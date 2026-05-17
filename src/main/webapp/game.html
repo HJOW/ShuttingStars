@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>HGAME</title>
+<title>Shutting Stars</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&family=Nanum+Gothic+Coding&display=swap" rel="stylesheet"/>
@@ -51,18 +51,7 @@ body {
 /* 페이지 접속 시 호출 */
 $(function() {
     const root   = $('.hgame_canvas_root');
-    const canvas = root.find('.hgame_canvas')[0];
-    
-    let vGap = window.outerHeight - window.innerHeight;
-    if(vGap < 0) vGap = 0;
-    const fResize = function() {
-        const canv = $(canvas);
-        canv.css('height', window.outerHeight - vGap + 1);
-    };
-    fResize();
-    $(window).on('resize', fResize);
-
-    _shuttingstarcore.init(canvas);
+    _shuttingstarcore.init(root[0]);
 
     // 임시 테스트 목적으로 임의의 곡 추가 및 선정
     setTimeout(() => {
@@ -88,9 +77,6 @@ $(function() {
 </head>
 <body>
     <div class='hgame_canvas_root'>
-        <canvas class='hgame_canvas'>
-        
-        </canvas>
     </div>
 </body>
 </html>
