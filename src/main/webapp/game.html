@@ -30,7 +30,7 @@ body {
 .invisible {
     display: none !important;
 }
-.hgame_canvas_root {
+.shuttingstar_canvas_root {
     background-image: linear-gradient(180deg, rgba(48, 48, 48, 0.99) 10%, rgba(69, 69, 69, 0.99) 100%);
     color: rgba(230, 230, 230, 0.99);
     width: 100%;
@@ -38,7 +38,7 @@ body {
     padding: 0;
     overflow: hidden;
 }
-.hgame_canvas_root .hgame_canvas {
+.shuttingstar_canvas_root .shuttingstar_canvas {
     width: 100%;
     margin: 0;
     padding: 0;
@@ -50,7 +50,7 @@ body {
 
 /* 페이지 접속 시 호출 */
 $(function() {
-    const root   = $('.hgame_canvas_root');
+    const root   = $('.shuttingstar_canvas_root');
     _shuttingstarcore.init(root[0]);
 
     /*
@@ -78,7 +78,7 @@ $(function() {
 </script>
 </head>
 <body>
-    <div class='hgame_canvas_root'>
+    <div class='shuttingstar_canvas_root'>
     </div>
 </body>
 </html>
