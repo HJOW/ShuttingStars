@@ -32,6 +32,7 @@ class ShuttingStarsCore {
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
     
+    /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
         if(typeof(rootDiv) == 'undefined') {
             rootDiv = document.body;
@@ -53,6 +54,7 @@ class ShuttingStarsCore {
         this.init(canvas);
     }
 
+    /** 초기화 (게임이 출력될 canvas 객체를 입력) */
     init(canvas) {
         this.canvas = canvas;
         this.ctx    = canvas.getContext('2d');
@@ -99,6 +101,7 @@ class ShuttingStarsCore {
         this.timeProgressKey = setInterval(() => { selfs.timeElapse(); }, Math.round((60000 / this.song.bpm) / this.timeMultiplier));
     }
 
+    /** 키 입력 처리 */
     handleKeyInput(key) {
         let idx;
         let notePlacer = null; // 해당 키에 맞는 NotePlacer 를 찾아야 함
@@ -131,7 +134,7 @@ class ShuttingStarsCore {
                     idx--;
                 }
 
-                if(obj.explosing == 0 && notePlacer.isConflicted(obj)) {
+                if(obj.explosing <= 0 && notePlacer.isConflictedVertical(obj)) {
                     // 해당 NotePlacer 과 충돌한 Note 가 얼마나 위치가 동일한지 판정 (수직으로만 이동하므로 y 좌표 및 노트 크기만 영향) - 백분율 사용
                     const distance = Math.abs(((obj.y - notePlacer.y) * 100.0) / obj.r);
 
@@ -315,7 +318,7 @@ class ShuttingStarsCore {
         this.ctx.fillRect(_shuttingstarcore.convertX(this.notePlacers[0].x - this.notePlacers[0].r), _shuttingstarcore.convertY(10), _shuttingstarcore.convertX(hpBarWidth), _shuttingstarcore.convertY(hpBarHeight));
     }
 
-    /** 시간 진행 (해당 곡의 4분의 1비트) */
+    /** 시간 진행 (해당 곡의 timeMultiplier 분의 1비트) */
     timeElapse() {
         const song = this.song;
         let idx;
@@ -391,6 +394,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
             if(obj instanceof Note) {
+                if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
                 obj.y -= obj.speedY;
                 if(obj.y < (obj.r / -2.0)) obj.y = (obj.r / -2.0);
             }
@@ -480,6 +484,25 @@ class ShuttingStarsObject {
                 ctx.strokeRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.r));
             }
         }
+    }
+
+    /** 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) */
+    isConflictedVertical(otherObject) {
+        if(this.shape === 'circle' && otherObject.shape === 'circle') {
+            const distance = Math.abs(this.y - otherObject.y);
+            return distance < this.r + otherObject.r;
+        } else if(this.shape == 'rect' && otherObject.shape == 'rect') {
+            return !(this.y + this.r < otherObject.y || this.y > otherObject.y + otherObject.r);
+        } else if(this.shape == 'circle' && otherObject.shape == 'rect') {
+            const closestY = Math.max(otherObject.y, Math.min(this.y, otherObject.y + otherObject.r));
+            const dy = this.y - closestY;
+            return (dy * dy) < (this.r * this.r);
+        } else if(this.shape == 'rect' && otherObject.shape == 'circle') {
+            const closestY = Math.max(this.y, Math.min(otherObject.y, this.y + this.r));
+            const dy = otherObject.y - closestY;
+            return (dy * dy) < (otherObject.r * otherObject.r);
+        }
+        return false;
     }
 
     /** 다른 객체와의 충돌 감지 */
