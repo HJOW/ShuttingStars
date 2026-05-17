@@ -95,9 +95,25 @@
           <artifactId>commons-codec</artifactId>
           <version>1.12</version>
       </dependency>
+      <dependency>
+          <groupId>com.google.firebase</groupId>
+          <artifactId>firebase-admin</artifactId>
+          <version>6.8.1</version>
+      </dependency>
+      <dependency>
+          <groupId>com.google.auto.value</groupId>
+          <artifactId>auto-value</artifactId>
+          <version>1.6.5</version>
+          <scope>provided</scope>
+      </dependency>
   </dependencies>
   <build>
     <finalName>shuttingstars</finalName>
+    <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+        </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-clean-plugin</artifactId>
