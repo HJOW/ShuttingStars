@@ -6,6 +6,7 @@
 class ShuttingStarsCore {
     resolution = {w : 1280, h : 720}; // 게임 내 무대의 절대크기
     dark = true;
+    reverseVertical = false;
     keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 입력 키
     arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'];
     enterKey = 'ENTER';
@@ -35,10 +36,13 @@ class ShuttingStarsCore {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
     };
     hp = 100.0; // 다 깎이면 게임 오버
-    state = 'menu'; // menu / songchoosing / playing / gameover / result / setting
+    state = 'menu'; // menu / songchoosing / songtitle / playing / gameover / result / setting
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
+    songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
+
+    songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
 
     paused = false;
     resumingTime = 0;
@@ -49,6 +53,8 @@ class ShuttingStarsCore {
 
     menuList = ['play', 'setting'];
     menuChoosing = null;
+
+    keypressTiming = 0;
 
     constructor() {}
     
@@ -67,10 +73,12 @@ class ShuttingStarsCore {
         htmls += "    </canvas>                            \n";
         htmls += "</div>                                   \n";
         rootDiv.innerHTML = htmls;
+
+        this.loadSettings();
         
         const canvas = document.getElementsByClassName('shuttingstars_canvas')[0];
-        canvas.style.minWidth  = '1280px';
-        canvas.style.minHeight = '720px';
+        canvas.style.minWidth  = this.resolution.w + 'px';
+        canvas.style.minHeight = this.resolution.h + 'px';
 
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
@@ -85,7 +93,11 @@ class ShuttingStarsCore {
         setInterval(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
 
         document.addEventListener('keydown', (event) => {
-            selfs.handleKeyInput(event.key.toUpperCase());
+            if(selfs.keypressTiming <= 0) {
+                selfs.handleKeyInput(event.key.toUpperCase());
+            } else {
+                setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase()); }, selfs.keypressTiming);
+            }
         });
 
         let vGap = window.outerHeight - window.innerHeight;
@@ -98,6 +110,80 @@ class ShuttingStarsCore {
 
         this.menuChoosing = this.menuList[0];
         this.resetStage();
+    }
+
+    /** 설정 불러오기 */
+    loadSettings() {
+        try {
+            let settingJsonStr = localStorage.getItem('shuttingstar_settings');
+            if(settingJsonStr) {
+                let settingJson = JSON.parse(settingJsonStr);
+                
+                if(typeof(settingJson.keyList) != 'undefined') {
+                    if(settingJson.keyList.length == this.keyList.length) {
+                        this.keyList = settingJson.keyList;
+                    }
+                }
+
+                if(typeof(settingJson.arrowKeys) != 'undefined') {
+                    if(settingJson.arrowKeys.length == this.arrowKeys.length) {
+                        this.arrowKeys = settingJson.arrowKeys;
+                    }
+                }
+                
+                if(typeof(settingJson.enterKey) != 'undefined') {
+                    this.enterKey = settingJson.enterKey;
+                }
+
+                if(typeof(settingJson.escKey) != 'undefined') {
+                    this.escKey = settingJson.escKey;
+                }
+
+                if(typeof(settingJson.fontFamily) != 'undefined') {
+                    this.fontFamily = settingJson.fontFamily;
+                }
+
+                if(typeof(settingJson.noteSpeedMultiplier) != 'undefined') {
+                    this.noteSpeedMultiplier = settingJson.noteSpeedMultiplier;
+                    if(typeof(this.noteSpeedMultiplier) == 'string') this.noteSpeedMultiplier = parseFloat(this.noteSpeedMultiplier);
+                }
+
+                if(typeof(settingJson.reverseVertical) != 'undefined') {
+                    this.reverseVertical = settingJson.reverseVertical;
+                    if(typeof(this.reverseVertical) == 'string') this.reverseVertical = ( (this.reverseVertical == 'Y' || this.this.reverseVertical == 'true') ? true : false );
+                }
+
+                if(typeof(settingJson.keypressTiming) != 'undefined') {
+                    this.keypressTiming = settingJson.keypressTiming;
+                    if(typeof(this.keypressTiming) == 'string') this.keypressTiming = parseInt(this.keypressTiming);
+                }
+            }
+        } catch(e) {
+            console.log('Failed to load settings.');
+            console.error(e);
+            console.log('Continue with default settings.');
+            this.saveSettings();
+        }
+    }
+
+    /** 설정 저장 */
+    saveSettings() {
+        try {
+            let settingJson = {}
+            settingJson.keyList = this.keyList;
+            settingJson.arrowKeys = this.arrowKeys;
+            settingJson.enterKey = this.enterKey;
+            settingJson.escKey = this.escKey;
+            settingJson.fontFamily = this.fontFamily;
+            settingJson.noteSpeedMultiplier = this.noteSpeedMultiplier;
+            settingJson.reverseVertical = this.reverseVertical;
+            settingJson.keypressTiming = this.keypressTiming;
+
+            localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
+        } catch(e) {
+            console.log('Failed to save settings.');
+            console.error(e);
+        }
     }
 
     /** 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행 */
@@ -135,8 +221,8 @@ class ShuttingStarsCore {
     handleKeyInput(key) {
         // 특수 키 확인
         if(key == this.arrowKeys[0] || key == this.arrowKeys[1] || key == this.arrowKeys[2] || key == this.arrowKeys[3] || key == this.enterKey) {
+            let index = 0;
             if(this.state == 'menu') {
-                let index = 0;
                 if(this.menuList.indexOf(this.menuChoosing) >= 0) index = this.menuList.indexOf(this.menuChoosing);
                 this.menuChoosing = this.menuList[index];
 
@@ -153,8 +239,38 @@ class ShuttingStarsCore {
                         this.state = 'songchoosing';
                     }
                 }
+            } else if(this.state == 'songchoosing') {
+                if(this.songs.length <= 0) { this.state = 'menu'; return; }
+                if(this.songChoosing == null) this.songChoosing = this.songs[0];
+
+                // 인덱스 구하기
+                index = 0;
+                for(let idx=0; idx<this.songs.length; idx++) {
+                    if(this.songs[idx] == this.songChoosing) {
+                        index = idx;
+                        break;
+                    }
+                }
+
+                // 키 적용
+                if(key == this.arrowKeys[0]) { // UP
+                    index--;
+                    if(index < 0) index = this.songs.length - 1;
+                    this.songChoosing = this.songs[index];
+                } else if(key == this.arrowKeys[1]) { // DOWN
+                    index++;
+                    if(index >= this.songs.length) index = 0;
+                    this.songChoosing = this.songs[index];
+                } else if(key == this.enterKey) { // ENTER
+                    if(this.songChoosing == null) return;
+                    this.song = this.songChoosing;
+                    this.songTitleTime = 80;
+                    this.state = 'songtitle';
+                } else if(key == this.escKey) {
+                    this.state = 'menu';
+                }
+
             }
-            // TODO
         } else if(key == this.escKey) {
             if(this.state == 'playing') {
                 if(this.paused) {
@@ -283,6 +399,8 @@ class ShuttingStarsCore {
             this.renderMenu();
         } else if(this.state == 'songchoosing') {
             this.renderSongChoosing();
+        } else if(this.state == 'songtitle') {
+            this.renderSongTitle();
         } else if(this.state == 'result') {
             this.renderResult();
         } else if(this.state == 'setting') {
@@ -360,7 +478,7 @@ class ShuttingStarsCore {
             rows += fontSize + gap;
         }
 
-        fontSize = 10;
+        fontSize = 12;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         opacity = 0.9;
         label = 'MOVE : ';
@@ -384,11 +502,157 @@ class ShuttingStarsCore {
     }
 
     renderSongChoosing() {
+        const selfs = this;
+        let idx;
+        let rows = 0;
+        let fontSize = 20;
+        let opacity = 0.9;
+        let gap = 60;
+        let label = '';
 
+        // 곡 목록이 비어 있으면 안내문구 출력 후 메뉴로 이동
+        if(this.songs.length <= 0) {
+            fontSize = 20;
+            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.strokeText('No songs available !', this.convertX(this.resolution.w / 2 - fontSize * (14/2)), this.convertY((this.resolution.h / 2) - 100 + rows));
+            rows += fontSize + gap;
+            setTimeout(() => { selfs.state = 'menu'; }, 4000);
+            return;
+        }
+
+        // 곡을 선택하지 않은 상태인 경우 첫 곡을 출력
+        if(this.songChoosing == null) { this.songChoosing = this.songs[0]; }
+
+        // 곡 목록을 다 출력할 수는 없으니, 현재 선택된 곡 앞뒤 2개만 출력
+        //    현재 선택된 곡을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
+        let frontSongs = [];
+        let backSongs = [];
+        let current = false;
+        for(idx=0; idx<this.songs.length; idx++) {
+            let songOne = this.songs[idx];
+            if(songOne == this.songChoosing) {
+                current = true; // 현재 선택된 곡, backSongs 에 넣기 (frontSongs 에 넣어도 문제는 없음)
+                backSongs.push(songOne);
+                continue;
+            }
+            if(! current) { // 아직 현재 선택된 곡을 만나기 이전 - 일단 frontSongs 에 넣고, 원소가 2개를 초과하면 먼저 넣은 것을 제거한다.
+                frontSongs.push(songOne);
+                if(frontSongs.length > 2) frontSongs.splice(0, 1);
+            } else { // 현재 선택된 곡을 지남 - backSongs 에 넣고, 원소가 3개 (현재 선택된 곡이 포함되어 있으므로) 가 되면 반복문을 중지한다.
+                backSongs.push(songOne);
+                if(backSongs.length >= 3) break;
+            }
+        }
+
+        // 하나의 배열로 병합
+        let displaySongs = [];
+        for(idx=0; idx<frontSongs.length; idx++) { displaySongs.push(frontSongs[idx]); }
+        for(idx=0; idx<backSongs.length; idx++) { displaySongs.push(backSongs[idx]); }
+        frontSongs = null;
+        backSongs = null;
+
+        let displayedSongs = 0;
+
+        // 출력
+        for(idx=0; idx<displaySongs.length; idx++) {
+            let songOne = displaySongs[idx];
+
+            // 곡 이름 출력
+            label = songOne.name;
+            fontSize = 20;
+            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+            if(this.songChoosing == songOne) opacity = 0.99;
+            else opacity = 0.3;
+
+            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            this.ctx.strokeText(label, this.convertX(this.resolution.w / 2 - fontSize * (label.length)), this.convertY((this.resolution.h / 2) - 120 + rows));
+            rows += fontSize + gap;
+
+            // 작곡가, 노트작성자, bpm 출력
+            label = 'Produced by ' + songOne.producer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
+            fontSize = 15;
+            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+            if(this.songChoosing == songOne) opacity = 0.99;
+            else opacity = 0.3;
+
+            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            this.ctx.strokeText(label, this.convertX(this.resolution.w / 2 - fontSize * (label.length/2)), this.convertY((this.resolution.h / 2) - 120 + rows));
+            rows += fontSize + gap;
+
+            displayedSongs++;
+        }
+
+        // 빈 공간 띄우기
+        fontSize = 35;
+        while(displayedSongs < 5) {
+            rows += fontSize + gap;
+            displayedSongs++;
+        }
+
+        // 기타 안내 출력
+        fontSize = 12;
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        opacity = 0.9;
+        label = 'MOVE : ';
+        for(idx=0; idx<this.arrowKeys.length; idx++) {
+            let arrowKeyOne = this.arrowKeys[idx];
+            let arrowKeyLabel = String(arrowKeyOne);
+            if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
+            else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
+            else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
+            else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
+            else arrowKeyLabel = String(arrowKeyOne);
+
+            label += arrowKeyLabel;
+        }
+        label += '    ACCEPT : ' + this.enterKey + '      BACK : ' + this.escKey;
+
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.strokeText(label, this.convertX(this.resolution.w / 2 - fontSize * (label.length/2)), this.convertY((this.resolution.h / 2) - 100 + rows));
+        rows += fontSize + gap;
+    }
+
+    renderSongTitle() {
+        const selfs = this;
+        let songOne = this.songChoosing;
+        let idx;
+        let rows = 0;
+        let fontSize = 20;
+        let opacity = 0.9;
+        let gap = 60;
+        let label = '';
+
+        if(songOne == null || typeof(songOne) == 'undefined') { this.state = 'songchoosing'; return; }
+
+        // 곡 이름 출력
+        label = songOne.name;
+        fontSize = 30;
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.strokeText(label, this.convertX(this.resolution.w / 2 - fontSize * (label.length)), this.convertY((this.resolution.h / 2) - 30 + rows));
+        rows += fontSize + gap;
+
+        // 작곡가, 노트작성자, bpm 출력
+        label = 'Produced by ' + songOne.producer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
+        fontSize = 20;
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.strokeText(label, this.convertX(this.resolution.w / 2 - fontSize * (label.length/2)), this.convertY((this.resolution.h / 2) - 30 + rows));
     }
 
     renderSetting() {
-        
+        // TODO
     }
 
     renderResult() {
@@ -505,6 +769,16 @@ class ShuttingStarsCore {
             }
         }
 
+        // 곡 준비 중 남은 시간 처리
+        if(this.state == 'songtitle') {
+            if(this.songTitleTime > 0) this.songTitleTime--;
+            if(this.songTitleTime <= 0) {
+                this.state = 'playing';
+                this.resetStage();
+                return;
+            }
+        }
+
         // 게임 오버 출력완료 여부 처리
         if(this.state == 'gameover') {
             if(this.gameoverTime > 0) this.gameoverTime--;
@@ -560,6 +834,12 @@ class ShuttingStarsCore {
 
         if(patternNow != null) {
             // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
+            //     locationIndex 값이 음수인 경우 랜덤 부여
+            if(patternNow.locationIndex < 0) {
+                patternNow.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+            }
+
+            //     노트 생성
             const note = new Note(patternNow.locationIndex);
             note.id = this.lastObjectId++;
             this.objects.push(note); // 패턴 추가
@@ -744,6 +1024,12 @@ const _shuttingstarcore = new ShuttingStarsCore();
 /** 곡 */
 class ShuttingStarsSong {
     name = '';
+    producer = '';
+    noteWriter = '';
+    description = '';
+    musicUrl = '';
+    thumbnailUrl = '';
+    bgaUrl = '';
     patterns = []; // ShuttingStarsNotePattern 배열
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 9999;
@@ -757,7 +1043,7 @@ class ShuttingStarsSong {
 
 /** 노트가 생성될 위치와 시간 (즉 패턴) */
 class ShuttingStarsNotePattern {
-    locationIndex = 0;
+    locationIndex = 0; // 음수 지정 시 랜덤 생성
     time = 0.0;
     constructor(locationIndex, time) {
         this.locationIndex = locationIndex;
