@@ -50,13 +50,23 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
     padding: 0;
 }
 </style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-7PWH500WNJ');
+</script>
+<!-- // Google tag (gtag.js) -->
 <script type="text/javascript" src='resources/js/jquery-1.12.4.min.js'></script>
 <script type="text/javascript" src='resources/js/shuttingstars.js'></script>
 <script type="text/javascript">
 
 /* 페이지 접속 시 호출 */
 $(function() {
-    const root   = $('.shuttingstar_canvas_root');
+    const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
     _shuttingstarcore.init(root[0]);
 
     
@@ -77,20 +87,12 @@ $(function() {
         }
 
         _shuttingstarcore.songs.push(song);
-        
-        /*
-        // 곡 선정 상태로 변경
-        _shuttingstarcore.song = song;
-        _shuttingstarcore.resetStage();
-        _shuttingstarcore.state = 'playing';
-        */
     }, 2000);
     
 });
 </script>
 </head>
 <body>
-    <div class='shuttingstar_canvas_root'>
-    </div>
+    <div class='shuttingstar_canvas_root'></div>
 </body>
 </html>
