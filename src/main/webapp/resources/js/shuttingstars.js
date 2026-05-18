@@ -560,6 +560,7 @@ class ShuttingStarsCore {
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
         this.ctx.strokeText('Shutting Stars', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
         rows += fontSize + gap;
 
@@ -578,6 +579,8 @@ class ShuttingStarsCore {
             this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
             rows += fontSize + gap;
         }
+
+        rows += fontSize * 3;
 
         fontSize = 12;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -735,7 +738,8 @@ class ShuttingStarsCore {
         let gap = 60;
         let label = '';
 
-        if(songOne == null || typeof(songOne) == 'undefined') { this.state = 'songchoosing'; return; }
+        if(songOne == null || typeof(songOne) == 'undefined') { songOne = this.song; this.songChoosing = this.song; }
+        if(songOne == null || typeof(songOne) == 'undefined') { this.song = null; this.songChoosing = null; this.state = 'songchoosing'; return; }
 
         // 곡 이름 출력
         label = songOne.name;
