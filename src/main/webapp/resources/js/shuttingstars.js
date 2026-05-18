@@ -41,6 +41,9 @@ class ShuttingStarsCore {
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
     songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
+    audio = null;
+    songThumb = null;
+    videoBga = null;
 
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
 
@@ -55,6 +58,7 @@ class ShuttingStarsCore {
     menuChoosing = null;
 
     keypressTiming = 0;
+    songTiming = 0;
 
     constructor() {}
     
@@ -157,6 +161,11 @@ class ShuttingStarsCore {
                     this.keypressTiming = settingJson.keypressTiming;
                     if(typeof(this.keypressTiming) == 'string') this.keypressTiming = parseInt(this.keypressTiming);
                 }
+
+                if(typeof(settingJson.songTiming) != 'undefined') {
+                    this.songTiming = settingJson.songTiming;
+                    if(typeof(this.songTiming) == 'string') this.songTiming = parseInt(this.songTiming);
+                }
             }
         } catch(e) {
             console.log('Failed to load settings.');
@@ -178,6 +187,7 @@ class ShuttingStarsCore {
             settingJson.noteSpeedMultiplier = this.noteSpeedMultiplier;
             settingJson.reverseVertical = this.reverseVertical;
             settingJson.keypressTiming = this.keypressTiming;
+            settingJson.songTiming = this.songTiming;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
@@ -202,7 +212,7 @@ class ShuttingStarsCore {
         this.report = {
             PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
         };
-
+        
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
             notePlacer.id = this.lastObjectId++;
@@ -210,11 +220,37 @@ class ShuttingStarsCore {
             this.notePlacers.push(notePlacer);
         }
 
-        if(this.song == null) return;
-        this.elapsedTime = 0;
+        if(this.song == null) { this.audio = null; return; }
+        if(this.state != 'playing' && this.state != 'songtitle') { this.audio = null; return; }
 
-        // 곡 동시처리 프로세스 시작
+        if(this.state == 'songtitle') {
+            if(this.song.thumbnailUrl) {
+                if(this.songThumb == null) {
+                    this.songThumb = new Image();
+                    this.songThumb.src = this.song.thumbnailUrl;
+                }
+            } else {
+                this.songThumb = null;
+            }
+        }
+
+        // 곡 플레이 세팅 중 처리
+        if(this.audio == null) {
+            if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
+                this.audio = new Audio(this.song.musicUrl);
+            } else {
+                this.audio = null;
+            }
+        }
+        
+        // 곡이 플레이 상황일 경우만 처리
+        if(this.state != 'playing') return;
+        this.elapsedTime = 0;
         this.timeProgressKey = setInterval(() => { selfs.timeElapse(); }, Math.round((60000 / this.song.bpm) / this.timeMultiplier));
+        if(this.audio != null) {
+            if(this.songTiming <= 0) this.audio.play();
+            else setTimeout(() => { selfs.audio.play(); }, this.songTiming);
+        }
     }
 
     /** 키 입력 처리 */
@@ -236,6 +272,10 @@ class ShuttingStarsCore {
                     this.menuChoosing = this.menuList[index];
                 } else if(key == this.enterKey) { // ENTER
                     if(this.menuChoosing == 'play') {
+                        this.audio = null;
+                        this.songThumb = null;
+                        this.videoBga = null;
+
                         this.state = 'songchoosing';
                     }
                 }
@@ -263,6 +303,7 @@ class ShuttingStarsCore {
                     this.songChoosing = this.songs[index];
                 } else if(key == this.enterKey) { // ENTER
                     if(this.songChoosing == null) return;
+
                     this.song = this.songChoosing;
                     this.songTitleTime = 80;
                     this.state = 'songtitle';
@@ -649,6 +690,11 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.strokeText(label, this.convertX(this.resolution.w / 2 - fontSize * (label.length/2)), this.convertY((this.resolution.h / 2) - 30 + rows));
+
+        // Thumb 있으면 출력
+        if(this.songThumb != null) {
+            this.ctx.drawImage(this.songThumb, 0, 0, this.convertX(this.resolution.w), this.convertY(this.resolution.h));
+        }
     }
 
     renderSetting() {
@@ -939,6 +985,9 @@ class ShuttingStarsCore {
     onSongEnd() {
         this.state = 'result';
         this.paused = false;
+        this.audio = null;
+        this.songThumb = null;
+        this.videoBga = null;
     }
 
     getNotes() {
