@@ -1,5 +1,28 @@
 /**
  * Shutting Stars
+ * 
+ *     핵심 JavaScript Library
+ *     주의 (usingWorker 사용 시 shuttingstarworker.js 와 같이 사용해야 함)
+ */
+
+/*
+
+LICENSE
+
+Copyright 2026 HJOW (hujinone22@naver.com)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. 
+ 
  */
 
 /* 게임 기동 근간을 이루는 전역 객체 */
@@ -27,7 +50,13 @@ class ShuttingStarsCore {
     notePlacers = []; // NotePlacer 객체들 보관
 
     elapsedTime = 0; // 진행 시간 (실제 시간과 단위가 다르며, 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
+
+    usingWorker = false; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
+
+    workerRender = null;
+    workerSongPlaying = null;
+    workerSimultaneousWork = null;
 
     point = 0;
     combo = 0;
@@ -93,8 +122,24 @@ class ShuttingStarsCore {
         const selfs = this;
 
         // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
-        setInterval(() => { selfs.render(); }, this.frameTime);
-        setInterval(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
+        if(this.usingWorker) {
+            this.workerRender = new Worker('shuttingstarworker.js');
+            this.workerRender.postMessage({interval : this.frameTime});
+            this.workerRender.onmessage = function(e) {
+                // const {drift, time} = e.data;
+                selfs.render();
+            }
+
+            this.workerSimultaneousWork = new Worker('shuttingstarworker.js');
+            this.workerSimultaneousWork.postMessage({interval : 20});
+            this.workerSimultaneousWork.onmessage = function(e) {
+                // const {drift, time} = e.data;
+                selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
+            }
+        } else {
+            this.repeat(() => { selfs.render(); }, this.frameTime);
+            this.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
+        }
 
         document.addEventListener('keydown', (event) => {
             if(selfs.keypressTiming <= 0) {
@@ -246,7 +291,19 @@ class ShuttingStarsCore {
         // 곡이 플레이 상황일 경우만 처리
         if(this.state != 'playing') return;
         this.elapsedTime = 0;
-        this.timeProgressKey = setInterval(() => { selfs.timeElapse(); }, Math.round((60000 / this.song.bpm) / this.timeMultiplier));
+
+        const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
+        if(this.usingWorker) {
+            this.workerSongPlaying = new Worker('shuttingstarworker.js');
+            this.workerSongPlaying.postMessage({interval : songBitGap});
+            this.workerSongPlaying.onmessage = function(e) {
+                // const {drift, time} = e.data;
+                selfs.timeElapse();
+            }
+        } else {
+            this.timeProgressKey = this.repeat(() => { selfs.timeElapse(); }, songBitGap);
+        }
+
         if(this.audio != null) {
             if(this.songTiming <= 0) this.audio.play();
             else setTimeout(() => { selfs.audio.play(); }, this.songTiming);
@@ -652,7 +709,9 @@ class ShuttingStarsCore {
 
             label += arrowKeyLabel;
         }
-        label += '    ACCEPT : ' + this.enterKey + '      BACK : ' + this.escKey;
+        label += '    ACCEPT : ' + this.enterKey + '      BACK : ';
+        if(this.escKey == 'ESCAPE') label += 'ESC';
+        else                        label += this.escKey;
 
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
@@ -751,9 +810,12 @@ class ShuttingStarsCore {
         this.ctx.strokeText('SCORE\t' + this.point, this.convertX(this.resolution.w / 2 - fontSize * (14/2)), this.convertY((this.resolution.h / 2) - 100 + rows));
         rows += fontSize + gap;
 
+        let escKeyLabel = this.escKey;
+        if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+        
         fontSize = 15;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        this.ctx.strokeText("'" + this.escKey + "' key to continue...", this.convertX(this.resolution.w / 2 - fontSize * (14/2)), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText("'" + escKeyLabel + "' key to continue...", this.convertX(this.resolution.w / 2 - fontSize * (14/2)), this.convertY((this.resolution.h / 2) - 100 + rows));
     }
 
     renderHpBar() {
@@ -948,8 +1010,16 @@ class ShuttingStarsCore {
     /** 곡 동시처리 프로세스 종료 (시작하려면 곡 선택 후 resetStage 가 호출되어야 함) */
     clearTimeHandler() {
         if(this.timeProgressKey != null) {
-            clearInterval(this.timeProgressKey);
+            if(typeof(this.timeProgressKey) == 'function') {
+                this.timeProgressKey();
+            } else {
+                clearInterval(this.timeProgressKey);
+            }
             this.timeProgressKey = null;
+        }
+        if(this.workerSongPlaying != null) {
+            try { this.workerSongPlaying.terminate(); } catch(e) { console.error(e); }
+            this.workerSongPlaying = null;
         }
     }
 
@@ -1066,6 +1136,26 @@ class ShuttingStarsCore {
             return 'rgb(' + r + ', ' + g + ', ' + b + ')';
         }
         return rgbaColor;
+    }
+
+    /** fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함. */
+    repeat(fnWork, timeGapMillis) {
+        let expected = Date.now() + timeGapMillis;
+        let switchStop = false;
+
+        const fStep = function() {
+            if(switchStop) return;
+            fnWork();
+            if(switchStop) return;
+
+            const drift = Date.now() - expected;
+            expected += timeGapMillis;
+            
+            setTimeout(fStep, Math.max(0, timeGapMillis - drift));
+        }
+        setTimeout(fStep, timeGapMillis);
+
+        return function() { switchStop = true; }
     }
 }
 const _shuttingstarcore = new ShuttingStarsCore();
