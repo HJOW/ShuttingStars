@@ -10,7 +10,7 @@ song.name = 'Night Ride';
 song.composer = 'Joshua Moses';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
-song.musicUrl = '/resources/songs/night-ride-by-joshua-moses.mp3';
+song.musicUrl = './resources/songs/night-ride-by-joshua-moses.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: Night Ride by Joshua Moses

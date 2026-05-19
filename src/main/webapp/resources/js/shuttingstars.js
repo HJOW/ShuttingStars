@@ -1689,7 +1689,7 @@ class ShuttingStarsSong {
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
-        return _shuttingstarcore.getNoteRadius() * 2 * _shuttingstarcore.noteSpeedMultiplier;
+        return Math.floor((_shuttingstarcore.getNoteRadius() * 2.0) * _shuttingstarcore.noteSpeedMultiplier / (_shuttingstarcore.timeMultiplier / 8.0));
     }
 
     getDifficultyList() {
