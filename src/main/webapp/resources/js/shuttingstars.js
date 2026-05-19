@@ -27,8 +27,8 @@ limitations under the License.
 
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
-    resolution = {w : 1920, h : 1080}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
-    stageSize  = {w : 1280, h :  720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
+    resolution = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
+    stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     
     dark = true;
@@ -1026,15 +1026,15 @@ class ShuttingStarsCore {
 
                 this.ctx.fillRect(Math.floor(this.canvas.width * 2.0 / 3.0), Math.floor(this.canvas.height * 3.0 / 4.0), Math.floor(this.canvas.width / 3.0), Math.floor(this.canvas.height * 1.0 / 4.0));
 
-                fontSize = this.convertFontSize(10);
+                fontSize = this.convertFontSize(12);
                 this.ctx.font = fontSize + 'px ' + this.fontFamily;
-                this.ctx.textAlign = "right";
+                this.ctx.textAlign = "left";
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
 
                 rows = Math.floor((this.canvas.height * 3.0 / 4.0) + fontSize) + 5;
                 for(const line of desc) {
-                    this.ctx.fillText(line, this.canvas.width - this.getLeftMargin() - 60, rows);
+                    this.ctx.fillText(line, Math.floor(this.canvas.width * 2.0 / 3.0) + fontSize + this.getLeftMargin(), rows);
                     rows += fontSize + gap;
                 }
                 this.ctx.textAlign = "center";
@@ -1377,7 +1377,7 @@ class ShuttingStarsCore {
 
         for(idx=0; idx<patterns.length; idx++) {
             const pattern = patterns[idx];
-            if(this.checkEqualFloats(pattern.time + this.songBitGap, this.elapsedTime * 1.0)) {
+            if(this.checkEqualFloats(pattern.time + this.songBitGap + song.timeConst, this.elapsedTime * 1.0)) {
                 patternNow = pattern;
                 break;
             }
@@ -1507,6 +1507,9 @@ class ShuttingStarsCore {
     onSongEnd() {
         this.state = 'result';
         this.paused = false;
+        if(this.audio != null) {
+            try { this.audio.pause(); } catch(e) { console.error(e); }
+        }
         this.audio = null;
         this.songThumb = null;
         this.videoBga = null;
@@ -1663,6 +1666,7 @@ class ShuttingStarsSong {
     bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 560; // 곡 종료 시간
+    timeConst = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용)
 
     // 난이도 별 패턴, easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
     //     예: easy;1, normal;3, hard;7, ex1;12, ...
@@ -1691,8 +1695,7 @@ class ShuttingStarsSong {
         const splits = desc.split('|');
         let arr = [];
         for(let line of splits) {
-            line = line.trim();
-            if(line == '') continue;
+            if(line.trim() == '') continue;
             arr.push(line);
         }
         return arr;
