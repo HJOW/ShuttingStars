@@ -45,7 +45,7 @@ class ShuttingStarsCore {
     urlCtx = './';  // URL Context Path
 
     frameTime = 10; // render 호출 주기
-    timeMultiplier = 8.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
+    timeMultiplier = 16.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
     stageRows = 36; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
     noteSpeedMultiplier = 1.0; // 노트 이동 속도 배수 (사용자가 지정 가능)
 
@@ -1390,7 +1390,7 @@ class ShuttingStarsCore {
 
         for(idx=0; idx<patterns.length; idx++) {
             const pattern = patterns[idx];
-            if(this.checkEqualFloats(pattern.time + this.songBitGap + song.timeConst, this.elapsedTime * 1.0)) {
+            if(this.checkEqualFloats((pattern.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
                 patternNow = pattern;
                 break;
             }
@@ -1679,8 +1679,9 @@ class ShuttingStarsSong {
     bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 560; // 곡 종료 시간
-    timeConst = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용)
-
+    timeMultiplier = 1; // 보정 시간 (노트 등장 time 값에 * 보정값으로 적용)
+    timeConstant = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
+    
     // 난이도 별 패턴, easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
     //     예: easy;1, normal;3, hard;7, ex1;12, ...
     // 각 원소는 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
@@ -1886,7 +1887,7 @@ class Note extends NoteKeyObject {
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
         this.x = notePlacer.x;
-        this.y = notePlacer.y + ((_shuttingstarcore.stageRows * this.r * 2) * _shuttingstarcore.noteSpeedMultiplier);
+        this.y = notePlacer.y + (((_shuttingstarcore.stageRows * this.r * 2) * _shuttingstarcore.noteSpeedMultiplier) * (_shuttingstarcore.timeMultiplier / 8));
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.9;

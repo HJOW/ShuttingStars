@@ -24,7 +24,8 @@ song.description = `
 `;
 song.bpm = 79;
 song.endTime = 1838;
-song.timeConst = -130;
+song.timeConstant = -135;
+song.timeMultiplier = 2;
 song.difficulties = {
     'normal;4' : [
         new ShuttingStarsNotePattern(-1, 137  ),
@@ -346,7 +347,8 @@ song.thumbnailUrl = '';
 song.description = 'Just for test this game';
 song.bpm = 120;
 song.endTime = 540;
-song.timeConst = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 2;
 song.difficulties = {
     'hard;9' : []
 };
