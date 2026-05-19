@@ -2009,6 +2009,41 @@ const _shuttingstarutil = new ShuttingStarsUtility();
 
 /********************** 외부에서 호출할 수 있도록 함수 구현 ************************/
 
+/** 곡 추가 */
+function addShuttingStarSong(song) {
+    if(! (song instanceof ShuttingStarsSong)) {
+        let json = song;
+        if(typeof(json) == 'string') json = JSON.parse(json);
+
+        song = new ShuttingStarsSong();
+        song.name           = json.name;
+        song.composer       = json.composer;
+        song.noteWriter     = json.noteWriter;
+        song.bgaUrl         = json.bgaUrl;
+        song.musicUrl       = json.musicUrl;
+        song.thumbnailUrl   = json.thumbnailUrl;
+        song.description    = json.description;
+        song.bpm            = json.bpm;
+        song.endTime        = json.endTime;
+        song.timeConstant   = json.timeConstant;
+        song.timeMultiplier = json.timeMultiplier;
+        song.difficulties   = {};
+
+        for(let key in json.difficulties) {
+            let noteArrs = json.difficulties[key];
+            let arr = [];
+
+            for(let noteJsonOne of noteArrs) {
+                let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
+                arr.push(patternOne);
+            }
+
+            song.difficulties[key] = arr;
+        }
+    }
+    _shuttingstarcore.songs.push(song);
+}
+
 /** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
 function initShuttingStars(param) {
     return _shuttingstarcore.init(param);
