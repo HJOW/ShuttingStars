@@ -88,6 +88,7 @@ class ShuttingStarsCore {
 
     paused = false;
     resumingTime = 0; // 일시정지 재개 전 대기 시간
+    resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값
     simultaneousWorkCycle = 0;
 
     colorManualAlpha = false;
@@ -330,6 +331,7 @@ class ShuttingStarsCore {
             PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
         };
         this.songBitGap = 0;
+        this.resumed = false;
         
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
@@ -547,6 +549,7 @@ class ShuttingStarsCore {
                     this.paused = false;
                 } else {
                     this.paused = true;
+                    if(this.audio != null) { this.audio.pause(); }
                 }
             } else if(this.state == 'result') {
                 this.state = 'menu';
@@ -1340,6 +1343,8 @@ class ShuttingStarsCore {
         if(this.paused) return;
         if(this.resumingTime >= 1) {
             this.resumingTime--;
+            if(this.resumingTime <= 0) this.resumed = true;
+            else                       this.resumed = false;
             return;
         }
 
@@ -1362,6 +1367,11 @@ class ShuttingStarsCore {
     timeElapse() {
         if(this.paused) return;
         if(this.resumingTime >= 1) return;
+
+        if(this.resumed) {
+            if(this.audio != null) { this.audio.resume(); }
+            this.resumed = false;
+        }
 
         const song = this.song;
         let idx;
