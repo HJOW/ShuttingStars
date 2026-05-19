@@ -1369,7 +1369,7 @@ class ShuttingStarsCore {
         if(this.resumingTime >= 1) return;
 
         if(this.resumed) {
-            if(this.audio != null) { this.audio.resume(); }
+            if(this.audio != null) { this.audio.play(); }
             this.resumed = false;
         }
 
