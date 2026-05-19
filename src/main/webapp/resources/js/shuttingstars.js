@@ -41,7 +41,7 @@ class ShuttingStarsCore {
     ctx = null;    // 2d 컨텍스트 객체
 
     frameTime = 16; // 1000 / 60
-    timeMultiplier = 8.0;
+    timeMultiplier = 8.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
     stageRows = 36; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
     noteSpeedMultiplier = 1.0; // 노트 이동 속도 배수 (사용자가 지정 가능)
 
@@ -65,21 +65,25 @@ class ShuttingStarsCore {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
     };
     hp = 100.0; // 다 깎이면 게임 오버
-    state = 'menu'; // menu / songchoosing / songtitle / playing / gameover / result / setting
+    state = 'menu'; // 현재 상태, menu / songchoosing / songtitle / playing / gameover / result / setting
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
-    songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
+    difficulty = null; // 선택된 난이도
     audio = null;
     songThumb = null;
     videoBga = null;
 
+    songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
+    difficultyChoosing = false; // 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시
+    difficultyChoosingList = [];// 매번 배열 추출할 수는 없으니 난이도 목록을 임시로 넣어두는 배열
+
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
+    gameoverTime = 0; // 게임 오버 마크 화면 남은 시간
 
     paused = false;
-    resumingTime = 0;
+    resumingTime = 0; // 일시정지 재개 전 대기 시간
     simultaneousWorkCycle = 0;
-    gameoverTime = 0;
 
     colorManualAlpha = false;
 
@@ -90,8 +94,8 @@ class ShuttingStarsCore {
     settingChoosing = null;
     settingModifyingMode = false;
 
-    keypressTiming = 0;
-    songTiming = 0;
+    keypressTiming = 0; // 키 입력 추가 딜레이 보정값
+    songTiming = 0; // 음원 재생 딜레이 보정값
 
     renderDebugMode = false; // 렌더링 디버그 모드 (objects 배열 내 내용 항상 출력 + JSON 객체를 objects 에 넣어 임의의 도형 추가 가능)
 
@@ -387,9 +391,14 @@ class ShuttingStarsCore {
                 } else if(key == this.enterKey) { // ENTER
                     if(this.songChoosing == null) return;
 
-                    this.song = this.songChoosing;
-                    this.songTitleTime = 80;
-                    this.state = 'songtitle';
+                    if(this.difficultyChoosing) {
+                        this.songTitleTime = 80;
+                        this.state = 'songtitle';
+                        this.difficultyChoosing = false;
+                    } else {
+                        this.song = this.songChoosing;
+                        this.difficultyChoosing = true;
+                    }
                 }
             } else if(this.state == 'setting') {
                 if(this.settingList.indexOf(this.settingChoosing) >= 0) index = this.settingList.indexOf(this.settingChoosing);
@@ -450,7 +459,8 @@ class ShuttingStarsCore {
             } else if(this.state == 'result') {
                 this.state = 'menu';
             } else if(this.state == 'songchoosing') {
-                this.state = 'menu';
+                if(this.difficultyChoosing) this.difficultyChoosing = false;
+                else this.state = 'menu';
             } else if(this.state == 'setting') {
                 if(this.settingModifyingMode) {
                     this.settingModifyingMode = false;
@@ -696,8 +706,9 @@ class ShuttingStarsCore {
     /** 화면 출력 - 곡 선정 화면 */
     renderSongChoosing() {
         const selfs = this;
-        let idx;
+        let idx, ddx;
         let rows = 0;
+        let cols = 0;
         let fontSize = 20;
         let opacity = 0.9;
         let uppers = 150;
@@ -715,7 +726,7 @@ class ShuttingStarsCore {
             setTimeout(() => { selfs.state = 'menu'; }, 4000);
             return;
         } else {
-            // 그외의 경우 게임 타이틀 출력
+            // 그외의 경우 안내문구 출력
             fontSize = 30;
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -768,7 +779,12 @@ class ShuttingStarsCore {
                 // 선택된 곡인 경우, 배경색 먼저 출력
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.fillRect(this.convertX((this.resolution.w / 10) - fontSize), this.convertY((this.resolution.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.convertX(this.resolution.w * 0.9), this.convertY((fontSize * 3) + gap));
+
+                if(this.difficultyChoosing) {
+                    this.ctx.fillRect(this.convertX((this.resolution.w / 10) - fontSize), this.convertY((this.resolution.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.convertX(this.resolution.w * 0.9), this.convertY((fontSize * 5) + gap * 2));
+                } else {
+                    this.ctx.fillRect(this.convertX((this.resolution.w / 10) - fontSize), this.convertY((this.resolution.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.convertX(this.resolution.w * 0.9), this.convertY((fontSize * 3) + gap));
+                }
             }
 
             // 곡 이름 출력
@@ -810,6 +826,43 @@ class ShuttingStarsCore {
             this.ctx.textAlign = "center";
             this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
             rows += fontSize + gap;
+
+            // 현재 선택된 곡이고, 난이도 선택해야 하는 차례인 경우
+            if(choosen && this.difficultyChoosing) {
+                fontSize = 15;
+                this.ctx.font = fontSize + 'px ' + this.fontFamily;
+                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                else          this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+
+                if(this.difficultyChoosingList.length == 0) this.difficultyChoosingList = this.songChoosing.getDifficultyList();
+                let diffIdx = this.difficultyChoosingList.indexOf(this.difficulty);
+                if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; }
+                
+                cols = 0;
+                for(ddx=0; ddx<this.difficultyChoosingList.length; ddx++) {
+                    let diffOne = this.difficultyChoosingList[ddx];
+                    let splits = diffOne.split(';');
+                    let difficultyName = String(splits[0]).trim();
+                    let difficultyNum  = parseInt(String(splits[1]).trim());
+
+                    label = '';
+
+                    if(ddx == diffIdx) label += '[';
+                    
+                    if(     difficultyName == 'easy'  ) label += 'EASY';
+                    else if(difficultyName == 'normal') label += 'NORMAL';
+                    else if(difficultyName == 'hard'  ) label += 'HARD';
+                    else label += 'EX';
+
+                    label += ' (' + difficultyNum + ')';
+
+                    if(ddx == diffIdx) label += ']';
+                    this.ctx.textAlign = "center";
+                    this.ctx.strokeText(label, this.convertX(this.resolution.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.resolution.h / 2) - uppers + rows));
+                    cols += (fontSize * label.length) + 20;
+                }
+                rows += fontSize + gap;
+            }
 
             displayedSongs++;
         }
@@ -933,6 +986,11 @@ class ShuttingStarsCore {
         if(songOne == null || typeof(songOne) == 'undefined') { songOne = this.song; this.songChoosing = this.song; }
         if(songOne == null || typeof(songOne) == 'undefined') { this.song = null; this.songChoosing = null; this.state = 'songchoosing'; return; }
 
+        // Thumb 있으면 먼저 출력
+        if(this.songThumb != null) {
+            this.ctx.drawImage(this.songThumb, 0, 0, this.convertX(this.resolution.w), this.convertY(this.resolution.h));
+        }
+
         // 곡 이름 출력
         label = songOne.name;
         fontSize = 30;
@@ -953,11 +1011,6 @@ class ShuttingStarsCore {
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
         this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 30 + rows));
-
-        // Thumb 있으면 출력
-        if(this.songThumb != null) {
-            this.ctx.drawImage(this.songThumb, 0, 0, this.convertX(this.resolution.w), this.convertY(this.resolution.h));
-        }
     }
 
     /** 화면 출력 - 플레이 종료 후 결과 화면 */
@@ -1159,14 +1212,17 @@ class ShuttingStarsCore {
         const song = this.song;
         let idx;
         if(song == null) {  this.state = 'menu'; return; } // 곡이 선정되지 않은 경우 시간 진행 없음
+        if(this.difficulty == null) { this.state = 'menu'; return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
         if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
         this.elapsedTime++;
         
         // 현재 시간에 해당하는 패턴이 있는지 확인
         let patternNow = null;
-        for(idx=0; idx<song.patterns.length; idx++) {
-            const pattern = song.patterns[idx];
+        let patterns = song.difficulties[this.difficulty];
+
+        for(idx=0; idx<patterns.length; idx++) {
+            const pattern = patterns[idx];
             if(pattern.time === this.elapsedTime * this.timeMultiplier) {
                 patternNow = pattern;
                 break;
@@ -1206,8 +1262,8 @@ class ShuttingStarsCore {
         // 곡의 끝 체크
         //     패턴들이 매 타이밍마다 있으리란 보장이 없으므로, 패턴들 중 가장 나중에 등장하는 패턴의 시간을 알아내야 함
         let lastPatternTime = 0;
-        for(idx=0; idx<song.patterns.length; idx++) {
-            const pattern = song.patterns[idx];
+        for(idx=0; idx<patterns.length; idx++) {
+            const pattern = patterns[idx];
             if(pattern.time > lastPatternTime) {
                 lastPatternTime = pattern.time;
             }
@@ -1411,14 +1467,26 @@ class ShuttingStarsSong {
     musicUrl = ''; // 음원 URL
     thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
     bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
-    patterns = []; // ShuttingStarsNotePattern 배열
     bpm = 120.0; // beat per minute, 곡의 속도
-    endTime = 560;
+    endTime = 560; // 곡 종료 시간
+
+    // 난이도 별 패턴, easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
+    //     예: easy;1, normal;3, hard;7, ex1;12, ...
+    // 각 원소는 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
+    difficulties = {}
 
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
         return _shuttingstarcore.getNoteRadius() * 2 * _shuttingstarcore.noteSpeedMultiplier;
+    }
+
+    getDifficultyList() {
+        let arr = [];
+        for(const k in this.difficulties) {
+            arr.push(k);
+        }
+        return arr;
     }
 }
 
