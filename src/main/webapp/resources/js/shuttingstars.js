@@ -728,9 +728,9 @@ class ShuttingStarsCore {
             let fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
-            this.ctx.strokeStyle = this.convertColor('rgba(250, 80, 80, 0.9)');
+            this.ctx.fillStyle = this.convertColor('rgba(250, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText('GAME OVER', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 20));
+            this.ctx.fillText('GAME OVER', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 20));
         }
     }
 
@@ -758,11 +758,21 @@ class ShuttingStarsCore {
 
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
-            if(this.menuChoosing == menuOne) opacity = 0.99;
-            else opacity = 0.3;
-            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-            this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+
+            if(this.menuChoosing == menuOne) {
+                opacity = 0.99;
+
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+            } else {
+                opacity = 0.3;
+
+                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+            }
+            
             rows += fontSize + gap;
         }
 
@@ -786,9 +796,9 @@ class ShuttingStarsCore {
         }
         label += '    ACCEPT : ' + this.enterKey;
 
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-        this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
         rows += fontSize + gap;
     }
 
@@ -884,16 +894,18 @@ class ShuttingStarsCore {
             // if(choosen) opacity = 0.99;
             // else opacity = 0.3;
 
+            this.ctx.textAlign = "center";
             if(choosen) {
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             } else {
                 if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             }
 
-            this.ctx.textAlign = "center";
-            this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+            
             rows += fontSize + gap;
 
             // 작곡가, 노트작성자, bpm 출력
@@ -904,22 +916,26 @@ class ShuttingStarsCore {
             // if(this.songChoosing == songOne) opacity = 0.99;
             // else opacity = 0.3;
 
+            this.ctx.textAlign = "center";
             if(choosen) {
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             } else {
                 if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             }
 
-            this.ctx.textAlign = "center";
-            this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             rows += fontSize + gap;
 
             // 현재 선택된 곡이고, 난이도 선택해야 하는 차례인 경우
             if(choosen && this.difficultyChoosing) {
                 fontSize = this.convertFontSize(15);
                 this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                 else          this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
 
@@ -928,6 +944,7 @@ class ShuttingStarsCore {
                 if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; }
                 
                 cols = 0;
+                this.ctx.textAlign = "center";
                 for(ddx=0; ddx<this.difficultyChoosingList.length; ddx++) {
                     let diffOne = this.difficultyChoosingList[ddx];
                     let splits = diffOne.split(';');
@@ -944,10 +961,10 @@ class ShuttingStarsCore {
                     else label += 'EX';
 
                     label += ' (' + difficultyNum + ')';
-
                     if(ddx == diffIdx) label += ']';
-                    this.ctx.textAlign = "center";
-                    this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+
+                    if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+                    else               this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
                     cols += (fontSize * label.length) + 20;
                 }
                 rows += fontSize + gap;
@@ -983,10 +1000,10 @@ class ShuttingStarsCore {
         if(this.escKey == 'ESCAPE') label += 'ESC';
         else                        label += this.escKey;
 
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
     }
 
@@ -998,6 +1015,7 @@ class ShuttingStarsCore {
         let fontSize = this.convertFontSize(30);
         let opacity = 0.9;
         let gap = Math.floor(fontSize / 2.0);
+        let uppers = 120;
         let label = '';
 
         if(this.settingChoosing == null) this.settingChoosing = this.settingList[0];
@@ -1006,7 +1024,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('Settings', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+        this.ctx.strokeText('Settings', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         for(idx=0; idx<this.settingList.length; idx++) {
@@ -1029,15 +1047,23 @@ class ShuttingStarsCore {
             if(choosen) {
                 if(this.settingModifyingMode) opacity = 0.99;
                 else opacity = 0.8;
-            } else opacity = 0.3;
-            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-            this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+            } else {
+                opacity = 0.3;
+
+                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+            }
+            
             rows += fontSize + gap;
         }
 
         fontSize = this.convertFontSize(30);
-        rows += fontSize * 5;
+        rows += fontSize * 3;
 
         fontSize = this.convertFontSize(12);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -1056,9 +1082,9 @@ class ShuttingStarsCore {
         }
         label += '    ACCEPT : ' + this.enterKey;
 
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-        this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
     }
 
@@ -1086,10 +1112,10 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(30);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
+        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
         rows += fontSize + gap;
 
         // 작곡가, 노트작성자, bpm 출력
@@ -1097,10 +1123,10 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(20);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
+        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
     }
 
     /** 화면 출력 - 플레이 종료 후 결과 화면 */
@@ -1120,49 +1146,49 @@ class ShuttingStarsCore {
 
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText(this.song.name, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows)); // TODO : 난이도 표기
+        this.ctx.fillText(this.song.name, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows)); // TODO : 난이도 표기
         rows += fontSize + gap;
 
         fontSize = this.convertFontSize(20);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        this.ctx.strokeStyle = this.convertColor('rgba(80, 230, 80, 0.8)'); // blue
+        this.ctx.fillStyle = this.convertColor('rgba(80, 230, 80, 0.8)'); // blue
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('PERFECT\t' + this.report.PERFECT, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText('PERFECT\t' + this.report.PERFECT, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        this.ctx.strokeStyle = this.convertColor('rgba(180, 230, 80, 0.8)'); // green
+        this.ctx.fillStyle = this.convertColor('rgba(180, 230, 80, 0.8)'); // green
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('GREAT\t' + this.report.GREAT, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText('GREAT\t' + this.report.GREAT, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        this.ctx.strokeStyle = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
+        this.ctx.fillStyle = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('GOOD\t' + this.report.GOOD, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText('GOOD\t' + this.report.GOOD, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        this.ctx.strokeStyle = this.convertColor('rgba(230, 180, 80, 0.8)'); // purple
+        this.ctx.fillStyle = this.convertColor('rgba(230, 180, 80, 0.8)'); // purple
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('BAD\t' + this.report.BAD, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText('BAD\t' + this.report.BAD, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        this.ctx.strokeStyle = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
+        this.ctx.fillStyle = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('MISS\t' + this.report.MISS, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText('MISS\t' + this.report.MISS, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('TOTAL\t' + this.point, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText('TOTAL\t' + this.point, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + (gap / 2);
 
         let escKeyLabel = this.escKey;
@@ -1171,7 +1197,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.textAlign = "center";
-        this.ctx.strokeText("'" + escKeyLabel + "' key to continue...", this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText("'" + escKeyLabel + "' key to continue...", this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
     }
 
     renderHpBar() {
@@ -1726,10 +1752,10 @@ class NoteKeyObject extends ShuttingStarsObject {
         let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
         ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
 
-        if(this.dark) ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
-        else          ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+        if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
+        else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
         ctx.textAlign = "center";
-        ctx.strokeText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (this.r / 2.0) - (fontSize / 3.0), true)); // Note 중앙에 출력
+        ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (this.r / 2.0) - (fontSize / 3.0), true)); // Note 중앙에 출력
     }
 }
 
@@ -1816,10 +1842,10 @@ class JudgeMark extends ShuttingStarsObject {
             fontSize = _shuttingstarcore.convertFontSize(15);
             ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
             if(this.judgeResult == 'MISS') {
-                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(255, 0, 0, 0.9)');
+                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 0, 0, 0.9)');
             } else {
                 if(_shuttingstarcore.dark) ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(230, 230, 230, 0.9)');
-                else ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
+                else ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
             }
             ctx.fillText('COMBO ' + combo, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY + 30)); // 판정 결과 아래에 출력
         }
