@@ -41,9 +41,10 @@ class ShuttingStarsCore {
     fontFamily = 'D2Coding'; // NanumGothicCoding / D2Coding
 
     canvas = null; // 캔버스 객체
-    ctx = null;    // 2d 컨텍스트 객체
+    ctx = null;    // 2D Context 객체
+    urlCtx = '/';  // URL Context Path
 
-    frameTime = 16; // 1000 / 60
+    frameTime = 10; // render 호출 주기
     timeMultiplier = 8.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
     stageRows = 36; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
     noteSpeedMultiplier = 1.0; // 노트 이동 속도 배수 (사용자가 지정 가능)
@@ -76,6 +77,7 @@ class ShuttingStarsCore {
     audio = null;
     songThumb = null;
     videoBga = null;
+    songBitGap = 0;
 
     songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
     difficultyChoosing = false; // 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시
@@ -164,7 +166,7 @@ class ShuttingStarsCore {
             }
 
             this.workerSimultaneousWork = new Worker('shuttingstarworker.js');
-            this.workerSimultaneousWork.postMessage({interval : 20});
+            this.workerSimultaneousWork.postMessage({interval : this.frameTime});
             this.workerSimultaneousWork.onmessage = function(e) {
                 // const {drift, time} = e.data;
                 selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
@@ -327,6 +329,7 @@ class ShuttingStarsCore {
         this.report = {
             PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
         };
+        this.songBitGap = 0;
         
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
@@ -353,6 +356,10 @@ class ShuttingStarsCore {
         if(this.audio == null) {
             if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                 this.audio = new Audio(this.song.musicUrl);
+                // this.audio.addEventListener('ended', function() {
+                //     console.log('SONG ENDED');
+                //     console.log(this.timeElapse);
+                // });
             } else {
                 this.audio = null;
             }
@@ -363,6 +370,7 @@ class ShuttingStarsCore {
         this.elapsedTime = 0;
 
         const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
+        this.songBitGap = songBitGap;
         if(this.usingWorker) {
             this.workerSongPlaying = new Worker('shuttingstarworker.js');
             this.workerSongPlaying.postMessage({interval : songBitGap});
@@ -377,7 +385,7 @@ class ShuttingStarsCore {
         if(this.audio != null) {
             setTimeout(() => {
                 selfs.audio.play();
-            }, (songBitGap * this.stageRows) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
+            }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
         }
     }
 
@@ -842,6 +850,7 @@ class ShuttingStarsCore {
         //    현재 선택된 곡을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
         let frontSongs = [];
         let backSongs = [];
+        let songChoosen = null;
         let current = false;
         for(idx=0; idx<this.songs.length; idx++) {
             let songOne = this.songs[idx];
@@ -875,14 +884,16 @@ class ShuttingStarsCore {
 
             fontSize = this.convertFontSize(20);
             if(choosen) {
+                songChoosen = songOne;
+
                 // 선택된 곡인 경우, 배경색 먼저 출력
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
 
                 if(this.difficultyChoosing) {
-                    this.ctx.fillRect(this.convertX((this.stageSize.w / 10) - fontSize), this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.convertX(this.stageSize.w * 0.9), this.convertY((fontSize * 4) + gap));
+                    this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMargin() * 2), this.convertY((fontSize * 4) + gap));
                 } else {
-                    this.ctx.fillRect(this.convertX((this.stageSize.w / 10) - fontSize), this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.convertX(this.stageSize.w * 0.9), this.convertY((fontSize * 3) + gap));
+                    this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMargin() * 2), this.convertY((fontSize * 3) + gap));
                 }
             }
 
@@ -905,7 +916,6 @@ class ShuttingStarsCore {
                 this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             }
 
-            
             rows += fontSize + gap;
 
             // 작곡가, 노트작성자, bpm 출력
@@ -967,9 +977,10 @@ class ShuttingStarsCore {
                     else               this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
                     cols += (fontSize * label.length) + 20;
                 }
-                rows += fontSize + gap;
+                rows += gap;
             }
 
+            rows += fontSize + gap;
             displayedSongs++;
         }
 
@@ -1004,7 +1015,30 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
         this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
-        rows += fontSize + gap;
+        
+        // 선택 곡 정보 출력
+        if(songChoosen != null) {
+            let desc = songChoosen.getDescriptionSplit();
+            if(desc != null && desc.length > 0) {
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
+
+                this.ctx.fillRect(Math.floor(this.canvas.width * 2.0 / 3.0), Math.floor(this.canvas.height * 3.0 / 4.0), Math.floor(this.canvas.width / 3.0), Math.floor(this.canvas.height * 1.0 / 4.0));
+
+                fontSize = this.convertFontSize(10);
+                this.ctx.font = fontSize + 'px ' + this.fontFamily;
+                this.ctx.textAlign = "right";
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+
+                rows = Math.floor((this.canvas.height * 3.0 / 4.0) + fontSize) + 5;
+                for(const line of desc) {
+                    this.ctx.fillText(line, this.canvas.width - this.getLeftMargin() - 60, rows);
+                    rows += fontSize + gap;
+                }
+                this.ctx.textAlign = "center";
+            }
+        }
     }
 
     /** 화면 출력 - 설정 화면 */
@@ -1342,7 +1376,7 @@ class ShuttingStarsCore {
 
         for(idx=0; idx<patterns.length; idx++) {
             const pattern = patterns[idx];
-            if(pattern.time === this.elapsedTime * this.timeMultiplier) {
+            if(this.checkEqualFloats(pattern.time + this.songBitGap, this.elapsedTime * 1.0)) {
                 patternNow = pattern;
                 break;
             }
@@ -1385,6 +1419,7 @@ class ShuttingStarsCore {
             const pattern = patterns[idx];
             if(pattern.time > lastPatternTime) {
                 lastPatternTime = pattern.time;
+                // lastPatternTime = lastPatternTime / this.timeMultiplier;
             }
         }
 
@@ -1392,8 +1427,15 @@ class ShuttingStarsCore {
             lastPatternTime = song.endTime;
         }
 
-        if(this.elapsedTime * this.timeMultiplier > lastPatternTime) {
+        // console.log(this.elapsedTime);
+        if(this.elapsedTime > lastPatternTime) {
             this.clearTimeHandler();
+
+            if(this.audio != null) {
+                try { this.audio.pause(); } catch(ex) {}
+                this.audio = null;
+            }
+
             this.onSongEnd();
             return;
         }
@@ -1504,16 +1546,24 @@ class ShuttingStarsCore {
     }
 
     getLeftMargin() {
-        return 20;
+        return 0;
     }
 
     getTopMargin() {
         return 0;
     }
+
+    getLeftMarginNote() {
+        return 20;
+    }
+
+    getTopMarginNote() {
+        return 0;
+    }
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
     convertX(x) {
-        return x * this.resolution.w / this.stageSize.w;
+        return (x * this.resolution.w / this.stageSize.w) + this.getLeftMargin();
         // return x;
     }
 
@@ -1521,10 +1571,10 @@ class ShuttingStarsCore {
     convertY(y, allowReverse) {
         if(allowReverse) {
             if(this.reverseVertical) {
-                return this.resolution.h - ( y * this.resolution.h / this.stageSize.h );
+                return (this.resolution.h - ( y * this.resolution.h / this.stageSize.h )) + this.getTopMargin();
             }
         }
-        return y * this.resolution.h / this.stageSize.h;
+        return (y * this.resolution.h / this.stageSize.h) + this.getTopMargin();
 
         // if(allowReverse) { if(this.reverseVertical) return this.stageSize.h - y; }
         // return y;
@@ -1560,6 +1610,23 @@ class ShuttingStarsCore {
     /** 폰트 크기 변환 */
     convertFontSize(num) {
         return Math.floor(num * (this.resolution.h * 1.0 / this.stageSize.h) * this.fontSizeRatio); // 해상도와 스테이지 크기 비율 구하기 (세로 길이만 반영)
+    }
+
+    /** URL 변환 */
+    convertURL(url) {
+        url = String(url).trim();
+        if(url.indexOf('http://') == 0 || url.indexOf('https://') == 0) return url;
+        if(url.indexOf('.') == 0) return url;
+
+        if(this.urlCtx.indexOf('/') == this.urlCtx.length - 1) this.urlCtx += '/';
+        if(url.indexOf('/') == 0) return this.urlCtx + url.substring(1);
+
+        return url;
+    }
+
+    /** 부동소수 동일여부 확인 */
+    checkEqualFloats(a, b) {
+        return Math.abs(a - b) < 0.000001;
     }
 
     /** fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함. */
@@ -1611,6 +1678,21 @@ class ShuttingStarsSong {
         let arr = [];
         for(const k in this.difficulties) {
             arr.push(k);
+        }
+        return arr;
+    }
+
+    getDescriptionSplit() {
+        let desc = this.description;
+        if(desc == null) return '';
+        desc = desc.trim();
+        
+        const splits = desc.split('|');
+        let arr = [];
+        for(let line of splits) {
+            line = line.trim();
+            if(line == '') continue;
+            arr.push(line);
         }
         return arr;
     }
@@ -1764,8 +1846,8 @@ class NotePlacer extends NoteKeyObject {
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
-        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMargin();
-        this.y = (this.r * 4) + _shuttingstarcore.getTopMargin();
+        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMarginNote();
+        this.y = (this.r * 4) + _shuttingstarcore.getTopMarginNote();
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.2;
