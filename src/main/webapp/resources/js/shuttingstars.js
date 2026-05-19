@@ -93,6 +93,8 @@ class ShuttingStarsCore {
     keypressTiming = 0;
     songTiming = 0;
 
+    renderDebugMode = false; // 렌더링 디버그 모드 (objects 배열 내 내용 항상 출력 + JSON 객체를 objects 에 넣어 임의의 도형 추가 가능)
+
     language = 'en';
     stringTable = {
         'ko' : {}
@@ -103,9 +105,20 @@ class ShuttingStarsCore {
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
         if(typeof(rootDiv) == 'undefined') {
+            // 예약어 클래스가 이미 존재하는지 확인
+            let additionalNumber = 0;
+            let rootClassName = 'shuttingstars_root';
+            let remains = document.getElementsByClassName(rootClassName);
+            while(remains != null && remains.length >= 1) { // 예약어가 없는 고유 영역을 확정 (이미 쓰는 경우 숫자를 +1씩 더해서 고유하게 만듦)
+                additionalNumber++;
+                rootClassName = 'shuttingstars_root' + additionalNumber;
+                remains = document.getElementsByClassName(rootClassName);
+            }
+            remains = null;
+            
             rootDiv = document.body;
-            rootDiv.innerHTML = "<div id='shuttingstars_root'></div>"
-            rootDiv = document.getElementById('shuttingstars_root');
+            rootDiv.innerHTML = "<div class='" + rootClassName + "'></div>"
+            rootDiv = document.getElementsByClassName(rootClassName)[0];
         }
         rootDiv.innerHTML = "";
         let htmls = '';
@@ -167,6 +180,7 @@ class ShuttingStarsCore {
         window.addEventListener('resize', fResize);
 
         this.menuChoosing = this.menuList[0];
+        this.state = 'menu';
         this.resetStage();
     }
 
@@ -555,6 +569,12 @@ class ShuttingStarsCore {
         // 캔버스 비우기
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // 디버그 모드
+        if(this.renderDebugMode) {
+            this.renderDebug();
+        }
+
+        // 현재 게임 상태별 렌더링
         if(this.state == 'playing' || this.state == 'gameover') {
             this.renderPlaying();
         } else if(this.state == 'menu') {
@@ -679,6 +699,7 @@ class ShuttingStarsCore {
         let rows = 0;
         let fontSize = 20;
         let opacity = 0.9;
+        let uppers = 150;
         let gap = 30;
         let label = '';
 
@@ -688,7 +709,7 @@ class ShuttingStarsCore {
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-            this.ctx.strokeText('No songs available !', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+            this.ctx.strokeText('No songs available !', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - (uppers - 20) + rows));
             rows += fontSize + gap;
             setTimeout(() => { selfs.state = 'menu'; }, 4000);
             return;
@@ -699,7 +720,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText('Choose what you want !', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 120 + rows));
+            this.ctx.strokeText('Choose what you want !', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
             rows += fontSize + gap;
         }
 
@@ -746,7 +767,7 @@ class ShuttingStarsCore {
                 // 선택된 곡인 경우, 배경색 먼저 출력
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.fillRect(this.convertX((this.resolution.w / 10) - fontSize), this.convertY((this.resolution.h / 2) - 120 + rows - (fontSize + (gap / 2))), this.convertX(this.resolution.w * 0.9), this.convertY((fontSize * 3) + gap));
+                this.ctx.fillRect(this.convertX((this.resolution.w / 10) - fontSize), this.convertY((this.resolution.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.convertX(this.resolution.w * 0.9), this.convertY((fontSize * 3) + gap));
             }
 
             // 곡 이름 출력
@@ -766,7 +787,7 @@ class ShuttingStarsCore {
             }
 
             this.ctx.textAlign = "center";
-            this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 120 + rows));
+            this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
             rows += fontSize + gap;
 
             // 작곡가, 노트작성자, bpm 출력
@@ -786,7 +807,7 @@ class ShuttingStarsCore {
             }
 
             this.ctx.textAlign = "center";
-            this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 120 + rows));
+            this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
             rows += fontSize + gap;
 
             displayedSongs++;
@@ -822,7 +843,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText(label, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
     }
 
@@ -943,13 +964,14 @@ class ShuttingStarsCore {
         // 첫 줄
         let rows = 0;
         let fontSize = 30;
-        let gap = 60;
+        let uppers = 150;
+        let gap = 30;
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('PLAYING REPORT', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('PLAYING REPORT', this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         // 두 번째 줄
@@ -957,35 +979,35 @@ class ShuttingStarsCore {
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.strokeStyle = this.convertColor('rgba(80, 230, 80, 0.8)'); // blue
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('PERFECT\t' + this.report.PERFECT, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('PERFECT\t' + this.report.PERFECT, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = 20;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.strokeStyle = this.convertColor('rgba(180, 230, 80, 0.8)'); // green
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('GREAT\t' + this.report.GREAT, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('GREAT\t' + this.report.GREAT, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = 20;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.strokeStyle = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('GOOD\t' + this.report.GOOD, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('GOOD\t' + this.report.GOOD, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = 20;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.strokeStyle = this.convertColor('rgba(230, 180, 80, 0.8)'); // purple
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('BAD\t' + this.report.BAD, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('BAD\t' + this.report.BAD, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = 20;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.strokeStyle = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('MISS\t' + this.report.MISS, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('MISS\t' + this.report.MISS, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = 20;
@@ -993,7 +1015,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('SCORE\t' + this.point, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText('SCORE\t' + this.point, this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         let escKeyLabel = this.escKey;
@@ -1002,7 +1024,7 @@ class ShuttingStarsCore {
         fontSize = 15;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.textAlign = "center";
-        this.ctx.strokeText("'" + escKeyLabel + "' key to continue...", this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - 100 + rows));
+        this.ctx.strokeText("'" + escKeyLabel + "' key to continue...", this.convertX(this.resolution.w / 2), this.convertY((this.resolution.h / 2) - uppers + rows));
     }
 
     renderHpBar() {
@@ -1040,6 +1062,29 @@ class ShuttingStarsCore {
         //    HP바 내부를 채우기
         this.ctx.fillStyle = hpBarInsideColor;
         this.ctx.fillRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(10), this.convertX(hpBarWidth), this.convertY(hpBarHeight));
+    }
+
+    renderDebug() {
+        for(const obj of this.objects) {
+            if(typeof(obj.draw) == 'function') continue;
+            if(typeof(obj.type) == 'undefined') continue;
+            if(typeof(obj.color) == 'undefined') continue;
+            if(typeof(obj.x) == 'undefined') continue;
+            if(typeof(obj.y) == 'undefined') continue;
+
+            try {
+                this.ctx.fillStyle = obj.color;
+                if(obj.type == 'rect') {
+                    this.ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+                } else if(obj.type == 'circle') {
+                    this.ctx.beginPath();
+                    this.ctx.arc(obj.x, obj.y, obj.r, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
     }
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
@@ -1292,17 +1337,20 @@ class ShuttingStarsCore {
     
     /** 게임 내 무대 크기 (resolution.w, resolution.h) 를 실제 화면 내 좌표 (window.outerWidth, window.outerHeight) 로 변환 */
     convertX(x) {
-        return x * this.resolution.w / window.outerWidth;
-        // return x;
+        // return x * this.resolution.w / window.outerWidth;
+        return x;
     }
     convertY(y, allowReverse) {
-        if(allowReverse) {
-            if(this.reverseVertical) {
-                return this.resolution.h - ( y * this.resolution.h / window.outerHeight );
-            }
-        }
-        return y * this.resolution.h / window.outerHeight;
-        // return y;
+        // if(allowReverse) {
+        //     if(this.reverseVertical) {
+        //         return this.resolution.h - ( y * this.resolution.h / window.outerHeight );
+        //     }
+        // }
+        // return y * this.resolution.h / window.outerHeight;
+
+
+        if(allowReverse) { if(this.reverseVertical) return this.resolution.h - y; }
+        return y;
     }
 
     convertColor(rgbaColor) {
@@ -1622,4 +1670,10 @@ class JudgeMark extends ShuttingStarsObject {
     isConflicted(otherObject) {
         return false;
     }
+}
+
+
+/** 외부에서 호출할 수 있도록 함수 구현 */
+function initShuttingStars(param) {
+    return _shuttingstarcore.init(param);
 }
