@@ -574,6 +574,7 @@ class ShuttingStarsCore {
             }
         }
         if(notePlacer == null) return;
+        console.log(this.elapsedTime + ', ' + key); // TODO
 
         // NotePlacer 폭발 처리
         notePlacer.explosing = 1;
