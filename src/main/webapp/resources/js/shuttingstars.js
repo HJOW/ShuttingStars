@@ -100,7 +100,10 @@ class ShuttingStarsCore {
     keypressTiming = 0; // 키 입력 추가 딜레이 보정값
     songTiming = 0; // 음원 재생 딜레이 보정값
 
-    renderDebugMode = false; // 렌더링 디버그 모드 (objects 배열 내 내용 항상 출력 + JSON 객체를 objects 에 넣어 임의의 도형 추가 가능)
+    // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
+    renderDebugMode = false;
+    // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
+    backgroundImage = null;
 
     language = 'en';
     stringTable = {
@@ -610,9 +613,14 @@ class ShuttingStarsCore {
     /** 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨 */
     render() {
         // 캔버스 비우기
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if(this.backgroundImage != null && this.backgroundImage != '') {
+            // 배경 이미지 존재 시 지금 출력
+            this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+        } else {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
 
-        // 디버그 모드
+        // 디버그 모드 켜진 경우 디버그용 객체 출력
         if(this.renderDebugMode) {
             this.renderDebug();
         }
@@ -638,7 +646,7 @@ class ShuttingStarsCore {
         // 객체 그리기
         for(let idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            obj.draw(this.ctx);
+            if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
         }
 
         // HP바 그리기
