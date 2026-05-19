@@ -38,7 +38,7 @@ class ShuttingStarsCore {
     enterKey = 'ENTER';
     escKey = 'ESCAPE';
 
-    fontFamily = 'Nanum Gothic Coding';
+    fontFamily = 'D2Coding'; // NanumGothicCoding / D2Coding
 
     canvas = null; // 캔버스 객체
     ctx = null;    // 2d 컨텍스트 객체
