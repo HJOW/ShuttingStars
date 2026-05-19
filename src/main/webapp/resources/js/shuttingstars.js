@@ -55,7 +55,7 @@ class ShuttingStarsCore {
 
     elapsedTime = 0; // 진행 시간 (실제 시간과 단위가 다르며, 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
 
-    usingWorker = false; // Worker 사용여부
+    usingWorker = true; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
 
     workerRender = null;
@@ -156,6 +156,9 @@ class ShuttingStarsCore {
         this.loadSettings();
 
         const selfs = this;
+
+        // worker 사용 가능여부 체크
+        if(String(window.location.href).indexOf('http') != 0) this.usingWorker = false;
 
         // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
         if(this.usingWorker) {
