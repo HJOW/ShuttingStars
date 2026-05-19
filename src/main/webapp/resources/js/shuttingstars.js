@@ -27,8 +27,8 @@ limitations under the License.
 
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
-    resolution = {w : 1280, h : 720}; // 렌더링 해상도
-    stageSize = {w : 1280, h : 720};  // 게임 내 무대의 절대크기
+    resolution = {w : 1920, h : 1080}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
+    stageSize  = {w : 1280, h :  720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     
     dark = true;
@@ -93,9 +93,11 @@ class ShuttingStarsCore {
     menuList = ['play', 'setting'];
     menuChoosing = null;
 
-    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier'];
+    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality'];
     settingChoosing = null;
     settingModifyingMode = false;
+    settingsGraphicQuality = ['LOW', 'MEDIUM', 'HIGH', '4K'];
+    settingGraphicQualityChoosing = null;
 
     keypressTiming = 0; // 키 입력 추가 딜레이 보정값
     songTiming = 0; // 음원 재생 딜레이 보정값
@@ -138,17 +140,17 @@ class ShuttingStarsCore {
         htmls += "    </canvas>                            \n";
         htmls += "</div>                                   \n";
         rootDiv.innerHTML = htmls;
-
-        this.loadSettings();
         
         const canvas = document.getElementsByClassName('shuttingstars_canvas')[0];
-        canvas.style.minWidth  = this.resolution.w + 'px';
-        canvas.style.minHeight = this.resolution.h + 'px';
+        canvas.style.minWidth  = '1280px';
+        canvas.style.minHeight = '720px';
 
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
 
+        this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
         this.setResolution(this.resolution.w, this.resolution.h);
+        this.loadSettings();
 
         const selfs = this;
 
@@ -198,6 +200,12 @@ class ShuttingStarsCore {
         this.resolution.h = h;
         this.canvas.width  = this.resolution.w;
         this.canvas.height = this.resolution.h;
+
+        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
+        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
     }
 
     /** 설정 불러오기 */
@@ -258,14 +266,14 @@ class ShuttingStarsCore {
                         let right = String(res[1]).trim();
                         if(isNaN(left )) left  = '1280';
                         if(isNaN(right)) right = '720';
-                        this.resolution.x = parseInt(left);
-                        this.resolution.y = parseInt(right);
-                        if(this.resolution.x < 1280) this.resolution.x = 1280;
-                        if(this.resolution.y <  720) this.resolution.y =  720;
-                        this.setResolution(this.resolution.x, this.resolution.y);
+                        this.resolution.w = parseInt(left);
+                        this.resolution.h = parseInt(right);
+                        if(this.resolution.w < 1280) this.resolution.w = 1280;
+                        if(this.resolution.h <  720) this.resolution.h =  720;
+                        this.setResolution(this.resolution.w, this.resolution.h);
                     } catch(e2) {
                         console.log('Resolution setting is wrong.');
-                        console.error(e);
+                        console.error(e2);
                         console.log('Trying with default resolution...')
                     }
                     
@@ -294,7 +302,7 @@ class ShuttingStarsCore {
             settingJson.reverseVertical = this.reverseVertical;
             settingJson.keypressTiming = this.keypressTiming;
             settingJson.songTiming = this.songTiming;
-            settingJson.resolution = this.resolution.x + ',' + this.resolution.y;
+            settingJson.resolution = this.resolution.w + ',' + this.resolution.h;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
@@ -399,6 +407,13 @@ class ShuttingStarsCore {
                         this.state = 'songchoosing';
                     } else if(this.menuChoosing == 'setting') {
                         this.state = 'setting';
+
+                        // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
+                        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+                        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+                        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+                        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
+                        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
                     }
                 }
             } else if(this.state == 'songchoosing') {
@@ -441,10 +456,33 @@ class ShuttingStarsCore {
 
                 if(key == this.enterKey) {
                     if(this.settingModifyingMode) {
-                        this.settingModifyingMode = false;
+                        this.settingModifyingMode = false; // 설정 변경 모드 OFF
+
+                        if(this.settingChoosing == 'setGraphicQuality') {
+                            // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
+                            if(this.settingGraphicQualityChoosing == 'LOW') {
+                                this.resolution.w = 1280;
+                                this.resolution.h =  720;
+                            } else if(this.settingGraphicQualityChoosing == 'MEDIUM') {
+                                this.resolution.w = 1920;
+                                this.resolution.h = 1080;
+                            } else if(this.settingGraphicQualityChoosing == 'HIGH') {
+                                this.resolution.w = 2560;
+                                this.resolution.h = 1440;
+                            } else if(this.settingGraphicQualityChoosing == '4K') {
+                                this.resolution.w = 3840;
+                                this.resolution.h = 2160;
+                            } else {
+                                this.resolution.w = 1280;
+                                this.resolution.h =  720;
+                            }
+                            this.setResolution(this.resolution.w, this.resolution.h);
+                        }
+
+                        // 설정 저장
                         this.saveSettings();
                     } else {
-                        this.settingModifyingMode = true;
+                        this.settingModifyingMode = true; // 설정 변경 모드 ON
                     }
                 } else if(this.settingModifyingMode) {
                     if(key == this.arrowKeys[2]) { // LEFT
@@ -457,6 +495,11 @@ class ShuttingStarsCore {
                         } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
                             this.noteSpeedMultiplier--;
                             if(this.noteSpeedMultiplier < 0.1) this.noteSpeedMultiplier = 0.1;
+                        } else if(this.settingChoosing == 'setGraphicQuality') {
+                            let idxChoose = this.settingsGraphicQuality.indexOf(this.settingGraphicQualityChoosing);
+                            idxChoose--;
+                            if(idxChoose < 0) idxChoose = this.settingsGraphicQuality.length - 1;
+                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[idxChoose];
                         }
                     } else if(key == this.arrowKeys[3]) { // RIGHT
                         if(this.settingChoosing == 'fixKeypressTiming') {
@@ -468,6 +511,12 @@ class ShuttingStarsCore {
                         } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
                             this.noteSpeedMultiplier++;
                             if(this.noteSpeedMultiplier >= 8.0) this.noteSpeedMultiplier = 8.0;
+                        } else if(this.settingChoosing == 'setGraphicQuality') {
+                            let idxChoose = this.settingsGraphicQuality.indexOf(this.settingGraphicQualityChoosing);
+                            if(idxChoose < 0) idxChoose = 0;
+                            idxChoose++;
+                            if(idxChoose >= this.settingsGraphicQuality.length) idxChoose = 0;
+                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[idxChoose];
                         }
                     }
                 } else {
@@ -943,7 +992,7 @@ class ShuttingStarsCore {
 
     /** 화면 출력 - 설정 화면 */
     renderSetting() {
-        // ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier']; // TODO
+        // ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality'];
         let idx;
         let rows = 0;
         let fontSize = this.convertFontSize(30);
@@ -973,7 +1022,8 @@ class ShuttingStarsCore {
             if(settingOne == 'fixKeypressTiming'     ) label = 'Key Press Delay - ' + leftSide + this.keypressTiming + rightSide;
             if(settingOne == 'fixSongTiming'         ) label = 'Sound Delay - '     + leftSide + this.songTiming + rightSide;
             if(settingOne == 'setNoteSpeedMultiplier') label = 'Note Speed Rate - ' + leftSide + this.noteSpeedMultiplier + rightSide;
-
+            if(settingOne == 'setGraphicQuality'     ) label = 'Graphic Quality - ' + leftSide + this.settingGraphicQualityChoosing + rightSide;
+            
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
             if(choosen) {
@@ -1791,8 +1841,49 @@ class JudgeMark extends ShuttingStarsObject {
     }
 }
 
+/********************** 기타 Util 성 prototype 세팅 ************************/
+if(!String.prototype.hexEncode) {
+	String.prototype.hexEncode = function(){
+	    var hex, i;
 
-/** 외부에서 호출할 수 있도록 함수 구현 */
+	    var result = "";
+	    for (i=0; i<this.length; i++) {
+	        hex = this.charCodeAt(i).toString(16);
+	        result += ("000"+hex).slice(-4);
+	    }
+
+	    return result
+	}
+}
+
+if(!String.prototype.hexDecode) {
+	String.prototype.hexDecode = function(){
+	    var j;
+	    var hexes = this.match(/.{1,4}/g) || [];
+	    var back = "";
+	    for(j = 0; j<hexes.length; j++) {
+	        back += String.fromCharCode(parseInt(hexes[j], 16));
+	    }
+
+	    return back;
+	}
+}
+
+/********************** // 기타 Util 성 prototype 세팅 ************************/
+
+/********************** 기타 Util 성 Class 세팅 ************************/
+class ShuttingStarsUtility {
+    /** 문자열 치환 */
+    replaceString(originalStr, targetStr, replacements) {
+        return String(originalStr).split(targetStr).join(replacements); 
+    }
+}
+const _shuttingstarutil = new ShuttingStarsUtility();
+/********************** 기타 Util 성 Class 세팅 ************************/
+
+/********************** 외부에서 호출할 수 있도록 함수 구현 ************************/
+
+/** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
 function initShuttingStars(param) {
     return _shuttingstarcore.init(param);
 }
