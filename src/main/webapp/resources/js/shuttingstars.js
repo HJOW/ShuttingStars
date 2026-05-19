@@ -247,7 +247,29 @@ class ShuttingStarsCore {
                     this.songTiming = settingJson.songTiming;
                     if(typeof(this.songTiming) == 'string') this.songTiming = parseInt(this.songTiming);
                 }
+
+                if(typeof(settingJson.resolution) != 'undefined') {
+                    try {
+                        let res = settingJson.resolution.split(',');
+                        let left  = String(res[0]).trim();
+                        let right = String(res[1]).trim();
+                        if(isNaN(left )) left  = '1280';
+                        if(isNaN(right)) right = '720';
+                        this.resolution.x = parseInt(left);
+                        this.resolution.y = parseInt(right);
+                        if(this.resolution.x < 1280) this.resolution.x = 1280;
+                        if(this.resolution.y <  720) this.resolution.y =  720;
+                        this.setResolution(this.resolution.x, this.resolution.y);
+                    } catch(e2) {
+                        console.log('Resolution setting is wrong.');
+                        console.error(e);
+                        console.log('Trying with default resolution...')
+                    }
+                    
+                }
             }
+
+            this.setResolution(this.resolution.w, this.resolution.h);
         } catch(e) {
             console.log('Failed to load settings.');
             console.error(e);
@@ -269,6 +291,7 @@ class ShuttingStarsCore {
             settingJson.reverseVertical = this.reverseVertical;
             settingJson.keypressTiming = this.keypressTiming;
             settingJson.songTiming = this.songTiming;
+            settingJson.resolution = this.resolution.x + ',' + this.resolution.y;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {

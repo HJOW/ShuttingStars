@@ -72,31 +72,6 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 $(function() {
     const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
     initShuttingStars(root[0]);
-
-    
-    // 임시 테스트 목적으로 임의의 곡 추가 및 선정
-    setTimeout(() => {
-        const song = new ShuttingStarsSong();
-        song.name = 'TEST SONG';
-        song.producer = 'TEST PRODUCER';
-        song.noteWriter = 'TEST NOTEWRITER';
-        song.bpm = 120;
-        song.difficulties = {
-            'hard;9' : []
-        };
-
-        // 임시 테스트 곡으로, 노트는 랜덤하게 생성
-        for(let idx=0; idx<120; idx++) {
-            const locationIndex = Math.floor(Math.random() * 6);
-            const time = idx * 4.0; // 4분의 1비트마다 노트 생성
-            const pattern = new ShuttingStarsNotePattern(locationIndex, time);
-            
-            song.difficulties['hard;9'].push(pattern);
-        }
-
-        _shuttingstarcore.songs.push(song);
-    }, 2000);
-    
 });
 </script>
 </head>
