@@ -328,8 +328,9 @@ class ShuttingStarsCore {
         }
 
         if(this.audio != null) {
-            if(this.songTiming <= 0) this.audio.play();
-            else setTimeout(() => { selfs.audio.play(); }, this.songTiming);
+            setTimeout(() => {
+                selfs.audio.play();
+            }, (songBitGap * this.stageRows) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
         }
     }
 
@@ -791,7 +792,7 @@ class ShuttingStarsCore {
             rows += fontSize + gap;
 
             // 작곡가, 노트작성자, bpm 출력
-            label = 'Produced by ' + songOne.producer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
+            label = 'Composed by ' + songOne.composer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
             fontSize = 15;
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
@@ -944,7 +945,7 @@ class ShuttingStarsCore {
         rows += fontSize + gap;
 
         // 작곡가, 노트작성자, bpm 출력
-        label = 'Produced by ' + songOne.producer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
+        label = 'Produced by ' + songOne.composer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
         fontSize = 20;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
@@ -1404,12 +1405,12 @@ const _shuttingstarcore = new ShuttingStarsCore();
 /** 곡 */
 class ShuttingStarsSong {
     name = '';
-    producer = '';
-    noteWriter = '';
-    description = '';
-    musicUrl = '';
-    thumbnailUrl = '';
-    bgaUrl = '';
+    composer = '';
+    noteWriter = ''; // 노트 작가
+    description = ''; // 설명
+    musicUrl = ''; // 음원 URL
+    thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
+    bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
     patterns = []; // ShuttingStarsNotePattern 배열
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 560;
