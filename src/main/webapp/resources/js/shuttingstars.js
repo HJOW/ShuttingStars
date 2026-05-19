@@ -42,7 +42,7 @@ class ShuttingStarsCore {
 
     canvas = null; // 캔버스 객체
     ctx = null;    // 2D Context 객체
-    urlCtx = '/';  // URL Context Path
+    urlCtx = './';  // URL Context Path
 
     frameTime = 10; // render 호출 주기
     timeMultiplier = 8.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
@@ -158,14 +158,14 @@ class ShuttingStarsCore {
 
         // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
         if(this.usingWorker) {
-            this.workerRender = new Worker('shuttingstarworker.js');
+            this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
             this.workerRender.postMessage({interval : this.frameTime});
             this.workerRender.onmessage = function(e) {
                 // const {drift, time} = e.data;
                 selfs.render();
             }
 
-            this.workerSimultaneousWork = new Worker('shuttingstarworker.js');
+            this.workerSimultaneousWork = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
             this.workerSimultaneousWork.postMessage({interval : this.frameTime});
             this.workerSimultaneousWork.onmessage = function(e) {
                 // const {drift, time} = e.data;
@@ -355,7 +355,7 @@ class ShuttingStarsCore {
         // 곡 플레이 세팅 중 처리
         if(this.audio == null) {
             if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
-                this.audio = new Audio(this.song.musicUrl);
+                this.audio = new Audio(this.convertURL(this.song.musicUrl));
                 // this.audio.addEventListener('ended', function() {
                 //     console.log('SONG ENDED');
                 //     console.log(this.timeElapse);
@@ -372,7 +372,7 @@ class ShuttingStarsCore {
         const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
         this.songBitGap = songBitGap;
         if(this.usingWorker) {
-            this.workerSongPlaying = new Worker('shuttingstarworker.js');
+            this.workerSongPlaying = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
             this.workerSongPlaying.postMessage({interval : songBitGap});
             this.workerSongPlaying.onmessage = function(e) {
                 // const {drift, time} = e.data;
