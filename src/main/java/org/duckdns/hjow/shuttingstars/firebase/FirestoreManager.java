@@ -34,7 +34,7 @@ public class FirestoreManager {
     
     private boolean using = false; // 사용여부 (true 로 하지 않으면 이 클래스 내 메소드 일체를 사용할 수 없음)
     private String firebaseConfigFile = "/***.json"; // Firebase 사이트에서 받은 admin 키 파일
-    private String firestoreDBUrl     = "https://***-default-rtdb.firebaseio.com"; // Firestore DB 주소
+    private String projectId = "shuttingstars-3eddf";
     
     protected Firestore conn;
     private boolean initialized = false;
@@ -70,13 +70,12 @@ public class FirestoreManager {
         		
         		using              = DataUtil.parseBoolean(jsonConfig.get("use").toString().trim());
         		firebaseConfigFile = jsonConfig.get("configFile").toString().trim();
-        		firestoreDBUrl     = jsonConfig.get("dburl").toString().trim();
         	}
         	
             InputStream serviceAccount = getClass().getResourceAsStream(firebaseConfigFile);
             FirebaseOptions options = new FirebaseOptions.Builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .setDatabaseUrl(firestoreDBUrl)
+                    .setProjectId(projectId)
                     .build();
 
             FirebaseApp.initializeApp(options);
