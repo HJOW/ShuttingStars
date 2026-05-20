@@ -29,7 +29,9 @@ limitations under the License.
 class ShuttingStarsCore {
     resolution = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
+
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
+    canvasZindex = 1;    // canvas 태그의 z-index
     
     dark = true;
     reverseVertical = false;
@@ -40,7 +42,9 @@ class ShuttingStarsCore {
 
     fontFamily = 'D2Coding'; // NanumGothicCoding / D2Coding
 
-    canvas = null; // 캔버스 객체
+    canvas = null;    // 캔버스 객체
+    configDiv = null; // 상세 설정 영역
+
     ctx = null;    // 2D Context 객체
     urlCtx = './';  // URL Context Path
 
@@ -64,13 +68,14 @@ class ShuttingStarsCore {
     workerSongPlaying = null;
     workerSimultaneousWork = null;
 
-    point = 0;
-    combo = 0;
-    missCombo = 0;
+    point = 0;     // 점수
+    combo = 0;     // 콤보
+    missCombo = 0; // 미스 콤보
     report = {
-        PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
+        PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0 // 각 판정별 통계
     };
     hp = 100.0; // 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시)
+
     gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
     gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
 
@@ -78,11 +83,13 @@ class ShuttingStarsCore {
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
+
     difficulty = null; // 선택된 난이도
-    audio = null;
-    songThumb = null;
-    videoBga = null;
-    songBitGap = 0;
+    audio = null;      // 현재 선택된 곡의 오디오 객체
+    songThumb = null;  // 현재 선택된 곡의 썸네일 이미지 URL
+    videoBga = null;   // 현재 선택된 곡의 BGA URL
+    songBitGap = 0;    // 현재 선택된 곡의 1사이클 길이 (bpm에 따라 다름)
+    songLastPatternTime = 0; // 현재 선택된 곡의 마지막 패턴의 시간
 
     songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
     difficultyChoosing = false; // 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시
@@ -142,16 +149,21 @@ class ShuttingStarsCore {
         }
         rootDiv.innerHTML = "";
         let htmls = '';
-        htmls += "<div class='shuttingstars_canvas_root'>  \n";
-        htmls += "    <canvas class='shuttingstars_canvas'>\n";
-        htmls += "                                         \n";
-        htmls += "    </canvas>                            \n";
-        htmls += "</div>                                   \n";
+        htmls += "<div class='shuttingstars_canvas_root'>      \n";
+        htmls += "    <canvas class='shuttingstars_canvas'>    \n";
+        htmls += "                                             \n";
+        htmls += "    </canvas>                                \n";
+        htmls += "    <div class='shuttingstars_canvas_config'>\n";
+        htmls += "    </div>                                   \n";
+        htmls += "</div>                                       \n";
         rootDiv.innerHTML = htmls;
-        
-        const canvas = document.getElementsByClassName('shuttingstars_canvas')[0];
+
+        this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
+
+        const canvas = rootDiv.querySelector('.shuttingstars_canvas');
         canvas.style.minWidth  = '1280px';
         canvas.style.minHeight = '720px';
+        canvas.style.zIndex    = this.canvasZindex;
 
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
@@ -368,7 +380,9 @@ class ShuttingStarsCore {
         if(this.song == null) { this.audio = null; return; }
         if(this.state != 'playing' && this.state != 'songtitle') { this.audio = null; return; }
 
+        // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
         if(this.state == 'songtitle') {
+            // 썸네일 체크해 이미지 객체 만들기
             if(this.song.thumbnailUrl) {
                 if(this.songThumb == null) {
                     this.songThumb = new Image();
@@ -380,6 +394,17 @@ class ShuttingStarsCore {
         }
 
         // 곡 플레이 세팅 중 처리
+        //     곡 마지막 패턴 시간 체크
+        this.songLastPatternTime = 0;
+        let patterns = this.song.difficulties[this.difficulty];
+        for(idx=0; idx<patterns.length; idx++) {
+            const pattern = patterns[idx];
+            if(pattern.time > this.songLastPatternTime) {
+                this.songLastPatternTime = pattern.time;
+            }
+        }
+
+        //     곡 오디오 세팅
         if(this.audio == null) {
             if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                 this.audio = new Audio(this.convertURL(this.song.musicUrl));
@@ -1270,7 +1295,7 @@ class ShuttingStarsCore {
         //    NotePlacer 제일 왼쪽부터 NotePlacer 제일 오른쪽 범위까지를 HP바 최대길이로 함
         //    NotePlacer 보다 상단에 위치
         const hpBarMaxWidth = this.notePlacers[this.notePlacers.length - 1].x + this.notePlacers[this.notePlacers.length - 1].r - this.notePlacers[0].x + this.notePlacers[0].r;
-        const hpBarHeight = 10;
+        const hpBarHeight = this.getHpBarHeight();
         const hpBarBorderColor = this.convertColor('rgba(200, 200, 200, 0.5)');
         let   hpBarInsideColor = String(hpBarBorderColor);
 
@@ -1295,11 +1320,11 @@ class ShuttingStarsCore {
 
         //    HP바를 화면 상단에 출력
         this.ctx.strokeStyle = hpBarBorderColor;
-        this.ctx.strokeRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(10), this.convertX(hpBarMaxWidth), this.convertY(hpBarHeight));
+        this.ctx.strokeRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(this.getHpBarYLocation()), this.convertX(hpBarMaxWidth), this.convertY(hpBarHeight));
 
         //    HP바 내부를 채우기
         this.ctx.fillStyle = hpBarInsideColor;
-        this.ctx.fillRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(10), this.convertX(hpBarWidth), this.convertY(hpBarHeight));
+        this.ctx.fillRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(this.getHpBarYLocation()), this.convertX(hpBarWidth), this.convertY(hpBarHeight));
     }
 
     renderDebug() {
@@ -1436,7 +1461,7 @@ class ShuttingStarsCore {
         // 이미 지나가버린 패턴 체크
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            if((obj instanceof Note) && (obj.y <= 0)) {
+            if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() + this.getHpBarHeight() + this.getNoteRadius() - 1 )) {
                 if(obj.explosing == 0) {
                     // 미스 처리
                     let resultMark = 'MISS';
@@ -1450,30 +1475,21 @@ class ShuttingStarsCore {
         }
 
         // 곡의 끝 체크
-        //     패턴들이 매 타이밍마다 있으리란 보장이 없으므로, 패턴들 중 가장 나중에 등장하는 패턴의 시간을 알아내야 함
-        let lastPatternTime = 0;
-        for(idx=0; idx<patterns.length; idx++) {
-            const pattern = patterns[idx];
-            if(pattern.time > lastPatternTime) {
-                lastPatternTime = pattern.time;
-                // lastPatternTime = lastPatternTime / this.timeMultiplier;
-            }
-        }
-
+        //     곡의 명시된 종료시간과 마지막 패턴의 시간 비교해 더 큰 값 선택
+        let lastPatternTime = this.songLastPatternTime;
         if(song.endTime > lastPatternTime + 4) {
             lastPatternTime = song.endTime;
         }
-
-        // console.log(this.elapsedTime);
-        if(this.elapsedTime > lastPatternTime) {
+        // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
+        if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
             this.clearTimeHandler();
 
             if(this.audio != null) {
-                try { this.audio.pause(); } catch(ex) {}
+                try { this.audio.pause(); } catch(ex) {} // 오디오 끄기
                 this.audio = null;
             }
 
-            this.onSongEnd();
+            this.onSongEnd(); // 종료
             return;
         }
 
@@ -1494,6 +1510,8 @@ class ShuttingStarsCore {
                 if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
                 obj.y -= obj.speedY;
                 if(obj.y < 0) obj.y = 0;
+
+                if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
             }
         }
     }
@@ -1518,17 +1536,27 @@ class ShuttingStarsCore {
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
-        return Math.floor(((this.getNoteRadius() * 2.0) * this.noteSpeedMultiplier * this.noteSpeedFixedConst) / (this.timeMultiplier / 8.0));
+        return ((this.getNoteRadius() * 2.0) * this.noteSpeedMultiplier * this.noteSpeedFixedConst) / (this.timeMultiplier / 8.0);
     }
 
     /** 노트 생성 위치 */
     getNoteCreationYLocation() {
-        return Math.floor( this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * (this.timeMultiplier / 8.0) ));
+        return this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * (this.timeMultiplier / 8.0) );
     }
 
     /** 판정선 위치 */
     getNotePlacerYLocation() {
-        return Math.floor((this.getNoteRadius() * 4) + this.getTopMarginNote());
+        return (this.getNoteRadius() * 4) + this.getTopMarginNote();
+    }
+
+    /** HP바 Y좌표 */
+    getHpBarYLocation() {
+        return 10;
+    }
+
+    /** HP바 높이 */
+    getHpBarHeight() {
+        return 10;
     }
 
     /** 폭발 중인 Note 폭발속도 가속 */

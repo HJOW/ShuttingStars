@@ -24,10 +24,10 @@ song.description = `
 `;
 song.bpm = 79;
 song.endTime = 3700;
-song.timeConstant = -410;
+song.timeConstant = -333;
 song.timeMultiplier = 1;
 song.difficulties = {
-    'normal;4' : [
+    'normal;6' : [
         { locationIndex : -1, time : 404   } ,
         { locationIndex : -1, time : 420   } ,
         { locationIndex : -1, time : 428   } ,
