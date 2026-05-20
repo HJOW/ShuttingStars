@@ -188,6 +188,16 @@ class ShuttingStarsCore {
             }
         });
 
+        document.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // TODO
+            console.log(x);
+            console.log(y);
+        });
+
         let vGap = window.outerHeight - window.innerHeight;
         if(vGap < 0) vGap = 0;
         const fResize = function() {
