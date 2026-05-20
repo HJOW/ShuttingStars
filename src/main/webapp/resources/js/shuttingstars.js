@@ -1684,6 +1684,41 @@ class ShuttingStarsCore {
         return url;
     }
 
+    /** 외부에서 곡 추가 시 호출 */
+    addSong(song) {
+        if(! (song instanceof ShuttingStarsSong)) {
+            let json = song;
+            if(typeof(json) == 'string') json = JSON.parse(json);
+
+            song = new ShuttingStarsSong();
+            song.name           = json.name;
+            song.composer       = json.composer;
+            song.noteWriter     = json.noteWriter;
+            song.bgaUrl         = json.bgaUrl;
+            song.musicUrl       = json.musicUrl;
+            song.thumbnailUrl   = json.thumbnailUrl;
+            song.description    = json.description;
+            song.bpm            = json.bpm;
+            song.endTime        = json.endTime;
+            song.timeConstant   = json.timeConstant;
+            song.timeMultiplier = json.timeMultiplier;
+            song.difficulties   = {};
+
+            for(let key in json.difficulties) {
+                let noteArrs = json.difficulties[key];
+                let arr = [];
+
+                for(let noteJsonOne of noteArrs) {
+                    let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
+                    arr.push(patternOne);
+                }
+
+                song.difficulties[key] = arr;
+            }
+        }
+        this.songs.push(song);
+    }
+
     /** 부동소수 동일여부 확인 */
     checkEqualFloats(a, b) {
         return Math.abs(a - b) < 0.000001;
@@ -1785,17 +1820,19 @@ class ShuttingStarsObject {
     shape = 'circle';
     color = 'rgba(200, 200, 200, 0.99)';
     fill = true; // 채우기 여부 / false 인 경우 채우기 없이 테두리만 출력
+    explosing = 0; // 0 : 일반적인 상황, 그 이상으로 가면 Note 제거 (혹은 Note 제거기 동작) 1~8 : 처리 애니메이션 진행상황
+    explosingMax = 8;
     constructor() {}
     draw(ctx) {
         if(this.shape === 'circle') {
             ctx.beginPath();
             ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
-            
+
             if(this.fill) {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.color + ', ' + this.opacity + ')');
+                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.fill();
             } else {
-                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.color + ', ' + this.opacity + ')');
+                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
@@ -1809,6 +1846,18 @@ class ShuttingStarsObject {
                 ctx.strokeRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.r));
             }
         }
+    }
+
+    modifyExplosiveColor() {
+        return this.color;
+    }
+
+    modifyExplosiveOpacity() {
+        let opa = this.opacity;
+        if(this.explosing >= 1) {
+            opa = 1.0 - (this.explosing * 1.0 / this.explosingMax);
+        }
+        return opa;
     }
 
     /** 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) */
@@ -1883,8 +1932,6 @@ class NoteKeyObject extends ShuttingStarsObject {
     key = '';
     locationIndex = 0;
     dark = false;
-    explosing = 0; // 0 : 일반적인 상황, 그 이상으로 가면 Note 제거 (혹은 Note 제거기 동작) 1~8 : 처리 애니메이션 진행상황
-    explosingMax = 8;
     constructor(locationIndex) {
         super();
         this.locationIndex = locationIndex;
@@ -1903,6 +1950,7 @@ class NoteKeyObject extends ShuttingStarsObject {
 
         if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
         else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+
         ctx.textAlign = "center";
         ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (this.r / 2.0) - (fontSize / 3.0), true)); // Note 중앙에 출력
     }
@@ -2064,37 +2112,7 @@ const _shuttingstarutil = new ShuttingStarsUtility();
 
 /** 곡 추가 */
 function addShuttingStarSong(song) {
-    if(! (song instanceof ShuttingStarsSong)) {
-        let json = song;
-        if(typeof(json) == 'string') json = JSON.parse(json);
-
-        song = new ShuttingStarsSong();
-        song.name           = json.name;
-        song.composer       = json.composer;
-        song.noteWriter     = json.noteWriter;
-        song.bgaUrl         = json.bgaUrl;
-        song.musicUrl       = json.musicUrl;
-        song.thumbnailUrl   = json.thumbnailUrl;
-        song.description    = json.description;
-        song.bpm            = json.bpm;
-        song.endTime        = json.endTime;
-        song.timeConstant   = json.timeConstant;
-        song.timeMultiplier = json.timeMultiplier;
-        song.difficulties   = {};
-
-        for(let key in json.difficulties) {
-            let noteArrs = json.difficulties[key];
-            let arr = [];
-
-            for(let noteJsonOne of noteArrs) {
-                let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
-                arr.push(patternOne);
-            }
-
-            song.difficulties[key] = arr;
-        }
-    }
-    _shuttingstarcore.songs.push(song);
+    _shuttingstarcore.addSong(song);
 }
 
 /** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
