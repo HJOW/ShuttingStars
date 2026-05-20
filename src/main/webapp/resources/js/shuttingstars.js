@@ -47,7 +47,8 @@ class ShuttingStarsCore {
     frameTime = 10; // render 호출 주기
     timeMultiplier = 16.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
     stageRows = 36; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
-    noteSpeedMultiplier = 1.0; // 노트 이동 속도 배수 (사용자가 지정 가능)
+    noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
+    noteSpeedMultiplier = 1.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
 
     lastObjectId = 0; // 객체 ID 부여용 카운터
     objects = []; // 게임의 구성 요소 객체들 (렌더링 대상)
@@ -68,7 +69,10 @@ class ShuttingStarsCore {
     report = {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
     };
-    hp = 100.0; // 다 깎이면 게임 오버
+    hp = 100.0; // 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시)
+    gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
+    gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
+
     state = 'menu'; // 현재 상태, menu / songchoosing / songtitle / playing / gameover / result / setting
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
@@ -345,6 +349,10 @@ class ShuttingStarsCore {
         };
         this.songBitGap = 0;
         this.resumed = false;
+        this.paused = false;
+        this.gameOverDelayed = false;
+        this.elapsedTime = 0;
+        this.resumingTime = 0;
         
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
@@ -1466,8 +1474,11 @@ class ShuttingStarsCore {
 
         // hp 체크 (0 미만이면 게임 오버 처리)
         if(this.hp <= 0) {
-            this.clearTimeHandler();
-            this.onGameOver();
+            this.gameOverDelayed = true;
+            if(this.gameOverEnabled) {
+                this.clearTimeHandler();
+                this.onGameOver();
+            }
             return;
         }
         
@@ -1700,7 +1711,7 @@ class ShuttingStarsSong {
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
-        return Math.floor((_shuttingstarcore.getNoteRadius() * 2.0) * _shuttingstarcore.noteSpeedMultiplier / (_shuttingstarcore.timeMultiplier / 8.0));
+        return Math.floor((_shuttingstarcore.getNoteRadius() * 2.0) * _shuttingstarcore.noteSpeedMultiplier * _shuttingstarcore.noteSpeedFixedConst / (_shuttingstarcore.timeMultiplier / 8.0));
     }
 
     getDifficultyList() {
@@ -1897,7 +1908,7 @@ class Note extends NoteKeyObject {
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
         this.x = notePlacer.x;
-        this.y = notePlacer.y + (((_shuttingstarcore.stageRows * this.r * 2) * _shuttingstarcore.noteSpeedMultiplier) * (_shuttingstarcore.timeMultiplier / 8));
+        this.y = notePlacer.y + (((_shuttingstarcore.stageRows * this.r * 2) * _shuttingstarcore.noteSpeedMultiplier * _shuttingstarcore.noteSpeedFixedConst) * (_shuttingstarcore.timeMultiplier / 8));
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.9;
