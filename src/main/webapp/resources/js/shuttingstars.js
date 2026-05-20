@@ -158,8 +158,6 @@ class ShuttingStarsCore {
         htmls += "</div>                                       \n";
         rootDiv.innerHTML = htmls;
 
-        this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
-
         const canvas = rootDiv.querySelector('.shuttingstars_canvas');
         canvas.style.minWidth  = '1280px';
         canvas.style.minHeight = '720px';
@@ -219,12 +217,18 @@ class ShuttingStarsCore {
         let vGap = window.outerHeight - window.innerHeight;
         if(hGap < 0) hGap = 0;
         if(vGap < 0) vGap = 0;
+
         const fResize = function() {
             // selfs.canvas.style.width  = (window.outerWidth  - hGap + 1) + 'px';
             selfs.canvas.style.height = (window.outerHeight - vGap + 1) + 'px';
+            selfs.renderConfigDiv();
         };
         fResize();
         window.addEventListener('resize', fResize);
+
+        this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
+        this.renderConfigDiv();
+        this.configDiv.style.display = 'none';
 
         this.menuChoosing = this.menuList[0];
         this.state = 'menu';
@@ -1327,6 +1331,7 @@ class ShuttingStarsCore {
         this.ctx.fillRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(this.getHpBarYLocation()), this.convertX(hpBarWidth), this.convertY(hpBarHeight));
     }
 
+    /** 렌더링 디버그 모드에서, 디버깅 용 객체 출력 */
     renderDebug() {
         for(const obj of this.objects) {
             if(typeof(obj.draw) == 'function') continue;
@@ -1348,6 +1353,25 @@ class ShuttingStarsCore {
                 console.error(e);
             }
         }
+    }
+
+    /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
+    renderConfigDiv() {
+        if(this.configDiv == null) return;
+        let html = `
+            
+        `;
+
+        this.configDiv.innerHTML = html;
+        this.configDiv.style.zIndex = this.canvasZindex + 1;
+        this.configDiv.style.position = 'fixed';
+        this.configDiv.style.top  = this.canvas.offsetTop  + 'px';
+        this.configDiv.style.left = this.canvas.offsetLeft + 'px';
+        this.configDiv.style.width = this.canvas.offsetWidth + 'px';
+        this.configDiv.style.height = this.canvas.offsetHeight + 'px';
+        
+        if(this.dark) this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
+        else          this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(200, 200, 200, 0.9)');
     }
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
