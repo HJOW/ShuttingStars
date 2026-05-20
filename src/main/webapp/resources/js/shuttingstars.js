@@ -203,9 +203,12 @@ class ShuttingStarsCore {
             console.log(y);
         });
 
+        let hGap = window.outerWidth  - window.innerWidth;
         let vGap = window.outerHeight - window.innerHeight;
+        if(hGap < 0) hGap = 0;
         if(vGap < 0) vGap = 0;
         const fResize = function() {
+            // selfs.canvas.style.width  = (window.outerWidth  - hGap + 1) + 'px';
             selfs.canvas.style.height = (window.outerHeight - vGap + 1) + 'px';
         };
         fResize();
@@ -1427,7 +1430,6 @@ class ShuttingStarsCore {
             //     노트 생성
             const note = new Note(patternNow.locationIndex);
             note.id = this.lastObjectId++;
-            note.speedY = song.getNoteMoveSpeed();
             this.objects.push(note); // 패턴 추가
         }
 
@@ -1510,6 +1512,23 @@ class ShuttingStarsCore {
             try { this.workerSongPlaying.terminate(); } catch(e) { console.error(e); }
             this.workerSongPlaying = null;
         }
+    }
+
+    /** 노트 속도 */
+    getNoteMoveSpeed() {
+        // 설정값에 따른 속도 반환
+        // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
+        return Math.floor(((this.getNoteRadius() * 2.0) * this.noteSpeedMultiplier * this.noteSpeedFixedConst) / (this.timeMultiplier / 8.0));
+    }
+
+    /** 노트 생성 위치 */
+    getNoteCreationYLocation() {
+        return Math.floor( this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * (this.timeMultiplier / 8.0) ));
+    }
+
+    /** 판정선 위치 */
+    getNotePlacerYLocation() {
+        return Math.floor((this.getNoteRadius() * 4) + this.getTopMarginNote());
     }
 
     /** 폭발 중인 Note 폭발속도 가속 */
@@ -1711,10 +1730,16 @@ class ShuttingStarsSong {
     // 각 원소는 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
     difficulties = {}
 
+    /** 노트 속도 */
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
-        return Math.floor((_shuttingstarcore.getNoteRadius() * 2.0) * _shuttingstarcore.noteSpeedMultiplier * _shuttingstarcore.noteSpeedFixedConst / (_shuttingstarcore.timeMultiplier / 8.0));
+        return _shuttingstarcore.getNoteMoveSpeed();
+    }
+
+    /** 노트 생성 위치 */
+    getNoteCreationYLocation() {
+        return _shuttingstarcore.getNoteCreationYLocation();
     }
 
     getDifficultyList() {
@@ -1889,7 +1914,7 @@ class NotePlacer extends NoteKeyObject {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
         this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMarginNote();
-        this.y = (this.r * 4) + _shuttingstarcore.getTopMarginNote();
+        this.y = _shuttingstarcore.getNotePlacerYLocation();
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.2;
@@ -1911,7 +1936,11 @@ class Note extends NoteKeyObject {
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
         this.x = notePlacer.x;
-        this.y = notePlacer.y + (((_shuttingstarcore.stageRows * this.r * 2) * _shuttingstarcore.noteSpeedMultiplier * _shuttingstarcore.noteSpeedFixedConst) * (_shuttingstarcore.timeMultiplier / 8));
+
+        // NOTE SPEED 관련
+        this.speedY = _shuttingstarcore.getNoteMoveSpeed();
+        this.y = _shuttingstarcore.getNoteCreationYLocation();
+
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.9;
