@@ -1478,8 +1478,8 @@ class ShuttingStarsCore {
             if(this.gameOverEnabled) {
                 this.clearTimeHandler();
                 this.onGameOver();
+                return;
             }
-            return;
         }
         
         // 스테이지에 남아있는 노트 이동
