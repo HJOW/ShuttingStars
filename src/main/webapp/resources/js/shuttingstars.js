@@ -46,7 +46,7 @@ class ShuttingStarsCore {
 
     frameTime = 10; // render 호출 주기
     timeMultiplier = 16.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
-    stageRows = 36; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
+    stageRows = 72; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
     sizeFixedConst = 2; // 노트 크기 상수 (변경 불가)
     noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
     noteSpeedMultiplier = 1.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
