@@ -608,6 +608,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
             if((obj instanceof Note)) {
+                if(obj.locationIndex != notePlacer.locationIndex) continue;
                 if(obj.explosing >= 1) continue;
                 if(obj.explosing <= 0 && notePlacer.isConflictedVertical(obj)) {
                     // 해당 NotePlacer 과 충돌한 Note 가 얼마나 위치가 동일한지 판정 (수직으로만 이동하므로 y 좌표 및 노트 크기만 영향) - 백분율 사용
@@ -620,6 +621,7 @@ class ShuttingStarsCore {
 
                     obj.explosing = 1; // 폭발 시작
                     this.objects[idx] = obj;
+                    break;
                 }
             }
         }
