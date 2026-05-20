@@ -1,0 +1,6 @@
+{
+    "use" : false,
+    "configFile" : "/***.json",
+    "dburl" : "https://***-default-rtdb.firebaseio.com"
+    
+}
