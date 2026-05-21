@@ -45,8 +45,14 @@ class ShuttingStarsCore {
     canvas = null;    // 캔버스 객체
     configDiv = null; // 상세 설정 영역
 
-    ctx = null;    // 2D Context 객체
-    urlCtx = './';  // URL Context Path
+    ctx = null;      // 2D Context 객체
+    audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
+    urlCtx = './';   // URL Context Path
+
+    useAudioVisualizer = true;
+    audioAnalyser = null; // Audio Analyser 객체 (미지원 시 null 유지)
+    audioBufferLen = 0;   // Audio 시각화에 쓰일 배열 크기
+    audioBuffer = null;   // Audio 시각화에 쓰일 배열
 
     frameTime = 10; // render 호출 주기
     timeMultiplier = 16.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
@@ -90,6 +96,7 @@ class ShuttingStarsCore {
     videoBga = null;   // 현재 선택된 곡의 BGA URL
     songBitGap = 0;    // 현재 선택된 곡의 1사이클 길이 (bpm에 따라 다름)
     songLastPatternTime = 0; // 현재 선택된 곡의 마지막 패턴의 시간
+    audioSource = null; // 시각화를 위한 변수 중 하나
 
     songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
     difficultyChoosing = false; // 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시
@@ -163,6 +170,7 @@ class ShuttingStarsCore {
         canvas.style.minHeight = '720px';
         canvas.style.zIndex    = this.canvasZindex;
 
+        // Canvas, 2D Context
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
 
@@ -412,12 +420,38 @@ class ShuttingStarsCore {
         if(this.audio == null) {
             if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                 this.audio = new Audio(this.convertURL(this.song.musicUrl));
+                
+                this.closeAudioSources();
+                if(this.useAudioVisualizer) {
+                    try {
+                        // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API )
+                        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        this.audioAnalyser = this.audioCtx.createAnalyser();
+    
+                        this.audio = new Audio(this.convertURL(this.song.musicUrl));
+                        this.audioSource = this.audioCtx.createMediaElementSource(this.audio);
+    
+                        this.audioSource.connect(this.audioAnalyser);
+                        this.audioAnalyser.connect(this.audioCtx.destination);
+                        this.audioAnalyser.fftSize = 256;
+    
+                        this.audioBufferLen = this.audioAnalyser.frequencyBinCount; // fftSize 의 절반값
+                        this.audioBuffer = new Uint8Array(this.audioBufferLen);
+                    } catch(exInx) {
+                        console.log('Failed to prepare audio context.');
+                        console.log(exInx);
+    
+                        this.closeAudioSources();
+                    }
+                }
+                
                 // this.audio.addEventListener('ended', function() {
                 //     console.log('SONG ENDED');
                 //     console.log(this.timeElapse);
                 // });
             } else {
                 this.audio = null;
+                this.closeAudioSources();
             }
         }
         
@@ -760,6 +794,9 @@ class ShuttingStarsCore {
 
     /** 화면 출력 - 플레이 중 출력 */
     renderPlaying() {
+        // 시각화 그리기
+        if(this.audioAnalyser != null && this.audioSource != null) this.renderAudioVisualizing();
+
         // 객체 그리기
         for(let idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
@@ -1355,6 +1392,30 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 오디오 시각화 그리기 */
+    renderAudioVisualizing() {
+        if(this.audioBuffer == null || this.audioBufferLen == 0) return;
+        
+        this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
+
+        // 막대그래프형 - 크기 계산
+        const barWidth = (this.canvas.width / this.audioBufferLen) * 2.5;
+        let barHeight, barColorVariable;
+        let x = 0;
+
+        for(let i=0; i<this.audioBufferLen; i++) {
+            barHeight = this.audioBuffer[i]; // 0 ~ 255
+            // convert ~255 to ~canvas.height
+            barHeight = ((barHeight * (this.canvas.height - 10)) / 255.0);
+
+            barColorVariable = ((barHeight * 100.0) / 255.0); // convert ranges
+
+            this.ctx.fillStyle = 'rgba(' + (barColorVariable + 140) + ', 100, 120, 0.3)';
+            this.ctx.fillRect(x, this.canvas.height - barHeight, barWidth - 2, barHeight);
+            x += barWidth;
+        }
+    }
+
     /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
     renderConfigDiv() {
         if(this.configDiv == null) return;
@@ -1618,9 +1679,16 @@ class ShuttingStarsCore {
         if(this.audio != null) {
             try { this.audio.pause(); } catch(e) { console.error(e); }
         }
+        this.closeAudioSources();
         this.audio = null;
         this.songThumb = null;
         this.videoBga = null;
+    }
+
+    closeAudioSources() {
+        if(this.audioSource   != null) { try { this.audioSource.disconnect();   this.audioSource   = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+        if(this.audioAnalyser != null) { try { this.audioAnalyser.disconnect(); this.audioAnalyser = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+        if(this.audioCtx      != null) { try { this.audioCtx.close();           this.audioCtx      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
     }
 
     getNotes() {
