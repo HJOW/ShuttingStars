@@ -110,6 +110,8 @@ class ShuttingStarsCore {
     resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값
     simultaneousWorkCycle = 0;
 
+    officialSongSerials = ['nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g'];
+
     colorManualAlpha = false;
 
     menuList = ['play', 'setting'];
@@ -192,6 +194,8 @@ class ShuttingStarsCore {
         this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
         this.setResolution(this.resolution.w, this.resolution.h);
         this.loadSettings();
+        
+        this.loadSongs();
 
         const selfs = this;
 
@@ -369,6 +373,63 @@ class ShuttingStarsCore {
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
             console.log('Failed to save settings.');
+            console.error(e);
+        }
+    }
+
+    /** 곡 목록 불러오기 */
+    loadSongs() {
+        let idx;
+
+        // 공식곡은 지우면 안되니 백업
+        let officialSongs = [];
+
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(this.officialSongSerials.indexOf(songOne.serial) >= 0) {
+                officialSongs.push(songOne);
+            }
+        }
+
+        // 백업한 배열로 곡 목록 바꿔치기
+        this.songs = officialSongs;
+        
+        // 스토리지에서 불러오기
+        try {
+            let songsArr = localStorage.getItem('shuttingstar_songs');
+            if(typeof(songsArr) == 'undefined' || songsArr == null) return;
+            if(typeof(songsArr) == 'string') songsArr = JSON.parse(songsArr);
+            
+            for(idx=0; idx<songsArr.length; idx++) {
+                const songJsonOne = songsArr[idx];
+                this.addSong(songJsonOne, true);
+            }
+        } catch(e) {
+            console.log('Failed to load songs.');
+            console.error(e);
+        }
+    }
+
+    /** 곡 목록 저장 */
+    saveSongs() {
+        let idx;
+
+        // 공식곡 제외하고 담기
+        let list = [];
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
+
+            // 시리얼 없는 경우 임의 시리얼 부여
+            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(Math.random() * 999999999) + '' + Math.floor(Math.random() * 999999999);
+            list.push(songOne);
+        }
+
+        // 스토리지에 저장
+        try {
+            localStorage.setItem('shuttingstar_songs', JSON.stringify(list));
+        } catch(e) {
+            console.log('Failed to save songs.');
             console.error(e);
         }
     }
@@ -1978,7 +2039,7 @@ class ShuttingStarsCore {
     }
 
     /** 외부에서 곡 추가 시 호출 */
-    addSong(song) {
+    addSong(song, noSave) {
         if(! (song instanceof ShuttingStarsSong)) {
             let json = song;
             if(typeof(json) == 'string') json = JSON.parse(json);
@@ -2010,6 +2071,9 @@ class ShuttingStarsCore {
             }
         }
         this.songs.push(song);
+
+        if(noSave) return;
+        this.saveSongs();
     }
 
     /** 부동소수 동일여부 확인 */
@@ -2052,6 +2116,7 @@ class ShuttingStarsSong {
     endTime = 560; // 곡 종료 시간
     timeMultiplier = 1; // 보정 시간 (노트 등장 time 값에 * 보정값으로 적용)
     timeConstant = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
+    serial = ''; // 수정하지 말 것
     
     // 난이도 별 패턴, easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
     //     예: easy;1, normal;3, hard;7, ex1;12, ...

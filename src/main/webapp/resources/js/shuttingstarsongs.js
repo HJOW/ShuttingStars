@@ -26,6 +26,7 @@ song.bpm = 79;
 song.endTime = 3700;
 song.timeConstant = -333;
 song.timeMultiplier = 1;
+song.serial = 'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g';
 song.difficulties = {
     'normal;6' : [
         { locationIndex : -1, time : 404   } ,
