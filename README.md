@@ -5,7 +5,7 @@ to make my own rhythm game !
 
 ## TEST URL
 
-https://shuttingstars-3eddf.web.app/game.html
+https://shuttingstars-3eddf.web.app
 
 ## LICENSE
 
