@@ -524,7 +524,8 @@ class ShuttingStarsCore {
                         else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
 
                         if(this.configDiv != null) {
-                            // this.openConfigDiv(); // TODO
+                            // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
+                            this.openConfigDiv();
                         }
                     }
                 }
@@ -1465,6 +1466,7 @@ class ShuttingStarsCore {
         let html = `
             <div class='shuttingstar_configlayer'>
                 <table class='shuttingstar_configtable full'>
+                    <caption>ShuttingStars - configuration screen</caption>
                     <colgroup>
                         <col style='width: 15rem;'/>
                         <col/>
@@ -1480,7 +1482,7 @@ class ShuttingStarsCore {
                         </tr>
                         <tr>
                             <th>Note Speed Rate</th>
-                            <td><input type='number' class='inp inp_notespeedrate full' step='1' min='1' max='8'/></td>
+                            <td><input type='number' class='inp inp_notespeedrate full' step='0.1' min='1.0' max='8.0'/></td>
                         </tr>
                         <tr>
                             <th>Graphic Quality</th>
@@ -1488,6 +1490,10 @@ class ShuttingStarsCore {
                         </tr>
                     </tbody>
                 </table>
+                <div class='shuttingstar_configcontrols'>
+                    <button type='button' class='btn btn_config_accept'>Accept</button>
+                    <button type='button' class='btn btn_config_cancel'>Cancel</button>
+                </div>
             </div>
         `;
 
@@ -1506,13 +1512,43 @@ class ShuttingStarsCore {
         layer.style.width  = '80%';
         layer.style.height = Math.round(this.canvas.offsetHeight * 0.8) + 'px';
         
-        if(this.dark) {
-            this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
-            layer.style.background = 'rgba(80, 80, 80, 0.7)';
-        } else {
-            this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(200, 200, 200, 0.9)');
-            layer.style.background = 'rgba(200, 200, 200, 0.7)';
-        }
+        const controlDiv = this.configDiv.querySelector('.shuttingstar_configcontrols');
+        const btnAccept  = controlDiv.querySelector('.btn_config_accept');
+        const btnCancel  = controlDiv.querySelector('.btn_config_cancel');
+        const selfs = this;
+        btnAccept.addEventListener('click', () => {
+            selfs.keypressTiming      = parseInt(String( layer.querySelector('.inp_keypressdelay').value ).trim());
+            selfs.songTiming          = parseInt(String( layer.querySelector('.inp_sounddelay').value ).trim());
+            selfs.noteSpeedMultiplier = parseInt(String( layer.querySelector('.inp_notespeedrate').value ).trim());
+
+            selfs.settingGraphicQualityChoosing = layer.querySelector('.sel_graphicquality').value;
+            if(selfs.settingGraphicQualityChoosing == 'LOW') {
+                selfs.resolution.w = 1280;
+                selfs.resolution.h =  720;
+            } else if(selfs.settingGraphicQualityChoosing == 'MEDIUM') {
+                selfs.resolution.w = 1920;
+                selfs.resolution.h = 1080;
+            } else if(selfs.settingGraphicQualityChoosing == 'HIGH') {
+                selfs.resolution.w = 2560;
+                selfs.resolution.h = 1440;
+            } else if(selfs.settingGraphicQualityChoosing == '4K') {
+                selfs.resolution.w = 3840;
+                selfs.resolution.h = 2160;
+            } else {
+                selfs.resolution.w = 1280;
+                selfs.resolution.h =  720;
+            }
+            selfs.setResolution(selfs.resolution.w, selfs.resolution.h);
+            selfs.saveSettings();
+            selfs.closeConfigDiv();
+            selfs.state = 'menu';
+        });
+
+        btnCancel.addEventListener('click', () => {
+            selfs.loadSettings();
+            selfs.closeConfigDiv();
+            selfs.state = 'menu';
+        });
     }
 
     /** 상세설정 창 열기 */
@@ -1532,14 +1568,13 @@ class ShuttingStarsCore {
         else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
         else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
 
-
         let sel = this.configDiv.querySelector('.sel_graphicquality');
         let html = '';
         for(let idx=0; idx<this.settingsGraphicQuality.length; idx++) {
             html += "<option value='" + this.settingsGraphicQuality[idx] + "'>" + this.settingsGraphicQuality[idx] + "</option>";
         }
         sel.innerHTML = html;
-
+        sel.value = this.settingGraphicQualityChoosing;
 
         this.configDiv.style.display = 'block';
     }
@@ -1547,7 +1582,7 @@ class ShuttingStarsCore {
     /** 상세설정 창 닫기 */
     closeConfigDiv() {
         this.configDiv.style.display = 'none';
-        this.state = 'menu';
+        this.canvas.focus();
     }
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
