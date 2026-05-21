@@ -165,6 +165,16 @@ class ShuttingStarsCore {
         htmls += "</div>                                       \n";
         rootDiv.innerHTML = htmls;
 
+        let styles = `
+            .shuttingstars_root .full { width: 100%; }
+            .shuttingstars_root .invisible { display: none !important; }
+            .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        `;
+        const styleElem = document.createElement('style');
+        styleElem.type = 'text/css';
+        styleElem.innerHTML = styles;
+        document.head.appendChild(styleElem);
+
         const canvas = rootDiv.querySelector('.shuttingstars_canvas');
         canvas.style.minWidth  = '1280px';
         canvas.style.minHeight = '720px';
@@ -512,6 +522,10 @@ class ShuttingStarsCore {
                         else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
                         else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
                         else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+
+                        if(this.configDiv != null) {
+                            // this.openConfigDiv(); // TODO
+                        }
                     }
                 }
             } else if(this.state == 'songchoosing') {
@@ -1419,8 +1433,62 @@ class ShuttingStarsCore {
     /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
     renderConfigDiv() {
         if(this.configDiv == null) return;
+        let styles = `
+            .shuttingstar_configlayer { margin-left: 10px; margin-top: 10px; font-size: 1.5rem; line-height: 1.5rem; }
+            .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
+            .shuttingstar_configlayer table th { border: 0; text-align: left; }
+        `;
+        if(this.dark) {
+            styles += `
+            .shuttingstars_canvas_config { background: rgba(80, 80, 80, 0.7); }
+            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
+            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select {
+                background: rgba(120, 120, 120, 0.7);
+                color : rgb(250, 250, 250);
+            }
+            `;
+        } else {
+            styles += `
+            .shuttingstars_canvas_config { background: rgba(200, 200, 200, 0.7); }
+            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
+            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select {
+                background: rgba(190, 190, 190, 0.7);
+                color : rgb(70, 70, 70);
+            }
+            `;
+        }
+        const styleElem = document.createElement('style');
+        styleElem.type = 'text/css';
+        styleElem.innerHTML = styles;
+        document.head.appendChild(styleElem);
+
         let html = `
-            
+            <div class='shuttingstar_configlayer'>
+                <table class='shuttingstar_configtable full'>
+                    <colgroup>
+                        <col style='width: 15rem;'/>
+                        <col/>
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <th>Key Press Delay</th>
+                            <td><input type='number' class='inp inp_keypressdelay full' step='1' min='0' max='9999'/></td>
+                        </tr>
+                        <tr>
+                            <th>Sound Delay</th>
+                            <td><input type='number' class='inp inp_sounddelay full' step='1' min='0' max='9999'/></td>
+                        </tr>
+                        <tr>
+                            <th>Note Speed Rate</th>
+                            <td><input type='number' class='inp inp_notespeedrate full' step='1' min='1' max='8'/></td>
+                        </tr>
+                        <tr>
+                            <th>Graphic Quality</th>
+                            <td><select class='sel sel_graphicquality full'></select></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         `;
 
         this.configDiv.innerHTML = html;
@@ -1430,9 +1498,56 @@ class ShuttingStarsCore {
         this.configDiv.style.left = this.canvas.offsetLeft + 'px';
         this.configDiv.style.width = this.canvas.offsetWidth + 'px';
         this.configDiv.style.height = this.canvas.offsetHeight + 'px';
+        this.configDiv.style.textAlign = 'center';
+        this.configDiv.style.verticalAlign = 'middle';
+
+        const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
+        layer.style.zIndex = this.canvasZindex + 2;
+        layer.style.width  = '80%';
+        layer.style.height = Math.round(this.canvas.offsetHeight * 0.8) + 'px';
         
-        if(this.dark) this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
-        else          this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(200, 200, 200, 0.9)');
+        if(this.dark) {
+            this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
+            layer.style.background = 'rgba(80, 80, 80, 0.7)';
+        } else {
+            this.configDiv.style.background = _shuttingstarcore.convertColor('rgba(200, 200, 200, 0.9)');
+            layer.style.background = 'rgba(200, 200, 200, 0.7)';
+        }
+    }
+
+    /** 상세설정 창 열기 */
+    openConfigDiv() {
+        let inp = this.configDiv.querySelector('.inp_keypressdelay');
+        inp.value = (this.keypressTiming);
+
+        inp = this.configDiv.querySelector('.inp_sounddelay');
+        inp.value = (this.songTiming);
+
+        inp = this.configDiv.querySelector('.inp_notespeedrate');
+        inp.value = (this.noteSpeedMultiplier);
+
+        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
+        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+
+
+        let sel = this.configDiv.querySelector('.sel_graphicquality');
+        let html = '';
+        for(let idx=0; idx<this.settingsGraphicQuality.length; idx++) {
+            html += "<option value='" + this.settingsGraphicQuality[idx] + "'>" + this.settingsGraphicQuality[idx] + "</option>";
+        }
+        sel.innerHTML = html;
+
+
+        this.configDiv.style.display = 'block';
+    }
+
+    /** 상세설정 창 닫기 */
+    closeConfigDiv() {
+        this.configDiv.style.display = 'none';
+        this.state = 'menu';
     }
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
