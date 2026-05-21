@@ -829,7 +829,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText('PAUSED', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
+            this.ctx.strokeText(this.trans('PAUSED'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
         }
 
         // 일시정지 해제 대기시간 그리기
@@ -840,7 +840,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText('Resume in ' + this.resumingTime + ' cycle !', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
+            this.ctx.strokeText(this.trans(ShuttingStarsUtility.replaceString('Resume in % cycle !', '%', String(this.resumingTime))), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
         }
 
         // 게임 오버 그리기
@@ -873,8 +873,8 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.menuList.length; idx++) {
             let menuOne = this.menuList[idx];
 
-            if(menuOne == 'play'   ) label = 'PLAY';
-            if(menuOne == 'setting') label = 'SETTING';
+            if(menuOne == 'play'   ) label = this.trans('PLAY');
+            if(menuOne == 'setting') label = this.trans('SETTING');
 
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -902,7 +902,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(12);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         opacity = 0.9;
-        label = 'MOVE : ';
+        label = this.trans('MOVE : ');
         for(idx=0; idx<this.arrowKeys.length; idx++) {
             let arrowKeyOne = this.arrowKeys[idx];
             let arrowKeyLabel = String(arrowKeyOne);
@@ -914,7 +914,7 @@ class ShuttingStarsCore {
 
             label += arrowKeyLabel;
         }
-        label += '    ACCEPT : ' + this.enterKey;
+        label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
@@ -940,7 +940,7 @@ class ShuttingStarsCore {
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-            this.ctx.strokeText('No songs available !', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - (uppers - 20) + rows));
+            this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - (uppers - 20) + rows));
             rows += fontSize + gap;
             setTimeout(() => { selfs.state = 'menu'; }, 4000);
             return;
@@ -951,7 +951,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText('Choose what you want !', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+            this.ctx.strokeText(this.trans('Choose what you want !'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             rows += fontSize + gap;
         }
 
@@ -1031,7 +1031,7 @@ class ShuttingStarsCore {
             rows += fontSize + gap;
 
             // 작곡가, 노트작성자, bpm 출력
-            label = 'Composed by ' + songOne.composer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
+            label = this.trans(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString('Composed by %1, Notes written by %2, %3 BPM', '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm)));
             fontSize = this.convertFontSize(15);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
@@ -1119,7 +1119,7 @@ class ShuttingStarsCore {
 
             label += arrowKeyLabel;
         }
-        label += '    ACCEPT : ' + this.enterKey + '      BACK : ';
+        label += '    ' + this.trans('ACCEPT : ') + this.enterKey + '      ' + this.trans('BACK : ');
         if(this.escKey == 'ESCAPE') label += 'ESC';
         else                        label += this.escKey;
 
@@ -1170,7 +1170,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('Settings', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.strokeText(this.trans('Settings'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         for(idx=0; idx<this.settingList.length; idx++) {
@@ -1183,10 +1183,10 @@ class ShuttingStarsCore {
 
             if(choosen && this.settingModifyingMode) { leftSide = '◀'; rightSide = '▶'; }
 
-            if(settingOne == 'fixKeypressTiming'     ) label = 'Key Press Delay - ' + leftSide + this.keypressTiming + rightSide;
-            if(settingOne == 'fixSongTiming'         ) label = 'Sound Delay - '     + leftSide + this.songTiming + rightSide;
-            if(settingOne == 'setNoteSpeedMultiplier') label = 'Note Speed Rate - ' + leftSide + this.noteSpeedMultiplier + rightSide;
-            if(settingOne == 'setGraphicQuality'     ) label = 'Graphic Quality - ' + leftSide + this.settingGraphicQualityChoosing + rightSide;
+            if(settingOne == 'fixKeypressTiming'     ) label = this.trans('Key Press Delay - ') + leftSide + this.keypressTiming + rightSide;
+            if(settingOne == 'fixSongTiming'         ) label = this.trans('Sound Delay - '    ) + leftSide + this.songTiming + rightSide;
+            if(settingOne == 'setNoteSpeedMultiplier') label = this.trans('Note Speed Rate - ') + leftSide + this.noteSpeedMultiplier + rightSide;
+            if(settingOne == 'setGraphicQuality'     ) label = this.trans('Graphic Quality - ') + leftSide + this.settingGraphicQualityChoosing + rightSide;
             
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -1218,9 +1218,9 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.arrowKeys.length; idx++) {
             let arrowKeyOne = this.arrowKeys[idx];
             let arrowKeyLabel = String(arrowKeyOne);
-            if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
-            else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
-            else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
+            if(     arrowKeyOne == 'ARROWUP'   ) arrowKeyLabel = '↑';
+            else if(arrowKeyOne == 'ARROWDOWN' ) arrowKeyLabel = '↓';
+            else if(arrowKeyOne == 'ARROWLEFT' ) arrowKeyLabel = '←';
             else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
             else arrowKeyLabel = String(arrowKeyOne);
 
@@ -1265,7 +1265,7 @@ class ShuttingStarsCore {
         rows += fontSize + gap;
 
         // 작곡가, 노트작성자, bpm 출력
-        label = 'Composed by ' + songOne.composer + ', Notes written by ' + songOne.noteWriter + ', ' + songOne.bpm + 'BPM';
+        label = this.trans(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString('Composed by %1, Notes written by %2, %3 BPM', '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm)));
         fontSize = this.convertFontSize(20);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
@@ -1287,7 +1287,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('PLAYING REPORT', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.strokeText(this.trans('PLAYING REPORT'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + (gap/2);
 
         fontSize = this.convertFontSize(15);
@@ -1334,7 +1334,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.fillText('TOTAL\t' + this.point, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText(this.trans('TOTAL') + '\t' + this.point, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + (gap / 2);
 
         let escKeyLabel = this.escKey;
@@ -1343,7 +1343,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.textAlign = "center";
-        this.ctx.fillText("'" + escKeyLabel + "' key to continue...", this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText("'" + escKeyLabel + "' " + this.trans("key to continue..."), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
     }
 
     renderHpBar() {
@@ -1386,11 +1386,11 @@ class ShuttingStarsCore {
     /** 렌더링 디버그 모드에서, 디버깅 용 객체 출력 */
     renderDebug() {
         for(const obj of this.objects) {
-            if(typeof(obj.draw) == 'function') continue;
-            if(typeof(obj.type) == 'undefined') continue;
+            if(typeof(obj.draw)  == 'function' ) continue;
+            if(typeof(obj.type)  == 'undefined') continue;
             if(typeof(obj.color) == 'undefined') continue;
-            if(typeof(obj.x) == 'undefined') continue;
-            if(typeof(obj.y) == 'undefined') continue;
+            if(typeof(obj.x)     == 'undefined') continue;
+            if(typeof(obj.y)     == 'undefined') continue;
 
             try {
                 this.ctx.fillStyle = obj.color;
@@ -1435,7 +1435,8 @@ class ShuttingStarsCore {
     renderConfigDiv() {
         if(this.configDiv == null) return;
         let styles = `
-            .shuttingstar_configlayer { margin-left: 10px; margin-top: 10px; font-size: 1.5rem; line-height: 1.5rem; }
+            .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; }
+            .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
             .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
             .shuttingstar_configlayer table th { border: 0; text-align: left; }
         `;
@@ -1465,34 +1466,35 @@ class ShuttingStarsCore {
 
         let html = `
             <div class='shuttingstar_configlayer'>
+                <h1>Configuration</h1>
                 <table class='shuttingstar_configtable full'>
-                    <caption>ShuttingStars - configuration screen</caption>
+                    <caption style='display: none;'>Configuration</caption>
                     <colgroup>
-                        <col style='width: 15rem;'/>
+                        <col style='width: 25rem;'/>
                         <col/>
                     </colgroup>
                     <tbody>
                         <tr>
-                            <th>Key Press Delay</th>
+                            <th class='target_translate'>Key Press Delay</th>
                             <td><input type='number' class='inp inp_keypressdelay full' step='1' min='0' max='9999'/></td>
                         </tr>
                         <tr>
-                            <th>Sound Delay</th>
+                            <th class='target_translate'>Sound Delay</th>
                             <td><input type='number' class='inp inp_sounddelay full' step='1' min='0' max='9999'/></td>
                         </tr>
                         <tr>
-                            <th>Note Speed Rate</th>
+                            <th class='target_translate'>Note Speed Rate</th>
                             <td><input type='number' class='inp inp_notespeedrate full' step='0.1' min='1.0' max='8.0'/></td>
                         </tr>
                         <tr>
-                            <th>Graphic Quality</th>
+                            <th class='target_translate'>Graphic Quality</th>
                             <td><select class='sel sel_graphicquality full'></select></td>
                         </tr>
                     </tbody>
                 </table>
                 <div class='shuttingstar_configcontrols'>
-                    <button type='button' class='btn btn_config_accept'>Accept</button>
-                    <button type='button' class='btn btn_config_cancel'>Cancel</button>
+                    <button type='button' class='btn btn_config_accept target_translate'>Accept</button>
+                    <button type='button' class='btn btn_config_cancel target_translate'>Cancel</button>
                 </div>
             </div>
         `;
@@ -1506,6 +1508,10 @@ class ShuttingStarsCore {
         this.configDiv.style.height = this.canvas.offsetHeight + 'px';
         this.configDiv.style.textAlign = 'center';
         this.configDiv.style.verticalAlign = 'middle';
+
+        this.configDiv.querySelectorAll('.target_translate').forEach((itemOne) => {
+            itemOne.innerHTML = this.trans(itemOne.innerHTML);
+        });
 
         const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
         layer.style.zIndex = this.canvasZindex + 2;
@@ -1577,6 +1583,7 @@ class ShuttingStarsCore {
         sel.value = this.settingGraphicQualityChoosing;
 
         this.configDiv.style.display = 'block';
+        this.configDiv.querySelector('.inp_keypressdelay').focus();
     }
 
     /** 상세설정 창 닫기 */
@@ -1889,6 +1896,17 @@ class ShuttingStarsCore {
 
     getTopMarginNote() {
         return 0;
+    }
+
+    /** 언어 번역 (stringTable 이용, 없으면 매개변수 값 그대로 반환) */
+    trans(english) {
+        let stringTableChoosed = this.stringTable[this.language];
+        if(typeof(stringTableChoosed) == 'undefined') return english;
+
+        let translated = stringTableChoosed[english];
+        if(typeof(translated) == 'undefined') return english;
+
+        return translated;
     }
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
@@ -2369,13 +2387,13 @@ if(!String.prototype.hexDecode) {
 /********************** // 기타 Util 성 prototype 세팅 ************************/
 
 /********************** 기타 Util 성 Class 세팅 ************************/
-class ShuttingStarsUtility {
+class ShuttingStarsUtilityClass {
     /** 문자열 치환 */
     replaceString(originalStr, targetStr, replacements) {
         return String(originalStr).split(targetStr).join(replacements); 
     }
 }
-const _shuttingstarutil = new ShuttingStarsUtility();
+const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
 /********************** 기타 Util 성 Class 세팅 ************************/
 
 /********************** 외부에서 호출할 수 있도록 함수 구현 ************************/
