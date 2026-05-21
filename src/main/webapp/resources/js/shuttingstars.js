@@ -1767,7 +1767,7 @@ class ShuttingStarsCore {
         return this.trans(`
 # Caution ! Lines start with '#' will be ignored.
 #
-# How to add your own custom song
+# How to add your own custom songs
 #    One song - one JSON object.
 #        name           : (string) Song's name
 #      , composer       : (string) Composer's name
@@ -1788,24 +1788,26 @@ class ShuttingStarsCore {
 #                    locationIndex : (integer) line (0~5, If you using -1 then random)
 #                    time          : (integer) occuring time ( Not seconds ! Need to test. )
 #    example
-#      {
-#          "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
-#        , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
-#        , "difficulties" : {
-#              "easy;1" : [
-#                  {"locationIndex" : 1, time : 3}
-#                , {"locationIndex" : 0, time : 6}
-#                , {"locationIndex" : 4, time : 9}
-#                ...
-#              ],
-#              "normal;4" : [
-#                  {"locationIndex" : 4, time : 2}
-#                , {"locationIndex" : 2, time : 4}
-#                , {"locationIndex" : 3, time : 6}
-#                ...
-#              ]
+#      [
+#          {
+#              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
+#            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
+#            , "difficulties" : {
+#                  "easy;1" : [
+#                      {"locationIndex" : 1, time : 3}
+#                    , {"locationIndex" : 0, time : 6}
+#                    , {"locationIndex" : 4, time : 9}
+#                    ...
+#                  ],
+#                  "normal;4" : [
+#                      {"locationIndex" : 4, time : 2}
+#                    , {"locationIndex" : 2, time : 4}
+#                    , {"locationIndex" : 3, time : 6}
+#                    ...
+#                  ]
+#              }
 #          }
-#      }
+#      ]
         `).trim();
     }
 
