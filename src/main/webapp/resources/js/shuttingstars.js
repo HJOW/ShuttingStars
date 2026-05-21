@@ -126,6 +126,11 @@ class ShuttingStarsCore {
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     renderDebugMode = false;
+    // 스트링 테이블 디버그 모드, 번역 가능 키워드가 화면에 나올 때마다 콘솔에도 출력
+    stringTableDebugMode = false;
+    // 키보드 입력 디버그 모드
+    keyInputDebugMode = false;
+
     // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
     backgroundImage = null;
 
@@ -227,8 +232,7 @@ class ShuttingStarsCore {
             const y = event.clientY - rect.top;
             
             // TODO
-            console.log(x);
-            console.log(y);
+            console.log('MOUSE CLICKED, ' + x + ', ' + y);
         });
 
         let hGap = window.outerWidth  - window.innerWidth;
@@ -680,7 +684,7 @@ class ShuttingStarsCore {
             }
         }
         if(notePlacer == null) return;
-        console.log(this.elapsedTime + ', ' + key); // TODO
+        if(this.keyInputDebugMode) console.log('KEY INPUT : ' + this.elapsedTime + ', ' + key);
 
         // NotePlacer 폭발 처리
         notePlacer.explosing = 1;
@@ -691,35 +695,36 @@ class ShuttingStarsCore {
             if((obj instanceof Note)) {
                 if(obj.locationIndex != notePlacer.locationIndex) continue;
                 if(obj.explosing >= 1) continue;
-                if(obj.explosing <= 0 && notePlacer.isConflictedVertical(obj)) {
-                    // 해당 NotePlacer 과 충돌한 Note 가 얼마나 위치가 동일한지 판정 (수직으로만 이동하므로 y 좌표 및 노트 크기만 영향) - 백분율 사용
-                    const distance = Math.abs(((obj.y - notePlacer.y) * 100.0) / obj.r);
 
-                    // 거리에 따른 판정, 점수 계산
-                    let resultMark = this.createResultMark(distance);
-                    this.processResultMark(resultMark);
-                    this.displayResultMark(resultMark);
+                // 두 객체 간의 거리 (y좌표 차이, 절대값)
+                const dist = notePlacer.isMeetVerticalRangeIn(obj);
+                if(dist < 0) continue; // 접근 여부 판정에는 노트 속도 보너스가 이미 반영되어 있음
 
-                    obj.explosing = 1; // 폭발 시작
-                    this.objects[idx] = obj;
-                    break;
-                }
+                // 거리를 백분율로 환산 - 이후 노트 속도 보너스 반영해야 함
+                const distance = Math.abs((dist * 100.0) / ( (obj.r + notePlacer.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4) ) );
+
+                // 거리에 따른 판정, 점수 계산
+                let resultMark = this.createResultMark(distance);
+                this.processResultMark(resultMark);
+                this.displayResultMark(resultMark);
+
+                obj.explosing = 1; // 폭발 시작
+                this.objects[idx] = obj;
+                break;
             }
         }
     }
     
     /** 거리에 따른 판정 산출 */
     createResultMark(distance) {
-        if(distance < 5.0) {
+        if(distance < 10.0) {
             return 'PERFECT';
-        } else if(distance < 10.0) {
-            return 'GREAT';
         } else if(distance < 30.0) {
+            return 'GREAT';
+        } else if(distance < 70.0) {
             return 'GOOD';
-        } else if(distance < 99.0) {
-            return 'BAD';
         }
-        return 'MISS';
+        return 'BAD';
     }
     
     /** 판정 결과에 따라 HP, 콤보 처리 */
@@ -2146,6 +2151,17 @@ class ShuttingStarsObject {
             opa = 1.0 - (this.explosing * 1.0 / this.explosingMax);
         }
         return opa;
+    }
+
+    /** 다른 객체와 적정거리 이내 접근 감지 (수직 충돌만 감지) 접근이 감지된 경우 두 객체간의 수직거리를 양수로 반환, 그외의 경우 음수를 반환 */
+    isMeetVerticalRangeIn(otherObject) {
+        if(((this instanceof NotePlacer) && (otherObject instanceof Note)) || ((this instanceof Note) && (otherObject instanceof NotePlacer))) {
+            const distance = Math.abs(this.y - otherObject.y);
+
+            if(distance < (this.r + otherObject.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4)) return distance;
+            return -1;
+        }
+        return -1;
     }
 
     /** 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) */
