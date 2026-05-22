@@ -31,6 +31,7 @@ _shuttingstarcore.stringTable = {
         'Cancel' : '취소',
         'Save' : '저장',
         'Tools' : '도구',
+        'Settings' : '설정',
         'Configuration' : '설정',
         'Custom Songs' : '사용자 정의 곡',
         'Key Press Delay' : '키 입력 딜레이',

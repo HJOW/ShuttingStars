@@ -1285,7 +1285,7 @@ class ShuttingStarsCore {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
-                this.ctx.fillRect(Math.floor(this.canvas.width * 2.0 / 3.0), Math.floor(this.canvas.height * 3.0 / 4.0), Math.floor(this.canvas.width / 3.0), Math.floor(this.canvas.height * 1.0 / 4.0));
+                this.ctx.fillRect(Math.floor(this.canvas.width * 2.7 / 4.0), Math.floor(this.canvas.height * 2.7 / 4.0), Math.floor((this.canvas.width * 1.2) / 4.0), Math.floor(this.canvas.height * 1.2 / 4.0));
 
                 fontSize = this.convertFontSize(12);
                 this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -1293,9 +1293,9 @@ class ShuttingStarsCore {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
 
-                rows = Math.floor((this.canvas.height * 3.0 / 4.0) + fontSize) + 5;
+                rows = Math.floor((this.canvas.height * 2.7 / 4.0) + fontSize) + 5;
                 for(const line of desc) {
-                    this.ctx.fillText(line, Math.floor(this.canvas.width * 2.0 / 3.0) + fontSize + this.getLeftMargin(), rows);
+                    this.ctx.fillText(line, Math.floor(this.canvas.width * 2.7 / 4.0) + fontSize + this.getLeftMargin(), rows);
                     rows += fontSize + gap;
                 }
                 this.ctx.textAlign = "center";
@@ -1332,10 +1332,10 @@ class ShuttingStarsCore {
 
             if(choosen && this.settingModifyingMode) { leftSide = '◀'; rightSide = '▶'; }
 
-            if(settingOne == 'fixKeypressTiming'     ) label = this.trans('Key Press Delay - ') + leftSide + this.keypressTiming + rightSide;
-            if(settingOne == 'fixSongTiming'         ) label = this.trans('Sound Delay - '    ) + leftSide + this.songTiming + rightSide;
-            if(settingOne == 'setNoteSpeedMultiplier') label = this.trans('Note Speed Rate - ') + leftSide + this.noteSpeedMultiplier + rightSide;
-            if(settingOne == 'setGraphicQuality'     ) label = this.trans('Graphic Quality - ') + leftSide + this.settingGraphicQualityChoosing + rightSide;
+            if(settingOne == 'fixKeypressTiming'     ) label = this.trans('Key Press Delay') + ' - ' + leftSide + this.keypressTiming + rightSide;
+            if(settingOne == 'fixSongTiming'         ) label = this.trans('Sound Delay'    ) + ' - ' + leftSide + this.songTiming + rightSide;
+            if(settingOne == 'setNoteSpeedMultiplier') label = this.trans('Note Speed Rate') + ' - ' + leftSide + this.noteSpeedMultiplier + rightSide;
+            if(settingOne == 'setGraphicQuality'     ) label = this.trans('Graphic Quality') + ' - ' + leftSide + this.settingGraphicQualityChoosing + rightSide;
             
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -2270,6 +2270,7 @@ class ShuttingStarsCore {
         const btnCancel3 = control3Div.querySelector('.btn_tool_cancel');
 
         btnCancel3.addEventListener('click', fCancel);
+
     }
 
     /** 상세설정 창 열기 */
