@@ -22,6 +22,7 @@ _shuttingstarcore.stringTable = {
     'ko' : {
         'PLAY' : '플레이',
         'SETTING' : '설정',
+        'CREDIT' : 'CREDIT',
         'MOVE : ' : '이동 : ',
         'ACCEPT : ' : '확인 : ',
         'ACCEPT' : '확인',
@@ -40,7 +41,11 @@ _shuttingstarcore.stringTable = {
         'Choose what you want !' : '곡을 선택하세요 !',
         'No songs available !' : '현재 선택 가능한 곡이 없습니다 !',
         'Composed by %1, Notes written by %2, %3 BPM' : '작곡 : %1, 노트 작성 : %2, %3 BPM',
-        'BACK : ' : '돌아가기 : '
-        
+        'Composed by %1, Notes written by %2' : '작곡 : %1, 노트 작성 : %2',
+        'BACK : ' : '돌아가기 : ',
+        '% key to continue...' : '% 키를 눌러 계속...',
+        'PLAYING REPORT' : 'PLAYING REPORT',
+        'TOTAL' : 'TOTAL',
+        'Visit % for detail...' : '% 에 방문하여 자세한 사항 확인'
     }
 };

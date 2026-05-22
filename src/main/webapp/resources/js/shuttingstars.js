@@ -63,9 +63,10 @@ class ShuttingStarsCore {
     resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 - 상수
     songTitleBaseTime = 80;     // 곡 로딩 기본 시간 - 상수
 
-    lastObjectId = 0; // 객체 ID 부여용 카운터
-    objects = []; // 게임의 구성 요소 객체들 (렌더링 대상)
-    notePlacers = []; // NotePlacer 객체들 보관
+    lastObjectId = 0;   // 객체 ID 부여용 카운터
+    objects = [];       // 항상 렌더링 대상인 객체들
+    objectsPlaying = []; // 상태가 playing 중일 때 렌더링 대상 객체들
+    notePlacers    = []; // NotePlacer 객체들 보관
 
     elapsedTime = 0; // 진행 시간 (실제 시간과 단위가 다르며, 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
 
@@ -87,7 +88,7 @@ class ShuttingStarsCore {
     gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
     gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
 
-    state = 'menu'; // 현재 상태, menu / songchoosing / songtitle / playing / gameover / result / setting
+    state = 'menu'; // 현재 상태, menu / songchoosing / songtitle / playing / gameover / result / setting / credit
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
@@ -116,7 +117,7 @@ class ShuttingStarsCore {
 
     colorManualAlpha = false;
 
-    menuList = ['play', 'setting'];
+    menuList = ['play', 'setting', 'credit'];
     menuChoosing = null;
 
     settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality'];
@@ -140,8 +141,16 @@ class ShuttingStarsCore {
     // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
     backgroundImage = null;
 
+    // 크레딧 출력 목록
+    creditContents = [];
+    creditIndex = 0; // 현재 출력 중인 순번
+    creditIndexIncreases = 0; // creditIndex 증가속도를 줄이기 위한 수단
+    creditIndexIncreaseMax = 50;
+
+    // 언어
     language = 'en';
-    languageDefault = true;
+    languageDefault = true; // 기본 플랫폼 언어 사용여부
+    // 언어 번역 테이블
     stringTable = {
         'ko' : {}
     };
@@ -473,7 +482,7 @@ class ShuttingStarsCore {
         this.clearTimeHandler();
 
         this.lastObjectId = 0;
-        this.objects = [];
+        this.objectsPlaying = [];
         this.notePlacers = [];
         this.hp = 100.0;
         this.point = 0;
@@ -492,7 +501,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
             notePlacer.id = this.lastObjectId++;
-            this.objects.push(notePlacer);
+            this.objectsPlaying.push(notePlacer);
             this.notePlacers.push(notePlacer);
         }
 
@@ -628,6 +637,9 @@ class ShuttingStarsCore {
                             // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
                             this.openConfigDiv();
                         }
+                    } else if(this.menuChoosing == 'credit') {
+                        this.prepareCreditList();
+                        this.state = 'credit';
                     }
                 }
             } else if(this.state == 'songchoosing') {
@@ -652,7 +664,6 @@ class ShuttingStarsCore {
                     }
                 }
                 
-
                 // 키 적용
                 if(key == this.arrowKeys[0]) { // UP
                     index--;
@@ -792,6 +803,9 @@ class ShuttingStarsCore {
                     this.state = 'menu';
                     this.resetStage();
                 }
+            } else if(this.state == 'credit') {
+                this.state = 'menu';
+                this.resetStage();
             }
         }
 
@@ -812,8 +826,8 @@ class ShuttingStarsCore {
         notePlacer.explosing = 1;
 
         // 해당 NotePlacer 과 충돌/위치가 동일한 Note 가 있는지 확인
-        for(idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if((obj instanceof Note)) {
                 if(obj.locationIndex != notePlacer.locationIndex) continue;
                 if(obj.explosing >= 1) continue;
@@ -831,7 +845,7 @@ class ShuttingStarsCore {
                 this.displayResultMark(resultMark);
 
                 obj.explosing = 1; // 폭발 시작
-                this.objects[idx] = obj;
+                this.objectsPlaying[idx] = obj;
                 break;
             }
         }
@@ -895,7 +909,7 @@ class ShuttingStarsCore {
     displayResultMark(resultMark) {
         if(resultMark == null) return;
         this.accelerateExplosingJudgeMarks();
-        this.objects.push(new JudgeMark(resultMark));
+        this.objectsPlaying.push(new JudgeMark(resultMark));
     }
 
     /** 노트의 반지름 */
@@ -918,6 +932,12 @@ class ShuttingStarsCore {
             this.renderDebug();
         }
 
+        // 글로벌 객체 그리기
+        for(let idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+        }
+
         // 현재 게임 상태별 렌더링
         if(this.state == 'playing' || this.state == 'gameover') {
             this.renderPlaying();
@@ -931,6 +951,8 @@ class ShuttingStarsCore {
             this.renderResult();
         } else if(this.state == 'setting') {
             this.renderSetting();
+        } else if(this.state == 'credit') {
+            this.renderCredit();
         }
     }
 
@@ -940,8 +962,8 @@ class ShuttingStarsCore {
         if(this.audioAnalyser != null && this.audioSource != null) this.renderAudioVisualizing();
 
         // 객체 그리기
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
         }
 
@@ -990,11 +1012,12 @@ class ShuttingStarsCore {
         let gap = Math.floor(fontSize / 2.0);
         let label = '';
 
+        rows = (this.stageSize.h / 2) - 100 + rows;
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.strokeText('Shutting Stars', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+        this.ctx.strokeText('Shutting Stars', this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + gap;
 
         for(idx=0; idx<this.menuList.length; idx++) {
@@ -1002,6 +1025,7 @@ class ShuttingStarsCore {
 
             if(menuOne == 'play'   ) label = this.trans('PLAY');
             if(menuOne == 'setting') label = this.trans('SETTING');
+            if(menuOne == 'credit' ) label = this.trans('CREDIT');
 
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -1011,13 +1035,13 @@ class ShuttingStarsCore {
 
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
             } else {
                 opacity = 0.3;
 
                 if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
             }
             
             rows += fontSize + gap;
@@ -1045,7 +1069,7 @@ class ShuttingStarsCore {
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 100 + rows));
+        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + gap;
     }
 
@@ -1281,7 +1305,6 @@ class ShuttingStarsCore {
 
     /** 화면 출력 - 설정 화면 */
     renderSetting() {
-        // ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality'];
         let idx;
         let rows = 0;
         let fontSize = this.convertFontSize(30);
@@ -1390,14 +1413,23 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
 
         // 작곡가, 노트작성자, bpm 출력
-        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
         fontSize = this.convertFontSize(20);
+        rows = this.stageSize.h - ((fontSize * 2) + gap);
+        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY((this.stageSize.h - (fontSize * 2))));
+        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY((rows)));
+
+        // 난이도 표기
+        label = String(this.difficulty.difficultyLevel);
+        fontSize = this.convertFontSize(40);
+        rows -= this.convertFontSize(5);
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(label, this.convertX(this.resolution.w - (fontSize * 2)), this.convertY((rows)));
     }
 
     /** 화면 출력 - 플레이 종료 후 결과 화면 */
@@ -1407,6 +1439,7 @@ class ShuttingStarsCore {
         let fontSize = this.convertFontSize(30);
         let uppers = 150;
         let gap = Math.floor(fontSize / 2.0);
+        let label = '';
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -1420,7 +1453,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.fillText(this.song.name, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows)); // TODO : 난이도 표기
+        this.ctx.fillText(this.song.name, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
         rows += fontSize + gap;
 
         fontSize = this.convertFontSize(20);
@@ -1460,15 +1493,46 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         this.ctx.fillText(this.trans('TOTAL') + '\t' + this.point, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
-        rows += fontSize + (gap / 2);
+        rows += fontSize + gap;
 
+        // 곡 이름 출력
+        label = this.song.name;
+        fontSize = this.convertFontSize(30);
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        rows = this.stageSize.h - ((fontSize * 3) + gap);
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY(rows));
+
+        // 작곡가, 노트작성자, bpm 출력
+        fontSize = this.convertFontSize(20);
+        rows = this.stageSize.h - ((fontSize * 2) + (gap * 2));
+        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.song.composer), '%2', this.song.noteWriter), '%3', String(this.song.bpm));
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY((rows)));
+
+        // 난이도 표기
+        label = String(this.difficulty.difficultyLevel);
+        fontSize = this.convertFontSize(40);
+        rows -= this.convertFontSize(5);
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(label, this.convertX(this.stageSize.w - (fontSize * 2)), this.convertY((rows)));
+
+        // ESC 표기
         let escKeyLabel = this.escKey;
         if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
 
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.textAlign = "center";
-        this.ctx.fillText("'" + escKeyLabel + "' " + this.trans("key to continue..."), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.resolution.w / 2), this.convertY(rows + (fontSize + gap * 2)));
     }
 
     renderHpBar() {
@@ -1510,7 +1574,7 @@ class ShuttingStarsCore {
 
     /** 렌더링 디버그 모드에서, 디버깅 용 객체 출력 */
     renderDebug() {
-        for(const obj of this.objects) {
+        for(const obj of this.objectsPlaying) {
             if(typeof(obj.draw)  == 'function' ) continue;
             if(typeof(obj.type)  == 'undefined') continue;
             if(typeof(obj.color) == 'undefined') continue;
@@ -1556,23 +1620,61 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 크레딧 그리기 */
+    renderCredit() {
+        let idx;
+        let displays = 0;
+        let rows = 0;
+        let opacity = 0.9;
+        let fontSize = 0;
+        let label = '';
+        
+        rows = this.convertFontSize(30);
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+
+        // 현재 출력 차례부터 처리
+        for(idx=this.creditIndex; idx<this.creditContents.length; idx++) {
+            const nows = this.creditContents[idx];
+
+            fontSize = this.convertFontSize(nows.fontSize);
+            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.fillText(nows.label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+            rows += fontSize;
+            
+            displays++;
+        }
+
+        // 다시 위로 돌아가 남은 차례 처리
+        for(idx=0; idx<this.creditContents.length - displays; idx++) {
+            const nows = this.creditContents[idx];
+
+            this.ctx.font = this.convertFontSize(nows.fontSize) + 'px ' + this.fontFamily;
+            this.ctx.fillText(nows.label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+            rows += fontSize;
+            
+            displays++;
+        }
+    }
+
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
     simultaneousWork(simultaneousWorkCycle) {
         // 항상 처리할 사항
 
         // 폭발 완료 처리
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof Note) {
                 if(obj.explosing >= obj.explosingMax) {
-                    this.objects.splice(idx, 1);
+                    this.objectsPlaying.splice(idx, 1);
                     idx--;
                 }
             } else if(obj instanceof NotePlacer) {
                 if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
             } else if(obj instanceof JudgeMark) {
                 if(obj.explosing >= obj.explosingMax) {
-                    this.objects.splice(idx, 1);
+                    this.objectsPlaying.splice(idx, 1);
                     idx--;
                 }
             }
@@ -1597,6 +1699,14 @@ class ShuttingStarsCore {
             }
         }
 
+        // Credit 처리
+        if(this.state == 'credit') {
+            this.creditIndexIncreases++;
+            if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
+            if(this.creditIndex < 0) this.creditIndex = 0;
+            if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
+        }
+
         // 일시정지 및 재개 대기 타이밍 처리
         if(this.paused) return;
         if(this.resumingTime >= 1) {
@@ -1607,8 +1717,8 @@ class ShuttingStarsCore {
         }
 
         // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof NoteKeyObject) {
                 if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
                     if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
@@ -1662,12 +1772,12 @@ class ShuttingStarsCore {
             //     노트 생성
             const note = new Note(patternNow.locationIndex);
             note.id = this.lastObjectId++;
-            this.objects.push(note); // 패턴 추가
+            this.objectsPlaying.push(note); // 패턴 추가
         }
 
         // 이미 지나가버린 패턴 체크
-        for(idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() + this.getHpBarHeight() + this.getNoteRadius() - 1 )) {
                 if(obj.explosing == 0) {
                     // 미스 처리
@@ -1711,8 +1821,8 @@ class ShuttingStarsCore {
         }
         
         // 스테이지에 남아있는 노트 이동
-        for(idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof Note) {
                 if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
                 obj.y -= obj.speedY;
@@ -1780,8 +1890,8 @@ class ShuttingStarsCore {
 
     /** 폭발 중인 JudgeMark 폭발속도 가속 */
     accelerateExplosingJudgeMarks() {
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof JudgeMark) {
                 if(obj.explosing < obj.explosingMax) {
                     obj.explosing++;
@@ -1831,8 +1941,8 @@ class ShuttingStarsCore {
     /** 현재 로드된 노트들 반환 */
     getNotes() {
         let arr = [];
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof Note) {
                 arr.push(obj);
             }
@@ -1842,8 +1952,8 @@ class ShuttingStarsCore {
 
     getNotePlacers() {
         let arr = [];
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof NotePlacer) {
                 arr.push(obj);
             }
@@ -1852,8 +1962,8 @@ class ShuttingStarsCore {
     }
 
     getNotePlacer(locationIndex) {
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
+        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
             if(obj instanceof NotePlacer) {
                 if(obj.locationIndex === locationIndex) {
                     return obj;
@@ -1877,6 +1987,52 @@ class ShuttingStarsCore {
 
     getTopMarginNote() {
         return 0;
+    }
+
+    /** Credit 목록 그리기 */
+    prepareCreditList() {
+        this.creditContents = [];
+        this.creditIndex = 0;
+
+        for(let idx=0; idx<5; idx++) {
+            this.creditContents.push({ label : '', fontSize : 30 });
+        }
+
+        this.creditContents.push({ label : 'Shutting Stars', fontSize : 30 });
+        this.creditContents.push({ label : this.trans('Made by HJOW'), fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 30 });
+
+        this.creditContents.push({ label : 'LICENSE', fontSize : 25 });
+        this.creditContents.push({ label : '', fontSize : 15 });
+        this.creditContents.push({ label : 'Copyright 2026 HJOW (hujinone22@naver.com)', fontSize : 15 });
+        this.creditContents.push({ label : ShuttingStarsUtility.replaceString(this.trans('Visit % for detail...'), '%', 'https://shuttingstars-3eddf.web.app/license.html'), fontSize : 15 });
+        
+        for(let idx=0; idx<3; idx++) {
+            this.creditContents.push({ label : '', fontSize : 30 });
+        }
+
+        this.creditContents.push({ label : 'Songs', fontSize : 30 });
+        this.creditContents.push({ label : '', fontSize : 30 });
+
+        for(let idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            
+            this.creditContents.push({ label : songOne.name, fontSize : 25 });
+            this.creditContents.push({ label : ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2'), '%1', songOne.composer), '%2', songOne.noteWriter), fontSize : 15 });
+            this.creditContents.push({ label : '', fontSize : 25 });
+        }
+
+        for(let idx=0; idx<3; idx++) {
+            this.creditContents.push({ label : '', fontSize : 30 });
+        }
+
+        let escKeyLabel = this.escKey;
+        if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+        this.creditContents.push({ label : ShuttingStarsUtility.replaceString(this.trans('% key to continue...'), '%', escKeyLabel), fontSize : 15 });
+
+        for(let idx=0; idx<3; idx++) {
+            this.creditContents.push({ label : '', fontSize : 30 });
+        }
     }
 
     /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */

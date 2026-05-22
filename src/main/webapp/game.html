@@ -67,7 +67,7 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 <script type="text/javascript">
 
 /* 페이지 접속 시 호출 */
-$(function() {
+document.addEventListener('DOMContentLoaded', function(){
     const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
     initShuttingStars(root[0]);
 });
