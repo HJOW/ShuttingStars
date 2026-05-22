@@ -2121,7 +2121,7 @@ class ShuttingStarsCore {
             .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.5); color: rgba(50, 230, 50, 0.6); }
             .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
             .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 600px; vertical-align: top; }
-            .shuttingstar_configlayer .ta_json_song { min-height: 600px; }
+            .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 600px; }
             .shuttingstar_configlayer .shuttingstar_tools_inner { height: 600px; overflow-y: scroll; }
             .shuttingstar_configlayer .shuttingstar_tools_inner .section { margin-bottom: 30px; }
             .shuttingstar_configcontrols { margin-top: 20px; }
@@ -2158,6 +2158,7 @@ class ShuttingStarsCore {
                 <div class='shuttingstar_config_tabbuttons'>
                     <button type='button' class='btn tab active target_translate' data-tabarea='.shuttingstar_configsections'>Configuration</button>
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custom Songs</button>
+                    <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_packagessections'>Packages</button>
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_toolssections'>Tools</button>
                 </div>
                 <div class='shuttingstar_configsections tabarea active'>
@@ -2204,6 +2205,16 @@ class ShuttingStarsCore {
                     <div class='shuttingstar_songcontrols'>
                         <button type='button' class='btn btn_song_accept target_translate'>Save</button>
                         <button type='button' class='btn btn_song_cancel target_translate red'>Cancel</button>
+                    </div>
+                </div>
+                <div class='shuttingstar_packagessections tabarea'>
+                    <h1 class='target_translate'>Packages</h1>
+                    <textarea class='full ta_packages'># Caution ! Lines start with '#' will be ignored.
+# Add package URLs here. Enter one URL per line.
+</textarea>
+                    <div class='shuttingstar_packagescontrols'>
+                        <button type='button' class='btn btn_packages_accept target_translate'>Save</button>
+                        <button type='button' class='btn btn_packages_cancel target_translate red'>Cancel</button>
                     </div>
                 </div>
                 <div class='shuttingstar_toolssections tabarea'>
@@ -2330,11 +2341,33 @@ class ShuttingStarsCore {
 
         btnCancel2.addEventListener('click', fCancel);
 
-        // 버튼 이벤트 (도구)
-        const control3Div = this.configDiv.querySelector('.shuttingstar_toolssections');
-        const btnCancel3 = control3Div.querySelector('.btn_tool_cancel');
+        // 버튼 이벤트 (패키지)
+        let ta2 = this.configDiv.querySelector('.ta_packages');
+        const control3Div = this.configDiv.querySelector('.shuttingstar_packagessections');
+        const btnSave3    = control3Div.querySelector('.btn_packages_accept');
+        const btnCancel3  = control3Div.querySelector('.btn_packages_cancel');
 
+        btnSave3.addEventListener('click', () => {
+            let urls = String(ta2.value).trim();
+            try {
+                localStorage.setItem('shuttingstar_packages', urls);
+                this.loadPackages().then(() => { selfs.loadSongs(); }).catch((ex) => { console.error(ex); });
+            } catch(ejson) {
+                console.error(ejson);
+                alert(this.trans('ERROR') + ' : ' + ejson);
+                return;
+            }
+
+            selfs.closeConfigDiv();
+            selfs.state = 'menu';
+        });
         btnCancel3.addEventListener('click', fCancel);
+
+        // 버튼 이벤트 (도구)
+        const control4Div = this.configDiv.querySelector('.shuttingstar_toolssections');
+        const btnCancel4 = control4Div.querySelector('.btn_tool_cancel');
+
+        btnCancel4.addEventListener('click', fCancel);
 
     }
 
@@ -2404,7 +2437,7 @@ class ShuttingStarsCore {
 
     /** 커스텀 곡 JSON 상단 주석 내용 반환 */
     defaultCustomSongComments() {
-        return this.trans(`
+        return String(`
 # Caution ! Lines start with '#' will be ignored.
 #
 # How to add your own custom songs
@@ -2546,23 +2579,24 @@ class ShuttingStarsCore {
         const selfs = this;
         return new Promise((resolve, reject) => {
             selfs.loadPlugins().then(() => {
-                setTimeout(() => {
-                    resolve(true);
-                }, 300);
-            }).catch((e) => { reject(e); });
+                selfs.loadPackages().then(() => {
+                    setTimeout(() => {
+                        resolve(true);
+                    }, 300);
+                }).catch((e1) => { reject(e2) });
+            }).catch((e2) => { reject(e2); });
         });
     }
 
-    /** 플러그인 불러오기 */
-    async loadPlugins() {
+    /** 곡 패키지 불러오기 */
+    async loadPackages() {
         let idx, jdx;
 
-        this.pluginApplied = [];
+        let packages = localStorage.getItem('shuttingstar_packages');
+        if(packages == null || typeof(packages) == 'undefined') return;
+        packages = ShuttingStarsUtility.removeLinesStartKey(packages, '#');
 
-        const plugins = localStorage.getItem('shuttingstar_plugins');
-        if(plugins == null || typeof(plugins) == 'undefined') return;
-
-        const splits = plugins.split('\n');
+        const splits = packages.split('\n');
         for(idx=0; idx<splits.length; idx++) {
             let lineOne = String(splits[idx]).trim();
             if(lineOne == '') continue;
@@ -2572,7 +2606,7 @@ class ShuttingStarsCore {
                 const json = responses.json();
 
                 if(typeof(json.name) != 'string') continue;
-                console.log('Plugin ' + json.name + ' applied.');
+                console.log('Package ' + json.name + ' applied.');
 
                 let songs = json.songs;
                 if(typeof(songs) != 'undefined' && songs != null) {
@@ -2580,18 +2614,22 @@ class ShuttingStarsCore {
                         this.addSong(songs[jdx]);
                     }
                 }
-
-                this.pluginApplied.push(json);
             } catch(e) {
-                console.error('Fail to load plugin from ' + lineOne);
+                console.error('Fail to load packages from ' + lineOne);
                 console.error(e);
                 continue;
             }
         }
     }
 
+    /** 플러그인 불러오기 */
+    async loadPlugins() {
+        this.pluginApplied = [];
+    }
+
     /** 외부에서 곡 추가 시 호출 */
     addSong(song, noSave) {
+        let idx;
         if(! (song instanceof ShuttingStarsSong)) {
             let json = song;
             if(typeof(json) == 'string') json = JSON.parse(json);
@@ -2611,7 +2649,7 @@ class ShuttingStarsCore {
             song.timeMultiplier = json.timeMultiplier;
             song.difficulties   = [];
 
-            for(let idx=0; idx<json.difficulties.length; idx++) {
+            for(idx=0; idx<json.difficulties.length; idx++) {
                 const difficultyOne = json.difficulties[idx];
                 let newObj = {};
 
@@ -2641,7 +2679,25 @@ class ShuttingStarsCore {
                 if(! exists) song.serial = json.serial; // 충돌 안하는 시리얼이면 넣기
             }
         }
-        this.songs.push(song);
+
+        // 중복 체크
+        let exists = false;
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(song.serial != '' && songOne.serial == song.serial) {
+                exists = true;
+                break;
+            }
+            if(songOne.name == song.name && songOne.composer == song.composer && songOne.noteWriter == song.noteWriter) {
+                exists = true;
+                break;
+            }
+        }
+
+        if(! exists) {
+            // 추가
+            this.songs.push(song);
+        }
 
         if(noSave) return;
         this.saveSongs();
