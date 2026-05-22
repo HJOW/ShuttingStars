@@ -22,6 +22,7 @@ song.description = `
 |Music promoted by
 |  Audio Library: https://links.al/youtube
 `;
+song.loadingTime = 10;
 song.bpm = 79;
 song.endTime = 3700;
 song.timeConstant = -333;

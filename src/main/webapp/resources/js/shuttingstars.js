@@ -60,6 +60,8 @@ class ShuttingStarsCore {
     sizeFixedConst = 2; // 노트 크기 상수 (변경 불가)
     noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
     noteSpeedMultiplier = 1.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
+    resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 - 상수
+    songTitleBaseTime = 80;     // 곡 로딩 기본 시간 - 상수
 
     lastObjectId = 0; // 객체 ID 부여용 카운터
     objects = []; // 게임의 구성 요소 객체들 (렌더링 대상)
@@ -104,9 +106,9 @@ class ShuttingStarsCore {
 
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
     gameoverTime = 0; // 게임 오버 마크 화면 남은 시간
+    resumingTime = 0; // 일시정지 후 재개 전 대기 시간
 
     paused = false;
-    resumingTime = 0; // 일시정지 재개 전 대기 시간
     resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값
     simultaneousWorkCycle = 0;
 
@@ -464,7 +466,7 @@ class ShuttingStarsCore {
             this.notePlacers.push(notePlacer);
         }
 
-        if(this.song == null) { this.audio = null; return; }
+        if(this.song == null) { this.closeAudioSources(); this.audio = null; return; }
 
         // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
         if(this.state == 'songtitle') {
@@ -643,7 +645,8 @@ class ShuttingStarsCore {
 
                     if(this.difficultyChoosing) {
                         if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
-                        this.songTitleTime = 80;
+                        this.songTitleTime = this.songTitleBaseTime;
+                        if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
                         this.state = 'songtitle';
                         this.difficultyChoosing = false;
                         this.resetStage();
@@ -739,7 +742,7 @@ class ShuttingStarsCore {
         } else if(key == this.escKey) {
             if(this.state == 'playing') {
                 if(this.paused) {
-                    this.resumingTime = 16 * _shuttingstarcore.timeMultiplier;
+                    this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
                     this.paused = false;
                 } else {
                     this.paused = true;
@@ -1355,7 +1358,6 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "center";
         this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
-        rows += fontSize + gap;
 
         // 작곡가, 노트작성자, bpm 출력
         label = this.trans(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString('Composed by %1, Notes written by %2, %3 BPM', '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm)));
@@ -1364,8 +1366,8 @@ class ShuttingStarsCore {
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-        this.ctx.textAlign = "center";
-        this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY((this.stageSize.h - (fontSize * 2))));
     }
 
     /** 화면 출력 - 플레이 종료 후 결과 화면 */
@@ -1803,6 +1805,7 @@ class ShuttingStarsCore {
 #      , musicUrl       : (string) Music file URL
 #      , thumbnailUrl   : (string) Thumbnail image file URL (just input empty text when not exist)
 #      , description    : (string) Description.
+#      , loadingTime    : (integer) Additional loading time
 #      , bpm            : (integer) BPM (Bit per minutes)
 #      , endTime        : (integer) This song's length ( Not seconds ! Need to test. )
 #      , timeConstant   : (integer) Note timing correction value (+)
@@ -1903,11 +1906,11 @@ class ShuttingStarsCore {
             const obj = this.objects[idx];
             if(obj instanceof NoteKeyObject) {
                 if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
-                    if(simultaneousWorkCycle % 4 == 0) obj.explosing++;
+                    if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
                 }
             } else if(obj instanceof JudgeMark) {
                 if(obj.explosing < obj.explosingMax) {
-                    if(simultaneousWorkCycle % 4 == 0) obj.explosing++;
+                    if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
                 }
             }
         }
@@ -2063,7 +2066,10 @@ class ShuttingStarsCore {
         const notes = this.getNotes();
         for(let idx=0; idx<notes.length; idx++) {
             let noteOne = notes[idx];
-            if(noteOne.explosing >= 1 && noteOne.explosing < noteOne.explosingMax) noteOne.explosing++;
+            if(noteOne.explosing >= 1 && noteOne.explosing < noteOne.explosingMax) {
+                noteOne.explosing++;
+                noteOne.explosingSpeed++;
+            }
         }
     }
 
@@ -2072,11 +2078,15 @@ class ShuttingStarsCore {
         for(let idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
             if(obj instanceof JudgeMark) {
-                if(obj.explosing < obj.explosingMax) obj.explosing++;
+                if(obj.explosing < obj.explosingMax) {
+                    obj.explosing++;
+                    obj.explosingSpeed++;
+                }
             }
         }
     }
 
+    /** 게임 오버 판정 시 호출 */
     onGameOver() {
         this.accelerateExplosingNotes();
         this.accelerateExplosingJudgeMarks();
@@ -2087,24 +2097,33 @@ class ShuttingStarsCore {
         this.paused = false;
     }
 
+    /** 곡 플레이 종료 시 호출 */
     onSongEnd() {
         this.state = 'result';
         this.paused = false;
-        if(this.audio != null) {
-            try { this.audio.pause(); } catch(e) { console.error(e); }
-        }
-        this.closeAudioSources();
+        this.stopAudio();
         this.audio = null;
         this.songThumb = null;
         this.videoBga = null;
     }
 
+    /** 곡 재생 종료 */
+    stopAudio() {
+        if(this.audio != null) {
+            try { this.audio.pause(); } catch(e) { console.error(e); }
+            this.audio = null;
+        }
+        this.closeAudioSources();
+    }
+
+    /** 오디오 관련 리소스 닫기 (예외 발생해도 무시) */
     closeAudioSources() {
         if(this.audioSource   != null) { try { this.audioSource.disconnect();   this.audioSource   = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioAnalyser != null) { try { this.audioAnalyser.disconnect(); this.audioAnalyser = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioCtx      != null) { try { this.audioCtx.close();           this.audioCtx      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
     }
 
+    /** 현재 로드된 노트들 반환 */
     getNotes() {
         let arr = [];
         for(let idx=0; idx<this.objects.length; idx++) {
@@ -2243,6 +2262,7 @@ class ShuttingStarsCore {
             song.musicUrl       = json.musicUrl;
             song.thumbnailUrl   = json.thumbnailUrl;
             song.description    = json.description;
+            song.loadingTime    = json.loadingTime;
             song.bpm            = json.bpm;
             song.endTime        = json.endTime;
             song.timeConstant   = json.timeConstant;
@@ -2322,6 +2342,7 @@ class ShuttingStarsSong {
     musicUrl = ''; // 음원 URL
     thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
     bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
+    loadingTime = 10; // 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함)
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 560; // 곡 종료 시간
     timeMultiplier = 1; // 보정 시간 (노트 등장 time 값에 * 보정값으로 적용)
@@ -2397,8 +2418,9 @@ class ShuttingStarsObject {
     shape = 'circle';
     color = 'rgba(200, 200, 200, 0.99)';
     fill = true; // 채우기 여부 / false 인 경우 채우기 없이 테두리만 출력
-    explosing = 0; // 0 : 일반적인 상황, 그 이상으로 가면 Note 제거 (혹은 Note 제거기 동작) 1~8 : 처리 애니메이션 진행상황
+    explosing = 0; // 0 : 일반적인 상황, 1~8 : 폭발 처리 애니메이션 진행상황
     explosingMax = 8;
+    explosingSpeed = 1; // 폭발 속도
     constructor() {}
     draw(ctx) {
         if(this.shape === 'circle') {
