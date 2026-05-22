@@ -145,7 +145,7 @@ class ShuttingStarsCore {
     creditContents = [];
     creditIndex = 0; // 현재 출력 중인 순번
     creditIndexIncreases = 0; // creditIndex 증가속도를 줄이기 위한 수단
-    creditIndexIncreaseMax = 50;
+    creditIndexIncreaseMax = 100;
 
     // 언어
     language = 'en';
@@ -1647,7 +1647,7 @@ class ShuttingStarsCore {
         }
 
         // 다시 위로 돌아가 남은 차례 처리
-        for(idx=0; idx<this.creditContents.length - displays; idx++) {
+        for(idx=0; idx<this.creditContents.length; idx++) { // 루프 전체 출력 - 어짜피 넘치는 영역은 숨겨지므로
             const nows = this.creditContents[idx];
 
             this.ctx.font = this.convertFontSize(nows.fontSize) + 'px ' + this.fontFamily;
