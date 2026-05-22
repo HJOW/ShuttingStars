@@ -20,6 +20,27 @@ limitations under the License.
  */
 _shuttingstarcore.stringTable = {
     'ko' : {
-
+        'PLAY' : '플레이',
+        'SETTING' : '설정',
+        'MOVE : ' : '이동 : ',
+        'ACCEPT : ' : '확인 : ',
+        'ACCEPT' : '확인',
+        'Accept' : '확인',
+        'CANCEL' : '취소',
+        'Cancel' : '취소',
+        'Save' : '저장',
+        'Tools' : '도구',
+        'Configuration' : '설정',
+        'Custom Songs' : '사용자 정의 곡',
+        'Key Press Delay' : '키 입력 딜레이',
+        'Sound Delay' : '음원 재생 딜레이',
+        'Note Speed Rate' : '노트 속도 배수',
+        'Graphic Quality' : '그래픽 품질',
+        'Language' : '언어',
+        'Choose what you want !' : '곡을 선택하세요 !',
+        'No songs available !' : '현재 선택 가능한 곡이 없습니다 !',
+        'Composed by %1, Notes written by %2, %3 BPM' : '작곡 : %1, 노트 작성 : %2, %3 BPM',
+        'BACK : ' : '돌아가기 : '
+        
     }
 };

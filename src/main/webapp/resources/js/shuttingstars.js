@@ -946,7 +946,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText(this.trans(ShuttingStarsUtility.replaceString('Resume within % !', '%', String(this.resumingTime))), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
+            this.ctx.strokeText(ShuttingStarsUtility.replaceString(this.trans('Resume within % !'), '%', String(this.resumingTime))), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10);
         }
 
         // 게임 오버 그리기
@@ -1137,7 +1137,7 @@ class ShuttingStarsCore {
             rows += fontSize + gap;
 
             // 작곡가, 노트작성자, bpm 출력
-            label = this.trans(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString('Composed by %1, Notes written by %2, %3 BPM', '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm)));
+            label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
             fontSize = this.convertFontSize(15);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
@@ -1212,7 +1212,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(12);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         opacity = 0.9;
-        label = 'MOVE : ';
+        label = this.trans('MOVE : ');
         for(idx=0; idx<this.arrowKeys.length; idx++) {
             let arrowKeyOne = this.arrowKeys[idx];
             let arrowKeyLabel = String(arrowKeyOne);
@@ -1369,7 +1369,7 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - 30 + rows));
 
         // 작곡가, 노트작성자, bpm 출력
-        label = this.trans(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString('Composed by %1, Notes written by %2, %3 BPM', '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm)));
+        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
         fontSize = this.convertFontSize(20);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
@@ -1915,7 +1915,7 @@ class ShuttingStarsCore {
             <div class='shuttingstar_configlayer'>
                 <div class='shuttingstar_config_tabbuttons'>
                     <button type='button' class='btn tab active target_translate' data-tabarea='.shuttingstar_configsections'>Configuration</button>
-                    <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custon Songs</button>
+                    <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custom Songs</button>
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_toolssections'>Tools</button>
                 </div>
                 <div class='shuttingstar_configsections tabarea active'>
