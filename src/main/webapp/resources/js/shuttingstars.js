@@ -88,7 +88,7 @@ class ShuttingStarsCore {
     gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
     gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
 
-    state = 'menu'; // 현재 상태, menu / songchoosing / songtitle / playing / gameover / result / setting / credit
+    state = 'title'; // 현재 상태, title / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
@@ -154,6 +154,9 @@ class ShuttingStarsCore {
     stringTable = {
         'ko' : {}
     };
+
+    // 불러온 플러그인 목록
+    pluginApplied = [];
 
     constructor() {}
     
@@ -290,11 +293,22 @@ class ShuttingStarsCore {
         this.renderConfigDiv();
         this.configDiv.style.display = 'none';
 
+        this.loadAfter().then(() => {
+            selfs.afterInitialized();
+        }).catch((e) => {
+            console.error(e);
+            selfs.afterInitialized();
+        });
+    }
+
+    /** 초기화 완료 후 호출 */
+    afterInitialized() {
         this.menuChoosing = this.menuList[0];
         this.state = 'menu';
         this.resetStage();
     }
 
+    /** 해상도 (그래픽 품질) 변경 */
     setResolution(w, h) {
         this.resolution.w = w;
         this.resolution.h = h;
@@ -941,6 +955,8 @@ class ShuttingStarsCore {
         // 현재 게임 상태별 렌더링
         if(this.state == 'playing' || this.state == 'gameover') {
             this.renderPlaying();
+        } else if(this.state == 'title') {
+            this.renderTitle();
         } else if(this.state == 'menu') {
             this.renderMenu();
         } else if(this.state == 'songchoosing') {
@@ -1001,6 +1017,31 @@ class ShuttingStarsCore {
             this.ctx.textAlign = "center";
             this.ctx.fillText('GAME OVER', this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 20));
         }
+    }
+
+    /** 화면 출력 - 타이틀 */
+    renderTitle() {
+        let idx;
+        let rows = 0;
+        let fontSize = this.convertFontSize(30);
+        let opacity = 0.9;
+        let gap = Math.floor(fontSize / 2.0);
+        let label = '';
+
+        rows = (this.stageSize.h / 2) - 100 + rows;
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+        this.ctx.strokeText('Shutting Stars', this.convertX(this.stageSize.w / 2), this.convertY(rows));
+
+        rows = this.stageSize.h - fontSize - gap;
+        fontSize = this.convertFontSize(15);
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(this.trans('Please wait...'), this.convertX(this.stageSize.w / 2), this.convertY(rows));
     }
 
     /** 화면 출력 - 메인 메뉴 */
@@ -2499,6 +2540,54 @@ class ShuttingStarsCore {
         if(url.indexOf('/') == 0) return this.urlCtx + url.substring(1);
 
         return url;
+    }
+
+    loadAfter() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            selfs.loadPlugins().then(() => {
+                setTimeout(() => {
+                    resolve(true);
+                }, 300);
+            }).catch((e) => { reject(e); });
+        });
+    }
+
+    /** 플러그인 불러오기 */
+    async loadPlugins() {
+        let idx, jdx;
+
+        this.pluginApplied = [];
+
+        const plugins = localStorage.getItem('shuttingstar_plugins');
+        if(plugins == null || typeof(plugins) == 'undefined') return;
+
+        const splits = plugins.split('\n');
+        for(idx=0; idx<splits.length; idx++) {
+            let lineOne = String(splits[idx]).trim();
+            if(lineOne == '') continue;
+
+            try {
+                const responses = await fetch(lineOne);
+                const json = responses.json();
+
+                if(typeof(json.name) != 'string') continue;
+                console.log('Plugin ' + json.name + ' applied.');
+
+                let songs = json.songs;
+                if(typeof(songs) != 'undefined' && songs != null) {
+                    for(jdx=0; jdx<songs.length; jdx++) {
+                        this.addSong(songs[jdx]);
+                    }
+                }
+
+                this.pluginApplied.push(json);
+            } catch(e) {
+                console.error('Fail to load plugin from ' + lineOne);
+                console.error(e);
+                continue;
+            }
+        }
     }
 
     /** 외부에서 곡 추가 시 호출 */
