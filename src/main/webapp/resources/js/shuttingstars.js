@@ -131,14 +131,17 @@ class ShuttingStarsCore {
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     renderDebugMode = false;
     // 스트링 테이블 디버그 모드, 번역 가능 키워드가 화면에 나올 때마다 콘솔에도 출력
-    stringTableDebugMode = false;
+    stringTableDebugMode = true;
     // 키보드 입력 디버그 모드
     keyInputDebugMode = false;
+    // 마우스 클릭 디버그 모드
+    mouseClickDebugMode = true;
 
     // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
     backgroundImage = null;
 
     language = 'en';
+    languageDefault = true;
     stringTable = {
         'ko' : {}
     };
@@ -237,8 +240,7 @@ class ShuttingStarsCore {
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
             
-            // TODO
-            console.log('MOUSE CLICKED, ' + x + ', ' + y);
+            if(this.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y);
         });
 
         let hGap = window.outerWidth  - window.innerWidth;
@@ -343,8 +345,13 @@ class ShuttingStarsCore {
                         console.log('Resolution setting is wrong.');
                         console.error(e2);
                         console.log('Trying with default resolution...')
+                    }    
+                }
+
+                if(typeof(settingJson.language) != 'undefined') {
+                    if(! settingJson.languageDefault) {
+                        this.language = settingJson.language;
                     }
-                    
                 }
             }
 
@@ -371,6 +378,8 @@ class ShuttingStarsCore {
             settingJson.keypressTiming = this.keypressTiming;
             settingJson.songTiming = this.songTiming;
             settingJson.resolution = this.resolution.w + ',' + this.resolution.h;
+            settingJson.language = this.language;
+            settingJson.languageDefault = this.languageDefault;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
@@ -1526,331 +1535,6 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
-    renderConfigDiv() {
-        if(this.configDiv == null) return;
-        const selfs = this;
-
-        // 상세설정 영역 공통 css 준비
-        let styles = `
-            .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; }
-            .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
-            .shuttingstar_configlayer button       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.4); color: rgba(122, 165, 240, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer button:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer button.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.4); color: rgba(244, 66, 66, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer button.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
-            .shuttingstar_configlayer table th { border: 0; text-align: left; }
-            .shuttingstar_configlayer .tabarea        { display: none; }
-            .shuttingstar_configlayer .tabarea.active { display: block; }
-            .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.4); color: rgba(50, 230, 50, 0.4); }
-            .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.5); color: rgba(50, 230, 50, 0.6); }
-            .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
-            .shuttingstar_configlayer .ta_json_song { min-height: 600px; }
-            .shuttingstar_configcontrols { margin-top: 20px; }
-        `;
-        if(this.dark) {
-            styles += `
-            .shuttingstars_canvas_config { background: rgba(80, 80, 80, 0.7); }
-            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
-            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
-                background: rgba(120, 120, 120, 0.7);
-                color : rgb(250, 250, 250);
-            }
-            `;
-        } else {
-            styles += `
-            .shuttingstars_canvas_config { background: rgba(200, 200, 200, 0.7); }
-            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
-            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
-                background: rgba(190, 190, 190, 0.7);
-                color : rgb(70, 70, 70);
-            }
-            `;
-        }
-
-        // 상세설정 영역 공통 css 적용
-        const styleElem = document.createElement('style');
-        styleElem.type = 'text/css';
-        styleElem.innerHTML = styles;
-        document.head.appendChild(styleElem);
-
-        // 상세설정 영역 HTML 준비
-        let html = `
-            <div class='shuttingstar_configlayer'>
-                <div class='shuttingstar_config_tabbuttons'>
-                    <button type='button' class='btn tab active target_translate' data-tabarea='.shuttingstar_configsections'>Configuration</button>
-                    <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custon Songs</button>
-                </div>
-                <div class='shuttingstar_configsections tabarea active'>
-                    <h1 class='target_translate'>Configuration</h1>
-                    <table class='shuttingstar_configtable full'>
-                        <caption style='display: none;'>Configuration</caption>
-                        <colgroup>
-                            <col style='width: 25rem;'/>
-                            <col/>
-                        </colgroup>
-                        <tbody>
-                            <tr>
-                                <th class='target_translate'>Key Press Delay</th>
-                                <td><input type='number' class='inp inp_keypressdelay full' step='1' min='0' max='9999'/></td>
-                            </tr>
-                            <tr>
-                                <th class='target_translate'>Sound Delay</th>
-                                <td><input type='number' class='inp inp_sounddelay full' step='1' min='0' max='9999'/></td>
-                            </tr>
-                            <tr>
-                                <th class='target_translate'>Note Speed Rate</th>
-                                <td><input type='number' class='inp inp_notespeedrate full' step='0.1' min='1.0' max='8.0'/></td>
-                            </tr>
-                            <tr>
-                                <th class='target_translate'>Graphic Quality</th>
-                                <td><select class='sel sel_graphicquality full'></select></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class='shuttingstar_configcontrols'>
-                        <button type='button' class='btn btn_config_accept target_translate'>Accept</button>
-                        <button type='button' class='btn btn_config_cancel target_translate red'>Cancel</button>
-                    </div>
-                </div>
-                <div class='shuttingstar_songssections tabarea'>
-                    <h1 class='target_translate'>Custom Songs</h1>
-                    <textarea class='full ta_json_song'></textarea>
-                    <div class='shuttingstar_songcontrols'>
-                        <button type='button' class='btn btn_song_accept target_translate'>Save</button>
-                        <button type='button' class='btn btn_song_cancel target_translate red'>Cancel</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // 상세설정 영역 HTML 및 기타 css 적용
-        this.configDiv.innerHTML = html;
-        this.configDiv.style.zIndex = this.canvasZindex + 1;
-        this.configDiv.style.position = 'fixed';
-        this.configDiv.style.top  = this.canvas.offsetTop  + 'px';
-        this.configDiv.style.left = this.canvas.offsetLeft + 'px';
-        this.configDiv.style.width = this.canvas.offsetWidth + 'px';
-        this.configDiv.style.height = this.canvas.offsetHeight + 'px';
-        this.configDiv.style.textAlign = 'center';
-        this.configDiv.style.verticalAlign = 'middle';
-
-        // 스트링 테이블 번역 적용
-        this.configDiv.querySelectorAll('.target_translate').forEach((itemOne) => {
-            itemOne.innerHTML = this.trans(itemOne.innerHTML);
-        });
-
-        // 레이어 영역 (안쪽)
-        const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
-        layer.style.zIndex = this.canvasZindex + 2;
-        layer.style.width  = '80%';
-        layer.style.height = Math.round(this.canvas.offsetHeight * 0.8) + 'px';
-
-        // 탭 이벤트
-        layer.querySelectorAll('button.tab').forEach((itemOne) => {
-            itemOne.addEventListener('click', function(e) {
-                const btn = e.target;
-
-                // 탭 버튼과 탭 영역들 다 비활성화
-                layer.querySelectorAll('button.tab').forEach((itemTwo) => {
-                    itemTwo.classList.remove('active');
-                });
-                layer.querySelectorAll('.tabarea').forEach((itemTwo) => {
-                    itemTwo.classList.remove('active');
-                });
-
-                // 이 버튼 활성화
-                btn.classList.add('active');
-
-                // 해당 영역도 활성화
-                layer.querySelector(btn.getAttribute('data-tabarea')).classList.add('active');
-            });
-        });
-        
-        // 버튼 이벤트 (설정)
-        const controlDiv = this.configDiv.querySelector('.shuttingstar_configcontrols');
-        const btnAccept  = controlDiv.querySelector('.btn_config_accept');
-        const btnCancel  = controlDiv.querySelector('.btn_config_cancel');
-        
-        btnAccept.addEventListener('click', () => {
-            selfs.keypressTiming      = parseInt(String( layer.querySelector('.inp_keypressdelay').value ).trim());
-            selfs.songTiming          = parseInt(String( layer.querySelector('.inp_sounddelay').value ).trim());
-            selfs.noteSpeedMultiplier = parseInt(String( layer.querySelector('.inp_notespeedrate').value ).trim());
-
-            selfs.settingGraphicQualityChoosing = layer.querySelector('.sel_graphicquality').value;
-            if(selfs.settingGraphicQualityChoosing == 'LOW') {
-                selfs.resolution.w = 1280;
-                selfs.resolution.h =  720;
-            } else if(selfs.settingGraphicQualityChoosing == 'MEDIUM') {
-                selfs.resolution.w = 1920;
-                selfs.resolution.h = 1080;
-            } else if(selfs.settingGraphicQualityChoosing == 'HIGH') {
-                selfs.resolution.w = 2560;
-                selfs.resolution.h = 1440;
-            } else if(selfs.settingGraphicQualityChoosing == '4K') {
-                selfs.resolution.w = 3840;
-                selfs.resolution.h = 2160;
-            } else {
-                selfs.resolution.w = 1280;
-                selfs.resolution.h =  720;
-            }
-            selfs.setResolution(selfs.resolution.w, selfs.resolution.h);
-            selfs.saveSettings();
-            selfs.closeConfigDiv();
-            selfs.state = 'menu';
-        });
-
-        btnCancel.addEventListener('click', () => {
-            selfs.loadSettings();
-            selfs.closeConfigDiv();
-            selfs.state = 'menu';
-        });
-
-        // 버튼 이벤트 (곡)
-        let ta = this.configDiv.querySelector('.ta_json_song');
-        const control2Div = this.configDiv.querySelector('.shuttingstar_songcontrols');
-        const btnSave     = control2Div.querySelector('.btn_song_accept');
-        const btnCancel2  = control2Div.querySelector('.btn_song_cancel');
-
-        btnSave.addEventListener('click', () => {
-            let json = String(ta.value).trim();
-            try {
-                json = ShuttingStarsUtility.removeLinesStartKey(json, '#');
-                json = JSON.parse(json);
-                localStorage.setItem('shuttingstar_songs', JSON.stringify(json));
-                this.loadSongs();
-            } catch(ejson) {
-                console.error(ejson);
-                alert(this.trans('ERROR') + ' : ' + ejson);
-                return;
-            }
-
-            selfs.closeConfigDiv();
-            selfs.state = 'menu';
-        });
-
-        btnCancel2.addEventListener('click', () => {
-            selfs.loadSettings();
-            selfs.closeConfigDiv();
-            selfs.state = 'menu';
-        });
-    }
-
-    /** 상세설정 창 열기 */
-    openConfigDiv() {
-        let idx;
-
-        // 설정화면 입력 요소들에 현재값 입력하기
-        let inp = this.configDiv.querySelector('.inp_keypressdelay');
-        inp.value = (this.keypressTiming);
-
-        inp = this.configDiv.querySelector('.inp_sounddelay');
-        inp.value = (this.songTiming);
-
-        inp = this.configDiv.querySelector('.inp_notespeedrate');
-        inp.value = (this.noteSpeedMultiplier);
-
-        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
-        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-
-        let sel = this.configDiv.querySelector('.sel_graphicquality');
-        let html = '';
-        for(idx=0; idx<this.settingsGraphicQuality.length; idx++) {
-            html += "<option value='" + this.settingsGraphicQuality[idx] + "'>" + this.settingsGraphicQuality[idx] + "</option>";
-        }
-        sel.innerHTML = html;
-        sel.value = this.settingGraphicQualityChoosing;
-
-        // 커스텀 곡 입력 요소들에 현재값 입력하기
-        let ta = this.configDiv.querySelector('.ta_json_song');
-        //     공식곡 제외하고 담기
-        let list = [];
-        for(idx=0; idx<this.songs.length; idx++) {
-            const songOne = this.songs[idx];
-            if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
-
-            // 시리얼 없는 경우 임의 시리얼 부여
-            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(Math.random() * 999999999) + '' + Math.floor(Math.random() * 999999999);
-            list.push(songOne);
-        }
-        // JSON으로 변환해 텍스트 영역에 담기
-        ta.value = this.defaultCustomSongComments() + '\n' + JSON.stringify(list);
-        
-        // 영역 전체를 노출시키고 포커스
-        this.configDiv.style.display = 'block';
-        this.configDiv.querySelector('.inp_keypressdelay').focus();
-    }
-
-    /** 상세설정 창 닫기 */
-    closeConfigDiv() {
-        this.configDiv.style.display = 'none';
-        this.canvas.focus();
-    }
-
-    /** 커스텀 곡 JSON 상단 주석 내용 반환 */
-    defaultCustomSongComments() {
-        return this.trans(`
-# Caution ! Lines start with '#' will be ignored.
-#
-# How to add your own custom songs
-#    One song - one JSON object.
-#        name           : (string) Song's name
-#      , composer       : (string) Composer's name
-#      , noteWriter     : (string) Note writer's name
-#      , bgaUrl         : (string) Just input empty text (BGA feature is not supported yet)
-#      , musicUrl       : (string) Music file URL
-#      , thumbnailUrl   : (string) Thumbnail image file URL (just input empty text when not exist)
-#      , description    : (string) Description.
-#      , loadingTime    : (integer) Additional loading time
-#      , bpm            : (integer) BPM (Bit per minutes)
-#      , endTime        : (integer) This song's length ( Not seconds ! Need to test. )
-#      , timeConstant   : (integer) Note timing correction value (+)
-#      , timeMultiplier : (integer) Note timing correction value (×)
-#      , serial         : (string) Just input empty text (Need only for official songs)
-#      , difficulties   : (array)
-#            element : (object)
-#                difficultyLabel : (string) Difficulty Name (ex: easy, normal, hard, ex1, ex2, ex3, ...)
-#                difficultyLevel : (integer) Difficulty Number
-#                patterns : (array)
-#                    element : (object)
-#                        locationIndex : (integer) line (0~5, If you using -1 then random)
-#                        time          : (integer) occuring time ( Not seconds ! Need to test. )
-#    example
-#      [
-#          {
-#              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
-#            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
-#            , "difficulties" : [
-#                  {
-#                       "difficultyLabel" : "easy"
-#                       "difficultyLevel" : 1
-#                       "patterns" : [
-#                            {"locationIndex" : 1, time : 3}
-#                          , {"locationIndex" : 0, time : 6}
-#                          , {"locationIndex" : 4, time : 9}
-#                          ...
-#                       ]
-#                  },
-#                  {
-#                       "difficultyLabel" : "normal"
-#                       "difficultyLevel" : 4
-#                       "patterns" : [
-#                            {"locationIndex" : 2, time : 2}
-#                          , {"locationIndex" : 1, time : 4}
-#                          , {"locationIndex" : 4, time : 6}
-#                          ...
-#                       ]
-#                  }
-#              ]
-#          }
-#      ]
-        `).trim();
-    }
-
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
     simultaneousWork(simultaneousWorkCycle) {
         // 항상 처리할 사항
@@ -2174,13 +1858,380 @@ class ShuttingStarsCore {
         return 0;
     }
 
+    /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
+    renderConfigDiv() {
+        if(this.configDiv == null) return;
+        const selfs = this;
+
+        // 상세설정 영역 공통 css 준비
+        let styles = `
+            .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; }
+            .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
+            .shuttingstar_configlayer button       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.4); color: rgba(122, 165, 240, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+            .shuttingstar_configlayer button:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+            .shuttingstar_configlayer button.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.4); color: rgba(244, 66, 66, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+            .shuttingstar_configlayer button.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+            .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
+            .shuttingstar_configlayer table th { border: 0; text-align: left; }
+            .shuttingstar_configlayer .tabarea        { display: none; }
+            .shuttingstar_configlayer .tabarea.active { display: block; }
+            .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.4); color: rgba(50, 230, 50, 0.4); }
+            .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.5); color: rgba(50, 230, 50, 0.6); }
+            .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
+            .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 600px; vertical-align: top; }
+            .shuttingstar_configlayer .ta_json_song { min-height: 600px; }
+            .shuttingstar_configlayer .shuttingstar_tools_inner { height: 600px; overflow-y: scroll; }
+            .shuttingstar_configlayer .shuttingstar_tools_inner .section { margin-bottom: 30px; }
+            .shuttingstar_configcontrols { margin-top: 20px; }
+        `;
+        if(this.dark) {
+            styles += `
+            .shuttingstars_canvas_config { background: rgba(80, 80, 80, 0.7); }
+            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
+            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
+                background: rgba(120, 120, 120, 0.7);
+                color : rgb(250, 250, 250);
+            }
+            `;
+        } else {
+            styles += `
+            .shuttingstars_canvas_config { background: rgba(200, 200, 200, 0.7); }
+            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
+            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
+                background: rgba(190, 190, 190, 0.7);
+                color : rgb(70, 70, 70);
+            }
+            `;
+        }
+
+        // 상세설정 영역 공통 css 적용
+        const styleElem = document.createElement('style');
+        styleElem.type = 'text/css';
+        styleElem.innerHTML = styles;
+        document.head.appendChild(styleElem);
+
+        // 상세설정 영역 HTML 준비
+        let html = `
+            <div class='shuttingstar_configlayer'>
+                <div class='shuttingstar_config_tabbuttons'>
+                    <button type='button' class='btn tab active target_translate' data-tabarea='.shuttingstar_configsections'>Configuration</button>
+                    <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custon Songs</button>
+                    <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_toolssections'>Tools</button>
+                </div>
+                <div class='shuttingstar_configsections tabarea active'>
+                    <h1 class='target_translate'>Configuration</h1>
+                    <div class='shuttingstar_config_inner'>
+                        <table class='shuttingstar_configtable full'>
+                            <caption style='display: none;'>Configuration</caption>
+                            <colgroup>
+                                <col style='width: 25rem;'/>
+                                <col/>
+                            </colgroup>
+                            <tbody>
+                                <tr>
+                                    <th class='target_translate'>Key Press Delay</th>
+                                    <td><input type='number' class='inp inp_keypressdelay full' step='1' min='0' max='9999'/></td>
+                                </tr>
+                                <tr>
+                                    <th class='target_translate'>Sound Delay</th>
+                                    <td><input type='number' class='inp inp_sounddelay full' step='1' min='0' max='9999'/></td>
+                                </tr>
+                                <tr>
+                                    <th class='target_translate'>Note Speed Rate</th>
+                                    <td><input type='number' class='inp inp_notespeedrate full' step='0.1' min='1.0' max='8.0'/></td>
+                                </tr>
+                                <tr>
+                                    <th class='target_translate'>Graphic Quality</th>
+                                    <td><select class='sel sel_graphicquality full'></select></td>
+                                </tr>
+                                <tr>
+                                    <th class='target_translate'>Language</th>
+                                    <td><select class='sel sel_language full'></select></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class='shuttingstar_configcontrols'>
+                        <button type='button' class='btn btn_config_accept target_translate'>Accept</button>
+                        <button type='button' class='btn btn_config_cancel target_translate red'>Cancel</button>
+                    </div>
+                </div>
+                <div class='shuttingstar_songssections tabarea'>
+                    <h1 class='target_translate'>Custom Songs</h1>
+                    <textarea class='full ta_json_song'></textarea>
+                    <div class='shuttingstar_songcontrols'>
+                        <button type='button' class='btn btn_song_accept target_translate'>Save</button>
+                        <button type='button' class='btn btn_song_cancel target_translate red'>Cancel</button>
+                    </div>
+                </div>
+                <div class='shuttingstar_toolssections tabarea'>
+                    <h1 class='target_translate'>Tools</h1>
+                    <div class='shuttingstar_tools_inner'>
+
+                    </div>
+                    <div class='shuttingstar_toolcontrols'>
+                        <button type='button' class='btn btn_tool_cancel target_translate red'>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 상세설정 영역 HTML 및 기타 css 적용
+        this.configDiv.innerHTML = html;
+        this.configDiv.style.zIndex = this.canvasZindex + 1;
+        this.configDiv.style.position = 'fixed';
+        this.configDiv.style.top  = this.canvas.offsetTop  + 'px';
+        this.configDiv.style.left = this.canvas.offsetLeft + 'px';
+        this.configDiv.style.width = this.canvas.offsetWidth + 'px';
+        this.configDiv.style.height = this.canvas.offsetHeight + 'px';
+        this.configDiv.style.textAlign = 'center';
+        this.configDiv.style.verticalAlign = 'middle';
+
+        // 스트링 테이블 번역 적용
+        this.configDiv.querySelectorAll('.target_translate').forEach((itemOne) => {
+            itemOne.innerHTML = this.trans(itemOne.innerHTML);
+        });
+
+        // 레이어 영역 (안쪽)
+        const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
+        layer.style.zIndex = this.canvasZindex + 2;
+        layer.style.width  = '80%';
+        layer.style.height = Math.round(this.canvas.offsetHeight * 0.8) + 'px';
+
+        // 탭 이벤트
+        layer.querySelectorAll('button.tab').forEach((itemOne) => {
+            itemOne.addEventListener('click', function(e) {
+                const btn = e.target;
+
+                // 탭 버튼과 탭 영역들 다 비활성화
+                layer.querySelectorAll('button.tab').forEach((itemTwo) => {
+                    itemTwo.classList.remove('active');
+                });
+                layer.querySelectorAll('.tabarea').forEach((itemTwo) => {
+                    itemTwo.classList.remove('active');
+                });
+
+                // 이 버튼 활성화
+                btn.classList.add('active');
+
+                // 해당 영역도 활성화
+                layer.querySelector(btn.getAttribute('data-tabarea')).classList.add('active');
+            });
+        });
+        
+        // 버튼 이벤트 (설정)
+        const controlDiv = this.configDiv.querySelector('.shuttingstar_configcontrols');
+        const btnAccept  = controlDiv.querySelector('.btn_config_accept');
+        const btnCancel  = controlDiv.querySelector('.btn_config_cancel');
+
+        const fCancel = function() {
+            selfs.loadSettings();
+            selfs.closeConfigDiv();
+            selfs.state = 'menu';
+            selfs.resetStage();
+        };
+        
+        btnAccept.addEventListener('click', () => {
+            selfs.keypressTiming      = parseInt(String( layer.querySelector('.inp_keypressdelay').value ).trim());
+            selfs.songTiming          = parseInt(String( layer.querySelector('.inp_sounddelay').value ).trim());
+            selfs.noteSpeedMultiplier = parseInt(String( layer.querySelector('.inp_notespeedrate').value ).trim());
+
+            selfs.settingGraphicQualityChoosing = layer.querySelector('.sel_graphicquality').value;
+            if(selfs.settingGraphicQualityChoosing == 'LOW') {
+                selfs.resolution.w = 1280;
+                selfs.resolution.h =  720;
+            } else if(selfs.settingGraphicQualityChoosing == 'MEDIUM') {
+                selfs.resolution.w = 1920;
+                selfs.resolution.h = 1080;
+            } else if(selfs.settingGraphicQualityChoosing == 'HIGH') {
+                selfs.resolution.w = 2560;
+                selfs.resolution.h = 1440;
+            } else if(selfs.settingGraphicQualityChoosing == '4K') {
+                selfs.resolution.w = 3840;
+                selfs.resolution.h = 2160;
+            } else {
+                selfs.resolution.w = 1280;
+                selfs.resolution.h =  720;
+            }
+            selfs.setResolution(selfs.resolution.w, selfs.resolution.h);
+            selfs.language = layer.querySelector('.sel_language').value;
+            selfs.languageDefault = false;
+            selfs.saveSettings();
+            selfs.closeConfigDiv();
+            selfs.state = 'menu';
+        });
+
+        btnCancel.addEventListener('click', fCancel);
+
+        // 버튼 이벤트 (곡)
+        let ta = this.configDiv.querySelector('.ta_json_song');
+        const control2Div = this.configDiv.querySelector('.shuttingstar_songcontrols');
+        const btnSave     = control2Div.querySelector('.btn_song_accept');
+        const btnCancel2  = control2Div.querySelector('.btn_song_cancel');
+
+        btnSave.addEventListener('click', () => {
+            let json = String(ta.value).trim();
+            try {
+                json = ShuttingStarsUtility.removeLinesStartKey(json, '#');
+                json = JSON.parse(json);
+                localStorage.setItem('shuttingstar_songs', JSON.stringify(json));
+                this.loadSongs();
+            } catch(ejson) {
+                console.error(ejson);
+                alert(this.trans('ERROR') + ' : ' + ejson);
+                return;
+            }
+
+            selfs.closeConfigDiv();
+            selfs.state = 'menu';
+        });
+
+        btnCancel2.addEventListener('click', fCancel);
+
+        // 버튼 이벤트 (도구)
+        const control3Div = this.configDiv.querySelector('.shuttingstar_toolssections');
+        const btnCancel3 = control3Div.querySelector('.btn_tool_cancel');
+
+        btnCancel3.addEventListener('click', fCancel);
+    }
+
+    /** 상세설정 창 열기 */
+    openConfigDiv() {
+        let idx;
+
+        // 설정화면 입력 요소들에 현재값 입력하기
+        let inp = this.configDiv.querySelector('.inp_keypressdelay');
+        inp.value = (this.keypressTiming);
+
+        inp = this.configDiv.querySelector('.inp_sounddelay');
+        inp.value = (this.songTiming);
+
+        inp = this.configDiv.querySelector('.inp_notespeedrate');
+        inp.value = (this.noteSpeedMultiplier);
+
+        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
+        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        
+        // 그래픽 설정
+        let sel = this.configDiv.querySelector('.sel_graphicquality');
+        let html = '';
+        for(idx=0; idx<this.settingsGraphicQuality.length; idx++) {
+            html += "<option value='" + this.settingsGraphicQuality[idx] + "'>" + this.settingsGraphicQuality[idx] + "</option>";
+        }
+        sel.innerHTML = html;
+        sel.value = this.settingGraphicQualityChoosing;
+        
+        // 언어 설정
+        sel = this.configDiv.querySelector('.sel_language');
+        html = '';
+        html += "<option value='en'>English</option>";
+        html += "<option value='ko'>한글</option>";
+        sel.innerHTML = html;
+        sel.value = this.language;
+
+        // 커스텀 곡 입력 요소들에 현재값 입력하기
+        let ta = this.configDiv.querySelector('.ta_json_song');
+        //     공식곡 제외하고 담기
+        let list = [];
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
+
+            // 시리얼 없는 경우 임의 시리얼 부여
+            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(Math.random() * 999999999) + '' + Math.floor(Math.random() * 999999999);
+            list.push(songOne);
+        }
+
+        // JSON으로 변환해 텍스트 영역에 담기
+        ta.value = this.defaultCustomSongComments() + '\n' + JSON.stringify(list);
+        
+        // 영역 전체를 노출시키고 포커스
+        this.configDiv.style.display = 'block';
+        this.configDiv.querySelector('.inp_keypressdelay').focus();
+    }
+
+    /** 상세설정 창 닫기 */
+    closeConfigDiv() {
+        this.configDiv.style.display = 'none';
+        this.canvas.focus();
+    }
+
+    /** 커스텀 곡 JSON 상단 주석 내용 반환 */
+    defaultCustomSongComments() {
+        return this.trans(`
+# Caution ! Lines start with '#' will be ignored.
+#
+# How to add your own custom songs
+#    One song - one JSON object.
+#        name           : (string) Song's name
+#      , composer       : (string) Composer's name
+#      , noteWriter     : (string) Note writer's name
+#      , bgaUrl         : (string) Just input empty text (BGA feature is not supported yet)
+#      , musicUrl       : (string) Music file URL
+#      , thumbnailUrl   : (string) Thumbnail image file URL (just input empty text when not exist)
+#      , description    : (string) Description.
+#      , loadingTime    : (integer) Additional loading time
+#      , bpm            : (integer) BPM (Bit per minutes)
+#      , endTime        : (integer) This song's length ( Not seconds ! Need to test. )
+#      , timeConstant   : (integer) Note timing correction value (+)
+#      , timeMultiplier : (integer) Note timing correction value (×)
+#      , serial         : (string) Just input empty text (Need only for official songs)
+#      , difficulties   : (array)
+#            element : (object)
+#                difficultyLabel : (string) Difficulty Name (ex: easy, normal, hard, ex1, ex2, ex3, ...)
+#                difficultyLevel : (integer) Difficulty Number
+#                patterns : (array)
+#                    element : (object)
+#                        locationIndex : (integer) line (0~5, If you using -1 then random)
+#                        time          : (integer) occuring time ( Not seconds ! Need to test. )
+#    example
+#      [
+#          {
+#              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
+#            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
+#            , "difficulties" : [
+#                  {
+#                       "difficultyLabel" : "easy"
+#                       "difficultyLevel" : 1
+#                       "patterns" : [
+#                            {"locationIndex" : 1, time : 3}
+#                          , {"locationIndex" : 0, time : 6}
+#                          , {"locationIndex" : 4, time : 9}
+#                          ...
+#                       ]
+#                  },
+#                  {
+#                       "difficultyLabel" : "normal"
+#                       "difficultyLevel" : 4
+#                       "patterns" : [
+#                            {"locationIndex" : 2, time : 2}
+#                          , {"locationIndex" : 1, time : 4}
+#                          , {"locationIndex" : 4, time : 6}
+#                          ...
+#                       ]
+#                  }
+#              ]
+#          }
+#      ]
+        `).trim();
+    }
+
     /** 언어 번역 (stringTable 이용, 없으면 매개변수 값 그대로 반환) */
     trans(english) {
+        if(typeof(this.language) == 'undefined') return english;
+        if(this.language == 'en') return english;
+
         let stringTableChoosed = this.stringTable[this.language];
         if(typeof(stringTableChoosed) == 'undefined') return english;
 
         let translated = stringTableChoosed[english];
-        if(typeof(translated) == 'undefined') return english;
+        if(typeof(translated) == 'undefined') {
+            if(this.stringTableDebugMode) console.log('[NOLANG] ' + english);
+            return english;
+        }
 
         return translated;
     }
