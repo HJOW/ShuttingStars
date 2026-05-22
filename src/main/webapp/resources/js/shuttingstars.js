@@ -150,6 +150,7 @@ class ShuttingStarsCore {
     
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
+        // Set HTML
         if(typeof(rootDiv) == 'undefined') {
             // 예약어 클래스가 이미 존재하는지 확인
             let additionalNumber = 0;
@@ -177,6 +178,7 @@ class ShuttingStarsCore {
         htmls += "</div>                                       \n";
         rootDiv.innerHTML = htmls;
 
+        // Set global CSS
         let styles = `
             .shuttingstars_root .full { width: 100%; }
             .shuttingstars_root .invisible { display: none !important; }
@@ -187,6 +189,24 @@ class ShuttingStarsCore {
         styleElem.innerHTML = styles;
         document.head.appendChild(styleElem);
 
+        // Set Language
+        if(this.languageDefault) {
+            try {
+                // 지원 언어 목록
+                let allows = ['en'];
+                for(let k in this.stringTable) {
+                    allows.push(k);
+                }
+
+                // 플랫폼 기본 언어 탐지
+                const platformLang = window.navigator.language;
+                // 플랫폼 언어가 준비된 언어 목록 안에 있으면 선택
+                if(allows.indexOf(platformLang) >= 0) this.language = platformLang;
+                else this.language = 'en'; // 없으면 영어
+            } catch(exIn) { console.error(exIn); console.log('Cannot detect platform language. Using English...'); this.language = 'en'; }
+        }
+
+        // Set canvas
         const canvas = rootDiv.querySelector('.shuttingstars_canvas');
         canvas.style.minWidth  = '1280px';
         canvas.style.minHeight = '720px';
@@ -196,6 +216,7 @@ class ShuttingStarsCore {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
 
+        // Graphic Setting
         this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
         this.setResolution(this.resolution.w, this.resolution.h);
         this.loadSettings();
