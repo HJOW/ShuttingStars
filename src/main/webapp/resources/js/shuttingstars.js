@@ -518,12 +518,13 @@ class ShuttingStarsCore {
             }
         }
 
-        if(this.state != 'playing') { this.audio = null; return; }
+        if(this.state != 'playing') { return; }
 
         // 곡 플레이 세팅 중 처리
         //     곡 마지막 패턴 시간 체크
         this.songLastPatternTime = 0;
-        let patterns = this.song.difficulties[this.difficulty];
+        let diff = song.difficulties[ this.difficulty.index ];
+        let patterns = diff.patterns;
         for(idx=0; idx<patterns.length; idx++) {
             const pattern = patterns[idx];
             if(pattern.time > this.songLastPatternTime) {
@@ -603,12 +604,22 @@ class ShuttingStarsCore {
 
                 // 인덱스 구하기
                 index = 0;
-                for(let idx=0; idx<this.songs.length; idx++) {
-                    if(this.songs[idx] == this.songChoosing) {
-                        index = idx;
-                        break;
+                if(this.difficultyChoosing) {
+                    for(let idx=0; idx<this.difficultyChoosingList.length; idx++) {
+                        if(this.difficulty == this.difficultyChoosingList[idx]) {
+                            index = idx;
+                            break;
+                        }
+                    }
+                } else {
+                    for(let idx=0; idx<this.songs.length; idx++) {
+                        if(this.songs[idx] == this.songChoosing) {
+                            index = idx;
+                            break;
+                        }
                     }
                 }
+                
 
                 // 키 적용
                 if(key == this.arrowKeys[0]) { // UP
@@ -619,16 +630,27 @@ class ShuttingStarsCore {
                     index++;
                     if(index >= this.songs.length) index = 0;
                     this.songChoosing = this.songs[index];
+                } else if(key == this.arrowKeys[2]) { // LEFT
+                    index--;
+                    if(index < 0) index = this.difficultyChoosingList.length - 1;
+                    this.difficulty = this.difficultyChoosingList[index];
+                } else if(key == this.arrowKeys[2]) { // RIGHT
+                    index++;
+                    if(index >= this.difficultyChoosingList.length) index = 0;
+                    this.difficulty = this.difficultyChoosingList[index];
                 } else if(key == this.enterKey) { // ENTER
                     if(this.songChoosing == null) return;
 
                     if(this.difficultyChoosing) {
+                        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
                         this.songTitleTime = 80;
                         this.state = 'songtitle';
                         this.difficultyChoosing = false;
                         this.resetStage();
                     } else {
                         this.song = this.songChoosing;
+                        this.difficultyChoosingList = this.song.getDifficultyList();
+                        this.difficulty = this.difficultyChoosingList[0];
                         this.difficultyChoosing = true;
                     }
                 }
@@ -1140,10 +1162,9 @@ class ShuttingStarsCore {
                 cols = 0;
                 this.ctx.textAlign = "center";
                 for(ddx=0; ddx<this.difficultyChoosingList.length; ddx++) {
-                    let diffOne = this.difficultyChoosingList[ddx];
-                    let splits = diffOne.split(';');
-                    let difficultyName = String(splits[0]).trim();
-                    let difficultyNum  = parseInt(String(splits[1]).trim());
+                    const diffOne = this.difficultyChoosingList[ddx];
+                    const difficultyName = diffOne.difficultyLabel;
+                    const difficultyNum  = diffOne.difficultyLevel;
 
                     label = '';
 
@@ -1787,31 +1808,41 @@ class ShuttingStarsCore {
 #      , timeConstant   : (integer) Note timing correction value (+)
 #      , timeMultiplier : (integer) Note timing correction value (×)
 #      , serial         : (string) Just input empty text (Need only for official songs)
-#      , difficulties   : (object)
-#            key   : (string) Difficuly. ex: 'easy;2' , 'normal;5' , 'hard;9' , ...  (Difficulty keyword can be 'easy', 'normal', 'hard', 'ex1', 'ex2', 'ex3', ...)
-#            value : (array) Define notes occuring pattern
-#                element : (object)
-#                    locationIndex : (integer) line (0~5, If you using -1 then random)
-#                    time          : (integer) occuring time ( Not seconds ! Need to test. )
+#      , difficulties   : (array)
+#            element : (object)
+#                difficultyLabel : (string) Difficulty Name (ex: easy, normal, hard, ex1, ex2, ex3, ...)
+#                difficultyLevel : (integer) Difficulty Number
+#                patterns : (array)
+#                    element : (object)
+#                        locationIndex : (integer) line (0~5, If you using -1 then random)
+#                        time          : (integer) occuring time ( Not seconds ! Need to test. )
 #    example
 #      [
 #          {
 #              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
 #            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
-#            , "difficulties" : {
-#                  "easy;1" : [
-#                      {"locationIndex" : 1, time : 3}
-#                    , {"locationIndex" : 0, time : 6}
-#                    , {"locationIndex" : 4, time : 9}
-#                    ...
-#                  ],
-#                  "normal;4" : [
-#                      {"locationIndex" : 4, time : 2}
-#                    , {"locationIndex" : 2, time : 4}
-#                    , {"locationIndex" : 3, time : 6}
-#                    ...
-#                  ]
-#              }
+#            , "difficulties" : [
+#                  {
+#                       "difficultyLabel" : "easy"
+#                       "difficultyLevel" : 1
+#                       "patterns" : [
+#                            {"locationIndex" : 1, time : 3}
+#                          , {"locationIndex" : 0, time : 6}
+#                          , {"locationIndex" : 4, time : 9}
+#                          ...
+#                       ]
+#                  },
+#                  {
+#                       "difficultyLabel" : "normal"
+#                       "difficultyLevel" : 4
+#                       "patterns" : [
+#                            {"locationIndex" : 2, time : 2}
+#                          , {"locationIndex" : 1, time : 4}
+#                          , {"locationIndex" : 4, time : 6}
+#                          ...
+#                       ]
+#                  }
+#              ]
 #          }
 #      ]
         `).trim();
@@ -1894,15 +1925,16 @@ class ShuttingStarsCore {
 
         const song = this.song;
         let idx;
-        if(song == null           ) { this.state = 'menu'; this.resetStage(); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
-        if(this.difficulty == null) { this.state = 'menu'; this.resetStage(); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
+        if(song == null) { this.state = 'menu'; this.resetStage(); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
+        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.state = 'menu'; this.resetStage(); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
         if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
         this.elapsedTime++;
         
-        // 현재 시간에 해당하는 패턴이 있는지 확인
+        // 현재 시간에 해당하는 패턴이 있는지 확인 TODO
+        let diff = song.difficulties[ this.difficulty.index ];
         let patternNow = null;
-        let patterns = song.difficulties[this.difficulty];
+        let patterns = diff.patterns;
 
         for(idx=0; idx<patterns.length; idx++) {
             const pattern = patterns[idx];
@@ -1978,7 +2010,7 @@ class ShuttingStarsCore {
                 obj.y -= obj.speedY;
                 if(obj.y < 0) obj.y = 0;
 
-                if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
+                // if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
             }
         }
     }
@@ -2215,18 +2247,23 @@ class ShuttingStarsCore {
             song.endTime        = json.endTime;
             song.timeConstant   = json.timeConstant;
             song.timeMultiplier = json.timeMultiplier;
-            song.difficulties   = {};
+            song.difficulties   = [];
 
-            for(let key in json.difficulties) {
-                let noteArrs = json.difficulties[key];
-                let arr = [];
+            for(let idx=0; idx<json.difficulties.length; idx++) {
+                const difficultyOne = json.difficulties[idx];
+                let newObj = {};
 
-                for(let noteJsonOne of noteArrs) {
+                newObj.index = idx;
+                newObj.difficultyLabel = difficultyOne.difficultyLabel;
+                newObj.difficultyLevel = difficultyOne.difficultyLevel;
+                newObj.patterns = [];
+
+                for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
+                    const noteJsonOne = difficultyOne.patterns[idx2];
                     let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
-                    arr.push(patternOne);
+                    newObj.patterns.push(patternOne);
                 }
-
-                song.difficulties[key] = arr;
+                song.difficulties.push(newObj);
             }
 
             song.serial = '';
@@ -2273,6 +2310,7 @@ class ShuttingStarsCore {
         return function() { switchStop = true; }
     }
 }
+
 const _shuttingstarcore = new ShuttingStarsCore();
 
 /** 곡 */
@@ -2290,10 +2328,13 @@ class ShuttingStarsSong {
     timeConstant = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
     serial = ''; // 수정하지 말 것
     
-    // 난이도 별 패턴, easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
-    //     예: easy;1, normal;3, hard;7, ex1;12, ...
-    // 각 원소는 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
-    difficulties = {}
+    // 난이도 별 패턴
+    // 배열로, 각 원소는 JSON객체로 구성
+    // 원소의 JSON키
+    //     difficultyLabel : easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
+    //     difficultyLevel : 1, 2, 3, ... (정수로  입력)
+    //     patterns : 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
+    difficulties = []
 
     /** 노트 속도 */
     getNoteMoveSpeed() {
@@ -2309,8 +2350,14 @@ class ShuttingStarsSong {
 
     getDifficultyList() {
         let arr = [];
-        for(const k in this.difficulties) {
-            arr.push(k);
+        let idx;
+        for(idx=0; idx<this.difficulties.length; idx++) {
+            const diffOne = this.difficulties[idx];
+            arr.push({
+                index : diffOne.index,
+                difficultyLabel : diffOne.difficultyLabel,
+                difficultyLevel : diffOne.difficultyLevel
+            });
         }
         return arr;
     }
