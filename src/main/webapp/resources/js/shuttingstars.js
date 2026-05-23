@@ -969,11 +969,12 @@ class ShuttingStarsCore {
     /** 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨 */
     render() {
         // 캔버스 비우기
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = 'rgb(5, 5, 5)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         if(this.backgroundImage != null && this.backgroundImage != '') {
             // 배경 이미지 존재 시 지금 출력
             this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
-        } else {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
         // 디버그 모드 켜진 경우 디버그용 객체 출력
@@ -1240,7 +1241,6 @@ class ShuttingStarsCore {
                 // 선택된 곡인 경우, 배경색 먼저 출력
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-
                 if(this.difficultyChoosing) {
                     this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMargin() * 2), this.convertY((fontSize * 4) + gap));
                 } else {
@@ -1540,40 +1540,40 @@ class ShuttingStarsCore {
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.fillStyle = this.convertColor('rgba(80, 230, 80, 0.8)'); // blue
         this.ctx.textAlign = "center";
-        this.ctx.fillText('PERFECT\t' + this.report.PERFECT, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        this.ctx.fillText('PERFECT\t' + ShuttingStarsUtility.fitDigit( this.report.PERFECT , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.fillStyle = this.convertColor('rgba(180, 230, 80, 0.8)'); // green
         this.ctx.textAlign = "center";
-        this.ctx.fillText('GREAT\t' + this.report.GREAT, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        this.ctx.fillText('GREAT  \t' + ShuttingStarsUtility.fitDigit( this.report.GREAT , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.fillStyle = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
         this.ctx.textAlign = "center";
-        this.ctx.fillText('GOOD\t' + this.report.GOOD, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        this.ctx.fillText('GOOD   \t' + ShuttingStarsUtility.fitDigit( this.report.GOOD , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.fillStyle = this.convertColor('rgba(230, 180, 80, 0.8)'); // purple
         this.ctx.textAlign = "center";
-        this.ctx.fillText('BAD\t' + this.report.BAD, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        this.ctx.fillText('BAD    \t' + ShuttingStarsUtility.fitDigit( this.report.BAD , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.fillStyle = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
         this.ctx.textAlign = "center";
-        this.ctx.fillText('MISS\t' + this.report.MISS, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        this.ctx.fillText('MISS   \t' + ShuttingStarsUtility.fitDigit( this.report.MISS , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/2);
 
-        label = String(this.point) + ' (' + this.judgeResultRank() + ')';
+        label = ShuttingStarsUtility.fitDigit(this.point, 10) + ' (' + this.judgeResultRank() + ')';
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.fillText(this.trans('TOTAL') + '\t' + label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        this.ctx.fillText(this.trans('TOTAL') + '  \t' + label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + gap;
 
         // 곡 이름 출력
@@ -3409,6 +3409,15 @@ class ShuttingStarsUtilityClass {
             res += line + '\n';
         }
         return res.trim();
+    }
+
+    /** 자연수 (양의 정수)와 자리수(역시 양의 정수) 입력 받아, 해당 자리수에 맞는 문자열로 변환, 숫자를 표현하고 남은 자리수는 빈 문자열(공백) 로 앞부분을 채움 */
+    fitDigit(naturalValue, digit) {
+        let res = String(naturalValue);
+        while(res.length < digit) {
+            res = ' ' + res;
+        }
+        return res;
     }
 }
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
