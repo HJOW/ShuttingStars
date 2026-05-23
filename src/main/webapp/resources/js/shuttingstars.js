@@ -981,10 +981,13 @@ class ShuttingStarsCore {
             this.renderDebug();
         }
 
-        // 글로벌 객체 그리기
+        // 글로벌 객체 그리기 (우선순위 낮음)
         for(let idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+            if(typeof(obj.priority) == 'undefined') continue;
+            if(obj.priority == 'low') {
+                if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+            }
         }
 
         // 현재 게임 상태별 렌더링
@@ -1004,6 +1007,15 @@ class ShuttingStarsCore {
             this.renderSetting();
         } else if(this.state == 'credit') {
             this.renderCredit();
+        }
+
+        // 글로벌 객체 그리기 (우선순위 높음)
+        for(let idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(typeof(obj.priority) == 'undefined') continue;
+            if(obj.priority == 'high') {
+                if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+            }
         }
     }
 
@@ -1784,7 +1796,7 @@ class ShuttingStarsCore {
                     }
                 }
 
-                obj.explosing++;
+                if(obj.explosing >= 1) obj.explosing++;
             }
         }
 
@@ -2631,9 +2643,11 @@ class ShuttingStarsCore {
         return url;
     }
 
+    /** 타이틀 화면 내 로딩 화면 중 처리 작업 */
     loadAfter() {
         const selfs = this;
         return new Promise((resolve, reject) => {
+            selfs.addStarlights();
             selfs.loadPlugins().then(() => {
                 selfs.loadPackages().then(() => {
                     setTimeout(() => {
@@ -2642,6 +2656,22 @@ class ShuttingStarsCore {
                 }).catch((e1) => { reject(e2) });
             }).catch((e2) => { reject(e2); });
         });
+    }
+
+    /** 장식용 별빛 추가 */
+    addStarlights() {
+        let idx;
+        // 기존 별빛 제거
+        for(idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(obj instanceof Starlight) { this.objects.splice(idx, 1); idx--;}
+        }
+
+        // 별빛 추가
+        for(idx=0; idx<20; idx++) {
+            const obj = new Starlight();
+            this.objects.push(obj);
+        }
     }
 
     /** 곡 패키지 불러오기 */
@@ -2869,6 +2899,8 @@ class ShuttingStarsObject {
     y = 0;
     r = 0; // rect 타입인 경우 w 대신
     h = 0;
+    speedX = 0;
+    speedY = 0;
     opacity = 1.0;
     shape = 'circle';
     color = 'rgba(200, 200, 200, 0.99)';
@@ -3017,7 +3049,7 @@ class NoteKeyObject extends ShuttingStarsObject {
         else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
 
         ctx.textAlign = "center";
-        ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (this.r / 2.0) - (fontSize / 3.0), true)); // Note 중앙에 출력
+        ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
     }
 }
 
@@ -3039,10 +3071,10 @@ class NotePlacer extends NoteKeyObject {
 
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
 class Note extends NoteKeyObject {
-    speedY = 10;
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
+        this.speedY = 10;
 
         // NotePlacer 찾기
         let notePlacer = _shuttingstarcore.getNotePlacer(locationIndex);
@@ -3133,11 +3165,40 @@ class JudgeMark extends ShuttingStarsObject {
     }
 }
 
-/** 장식용 폭발 객체 */
-class ExplosingObject extends ShuttingStarsObject {
+/** 장식용 상위 객체 */
+class DecorationObject extends ShuttingStarsObject {
     peakColor = '255, 255, 255';
+    priority = 'low';
+    constructor(locationIndex) {
+        super(locationIndex);
+    }
+}
+
+/** 장식용 별빛 객체 */
+class Starlight extends DecorationObject {
+    constructor() {
+        super(0);
+        this.r = Math.round(Math.random() * 3.0) + 1;
+        this.x = Math.round(Math.random() * _shuttingstarcore.stageSize.w);
+        this.y = Math.round(Math.random() * _shuttingstarcore.stageSize.h);
+        this.shape = 'circle';
+        this.opacity = 0.5 + (0.49 * Math.random());
+        this.color = '255, 255, 255';
+        this.priority = 'low';
+        this.dark = false;
+        this.fill = true;
+        this.speedX = 0;
+        this.speedY = 0;
+        this.explosing = 0;
+    }
+}
+
+/** 장식용 폭발 객체 */
+class ExplosingObject extends DecorationObject {
     constructor(locationIndex, y, color, peakColor) {
         super(locationIndex);
+        this.peakColor = '255, 255, 255';
+        this.priority = 'high';
         this.r = _shuttingstarcore.getNoteRadius();
         this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMarginNote();
         this.y = y;
@@ -3146,7 +3207,9 @@ class ExplosingObject extends ShuttingStarsObject {
         this.opacity = 0.1;
         this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
         this.dark = false;
-        this.fill = false;
+        this.fill = true;
+        this.speedX = 0;
+        this.speedY = 0;
         this.explosing = 1; // 폭발 객체이므로
 
         if(peakColor) {
