@@ -268,12 +268,16 @@ class ShuttingStarsCore {
             }
         });
 
-        document.addEventListener('click', (event) => {
+        this.canvas.addEventListener('click', (event) => {
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            
-            if(this.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y);
+
+            // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
+            const rx = Math.floor((x * selfs.stageSize.w ) / rect.width);
+            const ry = Math.floor((y * selfs.stageSize.h) / rect.height);
+
+            if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
         });
 
         let hGap = window.outerWidth  - window.innerWidth;
