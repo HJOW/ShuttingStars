@@ -858,8 +858,12 @@ class ShuttingStarsCore {
                 this.processResultMark(resultMark);
                 this.displayResultMark(resultMark);
 
-                obj.explosing = 1; // 폭발 시작
+                obj.explosing = 1; // 노트의 폭발 시작
                 this.objectsPlaying[idx] = obj;
+
+                // 추가 폭발 객체 추가
+                const newExplosinves = new ExplosingObject(obj.locationIndex, obj.y, obj.color, '255, 255, 255');
+                this.objects.push(newExplosinves);
                 break;
             }
         }
@@ -1716,10 +1720,11 @@ class ShuttingStarsCore {
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
     simultaneousWork(simultaneousWorkCycle) {
+        let idx;
         // 항상 처리할 사항
 
         // 폭발 완료 처리
-        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if(obj instanceof Note) {
                 if(obj.explosing >= obj.explosingMax) {
@@ -1733,6 +1738,22 @@ class ShuttingStarsCore {
                     this.objectsPlaying.splice(idx, 1);
                     idx--;
                 }
+            }
+        }
+
+        // 기타 폭발 오브젝트도 처리
+        for(idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(typeof(obj.explosing) == 'number') {
+                if(typeof(obj.explosingMax) == 'number') {
+                    if(obj.explosing >= obj.explosingMax) {
+                        this.objects.splice(idx, 1);
+                        idx--;
+                        continue;
+                    }
+                }
+
+                obj.explosing++;
             }
         }
 
@@ -1773,7 +1794,7 @@ class ShuttingStarsCore {
         }
 
         // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if(obj instanceof NoteKeyObject) {
                 if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
@@ -1843,6 +1864,10 @@ class ShuttingStarsCore {
 
                     // 폭발 시작
                     obj.explosing = 1;
+
+                    // 추가 폭발 객체 추가
+                    const newExplosinves = new ExplosingObject(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                    this.objects.push(newExplosinves);
                 }
             }
         }
@@ -2919,7 +2944,7 @@ class ShuttingStarsObject {
     getColorOfLocationIndex(locationIndex) {
         // 총 6개의 라인, 순서대로 빨주노초파남
         if(locationIndex == 0) {
-            return '230, 80, 80';
+            return '180, 80, 180';
         } else if(locationIndex == 1) {
             return '230, 180, 80';
         } else if(locationIndex == 2) {
@@ -3073,6 +3098,104 @@ class JudgeMark extends ShuttingStarsObject {
     /** 다른 객체와의 충돌 감지 - 판정 마크는 충돌 없음 */
     isConflicted(otherObject) {
         return false;
+    }
+}
+
+/** 장식용 폭발 객체 */
+class ExplosingObject extends ShuttingStarsObject {
+    peakColor = '255, 255, 255';
+    constructor(locationIndex, y, color, peakColor) {
+        super(locationIndex);
+        this.r = _shuttingstarcore.getNoteRadius();
+        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMarginNote();
+        this.y = y;
+        this.key = _shuttingstarcore.keyList[locationIndex];
+        this.shape = 'circle';
+        this.opacity = 0.1;
+        this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
+        this.dark = false;
+        this.fill = false;
+        this.explosing = 1; // 폭발 객체이므로
+
+        if(peakColor) {
+            this.peakColor = peakColor;
+        }
+    }
+
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
+
+        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+        ctx.fill();
+    }
+
+    modifyExplosiveR() {
+        let r = this.r;
+        let max = this.r * 1.5;
+        // this.explosing 값이 0~5 일 때는 r 값이 점진적으로 증가 (최대 1.5배까지), 이후 6~8 까지는 점진적으로 감소 (0까지)
+        r = ((max - this.r) / 5.0) * this.explosing + this.r;
+        if(this.explosing >= 6) {
+            r = r - (max / 3.0);
+            if(r < 0) r = 0;
+        }
+
+        return r;
+    }
+
+    modifyExplosiveColor() {
+        let color = this.color;
+        let splits = color.split(',');
+        let eplits = this.peakColor.split(',');
+        let r, g, b, er, eg, eb;
+
+        r = parseInt(String(splits[0]).trim());
+        g = parseInt(String(splits[1]).trim());
+        b = parseInt(String(splits[2]).trim());
+
+        er = parseInt(String(eplits[0]).trim());
+        eg = parseInt(String(eplits[1]).trim());
+        eb = parseInt(String(eplits[2]).trim());
+
+        let oroginalR = r;
+        let oroginalG = g;
+        let oroginalB = b;
+
+        let rd = er - r;
+        let gd = eg - g;
+        let bd = eb - b;
+
+        // this.explosing 값이 0~5 일 때는 밝기가 점진적으로 증가 (255, 255, 255 까지) 이후 고정
+        if(this.explosing <= 5) {
+            r = oroginalR + ((rd / 5.0) * (this.explosing));
+            g = oroginalG + ((gd / 5.0) * (this.explosing));
+            b = oroginalB + ((bd / 5.0) * (this.explosing));
+        } else if(this.explosing >= 6) {
+            r = er - ((rd / 3.0) * (this.explosing - 5));
+            g = eg - ((gd / 3.0) * (this.explosing - 5));
+            b = eb - ((bd / 3.0) * (this.explosing - 5));
+        }
+
+        r = Math.floor(r);
+        g = Math.floor(g);
+        b = Math.floor(b);
+
+        color = '' + r + ', ' + g + ', ' + b;
+
+        return color;
+    }
+
+    modifyExplosiveOpacity() {
+        let opa = this.opacity;
+        let d = 1.0 - opa;
+        // this.explosing 값이 0~5 일 때는 밝기가 점진적으로 증가 1.0까지 이후 6~8 에서 0까지 점진적으로 감소
+        if(this.explosing <= 5) {
+            opa = opa + ((d / 5.0) * this.explosing);
+        } else if(this.explosing >= 6) {
+            opa = 1 - (0.33 * (this.explosing - 5));
+        }
+
+        return opa;
     }
 }
 
