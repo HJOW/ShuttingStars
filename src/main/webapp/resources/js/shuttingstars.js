@@ -137,6 +137,9 @@ class ShuttingStarsCore {
     keyInputDebugMode = false;
     // 마우스 클릭 디버그 모드
     mouseClickDebugMode = true;
+    
+    // 마우스 이벤트 처리기
+    mouseEvents = [];
 
     // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
     backgroundImage = null;
@@ -278,6 +281,30 @@ class ShuttingStarsCore {
             const ry = Math.floor((y * selfs.stageSize.h) / rect.height);
 
             if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+
+            // 임시 객체 (충돌여부 판단 위함)
+            const mouseObject = new ShuttingStarsObject();
+            mouseObject.type = 'circle';
+            mouseObject.x    = rx;
+            mouseObject.y    = ry;
+            mouseObject.r    = 1;
+            mouseObject.fill = true;
+            
+            for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
+                const evOne = selfs.mouseEvents[mdx];
+                // 임시 객체 (충돌여부 판단 위함)
+                const tempObject = new ShuttingStarsObject();
+                tempObject.type = evOne.type;
+                tempObject.x    = evOne.x;
+                tempObject.y    = evOne.y;
+                tempObject.r    = evOne.r;
+                if(tempObject.h) tempObject.h = evOne.h;
+                tempObject.fill = true;
+
+                if(mouseObject.isConflicted(tempObject)) {
+                    if(typeof(evOne.callback) == 'function') evOne.callback();
+                }
+            }
         });
 
         let hGap = window.outerWidth  - window.innerWidth;
@@ -1626,7 +1653,7 @@ class ShuttingStarsCore {
             try {
                 this.ctx.fillStyle = obj.color;
                 if(obj.type == 'rect') {
-                    this.ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+                    this.ctx.fillRect(obj.x, obj.y, obj.r, obj.h);
                 } else if(obj.type == 'circle') {
                     this.ctx.beginPath();
                     this.ctx.arc(obj.x, obj.y, obj.r, 0, 2 * Math.PI);
@@ -2840,7 +2867,8 @@ class ShuttingStarsObject {
     id = 0;
     x = 0;
     y = 0;
-    r = 0;
+    r = 0; // rect 타입인 경우 w 대신
+    h = 0;
     opacity = 1.0;
     shape = 'circle';
     color = 'rgba(200, 200, 200, 0.99)';
@@ -2865,11 +2893,11 @@ class ShuttingStarsObject {
         } else if(this.shape == 'rect') {
             if(this.fill) {
                 ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.color + ', ' + this.opacity + ')');
-                ctx.fillRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.r));
+                ctx.fillRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
             } else {
                 ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.color + ', ' + this.opacity + ')');
                 ctx.lineWidth = 1;
-                ctx.strokeRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.r));
+                ctx.strokeRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
             }
         }
     }
@@ -2903,13 +2931,13 @@ class ShuttingStarsObject {
             const distance = Math.abs(this.y - otherObject.y);
             return distance < this.r + otherObject.r;
         } else if(this.shape == 'rect' && otherObject.shape == 'rect') {
-            return !(this.y + this.r < otherObject.y || this.y > otherObject.y + otherObject.r);
+            return !(this.y + this.h < otherObject.y || this.y > otherObject.y + otherObject.h);
         } else if(this.shape == 'circle' && otherObject.shape == 'rect') {
-            const closestY = Math.max(otherObject.y, Math.min(this.y, otherObject.y + otherObject.r));
+            const closestY = Math.max(otherObject.y, Math.min(this.y, otherObject.y + otherObject.h));
             const dy = this.y - closestY;
             return (dy * dy) < (this.r * this.r);
         } else if(this.shape == 'rect' && otherObject.shape == 'circle') {
-            const closestY = Math.max(this.y, Math.min(otherObject.y, this.y + this.r));
+            const closestY = Math.max(this.y, Math.min(otherObject.y, this.y + this.h));
             const dy = otherObject.y - closestY;
             return (dy * dy) < (otherObject.r * otherObject.r);
         }
@@ -2926,17 +2954,17 @@ class ShuttingStarsObject {
         } else if(this.shape == 'rect' && otherObject.shape == 'rect') {
             return !(this.x + this.r < otherObject.x || 
                      this.x > otherObject.x + otherObject.r || 
-                     this.y + this.r < otherObject.y || 
-                     this.y > otherObject.y + otherObject.r);
+                     this.y + this.h < otherObject.y || 
+                     this.y > otherObject.y + otherObject.h);
         } else if(this.shape == 'circle' && otherObject.shape == 'rect') {
             const closestX = Math.max(otherObject.x, Math.min(this.x, otherObject.x + otherObject.r));
-            const closestY = Math.max(otherObject.y, Math.min(this.y, otherObject.y + otherObject.r));
+            const closestY = Math.max(otherObject.y, Math.min(this.y, otherObject.y + otherObject.h));
             const dx = this.x - closestX;
             const dy = this.y - closestY;
             return (dx * dx + dy * dy) < (this.r * this.r);
         } else if(this.shape == 'rect' && otherObject.shape == 'circle') {
             const closestX = Math.max(this.x, Math.min(otherObject.x, this.x + this.r));
-            const closestY = Math.max(this.y, Math.min(otherObject.y, this.y + this.r));
+            const closestY = Math.max(this.y, Math.min(otherObject.y, this.y + this.h));
             const dx = otherObject.x - closestX;
             const dy = otherObject.y - closestY;
             return (dx * dx + dy * dy) < (otherObject.r * otherObject.r);
