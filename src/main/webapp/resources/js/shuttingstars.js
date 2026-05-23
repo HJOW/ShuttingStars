@@ -1052,7 +1052,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText(ShuttingStarsUtility.replaceString(this.trans('Resume within % !'), '%', String(this.resumingTime))), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10);
+            this.ctx.strokeText(ShuttingStarsUtility.replaceString(this.trans('Resume within % !'), '%', String(this.resumingTime)), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
         }
 
         // 게임 오버 그리기
@@ -1618,30 +1618,94 @@ class ShuttingStarsCore {
 
     renderHpBar() {
         // HP바 출력
-        //    NotePlacer 제일 왼쪽부터 NotePlacer 제일 오른쪽 범위까지를 HP바 최대길이로 함
-        //    NotePlacer 보다 상단에 위치
+        let   changes = 0;
+        let   r, g, b;
+
+        // HP 잔여에 따른 컬러 변경
+        if(this.gameOverDelayed) {
+            r = 140;
+            g = 30;
+            b = 30;
+        } if(this.hp >= 80) {
+            changes = 100 - ((this.hp - 80) * 5.0); // 100 ~ 80 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 따라 80, 250, 80 --> 180, 230, 80 으로 변화
+
+            r = 80 + Math.round(100 * (changes / 100.0));
+            if(r >= 180) r = 180;
+
+            g = 250 - Math.round(20 * (changes / 100.0));
+            if(g < 230) g = 230;
+
+            b = 80; // 변화 없음
+        } else if(this.hp >= 60) {
+            changes = 100 - ((this.hp - 60) * 5.0); // 80 ~ 60 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 180, 230, 80 --> 230, 180, 80 으로 변화
+
+            r = 180 + Math.round(50 * (changes / 100.0));
+            if(r >= 230) r = 230;
+
+            g = 230 - Math.round(50 * (changes / 100.0));
+            if(g < 180) g = 180;
+
+            b = 80; // 변화 없음
+        } else if(this.hp >= 40) {
+            changes = 100 - ((this.hp - 40) * 5.0); // 60 ~ 40 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 230, 180, 80 --> 230, 80, 80 으로 변화
+
+            r = 230; // 변화 없음
+
+            g = 180 - Math.round(100 * (changes / 100.0));
+            if(g < 80) g = 80;
+
+            b = 80; // 변화 없음
+        } else if(this.hp >= 20) {
+            changes = 100 - ((this.hp - 20) * 5.0); // 40 ~ 20 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 230, 80, 80 --> 200, 40, 40 으로 변화
+
+            r = 230 - Math.round(30 * (changes / 100.0));
+            if(g < 200) g = 200;
+
+            g = 80 - Math.round(40 * (changes / 100.0));
+            if(g < 40) g = 40;
+
+            b = 80 - Math.round(40 * (changes / 100.0));
+            if(b < 40) b = 40;
+        } else {
+            changes = 100 - (this.hp * 5.0); // 20 ~ 0 을 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 200, 40, 40 --> 40, 20, 20 으로 변화
+
+            r = 200 - Math.round(160 * (changes / 100.0));
+            if(r < 40) r = 40;
+
+            g = 40 - Math.round(20 * (changes / 100.0));
+            if(g < 20) g = 20;
+
+            b = 40 - Math.round(20 * (changes / 100.0));
+            if(b < 20) b = 20;
+        }
+        const hpBarInsideColor = this.convertColor('rgba(' + r + ', ' + g + ', ' + b + ', 0.8)');
+
+        // HP바 (행성형) 출력
+        let x      = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
+        let radius = Math.round((this.notePlacers[this.notePlacers.length-1].x - this.notePlacers[0].x) / 2.0) * 8;
+        let y      = this.getHpBarYLocation() - radius;
+        
+        this.ctx.beginPath();
+        this.ctx.fillStyle = hpBarInsideColor;
+        this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
+        this.ctx.fill();
+        /*
+        // 기존 바형 HP바
         const hpBarMaxWidth = this.notePlacers[this.notePlacers.length - 1].x + this.notePlacers[this.notePlacers.length - 1].r - this.notePlacers[0].x + this.notePlacers[0].r;
         const hpBarHeight = this.getHpBarHeight();
         const hpBarBorderColor = this.convertColor('rgba(200, 200, 200, 0.5)');
         let   hpBarInsideColor = String(hpBarBorderColor);
 
+        // HP바 (직선형)
         // 현재 HP (최대 100) 에 따라 HP바 길이 결정
         let hpBarWidth = 0;
         if(this.hp > 0) {
             hpBarWidth = hpBarMaxWidth * (this.hp / 100);
-        }
-
-        // HP 잔여에 따른 컬러 변경
-        if(this.hp >= 80) {
-            hpBarInsideColor = this.convertColor('rgba(80, 230, 80, 0.8)'); // green
-        } else if(this.hp >= 60) {
-            hpBarInsideColor = this.convertColor('rgba(180, 230, 80, 0.8)'); // yellow-green
-        } else if(this.hp >= 40) {
-            hpBarInsideColor = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
-        } else if(this.hp >= 20) {
-            hpBarInsideColor = this.convertColor('rgba(230, 180, 80, 0.8)'); // orange
-        } else {
-            hpBarInsideColor = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
         }
 
         //    HP바를 화면 상단에 출력
@@ -1651,6 +1715,7 @@ class ShuttingStarsCore {
         //    HP바 내부를 채우기
         this.ctx.fillStyle = hpBarInsideColor;
         this.ctx.fillRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(this.getHpBarYLocation()), this.convertX(hpBarWidth), this.convertY(hpBarHeight));
+        */
     }
 
     /** 렌더링 디버그 모드에서, 디버깅 용 객체 출력 */
@@ -1898,7 +1963,7 @@ class ShuttingStarsCore {
         // 이미 지나가버린 패턴 체크
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() + this.getHpBarHeight() + this.getNoteRadius() - 1 )) {
+            if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() - 1 )) {
                 if(obj.explosing == 0) {
                     // 미스 처리
                     let resultMark = 'MISS';
@@ -1992,12 +2057,7 @@ class ShuttingStarsCore {
 
     /** HP바 Y좌표 */
     getHpBarYLocation() {
-        return 10;
-    }
-
-    /** HP바 높이 */
-    getHpBarHeight() {
-        return 10;
+        return 15;
     }
 
     /** 폭발 중인 Note 폭발속도 가속 */
@@ -2034,6 +2094,14 @@ class ShuttingStarsCore {
                 if(obj.explosing <= 0) obj.explosing = 1;
             }
         }
+
+        // 거대 폭발 객체 생성
+        const bigExp = new ExplosingObject(0, 0, '180, 0, 0', '250, 80, 80');
+        bigExp.x = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
+        bigExp.y = this.getHpBarYLocation();
+        bigExp.r = 64;
+        bigExp.explosing = 1;
+        this.objects.push(bigExp);
 
         // 폭발 가속
         this.accelerateExplosingNotes();
