@@ -970,7 +970,8 @@ class ShuttingStarsCore {
     render() {
         // 캔버스 비우기
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.fillStyle = 'rgb(5, 5, 5)';
+        if(this.dark) this.ctx.fillStyle = 'rgba(5, 5, 5, 0.9)';
+        else          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         if(this.backgroundImage != null && this.backgroundImage != '') {
             // 배경 이미지 존재 시 지금 출력
