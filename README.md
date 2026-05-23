@@ -1,3 +1,5 @@
+English | [한글](README.ko.md)
+
 # Shutting Stars
 
 This is now my just practice project for javascript web with canvas

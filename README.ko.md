@@ -1,3 +1,5 @@
+한국어 | [English](README.md)
+
 # Shutting Stars
 
 HTML canvas 연습 프로젝트로, 리듬 게임을 만들고 있습니다.
