@@ -27,6 +27,8 @@ limitations under the License.
 
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
+    build = 1;
+    
     resolution = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
 
@@ -1091,6 +1093,13 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         this.ctx.fillText(this.trans('Please wait...'), this.convertX(this.stageSize.w / 2), this.convertY(rows));
+
+        fontSize = this.convertFontSize(12);
+        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.stageSize.w - (fontSize * 1.5)), this.convertY(this.stageSize.h - (fontSize * 1.5)));
     }
 
     /** 화면 출력 - 메인 메뉴 */
@@ -1161,6 +1170,11 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + gap;
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.stageSize.w - (fontSize * 1.5)), this.convertY(this.stageSize.h - (fontSize * 1.5)));
     }
 
     /** 화면 출력 - 곡 선정 화면 */
