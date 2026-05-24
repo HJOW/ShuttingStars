@@ -3807,11 +3807,12 @@ class VirtualKey extends DecorationObject {
         const charUnitW = (this.fontSize * 2) + this.wGap;
         const charUnitH = (this.fontSize * 2) + this.hGap;
         const charUnitWP = Math.round(charUnitW * 1.5);
+        const charUnitHP = Math.round(charUnitH * 1.5);
 
         this.key = key;
         this.shape = 'circle';
         this.x = 0;
-        this.y = Math.round(_shuttingstarcore.stageSize.h - (_shuttingstarcore.stageSize.h / 10.0));
+        this.y = Math.round(_shuttingstarcore.stageSize.h - (_shuttingstarcore.stageSize.h / 9.0));
         this.r = 0;
         this.speedX = 0;
         this.speedY = 0;
@@ -3862,16 +3863,15 @@ class VirtualKey extends DecorationObject {
             this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
         } else if(this.key == _shuttingstarcore.escKey) {
             if(_shuttingstarcore.state == 'playing') {
-                this.x += (charUnitWP * 7);
-                this.y -= charUnitH;
+                this.x += (charUnitWP * 5);
+                this.y += (charUnitHP - charUnitH);
             } else {
                 this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) + (charUnitW * 3);  // DOWN 보다 세 칸 오른쪽
                 this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
             }
         } else if(this.key == _shuttingstarcore.enterKey) {
             if(_shuttingstarcore.state == 'playing') {
-                this.x -= (charUnitWP * 2);
-                this.y -= charUnitH;
+                this.y += (charUnitHP - charUnitH);
             } else {
                 this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) - (charUnitW * 3);  // DOWN 보다 세 칸 왼쪽
                 this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
