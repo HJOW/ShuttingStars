@@ -449,7 +449,7 @@ class ShuttingStarsCore {
         // 상태 별 가상 키 및 마우스 이벤트 부여 // 종료
 
         // 일부 상태는 스테이지 리셋이 필요
-        if(state == 'menu' || state == 'playing') {
+        if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
             this.resetStage();
         }
     }
