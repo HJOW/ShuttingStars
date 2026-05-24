@@ -172,183 +172,188 @@ class ShuttingStarsCore {
     
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
-        // Set HTML
-        if(typeof(rootDiv) == 'undefined') {
-            // 예약어 클래스가 이미 존재하는지 확인
-            let additionalNumber = 0;
-            let rootClassName = 'shuttingstars_root';
-            let remains = document.getElementsByClassName(rootClassName);
-            while(remains != null && remains.length >= 1) { // 예약어가 없는 고유 영역을 확정 (이미 쓰는 경우 숫자를 +1씩 더해서 고유하게 만듦)
-                additionalNumber++;
-                rootClassName = 'shuttingstars_root' + additionalNumber;
-                remains = document.getElementsByClassName(rootClassName);
+        try {
+            // Set HTML
+            if(typeof(rootDiv) == 'undefined') {
+                // 예약어 클래스가 이미 존재하는지 확인
+                let additionalNumber = 0;
+                let rootClassName = 'shuttingstars_root';
+                let remains = document.getElementsByClassName(rootClassName);
+                while(remains != null && remains.length >= 1) { // 예약어가 없는 고유 영역을 확정 (이미 쓰는 경우 숫자를 +1씩 더해서 고유하게 만듦)
+                    additionalNumber++;
+                    rootClassName = 'shuttingstars_root' + additionalNumber;
+                    remains = document.getElementsByClassName(rootClassName);
+                }
+                remains = null;
+                
+                rootDiv = document.body;
+                rootDiv.innerHTML = "<div class='" + rootClassName + "'></div>"
+                rootDiv = document.getElementsByClassName(rootClassName)[0];
             }
-            remains = null;
+            rootDiv.innerHTML = "";
+            let htmls = '';
+            htmls += "<div class='shuttingstars_canvas_root'>      \n";
+            htmls += "    <canvas class='shuttingstars_canvas'>    \n";
+            htmls += "                                             \n";
+            htmls += "    </canvas>                                \n";
+            htmls += "    <div class='shuttingstars_canvas_config'>\n";
+            htmls += "    </div>                                   \n";
+            htmls += "</div>                                       \n";
+            rootDiv.innerHTML = htmls;
+
+            // Set global CSS
+            let styles = `
+                .shuttingstars_root .full { width: 100%; }
+                .shuttingstars_root .invisible { display: none !important; }
+                .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            `;
+            const styleElem = document.createElement('style');
+            styleElem.type = 'text/css';
+            styleElem.innerHTML = styles;
+            document.head.appendChild(styleElem);
+
+            // 언어 설정
+            if(this.languageDefault) {
+                try {
+                    // 지원 언어 목록
+                    let allows = ['en'];
+                    for(let k in this.stringTable) {
+                        allows.push(k);
+                    }
+
+                    // 플랫폼 기본 언어 탐지
+                    let platformLang = window.navigator.language;
+                    if(typeof(platformLang) == 'undefined' || platformLang == 'null') platformLang = 'en';
+                    if(typeof(platformLang) != 'string') platformLang = String(platformLang).trim();
+                    // 2자리가 아닌 경우 자르기
+                    if(platformLang.length > 2) platformLang = platformLang.substring(0, 2);
+                    // 소문자로 강제 변환
+                    platformLang = platformLang.toLowerCase();
+
+                    // 플랫폼 언어가 준비된 언어 목록 안에 있으면 선택
+                    if(allows.indexOf(platformLang) >= 0) this.language = platformLang;
+                    else this.language = 'en'; // 없으면 영어
+                } catch(exIn) { console.error(exIn); console.log('Cannot detect platform language. Using English...'); this.language = 'en'; }
+            }
+
+            // 캔버스 설정
+            const canvas = rootDiv.querySelector('.shuttingstars_canvas');
+            if(this.detectScreenLandscape()) {
+                canvas.style.minWidth  = '1280px';
+                canvas.style.minHeight = '720px';
+            } else {
+                canvas.style.minWidth  = '720px';
+                canvas.style.minHeight = '1280px';
+            }
+            canvas.style.zIndex    = this.canvasZindex;
+
+            this.canvas = canvas;
+            this.ctx = canvas.getContext('2d');
+
+            // 그래픽 해상도 설정
+            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+            this.setResolution(this.ressets.w, this.ressets.h);
+
+            // 가상 키 사용여부 지정
+            this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform();
+
+            // 설정 불러오기
+            this.loadSettings();
             
-            rootDiv = document.body;
-            rootDiv.innerHTML = "<div class='" + rootClassName + "'></div>"
-            rootDiv = document.getElementsByClassName(rootClassName)[0];
-        }
-        rootDiv.innerHTML = "";
-        let htmls = '';
-        htmls += "<div class='shuttingstars_canvas_root'>      \n";
-        htmls += "    <canvas class='shuttingstars_canvas'>    \n";
-        htmls += "                                             \n";
-        htmls += "    </canvas>                                \n";
-        htmls += "    <div class='shuttingstars_canvas_config'>\n";
-        htmls += "    </div>                                   \n";
-        htmls += "</div>                                       \n";
-        rootDiv.innerHTML = htmls;
+            // 곡 불러오기
+            this.loadSongs();
 
-        // Set global CSS
-        let styles = `
-            .shuttingstars_root .full { width: 100%; }
-            .shuttingstars_root .invisible { display: none !important; }
-            .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        `;
-        const styleElem = document.createElement('style');
-        styleElem.type = 'text/css';
-        styleElem.innerHTML = styles;
-        document.head.appendChild(styleElem);
+            const selfs = this;
 
-        // 언어 설정
-        if(this.languageDefault) {
-            try {
-                // 지원 언어 목록
-                let allows = ['en'];
-                for(let k in this.stringTable) {
-                    allows.push(k);
+            // worker 사용 가능여부 체크
+            if(String(window.location.href).indexOf('http') != 0) this.usingWorker = false;
+
+            // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
+            if(this.usingWorker) {
+                this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerRender.postMessage({interval : this.frameTime});
+                this.workerRender.onmessage = function(e) {
+                    // const {drift, time} = e.data;
+                    selfs.render();
                 }
 
-                // 플랫폼 기본 언어 탐지
-                let platformLang = window.navigator.language;
-                if(typeof(platformLang) == 'undefined' || platformLang == 'null') platformLang = 'en';
-                if(typeof(platformLang) != 'string') platformLang = String(platformLang).trim();
-                // 2자리가 아닌 경우 자르기
-                if(platformLang.length > 2) platformLang = platformLang.substring(0, 2);
-                // 소문자로 강제 변환
-                platformLang = platformLang.toLowerCase();
-
-                // 플랫폼 언어가 준비된 언어 목록 안에 있으면 선택
-                if(allows.indexOf(platformLang) >= 0) this.language = platformLang;
-                else this.language = 'en'; // 없으면 영어
-            } catch(exIn) { console.error(exIn); console.log('Cannot detect platform language. Using English...'); this.language = 'en'; }
-        }
-
-        // 캔버스 설정
-        const canvas = rootDiv.querySelector('.shuttingstars_canvas');
-        if(this.detectScreenLandscape()) {
-            canvas.style.minWidth  = '1280px';
-            canvas.style.minHeight = '720px';
-        } else {
-            canvas.style.minWidth  = '720px';
-            canvas.style.minHeight = '1280px';
-        }
-        canvas.style.zIndex    = this.canvasZindex;
-
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-
-        // 그래픽 해상도 설정
-        this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-        this.setResolution(this.ressets.w, this.ressets.h);
-
-        // 가상 키 사용여부 지정
-        this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform();
-
-        // 설정 불러오기
-        this.loadSettings();
-        
-        // 곡 불러오기
-        this.loadSongs();
-
-        const selfs = this;
-
-        // worker 사용 가능여부 체크
-        if(String(window.location.href).indexOf('http') != 0) this.usingWorker = false;
-
-        // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
-        if(this.usingWorker) {
-            this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
-            this.workerRender.postMessage({interval : this.frameTime});
-            this.workerRender.onmessage = function(e) {
-                // const {drift, time} = e.data;
-                selfs.render();
-            }
-
-            this.workerSimultaneousWork = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
-            this.workerSimultaneousWork.postMessage({interval : this.frameTime});
-            this.workerSimultaneousWork.onmessage = function(e) {
-                // const {drift, time} = e.data;
-                selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
-            }
-        } else {
-            this.repeat(() => { selfs.render(); }, this.frameTime);
-            this.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
-        }
-
-        document.addEventListener('keydown', (event) => {
-            if(selfs.keypressTiming <= 0) {
-                selfs.handleKeyInput(event.key.toUpperCase(), true);
+                this.workerSimultaneousWork = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerSimultaneousWork.postMessage({interval : this.frameTime});
+                this.workerSimultaneousWork.onmessage = function(e) {
+                    // const {drift, time} = e.data;
+                    selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
+                }
             } else {
-                setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase(), true); }, selfs.keypressTiming);
+                this.repeat(() => { selfs.render(); }, this.frameTime);
+                this.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
             }
-        });
 
-        this.canvas.addEventListener('click', (event) => { // TODO
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            document.addEventListener('keydown', (event) => {
+                if(selfs.keypressTiming <= 0) {
+                    selfs.handleKeyInput(event.key.toUpperCase(), true);
+                } else {
+                    setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase(), true); }, selfs.keypressTiming);
+                }
+            });
 
-            // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
-            const rx = Math.floor((x * selfs.stageSize.w) / rect.width );
-            const ry = Math.floor((y * selfs.stageSize.h) / rect.height);
+            this.canvas.addEventListener('click', (event) => { // TODO
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
 
-            if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+                // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
+                const rx = Math.floor((x * selfs.stageSize.w) / rect.width );
+                const ry = Math.floor((y * selfs.stageSize.h) / rect.height);
 
-            // 임시 객체 (충돌여부 판단 위함)
-            const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
-            mouseCursorObject.type = 'circle';
-            mouseCursorObject.x    = rx;
-            mouseCursorObject.y    = ry;
-            mouseCursorObject.r    = 3;
-            mouseCursorObject.fill = true;
-            mouseCursorObject.explosing = 1;
-            selfs.objects.push(mouseCursorObject);
+                if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
 
-            selfs.handleMouseClick(rx, ry, mouseCursorObject);
-        });
+                // 임시 객체 (충돌여부 판단 위함)
+                const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
+                mouseCursorObject.type = 'circle';
+                mouseCursorObject.x    = rx;
+                mouseCursorObject.y    = ry;
+                mouseCursorObject.r    = 3;
+                mouseCursorObject.fill = true;
+                mouseCursorObject.explosing = 1;
+                selfs.objects.push(mouseCursorObject);
 
-        let hGap = window.outerWidth  - window.innerWidth;
-        let vGap = window.outerHeight - window.innerHeight;
-        if(hGap < 0) hGap = 0;
-        if(vGap < 0) vGap = 0;
+                selfs.handleMouseClick(rx, ry, mouseCursorObject);
+            });
 
-        const fResize = function() {
-            // selfs.canvas.style.width  = (window.outerWidth  - hGap + 1) + 'px';
-            selfs.canvas.style.height = (window.outerHeight - vGap + 1) + 'px';
-            selfs.renderConfigDiv();
+            let hGap = window.outerWidth  - window.innerWidth;
+            let vGap = window.outerHeight - window.innerHeight;
+            if(hGap < 0) hGap = 0;
+            if(vGap < 0) vGap = 0;
 
-            // 기기의 방향이 바뀐 경우를 처리
-            if((window.outerWidth < window.outerHeight && selfs.canvas.width > selfs.canvas.height) || (window.outerWidth > window.outerHeight && selfs.canvas.width < selfs.canvas.height)) {
-                selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
-            }
-        };
-        fResize();
-        window.addEventListener('resize', fResize);
+            const fResize = function() {
+                // selfs.canvas.style.width  = (window.outerWidth  - hGap + 1) + 'px';
+                selfs.canvas.style.height = (window.outerHeight - vGap + 1) + 'px';
+                selfs.renderConfigDiv();
 
-        // 설정 화면, PC인 경우 HTML 방식의 설정 화면 사용, 그외의 경우 canvas 방식의 설정 사용
-        if(ShuttingStarsUtility.isTouchScreenPlatform()) this.configDiv = null;
-        else this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
-        this.renderConfigDiv();
-        this.configDiv.style.display = 'none';
+                // 기기의 방향이 바뀐 경우를 처리
+                if((window.outerWidth < window.outerHeight && selfs.canvas.width > selfs.canvas.height) || (window.outerWidth > window.outerHeight && selfs.canvas.width < selfs.canvas.height)) {
+                    selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
+                }
+            };
+            fResize();
+            window.addEventListener('resize', fResize);
 
-        this.loadAfter().then(() => {
-            selfs.afterInitialized();
-        }).catch((e) => {
-            console.error(e);
-            selfs.afterInitialized();
-        });
+            // 설정 화면, PC인 경우 HTML 방식의 설정 화면 사용, 그외의 경우 canvas 방식의 설정 사용
+            if(ShuttingStarsUtility.isTouchScreenPlatform()) this.configDiv = null;
+            else this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
+            this.renderConfigDiv();
+            this.configDiv.style.display = 'none';
+
+            this.loadAfter().then(() => {
+                selfs.afterInitialized();
+            }).catch((e) => {
+                console.error(e);
+                selfs.afterInitialized();
+            });
+        } catch(eGlobal) {
+            ShuttingStarsUtility.toast('ERROR : ' + eGlobal, true);
+            console.error(eGlobal);
+        }
     }
 
     /** 초기화 완료 후 호출 */
@@ -3890,6 +3895,8 @@ if(!String.prototype.hexDecode) {
 
 /********************** 기타 Util 성 Class 세팅 ************************/
 class ShuttingStarsUtilityClass {
+    toastIndex = 0;
+
     /** 문자열 치환 */
     replaceString(originalStr, targetStr, replacements) {
         return String(originalStr).split(targetStr).join(replacements); 
@@ -3924,9 +3931,133 @@ class ShuttingStarsUtilityClass {
         try { val2 = 'ontouchstart' in window || navigator.maxTouchPoints > 0; } catch(e) {}
         return val1 || val2;
     }
+
+    /** 토스트 메시지 출력, msg 에는 출력할 텍스트 입력 (필수), red 는 배경색 강조표시로 bool (true/false, 선택사항) 로 입력, duration 은 유지시간으로 정수값 (milliseconds, 선택사항) 입력  */
+    toast(msg, red, duration) {
+        let uniqNo = this.toastIndex;
+        this.toastIndex++;
+
+        msg = String(msg);
+
+        let uniqid = 'toast' + (Math.random() * 99999999) + '' + uniqNo;
+        let area = document.createElement('div');
+        area.id = uniqid;
+        area.classList.add('toast');
+        area.classList.add('sstoast');
+        area.classList.add(uniqid);
+        area.innerHTML = this.replaceString(this.replaceString(msg, '<', ''), '>', '');
+        area.title = msg;
+        area.style.position = 'fixed';
+        
+        let width = 400;
+        let height = 30;
+        let bopa = 0.6;
+        let fopa = 0.9;
+        let locationBottom = 100;
+        let reds = 'N';
+        if(red) reds = 'Y';
+        
+        area.dataset.bottom  = String(locationBottom);
+        area.dataset.index   = String(uniqNo);
+        area.dataset.removed = 'N';
+
+        area.style.bottom = locationBottom + 'px';
+        area.style.left = (window.outerWidth - 100 - width) + 'px';
+        area.style.width = width + 'px';
+        area.style.height = height + 'px';
+        area.style.textAlign = 'left';
+        if(reds == 'Y') {
+            area.style.background = 'rgba(134, 35, 35, ' + bopa + ')';
+            area.style.color = 'rgba(255, 255, 255, ' + fopa + ')';
+        } else {
+            area.style.background = 'rgba(35, 134, 35, ' + bopa + ')';
+            area.style.color = 'rgba(255, 255, 255, ' + fopa + ')';
+        }
+        area.style.fontSize = (height - 10) + 'px';
+        area.style.fontFamily = 'D2Coding, NanumGothicCoding';
+        area.style.padding = '15px 5px 5px 15px';
+        area.style.whiteSpace = 'nowrap';
+        area.style.textOverflow = 'ellipsis';
+        area.style.overflow = 'hidden';
+        area.style.borderRadius = '3px';
+
+        const fResetBottom = () => {
+            // 다른 토스트 메시지가 있으면 지금 이 토스트 메시지 위치 변경해야 함
+            let otherToasts = document.body.querySelectorAll('.sstoast');
+            if(otherToasts.length >= 1) {
+                let locationBottomMax = 100;
+                for(let idx=0; idx<otherToasts.length; idx++) {
+                    try {
+                        const otherToastOne = otherToasts[idx];
+
+                        // 제거된 객체 제외
+                        if(otherToastOne.dataset.removed == 'Y') continue;
+
+                        // 동일 객체 제외
+                        let otherId = otherToastOne.id;
+                        if(uniqid == otherId) continue;
+
+                        // 순번 더 높은 객체 제외
+                        let strIndex = otherToastOne.dataset.index;
+                        let intIndex = parseInt(strIndex);
+                        if(uniqNo < intIndex) continue;
+
+                        // bottom 최대값 체크
+                        let strBottom = otherToastOne.dataset.bottom;
+                        let intBottom = parseInt(strBottom);
+                        if(intBottom > locationBottomMax) locationBottomMax = intBottom;
+                    } catch(ignores) {}
+                }
+                locationBottom = locationBottomMax + (height * 2);
+                area.style.bottom = locationBottom + 'px';
+                area.dataset.bottom = String(locationBottom);
+            }
+        };
+        fResetBottom();
+
+        document.body.appendChild(area);
+        
+        let times = 10000;
+        if(msg.length >= 12) times += (msg.length - 12) * 500;
+        if(duration) times = duration;
+
+        const fClick = () => {
+            if(times > 5000) times = 5000;
+        };
+
+        area.addEventListener('click', fClick);
+        let timer = setInterval(() => {
+            if(times <= 5000) {
+                bopa -= 0.00012 * ( 5000.0 - (times) );
+                fopa -= 0.00015 * ( 5000.0 - (times) );
+
+                if(bopa < 0) bopa = 0;
+                if(fopa < 0) fopa = 0;
+                
+                if(reds == 'Y') {
+                    area.style.background = 'rgba(134, 35, 35, ' + bopa + ')';
+                    area.style.color = 'rgba(255, 255, 255, ' + fopa + ')';
+                } else {
+                    area.style.background = 'rgba(35, 134, 35, ' + bopa + ')';
+                    area.style.color = 'rgba(255, 255, 255, ' + fopa + ')';
+                }
+            }
+            fResetBottom();
+
+            times -= 50;
+            if(times <= 0) {
+                area.dataset.removed = 'Y';
+                area.style.display = 'none';
+                area.removeEventListener('click', fClick);
+                area.remove();
+                if(timer != null) clearInterval(timer);    
+            }
+        }, 50);
+    }
 }
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
-/********************** 기타 Util 성 Class 세팅 ************************/
+const SSUtil = ShuttingStarsUtility;
+/********************** // 기타 Util 성 Class 세팅 ************************/
 
 /********************** 외부에서 호출할 수 있도록 함수 구현 ************************/
 
@@ -3937,5 +4068,5 @@ function addShuttingStarSong(song) {
 
 /** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
 function initShuttingStars(param) {
-    return _shuttingstarcore.init(param);
+    try { return _shuttingstarcore.init(param); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
 }
