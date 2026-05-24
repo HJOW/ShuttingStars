@@ -1885,7 +1885,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(15);
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.stageSize.w - fontSize), this.convertY(rows + (fontSize + gap * 2)));
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.stageSize.w - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
     }
 
     renderHpBar() {
@@ -3797,7 +3797,7 @@ class TextDeco extends DecorationObject {
 /** 가상 키 객체 */
 class VirtualKey extends DecorationObject {
     key = 'S';
-    fontSize = 15;
+    fontSize = 25;
     wGap = 8;
     hGap = 8;
     callback = function() {};
@@ -3870,7 +3870,7 @@ class VirtualKey extends DecorationObject {
             }
         } else if(this.key == _shuttingstarcore.enterKey) {
             if(_shuttingstarcore.state == 'playing') {
-                this.x += (charUnitWP * 8);
+                this.x -= (charUnitWP * 2);
                 this.y -= charUnitH;
             } else {
                 this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) - (charUnitW * 3);  // DOWN 보다 세 칸 왼쪽
