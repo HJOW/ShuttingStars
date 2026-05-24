@@ -307,7 +307,7 @@ class ShuttingStarsCore {
             if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
 
             // 임시 객체 (충돌여부 판단 위함)
-            const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255')
+            const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
             mouseCursorObject.type = 'circle';
             mouseCursorObject.x    = rx;
             mouseCursorObject.y    = ry;
@@ -2152,30 +2152,34 @@ class ShuttingStarsCore {
 
         this.elapsedTime++;
         
-        // 현재 시간에 해당하는 패턴이 있는지 확인 TODO
+        // 현재 시간에 해당하는 패턴이 있는지 확인
         let diff = song.difficulties[ this.difficulty.index ];
-        let patternNow = null;
         let patterns = diff.patterns;
 
         for(idx=0; idx<patterns.length; idx++) {
             const pattern = patterns[idx];
             if(this.checkEqualFloats((pattern.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
-                patternNow = pattern;
-                break;
+                // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
+                //     locationIndex 값이 음수인 경우 랜덤 부여
+                if(pattern.locationIndex < 0) {
+                    pattern.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+                }
+                //     노트 생성
+                const note = new Note(pattern.locationIndex);
+                note.id = this.lastObjectId++;
+                this.objectsPlaying.push(note); // 패턴 추가
             }
         }
 
-        if(patternNow != null) {
-            // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
-            //     locationIndex 값이 음수인 경우 랜덤 부여
-            if(patternNow.locationIndex < 0) {
-                patternNow.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+        // 현재 시간에 해당하는 등장 장식이 있는지 확인
+        let decos = song.decorations;
+        for(idx=0; idx<decos.length; idx++) {
+            const decoOne = decos[idx];
+            if(typeof(decoOne.time) != 'number') continue;
+            if(typeof(decoOne.type) == 'undefined') continue;
+            if(this.checkEqualFloats((decoOne.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
+                this.addDecoration(decoOne);
             }
-
-            //     노트 생성
-            const note = new Note(patternNow.locationIndex);
-            note.id = this.lastObjectId++;
-            this.objectsPlaying.push(note); // 패턴 추가
         }
 
         // 이미 지나가버린 패턴 체크
@@ -2410,6 +2414,29 @@ class ShuttingStarsCore {
 
     getTopMarginNote() {
         return 0;
+    }
+
+    /** 곡에 포함되어 있던 장식 추가문구 해석해 집행 */
+    addDecoration(decoJson) {
+        let obj = null;
+        let type = String(decoJson.type).toLowerCase();
+
+        if(type == 'explosion') {
+            obj = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
+            obj.x = decoJson.x;
+            obj.y = decoJson.y;
+            obj.r = decoJson.r;
+            obj.explosing = 1;
+        } else if(type == 'star' || type == 'starlight') {
+            obj = new Starlight();
+            obj.x = decoJson.x;
+            obj.y = decoJson.y;
+            obj.r = decoJson.r;
+        } else if(type == 'text') {
+            obj = new TextDeco(decoJson.text, decoJson.x, decoJson.y, decoJson.fontSize, decoJson.align, decoJson.color);
+            if(decoJson.explosingMax) obj.explosingMax = decoJson.explosingMax;
+        }
+        if(obj != null) this.objects.push(obj);
     }
 
     /** Credit 목록 그리기 */
@@ -3079,6 +3106,7 @@ class ShuttingStarsCore {
             song.timeConstant   = json.timeConstant;
             song.timeMultiplier = json.timeMultiplier;
             song.difficulties   = [];
+            song.decorations    = [];
 
             for(idx=0; idx<json.difficulties.length; idx++) {
                 const difficultyOne = json.difficulties[idx];
@@ -3108,6 +3136,11 @@ class ShuttingStarsCore {
                     }
                 }
                 if(! exists) song.serial = json.serial; // 충돌 안하는 시리얼이면 넣기
+            }
+
+            if(json.decorations) {
+                if(typeof(json.decorations) == 'string') json.decorations = JSON.parse(json.decorations);
+                song.decorations = json.decorations;
             }
         }
 
@@ -3185,6 +3218,11 @@ class ShuttingStarsSong {
     //     difficultyLevel : 1, 2, 3, ... (정수로  입력)
     //     patterns : 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
     difficulties = []
+
+    // 장식
+    decorations = [];
+
+    constructor() {}
 
     /** 노트 속도 */
     getNoteMoveSpeed() {
@@ -3654,6 +3692,48 @@ class ExplosingObject extends DecorationObject {
         }
 
         return opa;
+    }
+}
+
+/** 텍스트 출력 장식 */
+class TextDeco extends DecorationObject {
+    text = '';
+    fontSize = 10;
+    align = 'center';
+    constructor(text, x, y, fontSize, align, color) {
+        super(locationIndex);
+        this.key = _shuttingstarcore.keyList[locationIndex];
+        this.priority = 'high';
+        this.r = 0;
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.fontSize = fontSize;
+        this.align = align;
+        this.shape = 'circle';
+        this.opacity = 1.0;
+        this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
+        this.peakColor = color;
+        this.dark = false;
+        this.fill = true;
+        this.speedX = 0;
+        this.speedY = 0;
+        this.explosing = 1;
+    }
+
+    getNowOpacity() {
+        let opa = 0.9;
+        if(this.explosing >= 3) opa -= 0.2;
+        if(this.explosing >= 4) opa -= (0.02 * (this.explosing - 3));
+        if(opa < 0) opa = 0;
+        this.opacity = opa;
+        return opa;
+    }
+
+    draw(ctx) {
+        this.ctx.textAlign = this.align;
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.color + ', ' + this.getNowOpacity() + ')');
+        this.ctx.fillText(this.text, this.convertX(this.x), this.convertY(this.y));
     }
 }
 
