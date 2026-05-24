@@ -54,7 +54,6 @@ class ShuttingStarsCore {
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
-    useAudioVisualizer = true;
     audioAnalyser = null; // Audio Analyser 객체 (미지원 시 null 유지)
     audioBufferLen = 0;   // Audio 시각화에 쓰일 배열 크기
     audioBuffer = null;   // Audio 시각화에 쓰일 배열
@@ -68,6 +67,7 @@ class ShuttingStarsCore {
     songTitleBaseTime = 80;     // 곡 로딩 기본 시간 (변경 불가)
 
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
+    useAudioVisualizer = true; // 시각화 사용여부
 
     lastObjectId = 0;   // 객체 ID 부여용 카운터
     objects = [];       // 항상 렌더링 대상인 객체들
@@ -746,7 +746,6 @@ class ShuttingStarsCore {
                             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                             this.audioAnalyser = this.audioCtx.createAnalyser();
         
-                            this.audio = new Audio(this.convertURL(this.song.musicUrl));
                             this.audioSource = this.audioCtx.createMediaElementSource(this.audio);
         
                             this.audioSource.connect(this.audioAnalyser);
