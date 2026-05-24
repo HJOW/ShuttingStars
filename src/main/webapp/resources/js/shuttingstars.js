@@ -2380,7 +2380,11 @@ class ShuttingStarsCore {
                                 <audio class='audio audio_detect_bpm' controls/>
                             </div>
                             <div class='section'>
-                                <button type='button' class='btn btn_detect_bpm'>DETECT</button>
+                                <select class='sel sel_detect_bpm_method'>
+                                    <option value='1'>1</option>
+                                    <option value='2'>2</option>
+                                </select>
+                                <button type='button' class='btn btn_detect_bpm'>DETECT</button><br/>
                                 <input type='text' class='inp inp_detect_bpm_result' style='width: 150px;' readonly/>
                             </div>
                         </div>
@@ -2542,10 +2546,17 @@ class ShuttingStarsCore {
         btnAct.addEventListener('click', () => {
             const audioObj = areaDetectBpm.querySelector('.audio_detect_bpm');
             audioObj.src = inpUrl.value;
-            
-            detectBpm(inpUrl.value).then((bpm) => {
-                inpResult.value = bpm;
-            });
+
+            const selMethod = areaDetectBpm.querySelector('.sel_detect_bpm_method');
+            if(selMethod.value == '1') {
+                detectBpm(inpUrl.value).then((bpm) => {
+                    inpResult.value = bpm;
+                });
+            } else {
+                detectBpm2(inpUrl.value).then((bpm) => {
+                    inpResult.value = bpm;
+                });
+            }
         });
     }
 
