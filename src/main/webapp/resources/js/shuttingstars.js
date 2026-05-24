@@ -59,14 +59,15 @@ class ShuttingStarsCore {
     audioBufferLen = 0;   // Audio 시각화에 쓰일 배열 크기
     audioBuffer = null;   // Audio 시각화에 쓰일 배열
 
-    frameTime = 10; // render 호출 주기
-    timeMultiplier = 16.0; // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미
-    stageRows = 72; // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭
-    sizeFixedConst = 2; // 노트 크기 상수 (변경 불가)
+    frameTime = 10;             // render 호출 주기 (변경 불가)
+    timeMultiplier = 16.0;      // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
+    stageRows = 72;             // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
+    sizeFixedConst = 2;         // 노트 크기 상수 (변경 불가)
     noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
-    noteSpeedMultiplier = 1.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
-    resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 - 상수
-    songTitleBaseTime = 80;     // 곡 로딩 기본 시간 - 상수
+    resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 (변경 불가)
+    songTitleBaseTime = 80;     // 곡 로딩 기본 시간 (변경 불가)
+
+    noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
 
     lastObjectId = 0;   // 객체 ID 부여용 카운터
     objects = [];       // 항상 렌더링 대상인 객체들
