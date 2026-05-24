@@ -144,6 +144,8 @@ class ShuttingStarsCore {
     keyInputDebugMode = false;
     // 마우스 클릭 디버그 모드
     mouseClickDebugMode = true;
+    // init 디버그 모드
+    initDebugMode = true;
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -180,11 +182,11 @@ class ShuttingStarsCore {
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
         try {
-            this.lastInitSuccessMessage = 'init started';
+            this.logInit('init started');
 
             // Set HTML
             if(typeof(rootDiv) == 'undefined') {
-                this.lastInitSuccessMessage = 'root div is not exist. creating start.';
+                this.logInit('root div is not exist. creating start.');
 
                 // 예약어 클래스가 이미 존재하는지 확인
                 let additionalNumber = 0;
@@ -202,7 +204,7 @@ class ShuttingStarsCore {
                 rootDiv = document.getElementsByClassName(rootClassName)[0];
             }
 
-            this.lastInitSuccessMessage = 'root div prepared. ss inside dom creating....';
+            this.logInit('root div prepared. ss inside dom creating....');
 
             rootDiv.innerHTML = "";
             let htmls = '';
@@ -215,7 +217,7 @@ class ShuttingStarsCore {
             htmls += "</div>                                       \n";
             rootDiv.innerHTML = htmls;
 
-            this.lastInitSuccessMessage = 'preparing global css...';
+            this.logInit('preparing global css...');
 
             // Set global CSS
             let styles = `
@@ -228,7 +230,7 @@ class ShuttingStarsCore {
             styleElem.innerHTML = styles;
             document.head.appendChild(styleElem);
 
-            this.lastInitSuccessMessage = 'detecting system language...';
+            this.logInit('detecting system language...');
 
             // 언어 설정
             if(this.languageDefault) {
@@ -254,7 +256,7 @@ class ShuttingStarsCore {
                 } catch(exIn) { console.error(exIn); console.log('Cannot detect platform language. Using English...'); this.language = 'en'; }
             }
 
-            this.lastInitSuccessMessage = 'preparing canvas...';
+            this.logInit('preparing canvas...');
 
             // 캔버스 설정
             const canvas = rootDiv.querySelector('.shuttingstars_canvas');
@@ -267,35 +269,35 @@ class ShuttingStarsCore {
             }
             canvas.style.zIndex    = this.canvasZindex;
 
-            this.lastInitSuccessMessage = 'preparing 2d context...';
+            this.logInit('preparing 2d context...');
 
             this.canvas = canvas;
             this.ctx = canvas.getContext('2d');
 
-            this.lastInitSuccessMessage = 'preparing canvas resolution...';
+            this.logInit('preparing canvas resolution...');
 
             // 그래픽 해상도 설정
             this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
             this.setResolution(this.ressets.w, this.ressets.h);
 
-            this.lastInitSuccessMessage = 'detecting touchscreen...';
+            this.logInit('detecting touchscreen...');
 
             // 가상 키 사용여부 지정
             this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform();
 
-            this.lastInitSuccessMessage = 'load settings...';
+            this.logInit('load settings...');
 
             // 설정 불러오기
             this.loadSettings();
 
-            this.lastInitSuccessMessage = 'load songs...';
+            this.logInit('load songs...');
             
             // 곡 불러오기
             this.loadSongs();
 
             const selfs = this;
 
-            this.lastInitSuccessMessage = 'setting workers...';
+            this.logInit('setting workers...');
 
             // worker 사용 가능여부 체크
             if(String(window.location.href).indexOf('http') != 0) this.usingWorker = false;
@@ -320,7 +322,7 @@ class ShuttingStarsCore {
                 this.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
             }
 
-            this.lastInitSuccessMessage = 'setting events...';
+            this.logInit('setting events...');
 
             document.addEventListener('keydown', (event) => {
                 if(selfs.keypressTiming <= 0) {
@@ -375,7 +377,7 @@ class ShuttingStarsCore {
             fResize();
             window.addEventListener('resize', fResize);
 
-            this.lastInitSuccessMessage = 'setting configuration screens...';
+            this.logInit('setting configuration screens...');
 
             // 설정 화면, PC인 경우 HTML 방식의 설정 화면 사용, 그외의 경우 canvas 방식의 설정 사용
             if(ShuttingStarsUtility.isTouchScreenPlatform()) this.configDiv = null;
@@ -383,10 +385,10 @@ class ShuttingStarsCore {
             this.renderConfigDiv();
             this.configDiv.style.display = 'none';
 
-            this.lastInitSuccessMessage = 'loading third parties...';
+            this.logInit('loading third parties...');
 
             this.loadAfter().then(() => {
-                this.lastInitSuccessMessage = 'starting game...';
+                selfs.logInit('starting game...');
                 selfs.afterInitialized();
             }).catch((e) => {
                 ShuttingStarsUtility.toast('ERROR : ' + e, true);
@@ -405,6 +407,12 @@ class ShuttingStarsCore {
     afterInitialized() {
         this.menuChoosing = this.menuList[0];
         this.setState('menu');
+    }
+
+    /** init 작업 진행현황 기록 (디버그 모드 시에만 의미 있음) */
+    logInit(msg) {
+        this.lastInitSuccessMessage = msg;
+        if(this.initDebugMode) ShuttingStarsUtility.toast(msg);
     }
 
     /** 게임 자체의 상태 변경 */
