@@ -2297,7 +2297,7 @@ class ShuttingStarsCore {
             if(obj instanceof JudgeMark) {
                 if(obj.explosing < obj.explosingMax) {
                     obj.explosing++;
-                    obj.explosingSpeed++;
+                    obj.explosingSpeed += 2;
                 }
             }
         }
@@ -3464,14 +3464,25 @@ class JudgeMark extends ShuttingStarsObject {
     }
 
     draw(ctx) {
+        // explosing 에 따른 폰트 크기 조절
+        let dynamicFontSize = 26;
+        if(this.explosing >=  3) dynamicFontSize--;
+        if(this.explosing >=  5) dynamicFontSize--;
+        if(this.explosing >=  7) dynamicFontSize--;
+        if(this.explosing >=  9) dynamicFontSize--;
+        if(this.explosing >= 11) dynamicFontSize--;
+        if(this.explosing >= 13) dynamicFontSize--;
+
         // 화면에 판정 결과 띄우기
-        let fontSize = _shuttingstarcore.convertFontSize(20);
+        let fontSize = _shuttingstarcore.convertFontSize(dynamicFontSize);
         ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
-        if(     this.judgeResult == 'MISS')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 80, 80, 0.8)'); // red
-        else if(this.judgeResult == 'BAD')     ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 180, 80, 0.8)'); // purple
-        else if(this.judgeResult == 'GOOD')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
-        else if(this.judgeResult == 'GREAT')   ctx.fillStyle = _shuttingstarcore.convertColor('rgba(180, 230, 80, 0.8)'); // green
-        else if(this.judgeResult == 'PERFECT') ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 230, 80, 0.8)'); // blue
+
+        let opa = this.getNowOpacity();
+        if(     this.judgeResult == 'MISS')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 80, 80, '  + opa + ')'); // red
+        else if(this.judgeResult == 'BAD')     ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 180, 80, ' + opa + ')'); // purple
+        else if(this.judgeResult == 'GOOD')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 230, 80, ' + opa + ')'); // yellow
+        else if(this.judgeResult == 'GREAT')   ctx.fillStyle = _shuttingstarcore.convertColor('rgba(180, 230, 80, ' + opa + ')'); // green
+        else if(this.judgeResult == 'PERFECT') ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 230, 80, '  + opa + ')'); // blue
 
         let midX = _shuttingstarcore.stageSize.w / 2;
         let midY = _shuttingstarcore.stageSize.h / 2;
@@ -3485,10 +3496,10 @@ class JudgeMark extends ShuttingStarsObject {
             fontSize = _shuttingstarcore.convertFontSize(15);
             ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
             if(this.judgeResult == 'MISS') {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 0, 0, 0.9)');
+                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 0, 0, ' + opa + ')');
             } else {
-                if(_shuttingstarcore.dark) ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(230, 230, 230, 0.9)');
-                else ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, 0.9)');
+                if(_shuttingstarcore.dark) ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(230, 230, 230, ' + opa + ')');
+                else ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + opa + ')');
             }
             ctx.fillText('COMBO ' + combo, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY + 30)); // 판정 결과 아래에 출력
         }
@@ -3496,7 +3507,14 @@ class JudgeMark extends ShuttingStarsObject {
 
     /** 기존 투명도 (Opacity) 에 explosing 반영 */
     getNowOpacity() {
-        return this.opacity * (1.0 - ((this.explosing - 1.0) / (this.explosingMax - 1.0)));
+        let opa = 0.9;
+        if(this.explosing >= 3) opa -= 0.2;
+        if(this.explosing >= 4) opa -= 0.3;
+        if(this.explosing >= 5) opa -= 0.4;
+        if(this.explosing >= 6) opa -= (0.03 * (this.explosing - 5));
+        if(opa < 0) opa = 0;
+        this.opacity = opa;
+        return opa;
     }
 
     /** 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) - 판정 마크는 충돌 없음 */
