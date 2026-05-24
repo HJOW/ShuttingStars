@@ -13,7 +13,41 @@
 <script defer src="/__/firebase/12.13.0/firebase-analytics-compat.js"></script>
 <script defer src="/__/firebase/12.13.0/firebase-remote-config-compat.js"></script>
 <script defer src="/__/firebase/12.13.0/firebase-performance-compat.js"></script>
+<!-- 
+    initialize the SDK after all desired features are loaded, set useEmulator to false
+    to avoid connecting the SDK to running emulators.
+-->
+<script defer src="/__/firebase/init.js?useEmulator=true"></script>
 <!-- // Firebase -->
+
+<!-- Google tag (gtag.js) -->
+<script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
+<script type="text/javascript">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-7PWH500WNJ');
+</script>
+<!-- // Google tag (gtag.js) -->
+
+<!--
+LICENSE
+
+Copyright 2026 HJOW (hujinone22@naver.com)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. 
+-->
 
 <link rel="stylesheet" href="./resources/fonts/fonts.css"/>
 <style type="text/css">
@@ -47,17 +81,6 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
     padding: 0;
 }
 </style>
-
-<!-- Google tag (gtag.js) -->
-<script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
-<script type="text/javascript">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-7PWH500WNJ');
-</script>
-<!-- // Google tag (gtag.js) -->
 
 <script type="text/javascript" src='resources/js/jquery-1.12.4.min.js'></script>
 <script type="text/javascript" src='resources/js/shuttingstarsinterface.js'></script>
