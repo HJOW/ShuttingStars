@@ -30,6 +30,8 @@ class ShuttingStarsCore {
     build = 1;
     
     resolution = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
+    ressets    = {w : 1280, h : 720}; // 설정값
+
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
 
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
@@ -225,8 +227,13 @@ class ShuttingStarsCore {
 
         // Set canvas
         const canvas = rootDiv.querySelector('.shuttingstars_canvas');
-        canvas.style.minWidth  = '1280px';
-        canvas.style.minHeight = '720px';
+        if(this.detectScreenLandscape()) {
+            canvas.style.minWidth  = '1280px';
+            canvas.style.minHeight = '720px';
+        } else {
+            canvas.style.minWidth  = '720px';
+            canvas.style.minHeight = '1280px';
+        }
         canvas.style.zIndex    = this.canvasZindex;
 
         // Canvas, 2D Context
@@ -235,7 +242,7 @@ class ShuttingStarsCore {
 
         // Graphic Setting
         this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-        this.setResolution(this.resolution.w, this.resolution.h);
+        this.setResolution(this.ressets.w, this.ressets.h);
         this.loadSettings();
         
         this.loadSongs();
@@ -318,6 +325,11 @@ class ShuttingStarsCore {
             // selfs.canvas.style.width  = (window.outerWidth  - hGap + 1) + 'px';
             selfs.canvas.style.height = (window.outerHeight - vGap + 1) + 'px';
             selfs.renderConfigDiv();
+
+            // 기기의 방향이 바뀐 경우를 처리
+            if((window.outerWidth < window.outerHeight && selfs.canvas.width > selfs.canvas.height) || (window.outerWidth > window.outerHeight && selfs.canvas.width < selfs.canvas.height)) {
+                selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
+            }
         };
         fResize();
         window.addEventListener('resize', fResize);
@@ -341,18 +353,46 @@ class ShuttingStarsCore {
         this.resetStage();
     }
 
-    /** 해상도 (그래픽 품질) 변경 */
+    /** 해상도 (그래픽 품질) 변경, 디스플레이 방향이 landscape 이라고 가정하에 매개변수를 넣어야 함.  */
     setResolution(w, h) {
-        this.resolution.w = w;
-        this.resolution.h = h;
+        this.ressets.w = w;
+        this.ressets.h = h;
+
+        let temp;
+        if(this.detectScreenLandscape()) {
+            if(this.stageSize.w < this.stageSize.h) {
+                temp = this.stageSize.w;
+                this.stageSize.w = this.stageSize.h;
+                this.stageSize.h = temp;
+                this.canvas.style.minWidth  = '1280px';
+                this.canvas.style.minHeight = '720px';
+            }
+            this.resolution.w = w;
+            this.resolution.h = h;
+        } else {
+            if(this.stageSize.w > this.stageSize.h) {
+                temp = this.stageSize.w;
+                this.stageSize.w = this.stageSize.h;
+                this.stageSize.h = temp;
+                this.canvas.style.minWidth  = '720px';
+                this.canvas.style.minHeight = '1280px';
+            }
+            this.resolution.w = h;
+            this.resolution.h = w;
+        }
         this.canvas.width  = this.resolution.w;
         this.canvas.height = this.resolution.h;
+        
+        if(     this.ressets.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        else if(this.ressets.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+        else if(this.ressets.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+        else if(this.ressets.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
+        else                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+    }
 
-        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
-        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+    /** 디스플레이 방향 (수직 portrait / 수평 landscape) 구분, landscape 인 경우 true, 그외의 경우 false 반환 */
+    detectScreenLandscape() {
+        return (window.outerWidth >= window.outerHeight);
     }
 
     /** 설정 불러오기 */
@@ -413,11 +453,11 @@ class ShuttingStarsCore {
                         let right = String(res[1]).trim();
                         if(isNaN(left )) left  = '1280';
                         if(isNaN(right)) right = '720';
-                        this.resolution.w = parseInt(left);
-                        this.resolution.h = parseInt(right);
-                        if(this.resolution.w < 1280) this.resolution.w = 1280;
-                        if(this.resolution.h <  720) this.resolution.h =  720;
-                        this.setResolution(this.resolution.w, this.resolution.h);
+                        this.ressets.w = parseInt(left);
+                        this.ressets.h = parseInt(right);
+                        if(this.ressets.w < 1280) this.ressets.w = 1280;
+                        if(this.ressets.h <  720) this.ressets.h =  720;
+                        this.setResolution(this.ressets.w, this.ressets.h);
                     } catch(e2) {
                         console.log('Resolution setting is wrong.');
                         console.error(e2);
@@ -432,7 +472,7 @@ class ShuttingStarsCore {
                 }
             }
 
-            this.setResolution(this.resolution.w, this.resolution.h);
+            this.setResolution(this.ressets.w, this.ressets.h);
         } catch(e) {
             console.log('Failed to load settings.');
             console.error(e);
@@ -756,22 +796,22 @@ class ShuttingStarsCore {
                         if(this.settingChoosing == 'setGraphicQuality') {
                             // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
                             if(this.settingGraphicQualityChoosing == 'LOW') {
-                                this.resolution.w = 1280;
-                                this.resolution.h =  720;
+                                this.ressets.w = 1280;
+                                this.ressets.h =  720;
                             } else if(this.settingGraphicQualityChoosing == 'MEDIUM') {
-                                this.resolution.w = 1920;
-                                this.resolution.h = 1080;
+                                this.ressets.w = 1920;
+                                this.ressets.h = 1080;
                             } else if(this.settingGraphicQualityChoosing == 'HIGH') {
-                                this.resolution.w = 2560;
-                                this.resolution.h = 1440;
+                                this.ressets.w = 2560;
+                                this.ressets.h = 1440;
                             } else if(this.settingGraphicQualityChoosing == '4K') {
-                                this.resolution.w = 3840;
-                                this.resolution.h = 2160;
+                                this.ressets.w = 3840;
+                                this.ressets.h = 2160;
                             } else {
-                                this.resolution.w = 1280;
-                                this.resolution.h =  720;
+                                this.ressets.w = 1280;
+                                this.ressets.h =  720;
                             }
-                            this.setResolution(this.resolution.w, this.resolution.h);
+                            this.setResolution(this.ressets.w, this.ressets.h);
                         }
 
                         // 설정 저장
@@ -2458,22 +2498,22 @@ class ShuttingStarsCore {
 
             selfs.settingGraphicQualityChoosing = layer.querySelector('.sel_graphicquality').value;
             if(selfs.settingGraphicQualityChoosing == 'LOW') {
-                selfs.resolution.w = 1280;
-                selfs.resolution.h =  720;
+                selfs.ressets.w = 1280;
+                selfs.ressets.h =  720;
             } else if(selfs.settingGraphicQualityChoosing == 'MEDIUM') {
-                selfs.resolution.w = 1920;
-                selfs.resolution.h = 1080;
+                selfs.ressets.w = 1920;
+                selfs.ressets.h = 1080;
             } else if(selfs.settingGraphicQualityChoosing == 'HIGH') {
-                selfs.resolution.w = 2560;
-                selfs.resolution.h = 1440;
+                selfs.ressets.w = 2560;
+                selfs.ressets.h = 1440;
             } else if(selfs.settingGraphicQualityChoosing == '4K') {
-                selfs.resolution.w = 3840;
-                selfs.resolution.h = 2160;
+                selfs.ressets.w = 3840;
+                selfs.ressets.h = 2160;
             } else {
-                selfs.resolution.w = 1280;
-                selfs.resolution.h =  720;
+                selfs.ressets.w = 1280;
+                selfs.ressets.h =  720;
             }
-            selfs.setResolution(selfs.resolution.w, selfs.resolution.h);
+            selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
             selfs.language = layer.querySelector('.sel_language').value;
             selfs.languageDefault = false;
             selfs.saveSettings();
@@ -2718,6 +2758,14 @@ class ShuttingStarsCore {
 
         // if(allowReverse) { if(this.reverseVertical) return this.stageSize.h - y; }
         // return y;
+    }
+
+    reverseConvertX(x) {
+        return (x * this.stageSize.w / this.resolution.w) + this.getLeftMargin();
+    }
+
+    reverseConvertY(y) {
+        return (y * this.stageSize.h / this.resolution.h) + this.getTopMargin();
     }
 
     /** 컬러 변환 시도 (alpha 값 미지원 시) */
