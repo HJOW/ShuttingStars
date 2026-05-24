@@ -49,6 +49,7 @@ _shuttingstarcore.stringTable = {
         'PLAYING REPORT' : 'PLAYING REPORT',
         'TOTAL' : 'TOTAL',
         'Visit % for detail...' : '% 에 방문하여 자세한 사항 확인',
-        'Please wait...' : '잠시 기다려주세요...'
+        'Please wait...' : '잠시 기다려주세요...',
+        'PAUSED' : '일시정지'
     }
 };

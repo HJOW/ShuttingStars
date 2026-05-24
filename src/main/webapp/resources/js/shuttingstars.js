@@ -298,12 +298,14 @@ class ShuttingStarsCore {
             if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
 
             // 임시 객체 (충돌여부 판단 위함)
-            const mouseCursorObject = new ShuttingStarsObject();
+            const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255')
             mouseCursorObject.type = 'circle';
             mouseCursorObject.x    = rx;
             mouseCursorObject.y    = ry;
-            mouseCursorObject.r    = 1;
+            mouseCursorObject.r    = 3;
             mouseCursorObject.fill = true;
+            mouseCursorObject.explosing = 1;
+            selfs.objects.push(mouseCursorObject);
 
             selfs.handleMouseClick(rx, ry, mouseCursorObject);
         });
@@ -341,8 +343,73 @@ class ShuttingStarsCore {
     /** 초기화 완료 후 호출 */
     afterInitialized() {
         this.menuChoosing = this.menuList[0];
-        this.state = 'menu';
-        this.resetStage();
+        this.setState('menu');
+    }
+
+    /** 게임 자체의 상태 변경 */
+    setState(state) {
+        const selfs = this;
+        let idx;
+
+        this.state = state;
+
+        // 마우스 이벤트 제거
+        this.mouseEvents = [];
+
+        // 가상 키 모두 제거
+        for(idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(obj instanceof VirtualKey) {
+                this.objects.splice(idx, 1);
+                idx--;
+            }
+        }
+
+        // 상태 별 가상 키 및 마우스 이벤트 부여
+        if(state == 'playing') {
+            for(idx=0; idx<this.keyList.length; idx++) {
+                let keyOne = this.keyList[idx];
+
+                const vkey = new VirtualKey(keyOne);
+                this.objects.push(vkey);
+
+                vkey.callback = function() {
+                    // NotePlacer 찾기
+                    let notePlacer = null;
+                    for(let idx=0; idx<selfs.notePlacers.length; idx++) {
+                        const notePlacerOne = selfs.notePlacers[idx];
+                        if(notePlacerOne.key == keyOne) {
+                            notePlacer = notePlacerOne;
+                            break;
+                        }
+                    }
+
+                    if(notePlacer != null) {
+                        // 해당 키 입력 처리
+                        if(selfs.keypressTiming <= 0) selfs.handleNotePlacerCalled(notePlacer);
+                        else setTimeout(() => { selfs.handleNotePlacerCalled(notePlacer); }, selfs.keypressTiming);
+                    }
+                };
+
+                this.mouseEvents.push({
+                    type : 'rect',
+                    x : vkey.x,
+                    y : vkey.y,
+                    r : vkey.r, // rect 인 경우 w 대신
+                    h : vkey.h,
+                    callback : () => {
+                        vkey.callback();
+                        vkey.explosing = 1;
+                    }
+                });
+
+            }
+        }
+
+        // 일부 상태는 스테이지 리셋이 필요
+        if(state == 'menu' || state == 'playing') {
+            this.resetStage();
+        }
     }
 
     /** 해상도 (그래픽 품질) 변경, 디스플레이 방향이 landscape 이라고 가정하에 매개변수를 넣어야 함.  */
@@ -705,10 +772,8 @@ class ShuttingStarsCore {
                         this.songThumb = null;
                         this.videoBga = null;
 
-                        this.state = 'songchoosing';
+                        this.setState('songchoosing');
                     } else if(this.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
-                        this.state = 'setting';
-
                         // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
                         if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
                         else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
@@ -716,17 +781,18 @@ class ShuttingStarsCore {
                         else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
                         else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
 
+                        this.setState('setting');
                         if(this.configDiv != null) {
                             // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
                             this.openConfigDiv();
                         }
                     } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
                         this.prepareCreditList();
-                        this.state = 'credit';
+                        this.setState('credit');
                     }
                 }
             } else if(this.state == 'songchoosing') { // 곡 선택 상태
-                if(this.songs.length <= 0) { this.state = 'menu'; return; } // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
+                if(this.songs.length <= 0) { this.setState('menu'); return; } // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
                 if(this.songChoosing == null) this.songChoosing = this.songs[0];
 
                 // 인덱스 구하기
@@ -771,9 +837,8 @@ class ShuttingStarsCore {
                         if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
                         this.songTitleTime = this.songTitleBaseTime;
                         if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-                        this.state = 'songtitle';
+                        this.setState('songtitle');
                         this.difficultyChoosing = false;
-                        this.resetStage();
                     } else {
                         this.song = this.songChoosing;
                         this.difficultyChoosingList = this.song.getDifficultyList();
@@ -873,22 +938,19 @@ class ShuttingStarsCore {
                     if(this.audio != null) { this.audio.pause(); }
                 }
             } else if(this.state == 'result') {
-                this.state = 'menu';
-                this.resetStage();
+                this.setState('menu');
             } else if(this.state == 'songchoosing') {
                 if(this.difficultyChoosing) { this.difficultyChoosing = false; }
-                else { this.state = 'menu'; this.resetStage(); }
+                else { this.setState('menu'); }
             } else if(this.state == 'setting') {
                 if(this.settingModifyingMode) {
                     this.settingModifyingMode = false;
                     this.loadSettings();
                 } else {
-                    this.state = 'menu';
-                    this.resetStage();
+                    this.setState('menu');
                 }
             } else if(this.state == 'credit') {
-                this.state = 'menu';
-                this.resetStage();
+                this.setState('menu');
             }
         }
 
@@ -967,7 +1029,7 @@ class ShuttingStarsCore {
             return 'PERFECT';
         } else if(distance < 30.0) {
             return 'GREAT';
-        } else if(distance < 70.0) {
+        } else if(distance < 50.0) {
             return 'GOOD';
         }
         return 'BAD';
@@ -1256,7 +1318,7 @@ class ShuttingStarsCore {
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - (uppers - 20) + rows));
             rows += fontSize + gap;
-            setTimeout(() => { selfs.state = 'menu'; }, 4000);
+            setTimeout(() => { selfs.setState('menu'); }, 4000);
             return;
         } else {
             // 그외의 경우 안내문구 출력
@@ -1557,7 +1619,7 @@ class ShuttingStarsCore {
         let label = '';
 
         if(songOne == null || typeof(songOne) == 'undefined') { songOne = this.song; this.songChoosing = this.song; }
-        if(songOne == null || typeof(songOne) == 'undefined') { this.song = null; this.songChoosing = null; this.state = 'songchoosing'; this.resetStage(); return; }
+        if(songOne == null || typeof(songOne) == 'undefined') { this.song = null; this.songChoosing = null; this.setState('songchoosing'); this.resetStage(); return; }
 
         // Thumb 있으면 먼저 출력
         if(this.songThumb != null) {
@@ -1929,9 +1991,13 @@ class ShuttingStarsCore {
             if(typeof(obj.explosing) == 'number') {
                 if(typeof(obj.explosingMax) == 'number') {
                     if(obj.explosing >= obj.explosingMax) {
-                        this.objects.splice(idx, 1);
-                        idx--;
-                        continue;
+                        if(obj instanceof VirtualKey) {
+                            obj.explosing = 0;
+                        } else {
+                            this.objects.splice(idx, 1);
+                            idx--;
+                            continue;
+                        }
                     }
                 }
 
@@ -1943,8 +2009,7 @@ class ShuttingStarsCore {
         if(this.state == 'songtitle') {
             if(this.songTitleTime > 0) this.songTitleTime--;
             if(this.songTitleTime <= 0) {
-                this.state = 'playing';
-                this.resetStage();
+                this.setState('playing');
                 return;
             }
         }
@@ -2002,8 +2067,8 @@ class ShuttingStarsCore {
 
         const song = this.song;
         let idx;
-        if(song == null) { this.state = 'menu'; this.resetStage(); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
-        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.state = 'menu'; this.resetStage(); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
+        if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
+        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); this.resetStage(); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
         if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
         this.elapsedTime++;
@@ -2183,13 +2248,13 @@ class ShuttingStarsCore {
 
         // 게임오버 상태로 변경
         this.gameoverTime = 16 * _shuttingstarcore.timeMultiplier;
-        this.state = 'gameover';
+        this.setState('gameover');
         this.paused = false;
     }
 
     /** 곡 플레이 종료 시 호출 */
     onSongEnd() {
-        this.state = 'result';
+        this.setState('result');
         this.paused = false;
         this.stopAudio();
         this.audio = null;
@@ -2506,8 +2571,7 @@ class ShuttingStarsCore {
         const fCancel = function() {
             selfs.loadSettings();
             selfs.closeConfigDiv();
-            selfs.state = 'menu';
-            selfs.resetStage();
+            selfs.setState('menu');
         };
         
         btnAccept.addEventListener('click', () => {
@@ -2537,7 +2601,7 @@ class ShuttingStarsCore {
             selfs.languageDefault = false;
             selfs.saveSettings();
             selfs.closeConfigDiv();
-            selfs.state = 'menu';
+            selfs.setState('menu');
         });
 
         btnCancel.addEventListener('click', fCancel);
@@ -2562,7 +2626,7 @@ class ShuttingStarsCore {
             }
 
             selfs.closeConfigDiv();
-            selfs.state = 'menu';
+            selfs.setState('menu');
         });
 
         btnCancel2.addEventListener('click', fCancel);
@@ -2585,7 +2649,7 @@ class ShuttingStarsCore {
             }
 
             selfs.closeConfigDiv();
-            selfs.state = 'menu';
+            selfs.setState('menu');
         });
         btnCancel3.addEventListener('click', fCancel);
 
@@ -3479,6 +3543,82 @@ class ExplosingObject extends DecorationObject {
         }
 
         return opa;
+    }
+}
+
+/** 가상 키 표시 */
+class VirtualKey extends DecorationObject {
+    key = 'S';
+    fontSize = 15;
+    wGap = 5;
+    hGap = 5;
+    callback = function() {};
+    constructor(key) {
+        super(0);
+        this.key = key;
+        this.shape = 'circle';
+        this.x = _shuttingstarcore.getLeftMargin();
+        this.y = Math.round(_shuttingstarcore.stageSize.h - (_shuttingstarcore.stageSize.h / 10.0));
+        this.r = 0;
+        this.speedX = 0;
+        this.speedY = 0;
+        this.opacity = 0.9;
+        if(_shuttingstarcore.dark) {
+            this.color = '200, 200, 200';
+            this.peakColor = '255, 255, 255';
+        } else {
+            this.color = '100, 100, 100';
+            this.peakColor = '50, 50, 50';
+        }
+        this.fill = true;
+        this.priority = 'high';
+        this.explosing = 0;
+        this.explosing = 2;
+        this.fontSize = _shuttingstarcore.convertFontSize(this.fontSize);
+        this.x += (this.fontSize * 2) + this.hGap;
+        this.r = Math.round(this.x / 2.0);
+        if(this.key == 'S') {
+            this.y -= ( (this.fontSize * 2) + this.hGap);
+        } else if(this.key == 'D') {
+            this.x += ( (this.fontSize * 2) + this.wGap);
+            this.y -= ( (this.fontSize * 2) + this.hGap);
+        } else if(this.key == 'F') {
+            this.x += (((this.fontSize * 2) + this.wGap) * 2);
+            this.y -= ( (this.fontSize * 2) + this.hGap);
+        } else if(this.key == 'H') {
+            this.x += (((this.fontSize * 2) + this.wGap) * 3);
+            this.y -= ( (this.fontSize * 2) + this.hGap);
+        } else if(this.key == 'J') {
+            this.x += (((this.fontSize * 2) + this.wGap) * 4);
+            this.y -= ( (this.fontSize * 2) + this.hGap);
+        } else if(this.key == 'K') {
+            this.x += (((this.fontSize * 2) + this.wGap) * 5);
+            this.y -= ( (this.fontSize * 2) + this.hGap);
+        }
+
+        this.x = _shuttingstarcore.convertX(this.x);
+        this.y = _shuttingstarcore.convertY(this.y);
+        this.r = _shuttingstarcore.convertX(this.r);
+    }
+    getNowOpacity() {
+        return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
+    }
+    draw(ctx) {
+        if(! _shuttingstarcore.virtualKey) return;
+        super.draw(ctx);
+
+        // 중앙에 가상키 글자를 찍기
+        //    먼저 글자 컬러 세팅
+        if(_shuttingstarcore.dark) {
+            ctx.fillStyle = _shuttingstarcore.convertColor('rgba(0, 0, 0, ' + this.getNowOpacity() + ')');
+        } else {
+            ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 255, 255, ' + this.getNowOpacity() + ')');
+        }
+        //    글자 폰트 세팅
+        ctx.font = this.fontSize + 'px ' + _shuttingstarcore.fontFamily;
+
+        //    출력
+        ctx.fillText(this.key, this.x, this.y + _shuttingstarcore.convertY(this.fontSize / 4.0)); // x, y는 convert 이미 처리된 좌표이므로 주의 !
     }
 }
 
