@@ -50,6 +50,8 @@ _shuttingstarcore.stringTable = {
         'TOTAL' : 'TOTAL',
         'Visit % for detail...' : '% 에 방문하여 자세한 사항 확인',
         'Please wait...' : '잠시 기다려주세요...',
-        'PAUSED' : '일시정지'
+        'PAUSED' : '일시정지',
+        'Resume within % !' : '재개 대기 % !',
+        '%1 key to resume, %2 key to give up !' : '재개하려면 %1, 포기하려면 %2'
     }
 };

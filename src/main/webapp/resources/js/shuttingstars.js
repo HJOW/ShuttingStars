@@ -280,9 +280,9 @@ class ShuttingStarsCore {
 
         document.addEventListener('keydown', (event) => {
             if(selfs.keypressTiming <= 0) {
-                selfs.handleKeyInput(event.key.toUpperCase());
+                selfs.handleKeyInput(event.key.toUpperCase(), true);
             } else {
-                setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase()); }, selfs.keypressTiming);
+                setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase(), true); }, selfs.keypressTiming);
             }
         });
 
@@ -365,51 +365,59 @@ class ShuttingStarsCore {
             }
         }
 
+        // 공용 가상 키 및 마우스 이벤트 부여
+        this.addDeclaredKeys(this.enterKey);
+        this.addDeclaredKeys(this.escKey);
+
         // 상태 별 가상 키 및 마우스 이벤트 부여
         if(state == 'playing') {
+            // 플레이 중 - 설정된 키 모두 출력
             for(idx=0; idx<this.keyList.length; idx++) {
                 let keyOne = this.keyList[idx];
+                this.addDeclaredKeys(keyOne);
+            }
 
-                const vkey = new VirtualKey(keyOne);
-                this.objects.push(vkey);
+        } else {
+            // 그외의 경우 - 방향키
 
-                vkey.callback = function() {
-                    // NotePlacer 찾기
-                    let notePlacer = null;
-                    for(let idx=0; idx<selfs.notePlacers.length; idx++) {
-                        const notePlacerOne = selfs.notePlacers[idx];
-                        if(notePlacerOne.key == keyOne) {
-                            notePlacer = notePlacerOne;
-                            break;
-                        }
-                    }
-
-                    if(notePlacer != null) {
-                        // 해당 키 입력 처리
-                        if(selfs.keypressTiming <= 0) selfs.handleNotePlacerCalled(notePlacer);
-                        else setTimeout(() => { selfs.handleNotePlacerCalled(notePlacer); }, selfs.keypressTiming);
-                    }
-                };
-
-                this.mouseEvents.push({
-                    type : 'rect',
-                    x : vkey.x,
-                    y : vkey.y,
-                    r : vkey.r, // rect 인 경우 w 대신
-                    h : vkey.h,
-                    callback : () => {
-                        vkey.callback();
-                        vkey.explosing = 1;
-                    }
-                });
-
+            // 방향키
+            for(idx=0; idx<this.arrowKeys.length; idx++) {
+                this.addDeclaredKeys(this.arrowKeys[idx]);
             }
         }
+        // 상태 별 가상 키 및 마우스 이벤트 부여 // 종료
 
         // 일부 상태는 스테이지 리셋이 필요
         if(state == 'menu' || state == 'playing') {
             this.resetStage();
         }
+    }
+
+    /** 가상 키 추가 */
+    addDeclaredKeys(realkey) {
+        const selfs = this;
+        const rkey = realkey;
+        const vkey = new VirtualKey(rkey);
+        selfs.objects.push(vkey);
+        
+        vkey.callback = function() {
+            if(selfs.keypressTiming <= 0) {
+                selfs.handleKeyInput(rkey, false);
+            } else {
+                setTimeout(() => { selfs.handleKeyInput(rkey, false); }, selfs.keypressTiming);
+            }
+        };
+
+        selfs.mouseEvents.push({
+            type : 'circle',
+            x : vkey.x,
+            y : vkey.y,
+            r : vkey.r, // rect 인 경우 w 대신
+            callback : () => {
+                vkey.callback();
+                vkey.explosing = 1;
+            }
+        });
     }
 
     /** 해상도 (그래픽 품질) 변경, 디스플레이 방향이 landscape 이라고 가정하에 매개변수를 넣어야 함.  */
@@ -745,8 +753,8 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 키 입력 처리 */
-    handleKeyInput(key) {
+    /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
+    handleKeyInput(key, vkeyExplosion) {
         if(this.keyInputDebugMode) console.log('KEY INPUT : ' + this.elapsedTime + ', ' + key);
 
         // 방향키와 엔터 키 확인
@@ -927,13 +935,21 @@ class ShuttingStarsCore {
                     }
                 }
                 
+            } else if(this.state == 'playing' && key == this.enterKey) { 
+                // 플레이 중이며 엔터 키
+                if(this.paused) { // 일시정지 중일 때 --> 재개 처리
+                    this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
+                    this.paused = false;
+                }
             }
         } else if(key == this.escKey) { // ESC키
             if(this.state == 'playing') {
+                // 플레이 중이며 ESC키
                 if(this.paused) {
-                    this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
-                    this.paused = false;
+                    // 이미 일시정지 중일 때 또 ESC 누름 --> 포기 처리
+                    this.onGameOver();
                 } else {
+                    // 일시정지 중이 아닐 때 --> 일시정지 시작
                     this.paused = true;
                     if(this.audio != null) { this.audio.pause(); }
                 }
@@ -954,19 +970,34 @@ class ShuttingStarsCore {
             }
         }
 
-        if(this.keyList.indexOf(key) < 0) return; // 여기서부턴 노트 처리기 키
+        // 노트 처리
+        if(this.keyList.indexOf(key) >= 0) {
+            let idx;
+            let notePlacer = null; // 해당 키에 맞는 NotePlacer 를 찾아야 함
+            for(idx=0; idx<this.notePlacers.length; idx++) {
+                if(this.notePlacers[idx].key === key) {
+                    notePlacer = this.notePlacers[idx];
+                    break;
+                }
+            }
+            if(notePlacer == null) return;
 
-        let idx;
-        let notePlacer = null; // 해당 키에 맞는 NotePlacer 를 찾아야 함
-        for(idx=0; idx<this.notePlacers.length; idx++) {
-            if(this.notePlacers[idx].key === key) {
-                notePlacer = this.notePlacers[idx];
-                break;
+            this.handleNotePlacerCalled(notePlacer);
+        }
+
+        // 가상 키 강조
+        if(vkeyExplosion) {
+            // 해당 가상 키 찾기
+            for(let idx=0; idx<this.objects.length; idx++) {
+                const objOne = this.objects[idx];
+                if(objOne instanceof VirtualKey) {
+                    if(key == objOne.key) {
+                        objOne.explosing = 1;
+                        break;
+                    }
+                }
             }
         }
-        if(notePlacer == null) return;
-
-        this.handleNotePlacerCalled(notePlacer);
     }
 
     handleNotePlacerCalled(notePlacer) {
@@ -1167,11 +1198,22 @@ class ShuttingStarsCore {
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
             this.ctx.strokeText(this.trans('PAUSED'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
+
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+            let escKeyLabel = this.escKey;
+            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.textAlign = "center";
+            this.ctx.strokeText(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('%1 key to resume, %2 key to give up !'), '%1', this.enterKey), '%2', escKeyLabel), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + (fontSize * 2) + 10));
         }
 
         // 일시정지 해제 대기시간 그리기
         if(this.resumingTime >= 1) {
-            let fontSize = this.convertFontSize(12);
+            let fontSize = this.convertFontSize(15);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -1504,12 +1546,20 @@ class ShuttingStarsCore {
         
         // 선택 곡 정보 출력
         if(songChoosen != null) {
+            let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
+            let descW = Math.floor((this.canvas.width * 1.2) / 4.0);
+
+            if(descW < 300) {
+                descX = Math.floor(this.canvas.width / 2.0);
+                descW = Math.floor((this.canvas.width) / 2.0);
+            }
+
             let desc = songChoosen.getDescriptionSplit();
             if(desc != null && desc.length > 0) {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
-                this.ctx.fillRect(Math.floor(this.canvas.width * 2.7 / 4.0), Math.floor(this.canvas.height * 2.7 / 4.0), Math.floor((this.canvas.width * 1.2) / 4.0), Math.floor(this.canvas.height * 1.2 / 4.0));
+                this.ctx.fillRect(descX, Math.floor(this.canvas.height * 2.7 / 4.0), descW, Math.floor(this.canvas.height * 1.2 / 4.0));
 
                 fontSize = this.convertFontSize(12);
                 this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -1519,7 +1569,7 @@ class ShuttingStarsCore {
 
                 rows = Math.floor((this.canvas.height * 2.7 / 4.0) + fontSize) + 5;
                 for(const line of desc) {
-                    this.ctx.fillText(line, Math.floor(this.canvas.width * 2.7 / 4.0) + fontSize + this.getLeftMargin(), rows);
+                    this.ctx.fillText(line, descX + fontSize + this.getLeftMargin(), rows);
                     rows += fontSize + gap;
                 }
                 this.ctx.textAlign = "center";
@@ -2233,6 +2283,10 @@ class ShuttingStarsCore {
                 if(obj.explosing <= 0) obj.explosing = 1;
             }
         }
+
+        // HP 0 처리
+        this.hp = 0;
+        this.gameOverDelayed = true;
 
         // 거대 폭발 객체 생성
         const bigExp = new ExplosingObject(0, 0, '180, 0, 0', '250, 80, 80');
@@ -3546,18 +3600,23 @@ class ExplosingObject extends DecorationObject {
     }
 }
 
-/** 가상 키 표시 */
+/** 가상 키 객체 */
 class VirtualKey extends DecorationObject {
     key = 'S';
     fontSize = 15;
-    wGap = 5;
-    hGap = 5;
+    wGap = 8;
+    hGap = 8;
     callback = function() {};
     constructor(key) {
         super(0);
+
+        const charUnitW = (this.fontSize * 2) + this.wGap;
+        const charUnitH = (this.fontSize * 2) + this.hGap;
+        const charUnitWP = Math.round(charUnitW * 1.5);
+
         this.key = key;
         this.shape = 'circle';
-        this.x = _shuttingstarcore.getLeftMargin();
+        this.x = 0;
         this.y = Math.round(_shuttingstarcore.stageSize.h - (_shuttingstarcore.stageSize.h / 10.0));
         this.r = 0;
         this.speedX = 0;
@@ -3575,25 +3634,54 @@ class VirtualKey extends DecorationObject {
         this.explosing = 0;
         this.explosing = 2;
         this.fontSize = _shuttingstarcore.convertFontSize(this.fontSize);
-        this.x += (this.fontSize * 2) + this.hGap;
-        this.r = Math.round(this.x / 2.0);
-        if(this.key == 'S') {
-            this.y -= ( (this.fontSize * 2) + this.hGap);
-        } else if(this.key == 'D') {
-            this.x += ( (this.fontSize * 2) + this.wGap);
-            this.y -= ( (this.fontSize * 2) + this.hGap);
-        } else if(this.key == 'F') {
-            this.x += (((this.fontSize * 2) + this.wGap) * 2);
-            this.y -= ( (this.fontSize * 2) + this.hGap);
-        } else if(this.key == 'H') {
-            this.x += (((this.fontSize * 2) + this.wGap) * 3);
-            this.y -= ( (this.fontSize * 2) + this.hGap);
-        } else if(this.key == 'J') {
-            this.x += (((this.fontSize * 2) + this.wGap) * 4);
-            this.y -= ( (this.fontSize * 2) + this.hGap);
-        } else if(this.key == 'K') {
-            this.x += (((this.fontSize * 2) + this.wGap) * 5);
-            this.y -= ( (this.fontSize * 2) + this.hGap);
+        this.x = Math.round((_shuttingstarcore.stageSize.w / 2.0) - (charUnitW * 3.0));
+        this.r = Math.round(charUnitW / 2.0);
+
+        if(this.key == _shuttingstarcore.keyList[0]) { // S
+            this.y -= charUnitH;
+        } else if(this.key == _shuttingstarcore.keyList[1]) { // D
+            this.x += charUnitWP;
+            this.y -= charUnitH;
+        } else if(this.key == _shuttingstarcore.keyList[2]) { // F
+            this.x += (charUnitWP * 2);
+            this.y -= charUnitH;
+        } else if(this.key == _shuttingstarcore.keyList[3]) { // H
+            this.x += (charUnitWP * 3);
+            this.y -= charUnitH;
+        } else if(this.key == _shuttingstarcore.keyList[4]) { // J
+            this.x += (charUnitWP * 4);
+            this.y -= charUnitH;
+        } else if(this.key == _shuttingstarcore.keyList[5]) { // K
+            this.x += (charUnitWP * 5);
+            this.y -= charUnitH;
+        } else if(this.key == _shuttingstarcore.arrowKeys[0]) { // UP
+            this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0);
+            this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0) - charUnitH;
+        } else if(this.key == _shuttingstarcore.arrowKeys[1]) { // DOWN
+            this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0);  // UP과 동일
+            this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0); // UP보다 한 칸 아래
+        } else if(this.key == _shuttingstarcore.arrowKeys[2]) { // LEFT
+            this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) - charUnitW;  // DOWN 보다 한 칸 왼쪽
+            this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
+        } else if(this.key == _shuttingstarcore.arrowKeys[3]) { // RIGHT
+            this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) + charUnitW;  // DOWN 보다 한 칸 오른쪽
+            this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
+        } else if(this.key == _shuttingstarcore.escKey) {
+            if(_shuttingstarcore.state == 'playing') {
+                this.x += (charUnitWP * 7);
+                this.y -= charUnitH;
+            } else {
+                this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) + (charUnitW * 3);  // DOWN 보다 세 칸 오른쪽
+                this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
+            }
+        } else if(this.key == _shuttingstarcore.enterKey) {
+            if(_shuttingstarcore.state == 'playing') {
+                this.x += (charUnitWP * 8);
+                this.y -= charUnitH;
+            } else {
+                this.x = Math.round(_shuttingstarcore.stageSize.w * 2.0 / 4.0) - (charUnitW * 3);  // DOWN 보다 세 칸 왼쪽
+                this.y = Math.round(_shuttingstarcore.stageSize.h * 9.0 / 10.0);
+            }
         }
 
         this.x = _shuttingstarcore.convertX(this.x);
@@ -3605,6 +3693,8 @@ class VirtualKey extends DecorationObject {
     }
     draw(ctx) {
         if(! _shuttingstarcore.virtualKey) return;
+        if(_shuttingstarcore.state == 'title' || _shuttingstarcore.state == 'songtitle') return;
+
         super.draw(ctx);
 
         // 중앙에 가상키 글자를 찍기
@@ -3617,8 +3707,17 @@ class VirtualKey extends DecorationObject {
         //    글자 폰트 세팅
         ctx.font = this.fontSize + 'px ' + _shuttingstarcore.fontFamily;
 
+        let label = this.key;
+        if(     label == 'ARROWUP'   ) label = '▲';
+        else if(label == 'ARROWDOWN' ) label = '▼';
+        else if(label == 'ARROWLEFT' ) label = '◀';
+        else if(label == 'ARROWRIGHT') label = '▶';
+        else if(label == 'ENTER'     ) label = 'ENT';
+        else if(label == 'ESCAPE'    ) label = 'ESC';
+
         //    출력
-        ctx.fillText(this.key, this.x, this.y + _shuttingstarcore.convertY(this.fontSize / 4.0)); // x, y는 convert 이미 처리된 좌표이므로 주의 !
+        ctx.textAlign = 'center';
+        ctx.fillText(label, this.x, this.y + _shuttingstarcore.convertY(this.fontSize / 4.0)); // x, y는 convert 이미 처리된 좌표이므로 주의 !
     }
 }
 
