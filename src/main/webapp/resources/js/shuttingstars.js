@@ -171,6 +171,10 @@ class ShuttingStarsCore {
     // init 에서 마지막으로 성공한 작업 메시지 (디버그 목적)
     lastInitSuccessMessage = '';
 
+    // 브라우저 영역 크기 감지 함수 (외부에서 변경해야 할 일이 있음)
+    fOuterWidth  = function() { return window.outerWidth;  }
+    fOuterHeight = function() { return window.outerHeight; }
+
     constructor() {}
     
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
@@ -350,18 +354,21 @@ class ShuttingStarsCore {
                 selfs.handleMouseClick(rx, ry, mouseCursorObject);
             });
 
-            let hGap = window.outerWidth  - window.innerWidth;
-            let vGap = window.outerHeight - window.innerHeight;
+            let outWidth  = this.fOuterWidth();
+            let outHeight = this.fOuterHeight();
+
+            let hGap = outWidth  - window.innerWidth;
+            let vGap = outHeight - window.innerHeight;
             if(hGap < 0) hGap = 0;
             if(vGap < 0) vGap = 0;
 
             const fResize = function() {
-                // selfs.canvas.style.width  = (window.outerWidth  - hGap + 1) + 'px';
-                selfs.canvas.style.height = (window.outerHeight - vGap + 1) + 'px';
+                // selfs.canvas.style.width  = (outWidth  - hGap + 1) + 'px';
+                selfs.canvas.style.height = (outHeight - vGap + 1) + 'px';
                 selfs.renderConfigDiv();
 
                 // 기기의 방향이 바뀐 경우를 처리
-                if((window.outerWidth < window.outerHeight && selfs.canvas.width > selfs.canvas.height) || (window.outerWidth > window.outerHeight && selfs.canvas.width < selfs.canvas.height)) {
+                if((outWidth < outHeight && selfs.canvas.width > selfs.canvas.height) || (outWidth > outHeight && selfs.canvas.width < selfs.canvas.height)) {
                     selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
                 }
             };
@@ -513,7 +520,7 @@ class ShuttingStarsCore {
 
     /** 디스플레이 방향 (수직 portrait / 수평 landscape) 구분, landscape 인 경우 true, 그외의 경우 false 반환 */
     detectScreenLandscape() {
-        return (window.outerWidth >= window.outerHeight);
+        return (this.fOuterWidth() >= this.fOuterHeight());
     }
 
     /** 설정 불러오기 */
@@ -2535,7 +2542,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 공통 css 준비
         let styles = `
-            .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; }
+            .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; }
             .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
             .shuttingstar_configlayer button       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.4); color: rgba(122, 165, 240, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
             .shuttingstar_configlayer button:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
