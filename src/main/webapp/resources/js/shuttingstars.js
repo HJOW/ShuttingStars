@@ -145,7 +145,7 @@ class ShuttingStarsCore {
     // 마우스 클릭 디버그 모드
     mouseClickDebugMode = true;
     // init 디버그 모드
-    initDebugMode = true;
+    initDebugMode = false;
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -383,7 +383,7 @@ class ShuttingStarsCore {
             if(ShuttingStarsUtility.isTouchScreenPlatform()) this.configDiv = null;
             else this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
             this.renderConfigDiv();
-            this.configDiv.style.display = 'none';
+            if(this.configDiv != null) this.configDiv.style.display = 'none';
 
             this.logInit('loading third parties...');
 
