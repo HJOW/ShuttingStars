@@ -2372,7 +2372,7 @@ class ShuttingStarsCore {
                     <h1 class='target_translate'>Tools</h1>
                     <div class='shuttingstar_tools_inner'>
                         <div class='section tools_detect_bpm'>
-                            <h2>BPM Detector</h2>
+                            <h2>BPM Detector (TEST)</h2>
                             <div class='section'>
                                 URL <input type='text' class='inp inp_detect_bpm_url'/>
                             </div>

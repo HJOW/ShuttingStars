@@ -2,9 +2,10 @@
     This script is not my own codes.
     References from 
         https://stackoverflow.com/questions/30110701/how-can-i-use-js-webaudioapi-for-beat-detection
+            Posted by Etheryte, modified by community. See post 'Timeline' for change history
+            Retrieved 2026-05-24, License - CC BY-SA 4.0
         http://joesul.li/van/beat-detection-using-web-audio/
-
-    Both, there is no license mention.
+            There is no license mention.
 */
 
 /** Detect song's bpm (Promise) */
