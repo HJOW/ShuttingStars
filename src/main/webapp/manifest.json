@@ -1,0 +1,21 @@
+{
+    "name" : "Shutting Stars",
+    "short_name" : "shuttingstars",
+    "start_url" : "index.html",
+    "display" : "standalone",
+    "orientation" : "portrait",
+    "background_color" : "#000000",
+    "theme_color" : "#000000",
+    "icons" : [
+        {
+            "src" : "./resources/icons/icon128.png",
+            "sizes" : "128x128",
+            "type" : "image/png"
+        },
+        {
+            "src" : "./resources/icons/icon512.png",
+            "sizes" : "512x512",
+            "type" : "image/png"
+        }
+    ]
+}
