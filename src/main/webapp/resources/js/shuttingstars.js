@@ -3953,7 +3953,7 @@ class ShuttingStarsUtilityClass {
         let height = 30;
         let bopa = 0.6;
         let fopa = 0.9;
-        let locationBottom = 100;
+        let locationBottom = 20;
         let reds = 'N';
         if(red) reds = 'Y';
         
@@ -3985,7 +3985,7 @@ class ShuttingStarsUtilityClass {
             // 다른 토스트 메시지가 있으면 지금 이 토스트 메시지 위치 변경해야 함
             let otherToasts = document.body.querySelectorAll('.sstoast');
             if(otherToasts.length >= 1) {
-                let locationBottomMax = 100;
+                let locationBottomMax = 20;
                 for(let idx=0; idx<otherToasts.length; idx++) {
                     try {
                         const otherToastOne = otherToasts[idx];
