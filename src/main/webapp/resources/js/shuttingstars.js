@@ -2371,7 +2371,19 @@ class ShuttingStarsCore {
                 <div class='shuttingstar_toolssections tabarea'>
                     <h1 class='target_translate'>Tools</h1>
                     <div class='shuttingstar_tools_inner'>
-
+                        <div class='section tools_detect_bpm'>
+                            <h2>BPM Detector</h2>
+                            <div class='section'>
+                                URL <input type='text' class='inp inp_detect_bpm_url'/>
+                            </div>
+                            <div class='section'>
+                                <audio class='audio audio_detect_bpm' controls/>
+                            </div>
+                            <div class='section'>
+                                <button type='button' class='btn btn_detect_bpm'>DETECT</button>
+                                <input type='text' class='inp inp_detect_bpm_result' style='width: 150px;' readonly/>
+                            </div>
+                        </div>
                     </div>
                     <div class='shuttingstar_toolcontrols'>
                         <button type='button' class='btn btn_tool_cancel target_translate red'>Cancel</button>
@@ -2520,6 +2532,21 @@ class ShuttingStarsCore {
 
         btnCancel4.addEventListener('click', fCancel);
 
+        // Detect BPM
+        let toolAreaOne = this.configDiv.querySelector('.tools_detect_bpm');
+        let btnAct = toolAreaOne.querySelector('.btn_detect_bpm');
+        let inpUrl = toolAreaOne.querySelector('.inp_detect_bpm_url');
+        let inpResult = toolAreaOne.querySelector('.inp_detect_bpm_result');
+
+        const areaDetectBpm = toolAreaOne;
+        btnAct.addEventListener('click', () => {
+            const audioObj = areaDetectBpm.querySelector('.audio_detect_bpm');
+            audioObj.src = inpUrl.value;
+            
+            detectBpm(inpUrl.value).then((bpm) => {
+                inpResult.value = bpm;
+            });
+        });
     }
 
     /** 상세설정 창 열기 */
