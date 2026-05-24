@@ -220,7 +220,14 @@ class ShuttingStarsCore {
                 }
 
                 // 플랫폼 기본 언어 탐지
-                const platformLang = window.navigator.language;
+                let platformLang = window.navigator.language;
+                if(typeof(platformLang) == 'undefined' || platformLang == 'null') platformLang = 'en';
+                if(typeof(platformLang) != 'string') platformLang = String(platformLang).trim();
+                // 2자리가 아닌 경우 자르기
+                if(platformLang.length > 2) platformLang = platformLang.substring(0, 2);
+                // 소문자로 강제 변환
+                platformLang = platformLang.toLowerCase();
+
                 // 플랫폼 언어가 준비된 언어 목록 안에 있으면 선택
                 if(allows.indexOf(platformLang) >= 0) this.language = platformLang;
                 else this.language = 'en'; // 없으면 영어
@@ -329,7 +336,9 @@ class ShuttingStarsCore {
         fResize();
         window.addEventListener('resize', fResize);
 
-        this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
+        // 설정 화면, PC인 경우 HTML 방식의 설정 화면 사용, 그외의 경우 canvas 방식의 설정 사용
+        if(ShuttingStarsUtility.isTouchScreenPlatform()) this.configDiv = null;
+        else this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
         this.renderConfigDiv();
         this.configDiv.style.display = 'none';
 
