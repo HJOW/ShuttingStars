@@ -126,11 +126,12 @@ class ShuttingStarsCore {
     menuList = ['play', 'setting', 'credit'];
     menuChoosing = null;
 
-    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality'];
+    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
     settingChoosing = null;
     settingModifyingMode = false;
     settingsGraphicQuality = ['LOW', 'MEDIUM', 'HIGH', '4K'];
     settingGraphicQualityChoosing = null;
+    settingResetReask = false;
 
     keypressTiming = 0; // 키 입력 추가 딜레이 보정값
     songTiming = 0; // 음원 재생 딜레이 보정값
@@ -869,7 +870,16 @@ class ShuttingStarsCore {
                 this.settingChoosing = this.settingList[index];
 
                 if(key == this.enterKey) {
-                    if(this.settingModifyingMode) {
+                    if(this.settingChoosing == 'resetAll') {
+                        if(this.settingResetReask) {
+                            // 초기화
+                            try { localStorage.clear(); } catch(er) { console.error(er); return; }
+                            location.reload();
+                        } else {
+                            // 한번 더 물어봄
+                            this.settingResetReask = true;
+                        }
+                    } else if(this.settingModifyingMode) {
                         this.settingModifyingMode = false; // 설정 변경 모드 OFF
 
                         if(this.settingChoosing == 'setGraphicQuality') {
@@ -899,6 +909,7 @@ class ShuttingStarsCore {
                         this.settingModifyingMode = true; // 설정 변경 모드 ON
                     }
                 } else if(this.settingModifyingMode) {
+                    this.settingResetReask = false;
                     if(key == this.arrowKeys[2]) { // LEFT
                         if(this.settingChoosing == 'fixKeypressTiming') {
                             this.keypressTiming--;
@@ -934,6 +945,7 @@ class ShuttingStarsCore {
                         }
                     }
                 } else {
+                    this.settingResetReask = false;
                     if(key == this.arrowKeys[0]) { // UP
                         index--;
                         if(index < 0) index = 0;
@@ -969,6 +981,7 @@ class ShuttingStarsCore {
                 if(this.difficultyChoosing) { this.difficultyChoosing = false; }
                 else { this.setState('menu'); }
             } else if(this.state == 'setting') {
+                this.settingResetReask = false;
                 if(this.settingModifyingMode) {
                     this.settingModifyingMode = false;
                     this.loadSettings();
@@ -1620,6 +1633,12 @@ class ShuttingStarsCore {
             if(settingOne == 'fixSongTiming'         ) label = this.trans('Sound Delay'    ) + ' - ' + leftSide + this.songTiming + rightSide;
             if(settingOne == 'setNoteSpeedMultiplier') label = this.trans('Note Speed Rate') + ' - ' + leftSide + this.noteSpeedMultiplier + rightSide;
             if(settingOne == 'setGraphicQuality'     ) label = this.trans('Graphic Quality') + ' - ' + leftSide + this.settingGraphicQualityChoosing + rightSide;
+            if(settingOne == 'resetAll') {
+                label = this.trans('Reset ALL')
+                if(this.settingResetReask) {
+                    label += ShuttingStarsUtility.replaceString(this.trans(' - % key to reset all now !'), '%', this.enterKey);
+                }
+            }
             
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
@@ -2536,6 +2555,8 @@ class ShuttingStarsCore {
                     <div class='shuttingstar_configcontrols'>
                         <button type='button' class='btn btn_config_accept target_translate'>Accept</button>
                         <button type='button' class='btn btn_config_cancel target_translate red'>Cancel</button>
+                        
+                        <button type='button' class='btn btn_config_resetall target_translate' style='margin-left: 30px;'>Reset All</button>
                     </div>
                 </div>
                 <div class='shuttingstar_songssections tabarea'>
@@ -2631,6 +2652,7 @@ class ShuttingStarsCore {
         const controlDiv = this.configDiv.querySelector('.shuttingstar_configcontrols');
         const btnAccept  = controlDiv.querySelector('.btn_config_accept');
         const btnCancel  = controlDiv.querySelector('.btn_config_cancel');
+        const btnReset   = controlDiv.querySelector('.btn_config_resetall');
 
         const fCancel = function() {
             selfs.loadSettings();
@@ -2669,6 +2691,13 @@ class ShuttingStarsCore {
         });
 
         btnCancel.addEventListener('click', fCancel);
+
+        btnReset.addEventListener('click', () => {
+            if(confirm(selfs.trans('Do you want to reset all?'))) {
+                try { localStorage.clear(); } catch(er) { console.error(er); alert(selfs.trans('Reset failed - ' + er)); return; }
+                location.reload();
+            }
+        });
 
         // 버튼 이벤트 (곡)
         let ta = this.configDiv.querySelector('.ta_json_song');

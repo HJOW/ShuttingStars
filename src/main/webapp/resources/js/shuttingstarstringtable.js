@@ -39,6 +39,7 @@ _shuttingstarcore.stringTable = {
         'Sound Delay' : '음원 재생 딜레이',
         'Note Speed Rate' : '노트 속도 배수',
         'Graphic Quality' : '그래픽 품질',
+        'Reset All' : '전체 초기화',
         'Language' : '언어',
         'Choose what you want !' : '곡을 선택하세요 !',
         'No songs available !' : '현재 선택 가능한 곡이 없습니다 !',
@@ -52,6 +53,8 @@ _shuttingstarcore.stringTable = {
         'Please wait...' : '잠시 기다려주세요...',
         'PAUSED' : '일시정지',
         'Resume within % !' : '재개 대기 % !',
-        '%1 key to resume, %2 key to give up !' : '재개하려면 %1, 포기하려면 %2'
+        '%1 key to resume, %2 key to give up !' : '재개하려면 %1, 포기하려면 %2',
+        '% key to reset all now !' : '% 키를 다시 누르면 전체 초기화 !',
+        'Do you want to reset all?' : '전부 초기화 하시겠습니까?'
     }
 };
