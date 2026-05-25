@@ -2147,14 +2147,15 @@ class ShuttingStarsCore {
 
         // 디버그 데이터
         let peakData = null;
+        let oldData;
         if(this.visualizePeakDebugMode) {
             peakData = {}
             peakData.time = this.elapsedTime;
             peakData.values = [];
 
-            if(this.visualizePeakDebugRecordTime - this.visualizePeakDebugShortestTime >= this.elapsedTime) peakData = null;
+            oldData = this.visualizePeakDebugRecordTime;
+            if(this.visualizePeakDebugRecordTime + this.visualizePeakDebugShortestTime >= this.elapsedTime) peakData = null;
             else this.visualizePeakDebugRecordTime = this.elapsedTime;
-            if(peakData != null) console.log(this.elapsedTime + ', ' + this.visualizePeakDebugRecordTime + ', ' + this.visualizePeakDebugShortestTime);
         }
 
         for(let i=0; i<this.audioBufferLen; i++) {
