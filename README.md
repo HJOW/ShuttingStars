@@ -33,3 +33,13 @@ Music: Night Ride by Joshua Moses https://joshuamosesmusic.bandcamp.com
 License: Creative Commons — Attribution 4.0 International — CC BY 4.0    
 Free Download / Stream: https://links.al/NnW    
 Music promoted by Audio Library: https://links.al/youtube    
+
++ Woowahan free songs - robot fantasia
+
+All intellectual property rights to each track included in the 배달의민족 <Robot Fantasia> album (hereinafter referred to as the “Subject Tracks”) are held by 우아한형제들 Inc.
+
+Individual or corporate users may freely modify and alter all Subject Tracks free of charge for use in both commercial and non-commercial purposes.
+
+However, please be aware that the act of selling the Subject Tracks themselves for a fee is strictly prohibited.
+
+Web pages, advertisements, films, games, and other video materials using Subject Tracks may be collected and utilized in the future for purposes such as data collection and research for publications, for commercial or non-commercial purposes by 우아한형제들 Inc. Users of Subject Tracks who do not wish for such collection or utilization to be prohibited may contact the 우아한형제들 Customer Center (1600-0987 / CS@woowahan.com) at any time.
