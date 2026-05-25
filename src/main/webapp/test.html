@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
     _shuttingstarcore.fBeforeInit = function(inst) {
         inst.songDebugMode = true;
+        inst.timeElapseDebugMode = true;
     }
     initShuttingStars(root[0]);
     SSUtil.toast('TEST MODE');

@@ -64,7 +64,7 @@ class ShuttingStarsCore {
     sizeFixedConst = 2;         // 노트 크기 상수 (변경 불가)
     noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
     resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 (변경 불가)
-    songTitleBaseTime = 80;     // 곡 로딩 기본 시간 (변경 불가)
+    songTitleBaseTime = 120;     // 곡 로딩 기본 시간 (변경 불가)
 
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true; // 시각화 사용여부
@@ -152,6 +152,8 @@ class ShuttingStarsCore {
     initDebugMode = false;
     // 테스트 곡 노출 여부
     songDebugMode = false;
+    // 시간 소요 출력 여부
+    timeElapseDebugMode = false;
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -1237,6 +1239,16 @@ class ShuttingStarsCore {
     render() {
         // 캔버스 비우기
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if(this.state == 'songtitle') {
+            // 한 타이밍, 게임 렌더링 시도를 하여 이미지 등 리소스 캐싱 유도
+            if(this.songTitleTime == this.songTitleBaseTime - 1) {
+                this.renderPlaying();
+                // 다시 비우기
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+        }
+
         if(this.dark) this.ctx.fillStyle = 'rgba(5, 5, 5, 0.9)';
         else          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1290,6 +1302,8 @@ class ShuttingStarsCore {
 
     /** 화면 출력 - 플레이 중 출력 */
     renderPlaying() {
+        let fontSize;
+
         // 시각화 그리기
         if(this.audioAnalyser != null && this.audioSource != null) this.renderAudioVisualizing();
 
@@ -1304,7 +1318,7 @@ class ShuttingStarsCore {
 
         // 일시정지 상태 그리기
         if(this.paused) {
-            let fontSize = this.convertFontSize(20);
+            fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -1326,7 +1340,7 @@ class ShuttingStarsCore {
 
         // 일시정지 해제 대기시간 그리기
         if(this.resumingTime >= 1) {
-            let fontSize = this.convertFontSize(15);
+            fontSize = this.convertFontSize(15);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -1335,9 +1349,20 @@ class ShuttingStarsCore {
             this.ctx.strokeText(ShuttingStarsUtility.replaceString(this.trans('Resume within % !'), '%', String(this.resumingTime)), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
         }
 
+        // 시간 소요 디버그 출력
+        if(this.timeElapseDebugMode) {
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.textAlign = "right";
+            this.ctx.fillText(String(this.elapsedTime), this.convertX(this.stageSize.w * 9 / 10), this.convertY(this.stageSize.h / 10));
+        }
+
         // 게임 오버 그리기
         if(this.state == 'gameover') {
-            let fontSize = this.convertFontSize(20);
+            fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
             this.ctx.fillStyle = this.convertColor('rgba(250, 80, 80, 0.9)');
