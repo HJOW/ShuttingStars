@@ -173,8 +173,11 @@ class ShuttingStarsCore {
     timeElapseDebugMode = false;
     // 시각화 중 피크치 디버깅
     visualizePeakDebugMode = false;
+
+    // 시각화 피크치 디버깅 데이터
     visualizePeakDebugRecordTime = 0;
-    visualizePeakDebugShortestTime = 3;
+    visualizePeakDebugShortestTime = 2; // 얼마나 시간을 촘촘하게 측정할 것인지 지정
+    visualizePeakDebugAvgtGap = 10; // 이 시간 동안의 평균을 측정
     visualizePeakDebugData = [];
     
     // 마우스 이벤트 처리기
@@ -790,7 +793,7 @@ class ShuttingStarsCore {
         this.elapsedTime = 0;
         this.resumingTime = 0;
 
-        if(this.visualizePeakDebugData.length >= 1) this.consoleVisualizeDebugData();
+        if(this.visualizePeakDebugData.length >= 1 && this.state == 'playing' && this.elapsedTime >= 80) this.consoleVisualizeDebugData();
         this.visualizePeakDebugData = [];
         this.visualizePeakDebugRecordTime = 0;
         
@@ -908,7 +911,6 @@ class ShuttingStarsCore {
                     selfs.audio.play();
                     if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.01;
 
-                    if(selfs.visualizePeakDebugData.length >= 1) selfs.consoleVisualizeDebugData();
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
                 }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
@@ -3486,7 +3488,7 @@ class ShuttingStarsCore {
     consoleVisualizeDebugData() {
         let idx, jdx;
         let line;
-        let averages = [];
+        let averages = []; // TODO : 그냥 평균을 낼 게 아니라 일정 시간 동안만 평균을 내야 함
 
         let maxLen = 0;
         // 각 데이터 길이 최대 필드 감지
