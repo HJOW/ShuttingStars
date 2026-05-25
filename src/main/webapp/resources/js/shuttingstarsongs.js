@@ -502,7 +502,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 120;
-song.endTime = 5700;
+song.endTime = 4350;
 song.timeConstant = -337;
 song.timeMultiplier = 1;
 song.serial = 'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g';
