@@ -173,9 +173,8 @@ class ShuttingStarsCore {
     timeElapseDebugMode = false;
     // 시각화 중 피크치 디버깅
     visualizePeakDebugMode = false;
-    visualizePeakDebugData = [
-        
-    ];
+    visualizePeakDebugRecordTime = 0;
+    visualizePeakDebugData = [];
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -790,6 +789,7 @@ class ShuttingStarsCore {
         this.elapsedTime = 0;
         this.resumingTime = 0;
         this.visualizePeakDebugData = [];
+        this.visualizePeakDebugRecordTime = 0;
         
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
@@ -905,6 +905,7 @@ class ShuttingStarsCore {
                     selfs.audio.play();
                     if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.01;
                     selfs.visualizePeakDebugData = [];
+                    selfs.visualizePeakDebugRecordTime = 0;
                 }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             }
         }
@@ -2145,6 +2146,9 @@ class ShuttingStarsCore {
             peakData = {}
             peakData.time = this.elapsedTime;
             peakData.values = [];
+
+            if(this.visualizePeakDebugRecordTime <= peakData.time) peakData = null;
+            else this.visualizePeakDebugRecordTime = peakData.time;
         }
 
         for(let i=0; i<this.audioBufferLen; i++) {
@@ -2165,7 +2169,7 @@ class ShuttingStarsCore {
             x += barWidth;
         }
 
-        if(this.visualizePeakDebugMode) this.visualizePeakDebugData.push(peakData);
+        if(peakData != null) this.visualizePeakDebugData.push(peakData);
     }
 
     /** 크레딧 그리기 */
