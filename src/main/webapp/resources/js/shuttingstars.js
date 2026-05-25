@@ -788,6 +788,8 @@ class ShuttingStarsCore {
         this.gameOverDelayed = false;
         this.elapsedTime = 0;
         this.resumingTime = 0;
+
+        if(this.visualizePeakDebugData.length >= 1) this.consoleVisualizeDebugData();
         this.visualizePeakDebugData = [];
         this.visualizePeakDebugRecordTime = 0;
         
