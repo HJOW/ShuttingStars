@@ -2154,6 +2154,7 @@ class ShuttingStarsCore {
 
             if(this.visualizePeakDebugRecordTime - this.visualizePeakDebugShortestTime >= peakData.time) peakData = null;
             else this.visualizePeakDebugRecordTime = peakData.time;
+            if(peakData != null) console.log(this.elapsedTime);
         }
 
         for(let i=0; i<this.audioBufferLen; i++) {
