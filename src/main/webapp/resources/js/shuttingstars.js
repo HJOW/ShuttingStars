@@ -3483,15 +3483,56 @@ class ShuttingStarsCore {
     consoleVisualizeDebugData() {
         let idx, jdx;
         let line;
+        let averages = [];
+
+        let maxLen = 0;
+        // 각 데이터 길이 최대 필드 감지
         for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
             const dataOne = this.visualizePeakDebugData[idx];
+            if(maxLen <= dataOne.values.length) maxLen = dataOne.values.length;
+        }
+
+        // 평균 데이터 미리 0으로 채우기 (합 먼저 진행)
+        for(idx=0; idx<maxLen; idx++) {
+            averages.push(0);
+        }
+
+        console.log('[ DATA START ]');
+        for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
+            const dataOne = this.visualizePeakDebugData[idx];
+            
             line = String(dataOne.time);
+            for(jdx=0; jdx<dataOne.values.length; jdx++) {
+                line += ', ' + String(dataOne.values[jdx]);
+                averages[jdx] += dataOne.values[jdx];
+            }
+            console.log(line);
+        }
+        console.log('[ DATA END ]');
+
+        // 평균 산출
+        console.log('[ AVERAGES ]');
+        line = '';
+        for(idx=0; idx<averages.length; idx++) {
+            averages[idx] = averages[idx] * 1.0 / this.visualizePeakDebugData.length;
+            if(idx > 0) line += ', ';
+            line += String(averages[idx]);
+        }
+
+        // 평균 이상인 시간대 출력
+        console.log('[ OVERTIMES ]');
+        for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
+            const dataOne = this.visualizePeakDebugData[idx];
+            const peaks = 0;
 
             for(jdx=0; jdx<dataOne.values.length; jdx++) {
-                line += ', ' + String(dataOne.values[jdx]); 
+                const valueOne = dataOne.values[jdx];
+                if(valueOne > averages[jdx]) {
+                    peaks++;
+                }
             }
 
-            console.log(line);
+            if(peaks >= averages.length / 2.0) console.log(dataOne.time);
         }
     }
 }
