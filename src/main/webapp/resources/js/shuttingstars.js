@@ -170,6 +170,11 @@ class ShuttingStarsCore {
     songDebugMode = false;
     // 시간 소요 출력 여부
     timeElapseDebugMode = false;
+    // 시각화 중 피크치 디버깅
+    visualizePeakDebugMode = false;
+    visualizePeakDebugData = [
+        
+    ];
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -897,6 +902,7 @@ class ShuttingStarsCore {
                 setTimeout(() => {
                     selfs.audio.play();
                     if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.01;
+                    selfs.visualizePeakDebugData = [];
                 }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             }
         }
@@ -2130,9 +2136,17 @@ class ShuttingStarsCore {
         const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * 2.5;
         let barHeight, barColorVariable;
         let x = 0;
+        let peakData = {}; // 디버그 모드에만 사용
 
         for(let i=0; i<this.audioBufferLen; i++) {
             barHeight = this.audioBuffer[i]; // 0 ~ 255
+
+            if(this.visualizePeakDebugMode) {
+                peakData.value = barHeight;
+                peakData.time  = this.elapsedTime;
+                this.visualizePeakDebugData.push(peakData);
+            }
+
             // convert ~255 to ~canvas.height
             barHeight = ((barHeight * (this.canvas.height - 10)) / 255.0);
 
