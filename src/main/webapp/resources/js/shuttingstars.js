@@ -348,8 +348,8 @@ class ShuttingStarsCore {
                     selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
                 }
             } else {
-                this.repeat(() => { selfs.render(); }, this.frameTime);
-                this.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
+                ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime);
+                ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
             }
 
             this.logInit('setting events...');
@@ -895,7 +895,7 @@ class ShuttingStarsCore {
                     selfs.timeElapse();
                 }
             } else {
-                this.timeProgressKey = this.repeat(() => { selfs.timeElapse(); }, songBitGap);
+                this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, songBitGap);
             }
 
             if(this.audio != null) {
@@ -3464,24 +3464,12 @@ class ShuttingStarsCore {
         return Math.abs(a - b) < 0.000001;
     }
 
-    /** fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함. */
-    repeat(fnWork, timeGapMillis) {
-        let expected = Date.now() + timeGapMillis;
-        let switchStop = false;
-
-        const fStep = function() {
-            if(switchStop) return;
-            fnWork();
-            if(switchStop) return;
-
-            const drift = Date.now() - expected;
-            expected += timeGapMillis;
-            
-            setTimeout(fStep, Math.max(0, timeGapMillis - drift));
+    /** 시각화 디버깅 데이터 콘솔에 출력 */
+    consoleVisualizeDebugData() {
+        for(let idx=0; idx<this.visualizePeakDebugData.length; idx++) {
+            const dataOne = this.visualizePeakDebugData[idx];
+            console.log(dataOne.time + ', ' + dataOne.value);
         }
-        setTimeout(fStep, timeGapMillis);
-
-        return function() { switchStop = true; }
     }
 }
 
@@ -4341,6 +4329,26 @@ class ShuttingStarsUtilityClass {
                 if(timer != null) clearInterval(timer);    
             }
         }, 50);
+    }
+
+    /** fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함. */
+    repeat(fnWork, timeGapMillis) {
+        let expected = Date.now() + timeGapMillis;
+        let switchStop = false;
+
+        const fStep = function() {
+            if(switchStop) return;
+            fnWork();
+            if(switchStop) return;
+
+            const drift = Date.now() - expected;
+            expected += timeGapMillis;
+            
+            setTimeout(fStep, Math.max(0, timeGapMillis - drift));
+        }
+        setTimeout(fStep, timeGapMillis);
+
+        return function() { switchStop = true; }
     }
 }
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
