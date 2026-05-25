@@ -893,7 +893,7 @@ class ShuttingStarsCore {
             if(this.audio != null) {
                 setTimeout(() => {
                     selfs.audio.play();
-                    if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.audioBackground.pause();
+                    if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.05;
                 }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             }
         }
