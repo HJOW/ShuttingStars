@@ -806,7 +806,7 @@ class ShuttingStarsCore {
             }
 
             //     배경음악 페이드 아웃 시작
-            if(this.volumeBackgroundSpeed == 0 && this.volumeBackground > 0) { this.volumeBackgroundSpeed = (-1) * 0.05; }
+            if(this.volumeBackgroundSpeed == 0 && this.volumeBackground > 0) { this.volumeBackgroundSpeed = (-1) * 0.01; }
 
             //     곡 오디오 세팅
             if(this.audio == null) {
@@ -871,7 +871,7 @@ class ShuttingStarsCore {
                     this.audioBackgroundPlaying = true;
                     this.volumeBackground = 0;
                     this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
-                    this.volumeBackgroundSpeed = 0.05;
+                    this.volumeBackgroundSpeed = 0.01;
                 }
             }
         }
@@ -896,7 +896,7 @@ class ShuttingStarsCore {
             if(this.audio != null) {
                 setTimeout(() => {
                     selfs.audio.play();
-                    if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.05;
+                    if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.01;
                 }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             }
         }
