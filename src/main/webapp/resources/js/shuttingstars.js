@@ -63,6 +63,12 @@ class ShuttingStarsCore {
     songTitleBaseTime = 120;    // 곡 로딩 기본 시간 (변경 불가)
     volumeMultiplier = 1.0;     // 볼륨 상수 (변경 불가)
 
+    margins = { // 여백 (빈 공간)
+        page  : { left :  0, top : 0 },
+        stage : { left :  0, top : 0 },
+        note  : { left : 20, top : 0 }
+    };
+
     volume = 1.0; // 마스터 볼륨 (0 ~ 1)
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true; // 시각화 사용여부
@@ -384,7 +390,9 @@ class ShuttingStarsCore {
 
             const fResize = function() {
                 // selfs.canvas.style.width  = (outWidth  - hGap + 1) + 'px';
-                selfs.canvas.style.height = (outHeight - vGap + 1) + 'px';
+                selfs.canvas.style.height = (selfs.fOuterHeight() - vGap - selfs.getTopMarginPage() + 1) + 'px';
+                selfs.canvas.style.marginLeft = selfs.getLeftMarginPage() + 'px';
+                selfs.canvas.style.marginTop  = selfs.getTopMarginPage() + 'px';
                 selfs.renderConfigDiv();
 
                 // 기기의 방향이 바뀐 경우를 처리
@@ -1593,9 +1601,9 @@ class ShuttingStarsCore {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                 if(this.difficultyChoosing) {
-                    this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMargin() * 2), this.convertY((fontSize * 4) + gap));
+                    this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMarginStage() * 2), this.convertY((fontSize * 4) + gap));
                 } else {
-                    this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMargin() * 2), this.convertY((fontSize * 3) + gap));
+                    this.ctx.fillRect(0, this.convertY((this.stageSize.h / 2) - uppers + rows - (fontSize + (gap / 2))), this.canvas.width - (this.getLeftMarginStage() * 2), this.convertY((fontSize * 3) + gap));
                 }
             }
 
@@ -1744,7 +1752,7 @@ class ShuttingStarsCore {
 
                 rows = Math.floor((this.canvas.height * 2.7 / 4.0) + fontSize) + 5;
                 for(const line of desc) {
-                    this.ctx.fillText(line, descX + fontSize + this.getLeftMargin(), rows);
+                    this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
                     rows += fontSize + gap;
                 }
                 this.ctx.textAlign = "center";
@@ -2574,20 +2582,28 @@ class ShuttingStarsCore {
         return null;
     }
 
-    getLeftMargin() {
-        return 0;
+    getLeftMarginStage() {
+        return this.margins.stage.left;
     }
 
-    getTopMargin() {
-        return 0;
+    getTopMarginStage() {
+        return this.margins.stage.top;
     }
 
     getLeftMarginNote() {
-        return 20;
+        return this.margins.note.left;
     }
 
     getTopMarginNote() {
-        return 0;
+        return this.margins.note.top;
+    }
+
+    getLeftMarginPage() {
+        return this.margins.page.left;
+    }
+
+    getTopMarginPage() {
+        return this.margins.page.top;
     }
 
     /** 곡에 포함되어 있던 장식 추가문구 해석해 집행 */
@@ -3190,7 +3206,7 @@ class ShuttingStarsCore {
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
     convertX(x) {
-        return Math.round((x * this.resolution.w / this.stageSize.w) + this.getLeftMargin());
+        return Math.round((x * this.resolution.w / this.stageSize.w) + this.getLeftMarginStage());
         // return x;
     }
 
@@ -3198,21 +3214,21 @@ class ShuttingStarsCore {
     convertY(y, allowReverse) {
         if(allowReverse) {
             if(this.reverseVertical) {
-                return (this.resolution.h - ( y * this.resolution.h / this.stageSize.h )) + this.getTopMargin();
+                return (this.resolution.h - ( y * this.resolution.h / this.stageSize.h )) + this.getTopMarginStage();
             }
         }
-        return Math.round((y * this.resolution.h / this.stageSize.h) + this.getTopMargin());
+        return Math.round((y * this.resolution.h / this.stageSize.h) + this.getTopMarginStage());
 
         // if(allowReverse) { if(this.reverseVertical) return this.stageSize.h - y; }
         // return y;
     }
 
     reverseConvertX(x) {
-        return (x * this.stageSize.w / this.resolution.w) + this.getLeftMargin();
+        return (x * this.stageSize.w / this.resolution.w) + this.getLeftMarginStage();
     }
 
     reverseConvertY(y) {
-        return (y * this.stageSize.h / this.resolution.h) + this.getTopMargin();
+        return (y * this.stageSize.h / this.resolution.h) + this.getTopMarginStage();
     }
 
     /** 컬러 변환 시도 (alpha 값 미지원 시) */
