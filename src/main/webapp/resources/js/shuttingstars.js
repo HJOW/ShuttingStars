@@ -141,9 +141,9 @@ class ShuttingStarsCore {
     // 스트링 테이블 디버그 모드, 번역 가능 키워드가 화면에 나올 때마다 콘솔에도 출력
     stringTableDebugMode = true;
     // 키보드 입력 디버그 모드
-    keyInputDebugMode = false;
+    keyInputDebugMode = true;
     // 마우스 클릭 디버그 모드
-    mouseClickDebugMode = true;
+    mouseClickDebugMode = false;
     // init 디버그 모드
     initDebugMode = false;
     
@@ -902,7 +902,7 @@ class ShuttingStarsCore {
                     index--;
                     if(index < 0) index = this.difficultyChoosingList.length - 1;
                     this.difficulty = this.difficultyChoosingList[index];
-                } else if(key == this.arrowKeys[2]) { // RIGHT
+                } else if(key == this.arrowKeys[3]) { // RIGHT
                     index++;
                     if(index >= this.difficultyChoosingList.length) index = 0;
                     this.difficulty = this.difficultyChoosingList[index];
@@ -1581,8 +1581,10 @@ class ShuttingStarsCore {
                     label += ' (' + difficultyNum + ')';
                     if(ddx == diffIdx) label += ']';
 
+                    fontSize = this.convertFontSize(15);
+                    this.ctx.font = fontSize + 'px ' + this.fontFamily;
                     if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
-                    else               this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+                    else               this.ctx.fillText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
                     cols += (fontSize * label.length) + 20;
                 }
                 rows += gap;

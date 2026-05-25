@@ -30,6 +30,18 @@ song.timeMultiplier = 1;
 song.serial = 'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g';
 song.difficulties = [
     {
+        difficultyLabel : 'easy',
+        difficultyLevel : 3,
+        patterns : [
+            { locationIndex : -1, time : 404   },
+
+
+
+
+            { locationIndex : -1, time : 3684  }
+        ]
+    },
+    {
         difficultyLabel : 'normal',
         difficultyLevel : 6,
         patterns : [
