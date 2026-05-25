@@ -788,6 +788,7 @@ class ShuttingStarsCore {
         this.gameOverDelayed = false;
         this.elapsedTime = 0;
         this.resumingTime = 0;
+        this.visualizePeakDebugData = [];
         
         for(idx=0; idx<this.keyList.length; idx++) {
             const notePlacer = new NotePlacer(idx);
@@ -2136,15 +2137,21 @@ class ShuttingStarsCore {
         const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * 2.5;
         let barHeight, barColorVariable;
         let x = 0;
-        let peakData = {}; // 디버그 모드에만 사용
+
+        // 디버그 데이터
+        let peakData = null;
+        if(this.visualizePeakDebugMode) {
+            peakData = {}
+            peakData.time = this.elapsedTime;
+            peakData.values = [];
+        }
 
         for(let i=0; i<this.audioBufferLen; i++) {
             barHeight = this.audioBuffer[i]; // 0 ~ 255
 
             if(this.visualizePeakDebugMode) {
-                peakData.value = barHeight;
-                peakData.time  = this.elapsedTime;
-                this.visualizePeakDebugData.push(peakData);
+                peakData.values.push(barHeight);
+                
             }
 
             // convert ~255 to ~canvas.height
@@ -2156,6 +2163,8 @@ class ShuttingStarsCore {
             this.ctx.fillRect(x, this.canvas.height - barHeight, barWidth - 2, barHeight);
             x += barWidth;
         }
+
+        if(this.visualizePeakDebugMode) this.visualizePeakDebugData.push(peakData);
     }
 
     /** 크레딧 그리기 */
