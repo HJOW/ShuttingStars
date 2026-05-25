@@ -60,9 +60,10 @@ class ShuttingStarsCore {
     sizeFixedConst = 2;         // 노트 크기 상수 (변경 불가)
     noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
     resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 (변경 불가)
-    songTitleBaseTime = 120;     // 곡 로딩 기본 시간 (변경 불가)
+    songTitleBaseTime = 120;    // 곡 로딩 기본 시간 (변경 불가)
+    volumeMultiplier = 1.0;     // 볼륨 상수 (변경 불가)
 
-    volume = 1.0; // 마스터 볼륨
+    volume = 1.0; // 마스터 볼륨 (0 ~ 1)
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true; // 시각화 사용여부
 
@@ -406,7 +407,7 @@ class ShuttingStarsCore {
                 try {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
                     selfs.audioBackground.loop = true;
-                    selfs.audioBackground.volume = 0.3 * selfs.volume;
+                    selfs.audioBackground.volume = 0.3 * (selfs.volume * selfs.volumeMultiplier);
                     selfs.audioBackground.play();
                     selfs.audioBackgroundPlaying = true;
                 } catch(exAudio) {
@@ -796,7 +797,7 @@ class ShuttingStarsCore {
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                     this.audio = new Audio(this.convertURL(this.song.musicUrl));
-                    this.audio.volume = this.volume;
+                    this.audio.volume = (this.volume * this.volumeMultiplier);
                     
                     this.closeAudioSources();
                     if(this.useAudioVisualizer) {
@@ -2109,7 +2110,7 @@ class ShuttingStarsCore {
         this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
 
         // 막대그래프형 - 크기 계산
-        const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen);
+        const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * 2.5;
         let barHeight, barColorVariable;
         let x = 0;
 
@@ -2120,7 +2121,7 @@ class ShuttingStarsCore {
 
             barColorVariable = ((barHeight * 100.0) / 255.0); // convert ranges
 
-            this.ctx.fillStyle = 'rgba(' + (barColorVariable + 140) + ', 100, 120, 0.3)';
+            this.ctx.fillStyle = 'rgba(' + (barColorVariable + 140) + ', 100, 120, 0.1)';
             this.ctx.fillRect(x, this.canvas.height - barHeight, barWidth - 2, barHeight);
             x += barWidth;
         }
