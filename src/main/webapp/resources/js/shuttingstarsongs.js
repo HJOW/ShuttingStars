@@ -487,29 +487,34 @@ song.difficulties = [
 
 addShuttingStarSong(song);
 
-/*
-song = new ShuttingStarsSong();
-song.name = 'TEST SONG';
-song.composer = 'HJOW';
+song = {};
+song.name = '큰집 18층으로 떠나는 여행';
+song.composer = '우아한형제들';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
-song.musicUrl = '';
+song.musicUrl = './resources/songs/woowahan/track07.mp3';
 song.thumbnailUrl = '';
-song.description = 'Just for test this game';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+`;
+song.loadingTime = 10;
 song.bpm = 120;
-song.endTime = 540;
-song.timeConstant = 0;
-song.timeMultiplier = 2;
-song.difficulties = {
-    'hard;9' : []
-};
+song.endTime = 5700;
+song.timeConstant = -337;
+song.timeMultiplier = 1;
+song.serial = 'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g';
+song.test = true; // 테스트 이후 false 로 변경
+song.difficulties = [
+    {
+        difficultyLabel : 'hard',
+        difficultyLevel : 7,
+        patterns : [
+            
+        ]
+    }
+]
 
-// 임시 테스트 곡으로, 노트는 랜덤하게 생성
-for(let idx=0; idx<song.endTime; idx++) {
-    const pattern = new ShuttingStarsNotePattern(-1, idx);
-    
-    if(Math.random() > 0.2) song.difficulties['hard;9'].push(pattern);
-}
-
-_shuttingstarcore.songs.push(song);
-*/
+addShuttingStarSong(song);

@@ -97,7 +97,8 @@ class ShuttingStarsCore {
     state = 'title'; // 현재 상태, title / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
 
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
-    songs = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열
+    songs = [];  // 불러온 곡들, ShuttingStarsSong 객체 배열
+    songDisplays = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열, songs 과 다른 점은 디버그 모드에 따른 노출 여부
 
     difficulty = null; // 선택된 난이도
     audio = null;      // 현재 선택된 곡의 오디오 객체
@@ -119,7 +120,10 @@ class ShuttingStarsCore {
     resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값
     simultaneousWorkCycle = 0;
 
-    officialSongSerials = ['nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g'];
+    officialSongSerials = [
+        'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g',
+        'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g'
+    ];
 
     colorManualAlpha = false;
 
@@ -146,6 +150,8 @@ class ShuttingStarsCore {
     mouseClickDebugMode = false;
     // init 디버그 모드
     initDebugMode = false;
+    // 테스트 곡 노출 여부
+    songDebugMode = false;
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -672,6 +678,18 @@ class ShuttingStarsCore {
 
         // 백업한 배열로 곡 목록 바꿔치기
         this.songs = officialSongs;
+
+        // songDisplays 도 갱신
+        if(this.songDebugMode) {
+            this.songDisplays = this.songs;
+        } else {
+            this.songDisplays = [];
+            for(idx=0; idx<this.songs.length; idx++) {
+                const songOne = this.songs[idx];
+                if(songOne.test) continue;
+                this.songDisplays.push(songOne);
+            }
+        }
         
         // 스토리지에서 불러오기
         try {
@@ -883,10 +901,10 @@ class ShuttingStarsCore {
                     }
                 }
             } else if(this.state == 'songchoosing') { // 곡 선택 상태
-                if(this.songs.length <= 0) { this.setState('menu'); return; } // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
-                if(this.songChoosing == null) this.songChoosing = this.songs[0];
+                if(this.songDisplays.length <= 0) { this.setState('menu'); return; } // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
+                if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
 
-                // 인덱스 구하기
+                // 난이도 인덱스 구하기
                 index = 0;
                 if(this.difficultyChoosing) {
                     for(let idx=0; idx<this.difficultyChoosingList.length; idx++) {
@@ -896,8 +914,8 @@ class ShuttingStarsCore {
                         }
                     }
                 } else {
-                    for(let idx=0; idx<this.songs.length; idx++) {
-                        if(this.songs[idx] == this.songChoosing) {
+                    for(let idx=0; idx<this.songDisplays.length; idx++) {
+                        if(this.songDisplays[idx] == this.songChoosing) {
                             index = idx;
                             break;
                         }
@@ -907,12 +925,12 @@ class ShuttingStarsCore {
                 // 키 적용
                 if(key == this.arrowKeys[0]) { // UP
                     index--;
-                    if(index < 0) index = this.songs.length - 1;
-                    this.songChoosing = this.songs[index];
+                    if(index < 0) index = this.songDisplays.length - 1;
+                    this.songChoosing = this.songDisplays[index];
                 } else if(key == this.arrowKeys[1]) { // DOWN
                     index++;
-                    if(index >= this.songs.length) index = 0;
-                    this.songChoosing = this.songs[index];
+                    if(index >= this.songDisplays.length) index = 0;
+                    this.songChoosing = this.songDisplays[index];
                 } else if(key == this.arrowKeys[2]) { // LEFT
                     index--;
                     if(index < 0) index = this.difficultyChoosingList.length - 1;
@@ -1448,7 +1466,7 @@ class ShuttingStarsCore {
         let label = '';
 
         // 곡 목록이 비어 있으면 안내문구 출력 후 메뉴로 이동
-        if(this.songs.length <= 0) {
+        if(this.songDisplays.length <= 0) {
             fontSize = this.convertFontSize(20);
             this.ctx.font = fontSize + 'px ' + this.fontFamily;
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -1469,7 +1487,7 @@ class ShuttingStarsCore {
         }
 
         // 곡을 선택하지 않은 상태인 경우 첫 곡을 출력
-        if(this.songChoosing == null) { this.songChoosing = this.songs[0]; }
+        if(this.songChoosing == null) { this.songChoosing = this.songDisplays[0]; }
 
         // 곡 목록을 다 출력할 수는 없으니, 현재 선택된 곡 앞뒤 2개만 출력
         //    현재 선택된 곡을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
@@ -1477,8 +1495,8 @@ class ShuttingStarsCore {
         let backSongs = [];
         let songChoosen = null;
         let current = false;
-        for(idx=0; idx<this.songs.length; idx++) {
-            let songOne = this.songs[idx];
+        for(idx=0; idx<this.songDisplays.length; idx++) {
+            let songOne = this.songDisplays[idx];
             if(songOne == this.songChoosing) {
                 current = true; // 현재 선택된 곡, backSongs 에 넣기 (frontSongs 에 넣어도 문제는 없음)
                 backSongs.push(songOne);
@@ -2538,8 +2556,8 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'Songs', fontSize : 30 });
         this.creditContents.push({ label : '', fontSize : 30 });
 
-        for(let idx=0; idx<this.songs.length; idx++) {
-            const songOne = this.songs[idx];
+        for(let idx=0; idx<this.songDisplays.length; idx++) {
+            const songOne = this.songDisplays[idx];
             
             this.creditContents.push({ label : songOne.name, fontSize : 25 });
             this.creditContents.push({ label : ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2'), '%1', songOne.composer), '%2', songOne.noteWriter), fontSize : 15 });
@@ -3252,6 +3270,9 @@ class ShuttingStarsCore {
             song.difficulties   = [];
             song.decorations    = [];
 
+            song.test = false;
+            if(json.test) song.test = true;
+
             for(idx=0; idx<json.difficulties.length; idx++) {
                 const difficultyOne = json.difficulties[idx];
                 let newObj = {};
@@ -3307,6 +3328,18 @@ class ShuttingStarsCore {
             this.songs.push(song);
         }
 
+        // songDisplays 갱신
+        if(this.songDebugMode) {
+            this.songDisplays = this.songs;
+        } else {
+            this.songDisplays = [];
+            for(idx=0; idx<this.songs.length; idx++) {
+                const songOne = this.songs[idx];
+                if(songOne.test) continue;
+                this.songDisplays.push(songOne);
+            }
+        }
+
         if(noSave) return;
         this.saveSongs();
     }
@@ -3353,6 +3386,7 @@ class ShuttingStarsSong {
     endTime = 560; // 곡 종료 시간
     timeMultiplier = 1; // 보정 시간 (노트 등장 time 값에 * 보정값으로 적용)
     timeConstant = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
+    test = false; // true 지정 시 곡 디버그 모드에서만 노출됨
     serial = ''; // 수정하지 말 것
     
     // 난이도 별 패턴
