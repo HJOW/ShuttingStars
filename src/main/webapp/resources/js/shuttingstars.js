@@ -906,6 +906,8 @@ class ShuttingStarsCore {
                 setTimeout(() => {
                     selfs.audio.play();
                     if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.01;
+
+                    if(selfs.visualizePeakDebugData.length >= 1) selfs.consoleVisualizeDebugData();
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
                 }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
@@ -2149,7 +2151,7 @@ class ShuttingStarsCore {
             peakData.time = this.elapsedTime;
             peakData.values = [];
 
-            if(this.visualizePeakDebugRecordTime <= peakData.time) peakData = null;
+            if(this.visualizePeakDebugRecordTime >= peakData.time) peakData = null;
             else this.visualizePeakDebugRecordTime = peakData.time;
         }
 
