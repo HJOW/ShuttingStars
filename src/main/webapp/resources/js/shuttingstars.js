@@ -62,6 +62,7 @@ class ShuttingStarsCore {
     resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 (변경 불가)
     songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
+    visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수 (변경 불가)
     
     margins = { // 여백 (빈 공간)
         page  : { left :  0, top : 0 },
@@ -2134,7 +2135,7 @@ class ShuttingStarsCore {
         this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
 
         // 막대그래프형 - 크기 계산
-        const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * 2.5;
+        const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * this.visualizeBarMultiplier;
         let barHeight, barColorVariable;
         let x = 0;
 
