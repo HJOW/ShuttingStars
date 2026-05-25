@@ -62,6 +62,7 @@ class ShuttingStarsCore {
     resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 (변경 불가)
     songTitleBaseTime = 120;     // 곡 로딩 기본 시간 (변경 불가)
 
+    volume = 1.0; // 마스터 볼륨
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true; // 시각화 사용여부
 
@@ -404,6 +405,8 @@ class ShuttingStarsCore {
                 selfs.logInit('starting background audio...');
                 try {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
+                    selfs.audioBackground.loop = true;
+                    selfs.audioBackground.volume = 0.3 * selfs.volume;
                     selfs.audioBackground.play();
                     selfs.audioBackgroundPlaying = true;
                 } catch(exAudio) {
@@ -793,6 +796,7 @@ class ShuttingStarsCore {
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                     this.audio = new Audio(this.convertURL(this.song.musicUrl));
+                    this.audio.volume = this.volume;
                     
                     this.closeAudioSources();
                     if(this.useAudioVisualizer) {
@@ -2105,7 +2109,7 @@ class ShuttingStarsCore {
         this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
 
         // 막대그래프형 - 크기 계산
-        const barWidth = (this.canvas.width / this.audioBufferLen) * 2.5;
+        const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen);
         let barHeight, barColorVariable;
         let x = 0;
 
