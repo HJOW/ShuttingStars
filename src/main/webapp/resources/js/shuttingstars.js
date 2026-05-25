@@ -2152,9 +2152,9 @@ class ShuttingStarsCore {
             peakData.time = this.elapsedTime;
             peakData.values = [];
 
-            if(this.visualizePeakDebugRecordTime - this.visualizePeakDebugShortestTime >= peakData.time) peakData = null;
-            else this.visualizePeakDebugRecordTime = peakData.time;
-            if(peakData != null) console.log(this.elapsedTime);
+            if(this.visualizePeakDebugRecordTime - this.visualizePeakDebugShortestTime >= this.elapsedTime) peakData = null;
+            else this.visualizePeakDebugRecordTime = this.elapsedTime;
+            if(peakData != null) console.log(this.elapsedTime + ', ' + this.visualizePeakDebugRecordTime + ', ' + this.visualizePeakDebugShortestTime);
         }
 
         for(let i=0; i<this.audioBufferLen; i++) {
