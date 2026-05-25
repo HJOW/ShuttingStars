@@ -2154,10 +2154,7 @@ class ShuttingStarsCore {
         for(let i=0; i<this.audioBufferLen; i++) {
             barHeight = this.audioBuffer[i]; // 0 ~ 255
 
-            if(this.visualizePeakDebugMode) {
-                peakData.values.push(barHeight);
-                
-            }
+            if(peakData != null) peakData.values.push(barHeight);
 
             // convert ~255 to ~canvas.height
             barHeight = ((barHeight * (this.canvas.height - 10)) / 255.0);
