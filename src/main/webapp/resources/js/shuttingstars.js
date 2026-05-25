@@ -54,10 +54,6 @@ class ShuttingStarsCore {
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
-    audioAnalyser = null; // Audio Analyser 객체 (미지원 시 null 유지)
-    audioBufferLen = 0;   // Audio 시각화에 쓰일 배열 크기
-    audioBuffer = null;   // Audio 시각화에 쓰일 배열
-
     frameTime = 10;             // render 호출 주기 (변경 불가)
     timeMultiplier = 16.0;      // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
     stageRows = 72;             // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
@@ -108,9 +104,16 @@ class ShuttingStarsCore {
     songLastPatternTime = 0; // 현재 선택된 곡의 마지막 패턴의 시간
     audioSource = null; // 시각화를 위한 변수 중 하나
 
+    audioAnalyser = null; // Audio Analyser 객체 (미지원 시 null 유지)
+    audioBufferLen = 0;   // Audio 시각화에 쓰일 배열 크기
+    audioBuffer = null;   // Audio 시각화에 쓰일 배열
+
     songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
     difficultyChoosing = false; // 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시
     difficultyChoosingList = [];// 매번 배열 추출할 수는 없으니 난이도 목록을 임시로 넣어두는 배열
+
+    audioBackground = null; // 플레이 곡이 아닌, 배경 곡
+    audioBackgroundPlaying = false;
 
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
     gameoverTime = 0; // 게임 오버 마크 화면 남은 시간
@@ -398,6 +401,15 @@ class ShuttingStarsCore {
             this.logInit('loading third parties...');
 
             this.loadAfter().then(() => {
+                selfs.logInit('starting background audio...');
+                try {
+                    selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
+                    selfs.audioBackground.play();
+                    selfs.audioBackgroundPlaying = true;
+                } catch(exAudio) {
+                    console.error(exAudio);
+                }
+
                 selfs.logInit('starting game...');
                 selfs.afterInitialized();
             }).catch((e) => {
@@ -830,29 +842,41 @@ class ShuttingStarsCore {
             }
         }
 
-        
-        
-        // 곡이 플레이 상황일 경우만 처리
-        if(this.state != 'playing') return;
-        this.elapsedTime = 0;
-
-        const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
-        this.songBitGap = songBitGap;
-        if(this.usingWorker) {
-            this.workerSongPlaying = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
-            this.workerSongPlaying.postMessage({interval : songBitGap});
-            this.workerSongPlaying.onmessage = function(e) {
-                // const {drift, time} = e.data;
-                selfs.timeElapse();
+        // 배경 오디오 존재 시 재생
+        if(this.audioBackground != null) {
+            if(state == 'menu') {
+                if(! this.audioBackgroundPlaying) {
+                    this.audioBackground.currentTime = 0;
+                    this.audioBackground.play();
+                    this.audioBackgroundPlaying = true;
+                }
+                
             }
-        } else {
-            this.timeProgressKey = this.repeat(() => { selfs.timeElapse(); }, songBitGap);
         }
+        
+        // 곡이 플레이 상황일 경우 처리
+        if(this.state == 'playing') {
+            this.elapsedTime = 0;
 
-        if(this.audio != null) {
-            setTimeout(() => {
-                selfs.audio.play();
-            }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
+            const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
+            this.songBitGap = songBitGap;
+            if(this.usingWorker) {
+                this.workerSongPlaying = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerSongPlaying.postMessage({interval : songBitGap});
+                this.workerSongPlaying.onmessage = function(e) {
+                    // const {drift, time} = e.data;
+                    selfs.timeElapse();
+                }
+            } else {
+                this.timeProgressKey = this.repeat(() => { selfs.timeElapse(); }, songBitGap);
+            }
+
+            if(this.audio != null) {
+                setTimeout(() => {
+                    selfs.audio.play();
+                    if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.audioBackground.pause();
+                }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
+            }
         }
     }
 
