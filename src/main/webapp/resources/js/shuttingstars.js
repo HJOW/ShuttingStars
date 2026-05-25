@@ -3475,9 +3475,17 @@ class ShuttingStarsCore {
 
     /** 시각화 디버깅 데이터 콘솔에 출력 */
     consoleVisualizeDebugData() {
-        for(let idx=0; idx<this.visualizePeakDebugData.length; idx++) {
+        let idx, jdx;
+        let line;
+        for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
             const dataOne = this.visualizePeakDebugData[idx];
-            console.log(dataOne.time + ', ' + dataOne.value);
+            line = String(dataOne.time);
+
+            for(jdx=0; jdx<dataOne.values.length; jdx++) {
+                line += ', ' + String(dataOne.values[jdx]); 
+            }
+
+            console.log(line);
         }
     }
 }
