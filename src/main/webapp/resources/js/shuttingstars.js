@@ -2650,6 +2650,17 @@ class ShuttingStarsCore {
                                     <th class='target_translate'>Language</th>
                                     <td><select class='sel sel_language full'></select></td>
                                 </tr>
+                                <tr>
+                                    <th class='target_translate'>Line Keys</th>
+                                    <td>
+                                        <span style='margin-left: 20px;'><span>1</span><input type='text' class='inp inp_linekey inp_linekey_1' maxlength='1' style='width:2rem;'/></span>
+                                        <span style='margin-left: 20px;'><span>2</span><input type='text' class='inp inp_linekey inp_linekey_2' maxlength='1' style='width:2rem;'/></span>
+                                        <span style='margin-left: 20px;'><span>3</span><input type='text' class='inp inp_linekey inp_linekey_3' maxlength='1' style='width:2rem;'/></span>
+                                        <span style='margin-left: 20px;'><span>4</span><input type='text' class='inp inp_linekey inp_linekey_4' maxlength='1' style='width:2rem;'/></span>
+                                        <span style='margin-left: 20px;'><span>5</span><input type='text' class='inp inp_linekey inp_linekey_5' maxlength='1' style='width:2rem;'/></span>
+                                        <span style='margin-left: 20px;'><span>6</span><input type='text' class='inp inp_linekey inp_linekey_6' maxlength='1' style='width:2rem;'/></span>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -2762,10 +2773,12 @@ class ShuttingStarsCore {
         };
         
         btnAccept.addEventListener('click', () => {
+            // 설정값들을 객체에 적용
             selfs.keypressTiming      = parseInt(String( layer.querySelector('.inp_keypressdelay').value ).trim());
             selfs.songTiming          = parseInt(String( layer.querySelector('.inp_sounddelay').value ).trim());
             selfs.noteSpeedMultiplier = parseInt(String( layer.querySelector('.inp_notespeedrate').value ).trim());
 
+            //     그래픽 품질
             selfs.settingGraphicQualityChoosing = layer.querySelector('.sel_graphicquality').value;
             if(selfs.settingGraphicQualityChoosing == 'LOW') {
                 selfs.ressets.w = 1280;
@@ -2784,8 +2797,46 @@ class ShuttingStarsCore {
                 selfs.ressets.h =  720;
             }
             selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
+
+            //     언어
             selfs.language = layer.querySelector('.sel_language').value;
             selfs.languageDefault = false;
+
+            //     라인 키
+            // 라인 키 설정
+            let specialKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'ENTER', 'ESCAPE'];
+            let tempKey = null;
+            tempKey = layer.querySelector('.inp_linekey_1').value;
+            tempKey = String(tempKey).trim().toUpperCase();
+            if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[0];
+            this.keyList[0] = tempKey;
+
+            tempKey = layer.querySelector('.inp_linekey_2').value;
+            tempKey = String(tempKey).trim().toUpperCase();
+            if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[1];
+            this.keyList[1] = tempKey;
+
+            tempKey = layer.querySelector('.inp_linekey_3').value;
+            tempKey = String(tempKey).trim().toUpperCase();
+            if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[2];
+            this.keyList[2] = tempKey;
+
+            tempKey = layer.querySelector('.inp_linekey_4').value;
+            tempKey = String(tempKey).trim().toUpperCase();
+            if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[3];
+            this.keyList[3] = tempKey;
+
+            tempKey = layer.querySelector('.inp_linekey_5').value;
+            tempKey = String(tempKey).trim().toUpperCase();
+            if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[4];
+            this.keyList[4] = tempKey;
+
+            tempKey = layer.querySelector('.inp_linekey_6').value;
+            tempKey = String(tempKey).trim().toUpperCase();
+            if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[5];
+            this.keyList[5] = tempKey;
+
+            // 설정 저장
             selfs.saveSettings();
             selfs.closeConfigDiv();
             selfs.setState('menu');
@@ -2913,6 +2964,25 @@ class ShuttingStarsCore {
         html += "<option value='ko'>한글</option>";
         sel.innerHTML = html;
         sel.value = this.language;
+
+        // 라인 키 설정
+        inp = this.configDiv.querySelector('.inp_linekey_1');
+        inp.value = this.keyList[0];
+
+        inp = this.configDiv.querySelector('.inp_linekey_2');
+        inp.value = this.keyList[1];
+
+        inp = this.configDiv.querySelector('.inp_linekey_3');
+        inp.value = this.keyList[2];
+
+        inp = this.configDiv.querySelector('.inp_linekey_4');
+        inp.value = this.keyList[3];
+
+        inp = this.configDiv.querySelector('.inp_linekey_5');
+        inp.value = this.keyList[4];
+
+        inp = this.configDiv.querySelector('.inp_linekey_6');
+        inp.value = this.keyList[5];
 
         // 커스텀 곡 입력 요소들에 현재값 입력하기
         let ta = this.configDiv.querySelector('.ta_json_song');

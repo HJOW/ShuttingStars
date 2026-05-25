@@ -41,6 +41,7 @@ _shuttingstarcore.stringTable = {
         'Graphic Quality' : '그래픽 품질',
         'Reset All' : '전체 초기화',
         'Language' : '언어',
+        "Line Keys" : '라인 키',
         'Choose what you want !' : '곡을 선택하세요 !',
         'No songs available !' : '현재 선택 가능한 곡이 없습니다 !',
         'Composed by %1, Notes written by %2, %3 BPM' : '작곡 : %1, 노트 작성 : %2, %3 BPM',
