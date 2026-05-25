@@ -176,6 +176,7 @@ class ShuttingStarsCore {
     // 브라우저 영역 크기 감지 함수 (외부에서 변경해야 할 일이 있음)
     fOuterWidth  = function() { return window.outerWidth;  }
     fOuterHeight = function() { return window.outerHeight; }
+    fBeforeInit  = function(obj) {  }
 
     constructor() {}
     
@@ -183,7 +184,8 @@ class ShuttingStarsCore {
     init(rootDiv) {
         try {
             this.logInit('init started');
-
+            try { this.fBeforeInit(this); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
+            
             // Set HTML
             if(typeof(rootDiv) == 'undefined') {
                 this.logInit('root div is not exist. creating start.');
@@ -601,6 +603,18 @@ class ShuttingStarsCore {
                     }    
                 }
 
+                if(typeof(settingJson.keyList) != 'undefined') {
+                    try {
+                        if(typeof(settingJson.keyList) == 'string') settingJson.keyList = JSON.parse(settingJson.keyList);
+                        if(settingJson.keyList.length != 6) throw 'Wrong key list counts';
+                        this.keyList = settingJson.keyList;
+                    } catch(e2) {
+                        console.log('Resolution setting is wrong.');
+                        console.error(e2);
+                        console.log('Trying with default resolution...');
+                    }  
+                }
+
                 if(typeof(settingJson.language) != 'undefined') {
                     if(! settingJson.languageDefault) {
                         this.language = settingJson.language;
@@ -633,6 +647,7 @@ class ShuttingStarsCore {
             settingJson.resolution = this.resolution.w + ',' + this.resolution.h;
             settingJson.language = this.language;
             settingJson.languageDefault = this.languageDefault;
+            settingJson.keyList = this.keyList;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
