@@ -848,7 +848,7 @@ class ShuttingStarsCore {
 
         // 배경 오디오 존재 시 재생
         if(this.audioBackground != null) {
-            if(state == 'menu') {
+            if(this.state == 'menu') {
                 if(! this.audioBackgroundPlaying) {
                     this.audioBackground.currentTime = 0;
                     this.audioBackground.play();
