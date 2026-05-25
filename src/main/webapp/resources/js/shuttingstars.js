@@ -326,7 +326,6 @@ class ShuttingStarsCore {
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime});
                 this.workerRender.onmessage = function(e) {
-                    // const {drift, time} = e.data;
                     selfs.render();
                 }
 
@@ -351,7 +350,7 @@ class ShuttingStarsCore {
                 }
             });
 
-            this.canvas.addEventListener('click', (event) => { // TODO
+            this.canvas.addEventListener('click', (event) => {
                 const rect = canvas.getBoundingClientRect();
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
@@ -2217,7 +2216,7 @@ class ShuttingStarsCore {
             }
         }
 
-        // 기타 폭발 오브젝트도 처리
+        // 기타 폭발 / 장식 오브젝트도 처리
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
             if(typeof(obj.explosing) == 'number') {
@@ -2234,6 +2233,16 @@ class ShuttingStarsCore {
                 }
 
                 if(obj.explosing >= 1) obj.explosing++;
+            }
+
+            if(obj instanceof Starlight) {
+                if(obj.x >= this.stageSize.w * 1.5 || obj.y >= this.stageSize.h * 1.5) {
+                    this.objects.splice(idx, 1);
+                    idx--;
+                    continue;
+                }
+                obj.x += obj.speedX;
+                obj.y += obj.speedY;
             }
         }
 
@@ -3181,7 +3190,7 @@ class ShuttingStarsCore {
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
     convertX(x) {
-        return (x * this.resolution.w / this.stageSize.w) + this.getLeftMargin();
+        return Math.round((x * this.resolution.w / this.stageSize.w) + this.getLeftMargin());
         // return x;
     }
 
@@ -3192,7 +3201,7 @@ class ShuttingStarsCore {
                 return (this.resolution.h - ( y * this.resolution.h / this.stageSize.h )) + this.getTopMargin();
             }
         }
-        return (y * this.resolution.h / this.stageSize.h) + this.getTopMargin();
+        return Math.round((y * this.resolution.h / this.stageSize.h) + this.getTopMargin());
 
         // if(allowReverse) { if(this.reverseVertical) return this.stageSize.h - y; }
         // return y;
