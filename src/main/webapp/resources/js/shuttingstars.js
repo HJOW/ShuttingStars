@@ -174,6 +174,7 @@ class ShuttingStarsCore {
     // 시각화 중 피크치 디버깅
     visualizePeakDebugMode = false;
     visualizePeakDebugRecordTime = 0;
+    visualizePeakDebugShortestTime = 3;
     visualizePeakDebugData = [];
     
     // 마우스 이벤트 처리기
@@ -2151,7 +2152,7 @@ class ShuttingStarsCore {
             peakData.time = this.elapsedTime;
             peakData.values = [];
 
-            if(this.visualizePeakDebugRecordTime >= peakData.time) peakData = null;
+            if(this.visualizePeakDebugRecordTime - this.visualizePeakDebugShortestTime >= peakData.time) peakData = null;
             else this.visualizePeakDebugRecordTime = peakData.time;
         }
 
