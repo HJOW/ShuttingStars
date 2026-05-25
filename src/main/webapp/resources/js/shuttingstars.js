@@ -67,6 +67,10 @@ class ShuttingStarsCore {
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true; // 시각화 사용여부
 
+    volumeBackground = 1.0; // 배경음악 볼륨 (게임 진행 중 변경됨)
+    volumeSongAudio  = 1.0; // 플레이 곡 볼륨 (게임 진행 중 변경됨)
+    volumeBackgroundSpeed = 0; // 배경음악 볼륨 페이드 인/아웃 속도값 (음수일 때는 volumeBackground 값이 감소하며 0 이하가 되면 멈춤, 양수일 때는 값이 증가하며 1 이상이 되면 멈춤)
+
     lastObjectId = 0;   // 객체 ID 부여용 카운터
     objects = [];       // 항상 렌더링 대상인 객체들
     objectsPlaying = []; // 상태가 playing 중일 때 렌더링 대상 객체들
@@ -407,7 +411,7 @@ class ShuttingStarsCore {
                 try {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
                     selfs.audioBackground.loop = true;
-                    selfs.audioBackground.volume = 0.3 * (selfs.volume * selfs.volumeMultiplier);
+                    selfs.audioBackground.volume = 0.3 * (selfs.volume * selfs.volumeBackground * selfs.volumeMultiplier);
                     selfs.audioBackground.play();
                     selfs.audioBackgroundPlaying = true;
                 } catch(exAudio) {
@@ -793,11 +797,14 @@ class ShuttingStarsCore {
                 this.songThumb = null;
             }
 
+            //     배경음악 페이드 아웃 시작
+            if(this.volumeBackgroundSpeed == 0 && this.volumeBackground > 0) { this.volumeBackgroundSpeed = (-1) * 0.05; }
+
             //     곡 오디오 세팅
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                     this.audio = new Audio(this.convertURL(this.song.musicUrl));
-                    this.audio.volume = (this.volume * this.volumeMultiplier);
+                    this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
                     
                     this.closeAudioSources();
                     if(this.useAudioVisualizer) {
@@ -854,8 +861,8 @@ class ShuttingStarsCore {
                     this.audioBackground.currentTime = 0;
                     this.audioBackground.play();
                     this.audioBackgroundPlaying = true;
+                    this.volumeBackgroundSpeed = 0.05;
                 }
-                
             }
         }
         
@@ -2227,6 +2234,18 @@ class ShuttingStarsCore {
                 }
 
                 if(obj.explosing >= 1) obj.explosing++;
+            }
+        }
+
+        // 배경음악 페이드 인/아웃 처리
+        if(this.audioBackgroundPlaying != null && this.volumeBackgroundSpeed != 0) {
+            this.volumeBackground += this.volumeBackgroundSpeed;
+            if(this.volumeBackground <   0) this.volumeBackground = 0;
+            if(this.volumeBackground > 0.3) this.volumeBackground = 0.3;
+            this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
+            if(this.volumeBackground == 0) {
+                this.audioBackground.pause();
+                this.audioBackgroundPlaying = false;
             }
         }
 
