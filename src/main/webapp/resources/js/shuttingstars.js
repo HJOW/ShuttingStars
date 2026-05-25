@@ -54,15 +54,15 @@ class ShuttingStarsCore {
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
-    frameTime = 10;             // render 호출 주기 (변경 불가)
-    timeMultiplier = 16.0;      // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
-    stageRows = 72;             // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
-    sizeFixedConst = 2;         // 노트 크기 상수 (변경 불가)
-    noteSpeedFixedConst = 0.25; // 노트 이동 속도 배수 (변경 불가)
-    resumeDelayTime = 16;       // 일시정지 후 재개 전 대기 타임 (변경 불가)
-    songTitleBaseTime = 120;    // 곡 로딩 기본 시간 (변경 불가)
-    volumeMultiplier = 1.0;     // 볼륨 상수 (변경 불가)
-
+    frameTime = 10;                // render 호출 주기 (변경 불가)
+    timeMultiplier = 16.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
+    stageRows = 72;                // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
+    sizeFixedConst = 2;            // 노트 크기 상수 (변경 불가)
+    noteSpeedFixedConst = 0.25;    // 노트 이동 속도 배수 (변경 불가)
+    resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 (변경 불가)
+    songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
+    volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
+    
     margins = { // 여백 (빈 공간)
         page  : { left :  0, top : 0 },
         stage : { left :  0, top : 0 },
@@ -70,6 +70,7 @@ class ShuttingStarsCore {
     };
 
     volume = 1.0; // 마스터 볼륨 (0 ~ 1)
+    volumeBackgroundDefault = 0.2; // 배경 음악 기본 볼륨
     noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true; // 시각화 사용여부
 
@@ -418,7 +419,7 @@ class ShuttingStarsCore {
                 try {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
                     selfs.audioBackground.loop = true;
-                    selfs.audioBackground.volume = 0.3 * (selfs.volume * selfs.volumeBackground * selfs.volumeMultiplier);
+                    selfs.audioBackground.volume = selfs.volumeBackgroundDefault * (selfs.volume * selfs.volumeBackground * selfs.volumeMultiplier);
                     selfs.audioBackground.play();
                     selfs.audioBackgroundPlaying = true;
                 } catch(exAudio) {
@@ -868,6 +869,8 @@ class ShuttingStarsCore {
                     this.audioBackground.currentTime = 0;
                     this.audioBackground.play();
                     this.audioBackgroundPlaying = true;
+                    this.volumeBackground = 0;
+                    this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
                     this.volumeBackgroundSpeed = 0.05;
                 }
             }
@@ -2257,10 +2260,10 @@ class ShuttingStarsCore {
         // 배경음악 페이드 인/아웃 처리
         if(this.audioBackgroundPlaying != null && this.volumeBackgroundSpeed != 0) {
             this.volumeBackground += this.volumeBackgroundSpeed;
-            if(this.volumeBackground <   0) this.volumeBackground = 0;
-            if(this.volumeBackground > 0.3) this.volumeBackground = 0.3;
+            if(this.volumeBackground < 0) this.volumeBackground = 0;
+            if(this.volumeBackground > this.volumeBackgroundDefault) this.volumeBackground = this.volumeBackgroundDefault;
             this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
-            if(this.volumeBackground == 0) {
+            if(this.volumeBackground <= 0) {
                 this.audioBackground.pause();
                 this.audioBackgroundPlaying = false;
             }
