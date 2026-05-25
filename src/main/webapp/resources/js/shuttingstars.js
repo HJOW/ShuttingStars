@@ -3517,13 +3517,14 @@ class ShuttingStarsCore {
             averages[idx] = averages[idx] * 1.0 / this.visualizePeakDebugData.length;
             if(idx > 0) line += ', ';
             line += String(averages[idx]);
+            console.log(line);
         }
 
         // 평균 이상인 시간대 출력
         console.log('[ OVERTIMES ]');
         for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
             const dataOne = this.visualizePeakDebugData[idx];
-            const peaks = 0;
+            let peaks = 0;
 
             for(jdx=0; jdx<dataOne.values.length; jdx++) {
                 const valueOne = dataOne.values[jdx];
