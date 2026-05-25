@@ -1,8 +1,8 @@
 {
     "id" : "shuttingstars_web",
     "name" : "Shutting Stars",
-    "short_name" : "shuttingstars",
-    "start_url" : "index.html",
+    "short_name" : "Shutting Stars",
+    "start_url" : "game.html",
     "display" : "fullscreen",
     "orientation" : "any",
     "categories" : [
