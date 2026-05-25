@@ -1365,7 +1365,7 @@ class ShuttingStarsCore {
         let fontSize;
 
         // 시각화 그리기
-        if(this.audioAnalyser != null && this.audioSource != null) this.renderAudioVisualizing();
+        if(this.audioAnalyser != null && this.audioSource != null && this.elapsedTime >= 80) this.renderAudioVisualizing();
 
         // 객체 그리기
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
