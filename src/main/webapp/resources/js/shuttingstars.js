@@ -1293,37 +1293,61 @@ class ShuttingStarsCore {
 
     /** NotePlacer 호출 처리 */
     handleNotePlacerCalled(notePlacer) {
+        let idx = 0;
+
         // NotePlacer 폭발 처리
         notePlacer.explosing = 1;
 
-        // 해당 NotePlacer 과 충돌/위치가 동일한 Note 가 있는지 확인
-        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+        // 해당 NotePlacer 과 충돌 중인 노트들 수집
+        let notes = [];
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if((obj instanceof Note)) {
                 if(obj.locationIndex != notePlacer.locationIndex) continue;
                 if(obj.explosing >= 1) continue;
 
-                // 두 객체 간의 거리 (y좌표 차이, 절대값)
                 const dist = notePlacer.isMeetVerticalRangeIn(obj);
-                if(dist < 0) continue; // 접근 여부 판정에는 노트 속도 보너스가 이미 반영되어 있음
+                if(dist < 0) continue;
 
-                // 거리를 백분율로 환산 - 이후 노트 속도 보너스 반영해야 함
-                const distance = Math.abs((dist * 100.0) / ( (obj.r + notePlacer.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4) ) );
-
-                // 거리에 따른 판정, 점수 계산
-                let resultMark = this.createResultMark(distance);
-                this.processResultMark(resultMark);
-                this.displayResultMark(resultMark);
-
-                obj.explosing = 1; // 노트의 폭발 시작
-                this.objectsPlaying[idx] = obj;
-
-                // 추가 폭발 객체 추가
-                const newExplosinves = new ExplosingObject(obj.locationIndex, obj.y, obj.color, '255, 255, 255');
-                this.objects.push(newExplosinves);
-                break;
+                notes.push({
+                    idx : idx,
+                    note : obj,
+                    y : obj.y,
+                    dist : dist
+                });
             }
         }
+
+        if(notes.length <= 0) return; // 충돌한 노트가 없으면 중단
+
+        // 가장 y값이 낮은 노트 찾기
+        let minimumY = 99999;
+        let minimumIdx  = notes[0].idx;
+        let minimumNote = notes[0].note;
+        let mimimumDist = notes[0].dist;
+        for(idx=0; idx<notes.length; idx++) {
+            let noteOne = notes[idx];
+            if(noteOne.y < minimumY) {
+                minimumY = noteOne.y;
+                minimumIdx  = noteOne.idx;
+                minimumNote = noteOne.note;
+                mimimumDist = noteOne.dist;
+            }
+        }
+
+        // 거리를 백분율로 환산 - 이후 노트 속도 보너스 반영해야 함
+        const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4) ) );
+
+        // 거리에 따른 판정, 점수 계산
+        let resultMark = this.createResultMark(distance);
+        this.processResultMark(resultMark);
+        this.displayResultMark(resultMark);
+
+        minimumNote.explosing = 1; // 노트의 폭발 시작
+
+        // 추가 폭발 객체 추가
+        const newExplosinves = new ExplosingObject(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+        this.objects.push(newExplosinves);
     }
 
     /** 마우스 클릭 / 터치 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
@@ -2092,6 +2116,14 @@ class ShuttingStarsCore {
         if(this.dark) defColor = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          defColor = this.convertColor('rgba(80, 80, 80, 0.9)');
 
+        // create 모드 출력
+        if(this.createMode) {
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();    
+            this.ctx.strokeStyle = defColor;
+            this.ctx.textAlign = "right";
+            this.ctx.strokeText(this.trans('CREATE MODE'), Math.round(this.getStageWidth() - 10), this.convertY(30));
+        }
+
         // 타이틀 출력
         rows = (this.getStageHeight() / 6);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
@@ -2485,7 +2517,7 @@ class ShuttingStarsCore {
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
     simultaneousWork(simultaneousWorkCycle) {
-        let idx;
+        let idx, jdx;
         // 항상 처리할 사항
 
         // 폭발 완료 처리
@@ -2597,6 +2629,24 @@ class ShuttingStarsCore {
                 } else if(obj instanceof JudgeMark) {
                     if(obj.explosing < obj.explosingMax) {
                         if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
+                    }
+                }
+            }
+        }
+
+        // create 모드
+        if(this.createMode) {
+            if(this.state == 'playing') {
+                for(idx=0; idx<this.notePlacers.length; idx++) {
+                    let notePlacerOne = this.notePlacers[idx];
+                    for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
+                        let objOne = this.objectsPlaying[jdx];
+                        if(objOne instanceof Note) {
+                            if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
+                                this.handleNotePlacerCalled(notePlacerOne);
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -3122,6 +3172,12 @@ class ShuttingStarsCore {
                                 </select>
                                 <button type='button' class='btn btn_detect_bpm'>DETECT</button><br/>
                                 <input type='text' class='inp inp_detect_bpm_result' style='width: 150px;' readonly/>
+                            </div>
+                        </div>
+                        <div class='section tools_create_mode'>
+                            <h2>Song Creation Mode (TEST)</h2>
+                            <div class='section'>
+                                <a href='create.html' target='_blank'>POPUP</a>
                             </div>
                         </div>
                     </div>
