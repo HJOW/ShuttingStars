@@ -3203,7 +3203,7 @@ class ShuttingStarsCore {
 #                patterns : (array)
 #                    element : (object)
 #                        locationIndex : (integer) line (0~5, If you using -1 then random)
-#                        time          : (integer) occuring time ( Not seconds ! Need to test. )
+#                        time          : (number) occuring time ( Not seconds ! Need to test. ) float also OK
 #    example
 #      [
 #          {
