@@ -46,6 +46,7 @@ class ShuttingStarsCore {
     escKey = 'ESCAPE';
 
     fontFamily = 'D2Coding'; // NanumGothicCoding / D2Coding
+    alterFonts = 'NanumGothicCoding'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
 
     canvas = null;    // 캔버스 객체
     configDiv = null; // 상세 설정 영역
@@ -3259,7 +3260,7 @@ class ShuttingStarsCore {
 
     /** render 메소드 내에서 사용되는 font 값 중 family 값 반환 */
     getRenderFontFamily() {
-        return this.fontFamily;
+        return this.fontFamily + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
     }
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
