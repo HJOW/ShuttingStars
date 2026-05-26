@@ -466,6 +466,7 @@ class ShuttingStarsCore {
                 selfs.logInit('preparing background audio...');
                 try {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
+                    selfs.audioBackground.loop = true;
                     // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
                 } catch(exAudio) {
                     console.error(exAudio);
@@ -928,6 +929,7 @@ class ShuttingStarsCore {
             if(this.state == 'menu') {
                 if(! this.audioBackgroundPlaying) {
                     this.audioBackground.currentTime = 0;
+                    this.audioBackground.loop = true;
                     this.audioBackground.play();
                     this.audioBackgroundPlaying = true;
                     this.volumeBackground = 0;
