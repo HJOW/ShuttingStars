@@ -43,3 +43,10 @@ Individual or corporate users may freely modify and alter all Subject Tracks fre
 However, please be aware that the act of selling the Subject Tracks themselves for a fee is strictly prohibited.
 
 Web pages, advertisements, films, games, and other video materials using Subject Tracks may be collected and utilized in the future for purposes such as data collection and research for publications, for commercial or non-commercial purposes by 우아한형제들 Inc. Users of Subject Tracks who do not wish for such collection or utilization to be prohibited may contact the 우아한형제들 Customer Center (1600-0987 / CS@woowahan.com) at any time.
+
+## Third Party Fonts
+
++ D2Coding
+
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+https://github.com/Joungkyun/font-d2coding/blob/master/License
