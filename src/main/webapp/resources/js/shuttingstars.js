@@ -1548,7 +1548,7 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(20);
             this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            this.ctx.fillStyle = this.convertColor('rgba(250, 80, 80, 0.9)');
+            this.ctx.fillStyle = this.convertColor('rgba(250, 40, 40, 0.9)');
             this.ctx.textAlign = "center";
             this.ctx.fillText('GAME OVER', Math.round(this.getStageWidth() / 2), Math.round((this.getStageHeight() / 2) + 20));
         }
@@ -1798,11 +1798,6 @@ class ShuttingStarsCore {
                 fontSize = this.convertFontSize(15);
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-
                 if(this.difficultyChoosingList.length == 0) this.difficultyChoosingList = this.songChoosing.getDifficultyList();
                 let diffIdx = this.difficultyChoosingList.indexOf(this.difficulty);
                 if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; }
@@ -1813,6 +1808,8 @@ class ShuttingStarsCore {
                     const diffOne = this.difficultyChoosingList[ddx];
                     const difficultyName = diffOne.difficultyLabel;
                     const difficultyNum  = diffOne.difficultyLevel;
+                    const colors = this.difficultyNumberColor(difficultyNum);
+                    this.ctx.fillStyle = this.convertColor('rgba(' + colors + ', ' + opacity + ')');
 
                     label = '';
 
@@ -2065,47 +2062,52 @@ class ShuttingStarsCore {
 
         // 판정별 숫자 출력
         fontSize = this.convertFontSize(20);
+        label = 'PERFECT';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        this.ctx.fillStyle = this.convertColor('rgba(80, 230, 80, 0.8)'); // blue
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText('PERFECT', Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.PERFECT , 5), Math.round(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
         rows += fontSize + (gap/4);
 
+        label = 'GREAT';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        this.ctx.fillStyle = this.convertColor('rgba(180, 230, 80, 0.8)'); // green
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText('GREAT', Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.GREAT , 5), Math.round(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
         rows += fontSize + (gap/4);
 
+        label = 'GOOD';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        this.ctx.fillStyle = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText('GOOD', Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.GOOD , 5), Math.round(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
         rowCenter = rows; // 수직 중앙 위치 기록해두기 (랭크 출력할 때 사용)
         rows += fontSize + (gap/4);
 
+        label = 'BAD';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        this.ctx.fillStyle = this.convertColor('rgba(230, 180, 80, 0.8)'); // purple
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText('BAD', Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.BAD , 5), Math.round(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
         rows += fontSize + (gap/4);
 
+        label = 'MISS';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        this.ctx.fillStyle = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText('MISS', Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, Math.round(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.MISS , 5), Math.round(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
@@ -2126,7 +2128,7 @@ class ShuttingStarsCore {
         this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "center";
         label = this.judgeResultRank();
-        console.log();
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', 0.9)');
         this.ctx.fillText(label, Math.round(this.getStageWidth() / 2) + this.convertX(fontSize * 7), this.convertY(rowCenter + (this.convertFontSize(100) / 2)));
 
         // 곡 이름 출력
@@ -2395,6 +2397,46 @@ class ShuttingStarsCore {
         if(percents >= 30.0) return 'C';
 
         return 'D';
+    }
+
+    /** 랭크 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255) */
+    judgeResultRankColor(resultRankChar) {
+        if(resultRankChar == 'P') return '255, 215, 0';
+        if(resultRankChar == 'S') return '255, 215, 0';
+        if(resultRankChar == 'A') return '192, 192, 192';
+        if(resultRankChar == 'B') return '204, 114, 61';
+        if(resultRankChar == 'C') return '47, 157, 39';
+        if(resultRankChar == 'D') return '128, 65, 217';
+        return '153, 0, 76';
+    }
+
+    /** 판정 별 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255) */
+    judgeMarkColor(judgeResult) {
+        if(     judgeResult == 'MISS'   ) return '230, 40, 40';
+        else if(judgeResult == 'BAD'    ) return '102, 37, 0';
+        else if(judgeResult == 'GOOD'   ) return '47, 157, 39';
+        else if(judgeResult == 'GREAT'  ) return '103, 153, 250';
+        else if(judgeResult == 'PERFECT') return '255, 215, 0';
+        return '230, 40, 40';
+    }
+
+    /** 난이도 표시 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255) */
+    difficultyNumberColor(difficultyNumber) {
+        if(difficultyNumber <= 2) {
+            return '159, 201, 60';
+        } else if(difficultyNumber <= 3) {
+            return '159, 201, 60';
+        } else if(difficultyNumber == 4) {
+            return '107, 153, 0';
+        } else if(difficultyNumber <= 6) {
+            return '153, 112, 0';
+        } else if(difficultyNumber == 7) {
+            return '153, 56, 0';
+        } else if(difficultyNumber == 8) {
+            return '102, 37, 0';
+        } else {
+            return '230, 40, 40';
+        }
     }
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
@@ -4080,12 +4122,8 @@ class JudgeMark extends ShuttingStarsObject {
         ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
 
         let opa = this.getNowOpacity();
-        if(     this.judgeResult == 'MISS')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 80, 80, '  + opa + ')'); // red
-        else if(this.judgeResult == 'BAD')     ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 180, 80, ' + opa + ')'); // purple
-        else if(this.judgeResult == 'GOOD')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 230, 80, ' + opa + ')'); // yellow
-        else if(this.judgeResult == 'GREAT')   ctx.fillStyle = _shuttingstarcore.convertColor('rgba(180, 230, 80, ' + opa + ')'); // green
-        else if(this.judgeResult == 'PERFECT') ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 230, 80, '  + opa + ')'); // blue
-
+        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + _shuttingstarcore.judgeMarkColor(this.judgeResult) + ', ' + opa + ')');
+        
         let midX = _shuttingstarcore.getStageWidth()  / 2;
         let midY = _shuttingstarcore.getStageHeight() / 2;
         ctx.fillText(this.judgeResult, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY)); // 화면 중앙에 출력
