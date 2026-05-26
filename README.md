@@ -46,7 +46,10 @@ Web pages, advertisements, films, games, and other video materials using Subject
 
 ## Third Party Fonts
 
-+ D2Coding
++ Nanum Gothic, Nanum Myeongjo, Nanum Gothic Coding, D2Coding
 
-SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
-https://github.com/Joungkyun/font-d2coding/blob/master/License
+Copyright (c) 2010, NAVER Corporation (https://www.navercorp.com/) with Reserved Font Name Nanum, Naver Nanum, NanumGothic, Naver NanumGothic, NanumMyeongjo, Naver NanumMyeongjo, NanumBrush, Naver NanumBrush, NanumPen, Naver NanumPen, Naver NanumGothicEco, NanumGothicEco, Naver NanumMyeongjoEco, NanumMyeongjoEco, Naver NanumGothicLight, NanumGothicLight, NanumBarunGothic, Naver NanumBarunGothic, NanumSquareRound, NanumBarunPen, MaruBuri, NanumSquareNeo
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+
+Visit https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko

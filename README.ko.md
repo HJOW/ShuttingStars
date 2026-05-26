@@ -46,7 +46,10 @@ Music promoted by Audio Library: https://links.al/youtube
 
 ## 써드파티 글꼴
 
-+ D2Coding
++ 나눔고딕, 나눔명조, 나눔고딕코딩, D2Coding
 
-SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
-https://github.com/Joungkyun/font-d2coding/blob/master/License
+‘나눔, 네이버 나눔, 나눔고딕, 네이버 나눔고딕, 나눔명조, 네이버 나눔명조, 나눔손글씨, 네이버 나눔손글씨, 나눔펜, 네이버 나눔펜, 네이버 나눔고딕에코, 나눔고딕에코, 네이버 나눔명조에코, 나눔명조에코, 네이버 나눔고딕라이트, 나눔고딕라이트, 나눔바른고딕, 네이버나눔바른고딕, 나눔스퀘어라운드, 나눔바른펜, 마루 부리, 나눔스퀘어네오’ 폰트명에 대해 NAVER(https://www.navercorp.com/)가 저작권을 소유하고 있습니다.
+
+본 폰트 소프트웨어는 SIL 오픈 폰트 라이선스 버전 1.1에 따라 라이선스 취득을 하였습니다.
+
+전문 : https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko

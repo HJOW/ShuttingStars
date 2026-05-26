@@ -13,6 +13,69 @@
 }
 
 @font-face {
+    font-family : "Nanum Gothic";
+    src : url("NanumGothic.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "NanumGothic";
+    src : url("NanumGothic.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "Nanum Gothic";
+    src : url("NanumGothicBold.otf") format("opentype");
+    font-weight: normal;
+    font-style: bold;
+}
+
+@font-face {
+    font-family : "NanumGothic";
+    src : url("NanumGothicBold.otf") format("opentype");
+    font-weight: normal;
+    font-style: bold;
+}
+
+@font-face {
+    font-family : "Nanum Myeongjo";
+    src : url("NanumMyeongjo.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "Nanum Myeongjo";
+    src : url("NanumMyeongjo.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "Nanum Myeongjo";
+    src : url("NanumMyeongjoBold.otf") format("opentype");
+    font-weight: normal;
+    font-style: bold;
+}
+
+@font-face {
+    font-family : "NanumMyeongjo";
+    src : url("NanumMyeongjoBold.otf") format("opentype");
+    font-weight: normal;
+    font-style: bold;
+}
+
+@font-face {
+    font-family : "NanumGothicCoding";
+    src : url("NanumGothicCoding.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
     font-family: 'D2 coding';
     font-style: normal;
     font-weight: normal;

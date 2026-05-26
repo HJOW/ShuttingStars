@@ -56,6 +56,7 @@ _shuttingstarcore.stringTable = {
         'Resume within % !' : '재개 대기 % !',
         '%1 key to resume, %2 key to give up !' : '재개하려면 %1, 포기하려면 %2',
         '% key to reset all now !' : '% 키를 다시 누르면 전체 초기화 !',
+        '% key to start' : '% 키를 눌러 시작',
         'Do you want to reset all?' : '전부 초기화 하시겠습니까?'
     }
 };

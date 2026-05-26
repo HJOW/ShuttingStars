@@ -45,8 +45,9 @@ class ShuttingStarsCore {
     enterKey = 'ENTER';
     escKey = 'ESCAPE';
 
-    fontFamily = 'D2Coding'; // NanumGothicCoding / D2Coding
-    alterFonts = 'NanumGothicCoding'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
+    fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
+    pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
+    alterFonts = 'NanumGothicCoding NanumGothic'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
 
     canvas = null;    // 캔버스 객체
     configDiv = null; // 상세 설정 영역
@@ -90,6 +91,7 @@ class ShuttingStarsCore {
 
     usingWorker = true; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
+    titleScreenWaiting = false; // 상태가 title 이면서 로딩은 끝났음을 나타내는 변수
 
     workerRender = null;
     workerSongPlaying = null;
@@ -218,6 +220,7 @@ class ShuttingStarsCore {
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
         try {
+            this.titleScreenWaiting = false;
             this.logInit('init started');
             try { this.fBeforeInit(this); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
             
@@ -426,13 +429,10 @@ class ShuttingStarsCore {
             this.logInit('loading third parties...');
 
             this.loadAfter().then(() => {
-                selfs.logInit('starting background audio...');
+                selfs.logInit('preparing background audio...');
                 try {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
-                    selfs.audioBackground.loop = true;
-                    selfs.audioBackground.volume = selfs.volumeBackgroundDefault * (selfs.volume * selfs.volumeBackground * selfs.volumeMultiplier);
-                    selfs.audioBackground.play();
-                    selfs.audioBackgroundPlaying = true;
+                    // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
                 } catch(exAudio) {
                     console.error(exAudio);
                 }
@@ -455,7 +455,8 @@ class ShuttingStarsCore {
     /** 초기화 완료 후 호출 */
     afterInitialized() {
         this.menuChoosing = this.menuList[0];
-        this.setState('menu');
+        this.titleScreenWaiting = true;
+        // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
     }
 
     /** init 작업 진행현황 기록 (디버그 모드 시에만 의미 있음) */
@@ -927,7 +928,19 @@ class ShuttingStarsCore {
         // 방향키와 엔터 키 확인
         if(key == this.arrowKeys[0] || key == this.arrowKeys[1] || key == this.arrowKeys[2] || key == this.arrowKeys[3] || key == this.enterKey) {
             let index = 0;
-            if(this.state == 'menu') { 
+            if(this.state == 'title') {
+                if(key == this.enterKey || key == 'ENTER') {
+                    this.setState('menu');
+
+                    if(this.audioBackground != null) {
+                        this.audioBackground.currentTime = 0;
+                        this.audioBackground.loop = true;
+                        this.audioBackground.volume = this.volumeBackgroundDefault * (this.volume * this.volumeBackground * this.volumeMultiplier);
+                        this.audioBackground.play();
+                        this.audioBackgroundPlaying = true;
+                    }
+                }
+            } else if(this.state == 'menu') { 
                 // 메뉴 상태
 
                 if(this.menuList.indexOf(this.menuChoosing) >= 0) index = this.menuList.indexOf(this.menuChoosing);
@@ -1467,7 +1480,10 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        this.ctx.fillText(this.trans('Please wait...'), this.convertX(this.stageSize.w / 2), this.convertY(rows));
+        label = 'Please wait...';
+        if(this.titleScreenWaiting) label = '% key to start';
+
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), this.convertX(this.stageSize.w / 2), this.convertY(rows));
 
         fontSize = this.convertFontSize(12);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
@@ -3258,8 +3274,9 @@ class ShuttingStarsCore {
         return translated;
     }
 
-    /** render 메소드 내에서 사용되는 font 값 중 family 값 반환 */
-    getRenderFontFamily() {
+    /** render 메소드 내에서 사용되는 font 값 중 글꼴 파트 반환, pointFont 는 강조하고 싶을 때 true 를 입력 (선택사항) */
+    getRenderFontFamily(pointFont) {
+        if(pointFont) return this.pointFont + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
         return this.fontFamily + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
     }
     
