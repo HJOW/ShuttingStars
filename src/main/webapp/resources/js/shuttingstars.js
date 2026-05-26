@@ -39,6 +39,8 @@ class ShuttingStarsCore {
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     canvasZindex = 1;    // canvas 태그의 z-index
     
+    createMode = false; // 곡 생성 모드, 키보드 컨트롤 불가
+
     dark = true;
     reverseVertical = false;
     keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 입력 키
@@ -223,6 +225,7 @@ class ShuttingStarsCore {
     fOuterWidth  = function() { return window.outerWidth;  }
     fOuterHeight = function() { return window.outerHeight; }
     fBeforeInit  = function(obj) {  }
+    fAfterInit   = function(obj) {  }
 
     constructor() {}
     
@@ -374,6 +377,7 @@ class ShuttingStarsCore {
             this.logInit('setting events...');
 
             document.addEventListener('keydown', (event) => {
+                if(selfs.createMode) return;
                 if(selfs.keypressTiming <= 0) {
                     selfs.handleKeyInput(event.key.toUpperCase(), true);
                 } else {
@@ -382,6 +386,7 @@ class ShuttingStarsCore {
             });
 
             document.addEventListener('keyup', (event) => {
+                if(selfs.createMode) return;
                 if(selfs.keypressTiming <= 0) {
                     selfs.handleKeyRelease(event.key.toUpperCase(), true);
                 } else {
@@ -424,11 +429,13 @@ class ShuttingStarsCore {
             };
 
             this.canvas.addEventListener('mousedown', (event) => {
+                if(selfs.createMode) return;
                 const obj = fMouseClickConversion(event, true);
                 selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
             });
 
             this.canvas.addEventListener('mouseup', (event) => {
+                if(selfs.createMode) return;
                 const obj = fMouseClickConversion(event, false);
                 selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
             });
@@ -463,6 +470,12 @@ class ShuttingStarsCore {
             else this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
             this.renderConfigDiv();
             if(this.configDiv != null) this.configDiv.style.display = 'none';
+
+            if(this.createMode) {
+                this.logInit('applying creating mode...');
+                this.songDebugMode = true;
+                this.gameOverEnabled = false;
+            }
 
             this.logInit('loading third parties...');
 
@@ -502,6 +515,8 @@ class ShuttingStarsCore {
         this.menuChoosing = this.menuList[0];
         this.titleScreenWaiting = true;
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
+
+        try { this.fAfterInit(this); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
     }
 
     /** init 작업 진행현황 기록 (디버그 모드 시에만 의미 있음) */
@@ -817,7 +832,7 @@ class ShuttingStarsCore {
 
             // 시리얼 없는 경우 임의 시리얼 부여
             if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(Math.random() * 999999999) + '' + Math.floor(Math.random() * 999999999);
-            list.push(songOne);
+            list.push(songOne.toJSONObject());
         }
 
         // 스토리지에 저장
@@ -1093,13 +1108,12 @@ class ShuttingStarsCore {
                     }
                 } else if(key == this.enterKey) { // ENTER
                     if(this.songChoosing == null) return;
+                    this.playTick();
 
                     if(this.difficultyChoosing) {
                         if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
                         this.songTitleTime = this.songTitleBaseTime;
                         if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-
-                        this.playTick();
 
                         // 곡 플레이 선택함.
                         this.setState('songtitle');
@@ -3669,72 +3683,85 @@ class ShuttingStarsCore {
         this.pluginApplied = [];
     }
 
+    /** JSON 객체를 읽어 ShuttingStarsSong 객체 생성 */
+    parseSong(json) {
+        if(typeof(json) == 'string') json = JSON.parse(json);
+
+        let idx;
+        let song = new ShuttingStarsSong();
+
+        song.name           = json.name;
+        song.composer       = json.composer;
+        song.noteWriter     = json.noteWriter;
+        song.bgaUrl         = json.bgaUrl;
+        song.musicUrl       = json.musicUrl;
+        song.thumbnailUrl   = json.thumbnailUrl;
+        song.description    = json.description;
+        song.loadingTime    = json.loadingTime;
+        song.bpm            = json.bpm;
+        song.endTime        = json.endTime;
+        song.timeConstant   = json.timeConstant;
+        song.timeMultiplier = json.timeMultiplier;
+        song.difficulties   = [];
+        song.decorations    = [];
+
+        song.test = false;
+        if(json.test) song.test = true;
+
+        song.autoStars = true;
+        if(typeof(json.autoStars) != 'undefined') {
+            if(json.autoStars) song.autoStars = true;
+            else               song.autoStars = false;
+        }
+
+        for(idx=0; idx<json.difficulties.length; idx++) {
+            const difficultyOne = json.difficulties[idx];
+            let newObj = {};
+
+            newObj.index = idx;
+            newObj.difficultyLabel = difficultyOne.difficultyLabel;
+            newObj.difficultyLevel = difficultyOne.difficultyLevel;
+            newObj.patterns = [];
+
+            for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
+                const noteJsonOne = difficultyOne.patterns[idx2];
+                let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
+                newObj.patterns.push(patternOne);
+            }
+            song.difficulties.push(newObj);
+        }
+
+        if(json.serial != null && json.serial != '') {
+            song.serial = json.serial;
+        } else {
+            song.serial = 'CUSTOMSONG_' + (Math.random() * 99999999) + '' + (Math.random() * 99999999);
+        }
+
+        if(json.decorations) {
+            if(typeof(json.decorations) == 'string') json.decorations = JSON.parse(json.decorations);
+            song.decorations = json.decorations;
+        }
+
+        return song;
+    }
+
     /** 외부에서 곡 추가 시 호출 */
     addSong(song, noSave) {
+        let returnVal = null;
         let idx;
         if(! (song instanceof ShuttingStarsSong)) {
             let json = song;
             if(typeof(json) == 'string') json = JSON.parse(json);
 
-            song = new ShuttingStarsSong();
-            song.name           = json.name;
-            song.composer       = json.composer;
-            song.noteWriter     = json.noteWriter;
-            song.bgaUrl         = json.bgaUrl;
-            song.musicUrl       = json.musicUrl;
-            song.thumbnailUrl   = json.thumbnailUrl;
-            song.description    = json.description;
-            song.loadingTime    = json.loadingTime;
-            song.bpm            = json.bpm;
-            song.endTime        = json.endTime;
-            song.timeConstant   = json.timeConstant;
-            song.timeMultiplier = json.timeMultiplier;
-            song.difficulties   = [];
-            song.decorations    = [];
+            song = this.parseSong(json);
+            returnVal = song;
+        } else {
+            returnVal = song;
+        }
 
-            song.test = false;
-            if(json.test) song.test = true;
-
-            song.autoStars = true;
-            if(typeof(json.autoStars) != 'undefined') {
-                if(json.autoStars) song.autoStars = true;
-                else               song.autoStars = false;
-            }
-
-            for(idx=0; idx<json.difficulties.length; idx++) {
-                const difficultyOne = json.difficulties[idx];
-                let newObj = {};
-
-                newObj.index = idx;
-                newObj.difficultyLabel = difficultyOne.difficultyLabel;
-                newObj.difficultyLevel = difficultyOne.difficultyLevel;
-                newObj.patterns = [];
-
-                for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
-                    const noteJsonOne = difficultyOne.patterns[idx2];
-                    let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
-                    newObj.patterns.push(patternOne);
-                }
-                song.difficulties.push(newObj);
-            }
-
-            song.serial = '';
-            if(json.serial != null && json.serial != '') {
-                // 저장된 다른 곡들 중 시리얼 충돌 확인해야 함
-                let exists = false;
-                for(let songOne of this.songs) {
-                    if(songOne.serial == json.serial) {
-                        exists = true;
-                        break;
-                    }
-                }
-                if(! exists) song.serial = json.serial; // 충돌 안하는 시리얼이면 넣기
-            }
-
-            if(json.decorations) {
-                if(typeof(json.decorations) == 'string') json.decorations = JSON.parse(json.decorations);
-                song.decorations = json.decorations;
-            }
+        // 시리얼 없으면 발급
+        if(song.serial == null || song.serial == '') {
+            song.serial = 'CUSTOMSONG_' + (Math.random() * 99999999) + '' + (Math.random() * 99999999);
         }
 
         // 중복 체크
@@ -3751,10 +3778,8 @@ class ShuttingStarsCore {
             }
         }
 
-        if(! exists) {
-            // 추가
-            this.songs.push(song);
-        }
+        if(exists) throw "Duplicated song's serial";
+        this.songs.push(song);
 
         // songDisplays 갱신
         if(this.songDebugMode) {
@@ -3768,8 +3793,9 @@ class ShuttingStarsCore {
             }
         }
 
-        if(noSave) return;
+        if(noSave) return returnVal;
         this.saveSongs();
+        return returnVal;
     }
 
     /** 부동소수 동일여부 확인 */
@@ -3862,7 +3888,7 @@ class ShuttingStarsSong {
     //     difficultyLabel : easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
     //     difficultyLevel : 1, 2, 3, ... (정수로  입력)
     //     patterns : 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
-    difficulties = []
+    difficulties = [];
 
     // 장식
     decorations = [];
@@ -3907,6 +3933,49 @@ class ShuttingStarsSong {
             arr.push(line);
         }
         return arr;
+    }
+
+    toJSONObject() {
+        let idx, jdx;
+        let obj = {};
+        obj.name = this.name;
+        obj.composer = this.composer;
+        obj.noteWriter = this.noteWriter;
+        obj.bgaUrl = this.bgaUrl;
+        obj.musicUrl = this.musicUrl;
+        obj.thumbnailUrl = this.thumbnailUrl;
+        obj.description = this.description;
+        obj.loadingTime = this.loadingTime;
+        obj.bpm = this.bpm;
+        obj.endTime = this.endTime;
+        obj.timeConstant = this.timeConstant;
+        obj.timeMultiplier = this.timeMultiplier;
+        obj.test = this.test;
+        obj.autoStars = this.autoStars;
+        obj.serial = this.serial;
+        obj.decorations = this.decorations;
+        obj.difficulties = [];
+        
+
+        for(idx=0; idx<this.difficulties.length; idx++) {
+            let diffOne = this.difficulties[idx];
+            let diffObj = {};
+            diffObj.index = diffOne.index;
+            diffObj.difficultyLabel = diffOne.difficultyLabel;
+            diffObj.difficultyLevel = diffOne.difficultyLevel;
+            diffObj.patterns = [];
+
+            for(jdx=0; jdx<diffOne.patterns.length; jdx++) {
+                const noteObjOne = diffOne.patterns[jdx];
+                let noteJsonOne = {};
+                noteJsonOne.locationIndex = noteObjOne.locationIndex;
+                noteJsonOne.time = noteObjOne.time;
+                diffObj.patterns.push(noteJsonOne);
+            }
+            obj.difficulties.push(diffObj);
+        }
+
+        return obj;
     }
 }
 
@@ -4720,7 +4789,7 @@ const SSUtil = ShuttingStarsUtility;
 
 /** 곡 추가 */
 function addShuttingStarSong(song) {
-    _shuttingstarcore.addSong(song);
+    return _shuttingstarcore.addSong(song);
 }
 
 /** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */

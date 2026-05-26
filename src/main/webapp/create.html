@@ -45,10 +45,13 @@ body {
     overflow: hidden;
 }
 html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5, h6, label, table, tr, td, th {
-    font-family: 'Nanum Gothic Coding';
+    font-family: 'D2Coding, Nanum Gothic Coding';
 }
 .invisible {
     display: none !important;
+}
+.full {
+    width: 100%;
 }
 .shuttingstar_canvas_root {
     background-image: linear-gradient(180deg, rgba(48, 48, 48, 0.99) 10%, rgba(69, 69, 69, 0.99) 100%);
@@ -86,12 +89,201 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 <script type="text/javascript">
 
 /* 페이지 접속 시 호출 */
-document.addEventListener('DOMContentLoaded', function(){
-    
+$(function() {
+    const root = $('.shuttingstar_root');
+    _shuttingstarcore.fBeforeInit = function(inst) {
+        inst.createMode = true;
+        inst.fOuterWidth  = function() { return  720;  }
+        inst.fOuterHeight = function() { return 1280; }
+    }
+    initShuttingStars(root[0]);
+    _shuttingstarcore.fAfterInit = function(inst) {
+        let idx;
+        const ta = $('.ta_song_json');
+        const selSongs = $('.sel_songs');
+        const selDiff = $('.sel_diff');
+        const btnLoad = $('.btn_load');
+        const btnSave = $('.btn_save');
+        const btnTest = $('.btn_test');
+        const btnStop = $('.btn_stop');
+
+        let songSelected = null;
+
+        const fLoadSongList = function() {
+            selSongs.empty();
+            selDiff.empty();
+            btnTest.prop('disabled', true);
+            btnStop.prop('disabled', true);
+            selSongs.append("<option value=''>- NEW -</option>");
+            for(idx=0; idx<inst.songs.length; idx++) {
+                const songOne = inst.songs[idx];
+                if(songOne.serial == '') continue;
+                selSongs.append("<option value='" + SSUtil.replaceString(songOne.serial, "'", "\"") + "'>" + SSUtil.replaceString(SSUtil.replaceString(songOne.name, '<', '&lt;'), '>', '&gt;') + "</option>");
+            }
+        }
+
+        const fLoadSong = function() {
+            selDiff.empty();
+            btnTest.prop('disabled', true);
+            btnStop.prop('disabled', true);
+
+            let song = null;
+            let songSerial = selSongs.val();
+
+            if(songSerial == '') {
+                song = new ShuttingStarsSong();
+                song.difficulties.push({
+                    index : 0,
+                    difficultyLabel : 'easy',
+                    difficultyLevel : 1,
+                    patterns : []
+                });
+            } else {
+                for(idx=0; idx<inst.songs.length; idx++) {
+                    const songOne = inst.songs[idx];
+                    if(songOne.serial == songSerial) {
+                        song = songOne;
+                        break;
+                    }
+                }
+            }
+
+            if(song == null) { alert('Failed to load this song !'); fLoadSongList(); return; }
+            songSelected = song;
+
+            ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
+
+            let diffList = [];
+            for(idx=0; idx<songSelected.difficulties.length; idx++) {
+                let diffOne = songSelected.difficulties[idx];
+                selDiff.append("<option value='" + idx + "'>" + SSUtil.replaceString(SSUtil.replaceString( diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')' , '<', '&lt;'), '>', '&gt;') + "</option>");
+            }
+            if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); }
+            else { selDiff.prop('disabled', true); btnTest.prop('disabled', true); }
+        }
+
+        const fSaveSong = function() {
+            let text = ta.val();
+            let songConverted = null;
+            try {
+                let json = JSON.parse(text);
+                songConverted = inst.parseSong(json);
+            } catch(e) {
+                console.error(e);
+                alert('ERROR : ' + e);
+                return;
+            }
+
+            if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
+                songConverted = inst.addSong(songConverted); 
+                let newSerial = songConverted.serial;
+                fLoadSongList();
+                selSongs.val(newSerial);
+            } else { // 기존 곡인 경우
+                if(inst.officialSongSerials.indexOf(songConverted.serial) >= 0) { alert('Cannot modify official songs !'); return; }
+                let beforeSongIdx = null;
+
+                for(idx=0; idx<inst.songs.length; idx++) {
+                    const songOne = inst.songs[idx];
+                    if(songOne.serial == songConverted.serial) {
+                        beforeSongIdx = idx;
+                        break;
+                    }
+                }
+
+                inst.songs[beforeSongIdx] = songConverted;
+                fLoadSongList();
+                selSongs.val(songConverted.serial);
+            }
+            fLoadSong();
+        }
+
+        const fTest = function() {
+            btnTest.prop('disabled', true);
+            btnLoad.prop('disabled', true);
+            btnSave.prop('disabled', true);
+
+            let text = ta.val();
+            let songConverted = null;
+            try {
+                songConverted = inst.parseSong(text);
+            } catch(e) {
+                console.error(e);
+                alert('ERROR : ' + e);
+                return;
+            }
+
+            let diff = selDiff.val();
+
+            if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
+                fSaveSong();
+                selDiff.val(diff);
+            }
+
+            inst.song = songConverted;
+            inst.difficultyChoosingList = songConverted.getDifficultyList();
+            inst.difficulty = inst.difficultyChoosingList[parseInt(diff)];
+            inst.difficultyChoosing = false;
+
+            inst.songTitleTime = inst.songTitleBaseTime;
+            if(! isNaN(inst.song.loadingTime)) inst.songTitleTime += inst.song.loadingTime;
+
+            // 곡 플레이 선택함.
+            inst.setState('songtitle');
+            inst.difficultyChoosing = false;
+            inst.titleDelayTime = Math.floor(20 * (inst.noteSpeedMultiplier - 1));
+            setTimeout(function() { btnStop.prop('disabled', false); }, 2000);
+        }
+
+        const fStop = function() {
+            btnStop.prop('disabled', true);
+            btnTest.prop('disabled', false);
+            btnLoad.prop('disabled', false);
+            btnSave.prop('disabled', false);
+            inst.onSongEnd();
+        }
+
+        btnLoad.on('click', fLoadSong);
+        btnSave.on('click', fSaveSong);
+        btnTest.on('click', fTest);
+        btnStop.on('click', fStop);
+        
+        fLoadSongList();
+        fLoadSong();
+    }
 });
 </script>
 </head>
 <body>
-    <div class='shuttingstar_canvas_root'></div>
+    <div class='shuttingstar_create_root'>
+        <table class="full">
+            <colgroup>
+                <col/>
+                <col style="width: 720px;"/>
+            </colgroup>
+            <tbody>
+                <tr>
+                    <td colspan="2">
+                        <span>
+                            <select class="sel sel_songs"></select>
+                            <button type="button" class="btn btn_load">LOAD</button>
+                            <button type="button" class="btn btn_save">SAVE</button>
+                        </span>
+                        <span>
+                            <select class="sel sel_diff" disabled="disabled"></select>
+                            <button type="button" class="btn btn_test" disabled="disabled">TEST</button>
+                            <button type="button" class="btn btn_stop" disabled="disabled">STOP</button>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="height: 1280px; max-height: 1280px; vertical-align: top;">
+                        <textarea class="full ta_song_json" style="height: 1280px;"></textarea>
+                    </td>
+                    <td style="width:720px; max-width: 720px; height: 1280px; max-height: 1280px; overflow: hidden;"><div class='shuttingstar_root'></div></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
