@@ -33,7 +33,8 @@ class ShuttingStarsCore {
     ressets    = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
 
-    virtualKey = false; // 가상 키 출력 여부
+    virtualKey = false;      // 가상 키 출력 여부
+    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음)
 
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     canvasZindex = 1;    // canvas 태그의 z-index
@@ -161,12 +162,15 @@ class ShuttingStarsCore {
     keypressTiming = 0; // 키 입력 추가 딜레이 보정값
     songTiming = 0; // 음원 재생 딜레이 보정값
 
+    keypressing = {}; // 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량)
+
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     renderDebugMode = false;
     // 스트링 테이블 디버그 모드, 번역 가능 키워드가 화면에 나올 때마다 콘솔에도 출력
     stringTableDebugMode = true;
     // 키보드 입력 디버그 모드
-    keyInputDebugMode = true;
+    keyInputDebugMode = false;
+    keyReleaseDebugMode = false;
     // 마우스 클릭 디버그 모드
     mouseClickDebugMode = false;
     // init 디버그 모드
@@ -323,7 +327,8 @@ class ShuttingStarsCore {
             this.logInit('detecting touchscreen...');
 
             // 가상 키 사용여부 지정
-            this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform();
+            if(this.virtualKeyForce) this.virtualKey = true;
+            else this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform();
 
             this.logInit('load settings...');
 
@@ -371,7 +376,17 @@ class ShuttingStarsCore {
                 }
             });
 
-            this.canvas.addEventListener('click', (event) => {
+            document.addEventListener('keyup', (event) => {
+                if(selfs.keypressTiming <= 0) {
+                    selfs.handleKeyRelease(event.key.toUpperCase(), true);
+                } else {
+                    setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase(), true); }, selfs.keypressTiming);
+                }
+            });
+
+            const fMouseClickConversion = function(event, mouseDown) {
+                let obj = {};
+
                 const rect = canvas.getBoundingClientRect();
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
@@ -380,7 +395,12 @@ class ShuttingStarsCore {
                 const rx = Math.floor((x * selfs.stageSize.w) / rect.width );
                 const ry = Math.floor((y * selfs.stageSize.h) / rect.height);
 
-                if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+                if(mouseDown) {
+                    if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+                } else {
+                    if(selfs.mouseClickDebugMode) console.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+                }
+                
 
                 // 임시 객체 (충돌여부 판단 위함)
                 const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
@@ -392,7 +412,20 @@ class ShuttingStarsCore {
                 mouseCursorObject.explosing = 1;
                 selfs.objects.push(mouseCursorObject);
 
-                selfs.handleMouseClick(rx, ry, mouseCursorObject);
+                obj.x = rx;
+                obj.y = ry;
+                obj.cursor = mouseCursorObject;
+                return obj;
+            };
+
+            this.canvas.addEventListener('mousedown', (event) => {
+                const obj = fMouseClickConversion(event, true);
+                selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
+            });
+
+            this.canvas.addEventListener('mouseup', (event) => {
+                const obj = fMouseClickConversion(event, false);
+                selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
             });
 
             let outWidth  = this.fOuterWidth();
@@ -519,7 +552,7 @@ class ShuttingStarsCore {
         const vkey = new VirtualKey(rkey);
         selfs.objects.push(vkey);
         
-        vkey.callback = function() {
+        vkey.click = function() {
             if(selfs.keypressTiming <= 0) {
                 selfs.handleKeyInput(rkey, false);
             } else {
@@ -527,14 +560,25 @@ class ShuttingStarsCore {
             }
         };
 
+        vkey.release = function() {
+            if(selfs.keypressTiming <= 0) {
+                selfs.handleKeyRelease(rkey);
+            } else {
+                setTimeout(() => { selfs.handleKeyRelease(rkey); }, selfs.keypressTiming);
+            }
+        }
+
         selfs.mouseEvents.push({
             type : 'circle',
             x : vkey.x,
             y : vkey.y,
             r : vkey.r, // rect 인 경우 w 대신
-            callback : () => {
-                vkey.callback();
+            click : () => {
+                vkey.click();
                 vkey.explosing = 1;
+            },
+            release : () => {
+                vkey.release();
             }
         });
     }
@@ -924,6 +968,10 @@ class ShuttingStarsCore {
     /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
     handleKeyInput(key, vkeyExplosion) {
         if(this.keyInputDebugMode) console.log('KEY INPUT : ' + this.elapsedTime + ', ' + key);
+        key = String(key);
+
+        // 키 입력 신호 넣기
+        this.keypressing[key] = new Date().getTime();
 
         // 방향키와 엔터 키 확인
         if(key == this.arrowKeys[0] || key == this.arrowKeys[1] || key == this.arrowKeys[2] || key == this.arrowKeys[3] || key == this.enterKey) {
@@ -1195,6 +1243,7 @@ class ShuttingStarsCore {
         }
     }
 
+    /** NotePlacer 호출 처리 */
     handleNotePlacerCalled(notePlacer) {
         // NotePlacer 폭발 처리
         notePlacer.explosing = 1;
@@ -1244,7 +1293,38 @@ class ShuttingStarsCore {
             tempObject.fill = true;
 
             if(mouseCursorObject.isConflicted(tempObject)) {
-                if(typeof(evOne.callback) == 'function') evOne.callback();
+                if(typeof(evOne.click) == 'function') evOne.click();
+            }
+        }
+    }
+
+    /** 키 입력 해제 (손가락을 뗌) 처리 */
+    handleKeyRelease(key) {
+        if(this.keyReleaseDebugMode) console.log('KEY RELEASE : ' + this.elapsedTime + ', ' + key);
+        key = String(key);
+
+        const timeDiff = (typeof(this.keypressing[key]) == 'undefined' || this.keypressing[key] == null) ? 0 : new Date().getTime() - this.keypressing[key];
+        this.keypressing[key] = null;
+
+        // TODO
+    }
+
+    /** 마우스 클릭 해제 / 터치 해제 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
+    handleMouseRelease(x, y, mouseCursorObject) {
+        const selfs = this;
+        for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
+            const evOne = selfs.mouseEvents[mdx];
+            // 임시 객체 (충돌여부 판단 위함)
+            const tempObject = new ShuttingStarsObject();
+            tempObject.type = evOne.type;
+            tempObject.x    = evOne.x;
+            tempObject.y    = evOne.y;
+            tempObject.r    = evOne.r;
+            if(tempObject.h) tempObject.h = evOne.h;
+            tempObject.fill = true;
+
+            if(mouseCursorObject.isConflicted(tempObject)) {
+                if(typeof(evOne.release) == 'function') evOne.release();
             }
         }
     }
@@ -4134,7 +4214,8 @@ class VirtualKey extends DecorationObject {
     fontSize = 25;
     wGap = 8;
     hGap = 8;
-    callback = function() {};
+    click = function() {};
+    release = function() {}
     constructor(key) {
         super(0);
 
