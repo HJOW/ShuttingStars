@@ -1392,7 +1392,7 @@ class ShuttingStarsCore {
         // 일시정지 상태 그리기
         if(this.paused) {
             fontSize = this.convertFontSize(20);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -1400,7 +1400,7 @@ class ShuttingStarsCore {
             this.ctx.strokeText(this.trans('PAUSED'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) + 10));
 
             fontSize = this.convertFontSize(12);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
             let escKeyLabel = this.escKey;
             if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
@@ -1414,7 +1414,7 @@ class ShuttingStarsCore {
         // 일시정지 해제 대기시간 그리기
         if(this.resumingTime >= 1) {
             fontSize = this.convertFontSize(15);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = fontSize + 'px ' + this.getRenderFontFamily();
 
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -1425,7 +1425,7 @@ class ShuttingStarsCore {
         // 시간 소요 디버그 출력
         if(this.timeElapseDebugMode) {
             fontSize = this.convertFontSize(12);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -1436,7 +1436,7 @@ class ShuttingStarsCore {
         // 게임 오버 그리기
         if(this.state == 'gameover') {
             fontSize = this.convertFontSize(20);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
             this.ctx.fillStyle = this.convertColor('rgba(250, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
@@ -1454,7 +1454,7 @@ class ShuttingStarsCore {
         let label = '';
 
         rows = (this.stageSize.h / 2) - 100 + rows;
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -1462,14 +1462,14 @@ class ShuttingStarsCore {
 
         rows = this.stageSize.h - fontSize - gap;
         fontSize = this.convertFontSize(15);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         this.ctx.fillText(this.trans('Please wait...'), this.convertX(this.stageSize.w / 2), this.convertY(rows));
 
         fontSize = this.convertFontSize(12);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
@@ -1486,7 +1486,7 @@ class ShuttingStarsCore {
         let label = '';
 
         rows = (this.stageSize.h / 2) - 100 + rows;
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -1501,20 +1501,21 @@ class ShuttingStarsCore {
             if(menuOne == 'credit' ) label = this.trans('CREDIT');
 
             fontSize = this.convertFontSize(20);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
 
             if(this.menuChoosing == menuOne) {
+                this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.99;
 
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                 this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
             } else {
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.3;
 
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
             }
             
             rows += fontSize + gap;
@@ -1524,7 +1525,7 @@ class ShuttingStarsCore {
         rows += fontSize * 5;
 
         fontSize = this.convertFontSize(12);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         opacity = 0.9;
         label = this.trans('MOVE : ');
         for(idx=0; idx<this.arrowKeys.length; idx++) {
@@ -1566,7 +1567,7 @@ class ShuttingStarsCore {
         // 곡 목록이 비어 있으면 안내문구 출력 후 메뉴로 이동
         if(this.songDisplays.length <= 0) {
             fontSize = this.convertFontSize(20);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - (uppers - 20) + rows));
@@ -1576,7 +1577,7 @@ class ShuttingStarsCore {
         } else {
             // 그외의 경우 안내문구 출력
             fontSize = this.convertFontSize(30);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
@@ -1639,7 +1640,7 @@ class ShuttingStarsCore {
 
             // 곡 이름 출력
             label = songOne.name;
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
             opacity = 0.99;
             // if(choosen) opacity = 0.99;
@@ -1661,7 +1662,7 @@ class ShuttingStarsCore {
             // 작곡가, 노트작성자, bpm 출력
             label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
             fontSize = this.convertFontSize(15);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
             // if(this.songChoosing == songOne) opacity = 0.99;
             // else opacity = 0.3;
@@ -1682,7 +1683,7 @@ class ShuttingStarsCore {
             // 현재 선택된 곡이고, 난이도 선택해야 하는 차례인 경우
             if(choosen && this.difficultyChoosing) {
                 fontSize = this.convertFontSize(15);
-                this.ctx.font = fontSize + 'px ' + this.fontFamily;
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
@@ -1713,7 +1714,9 @@ class ShuttingStarsCore {
                     if(ddx == diffIdx) label += ']';
 
                     fontSize = this.convertFontSize(15);
-                    this.ctx.font = fontSize + 'px ' + this.fontFamily;
+                    if(ddx == diffIdx) this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    else               this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
                     if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
                     else               this.ctx.fillText(label, this.convertX(this.stageSize.w / 2) + cols - (diffIdx * fontSize * 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
                     cols += (fontSize * label.length) + 20;
@@ -1734,7 +1737,7 @@ class ShuttingStarsCore {
 
         // 기타 안내 출력
         fontSize = this.convertFontSize(12);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         opacity = 0.9;
         label = this.trans('MOVE : ');
         for(idx=0; idx<this.arrowKeys.length; idx++) {
@@ -1775,7 +1778,7 @@ class ShuttingStarsCore {
                 this.ctx.fillRect(descX, Math.floor(this.canvas.height * 2.7 / 4.0), descW, Math.floor(this.canvas.height * 1.2 / 4.0));
 
                 fontSize = this.convertFontSize(12);
-                this.ctx.font = fontSize + 'px ' + this.fontFamily;
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 this.ctx.textAlign = "left";
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
@@ -1802,7 +1805,7 @@ class ShuttingStarsCore {
 
         if(this.settingChoosing == null) this.settingChoosing = this.settingList[0];
 
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -1831,8 +1834,8 @@ class ShuttingStarsCore {
             }
             
             fontSize = this.convertFontSize(20);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
             if(choosen) {
+                this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
                 if(this.settingModifyingMode) opacity = 0.99;
                 else opacity = 0.8;
 
@@ -1840,11 +1843,12 @@ class ShuttingStarsCore {
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                 this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             } else {
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.3;
 
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.stageSize.w / 2), this.convertY((this.stageSize.h / 2) - uppers + rows));
             }
             
             rows += fontSize + gap;
@@ -1854,7 +1858,7 @@ class ShuttingStarsCore {
         rows += fontSize * 3;
 
         fontSize = this.convertFontSize(12);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         opacity = 0.9;
         label = 'MOVE : ';
         for(idx=0; idx<this.arrowKeys.length; idx++) {
@@ -1898,7 +1902,7 @@ class ShuttingStarsCore {
         // 곡 이름 출력
         label = songOne.name;
         fontSize = this.convertFontSize(30);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
@@ -1909,7 +1913,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(20);
         rows = this.stageSize.h - ((fontSize * 2) + gap);
         label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
@@ -1920,7 +1924,7 @@ class ShuttingStarsCore {
         label = String(this.difficulty.difficultyLevel);
         fontSize = this.convertFontSize(40);
         rows -= this.convertFontSize(5);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.resolution.w - (fontSize * 2)), this.convertY((rows)));
     }
@@ -1934,7 +1938,7 @@ class ShuttingStarsCore {
         let label = '';
 
         rows = (this.stageSize.h / 6);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -1942,31 +1946,31 @@ class ShuttingStarsCore {
         rows += fontSize + (gap/2);
 
         fontSize = this.convertFontSize(20);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(80, 230, 80, 0.8)'); // blue
         this.ctx.textAlign = "center";
         this.ctx.fillText('PERFECT\t' + ShuttingStarsUtility.fitDigit( this.report.PERFECT , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(180, 230, 80, 0.8)'); // green
         this.ctx.textAlign = "center";
         this.ctx.fillText('GREAT  \t' + ShuttingStarsUtility.fitDigit( this.report.GREAT , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(230, 230, 80, 0.8)'); // yellow
         this.ctx.textAlign = "center";
         this.ctx.fillText('GOOD   \t' + ShuttingStarsUtility.fitDigit( this.report.GOOD , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(230, 180, 80, 0.8)'); // purple
         this.ctx.textAlign = "center";
         this.ctx.fillText('BAD    \t' + ShuttingStarsUtility.fitDigit( this.report.BAD , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
         rows += fontSize + (gap/4);
 
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(230, 80, 80, 0.8)'); // red
         this.ctx.textAlign = "center";
         this.ctx.fillText('MISS   \t' + ShuttingStarsUtility.fitDigit( this.report.MISS , 5), this.convertX(this.stageSize.w / 2), this.convertY(rows));
@@ -1974,7 +1978,7 @@ class ShuttingStarsCore {
 
         label = ShuttingStarsUtility.fitDigit(this.point, 10) + ' (' + this.judgeResultRank() + ')';
         fontSize = this.convertFontSize(15);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -1984,7 +1988,7 @@ class ShuttingStarsCore {
         // 곡 이름 출력
         label = this.song.name;
         fontSize = this.convertFontSize(30);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         rows = this.stageSize.h - ((fontSize * 3) + gap);
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -1996,7 +2000,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(20);
         rows = this.stageSize.h - ((fontSize * 2) + (gap * 2));
         label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.song.composer), '%2', this.song.noteWriter), '%3', String(this.song.bpm));
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -2007,7 +2011,7 @@ class ShuttingStarsCore {
         label = String(this.difficulty.difficultyLevel);
         fontSize = this.convertFontSize(40);
         rows -= this.convertFontSize(5);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.stageSize.w - (fontSize * 2)), this.convertY((rows)));
 
@@ -2016,7 +2020,7 @@ class ShuttingStarsCore {
         if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
 
         fontSize = this.convertFontSize(15);
-        this.ctx.font = fontSize + 'px ' + this.fontFamily;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.stageSize.w - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
     }
@@ -2208,7 +2212,7 @@ class ShuttingStarsCore {
             const nows = this.creditContents[idx];
 
             fontSize = this.convertFontSize(nows.fontSize);
-            this.ctx.font = fontSize + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.fillText(nows.label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
             rows += fontSize;
             
@@ -2219,7 +2223,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.creditContents.length; idx++) { // 루프 전체 출력 - 어짜피 넘치는 영역은 숨겨지므로
             const nows = this.creditContents[idx];
 
-            this.ctx.font = this.convertFontSize(nows.fontSize) + 'px ' + this.fontFamily;
+            this.ctx.font = 'normal ' + this.convertFontSize(nows.fontSize) + 'px ' + this.getRenderFontFamily();
             this.ctx.fillText(nows.label, this.convertX(this.stageSize.w / 2), this.convertY(rows));
             rows += fontSize;
             
@@ -3252,6 +3256,11 @@ class ShuttingStarsCore {
 
         return translated;
     }
+
+    /** render 메소드 내에서 사용되는 font 값 중 family 값 반환 */
+    getRenderFontFamily() {
+        return this.fontFamily;
+    }
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
     convertX(x) {
@@ -3789,7 +3798,7 @@ class NoteKeyObject extends ShuttingStarsObject {
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
         let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
-        ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
+        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
 
         if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
         else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
@@ -3876,7 +3885,7 @@ class JudgeMark extends ShuttingStarsObject {
 
         // 화면에 판정 결과 띄우기
         let fontSize = _shuttingstarcore.convertFontSize(dynamicFontSize);
-        ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
+        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
 
         let opa = this.getNowOpacity();
         if(     this.judgeResult == 'MISS')    ctx.fillStyle = _shuttingstarcore.convertColor('rgba(230, 80, 80, '  + opa + ')'); // red
@@ -3895,7 +3904,7 @@ class JudgeMark extends ShuttingStarsObject {
         // 콤보 띄우기
         if(combo > 1) {
             fontSize = _shuttingstarcore.convertFontSize(15);
-            ctx.font = fontSize + 'px ' + _shuttingstarcore.fontFamily;
+            ctx.font = 'normal ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
             if(this.judgeResult == 'MISS') {
                 ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 0, 0, ' + opa + ')');
             } else {
@@ -4205,7 +4214,7 @@ class VirtualKey extends DecorationObject {
             ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 255, 255, ' + this.getNowOpacity() + ')');
         }
         //    글자 폰트 세팅
-        ctx.font = this.fontSize + 'px ' + _shuttingstarcore.fontFamily;
+        ctx.font = 'bold ' + this.fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
 
         let label = this.key;
         if(     label == 'ARROWUP'   ) label = '▲';
