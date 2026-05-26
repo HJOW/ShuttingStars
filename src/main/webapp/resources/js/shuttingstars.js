@@ -2760,13 +2760,14 @@ class ShuttingStarsCore {
             .shuttingstar_configlayer button.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
             .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
             .shuttingstar_configlayer table th { border: 0; text-align: left; }
+            .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
             .shuttingstar_configlayer .tabarea        { display: none; }
             .shuttingstar_configlayer .tabarea.active { display: block; }
             .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.4); color: rgba(50, 230, 50, 0.4); }
             .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.5); color: rgba(50, 230, 50, 0.6); }
             .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
-            .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 600px; vertical-align: top; }
-            .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 600px; }
+            .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 500px; vertical-align: top; }
+            .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 500px; }
             .shuttingstar_configlayer .shuttingstar_tools_inner { height: 600px; overflow-y: scroll; }
             .shuttingstar_configlayer .shuttingstar_tools_inner .section { margin-bottom: 30px; }
             .shuttingstar_configcontrols { margin-top: 20px; }
