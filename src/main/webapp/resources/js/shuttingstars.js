@@ -66,6 +66,7 @@ class ShuttingStarsCore {
     songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
     visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수 (변경 불가)
+    backStarlightCount = 20;       // 배경 별빛 장식 갯수
     
     margins = { // 여백 (빈 공간)
         page  : { left :  0, top : 0 },
@@ -1469,6 +1470,13 @@ class ShuttingStarsCore {
             return;
         }
 
+        // BGA 그리기
+        if(this.song) {
+            if(this.song.bgaUrl != null && typeof(this.song.bgaUrl) != 'undefined') {
+                // this.song.bgaUrl
+            }
+        }
+
         let fontSize;
 
         // 시각화 그리기
@@ -2393,7 +2401,7 @@ class ShuttingStarsCore {
             }
 
             if(obj instanceof Starlight) {
-                if(obj.x >= this.stageSize.w * 1.5 || obj.y >= this.stageSize.h * 1.5) {
+                if(obj.x < (-20) || obj.y < this.stageSize.h * (-20) || obj.x > this.stageSize.w + 20 || obj.y > this.stageSize.h + 20) {
                     this.objects.splice(idx, 1);
                     idx--;
                     continue;
@@ -2402,6 +2410,9 @@ class ShuttingStarsCore {
                 obj.y += obj.speedY;
             }
         }
+
+        // Starlight 갯수 유지
+        this.remainStarlightCounts();
 
         // 배경음악 페이드 인/아웃 처리
         if(this.audioBackgroundPlaying != null && this.volumeBackgroundSpeed != 0) {
@@ -2441,25 +2452,27 @@ class ShuttingStarsCore {
             if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
         }
 
-        // 일시정지 및 재개 대기 타이밍 처리
-        if(this.paused) return;
-        if(this.resumingTime >= 1) {
-            this.resumingTime--;
-            if(this.resumingTime <= 0) this.resumed = true;
-            else                       this.resumed = false;
-            return;
-        }
+        // 재개 대기 타이밍 처리, NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+        if(! this.paused) {
+            // 재개 타이밍 처리
+            if(this.resumingTime >= 1) {
+                this.resumingTime--;
+                if(this.resumingTime <= 0) this.resumed = true;
+                else                       this.resumed = false;
+                return;
+            }
 
-        // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-        for(idx=0; idx<this.objectsPlaying.length; idx++) {
-            const obj = this.objectsPlaying[idx];
-            if(obj instanceof NoteKeyObject) {
-                if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
-                    if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
-                }
-            } else if(obj instanceof JudgeMark) {
-                if(obj.explosing < obj.explosingMax) {
-                    if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
+            // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+            for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj instanceof NoteKeyObject) {
+                    if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
+                        if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
+                    }
+                } else if(obj instanceof JudgeMark) {
+                    if(obj.explosing < obj.explosingMax) {
+                        if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
+                    }
                 }
             }
         }
@@ -2772,6 +2785,8 @@ class ShuttingStarsCore {
             obj.x = decoJson.x;
             obj.y = decoJson.y;
             obj.r = decoJson.r;
+            obj.speedX = 1;
+            obj.speedY = 0;
         } else if(type == 'text') {
             obj = new TextDeco(decoJson.text, decoJson.x, decoJson.y, decoJson.fontSize, decoJson.align, decoJson.color);
             if(decoJson.explosingMax) obj.explosingMax = decoJson.explosingMax;
@@ -3457,9 +3472,36 @@ class ShuttingStarsCore {
         }
 
         // 별빛 추가
-        for(idx=0; idx<20; idx++) {
+        for(idx=0; idx<this.backStarlightCount; idx++) {
             const obj = new Starlight();
+            obj.speedX = 1;
+            obj.speedY = 0;
             this.objects.push(obj);
+        }
+    }
+
+    /** 장식용 별빛 갯수 맞추기 */
+    remainStarlightCounts() {
+        let idx, count, newOne;
+        count = 0;
+        // 기존 별빛 수 세기
+        for(idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(obj instanceof Starlight) { count++; }
+        }
+
+        if(this.song != null) { // 곡이 선택된 상태로
+            if(! this.song.autoStars) return; // 곡에서 별빛 안쓰기로 했다면 중단
+        }
+
+        // 갯수 맞춰 생성
+        while(count < this.backStarlightCount) {
+            newOne = new Starlight();
+            newOne.x = -2;
+            newOne.speedX = 1;
+            this.objects.push(newOne);
+
+            count++;
         }
     }
 
@@ -3527,6 +3569,12 @@ class ShuttingStarsCore {
 
             song.test = false;
             if(json.test) song.test = true;
+
+            song.autoStars = true;
+            if(typeof(json.autoStars) != 'undefined') {
+                if(json.autoStars) song.autoStars = true;
+                else               song.autoStars = false;
+            }
 
             for(idx=0; idx<json.difficulties.length; idx++) {
                 const difficultyOne = json.difficulties[idx];
@@ -3679,6 +3727,7 @@ class ShuttingStarsSong {
     endTime = 560; // 곡 종료 시간
     timeMultiplier = 1; // 보정 시간 (노트 등장 time 값에 * 보정값으로 적용)
     timeConstant = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
+    autoStars = true; // 자동 Starlight 생성
     test = false; // true 지정 시 곡 디버그 모드에서만 노출됨
     serial = ''; // 수정하지 말 것
     
