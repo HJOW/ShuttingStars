@@ -25,3 +25,17 @@
     font-weight: normal;
     src : url('D2Coding.woff2') format('woff2')
 }
+
+@font-face {
+    font-family: 'D2 coding';
+    font-style: normal;
+    font-weight: bold;
+    src : url('D2CodingBold.woff2') format('woff2')
+}
+
+@font-face {
+    font-family: 'D2Coding';
+    font-style: normal;
+    font-weight: bold;
+    src : url('D2CodingBold.woff2') format('woff2')
+}

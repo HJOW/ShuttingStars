@@ -84,7 +84,8 @@ class ShuttingStarsCore {
     objectsPlaying = []; // 상태가 playing 중일 때 렌더링 대상 객체들
     notePlacers    = []; // NotePlacer 객체들 보관
 
-    elapsedTime = 0; // 진행 시간 (실제 시간과 단위가 다르며, 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
+    elapsedTime = 0;    // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
+    titleDelayTime = 0; // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간
 
     usingWorker = true; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
@@ -1010,8 +1011,11 @@ class ShuttingStarsCore {
                         if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
                         this.songTitleTime = this.songTitleBaseTime;
                         if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+
+                        // 곡 플레이 선택함.
                         this.setState('songtitle');
                         this.difficultyChoosing = false;
+                        this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
                     } else {
                         this.song = this.songChoosing;
                         this.difficultyChoosingList = this.song.getDifficultyList();
@@ -1364,6 +1368,13 @@ class ShuttingStarsCore {
 
     /** 화면 출력 - 플레이 중 출력 */
     renderPlaying() {
+        // titleDelayTime 값이 있으면, 플레이 중임에도 타이틀 화면 출력
+        //    노트 올라오는 속도 때문에 게임이 시작됐음에도 곡이 늦게 재생도록 한 데에 대한 대응책, 노트속도 배수에 따라 이 값을 조절할 예정
+        if(this.titleDelayTime >= 1) {
+            this.renderSongTitle();
+            return;
+        }
+
         let fontSize;
 
         // 시각화 그리기
@@ -2366,10 +2377,11 @@ class ShuttingStarsCore {
         const song = this.song;
         let idx;
         if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
-        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); this.resetStage(); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
+        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
         if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
         this.elapsedTime++;
+        if(this.titleDelayTime >= 1) this.titleDelayTime--;
         
         // 현재 시간에 해당하는 패턴이 있는지 확인
         let diff = song.difficulties[ this.difficulty.index ];
