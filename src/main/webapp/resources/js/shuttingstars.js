@@ -135,6 +135,10 @@ class ShuttingStarsCore {
     audioBackground = null; // 플레이 곡이 아닌, 배경 곡
     audioBackgroundPlaying = false;
 
+    se = { // 효과음 (Audio 객체를 원소로 함)
+        tick : null
+    }
+
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
     gameoverTime = 0; // 게임 오버 마크 화면 남은 시간
     resumingTime = 0; // 일시정지 후 재개 전 대기 시간
@@ -468,6 +472,12 @@ class ShuttingStarsCore {
                     selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
                     selfs.audioBackground.loop = true;
                     // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
+                } catch(exAudio) {
+                    console.error(exAudio);
+                }
+
+                try {
+                    selfs.se.tick = new Audio(this.convertURL('./resources/se/tick.ogg'));
                 } catch(exAudio) {
                     console.error(exAudio);
                 }
@@ -981,6 +991,7 @@ class ShuttingStarsCore {
             let index = 0;
             if(this.state == 'title') {
                 if(key == this.enterKey || key == 'ENTER') {
+                    this.playTick();
                     this.setState('menu');
 
                     if(this.audioBackground != null) {
@@ -1011,6 +1022,7 @@ class ShuttingStarsCore {
                         this.songThumb = null;
                         this.videoBga = null;
 
+                        this.playTick();
                         this.setState('songchoosing');
                     } else if(this.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
                         // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
@@ -1020,12 +1032,14 @@ class ShuttingStarsCore {
                         else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
                         else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
 
+                        this.playTick();
                         this.setState('setting');
                         if(this.configDiv != null) {
                             // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
                             this.openConfigDiv();
                         }
                     } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
+                        this.playTick();
                         this.prepareCreditList();
                         this.setState('credit');
                     }
@@ -1085,6 +1099,8 @@ class ShuttingStarsCore {
                         this.songTitleTime = this.songTitleBaseTime;
                         if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
 
+                        this.playTick();
+
                         // 곡 플레이 선택함.
                         this.setState('songtitle');
                         this.difficultyChoosing = false;
@@ -1103,14 +1119,17 @@ class ShuttingStarsCore {
                 if(key == this.enterKey) {
                     if(this.settingChoosing == 'resetAll') {
                         if(this.settingResetReask) {
+                            this.playTick();
                             // 초기화
                             try { localStorage.clear(); } catch(er) { console.error(er); return; }
                             location.reload();
                         } else {
+                            this.playTick();
                             // 한번 더 물어봄
                             this.settingResetReask = true;
                         }
                     } else if(this.settingModifyingMode) {
+                        this.playTick();
                         this.settingModifyingMode = false; // 설정 변경 모드 OFF
 
                         if(this.settingChoosing == 'setGraphicQuality') {
@@ -1137,6 +1156,7 @@ class ShuttingStarsCore {
                         // 설정 저장
                         this.saveSettings();
                     } else {
+                        this.playTick();
                         this.settingModifyingMode = true; // 설정 변경 모드 ON
                     }
                 } else if(this.settingModifyingMode) {
@@ -1209,9 +1229,11 @@ class ShuttingStarsCore {
             } else if(this.state == 'result') {
                 this.setState('menu');
             } else if(this.state == 'songchoosing') {
+                this.playTick();
                 if(this.difficultyChoosing) { this.difficultyChoosing = false; }
                 else { this.setState('menu'); }
             } else if(this.state == 'setting') {
+                this.playTick();
                 this.settingResetReask = false;
                 if(this.settingModifyingMode) {
                     this.settingModifyingMode = false;
@@ -1220,6 +1242,7 @@ class ShuttingStarsCore {
                     this.setState('menu');
                 }
             } else if(this.state == 'credit') {
+                this.playTick();
                 this.setState('menu');
             }
         }
@@ -3630,6 +3653,15 @@ class ShuttingStarsCore {
                 continue;
             }
         }
+    }
+
+    /** 틱 효과음 재생 */
+    playTick() {
+        if(this.se.tick == null) return;
+        try {
+            this.se.tick.currentTime = 0;
+            this.se.tick.play();
+        } catch(e) { console.error(e); }
     }
 
     /** 플러그인 불러오기 */
