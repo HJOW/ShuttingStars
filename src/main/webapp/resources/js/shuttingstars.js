@@ -2034,6 +2034,7 @@ class ShuttingStarsCore {
         label = String(this.difficulty.difficultyLevel);
         fontSize = this.convertFontSize(40);
         rows -= this.convertFontSize(5);
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.resolution.w - (fontSize * 2)), this.convertY((rows)));
@@ -2157,9 +2158,13 @@ class ShuttingStarsCore {
         label = String(this.difficulty.difficultyLevel);
         fontSize = this.convertFontSize(40);
         rows -= this.convertFontSize(5);
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, Math.floor(this.getStageWidth() - this.convertX(fontSize * 2)), this.convertY((rows)));
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
 
         // ESC 표기
         let escKeyLabel = this.escKey;
