@@ -27,6 +27,7 @@ song.bpm = 79;
 song.endTime = 3700;
 song.timeConstant = -337;
 song.timeMultiplier = 1;
+song.test = false;
 song.serial = 'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g';
 song.difficulties = [
     {
@@ -2597,6 +2598,36 @@ song.difficulties.push({
 
 { locationIndex : -1, time : 4094},
 { locationIndex : -1, time : 4096}
+    ]
+});
+
+addShuttingStarSong(song);
+
+song = {};
+song.name = 'Racing the horizon line';
+song.composer = 'Lyria';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = './resources/songs/ai/aitrack_260528_01.mp3';
+song.thumbnailUrl = '';
+song.description = `
+|Music: Google Lyria
+|  https://gemini.google/overview/music-generation/
+|License: All license granted by AI Platform.
+`;
+song.loadingTime = 10;
+song.bpm = 180;
+song.endTime = 3700;
+song.timeConstant = -337;
+song.timeMultiplier = 1;
+song.test = true; // 테스트 이후 false 로 변경
+song.serial = 'nai4ilaHbn7g934634634638zJ93f8gp34qgD39p4g';
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'hard',
+    difficultyLevel : 7,
+    patterns : [
+
     ]
 });
 
