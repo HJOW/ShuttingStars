@@ -3545,6 +3545,28 @@ class ShuttingStarsCore {
             this.creditContents.push({ label : '', fontSize : 30 });
         }
 
+        this.creditContents.push({ label : 'Third Parties', fontSize : 30 });
+        this.creditContents.push({ label : '', fontSize : 30 });
+
+        this.creditContents.push({ label : 'jQuery (Only for Create Mode)', fontSize : 25 });
+        this.creditContents.push({ label : 'Projects referencing this document are released under the terms of the MIT license.', fontSize : 15 });
+        this.creditContents.push({ label : 'https://jquery.com/license/', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
+        this.creditContents.push({ label : 'Three.js', fontSize : 25 });
+        this.creditContents.push({ label : 'The MIT License - Copyright © 2010-2026 three.js authors', fontSize : 15 });
+        this.creditContents.push({ label : 'https://github.com/mrdoob/three.js/blob/dev/LICENSE', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
+        this.creditContents.push({ label : '나눔고딕, 나눔명조, 나눔고딕코딩, D2Coding', fontSize : 25 });
+        this.creditContents.push({ label : 'SIL Open Font License, Version 1.1.', fontSize : 15 });
+        this.creditContents.push({ label : 'https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
+        for(let idx=0; idx<3; idx++) {
+            this.creditContents.push({ label : '', fontSize : 30 });
+        }
+
         let escKeyLabel = this.escKey;
         if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
         this.creditContents.push({ label : ShuttingStarsUtility.replaceString(this.trans('% key to continue...'), '%', escKeyLabel), fontSize : 15 });
