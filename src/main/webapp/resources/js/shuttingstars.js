@@ -974,20 +974,6 @@ class ShuttingStarsCore {
             }
         }
 
-        if(this.state != 'playing') { return; }
-
-        // 곡 플레이 세팅 중 처리
-        //     곡 마지막 패턴 시간 체크
-        this.songLastPatternTime = 0;
-        let diff = this.song.difficulties[ this.difficulty.index ];
-        let patterns = diff.patterns;
-        for(idx=0; idx<patterns.length; idx++) {
-            const pattern = patterns[idx];
-            if(pattern.time > this.songLastPatternTime) {
-                this.songLastPatternTime = pattern.time;
-            }
-        }
-
         // 배경 오디오 존재 시 재생
         if(this.audioBackground != null) {
             if(this.state == 'menu') {
