@@ -2617,7 +2617,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 180;
-song.endTime = 3700;
+song.endTime = 7000;
 song.timeConstant = -337;
 song.timeMultiplier = 1;
 song.test = true; // 테스트 이후 false 로 변경
