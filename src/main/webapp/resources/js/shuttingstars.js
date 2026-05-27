@@ -113,6 +113,9 @@ class ShuttingStarsCore {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0 // 각 판정별 통계
     };
     hp = 100.0; // 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시)
+    
+    selectedRecordIndex = -1; // 기록 조회 화면에서 사용
+    seeingRecord = null; // 기록 조회 시 해당 기록 JSON 객체 탑재
 
     gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
     gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
@@ -1264,12 +1267,17 @@ class ShuttingStarsCore {
                     }
                 }
                 
-            } else if(this.state == 'playing' && key == this.enterKey) { 
+            } else if(this.state == 'playing' && key == this.enterKey) {
                 // 플레이 중이며 엔터 키
                 if(this.paused) { // 일시정지 중일 때 --> 재개 처리
                     this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
                     this.paused = false;
                 }
+            } else if(this.state == 'recordlist') {
+                // TODO
+            } else if(this.state == 'recorddet' && key == this.enterKey) {
+                this.playTick();
+                this.setState('recordlist');
             }
         } else if(key == this.escKey) { // ESC키
             if(this.state == 'playing') {
@@ -1300,6 +1308,12 @@ class ShuttingStarsCore {
             } else if(this.state == 'credit') {
                 this.playTick();
                 this.setState('menu');
+            } else if(this.state == 'recordlist') {
+                this.playTick();
+                this.setState('menu');
+            } else if(this.state == 'recorddet') {
+                this.playTick();
+                this.setState('recordlist');
             }
         }
 
@@ -1504,7 +1518,7 @@ class ShuttingStarsCore {
             this.combo = 0;
             this.missCombo++;
             this.report.MISS++;
-            this.hp -= 4.0;
+            this.hp -= (4.0 + (this.missCombo >= 1 ? (  this.missCombo >= 10 ? 2 : 1 ) : 0));
             if(this.hp < 0) this.hp = 0;
         }
     }
@@ -1570,6 +1584,10 @@ class ShuttingStarsCore {
             this.renderSongTitle();
         } else if(this.state == 'result') {
             this.renderResult();
+        } else if(this.state == 'recordlist') {
+            this.renderRecordList();
+        } else if(this.state == 'recorddet') {
+            this.renderRecordResult();
         } else if(this.state == 'setting') {
             this.renderSetting();
         } else if(this.state == 'credit') {
@@ -2320,6 +2338,148 @@ class ShuttingStarsCore {
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
     }
 
+    /** 기록 목록 그리기 */
+    renderRecordList() {
+        // TODO
+    }
+
+    /** 기록 조회 그리기 */
+    renderRecordResult() {
+        // 첫 줄
+        let rows = 0;
+        let rowCenter = 0;
+        let fontSize = this.convertFontSize(30);
+        let gap = Math.floor(fontSize / 2.0);
+        let label = '';
+        let defColor = null;
+
+        if(this.dark) defColor = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          defColor = this.convertColor('rgba(80, 80, 80, 0.9)');
+
+        // 타이틀 출력
+        rows = (this.getStageHeight() / 6);
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.strokeStyle = defColor;
+        this.ctx.textAlign = "center";
+        this.ctx.strokeText(this.trans('PLAYING REPORT'), this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+        rows += fontSize + (gap/2);
+
+        // 판정별 숫자 출력
+        fontSize = this.convertFontSize(20);
+        label = 'PERFECT';
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillStyle = defColor;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.PERFECT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        rows += fontSize + (gap/4);
+
+        label = 'GREAT';
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillStyle = defColor;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.GREAT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        rows += fontSize + (gap/4);
+
+        label = 'GOOD';
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillStyle = defColor;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.GOOD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        rowCenter = rows; // 수직 중앙 위치 기록해두기 (랭크 출력할 때 사용)
+        rows += fontSize + (gap/4);
+
+        label = 'BAD';
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillStyle = defColor;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.BAD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        rows += fontSize + (gap/4);
+
+        label = 'MISS';
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillStyle = defColor;
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.MISS , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        rows += fontSize + (gap/2);
+
+        // 점수 출력
+        label = ShuttingStarsUtility.fitDigit(this.seeingRecord.point, 10);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(this.trans('TOTAL'), this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        rows += fontSize + gap;
+
+        // 랭크 출력
+        this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getRenderFontFamily();
+        this.ctx.textAlign = "center";
+        label = this.judgeResultRank(this.seeingRecord);
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', 0.9)');
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 7), this.convertY(rowCenter + (this.convertFontSize(100) / 2)));
+
+        // 곡 이름 출력
+        label = this.seeingRecord.song.name;
+        fontSize = this.convertFontSize(30);
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        rows = this.getStageHeight() - ((fontSize * 3) + gap);
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY(rows));
+
+        // 작곡가, 노트작성자, bpm 출력
+        fontSize = this.convertFontSize(20);
+        rows = this.getStageHeight() - ((fontSize * 2) + (gap * 2));
+        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.seeingRecord.song.composer), '%2', this.seeingRecord.song.noteWriter), '%3', String(this.song.bpm));
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY((rows)));
+
+        // 난이도 표기
+        label = String(this.seeingRecord.level);
+        fontSize = this.convertFontSize(40);
+        rows -= this.convertFontSize(5);
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.seeingRecord.level) + ', 0.9)');
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(label, Math.floor(this.getStageWidth() - this.convertX(fontSize * 2)), this.convertY((rows)));
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+
+        // ESC 표기
+        let escKeyLabel = this.escKey;
+        if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+        fontSize = this.convertFontSize(15);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.textAlign = "right";
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
+    }
+
+    /** HP 표시 수단 (즉 행성) 그리기 */
     renderHpBar() {
         // HP바 출력
         let   changes = 0;
@@ -2527,19 +2687,40 @@ class ShuttingStarsCore {
     }
 
     /** 랭크 탐지 */
-    judgeResultRank() {
+    judgeResultRank(record) {
+        let count, percents;
+        if(record) {
+            if(! record.clear) return 'F';
+        
+            // Note 갯수 체크
+            count = record.notes;
+
+            // P/S 등급 처리
+            if(record.report.PERFECT == count) return 'P';
+            if((record.report.PERFECT + record.report.GREAT) >= 1 && record.report.MISS <= 0) return 'S';
+
+            // Perfect + Great 비율 체크
+            percents = ((record.report.PERFECT + record.report.GREAT) * 100.0) / count;
+            // 기타 등급 처리
+            if(percents >=  5.0) return 'A';
+            if(percents >= 10.0) return 'B';
+            if(percents >= 30.0) return 'C';
+
+            return 'D';
+        }
+
         if(this.gameOverDelayed) return 'F';
         
         // Note 갯수 체크
         let diff = this.song.difficulties[ this.difficulty.index ];
-        let count = diff.patterns.length;
+        count = diff.patterns.length;
 
         // P/S 등급 처리
         if(this.report.PERFECT == count) return 'P';
         if((this.report.PERFECT + this.report.GREAT) >= 1 && this.report.MISS <= 0) return 'S';
 
         // Perfect + Great 비율 체크
-        let percents = ((this.report.PERFECT + this.report.GREAT) * 100.0) / count;
+        percents = ((this.report.PERFECT + this.report.GREAT) * 100.0) / count;
         // 기타 등급 처리
         if(percents >=  5.0) return 'A';
         if(percents >= 10.0) return 'B';
@@ -2941,6 +3122,12 @@ class ShuttingStarsCore {
         this.songThumb = null;
         this.videoBga = null;
 
+        // Note 갯수 체크
+        let diff = this.song.difficulties[ this.difficulty.index ];
+        let count = diff.patterns.length;
+        let rank = this.judgeResultRank();
+
+        // 기록 남기기
         this.addRecords({
             date : new Date().getTime(),
             song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter },
@@ -2948,7 +3135,9 @@ class ShuttingStarsCore {
             level : this.difficulty.difficultyLevel,
             point : this.point,
             report : this.report,
+            notes : count,
             combo : this.maxCombo,
+            rank : rank,
             hp : this.hp,
             gameover : this.gameOverDelayed,
             clear : (this.hp >= 1 && (! this.gameOverDelayed))
