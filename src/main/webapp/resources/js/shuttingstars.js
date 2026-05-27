@@ -57,7 +57,8 @@ class ShuttingStarsCore {
     configDiv = null; // 상세 설정 영역
 
     ctx = null;      // 2D Context 객체
-    ctx3d = null;    // 3D Context 객체
+    ss3d = null;     // ShuttingStars3DManager 객체
+
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
@@ -87,10 +88,11 @@ class ShuttingStarsCore {
     volumeSongAudio  = 1.0; // 플레이 곡 볼륨 (게임 진행 중 변경됨)
     volumeBackgroundSpeed = 0; // 배경음악 볼륨 페이드 인/아웃 속도값 (음수일 때는 volumeBackground 값이 감소하며 0 이하가 되면 멈춤, 양수일 때는 값이 증가하며 1 이상이 되면 멈춤)
 
-    lastObjectId = 0;   // 객체 ID 부여용 카운터
-    objects = [];       // 항상 렌더링 대상인 객체들
-    objectsPlaying = []; // 상태가 playing 중일 때 렌더링 대상 객체들
-    notePlacers    = []; // NotePlacer 객체들 보관
+    lastObjectId = 0;    // 객체 ID 부여용 카운터
+    objects = [];        // 항상 렌더링 대상인 객체들 (주로 장식)
+    objectsPlaying = []; // 상태가 playing 중일 때 렌더링 대상 객체들 (NotePlacer, Note 등 주요 게임 구성요소)
+    object3ds = [];      // 항상 렌더링 대상인 3D 객체들 (장식, ShuttingStars3DObject 타입만 원소로 입력해야 함)
+    notePlacers = [];    // NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관)
 
     elapsedTime = 0;    // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
     titleDelayTime = 0; // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간
@@ -333,7 +335,6 @@ class ShuttingStarsCore {
             this.canvas = canvas;
             this.canvas3d = canvas3d;
             this.ctx = canvas.getContext('2d');
-            try { this.ctx3d = canvas3d.getContext('webgl'); } catch(ewebgl) { console.error(ewebgl); console.log('Fail to init webgl.'); }
 
             this.logInit('preparing canvas resolution...');
 
@@ -378,9 +379,18 @@ class ShuttingStarsCore {
                     // const {drift, time} = e.data;
                     selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
                 }
+
+                this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerRender.postMessage({interval : this.frameTime * 2});
+                this.workerRender.onmessage = function(e) {
+                    if(selfs.ss3d != null && selfs.canvas3d != null) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
+                }
             } else {
                 ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime);
                 ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
+                ShuttingStarsUtility.repeat(() => {
+                    if(selfs.ss3d != null && selfs.canvas3d != null) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
+                }, this.frameTime * 2);
             }
 
             this.logInit('setting events...');
@@ -492,6 +502,10 @@ class ShuttingStarsCore {
                     selfs.canvas3d.style.top  = canvasBounding.top + 'px';
                     selfs.canvas3d.style.width  = canvasBounding.width + 'px';
                     selfs.canvas3d.style.height = canvasBounding.height + 'px';
+                }
+
+                if(selfs.ss3d != null) {
+                    selfs.ss3d.onWindowResize(selfs.canvas3d, selfs);
                 }
             };
             fResize();
@@ -2998,6 +3012,12 @@ class ShuttingStarsCore {
         return this.stageSize.h - this.getTopMarginPage();
     }
 
+    set3DManager(ss3d) {
+        if(ss3d == null) { this.ss3d = null; return; }
+        if(ss3d instanceof ShuttingStars3DManager) { this.ss3d = ss3d; this.ss3d.init(this.canvas3d, this); }
+        else throw 'Only for ShuttingStars3DManager type !';
+    }
+
     /** 곡에 포함되어 있던 장식 추가문구 해석해 집행 */
     addDecoration(decoJson) {
         let obj = null;
@@ -4691,7 +4711,17 @@ if(!String.prototype.hexDecode) {
 }
 
 /********************** // 기타 Util 성 prototype 세팅 ************************/
-
+/********************** 3D 를 다루는 Class 세팅 ************************/
+class ShuttingStars3DManager {
+    init(canvas3d, coreInst) {}
+    render(canvas3d, objects) {} // object3ds
+    onWindowResize(canvas3d, coreInst) {}
+}
+class ShuttingStars3DObject {
+    constructor(manager) {}
+    getMeshes(manager) { return []; }
+}
+/********************** // 3D 를 다루는 Class 세팅 ************************/
 /********************** 기타 Util 성 Class 세팅 ************************/
 class ShuttingStarsUtilityClass {
     toastIndex = 0;

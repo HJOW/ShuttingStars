@@ -66,3 +66,9 @@ Music promoted by Audio Library: https://links.al/youtube
 
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/
+
++ Three.js (선택사항)
+
+The MIT License
+Copyright © 2010-2026 three.js authors
+https://github.com/mrdoob/three.js/blob/dev/LICENSE

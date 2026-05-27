@@ -66,3 +66,9 @@ Visit https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
 
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/
+
++ Three.js
+
+The MIT License
+Copyright © 2010-2026 three.js authors
+https://github.com/mrdoob/three.js/blob/dev/LICENSE
