@@ -100,7 +100,17 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             if(objOne instanceof MouseEventArea) continue;
             if(objOne instanceof MouseClickHighlighter) continue;
             if(objOne instanceof Starlight) continue;
-            const newObj = new SphereObject(this);
+            
+            let newObj = new SphereObject(this);
+            newObj.x = this.convertX(objOne.x);
+            newObj.y = this.convertY(objOne.y);
+            newObj.z = 1;
+            newObj.r = this.convertX(objOne.r);
+            newObj.setColor(objOne.color);
+            newObj.prepareDefaults();
+            coreInst.object3ds.push(newObj);
+
+            newObj = new LightPoint(this, 0.5);
             newObj.x = this.convertX(objOne.x);
             newObj.y = this.convertY(objOne.y);
             newObj.z = 1;
@@ -240,6 +250,27 @@ class SphereObject extends ShuttingStars3DObject {
         if(hb.length == 1) hb = '0' + hb;
 
         this.color = parseInt('0x' + hr + '' + hg + '' + hb);
+    }
+}
+
+/** 광원 객체 */
+class LightPoint extends SphereObject {
+    bright = 0.5;
+    light = null;
+
+    constructor(manager, bright) {
+        super(manager);
+        this.bright = bright;
+    }
+
+    prepareDefaults() {
+        this.light = new THREE.PointLight(this.color, this.bright, 800, 1);
+        this.light.position.set(this.x, this.y, this.z);
+        this.light.visible = true;
+    }
+
+    getMeshes(manager) {
+        return [ this.light ];
     }
 }
 

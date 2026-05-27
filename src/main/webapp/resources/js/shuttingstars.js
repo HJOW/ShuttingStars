@@ -1007,6 +1007,19 @@ class ShuttingStarsCore {
         if(this.state == 'playing') {
             this.elapsedTime = 0;
 
+            // 곡 플레이 세팅 중 처리
+            //     곡 마지막 패턴 시간 체크
+            this.songLastPatternTime = 0;
+            let diff = this.song.difficulties[ this.difficulty.index ];
+            let patterns = diff.patterns;
+            for(idx=0; idx<patterns.length; idx++) {
+                const pattern = patterns[idx];
+                if(pattern.time > this.songLastPatternTime) {
+                    this.songLastPatternTime = pattern.time;
+                }
+            }
+
+            // 반복 처리 시작 (곡의 bpm 반영)
             const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
             this.songBitGap = songBitGap;
             if(this.usingWorker) {
@@ -1020,6 +1033,7 @@ class ShuttingStarsCore {
                 this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, songBitGap);
             }
 
+            // 오디오 재생 시작
             if(this.audio != null) {
                 setTimeout(() => {
                     selfs.audio.play();
