@@ -917,8 +917,6 @@ class ShuttingStarsCore {
             this.notePlacers.push(notePlacer);
         }
 
-        if(this.song == null) { this.closeAudioSources(); this.audio = null; return; }
-
         // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
         if(this.state == 'songtitle') {
             // 썸네일 체크해 이미지 객체 만들기
@@ -932,7 +930,7 @@ class ShuttingStarsCore {
             }
 
             //     배경음악 페이드 아웃 시작
-            if(this.volumeBackgroundSpeed == 0 && this.volumeBackground > 0) { this.volumeBackgroundSpeed = (-1) * 0.01; }
+            if(this.volumeBackgroundSpeed >= 0 && this.volumeBackground > 0) { this.volumeBackgroundSpeed = (-1) * 0.01; }
 
             //     곡 오디오 세팅
             if(this.audio == null) {
@@ -992,6 +990,7 @@ class ShuttingStarsCore {
         // 곡이 플레이 상황일 경우 처리
         if(this.state == 'playing') {
             this.elapsedTime = 0;
+            if(this.song == null) { this.closeAudioSources(); this.audio = null; this.setState('menu'); return; }
 
             // 곡 플레이 세팅 중 처리
             //     곡 마지막 패턴 시간 체크
@@ -2639,7 +2638,7 @@ class ShuttingStarsCore {
         this.remainStarlightCounts();
 
         // 배경음악 페이드 인/아웃 처리
-        if(this.audioBackgroundPlaying != null && this.volumeBackgroundSpeed != 0) {
+        if(this.audioBackgroundPlaying && this.volumeBackgroundSpeed != 0) {
             this.volumeBackground += this.volumeBackgroundSpeed;
             if(this.volumeBackground < 0) this.volumeBackground = 0;
             if(this.volumeBackground > this.volumeBackgroundDefault) this.volumeBackground = this.volumeBackgroundDefault;
@@ -2939,7 +2938,8 @@ class ShuttingStarsCore {
     /** 곡 재생 종료 */
     stopAudio() {
         if(this.audio != null) {
-            try { this.audio.pause(); } catch(e) { console.error(e); }
+            try { this.audio.pause();  } catch(e) { console.error(e); }
+            try { this.audio.remove(); } catch(e) { console.error(e); }
             this.audio = null;
         }
         this.closeAudioSources();
