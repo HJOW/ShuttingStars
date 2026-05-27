@@ -23,6 +23,7 @@ _shuttingstarcore.stringTable = {
         'PLAY' : '플레이',
         'SETTING' : '설정',
         'CREDIT' : 'CREDIT',
+        'RECORDS' : '기록',
         'MOVE : ' : '이동 : ',
         'ACCEPT : ' : '확인 : ',
         'ACCEPT' : '확인',
@@ -58,6 +59,7 @@ _shuttingstarcore.stringTable = {
         '% key to reset all now !' : '% 키를 다시 누르면 전체 초기화 !',
         '% key to start' : '% 키를 눌러 시작',
         'Touch here to start' : '이 곳을 터치하여 시작',
-        'Do you want to reset all?' : '전부 초기화 하시겠습니까?'
+        'Do you want to reset all?' : '전부 초기화 하시겠습니까?',
+        'RECORD' : 'RECORD'
     }
 };

@@ -115,6 +115,7 @@ class ShuttingStarsCore {
     hp = 100.0; // 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시)
     
     selectedRecordIndex = -1; // 기록 조회 화면에서 사용
+    selectedRecordList = []; // 기록 조회 화면 들어갈 때 탑재됨
     seeingRecord = null; // 기록 조회 시 해당 기록 JSON 객체 탑재
 
     gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
@@ -164,7 +165,7 @@ class ShuttingStarsCore {
 
     colorManualAlpha = false;
 
-    menuList = ['play', 'setting', 'credit'];
+    menuList = ['play', 'records', 'setting', 'credit'];
     menuChoosing = null;
 
     settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
@@ -1103,6 +1104,12 @@ class ShuttingStarsCore {
                         this.playTick();
                         this.prepareCreditList();
                         this.setState('credit');
+                    } else if(this.menuChoosing == 'records') { // 메뉴 - 기록
+                        this.playTick();
+                        this.selectedRecordList = this.getRecords();
+                        this.seeingRecord = null;
+                        if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
+                        this.setState('recordlist');
                     }
                 }
             } else if(this.state == 'songchoosing') { // 곡 선택 상태
@@ -1274,7 +1281,32 @@ class ShuttingStarsCore {
                     this.paused = false;
                 }
             } else if(this.state == 'recordlist') {
-                // TODO
+                if(this.selectedRecordList.length <= 0) { this.setState('menu'); return; } // 기록이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
+                if(this.seeingRecord == null) this.seeingRecord = this.selectedRecordList[0];
+
+                // 기록 인덱스 구하기
+                index = 0;
+                for(let idx=0; idx<this.selectedRecordList.length; idx++) {
+                    if(this.selectedRecordList[idx] == this.seeingRecord) {
+                        index = idx;
+                        break;
+                    }
+                }
+                
+                // 키 적용
+                if(key == this.arrowKeys[0]) { // UP
+                    index--;
+                    if(index < 0) index = this.selectedRecordList.length - 1;
+                    this.seeingRecord = this.selectedRecordList[index];
+                } else if(key == this.arrowKeys[1]) { // DOWN
+                    index++;
+                    if(index >= this.selectedRecordList.length) index = 0;
+                    this.seeingRecord = this.selectedRecordList[index];
+                } else if(key == this.enterKey) { // ENTER
+                    if(this.seeingRecord == null) return;
+                    this.playTick();
+                    this.setState('recorddet');
+                }
             } else if(this.state == 'recorddet' && key == this.enterKey) {
                 this.playTick();
                 this.setState('recordlist');
@@ -1310,6 +1342,7 @@ class ShuttingStarsCore {
                 this.setState('menu');
             } else if(this.state == 'recordlist') {
                 this.playTick();
+                this.selectedRecordList = [];
                 this.setState('menu');
             } else if(this.state == 'recorddet') {
                 this.playTick();
@@ -1750,6 +1783,7 @@ class ShuttingStarsCore {
             if(menuOne == 'play'   ) label = this.trans('PLAY');
             if(menuOne == 'setting') label = this.trans('SETTING');
             if(menuOne == 'credit' ) label = this.trans('CREDIT');
+            if(menuOne == 'records') label = this.trans('RECORDS');
 
             fontSize = this.convertFontSize(20);
 
@@ -2340,7 +2374,195 @@ class ShuttingStarsCore {
 
     /** 기록 목록 그리기 */
     renderRecordList() {
-        // TODO
+        const selfs = this;
+        let idx, ddx;
+        let rows = 0;
+        let cols = 0;
+        let fontSize = this.convertFontSize(20);
+        let opacity = 0.9;
+        let uppers = 150;
+        let gap = Math.floor(fontSize / 2.0);
+        let label = '';
+        let metric, metric2;
+        let metricSize1, metricSize2;
+
+        // 폰트 크기 측정
+        // 선택된 기록인 경우, 배경색 출력
+        //    기록 내 곡 이름과 점유 공간 크기를 알아야 함
+        fontSize = this.convertFontSize(20);
+        label = 'ABCDE12345';
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        metric = this.ctx.measureText(label);
+        fontSize = this.convertFontSize(15);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        metric2 = this.ctx.measureText(label);
+
+        metricSize1 = (metric.fontBoundingBoxAscent + metric.fontBoundingBoxDescent);
+        metricSize2 = (metric2.fontBoundingBoxAscent + metric2.fontBoundingBoxDescent);
+        gap = Math.floor(metricSize2 / 2.0);
+
+        // 기록 목록이 비어 있으면 안내문구 출력 후 메뉴로 이동
+        if(this.selectedRecordList.length <= 0) {
+            fontSize = this.convertFontSize(20);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.strokeText(this.trans('No record !'), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - 20) + (rows)));
+            rows += fontSize + gap;
+            setTimeout(() => { selfs.setState('menu'); }, 4000);
+            return;
+        } else {
+            // 그외의 경우 안내문구 출력
+            fontSize = this.convertFontSize(30);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.textAlign = "center";
+            this.ctx.strokeText(this.trans('RECORD'), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
+            rows += fontSize + gap;
+        }
+
+        // 기록을 선택하지 않은 상태인 경우 첫 기록을 출력
+        if(this.seeingRecord == null) { this.seeingRecord = this.selectedRecordList[0]; }
+
+        // 기록 목록을 다 출력할 수는 없으니, 현재 선택된 기록 앞뒤 2개만 출력
+        //    현재 선택된 기록을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
+        let frontSongs = [];
+        let backSongs = [];
+        let songChoosen = null;
+        let current = false;
+        for(idx=0; idx<this.selectedRecordList.length; idx++) {
+            let songOne = this.selectedRecordList[idx];
+            if(songOne == this.seeingRecord) {
+                current = true; // 현재 선택된 곡, backSongs 에 넣기 (frontSongs 에 넣어도 문제는 없음)
+                backSongs.push(songOne);
+                continue;
+            }
+            if(! current) { // 아직 현재 선택된 곡을 만나기 이전 - 일단 frontSongs 에 넣고, 원소가 2개를 초과하면 먼저 넣은 것을 제거한다.
+                frontSongs.push(songOne);
+                if(frontSongs.length > 2) frontSongs.splice(0, 1);
+            } else { // 현재 선택된 곡을 지남 - backSongs 에 넣고, 원소가 3개 (현재 선택된 곡이 포함되어 있으므로) 가 되면 반복문을 중지한다.
+                backSongs.push(songOne);
+                if(backSongs.length >= 3) break;
+            }
+        }
+
+        // 하나의 배열로 병합
+        let displaySongs = [];
+        for(idx=0; idx<frontSongs.length; idx++) { displaySongs.push(frontSongs[idx]); }
+        for(idx=0; idx<backSongs.length; idx++) { displaySongs.push(backSongs[idx]); }
+        frontSongs = null;
+        backSongs = null;
+
+        let displayedSongs = 0;
+
+        // 출력
+        for(idx=0; idx<displaySongs.length; idx++) {
+            let songOne = displaySongs[idx];
+            let choosen = (this.seeingRecord == songOne);
+            let upperY = 0;
+
+            // 선택된 곡 배경색 출력
+            if(choosen) {
+                songChoosen = songOne;
+
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+
+                this.ctx.fillRect(0, this.convertY((this.getStageHeight() / 2) - (uppers - rows) - (metricSize1 - gap)), this.canvas.width - (this.getLeftMarginStage() * 2), metricSize1 + (metricSize2 * 3) + this.convertY(gap*2));
+            }
+
+            // 곡 이름 출력
+            opacity = 0.99;
+            // if(choosen) opacity = 0.99;
+            // else opacity = 0.3;
+
+            fontSize = this.convertFontSize(20);
+            label = songOne.song.name;
+            this.ctx.textAlign = "center";
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            if(choosen) {
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
+            } else {
+                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
+            }
+            upperY = (this.getStageHeight() / 2) - (uppers - rows);
+            rows += metricSize1 + gap;
+
+            // 작곡가, 노트작성자, bpm 출력
+            label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.song.composer), '%2', songOne.song.noteWriter), '%3', String(songOne.song.bpm));
+            fontSize = this.convertFontSize(15);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+            // if(this.songChoosing == songOne) opacity = 0.99;
+            // else opacity = 0.3;
+
+            this.ctx.textAlign = "center";
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            if(choosen) {
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
+            } else {
+                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
+            }
+            rows += metricSize2 + gap;
+
+            // 점수 출력
+            fontSize = this.convertFontSize(20);
+            this.ctx.textAlign = "left";
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            label = String(songOne.point);
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
+
+            // 랭크 출력
+            fontSize = this.convertFontSize(80);
+            this.ctx.textAlign = "center";
+            this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+            label = songOne.rank;
+            this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', ' + opacity + ')');
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), this.convertY(upperY + metricSize1 + (gap * 2)));
+
+            rows += metricSize2 + (gap*2);
+            displayedSongs++;
+        }
+
+        // 빈 공간 띄우기
+        fontSize = this.convertFontSize(35);
+        while(displayedSongs < 5) {
+            rows += fontSize + gap;
+            displayedSongs++;
+        }
+
+        // 기타 안내 출력
+        fontSize = this.convertFontSize(12);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        opacity = 0.9;
+        label = this.trans('MOVE : ');
+        for(idx=0; idx<this.arrowKeys.length; idx++) {
+            let arrowKeyOne = this.arrowKeys[idx];
+            let arrowKeyLabel = String(arrowKeyOne);
+            if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
+            else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
+            else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
+            else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
+            else arrowKeyLabel = String(arrowKeyOne);
+
+            label += arrowKeyLabel;
+        }
+        label += '    ' + this.trans('ACCEPT : ') + this.enterKey + '      ' + this.trans('BACK : ');
+        if(this.escKey == 'ESCAPE') label += 'ESC';
+        else                        label += this.escKey;
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - rows)));
     }
 
     /** 기록 조회 그리기 */
@@ -2449,7 +2671,7 @@ class ShuttingStarsCore {
         // 작곡가, 노트작성자, bpm 출력
         fontSize = this.convertFontSize(20);
         rows = this.getStageHeight() - ((fontSize * 2) + (gap * 2));
-        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.seeingRecord.song.composer), '%2', this.seeingRecord.song.noteWriter), '%3', String(this.song.bpm));
+        label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.seeingRecord.song.composer), '%2', this.seeingRecord.song.noteWriter), '%3', String(this.seeingRecord.song.bpm));
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
@@ -3130,7 +3352,7 @@ class ShuttingStarsCore {
         // 기록 남기기
         this.addRecords({
             date : new Date().getTime(),
-            song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter },
+            song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter, bpm : this.song.bpm },
             difficulty : this.difficulty.difficultyLabel,
             level : this.difficulty.difficultyLevel,
             point : this.point,
