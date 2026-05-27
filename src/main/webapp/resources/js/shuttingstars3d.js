@@ -31,20 +31,27 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
     scene = null;
     camera = null;
     renderer = null;
+    resolution = {w : 0, h : 0};
+    stageSize = {w : 0, h : 0};
     init(canvas3d, coreInst) {
+        const canvasBound = canvas3d.getBoundingClientRect();
+        // 해상도 준비
+        this.resolution.w = canvasBound.width;
+        this.resolution.h = canvasBound.height;
+        this.stageSize = coreInst.stageSize;
+
         // 장면 준비
         this.scene = new THREE.Scene();
         // 카메라 준비
         this.camera = new THREE.PerspectiveCamera(50, coreInst.fOuterWidth() / coreInst.fOuterHeight(), 0.1, 1000);
-        this.camera.position.set(0, 0, 1000);
-        this.camera.lookAt(0, 0, 0);
+        this.camera.position.set(canvasBound.width / 2, canvasBound.height / 2, 800);
+        this.camera.lookAt(canvasBound.width / 2, canvasBound.height / 2, 0);
 
         // 렌더러 준비
         this.renderer = new THREE.WebGLRenderer({
             canvas : canvas3d, antialias : true, alpha : true // 배경 투명하게 하려면 alpha 는 꼭 true 로 줄 것 !
         });
         // 3D 무대의 크기 지정
-        const canvasBound = canvas3d.getBoundingClientRect();
         this.renderer.setSize(canvasBound.width, canvasBound.height);
 
         // 배경 투명 지정
@@ -52,6 +59,28 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
 
         // 샘플 객체
         // coreInst.object3ds.push(new SampleObject(this));
+    }
+
+    simultaneousJob(coreInst) {
+        super.simultaneousJob(coreInst);
+        let idx;
+
+        /*
+        // 2D 객체들을 3D 객체로 변환
+        coreInst.object3ds = [];
+        for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+            const objOne = coreInst.objectsPlaying[idx];
+            if(objOne.shape != 'circle') continue;
+
+            const newObj = new SphereObject(this);
+            newObj.x = objOne.x;
+            newObj.y = objOne.y;
+            newObj.z = 0;
+            newObj.r = objOne.r;
+            newObj.prepareDefaults();
+            coreInst.object3ds.push(newObj);
+        }
+        */
     }
 
     render(canvas3d, objects) {
@@ -78,23 +107,55 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
 
         const canvasBound = canvas3d.getBoundingClientRect();
         this.renderer.setSize(canvasBound.width, canvasBound.height);
+        this.resolution.w = canvasBound.width;
+        this.resolution.h = canvasBound.height;
+        this.stageSize = coreInst.stageSize;
     }
+
+    /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
+    convertX(x) {
+        return Math.round((x * this.resolution.w / this.stageSize.w));
+    }
+
+    /** 게임 내 무대 크기 (stageSize.h) 를 실제 화면 내 좌표 (resolution.h) 로 변환 */
+    convertY(y) {
+        return this.resolution.h - Math.round((y * this.resolution.h / this.stageSize.h));
+    }
+
 }
 
-// 샘플 객체
-class SampleObject extends ShuttingStars3DObject {
-    geometry = null;
-    material = null;
-    sphere = null;
+// 표준 구형 객체
+class SphereObject extends ShuttingStars3DObject {
+    x = 0;
+    y = 0;
+    z = 0;
+    r = 1;
+    color = 0x00ff00;
     constructor(manager) {
         super(manager);
-        this.geometry = new THREE.SphereGeometry(20, 30, 40);
-        this.material = new THREE.MeshBasicMaterial({ color : 0x00ff00, wireframe: false });
+    }
+
+    prepareDefaults() {
+        this.geometry = new THREE.SphereGeometry(this.r);
+        this.material = new THREE.MeshBasicMaterial({ color : this.color, wireframe: false });
         this.sphere = new THREE.Mesh(this.geometry, this.material);
+        this.sphere.position.set(this.x, this.y, this.z);
     }
 
     getMeshes(manager) {
         return [ this.sphere ];
+    }
+}
+
+// 샘플 객체
+class SampleObject extends SphereObject {
+    constructor(manager) {
+        super(manager);
+        this.x = 20;
+        this.y = 20;
+        this.z = 0;
+        this.r = 20;
+        this.prepareDefaults();
     }
 }
 
