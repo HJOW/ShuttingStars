@@ -103,7 +103,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             const newObj = new SphereObject(this);
             newObj.x = this.convertX(objOne.x);
             newObj.y = this.convertY(objOne.y);
-            newObj.z = 10;
+            newObj.z = 1;
             newObj.r = this.convertX(objOne.r);
             newObj.setColor(objOne.color);
             newObj.prepareDefaults();
@@ -168,6 +168,13 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             }
         }
 
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    clear() {
+        if(this.scene == null) return;
+        this.scene.clear();
+        if(this.renderer == null || this.camera == null) return;
         this.renderer.render(this.scene, this.camera);
     }
 

@@ -1374,7 +1374,7 @@ class ShuttingStarsCore {
             }
         }
 
-        // 거리를 백분율로 환산 - 이후 노트 속도 보너스 반영해야 함
+        // 거리를 백분율로 환산 - 이후 노트 속도 반영해야 함
         const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4) ) );
 
         // 거리에 따른 판정, 점수 계산
@@ -1385,7 +1385,7 @@ class ShuttingStarsCore {
         minimumNote.explosing = 1; // 노트의 폭발 시작
 
         // 추가 폭발 객체 추가
-        const newExplosinves = new ExplosingObject(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+        const newExplosinves = new CorrectNoteExplosing(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
         this.objects.push(newExplosinves);
     }
 
@@ -2783,7 +2783,7 @@ class ShuttingStarsCore {
                     obj.explosing = 1;
 
                     // 추가 폭발 객체 추가
-                    const newExplosinves = new ExplosingObject(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                    const newExplosinves = new FailExplosing(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                     this.objects.push(newExplosinves);
                 }
             }
@@ -2909,7 +2909,7 @@ class ShuttingStarsCore {
         this.gameOverDelayed = true;
 
         // 거대 폭발 객체 생성
-        const bigExp = new ExplosingObject(0, 0, '180, 0, 0', '250, 80, 80');
+        const bigExp = new PlanetExplosing(0, 0, '180, 0, 0', '250, 80, 80');
         bigExp.x = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
         bigExp.y = this.getHpBarYLocation();
         bigExp.r = 64;
@@ -4560,6 +4560,27 @@ class ExplosingObject extends DecorationObject {
         }
 
         return opa;
+    }
+}
+
+/** 노트 명중 효과 */
+class CorrectNoteExplosing extends ExplosingObject {
+    constructor(locationIndex, y, color, peakColor) {
+        super(locationIndex, y, color, peakColor);
+    }
+}
+
+/** 노트 미스 폭발 효과 */
+class FailExplosing extends ExplosingObject {
+    constructor(locationIndex, y, color, peakColor) {
+        super(locationIndex, y, color, peakColor);
+    }
+}
+
+/** 게임오버 최종 폭발 효과 */
+class PlanetExplosing extends ExplosingObject {
+    constructor(locationIndex, y, color, peakColor) {
+        super(locationIndex, y, color, peakColor);
     }
 }
 
