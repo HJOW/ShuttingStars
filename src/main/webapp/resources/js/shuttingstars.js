@@ -423,7 +423,7 @@ class ShuttingStarsCore {
                 
 
                 // 임시 객체 (충돌여부 판단 위함)
-                const mouseCursorObject = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
+                const mouseCursorObject = new MouseClickHighlighter(0, 0, '255, 255, 255', '255, 255, 255');
                 mouseCursorObject.type = 'circle';
                 mouseCursorObject.x    = rx;
                 mouseCursorObject.y    = ry;
@@ -1403,7 +1403,7 @@ class ShuttingStarsCore {
         for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
             const evOne = selfs.mouseEvents[mdx];
             // 임시 객체 (충돌여부 판단 위함)
-            const tempObject = new ShuttingStarsObject();
+            const tempObject = new MouseEventArea();
             tempObject.type = evOne.type;
             tempObject.x    = evOne.x;
             tempObject.y    = evOne.y;
@@ -4429,6 +4429,11 @@ class JudgeMark extends ShuttingStarsObject {
     }
 }
 
+/** 마우스 클릭 지점 확인을 위한 객체 (충돌여부 판단을 통해 해당 객체를 클릭했음을 인식) */
+class MouseEventArea extends ShuttingStarsObject {
+
+}
+
 /** 장식용 상위 객체 */
 class DecorationObject extends ShuttingStarsObject {
     peakColor = '255, 255, 255';
@@ -4555,6 +4560,13 @@ class ExplosingObject extends DecorationObject {
         }
 
         return opa;
+    }
+}
+
+/** 마우스 클릭 표시 */
+class MouseClickHighlighter extends ExplosingObject {
+    constructor() {
+        super(0, 0, '255,255,255', '255,255,255');
     }
 }
 
