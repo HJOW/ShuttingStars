@@ -123,6 +123,7 @@ class ShuttingStarsCore {
 
     state = 'title'; // 현재 상태, title / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
 
+    mode = 'default'; // 일반적인 플레이 모드
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
     songs = [];  // 불러온 곡들, ShuttingStarsSong 객체 배열
     songDisplays = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열, songs 과 다른 점은 디버그 모드에 따른 노출 여부
@@ -1169,6 +1170,7 @@ class ShuttingStarsCore {
                         if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
 
                         // 곡 플레이 선택함.
+                        this.mode = 'default';
                         this.setState('songtitle');
                         this.difficultyChoosing = false;
                         this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
@@ -3352,6 +3354,7 @@ class ShuttingStarsCore {
         // 기록 남기기
         this.addRecords({
             date : new Date().getTime(),
+            mode : this.mode,
             song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter, bpm : this.song.bpm },
             difficulty : this.difficulty.difficultyLabel,
             level : this.difficulty.difficultyLevel,
