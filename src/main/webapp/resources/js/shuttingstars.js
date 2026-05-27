@@ -4963,6 +4963,11 @@ function addShuttingStarSong(song) {
     return _shuttingstarcore.addSong(song);
 }
 
+/** 3D 매니저 등록 / 해제 */
+function setShuttingStar3D(obj) {
+    setTimeout(function() { _shuttingstarcore.set3DManager(obj); }, 1000);
+}
+
 /** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
 function initShuttingStars(param) {
     try { return _shuttingstarcore.init(param); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }

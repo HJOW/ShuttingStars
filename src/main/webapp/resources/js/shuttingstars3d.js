@@ -248,6 +248,4 @@ class SampleObject extends SphereObject {
     }
 }
 
-setTimeout(() => {
-    _shuttingstarcore.set3DManager(new ShuttingStars3DModule())
-}, 2000);
+setShuttingStar3D(new ShuttingStars3DModule());
