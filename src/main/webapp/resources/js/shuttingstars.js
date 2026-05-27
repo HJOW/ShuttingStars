@@ -52,10 +52,12 @@ class ShuttingStarsCore {
     pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
     alterFonts = 'NanumGothicCoding NanumGothic'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
 
-    canvas = null;    // 캔버스 객체
+    canvas = null;    // 캔버스 객체 (메인 게임 동작)
+    canvas3d = null;  // 3D 장식 출력용 캔버스 객체
     configDiv = null; // 상세 설정 영역
 
     ctx = null;      // 2D Context 객체
+    ctx3d = null;    // 3D Context 객체
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
@@ -258,15 +260,12 @@ class ShuttingStarsCore {
 
             this.logInit('root div prepared. ss inside dom creating....');
 
-            rootDiv.innerHTML = "";
             let htmls = '';
-            htmls += "<div class='shuttingstars_canvas_root'>      \n";
-            htmls += "    <canvas class='shuttingstars_canvas'>    \n";
-            htmls += "                                             \n";
-            htmls += "    </canvas>                                \n";
-            htmls += "    <div class='shuttingstars_canvas_config'>\n";
-            htmls += "    </div>                                   \n";
-            htmls += "</div>                                       \n";
+            htmls += "<div class='shuttingstars_canvas_root'>               \n";
+            htmls += "    <canvas class='shuttingstars_canvas'></canvas>    \n";
+            htmls += "    <canvas class='shuttingstars_canvas_3d'></canvas> \n";
+            htmls += "    <div class='shuttingstars_canvas_config'></div>   \n";
+            htmls += "</div>                                                \n";
             rootDiv.innerHTML = htmls;
 
             this.logInit('preparing global css...');
@@ -312,19 +311,29 @@ class ShuttingStarsCore {
 
             // 캔버스 설정
             const canvas = rootDiv.querySelector('.shuttingstars_canvas');
+            const canvas3d = rootDiv.querySelector('.shuttingstars_canvas_3d');
+
             if(this.detectScreenLandscape()) {
                 canvas.style.minWidth  = '1280px';
                 canvas.style.minHeight = '720px';
+                canvas3d.style.minWidth  = '1280px';
+                canvas3d.style.minHeight = '720px';
             } else {
                 canvas.style.minWidth  = '720px';
                 canvas.style.minHeight = '1280px';
+                canvas3d.style.minWidth  = '720px';
+                canvas3d.style.minHeight = '1280px';
             }
-            canvas.style.zIndex    = this.canvasZindex;
+            canvas.style.zIndex = this.canvasZindex;
+            canvas3d.style.zIndex = this.canvasZindex+1;
+            canvas3d.style.background = 'transparent';
 
             this.logInit('preparing 2d context...');
 
             this.canvas = canvas;
+            this.canvas3d = canvas3d;
             this.ctx = canvas.getContext('2d');
+            try { this.ctx3d = canvas3d.getContext('webgl'); } catch(ewebgl) { console.error(ewebgl); console.log('Fail to init webgl.'); }
 
             this.logInit('preparing canvas resolution...');
 
@@ -440,6 +449,20 @@ class ShuttingStarsCore {
                 selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
             });
 
+            if(this.canvas3d != null) {
+                this.canvas3d.addEventListener('mousedown', (event) => {
+                    if(selfs.createMode) return;
+                    const obj = fMouseClickConversion(event, true);
+                    selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
+                });
+
+                this.canvas3d.addEventListener('mouseup', (event) => {
+                    if(selfs.createMode) return;
+                    const obj = fMouseClickConversion(event, false);
+                    selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
+                });
+            }
+
             let outWidth  = this.fOuterWidth();
             let outHeight = this.fOuterHeight();
 
@@ -458,6 +481,17 @@ class ShuttingStarsCore {
                 // 기기의 방향이 바뀐 경우를 처리
                 if((outWidth < outHeight && selfs.canvas.width > selfs.canvas.height) || (outWidth > outHeight && selfs.canvas.width < selfs.canvas.height)) {
                     selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
+                }
+
+                // 3d 장식용 캔버스 관리
+                if(selfs.canvas3d != null) {
+                    selfs.canvas3d.style.position = 'fixed';
+
+                    const canvasBounding = selfs.canvas.getBoundingClientRect();
+                    selfs.canvas3d.style.left = canvasBounding.left + 'px';
+                    selfs.canvas3d.style.top  = canvasBounding.top + 'px';
+                    selfs.canvas3d.style.width  = canvasBounding.width + 'px';
+                    selfs.canvas3d.style.height = canvasBounding.height + 'px';
                 }
             };
             fResize();
@@ -1353,6 +1387,14 @@ class ShuttingStarsCore {
     /** 마우스 클릭 / 터치 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
     handleMouseClick(x, y, mouseCursorObject) {
         const selfs = this;
+
+        if(this.state == 'title' && this.titleScreenWaiting) {
+            // 로딩 끝난 이후 타이틀 화면에서는 아무데나 터치하면 메뉴로 넘어가야 함
+            this.setState('menu');
+            return;
+        }
+
+        // 각 영역 별 터치 지점을 mouseEvents 배열에 담아놨음
         for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
             const evOne = selfs.mouseEvents[mdx];
             // 임시 객체 (충돌여부 판단 위함)
@@ -1384,6 +1426,7 @@ class ShuttingStarsCore {
     /** 마우스 클릭 해제 / 터치 해제 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
     handleMouseRelease(x, y, mouseCursorObject) {
         const selfs = this;
+        // 각 영역 별 터치 지점을 mouseEvents 배열에 담아놨음
         for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
             const evOne = selfs.mouseEvents[mdx];
             // 임시 객체 (충돌여부 판단 위함)
@@ -1640,7 +1683,10 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         label = 'Please wait...';
-        if(this.titleScreenWaiting) label = '% key to start';
+        if(this.titleScreenWaiting) {
+            if(this.virtualKey) label = 'Touch here to start';
+            else                label = '% key to start';
+        }
 
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), Math.round(this.getStageWidth() / 2), this.convertY(rows));
 
@@ -3190,7 +3236,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 HTML 및 기타 css 적용
         this.configDiv.innerHTML = html;
-        this.configDiv.style.zIndex = this.canvasZindex + 1;
+        this.configDiv.style.zIndex = this.canvasZindex + 2;
         this.configDiv.style.position = 'fixed';
         this.configDiv.style.top  = this.canvas.offsetTop  + 'px';
         this.configDiv.style.left = this.canvas.offsetLeft + 'px';
@@ -4572,20 +4618,11 @@ class VirtualKey extends DecorationObject {
             this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0) + charUnitW;  // DOWN 보다 한 칸 오른쪽
             this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0);
         } else if(this.key == _shuttingstarcore.escKey) {
-            if(_shuttingstarcore.state == 'playing') {
-                this.x += (charUnitWP * 5);
-                this.y += (charUnitHP - charUnitH);
-            } else {
-                this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0) + (charUnitW * 3);  // DOWN 보다 세 칸 오른쪽
-                this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0);
-            }
+            this.x = Math.round(_shuttingstarcore.getStageWidth()   * 9.0 / 10.0);
+            this.y = Math.round(_shuttingstarcore.getStageHeight()  * 1.0 / 10.0) + charUnitH;
         } else if(this.key == _shuttingstarcore.enterKey) {
-            if(_shuttingstarcore.state == 'playing') {
-                this.y += (charUnitHP - charUnitH);
-            } else {
-                this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0) - (charUnitW * 3);  // DOWN 보다 세 칸 왼쪽
-                this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0);
-            }
+            this.x = Math.round(_shuttingstarcore.getStageWidth()   * 9.0 / 10.0);
+            this.y = Math.round(_shuttingstarcore.getStageHeight()  * 1.0 / 10.0);
         }
 
         this.x = _shuttingstarcore.convertX(this.x);

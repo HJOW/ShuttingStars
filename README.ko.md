@@ -8,6 +8,12 @@ HTML canvas 연습 프로젝트로, 리듬 게임을 만들고 있습니다.
 
 https://shuttingstars-3eddf.web.app
 
+## 하드웨어 의존성
+
+현재 기준, 순수 웹 서버만으로도 동작하도록 구성되어 있으며, 동적 서버 페이지 기술 없이 호환됩니다.    
+브라우저 회사들의 CORS 정책으로 인하여, 로컬에서 플레이하더라도 반드시 웹 서버를 통한 구동이 필요합니다.    
+웹 소스 경로 : src/main/webapp
+
 ## 라이센스
 
 Copyright 2026 HJOW (hujinone22@naver.com)
@@ -53,3 +59,10 @@ Music promoted by Audio Library: https://links.al/youtube
 본 폰트 소프트웨어는 SIL 오픈 폰트 라이선스 버전 1.1에 따라 라이선스 취득을 하였습니다.
 
 전문 : https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
+
+## 써드파티 Library
+
++ jQuery (Create Mode 에서만 사용)
+
+Projects referencing this document are released under the terms of the MIT license.
+https://jquery.com/license/

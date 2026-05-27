@@ -9,6 +9,12 @@ to make my own rhythm game !
 
 https://shuttingstars-3eddf.web.app
 
+## 하드웨어 의존성
+
+As of now, it is configured to operate using only a pure web server and is compatible without dynamic server pages.    
+Due to browser companies' CORS policies, it must be run through a web server even when playing locally. 
+WEB Sources : src/main/webapp
+
 ## LICENSE
 
 Copyright 2026 HJOW (hujinone22@naver.com)
@@ -53,3 +59,10 @@ Copyright (c) 2010, NAVER Corporation (https://www.navercorp.com/) with Reserved
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 
 Visit https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
+
+## Third Party Libraries
+
++ jQuery (Only for Create Mode)
+
+Projects referencing this document are released under the terms of the MIT license.
+https://jquery.com/license/
