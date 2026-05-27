@@ -100,7 +100,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             if(objOne instanceof MouseEventArea) continue;
             if(objOne instanceof MouseClickHighlighter) continue;
             if(objOne instanceof Starlight) continue;
-            
+
             let newObj = new SphereObject(this);
             newObj.x = this.convertX(objOne.x);
             newObj.y = this.convertY(objOne.y);
@@ -110,7 +110,11 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             newObj.prepareDefaults();
             coreInst.object3ds.push(newObj);
 
-            newObj = new LightPoint(this, 0.5);
+            let lightRadius = 0.5;
+            if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
+            else                      lightRadius = 0.8 - (0.1 * (objOne.explosing - 3));
+
+            newObj = new LightPoint(this, lightRadius);
             newObj.x = this.convertX(objOne.x);
             newObj.y = this.convertY(objOne.y);
             newObj.z = 1;
