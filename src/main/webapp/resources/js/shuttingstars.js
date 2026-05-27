@@ -107,6 +107,7 @@ class ShuttingStarsCore {
 
     point = 0;     // 점수
     combo = 0;     // 콤보
+    maxCombo = 0;  // 최대 콤보
     missCombo = 0; // 미스 콤보
     report = {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0 // 각 판정별 통계
@@ -695,7 +696,7 @@ class ShuttingStarsCore {
     loadSettings() {
         try {
             let settingJsonStr = localStorage.getItem('shuttingstar_settings');
-            if(settingJsonStr) {
+            if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
                 let settingJson = JSON.parse(settingJsonStr);
                 
                 if(typeof(settingJson.keyList) != 'undefined') {
@@ -847,7 +848,10 @@ class ShuttingStarsCore {
         try {
             let songsArr = localStorage.getItem('shuttingstar_songs');
             if(typeof(songsArr) == 'undefined' || songsArr == null) return;
-            if(typeof(songsArr) == 'string') songsArr = JSON.parse(songsArr);
+            if(songsArr == '') return;
+            if(typeof(songsArr) == 'string') {
+                songsArr = JSON.parse(songsArr);
+            }
             
             for(idx=0; idx<songsArr.length; idx++) {
                 const songJsonOne = songsArr[idx];
@@ -895,6 +899,7 @@ class ShuttingStarsCore {
         this.hp = 100.0;
         this.point = 0;
         this.combo = 0;
+        this.maxCombo = 0;
         this.missCombo = 0;
         this.report = {
             PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
@@ -1173,8 +1178,7 @@ class ShuttingStarsCore {
                         if(this.settingResetReask) {
                             this.playTick();
                             // 초기화
-                            try { localStorage.clear(); } catch(er) { console.error(er); return; }
-                            location.reload();
+                            this.resetAll();
                         } else {
                             this.playTick();
                             // 한번 더 물어봄
@@ -1466,6 +1470,7 @@ class ShuttingStarsCore {
         if(resultMark == 'PERFECT') {
             this.point += (100 * (this.combo + 1));
             this.combo++;
+            if(this.maxCombo < this.combo) this.maxCombo = this.combo;
             this.missCombo = 0;
             this.report.PERFECT++;
 
@@ -1474,6 +1479,7 @@ class ShuttingStarsCore {
         } else if(resultMark == 'GREAT') {
             this.point += (70 * (this.combo + 1));
             this.combo++;
+            if(this.maxCombo < this.combo) this.maxCombo = this.combo;
             this.missCombo = 0;
             this.report.GREAT++;
 
@@ -1482,6 +1488,7 @@ class ShuttingStarsCore {
         } else if(resultMark == 'GOOD') {
             this.point += (50 * (this.combo + 1));
             this.combo++;
+            if(this.maxCombo < this.combo) this.maxCombo = this.combo;
             this.missCombo = 0;
             this.report.GOOD++;
 
@@ -2933,6 +2940,19 @@ class ShuttingStarsCore {
         this.audio = null;
         this.songThumb = null;
         this.videoBga = null;
+
+        this.addRecords({
+            date : new Date().getTime(),
+            song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter },
+            difficulty : this.difficulty.difficultyLabel,
+            level : this.difficulty.difficultyLevel,
+            point : this.point,
+            report : this.report,
+            combo : this.maxCombo,
+            hp : this.hp,
+            gameover : this.gameOverDelayed,
+            clear : (this.hp >= 1 && (! this.gameOverDelayed))
+        });
     }
 
     /** 곡 재생 종료 */
@@ -3414,8 +3434,7 @@ class ShuttingStarsCore {
 
         btnReset.addEventListener('click', () => {
             if(confirm(selfs.trans('Do you want to reset all?'))) {
-                try { localStorage.clear(); } catch(er) { console.error(er); alert(selfs.trans('Reset failed - ' + er)); return; }
-                location.reload();
+                selfs.resetAll();
             }
         });
 
@@ -3794,6 +3813,7 @@ class ShuttingStarsCore {
 
         let packages = localStorage.getItem('shuttingstar_packages');
         if(packages == null || typeof(packages) == 'undefined') return;
+        if(packages == '') return;
         packages = ShuttingStarsUtility.removeLinesStartKey(packages, '#');
 
         const splits = packages.split('\n');
@@ -3951,9 +3971,61 @@ class ShuttingStarsCore {
         return returnVal;
     }
 
-    /** 부동소수 동일여부 확인 */
+    /** 부동소수 동일여부 확인 (노트 생성 타이밍에 사용) */
     checkEqualFloats(a, b) {
         return Math.abs(a - b) < 0.000001;
+    }
+
+    /** 저장된 기록들 반환 */
+    getRecords() {
+        let storageStrings = localStorage.getItem('shuttingstar_records');
+        if(typeof(storageStrings) == 'undefined' || storageStrings == '' || storageStrings == null) return [];
+        let storageJson = JSON.parse(storageStrings);
+        return storageJson;
+    }
+
+    /** 기록 저장 */
+    addRecords(recordOne) {
+        if(typeof(recordOne) == 'undefined') return;
+        if(recordOne == null) return;
+        if(recordOne == '') return;
+        if(typeof(recordOne) == 'string') recordOne = JSON.parse(recordOne);
+
+        let recordArray = this.getRecords();
+        if(recordArray == null) recordArray = [];
+        recordArray.unshift(recordOne); // 첫 번째 자리에 추가
+        
+        let deletes = -1;
+        let idx;
+        while(recordArray.length > 100) {
+            // 뒤에서부터 시작해서, 클리어 안한 것 위주로 먼저 삭제
+            for(let idx=recordArray.length-1; idx>=0; idx--) {
+                let recOne = recordArray[idx];
+                if(! recOne.clear) {
+                    deletes = idx;
+                    break;
+                }
+            }
+            if(deletes >= 0) {
+                recordArray.splice(deletes, 1); 
+            } else {
+                // 전부 클리어한 것만 남아있는 상황이므로, 맨 뒤의 원소 삭제
+                recordArray.splice(recordArray.length - 1, 1); 
+            }
+            if(recordArray.length <= 100) break;
+        }
+
+        localStorage.setItem('shuttingstar_records', JSON.stringify(recordArray));
+    }
+
+    /** 전체 초기화 */
+    resetAll() {
+        const fAfter = function() { location.reload(); }
+        try { localStorage.setItem('shuttingstar_settings', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { localStorage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { localStorage.setItem('shuttingstar_records' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        fAfter();
     }
 
     /** 시각화 디버깅 데이터 콘솔에 출력 */
