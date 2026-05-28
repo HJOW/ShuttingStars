@@ -3584,7 +3584,8 @@ class ShuttingStarsCore {
             rank : rank,
             hp : this.hp,
             gameover : this.gameOverDelayed,
-            clear : (this.hp >= 1 && (! this.gameOverDelayed))
+            clear : (this.hp >= 1 && (! this.gameOverDelayed)),
+            build : this.build
         });
     }
 
