@@ -2035,6 +2035,16 @@ class ShuttingStarsCore {
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - 20) + (rows)));
             rows += fontSize + gap;
+
+            // ESC 표기
+            let escKeyLabel = this.escKey;
+            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+            fontSize = this.convertFontSize(15);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "right";
+            this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
+
             setTimeout(() => { selfs.setState('menu'); }, 4000);
             return;
         } else {
@@ -2570,6 +2580,17 @@ class ShuttingStarsCore {
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.strokeText(this.trans('No record !'), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) - (uppers - 20) + (rows)));
             rows += fontSize + gap;
+
+
+            // ESC 표기
+            let escKeyLabel = this.escKey;
+            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+            fontSize = this.convertFontSize(15);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "right";
+            this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
+
             setTimeout(() => { selfs.setState('menu'); }, 4000);
             return;
         } else {
@@ -3614,6 +3635,7 @@ class ShuttingStarsCore {
 
     set3DManager(ss3d) {
         const selfs = this;
+        let ss3dworked = false;
         if(ss3d == null) { this.ss3d = null; return; }
         if(ss3d instanceof ShuttingStars3DManager) {
             this.ss3d = ss3d; this.ss3d.init(this.canvas3d, this);
@@ -3627,7 +3649,14 @@ class ShuttingStarsCore {
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime * 2});
                 this.workerRender.onmessage = function(e) {
-                    if(selfs.ss3d != null && (! selfs.disable3d)) { selfs.ss3d.simultaneousJob(selfs); }
+                    if(selfs.ss3d != null) { 
+                        if(selfs.disable3d) {  
+                            if(ss3dworked) {
+                                selfs.ss3d.clear();
+                                ss3dworked = false;
+                            }
+                        } else { ss3dworked = true; selfs.ss3d.simultaneousJob(selfs); }
+                    }
                 }
             } else {
                 ShuttingStarsUtility.repeat(() => {
@@ -3635,7 +3664,14 @@ class ShuttingStarsCore {
                 }, this.frameTime * 2);
 
                 ShuttingStarsUtility.repeat(() => {
-                    if(selfs.ss3d != null && (! selfs.disable3d)) { selfs.ss3d.simultaneousJob(selfs); }
+                    if(selfs.ss3d != null) { 
+                        if(selfs.disable3d) {  
+                            if(ss3dworked) {
+                                selfs.ss3d.clear();
+                                ss3dworked = false;
+                            }
+                        } else { ss3dworked = true; selfs.ss3d.simultaneousJob(selfs); }
+                    }
                 }, this.frameTime * 2);
             }
         }
@@ -4398,14 +4434,13 @@ class ShuttingStarsCore {
 
     /** render 메소드 내에서 사용되는 font 값 중 글꼴 파트 반환, pointFont 는 강조하고 싶을 때 true 를 입력 (선택사항) */
     getRenderFontFamily(pointFont) {
-        if(pointFont) return this.pointFont + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
-        return this.fontFamily + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
+        if(pointFont) return this.pointFont  + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
+        return               this.fontFamily + (this.alterFonts == '' ? '' : ' ' + this.alterFonts);
     }
     
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
     convertX(x) {
         return Math.round((x * this.resolution.w / this.getStageWidth()) + this.getLeftMarginStage());
-        // return x;
     }
 
     /** 게임 내 무대 크기 (stageSize.h) 를 실제 화면 내 좌표 (resolution.h) 로 변환 */
