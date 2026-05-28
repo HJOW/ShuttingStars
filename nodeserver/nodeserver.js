@@ -1,0 +1,142 @@
+/**
+ * JSP/Servlet 기반 서버 대신 node.js 기반 서버 기동 시 사용
+ *
+ * 사용법)
+ *     1. 서버 실행
+ *        node nodeserver.js
+ *
+ *     2. 서버 종료
+ *         프로세스를 종료시키거나, 해당 명령 프롬프트 / 터미널 창에서 CTRL+C 입력
+ *
+ *     3. 포트 지정하여 서버 실행
+ *        node nodeserver.js 9690
+ *
+ * 필요사항)
+ *     1. node.js 사전 설치 필요
+ *     2. 명령 프롬프트 / 터미널에서, cd 명령어로 nodeserver.js 파일이 있는 디렉토리까지 접근한 후 실행해야 함
+*/
+/*
+
+LICENSE
+
+Copyright 2026 HJOW (hujinone22@naver.com)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. 
+ 
+ */
+
+const http = require('http')
+const fs   = require('fs');
+const path = require('path');
+
+// 포트
+let PORT = 9690;
+// 웹 경로
+const WEB_ROOT = path.join(__dirname, '../src' + path.sep + 'main' + path.sep + 'webapp');
+
+// 매개변수 검사
+if(process.argv.length >= 3) { // process.argv 배열 1, 2번은 예약되어 있음, 3번부터 매개변수가 들어오기 시작함
+    PORT = parseInt(process.argv[2]); // 첫 번째 매개변수로 포트 입력
+}
+
+// 이 문구들이 들어간 URL은 서비스 되지 않음
+const blacklistFilePattern = [
+    '/WEB-INF/',
+    '/META-INF/'
+];
+
+const server = http.createServer((req, res) => {
+    // URL 경로 설정 (기본값: index.html)
+    const filePath = path.join(WEB_ROOT, req.url === '/' ? 'index.html' : req.url);
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const url = req.url;
+    console.log('REQUEST : ' + url + ' by ' + ip);
+
+    // blacklist 처리
+    for(let idx=0; idx<blacklistFilePattern.length; idx++) {
+        const blacklistOne = blacklistFilePattern[idx];
+        if(url.indexOf(blacklistOne) >= 0) {
+            res.writeHead(403, {'Content-Type': 'text/plain'});
+            res.end('403 Forbidden');
+            return;
+        }
+    }
+
+    // 파일 확장자 추출
+    const extname = path.extname(filePath);
+    let contentType = 'application/octet-stream';
+
+    switch (extname) {
+        case '.html': contentType = 'text/html'; break;
+        case '.htm': contentType = 'text/html'; break;
+        case '.txt': contentType = 'text/plain'; break;
+        case '.js': contentType = 'text/javascript'; break;
+        case '.css': contentType = 'text/css'; break;
+        case '.json': contentType = 'application/json'; break;
+        case '.xml': contentType = 'application/xml'; break;
+        case '.png': contentType = 'image/png'; break;
+        case '.jpg': contentType = 'image/jpeg'; break;
+        case '.gif': contentType = 'image/gif'; break;
+        case '.ico': contentType = 'image/vnd.microsoft.icon'; break;
+        case '.mp3': contentType = 'audio/mpeg'; break;
+        case '.ogg': contentType = 'audio/ogg'; break;
+        case '.wav': contentType = 'audio/wav'; break;
+        case '.mp4': contentType = 'video/mp4'; break;
+        case '.weba': contentType = 'audio/webm'; break;
+        case '.webm': contentType = 'video/webm'; break;
+        case '.webp': contentType = 'image/webp'; break;
+        case '.ttf': contentType = 'font/ttf'; break;
+        case '.otf': contentType = 'font/otf'; break;
+        case '.woff': contentType = 'font/woff'; break;
+        case '.woff2': contentType = 'font/woff2'; break;
+        case '.zip': contentType = 'application/zip'; break;
+        case '.7z': contentType = 'application/x-7z-compressed'; break;
+        case '.gz': contentType = 'application/gzip'; break;
+        case '.jar': contentType = 'application/java-archive'; break;
+        case '.csv': contentType = 'text/csv'; break;
+        case '.pdf': contentType = 'application/pdf'; break;
+        case '.docx': contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; break;
+        case '.pptx': contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'; break;
+        case '.xlsx': contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; break;
+    }
+
+    fs.readFile(filePath, (err, content) => {
+        if(err) {
+            if(err.code == 'ENOENT') {
+                res.writeHead(404, {'Content-Type': 'text/plain'});
+                res.end('404 Not Found');
+                return;
+            } else {
+                res.writeHead(500);
+                res.end('Internal Server Error');
+            }
+        } else {
+            res.writeHead(200, {'Content-Type': contentType});
+            res.end(content, 'utf-8');
+        }
+    });
+});
+
+server.on('close', () => {
+    console.log('Server with ' + PORT + ' will be shutdown !');
+});
+
+server.on('error', (err) => {
+    console.log('Server with ' + PORT + ' error !');
+    console.error(err);
+});
+
+server.listen(PORT, () => {
+    console.log('Server in running with ' + PORT + ' port !');
+    console.log('    WEB ROOT : ' + WEB_ROOT);
+});
