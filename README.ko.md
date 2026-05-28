@@ -10,7 +10,8 @@ https://shuttingstars-3eddf.web.app
 
 ## 하드웨어 의존성
 
-현재 기준, 순수 웹 서버만으로도 동작하도록 구성되어 있으며, 동적 서버 페이지 기술 없이 호환됩니다.    
+현재 기준, 대부분의 기능이 순수 웹 서버만으로도 동작하도록 구성되어 있으며, 동적 서버 페이지 기술 없이 호환됩니다.    
+(선택사항으로, Firebase anthentication 로그인 및 클리어 기록 Firestore DB 업로드 기능이 구현되어 있습니다.)
 브라우저 회사들의 CORS 정책으로 인하여, 로컬에서 플레이하더라도 반드시 웹 서버를 통한 구동이 필요합니다.    
 웹 소스 경로 : src/main/webapp
 
@@ -67,8 +68,15 @@ Music promoted by Audio Library: https://links.al/youtube
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/
 
-+ Three.js (선택사항)
++ Three.js (선택사항, 없어도 3D 객체 없이 구동됨)
 
 The MIT License
 Copyright © 2010-2026 three.js authors
 https://github.com/mrdoob/three.js/blob/dev/LICENSE
+
++ Crypto-JS (선택사항, 백엔드 붙일 때만 필요)
+
+The MIT License
+Copyright (c) 2009-2013 Jeff Mott  
+Copyright (c) 2013-2016 Evan Vosberg
+https://github.com/brix/crypto-js/blob/develop/LICENSE

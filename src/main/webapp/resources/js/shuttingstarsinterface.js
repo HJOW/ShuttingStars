@@ -1,4 +1,11 @@
-/** 백엔드 서버 / DB 통신 구현 파트, 필요 시 shuttingstars.js 보다 먼저 불러와야 함 */
+/** 
+ * 
+ * 백엔드 서버 / DB 통신 구현 파트
+ *     필요 시 shuttingstars.js 보다 먼저 불러와야 함 
+ *     Crypto-JS 의존성
+ * 
+ * 
+*/
 /*
 
 LICENSE

@@ -12,6 +12,7 @@ https://shuttingstars-3eddf.web.app
 ## 하드웨어 의존성
 
 As of now, it is configured to operate using only a pure web server and is compatible without dynamic server pages.    
+(Some feature using firebase authentication and firestore to upload clear records. - Not necessary)
 Due to browser companies' CORS policies, it must be run through a web server even when playing locally. 
 WEB Sources : src/main/webapp
 
@@ -72,3 +73,10 @@ https://jquery.com/license/
 The MIT License
 Copyright © 2010-2026 three.js authors
 https://github.com/mrdoob/three.js/blob/dev/LICENSE
+
++ Crypto-JS
+
+The MIT License
+Copyright (c) 2009-2013 Jeff Mott  
+Copyright (c) 2013-2016 Evan Vosberg
+https://github.com/brix/crypto-js/blob/develop/LICENSE
