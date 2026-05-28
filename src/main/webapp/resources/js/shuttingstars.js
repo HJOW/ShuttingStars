@@ -892,6 +892,11 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 곡 처리 프로세스 반복주기 계산, bpm 은 number 타입 (소수 가능) 을 넣어야 함 */
+    calculateSongBitGap(bpm) {
+        return Math.round((60000 / bpm) / this.timeMultiplier);
+    }
+
     /** 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행 */
     resetStage() {
         const selfs = this;
@@ -1015,17 +1020,16 @@ class ShuttingStarsCore {
             }
 
             // 반복 처리 시작 (곡의 bpm 반영)
-            const songBitGap = Math.round((60000 / this.song.bpm) / this.timeMultiplier);
-            this.songBitGap = songBitGap;
+            this.songBitGap = this.calculateSongBitGap(this.song.bpm);
             if(this.usingWorker) {
                 this.workerSongPlaying = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
-                this.workerSongPlaying.postMessage({interval : songBitGap});
+                this.workerSongPlaying.postMessage({interval : selfs.songBitGap});
                 this.workerSongPlaying.onmessage = function(e) {
                     // const {drift, time} = e.data;
                     selfs.timeElapse();
                 }
             } else {
-                this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, songBitGap);
+                this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, selfs.songBitGap);
             }
 
             // 오디오 재생 시작
@@ -1036,7 +1040,7 @@ class ShuttingStarsCore {
 
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
-                }, (songBitGap * this.stageRows * 2) + this.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
+                }, (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             }
         }
     }
@@ -3131,7 +3135,7 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 동시처리 프로세스 - 시간 진행 (해당 곡의 timeMultiplier 분의 1비트) */
+    /** 곡 동시처리 프로세스 - 시간 진행 (calculateSongBitGap(곡의bpm) 주기마다 1회 호출) */
     timeElapse() {
         if(this.paused) return;
         if(this.resumingTime >= 1) return;
