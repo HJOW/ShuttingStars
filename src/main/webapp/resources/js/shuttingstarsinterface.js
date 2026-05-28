@@ -48,37 +48,47 @@ class ShuttingStarsInterface {
 
 /** Firebase 호스팅 기본제공 API 이용 방식 */
 class FirebaseHostingImplementation extends ShuttingStarsInterface {
-     constructor() {
-         super();
-         const selfs = this;
+    authStateChangedEvents = [];
+    constructor() {
+        super();
+        const selfs = this;
 
-         // 인증 활성화
-         this.auth = firebase.auth();
-         this.firestore = firebase.firestore();
+        // 인증 활성화
+        this.auth = firebase.auth();
+        this.firestore = firebase.firestore();
 
-         // 인증 상태 이벤트 부여
-         this.auth.onAuthStateChanged((user) => {
-             if(user) {
-                 selfs.user = user;
-                 selfs.logined = true;
-             } else {
-                 selfs.logined = false;
-             }
-         });
-     }
-     login(json) {
-         const selfs = this;
-         return new Promise((resolve, reject) => {
-             selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
-                 selfs.user = userCredential.user;
-                 selfs.logined = true;
-                 resolve({
-                     success : true,
-                     userJson : userCredential.user
-                 });
-             }).catch((e) => { reject(e); });
-         });
-     }
+        // 인증 상태 이벤트 부여
+        this.auth.onAuthStateChanged((user) => {
+            if(user) {
+                selfs.user = user;
+                selfs.logined = true;
+            } else {
+                selfs.logined = false;
+            }
+
+            for(let idx=0; idx<selfs.authStateChangedEvents.length; idx++) {
+                const fAuthStateHandler = selfs.authStateChangedEvents[idx];
+                if(typeof(fAuthStateHandler) == 'function') fAuthStateHandler(selfs);
+            }
+        });
+    }
+    login(json) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                    selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
+                    selfs.user = userCredential.user;
+                    selfs.logined = true;
+                    resolve({
+                        success : true,
+                        userJson : userCredential.user
+                    });
+                }).catch((e) => { reject(e); });
+            } catch(exc) {
+                reject(exc);
+            }
+        });
+    }
 
     checkLogined(userJson) {
         const selfs = this;
@@ -92,23 +102,32 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         return new Promise((resolve, reject) => {
             selfs.logined = false;
             selfs.user = null;
-            
-            resolve({ success : true });
-        })
+            try {
+                selfs.auth.signOut().then(() => {
+                    setTimeout(() => { selfs.authStateChangedEvents = []; }, 1000);
+                    resolve({ success : true });
+                }).catch((e) => { reject(e); });
+            } catch(exc) {
+                reject(exc);
+            }
+        });
     }
 
     registerRankRecord(json) {
         const selfs = this;
         return new Promise((resolve, reject) => {
-            if(! selfs.logined) { reject('No logined.'); return; }
-
-            let record = {};
-            for(const k in json) {
-                record[k] = json[k];
+            try {
+                if(! selfs.logined) { throw ('No logined.'); }
+                let record = {};
+                for(const k in json) {
+                    record[k] = json[k];
+                }
+                record.uid = selfs.loginUid;
+                selfs.firestore.collection('highscore').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
+            } catch(exc) {
+                reject(exc);
             }
-            record.uid = selfs.loginUid;
-            selfs.firestore.collection('highscore').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
-        })
+        });
     }
 }
 
@@ -117,9 +136,10 @@ class ServletImplementation extends ShuttingStarsInterface {
 
 }
 
-let _tempinterface = new ShuttingStarsInterface(); // 이대로 두면 아무것도 안하고 무조건 실패함
-if(typeof(firebase) == 'undefined') _tempinterface = new ServletImplementation(); // 서블릿 따로 구현하는 경우 ServletImplementation 에도 구현을 해야 함
-else                                _tempinterface = new FirebaseHostingImplementation(); // Firebase 사용 가능한 경우 (Firebase 호스팅 환경) 자동 사용
-
-const _ssbackend = _tempinterface;
-_tempinterface = null;
+/** 직접 호출하지 말 것 (shuttingstars.js 에서 호출함) */
+function __ssBackEnd() {
+    let _ssbackend;
+    if(typeof(firebase) == 'undefined') _ssbackend = new ServletImplementation(); // 서블릿 따로 구현하는 경우 ServletImplementation 에도 구현을 해야 함
+    else                                _ssbackend = new FirebaseHostingImplementation(); // Firebase 사용 가능한 경우 (Firebase 호스팅 환경) 자동 사용
+    return _ssbackend;
+}

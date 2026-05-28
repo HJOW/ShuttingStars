@@ -33,7 +33,7 @@ class ShuttingStarsCore {
     ressets    = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
 
-    backend = (typeof(_ssbackend) == 'undefined' || _ssbackend == null) ? null : _ssbackend;
+    backend = null;
 
     virtualKey = false;      // 가상 키 출력 여부
     virtualKeyNone = false;  // 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음)
@@ -258,6 +258,16 @@ class ShuttingStarsCore {
     
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv) {
+        const selfs = this;
+        try {
+            this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
+            this.backend.authStateChangedEvents.push(() => {
+                selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+            });
+        } catch(e) {
+            console.error(e);
+            this.backend = null;
+        }
         try {
             this.titleScreenWaiting = false;
             this.logInit('init started');
@@ -396,8 +406,6 @@ class ShuttingStarsCore {
             
             // 곡 불러오기
             this.loadSongs();
-
-            const selfs = this;
 
             this.logInit('setting workers...');
 
@@ -672,7 +680,7 @@ class ShuttingStarsCore {
             try {
                 // User 정보 로컬 스토리지에서 탐지
                 let userInfo = localStorage.getItem('shuttingstar_session');
-                if(userInfo == null || typeof(userInfo) == 'undefined' || userInfo == '') userInfo = null;
+                if(userInfo == null || typeof(userInfo) == 'undefined' || userInfo == '' || userInfo == 'undefined') userInfo = null;
                 if(userInfo != null) {
                     if(typeof(userInfo) == 'string') userInfo = JSON.parse(userInfo);
                     if(userInfo.uid == null || typeof(userInfo.uid) == 'undefined') userInfo = null;
@@ -688,11 +696,8 @@ class ShuttingStarsCore {
                         newList.push(menuOne);
                     }
 
-                    /*
-                    // TODO
                     // 로그인된 경우, 로그아웃 메뉴 추가
                     newList.push('logout');
-                    */
 
                     resolve(newList);
                 };
@@ -710,11 +715,8 @@ class ShuttingStarsCore {
                         newList.push(menuOne);
                     }
 
-                    /*
-                    // TODO
                     // 로그인 안된 경우, 로그인 메뉴 추가
                     newList.push('login');
-                    */
 
                     resolve(newList);
                 };
@@ -726,7 +728,7 @@ class ShuttingStarsCore {
                     if(typeof(userInfo) == 'string') userInfo = JSON.parse(userInfo);
                     selfs.backend.user = userInfo;
                     if(! selfs.backend.sessionChecked) {
-                        selfs.checkLogined(selfs.backend.user).then((res) => {
+                        selfs.backend.checkLogined(selfs.backend.user).then((res) => {
                             if(res.loginAvail) {
                                 // 로그인 성공
                                 fLogined();
@@ -1249,8 +1251,10 @@ class ShuttingStarsCore {
                         this.playTick();
                         if(this.backend != null) {
                             this.keyEventDisabled = true;
+                            this.pops.root.querySelector('.inp_login_password').value = '';
                             this.pops.dim.classList.remove('invisible');
                             this.pops.login.classList.remove('invisible');
+                            this.pops.root.querySelector('.inp_login_email').focus();
                         }
                     } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
                         this.playTick();
@@ -1905,15 +1909,31 @@ class ShuttingStarsCore {
             if(this.virtualKey) label = 'Touch here to start';
             else                label = '% key to start';
         }
-
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), this.convertX(this.getStageWidth() / 2), this.convertY(rows));
 
+        // 빌드 번호 출력
         fontSize = this.convertFontSize(12);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
         this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
+
+        // 로그인된 경우 로그인된 이메일 주소 출력
+        if(this.backend != null) {
+            if(this.backend.logined) {
+                if(this.backend.user) {
+                    fontSize = this.convertFontSize(12);
+                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    opacity = 0.9;
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    this.ctx.textAlign = 'left';
+
+                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
+                }
+            }
+        }
     }
 
     /** 화면 출력 - 메인 메뉴 */
@@ -1970,6 +1990,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(30);
         rows += fontSize * 5;
 
+        // 조작키 안내 출력
         fontSize = this.convertFontSize(12);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         opacity = 0.9;
@@ -1986,16 +2007,32 @@ class ShuttingStarsCore {
             label += arrowKeyLabel;
         }
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
-
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
         rows += fontSize + gap;
 
+        // 빌드 번호 출력
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - this.convertX(fontSize * 1.5)), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
+
+        // 로그인된 경우 로그인된 이메일 주소 출력
+        if(this.backend != null) {
+            if(this.backend.logined) {
+                if(this.backend.user) {
+                    fontSize = this.convertFontSize(12);
+                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    opacity = 0.9;
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    this.ctx.textAlign = 'left';
+
+                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
+                }
+            }
+        }
     }
 
     /** 화면 출력 - 곡 선정 화면 */
@@ -3817,13 +3854,13 @@ class ShuttingStarsCore {
         popInside.innerHTML = htmls;
         this.pops.login = popInside;
 
-        let btn;
-        btn = popInside.querySelector('.btn_login');
-        btn.addEventListener('click', () => {
+        let fLogin = function() {
             selfs.backend.login({
                 email    : selfs.pops.login.querySelector('.inp_login_email').value,
                 password : selfs.pops.login.querySelector('.inp_login_password').value
-            }).then((success, user) => {
+            }).then((respJson) => {
+                const success = respJson.success;
+                const user    = respJson.userJson;
                 if(! success) {
                     selfs.toast(selfs.trans('Login failed.'));
                 } else {
@@ -3834,7 +3871,26 @@ class ShuttingStarsCore {
                 selfs.pops.login.classList.add('invisible');
                 selfs.pops.join.classList.add('invisible');
                 selfs.pops.dim.classList.add('invisible');
+
+                const fAfter = function() {
+                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+                };
+                fAfter();
+                selfs.backend.authStateChangedEvents.push(fAfter);
+            }).catch((err) => {
+                console.error(err);
+                ShuttingStarsUtility.toast(selfs.trans('ERROR : ') + err);
             });
+        }
+
+        let btn;
+        btn = popInside.querySelector('.btn_login');
+        btn.addEventListener('click', fLogin);
+
+        this.pops.login.querySelector('.inp_login_password').addEventListener('keypress', function(e) {
+            e.preventDefault();
+            if(e.keyCode == 13) fLogin();
+            return false;
         });
 
         btn = popInside.querySelector('.btn_join');
