@@ -44,6 +44,7 @@ class ShuttingStarsInterface {
 /** Firebase 호스팅 기본제공 API 이용 방식 */
 class FirebaseHostingImplementation extends ShuttingStarsInterface {
      auth = null;
+     firestore = null;
      logined = false;
      loginUid = null;
      constructor() {
@@ -52,6 +53,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
          // 인증 활성화
          this.auth = firebase.auth();
+         this.firestore = firebase.firestore();
+
          // 인증 상태 이벤트 부여
          this.auth.onAuthStateChanged((user) => {
              if(user) {
@@ -90,6 +93,20 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             resolve({ success : true });
         })
     }
+
+    registerRankRecord(json) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            if(! selfs.logined) { reject('No logined.'); return; }
+
+            let record = {};
+            for(const k in json) {
+                record[k] = json[k];
+            }
+            record.uid = selfs.loginUid;
+            selfs.firestore.collection('highscore').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
+        })
+    }
 }
 
 /** Servlet 기반 서버와 통신하는 방식 */
@@ -97,9 +114,9 @@ class ServletImplementation extends ShuttingStarsInterface {
 
 }
 
-let _tempinterface = null;
-if(typeof(firebase) == 'undefined') _tempinterface = new ServletImplementation();
-else                                _tempinterface = new FirebaseHostingImplementation();
+let _tempinterface = new ShuttingStarsInterface(); // 이대로 두면 아무것도 안하고 무조건 실패함
+if(typeof(firebase) == 'undefined') _tempinterface = new ServletImplementation(); // 서블릿 따로 구현하는 경우 ServletImplementation 에도 구현을 해야 함
+else                                _tempinterface = new FirebaseHostingImplementation(); // Firebase 사용 가능한 경우 (Firebase 호스팅 환경) 자동 사용
 
 const _ssbackend = _tempinterface;
 _tempinterface = null;
