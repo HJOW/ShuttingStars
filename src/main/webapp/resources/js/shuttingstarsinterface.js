@@ -22,22 +22,74 @@ limitations under the License.
 /** 중간 인터페이스 구현 */
 class ShuttingStarsInterface {
     login(json) {
-        return new Promise((resolve, reject) => { resolve(true); })
+        return new Promise((resolve, reject) => { resolve({ success : false, userJson : null }); })
+    }
+    checkLogined(userJson) {
+        return new Promise((resolve, reject) => { resolve({ success : false, loginAvail : false}); })
+    }
+    logout() {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
     listAdditionalSongs() {
-        return new Promise((resolve, reject) => { resolve([]); })
+        return new Promise((resolve, reject) => { resolve({ success : false, songs : [] }); })
     }
     listRankBoard() {
-        return new Promise((resolve, reject) => { resolve([]); })
+        return new Promise((resolve, reject) => { resolve({ success : false, list : [] }); })
     }
     registerRankRecord(json) {
-        return new Promise((resolve, reject) => { resolve(true); })
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
 }
 
 /** Firebase 호스팅 기본제공 API 이용 방식 */
 class FirebaseHostingImplementation extends ShuttingStarsInterface {
-     
+     auth = null;
+     logined = false;
+     loginUid = null;
+     constructor() {
+         super();
+         const selfs = this;
+
+         // 인증 활성화
+         this.auth = firebase.auth();
+         // 인증 상태 이벤트 부여
+         this.auth.onAuthStateChanged((user) => {
+             if(user) {
+                 selfs.loginUid = user.uid;
+                 selfs.logined = true;
+             } else {
+                 selfs.logined = false;
+             }
+         });
+     }
+     login(json) {
+         const selfs = this;
+         return new Promise((resolve, reject) => {
+             selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
+                 selfs.loginUid = userCredential.user.uid;
+                 selfs.logined = true;
+                 resolve({
+                     success : true,
+                     userJson : userCredential.user
+                 });
+             }).catch((e) => { reject(e); });
+         });
+     }
+
+    checkLogined(userJson) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            resolve({ success : true, loginAvail : selfs.logined });
+        });
+    }
+
+    logout() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            selfs.signOut();
+            resolve({ success : true });
+        })
+    }
 }
 
 /** Servlet 기반 서버와 통신하는 방식 */
