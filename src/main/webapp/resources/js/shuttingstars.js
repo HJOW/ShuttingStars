@@ -3984,7 +3984,7 @@ class ShuttingStarsCore {
         const popRoot = this.pops.root;
         popRoot.innerHTML = `
             <div class='shuttingstars_pop_dim invisible'></div>
-            <div class='shuttingstars_pop_content shuttingstars_canvas_config'></div>  
+            <div class='shuttingstars_pop_content shuttingstars_canvas_config invisible'></div>  
             <div class='shuttingstars_pop_content pop_login invisible'></div>
             <div class='shuttingstars_pop_content pop_join  invisible'></div>
 
