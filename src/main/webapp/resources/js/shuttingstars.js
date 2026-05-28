@@ -189,7 +189,7 @@ class ShuttingStarsCore {
     settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
     settingChoosing = null;
     settingModifyingMode = false;
-    settingsGraphicQuality = ['LOW', 'MEDIUM', 'HIGH', '4K'];
+    settingsGraphicQuality = ['LOW', 'MEDIUM', 'HIGH'];
     settingGraphicQualityChoosing = null;
     settingResetReask = false;
 
@@ -817,11 +817,12 @@ class ShuttingStarsCore {
         this.canvas.width  = this.resolution.w;
         this.canvas.height = this.resolution.h;
         
-        if(     this.ressets.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-        else if(this.ressets.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-        else if(this.ressets.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-        else if(this.ressets.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
-        else                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        if(this.ressets.h <= 720) {
+            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0]; 
+        } else {
+            if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+            else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+        }
     }
 
     /** 디스플레이 방향 (수직 portrait / 수평 landscape) 구분, landscape 인 경우 true, 그외의 경우 false 반환 */
@@ -1226,12 +1227,13 @@ class ShuttingStarsCore {
                         this.playTick();
                         this.setState('songchoosing');
                     } else if(selfs.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
-                        // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
-                        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-                        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-                        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-                        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
-                        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+                        // 그래픽 퀄리티 해상도는 해상도+3D 관련 사항이므로 따로 처리
+                        if(this.resolution.h <= 720) {
+                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+                        } else {
+                            if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+                            else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+                        }
 
                         this.playTick();
                         this.setState('setting');
@@ -2567,7 +2569,7 @@ class ShuttingStarsCore {
         this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
-        this.ctx.fillText(label, Math.floor(this.getStageWidth() - this.convertX(fontSize * 2)), this.convertY((rows)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY((rows)));
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -2907,7 +2909,7 @@ class ShuttingStarsCore {
         this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.seeingRecord.level) + ', 0.9)');
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
-        this.ctx.fillText(label, Math.floor(this.getStageWidth() - this.convertX(fontSize * 2)), this.convertY((rows)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY((rows)));
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -4212,15 +4214,15 @@ class ShuttingStarsCore {
             if(selfs.settingGraphicQualityChoosing == 'LOW') {
                 selfs.ressets.w = 1280;
                 selfs.ressets.h =  720;
+                selfs.disable3d = true;
             } else if(selfs.settingGraphicQualityChoosing == 'MEDIUM') {
                 selfs.ressets.w = 1920;
                 selfs.ressets.h = 1080;
+                selfs.disable3d = true;
             } else if(selfs.settingGraphicQualityChoosing == 'HIGH') {
-                selfs.ressets.w = 2560;
-                selfs.ressets.h = 1440;
-            } else if(selfs.settingGraphicQualityChoosing == '4K') {
-                selfs.ressets.w = 3840;
-                selfs.ressets.h = 2160;
+                selfs.ressets.w = 1920;
+                selfs.ressets.h = 1080;
+                selfs.disable3d = false;
             } else {
                 selfs.ressets.w = 1280;
                 selfs.ressets.h =  720;
