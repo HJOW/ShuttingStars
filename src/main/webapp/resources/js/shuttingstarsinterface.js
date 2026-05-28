@@ -35,6 +35,9 @@ class ShuttingStarsInterface {
     logout() {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
+    createUser(json) {
+        return new Promise((resolve, reject) => { resolve({ success : false, userJson : null }); })
+    }
     listAdditionalSongs() {
         return new Promise((resolve, reject) => { resolve({ success : false, songs : [] }); })
     }
@@ -72,6 +75,25 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             }
         });
     }
+
+    createUser(json) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                    selfs.auth.createUserWithEmailAndPassword(json.email, json.password).then((userCredential) => {
+                    selfs.user = userCredential.user;
+                    selfs.logined = true;
+                    resolve({
+                        success : true,
+                        userJson : userCredential.user
+                    });
+                }).catch((e) => { reject(e); });
+            } catch(exc) {
+                reject(exc);
+            }
+        });
+    }
+
     login(json) {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -122,7 +144,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 for(const k in json) {
                     record[k] = json[k];
                 }
-                record.uid = selfs.loginUid;
+                record.uid = selfs.user.uid;
+                record.email = selfs.user.email;
                 selfs.firestore.collection('highscore').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
             } catch(exc) {
                 reject(exc);

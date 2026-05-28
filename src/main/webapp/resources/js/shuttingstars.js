@@ -318,13 +318,15 @@ class ShuttingStarsCore {
                 .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.4); color: rgba(244, 66, 66, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root .shuttingstars_pop_dim { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
+                .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
+                .shuttingstars_root .shuttingstars_pop_dim2 { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1004; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 400px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
                 .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td { padding: 1rem 1rem 1rem 1rem; }
                 .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td, .shuttingstars_root .shuttingstars_pop_content input, .shuttingstars_root .shuttingstars_pop_content button {
                     font-size: 2rem;
                     line-height: 2.5rem;
                 }
+                .shuttingstars_root .shuttingstars_pop_content.shuttingstars_pop_content2 { z-index: 1005; }
             `;
             const styleElem = document.createElement('style');
             styleElem.type = 'text/css';
@@ -3813,10 +3815,13 @@ class ShuttingStarsCore {
         const selfs = this;
         const popRoot = this.pops.root;
         popRoot.innerHTML = `
-            <div class='shuttingstars_pop_dim'></div>
+            <div class='shuttingstars_pop_dim invisible'></div>
             <div class='shuttingstars_pop_content shuttingstars_canvas_config'></div>  
             <div class='shuttingstars_pop_content pop_login invisible'></div>
             <div class='shuttingstars_pop_content pop_join  invisible'></div>
+
+            <div class='shuttingstars_pop_dim2 invisible'></div>
+            <div class='shuttingstars_pop_content shuttingstars_pop_content2 pop_conf invisible'></div>
         `;
 
         let popInside = popRoot.querySelector('.shuttingstars_pop_dim');
@@ -3888,9 +3893,7 @@ class ShuttingStarsCore {
         btn.addEventListener('click', fLogin);
 
         this.pops.login.querySelector('.inp_login_password').addEventListener('keypress', function(e) {
-            e.preventDefault();
             if(e.keyCode == 13) fLogin();
-            return false;
         });
 
         btn = popInside.querySelector('.btn_join');
@@ -3939,7 +3942,35 @@ class ShuttingStarsCore {
         this.pops.join = popInside;
 
         btn = popInside.querySelector('.btn_join_now');
-        // TODO
+        let fJoin = function() {
+            selfs.backend.createUser({
+                email    : selfs.pops.login.querySelector('.inp_login_email').value,
+                password : selfs.pops.login.querySelector('.inp_login_password').value
+            }).then((respJson) => {
+                const success = respJson.success;
+                const user    = respJson.userJson;
+                if(! success) {
+                    selfs.toast(selfs.trans('Join failed.'));
+                } else {
+                    localStorage.setItem('shuttingstar_session', JSON.stringify(user));
+                }
+
+                selfs.keyEventDisabled = false;
+                selfs.pops.login.classList.add('invisible');
+                selfs.pops.join.classList.add('invisible');
+                selfs.pops.dim.classList.add('invisible');
+
+                const fAfter = function() {
+                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+                };
+                fAfter();
+                selfs.backend.authStateChangedEvents.push(fAfter);
+            }).catch((err) => {
+                console.error(err);
+                ShuttingStarsUtility.toast(selfs.trans('ERROR : ') + err);
+            });
+        }
+        btn.addEventListener('click', fJoin);
 
         btn = popInside.querySelector('.btn_join_cancel');
         btn.addEventListener('click', () => {
@@ -4828,6 +4859,15 @@ class ShuttingStarsCore {
         }
 
         localStorage.setItem('shuttingstar_records', JSON.stringify(recordArray));
+
+        // 로그인된 경우 Firestore 에도 기록
+        if(recordOne.clear) {
+            if(this.backend != null) {
+                if(this.backend.logined) {
+                    this.backend.registerRankRecord(recordOne);
+                }
+            }
+        }
     }
 
     /** 전체 초기화 */
