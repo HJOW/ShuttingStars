@@ -41,6 +41,7 @@ _shuttingstarcore.stringTable = {
         'Note Speed Rate' : '노트 속도 배수',
         'Graphic Quality' : '그래픽 품질',
         'Reset All' : '전체 초기화',
+        'Reset ALL' : '전체 초기화',
         'Language' : '언어',
         "Line Keys" : '라인 키',
         'Choose what you want !' : '곡을 선택하세요 !',
@@ -60,6 +61,12 @@ _shuttingstarcore.stringTable = {
         '% key to start' : '% 키를 눌러 시작',
         'Touch here to start' : '이 곳을 터치하여 시작',
         'Do you want to reset all?' : '전부 초기화 하시겠습니까?',
-        'RECORD' : 'RECORD'
+        'RECORD' : 'RECORD',
+        'LOGIN' : '로그인',
+        'LOGOUT' : '로그아웃',
+        'Do you want to logout now?' : '지금 로그아웃 하시겠습니까?',
+        "E-MAIL" : 'E-MAIL',
+        "PASSWORD" : '암호',
+        "JOIN" : "가입"
     }
 };

@@ -1,4 +1,4 @@
-/** 백엔드 서버 / DB 통신 구현 파트, shuttingstars.js 보다 먼저 불러와야 함 */
+/** 백엔드 서버 / DB 통신 구현 파트, 필요 시 shuttingstars.js 보다 먼저 불러와야 함 */
 /*
 
 LICENSE
@@ -21,6 +21,11 @@ limitations under the License.
 
 /** 중간 인터페이스 구현 */
 class ShuttingStarsInterface {
+    auth = null;
+    firestore = null;
+    sessionChecked = false;
+    logined = false;
+    user = null;
     login(json) {
         return new Promise((resolve, reject) => { resolve({ success : false, userJson : null }); })
     }
@@ -43,10 +48,6 @@ class ShuttingStarsInterface {
 
 /** Firebase 호스팅 기본제공 API 이용 방식 */
 class FirebaseHostingImplementation extends ShuttingStarsInterface {
-     auth = null;
-     firestore = null;
-     logined = false;
-     loginUid = null;
      constructor() {
          super();
          const selfs = this;
@@ -58,7 +59,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
          // 인증 상태 이벤트 부여
          this.auth.onAuthStateChanged((user) => {
              if(user) {
-                 selfs.loginUid = user.uid;
+                 selfs.user = user;
                  selfs.logined = true;
              } else {
                  selfs.logined = false;
@@ -69,7 +70,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
          const selfs = this;
          return new Promise((resolve, reject) => {
              selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
-                 selfs.loginUid = userCredential.user.uid;
+                 selfs.user = userCredential.user;
                  selfs.logined = true;
                  resolve({
                      success : true,
@@ -89,7 +90,9 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     logout() {
         const selfs = this;
         return new Promise((resolve, reject) => {
-            selfs.signOut();
+            selfs.logined = false;
+            selfs.user = null;
+            
             resolve({ success : true });
         })
     }

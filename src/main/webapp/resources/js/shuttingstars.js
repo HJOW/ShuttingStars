@@ -33,20 +33,35 @@ class ShuttingStarsCore {
     ressets    = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
 
+    backend = (typeof(_ssbackend) == 'undefined' || _ssbackend == null) ? null : _ssbackend;
+
     virtualKey = false;      // 가상 키 출력 여부
-    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음)
+    virtualKeyNone = false;  // 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음)
+    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음)
 
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     canvasZindex = 1;    // canvas 태그의 z-index
+
+    rootDiv = null;
+    pops = {
+        root : null,
+        dim : null,
+        config : null,
+        login : null,
+        join : null
+    };
     
     createMode = false; // 곡 생성 모드, 키보드 컨트롤 불가
 
-    dark = true;
-    reverseVertical = false;
+    dark = true;             // 다크 모드 (기본)
+    reverseVertical = false; // 수직 반전
+    
     keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 입력 키
     arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'];
     enterKey = 'ENTER';
     escKey = 'ESCAPE';
+    
+    keyEventDisabled = false;
 
     fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
     pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
@@ -56,8 +71,9 @@ class ShuttingStarsCore {
     canvas3d = null;  // 3D 장식 출력용 캔버스 객체
     configDiv = null; // 상세 설정 영역
 
-    ctx = null;      // 2D Context 객체
-    ss3d = null;     // ShuttingStars3DManager 객체
+    ctx = null;       // 2D Context 객체
+    ss3d = null;      // ShuttingStars3DManager 객체
+    disable3d = true; // true 지정 시 3D 렌더링하지 않음
 
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
@@ -167,6 +183,7 @@ class ShuttingStarsCore {
     colorManualAlpha = false;
 
     menuList = ['play', 'records', 'setting', 'credit'];
+    menuListDynamic = []; // 위 menuList 에 데이터가 추가됨
     menuChoosing = null;
 
     settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
@@ -268,13 +285,17 @@ class ShuttingStarsCore {
 
             this.logInit('root div prepared. ss inside dom creating....');
 
-            let htmls = '';
-            htmls += "<div class='shuttingstars_canvas_root'>               \n";
-            htmls += "    <canvas class='shuttingstars_canvas'></canvas>    \n";
-            htmls += "    <canvas class='shuttingstars_canvas_3d'></canvas> \n";
-            htmls += "    <div class='shuttingstars_canvas_config'></div>   \n";
-            htmls += "</div>                                                \n";
+            let htmls = `
+                <div class='shuttingstars_canvas_root'>              
+                    <canvas class='shuttingstars_canvas'></canvas>   
+                    <canvas class='shuttingstars_canvas_3d'></canvas>
+                    <div class='shuttingstars_pop_root'></div>
+                </div>                                     
+            `;
             rootDiv.innerHTML = htmls;
+            this.rootDiv = rootDiv;
+            this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
+            this.renderPopupDiv();
 
             this.logInit('preparing global css...');
 
@@ -283,6 +304,17 @@ class ShuttingStarsCore {
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .shuttingstars_root button.btn       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.4); color: rgba(122, 165, 240, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.4); color: rgba(244, 66, 66, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root .shuttingstars_pop_dim { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
+                .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 400px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
+                .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td { padding: 1rem 1rem 1rem 1rem; }
+                .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td, .shuttingstars_root .shuttingstars_pop_content input, .shuttingstars_root .shuttingstars_pop_content button {
+                    font-size: 2rem;
+                    line-height: 2.5rem;
+                }
             `;
             const styleElem = document.createElement('style');
             styleElem.type = 'text/css';
@@ -351,8 +383,9 @@ class ShuttingStarsCore {
             this.logInit('detecting touchscreen...');
 
             // 가상 키 사용여부 지정
-            if(this.virtualKeyForce) this.virtualKey = true;
-            else this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform();
+            if(this.virtualKeyNone) this.virtualKey = false;
+            else if(this.virtualKeyForce) this.virtualKey = true;
+            else (this.virtualKey = ShuttingStarsUtility.isTouchScreenPlatform());
 
             this.logInit('load settings...');
 
@@ -514,7 +547,10 @@ class ShuttingStarsCore {
             if(ShuttingStarsUtility.isTouchScreenPlatform()) this.configDiv = null;
             else this.configDiv = rootDiv.querySelector('.shuttingstars_canvas_config');
             this.renderConfigDiv();
-            if(this.configDiv != null) this.configDiv.style.display = 'none';
+            if(this.configDiv != null) {
+                this.configDiv.classList.add('invisible');
+                this.pops.config = this.configDiv;
+            }
 
             if(this.createMode) {
                 this.logInit('applying creating mode...');
@@ -540,8 +576,15 @@ class ShuttingStarsCore {
                     console.error(exAudio);
                 }
 
-                selfs.logInit('starting game...');
-                selfs.afterInitialized();
+                selfs.menuListDynamic = selfs.menuList;
+                selfs.getMenuList().then((menuList) => {
+                    selfs.menuListDynamic = menuList;
+                    selfs.logInit('starting game...');
+                    selfs.afterInitialized();
+                }).catch((exmenu) => {
+                    ShuttingStarsUtility.toast('ERROR : ' + exmenu, true);
+                    console.error(exmenu);
+                });
             }).catch((e) => {
                 ShuttingStarsUtility.toast('ERROR : ' + e, true);
                 console.error(e);
@@ -557,7 +600,7 @@ class ShuttingStarsCore {
 
     /** 초기화 완료 후 호출 */
     afterInitialized() {
-        this.menuChoosing = this.menuList[0];
+        this.menuChoosing = this.menuListDynamic[0];
         this.titleScreenWaiting = true;
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
@@ -615,6 +658,91 @@ class ShuttingStarsCore {
         if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
             this.resetStage();
         }
+    }
+
+    /** 메뉴 목록 반환, this.menuList 에 더해 로그인 여부 등 동적으로 원소가 추가될 수 있음, Promise */
+    getMenuList() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            if(selfs.backend == null) {
+                resolve( selfs.menuList );
+                return;
+            }
+
+            try {
+                // User 정보 로컬 스토리지에서 탐지
+                let userInfo = localStorage.getItem('shuttingstar_session');
+                if(userInfo == null || typeof(userInfo) == 'undefined' || userInfo == '') userInfo = null;
+                if(userInfo != null) {
+                    if(typeof(userInfo) == 'string') userInfo = JSON.parse(userInfo);
+                    if(userInfo.uid == null || typeof(userInfo.uid) == 'undefined') userInfo = null;
+                }
+
+                const fLogined = () => {
+                    let newList = [];
+                    let classicList = selfs.menuList;
+
+                    // 기존 메뉴 그대로 유지
+                    for(let idx=0; idx<classicList.length; idx++) {
+                        const menuOne = classicList[idx];
+                        newList.push(menuOne);
+                    }
+
+                    /*
+                    // TODO
+                    // 로그인된 경우, 로그아웃 메뉴 추가
+                    newList.push('logout');
+                    */
+
+                    resolve(newList);
+                };
+
+                const fNotLogined = () => {
+                    selfs.backend.logined = false;
+                    selfs.backend.user = null;
+
+                    let newList = [];
+                    let classicList = selfs.menuList;
+
+                    // 기존 메뉴 그대로 유지
+                    for(let idx=0; idx<classicList.length; idx++) {
+                        const menuOne = classicList[idx];
+                        newList.push(menuOne);
+                    }
+
+                    /*
+                    // TODO
+                    // 로그인 안된 경우, 로그인 메뉴 추가
+                    newList.push('login');
+                    */
+
+                    resolve(newList);
+                };
+
+                if(userInfo == null) {
+                    // 로그인 안됨
+                    fNotLogined();
+                } else {
+                    if(typeof(userInfo) == 'string') userInfo = JSON.parse(userInfo);
+                    selfs.backend.user = userInfo;
+                    if(! selfs.backend.sessionChecked) {
+                        selfs.checkLogined(selfs.backend.user).then((res) => {
+                            if(res.loginAvail) {
+                                // 로그인 성공
+                                fLogined();
+                            } else {
+                                // 로그인 안됨
+                                fNotLogined();
+                            }
+                        }).catch((e) => { console.error(e); resolve( selfs.menuList ); });
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
+            resolve( selfs.menuList );
+        });
     }
 
     /** 가상 키 추가 */
@@ -1047,6 +1175,9 @@ class ShuttingStarsCore {
 
     /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
     handleKeyInput(key, vkeyExplosion) {
+        const selfs = this;
+
+        if(this.keyEventDisabled) return;
         if(this.keyInputDebugMode) console.log('KEY INPUT : ' + this.elapsedTime + ', ' + key);
         key = String(key);
 
@@ -1071,18 +1202,17 @@ class ShuttingStarsCore {
                 }
             } else if(this.state == 'menu') { 
                 // 메뉴 상태
-
-                if(this.menuList.indexOf(this.menuChoosing) >= 0) index = this.menuList.indexOf(this.menuChoosing);
-                this.menuChoosing = this.menuList[index];
+                if(this.menuListDynamic.indexOf(selfs.menuChoosing) >= 0) index = this.menuListDynamic.indexOf(selfs.menuChoosing);
+                this.menuChoosing = this.menuListDynamic[index];
 
                 if(key == this.arrowKeys[0]) { // UP
                     index--;
-                    if(index < 0) index = this.menuList.length - 1;
-                    this.menuChoosing = this.menuList[index];
+                    if(index < 0) index = this.menuListDynamic.length - 1;
+                    this.menuChoosing = this.menuListDynamic[index];
                 } else if(key == this.arrowKeys[1]) { // DOWN
                     index++;
-                    if(index >= this.menuList.length) index = 0;
-                    this.menuChoosing = this.menuList[index];
+                    if(index >= this.menuListDynamic.length) index = 0;
+                    this.menuChoosing = this.menuListDynamic[index];
                 } else if(key == this.enterKey) { // ENTER
                     if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
                         this.audio = null;
@@ -1091,7 +1221,7 @@ class ShuttingStarsCore {
 
                         this.playTick();
                         this.setState('songchoosing');
-                    } else if(this.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
+                    } else if(selfs.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
                         // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
                         if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
                         else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
@@ -1101,7 +1231,7 @@ class ShuttingStarsCore {
 
                         this.playTick();
                         this.setState('setting');
-                        if(this.configDiv != null) {
+                        if(selfs.configDiv != null) {
                             // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
                             this.openConfigDiv();
                         }
@@ -1111,10 +1241,30 @@ class ShuttingStarsCore {
                         this.setState('credit');
                     } else if(this.menuChoosing == 'records') { // 메뉴 - 기록
                         this.playTick();
-                        this.selectedRecordList = this.getRecords();
+                        this.selectedRecordList = selfs.getRecords();
                         this.seeingRecord = null;
                         if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
                         this.setState('recordlist');
+                    } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
+                        this.playTick();
+                        if(this.backend != null) {
+                            this.keyEventDisabled = true;
+                            this.pops.dim.classList.remove('invisible');
+                            this.pops.login.classList.remove('invisible');
+                        }
+                    } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
+                        this.playTick();
+                        if(this.backend != null) {
+                            if(confirm( this.trans('Do you want to logout now?') )) {
+                                this.backend.logout().then(() => {
+                                    try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
+                                    selfs.getMenuList().then((menuList) => {
+                                        selfs.menuListDynamic = menuList;
+                                        selfs.setState('title');
+                                    });
+                                });
+                            }
+                        }
                     }
                 }
             } else if(this.state == 'songchoosing') { // 곡 선택 상태
@@ -1768,6 +1918,7 @@ class ShuttingStarsCore {
 
     /** 화면 출력 - 메인 메뉴 */
     renderMenu() {
+        const selfs = this;
         let idx;
         let rows = 0;
         let fontSize = this.convertFontSize(30);
@@ -1783,13 +1934,17 @@ class ShuttingStarsCore {
         this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), this.convertY(rows));
         rows += fontSize + gap;
 
-        for(idx=0; idx<this.menuList.length; idx++) {
-            let menuOne = this.menuList[idx];
+        if(this.menuChoosing == null) this.menuChoosing = this.menuListDynamic[0];
+
+        for(idx=0; idx<this.menuListDynamic.length; idx++) {
+            let menuOne = this.menuListDynamic[idx];
 
             if(menuOne == 'play'   ) label = this.trans('PLAY');
             if(menuOne == 'setting') label = this.trans('SETTING');
             if(menuOne == 'credit' ) label = this.trans('CREDIT');
             if(menuOne == 'records') label = this.trans('RECORDS');
+            if(menuOne == 'login'  ) label = this.trans('LOGIN');
+            if(menuOne == 'logout' ) label = this.trans('LOGOUT');
 
             fontSize = this.convertFontSize(20);
 
@@ -3466,21 +3621,21 @@ class ShuttingStarsCore {
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime * 2});
                 this.workerRender.onmessage = function(e) {
-                    if(selfs.ss3d != null && selfs.canvas3d != null) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
+                    if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
                 }
 
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime * 2});
                 this.workerRender.onmessage = function(e) {
-                    if(selfs.ss3d != null) { selfs.ss3d.simultaneousJob(selfs); }
+                    if(selfs.ss3d != null && (! selfs.disable3d)) { selfs.ss3d.simultaneousJob(selfs); }
                 }
             } else {
                 ShuttingStarsUtility.repeat(() => {
-                    if(selfs.ss3d != null && selfs.canvas3d != null) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
+                    if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
                 }, this.frameTime * 2);
 
                 ShuttingStarsUtility.repeat(() => {
-                    if(selfs.ss3d != null) { selfs.ss3d.simultaneousJob(selfs); }
+                    if(selfs.ss3d != null && (! selfs.disable3d)) { selfs.ss3d.simultaneousJob(selfs); }
                 }, this.frameTime * 2);
             }
         }
@@ -3580,7 +3735,133 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
+    /** 팝업 화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
+    renderPopupDiv() {
+        const selfs = this;
+        const popRoot = this.pops.root;
+        popRoot.innerHTML = `
+            <div class='shuttingstars_pop_dim'></div>
+            <div class='shuttingstars_pop_content shuttingstars_canvas_config'></div>  
+            <div class='shuttingstars_pop_content pop_login invisible'></div>
+            <div class='shuttingstars_pop_content pop_join  invisible'></div>
+        `;
+
+        let popInside = popRoot.querySelector('.shuttingstars_pop_dim');
+        this.pops.dim = popInside;
+
+        popInside = popRoot.querySelector('.pop_login');
+        let htmls = `
+            <table class='table_login_form full'>
+                <colgroup>
+                    <col style='width: 10rem;'/>
+                    <col/>
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th class='target_translate' colspan='2' style='font-size: 3rem; font-weight: bold;'>LOGIN</th>
+                    </tr>
+                    <tr>
+                        <th class='target_translate' style='text-align: left;'>E-MAIL</th>
+                        <td><input type='text'     class='full inp inp_login inp_login_email'/></td>
+                    </tr>
+                    <tr>
+                        <th class='target_translate' style='text-align: left;'>PASSWORD</th>
+                        <td><input type='password' class='full inp inp_login inp_login_password'/></td>
+                    </tr>
+                    <tr>
+                        <td colspan='2' style='text-align: center'>
+                            <button type='button' class='btn btn_login target_translate'>LOGIN</button>
+                            <button type='button' class='btn btn_join  target_translate'>JOIN</button>
+                            <button type='button' class='target_translate btn btn_login_cancel red'>CANCEL</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        popInside.innerHTML = htmls;
+        this.pops.login = popInside;
+
+        let btn;
+        btn = popInside.querySelector('.btn_login');
+        btn.addEventListener('click', () => {
+            selfs.backend.login({
+                email    : selfs.pops.login.querySelector('.inp_login_email').value,
+                password : selfs.pops.login.querySelector('.inp_login_password').value
+            }).then((success, user) => {
+                if(! success) {
+                    selfs.toast(selfs.trans('Login failed.'));
+                } else {
+                    localStorage.setItem('shuttingstar_session', JSON.stringify(user));
+                }
+
+                selfs.keyEventDisabled = false;
+                selfs.pops.login.classList.add('invisible');
+                selfs.pops.join.classList.add('invisible');
+                selfs.pops.dim.classList.add('invisible');
+            });
+        });
+
+        btn = popInside.querySelector('.btn_join');
+        btn.addEventListener('click', () => {
+            selfs.pops.login.classList.add('invisible');
+            selfs.pops.join.classList.remove('invisible');
+        });
+
+        btn = popInside.querySelector('.btn_login_cancel');
+        btn.addEventListener('click', () => {
+            selfs.keyEventDisabled = false;
+            selfs.pops.login.classList.add('invisible');
+            selfs.pops.join.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+        });
+
+        popInside = popRoot.querySelector('.pop_join');
+        htmls = `
+            <table class='table_join_form full'>
+                <colgroup>
+                    <col style='width: 10rem;'/>
+                    <col/>
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th class='target_translate' colspan='2' style='font-size: 3rem; font-weight: bold;'>JOIN</th>
+                    </tr>
+                    <tr>
+                        <th class='target_translate' style='text-align: left;'>E-MAIL</th>
+                        <td><input type='text'     class='full inp inp_join inp_join_email'/></td>
+                    </tr>
+                    <tr>
+                        <th class='target_translate' style='text-align: left;'>PASSWORD</th>
+                        <td><input type='password' class='full inp inp_join inp_join_password'/></td>
+                    </tr>
+                    <tr>
+                        <td colspan='2' style='text-align: center'>
+                            <button type='button' class='target_translate btn btn_join_now'       >JOIN</button>
+                            <button type='button' class='target_translate btn btn_join_cancel red'>BACK</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        popInside.innerHTML = htmls;
+        this.pops.join = popInside;
+
+        btn = popInside.querySelector('.btn_join_now');
+        // TODO
+
+        btn = popInside.querySelector('.btn_join_cancel');
+        btn.addEventListener('click', () => {
+            selfs.pops.join.classList.add('invisible');
+            selfs.pops.login.classList.remove('invisible');
+        });
+
+        // 스트링 테이블 번역 적용
+        this.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
+            itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
+        });
+    }
+
+    /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) renderPopupDiv 보다 나중에 호출되어야 함 */
     renderConfigDiv() {
         if(this.configDiv == null) return;
         const selfs = this;
@@ -3589,10 +3870,6 @@ class ShuttingStarsCore {
         let styles = `
             .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; }
             .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
-            .shuttingstar_configlayer button       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.4); color: rgba(122, 165, 240, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer button:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer button.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.4); color: rgba(244, 66, 66, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-            .shuttingstar_configlayer button.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
             .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
             .shuttingstar_configlayer table th { border: 0; text-align: left; }
             .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
@@ -3747,7 +4024,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 HTML 및 기타 css 적용
         this.configDiv.innerHTML = html;
-        this.configDiv.style.zIndex = this.canvasZindex + 2;
+        this.configDiv.style.zIndex = 1002;
         this.configDiv.style.position = 'fixed';
         this.configDiv.style.top  = this.canvas.offsetTop  + 'px';
         this.configDiv.style.left = this.canvas.offsetLeft + 'px';
@@ -3758,7 +4035,7 @@ class ShuttingStarsCore {
 
         // 스트링 테이블 번역 적용
         this.configDiv.querySelectorAll('.target_translate').forEach((itemOne) => {
-            itemOne.innerHTML = this.trans(itemOne.innerHTML);
+            itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
         });
 
         // 레이어 영역 (안쪽)
@@ -4028,13 +4305,17 @@ class ShuttingStarsCore {
         ta.value = this.defaultCustomSongComments() + '\n' + JSON.stringify(list);
         
         // 영역 전체를 노출시키고 포커스
-        this.configDiv.style.display = 'block';
+        this.keyEventDisabled = true;
+        this.pops.dim.classList.remove('invisible');
+        this.configDiv.classList.remove('invisible');
         this.configDiv.querySelector('.inp_keypressdelay').focus();
     }
 
     /** 상세설정 창 닫기 */
     closeConfigDiv() {
-        this.configDiv.style.display = 'none';
+        this.configDiv.classList.add('invisible');
+        this.pops.dim.classList.add('invisible');
+        this.keyEventDisabled = false;
         this.canvas.focus();
     }
 
@@ -4465,6 +4746,7 @@ class ShuttingStarsCore {
         try { localStorage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_records' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         fAfter();
     }
 
