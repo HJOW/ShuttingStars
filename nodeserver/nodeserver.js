@@ -55,6 +55,18 @@ const blacklistFilePattern = [
     '/META-INF/'
 ];
 
+// 동적 URL
+const apis = {
+    login               : function(req, res) {   },
+    checkLogined        : function(req, res) {   },
+    logout              : function(req, res) {   },
+    createUser          : function(req, res) {   },
+    listAdditionalSongs : function(req, res) {   },
+    checkLogined        : function(req, res) {   },
+    listRankBoard       : function(req, res) {   },
+    registerRankRecord  : function(req, res) {   }
+}
+
 const server = http.createServer((req, res) => {
     // URL 경로 설정 (기본값: index.html)
     const filePath = path.join(WEB_ROOT, req.url === '/' ? 'index.html' : req.url);
@@ -70,6 +82,31 @@ const server = http.createServer((req, res) => {
             res.end('403 Forbidden');
             return;
         }
+    }
+
+    // 동적 URL 처리
+    if(url.indexOf('/apis/') == 0) {
+        let prefRemoved = url.substring(6);
+        let nextSlash = prefRemoved.indexOf('/');
+        if(nextSlash < 0) nextSlash = prefRemoved.length;
+
+        let apiName = prefRemoved.substring(0, nextSlash);
+        let funcObj = apis[apiName];
+
+        if(typeof(funcObj) == 'undefined' || funcObj == null) {
+            res.writeHead(404, {'Content-Type': 'text/plain'});
+            res.end('404 Not Found');
+            return;
+        }
+
+        let results = funcObj(req, res);
+        if(typeof(results) == 'undefined') return;
+        if(typeof(results) == 'object') results = JSON.stringify(results);
+        if(typeof(results) != 'string') results = String(results);
+
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(results, 'utf-8');
+        return;
     }
 
     // 파일 확장자 추출
