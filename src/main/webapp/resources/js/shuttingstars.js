@@ -2174,6 +2174,8 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.menuListDynamic.length; idx++) {
             let menuOne = this.menuListDynamic[idx];
 
+            if(menuOne == 'login' || menuOne == 'logout') continue;
+
             if(menuOne == 'play'   ) label = this.trans('PLAY');
             if(menuOne == 'setting') label = this.trans('SETTING');
             if(menuOne == 'credit' ) label = this.trans('CREDIT');
@@ -2235,18 +2237,36 @@ class ShuttingStarsCore {
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null) {
+            let logined = false;
+            let label = '';
+
+            fontSize = this.convertFontSize(12);
+            this.ctx.textAlign = 'left';
+            
+            if(this.menuChoosing == 'login' || this.menuChoosing == 'logout') {
+                this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+                opacity = 0.99;
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            } else {
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                opacity = 0.6;
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            }
+
             if(this.backend.logined) {
                 if(this.backend.user) {
-                    fontSize = this.convertFontSize(12);
-                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-                    opacity = 0.9;
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    this.ctx.textAlign = 'left';
-
-                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
+                    logined = true;
                 }
             }
+
+            if(logined) {
+                label = this.backend.user.email;
+            } else {
+                label = this.trans('GUEST');
+            }
+            this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight() - (fontSize * 3.5)));
         }
     }
 
