@@ -28,6 +28,7 @@ limitations under the License.
 
 /** 중간 인터페이스 구현 */
 class ShuttingStarsInterface {
+    avail = false; // false 인 경우 사용 불가
     auth = null;
     firestore = null;
     sessionChecked = false;
@@ -87,6 +88,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         firebase.performance();
         // firebase.messaging().requestPermission().then(() => { });
         // firebase.firestore().doc('/foo/bar').get().then(() => { });
+
+        this.avail = true;
     }
 
     createUser(json) {

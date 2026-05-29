@@ -1331,6 +1331,14 @@ class ShuttingStarsCore {
             index++;
             if(index >= this.menuListDynamic.length) index = 0;
             this.menuChoosing = this.menuListDynamic[index];
+
+            if(this.backend == null || (! this.backend.avail)) {
+                if(this.menuChoosing == 'login' || this.menuChoosing == 'logout') {
+                    index = 0;
+                    this.menuChoosing = this.menuListDynamic[index];
+                }
+            }
+            
         } else if(key == this.enterKey) { // ENTER
             if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
                 this.audio = null;
@@ -1367,7 +1375,7 @@ class ShuttingStarsCore {
                 this.setState('recordlist');
             } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
                 this.playTick();
-                if(this.backend != null) {
+                if(this.backend != null && this.backend.avail) {
                     this.keyEventDisabled = true;
                     this.pops.root.querySelector('.inp_login_password').value = '';
                     this.pops.dim.classList.remove('invisible');
@@ -1376,7 +1384,7 @@ class ShuttingStarsCore {
                 }
             } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
                 this.playTick();
-                if(this.backend != null) {
+                if(this.backend != null && this.backend.avail) {
                     if(confirm( this.trans('Do you want to logout now?') )) {
                         this.backend.logout().then(() => {
                             try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
@@ -2135,7 +2143,7 @@ class ShuttingStarsCore {
         this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
 
         // 로그인된 경우 로그인된 이메일 주소 출력
-        if(this.backend != null) {
+        if(this.backend != null && this.backend.avail) {
             if(this.backend.logined) {
                 if(this.backend.user) {
                     fontSize = this.convertFontSize(12);
@@ -2236,7 +2244,7 @@ class ShuttingStarsCore {
         this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight() - (fontSize * 1.5)));
 
         // 로그인된 경우 로그인된 이메일 주소 출력
-        if(this.backend != null) {
+        if(this.backend != null && this.backend.avail) {
             let logined = false;
             let label = '';
 
@@ -3001,6 +3009,7 @@ class ShuttingStarsCore {
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         let emptyState = false;
 
+        if(this.selectedRecordList == null) this.selectedRecordList = [];
         if(this.selectedRecordList.length <= 0) {
             this.ctx.strokeText(this.trans('No records'), this.convertX(this.getStageWidth() / 2), this.convertY(rows));
             emptyState = true;
@@ -3053,10 +3062,10 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
-        if(this.backend == null) {
-            this.ctx.strokeText(lefts + this.trans('RECORD') + rights, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
-        } else {
+        if(this.backend != null && this.backend.avail) {
             this.ctx.strokeText(lefts + this.trans('RECORD') + ' - ' + (this.selectRecordType == 'internet' ? this.trans('INTERNET') : this.trans('LOCAL')) + rights, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+        } else {
+            this.ctx.strokeText(lefts + this.trans('RECORD') + rights, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
         }
         rows += metricSize3 + gap;
         
@@ -5235,6 +5244,7 @@ class ShuttingStarsCore {
         const selfs = this;
         return new Promise((resolve, reject) => {
             if(selfs.backend == null) { resolve(null); return; }
+            if(! selfs.backend.avail) { resolve(null); return; }
             try {
                 selfs.backend.listRankBoard().then((resp) => {
                     if(! resp.success) { resolve([]); return; }
@@ -5285,7 +5295,7 @@ class ShuttingStarsCore {
 
         // 로그인된 경우 Firestore 에도 기록
         if(recordOne.clear) {
-            if(this.backend != null) {
+            if(this.backend != null && this.backend.avail) {
                 if(this.backend.logined) {
                     this.backend.registerRankRecord(recordOne);
                 }
