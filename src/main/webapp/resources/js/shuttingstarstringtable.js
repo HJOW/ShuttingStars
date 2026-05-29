@@ -73,6 +73,8 @@ _shuttingstarcore.stringTable = {
         'Do you want to logout now?' : '지금 로그아웃 하시겠습니까?',
         "E-MAIL" : 'E-MAIL',
         "PASSWORD" : '암호',
-        "JOIN" : "가입"
+        "JOIN" : "가입",
+        "LOCAL" : "로컬",
+        "INTERNET" : "인터넷"
     }
 };

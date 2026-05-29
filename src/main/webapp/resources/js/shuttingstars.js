@@ -110,8 +110,9 @@ class ShuttingStarsCore {
     object3ds = [];      // 항상 렌더링 대상인 3D 객체들 (장식, ShuttingStars3DObject 타입만 원소로 입력해야 함)
     notePlacers = [];    // NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관)
 
-    elapsedTime = 0;    // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
-    titleDelayTime = 0; // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간
+    elapsedTime = 0;      // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
+    simultaneousTime = 0; // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
+    titleDelayTime = 0;   // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간
 
     usingWorker = true; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
@@ -2101,7 +2102,7 @@ class ShuttingStarsCore {
         let gap = Math.floor(fontSize / 2.0);
         let label = '';
 
-        rows = (this.getStageHeight() / 2) - 100 + rows;
+        rows = (this.getStageHeight() / 5);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -2164,7 +2165,7 @@ class ShuttingStarsCore {
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight() - (fontSize * 1.5))));
         rows += fontSize + gap;
 
         // 빌드 번호 출력
@@ -2550,7 +2551,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight() * 9 / 10)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight() - (fontSize * 1.5))));
         
         // 선택 곡 정보 출력
         if(songChoosen != null) {
@@ -3121,7 +3122,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight() * 9 / 10)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight() - (fontSize * 1.5))));
     }
 
     /** 기록 조회 그리기 */
@@ -3379,6 +3380,8 @@ class ShuttingStarsCore {
         let label = '';
         
         rows = this.convertFontSize(30);
+        rows = rows - Math.floor( rows * ( this.creditIndexIncreases * 1.0 / this.creditIndexIncreaseMax ));
+
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -3399,6 +3402,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.creditContents.length; idx++) { // 루프 전체 출력 - 어짜피 넘치는 영역은 숨겨지므로
             const nows = this.creditContents[idx];
 
+            fontSize = this.convertFontSize(nows.fontSize);
             this.ctx.font = 'normal ' + this.convertFontSize(nows.fontSize) + 'px ' + this.getRenderFontFamily();
             this.ctx.fillText(nows.label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
             rows += fontSize;
@@ -3569,6 +3573,9 @@ class ShuttingStarsCore {
         let idx, jdx;
         // 항상 처리할 사항
 
+        this.simultaneousTime++;
+        if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
+
         // 폭발 완료 처리
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
@@ -3652,7 +3659,7 @@ class ShuttingStarsCore {
 
         // Credit 처리
         if(this.state == 'credit') {
-            this.creditIndexIncreases++;
+            if(this.simultaneousTime % 2 == 0) this.creditIndexIncreases++;
             if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
             if(this.creditIndex < 0) this.creditIndex = 0;
             if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
@@ -6038,9 +6045,9 @@ class TextDeco extends DecorationObject {
 /** 가상 키 객체 */
 class VirtualKey extends DecorationObject {
     key = 'S';
-    fontSize = 25;
-    wGap = 8;
-    hGap = 8;
+    fontSize = 30;
+    wGap = 12;
+    hGap = 12;
     click = function() {};
     release = function() {}
     constructor(key) {
@@ -6110,10 +6117,6 @@ class VirtualKey extends DecorationObject {
             this.x = Math.round(_shuttingstarcore.getStageWidth()   * 9.0 / 10.0);
             this.y = Math.round(_shuttingstarcore.getStageHeight()  * 1.0 / 10.0);
         }
-
-        this.x = _shuttingstarcore.convertX(this.x);
-        this.y = _shuttingstarcore.convertY(this.y);
-        this.r = _shuttingstarcore.convertX(this.r);
     }
     getNowOpacity() {
         return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
@@ -6144,7 +6147,7 @@ class VirtualKey extends DecorationObject {
 
         //    출력
         ctx.textAlign = 'center';
-        ctx.fillText(label, this.x, this.y + _shuttingstarcore.convertY(this.fontSize / 4.0)); // x, y는 convert 이미 처리된 좌표이므로 주의 !
+        ctx.fillText(label, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y) + _shuttingstarcore.convertY(this.fontSize / 4.0));
     }
 }
 
