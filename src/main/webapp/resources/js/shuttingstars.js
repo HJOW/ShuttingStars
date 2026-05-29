@@ -315,7 +315,22 @@ class ShuttingStarsCore {
             this.logInit('preparing global css...');
 
             // Set global CSS
-            let styles = `
+            let styles = '';
+
+            //     글꼴 설정
+            let fonts = this.getRenderFontFamily();
+            fonts = fonts.split(' ').join(', ');
+            let targets = ['div', 'p', 'span', 'pre', 'input', 'textarea', 'select', 'button', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'table', 'tr', 'td', 'th', 'canvas', 'video', 'audio'];
+            styles += '.shuttingstars_root';
+            for(let domElem of targets) {
+                styles += ', ';
+                styles += '.shuttingstars_root ' + domElem;
+            }
+            styles += ' { font-family : ' + fonts + '; }\n';
+
+            //     기본 CSS
+            styles += `
+                .shuttingstars_root { width: 100%; margin: 0; padding: 0; }
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -333,6 +348,45 @@ class ShuttingStarsCore {
                 }
                 .shuttingstars_root .shuttingstars_pop_content.shuttingstars_pop_content2 { z-index: 1005; }
             `;
+            //     설정 영역 CSS
+            // 상세설정 영역 공통 css 준비
+            styles += `
+                .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; }
+                .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
+                .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
+                .shuttingstar_configlayer table th { border: 0; text-align: left; }
+                .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
+                .shuttingstar_configlayer .tabarea        { display: none; }
+                .shuttingstar_configlayer .tabarea.active { display: block; }
+                .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.7); color: rgba(50, 230, 50, 0.7); }
+                .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.8); color: rgba(50, 230, 50, 0.8); }
+                .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
+                .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 500px; vertical-align: top; }
+                .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 500px; }
+                .shuttingstar_configlayer .shuttingstar_tools_inner { height: 600px; overflow-y: scroll; }
+                .shuttingstar_configlayer .shuttingstar_tools_inner .section { margin-bottom: 30px; }
+                .shuttingstar_configcontrols { margin-top: 20px; }
+            `;
+            if(this.dark) {
+                styles += `
+                .shuttingstars_canvas_config { background: rgba(80, 80, 80, 0.7); }
+                .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
+                .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
+                    background: rgba(120, 120, 120, 0.7);
+                    color : rgb(250, 250, 250);
+                }
+                `;
+            } else {
+                styles += `
+                .shuttingstars_canvas_config { background: rgba(200, 200, 200, 0.7); }
+                .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
+                .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
+                    background: rgba(190, 190, 190, 0.7);
+                    color : rgb(70, 70, 70);
+                }
+                `;
+            }
+
             const styleElem = document.createElement('style');
             styleElem.type = 'text/css';
             styleElem.innerHTML = styles;
@@ -4355,50 +4409,6 @@ class ShuttingStarsCore {
     renderConfigDiv() {
         if(this.configDiv == null) return;
         const selfs = this;
-
-        // 상세설정 영역 공통 css 준비
-        let styles = `
-            .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; }
-            .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
-            .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
-            .shuttingstar_configlayer table th { border: 0; text-align: left; }
-            .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
-            .shuttingstar_configlayer .tabarea        { display: none; }
-            .shuttingstar_configlayer .tabarea.active { display: block; }
-            .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.7); color: rgba(50, 230, 50, 0.7); }
-            .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.8); color: rgba(50, 230, 50, 0.8); }
-            .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
-            .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 500px; vertical-align: top; }
-            .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 500px; }
-            .shuttingstar_configlayer .shuttingstar_tools_inner { height: 600px; overflow-y: scroll; }
-            .shuttingstar_configlayer .shuttingstar_tools_inner .section { margin-bottom: 30px; }
-            .shuttingstar_configcontrols { margin-top: 20px; }
-        `;
-        if(this.dark) {
-            styles += `
-            .shuttingstars_canvas_config { background: rgba(80, 80, 80, 0.7); }
-            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
-            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
-                background: rgba(120, 120, 120, 0.7);
-                color : rgb(250, 250, 250);
-            }
-            `;
-        } else {
-            styles += `
-            .shuttingstars_canvas_config { background: rgba(200, 200, 200, 0.7); }
-            .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
-            .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
-                background: rgba(190, 190, 190, 0.7);
-                color : rgb(70, 70, 70);
-            }
-            `;
-        }
-
-        // 상세설정 영역 공통 css 적용
-        const styleElem = document.createElement('style');
-        styleElem.type = 'text/css';
-        styleElem.innerHTML = styles;
-        document.head.appendChild(styleElem);
 
         // 상세설정 영역 HTML 준비
         let html = `

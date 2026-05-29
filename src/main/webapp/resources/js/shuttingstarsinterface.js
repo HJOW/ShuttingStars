@@ -81,6 +81,12 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 if(typeof(fAuthStateHandler) == 'function') fAuthStateHandler(selfs);
             }
         });
+
+        // Analytics 등 사용
+        firebase.analytics();
+        firebase.performance();
+        // firebase.messaging().requestPermission().then(() => { });
+        // firebase.firestore().doc('/foo/bar').get().then(() => { });
     }
 
     createUser(json) {
