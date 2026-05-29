@@ -1203,6 +1203,8 @@ class ShuttingStarsCore {
         }
     }
 
+
+
     /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
     handleKeyInput(key, vkeyExplosion) {
         const selfs = this;
@@ -1214,409 +1216,404 @@ class ShuttingStarsCore {
         // 키 입력 신호 넣기
         this.keypressing[key] = new Date().getTime();
 
-        // 방향키와 엔터 키 확인
-        if(key == this.arrowKeys[0] || key == this.arrowKeys[1] || key == this.arrowKeys[2] || key == this.arrowKeys[3] || key == this.enterKey) {
-            let index = 0;
-            if(this.state == 'title') {
-                if(key == this.enterKey || key == 'ENTER') {
-                    this.playTick();
-                    this.setState('menu');
+        // 타이틀 화면 키 핸들링
+        if(this.state == 'title') {
+            this.handleKeyInputTitle(key, vkeyExplosion);
+        } else if(this.state == 'menu') { 
+            this.handleKeyInputMenu(key, vkeyExplosion);
+        } else if(this.state == 'songchoosing') {
+            this.handleKeyInputSongChoosing(key, vkeyExplosion);
+        } else if(this.state == 'setting') {
+            this.handleKeyInputSetting(key, vkeyExplosion);
+        } else if(this.state == 'playing') {
+            this.handleKeyInputPlaying(key, vkeyExplosion);
+        } else if(this.state == 'recordlist') {
+            this.handleKeyInputRecordList(key, vkeyExplosion);
+        } else if(this.state == 'recorddet') {
+            this.handleKeyInputRecordDetail(key, vkeyExplosion);
+        } else if(this.state == 'result') {
+            this.handleKeyInputResult(key, vkeyExplosion);
+        } else if(this.state == 'handleKeyInputCredit') {
+            this.handleKeyInputCredit(key, vkeyExplosion);
+        }
+    }
 
-                    if(this.audioBackground != null) {
-                        this.audioBackground.currentTime = 0;
-                        this.audioBackground.loop = true;
-                        this.audioBackground.volume = this.volumeBackgroundDefault * (this.volume * this.volumeBackground * this.volumeMultiplier);
-                        this.audioBackground.play();
-                        this.audioBackgroundPlaying = true;
-                    }
-                }
-            } else if(this.state == 'menu') { 
-                // 메뉴 상태
-                if(this.menuListDynamic.indexOf(selfs.menuChoosing) >= 0) index = this.menuListDynamic.indexOf(selfs.menuChoosing);
-                this.menuChoosing = this.menuListDynamic[index];
+    /** 타이틀 화면 키 입력 핸들링 */
+    handleKeyInputTitle(key, vkeyExplosion) {
+        if(key == this.enterKey || key == 'ENTER') {
+            this.playTick();
+            this.setState('menu');
 
-                if(key == this.arrowKeys[0]) { // UP
-                    index--;
-                    if(index < 0) index = this.menuListDynamic.length - 1;
-                    this.menuChoosing = this.menuListDynamic[index];
-                } else if(key == this.arrowKeys[1]) { // DOWN
-                    index++;
-                    if(index >= this.menuListDynamic.length) index = 0;
-                    this.menuChoosing = this.menuListDynamic[index];
-                } else if(key == this.enterKey) { // ENTER
-                    if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
-                        this.audio = null;
-                        this.songThumb = null;
-                        this.videoBga = null;
+            if(this.audioBackground != null) {
+                this.audioBackground.currentTime = 0;
+                this.audioBackground.loop = true;
+                this.audioBackground.volume = this.volumeBackgroundDefault * (this.volume * this.volumeBackground * this.volumeMultiplier);
+                this.audioBackground.play();
+                this.audioBackgroundPlaying = true;
+            }
+        }
+    }
 
-                        this.playTick();
-                        this.setState('songchoosing');
-                    } else if(selfs.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
-                        // 그래픽 퀄리티 해상도는 해상도+3D 관련 사항이므로 따로 처리
-                        if(this.resolution.h <= 720) {
-                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-                        } else {
-                            if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-                            else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-                        }
+    /** 메뉴 화면 키 입력 핸들링 */
+    handleKeyInputMenu(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
 
-                        this.playTick();
-                        this.setState('setting');
-                        if(selfs.configDiv != null) {
-                            // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
-                            this.openConfigDiv();
-                        }
-                    } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
-                        this.playTick();
-                        this.prepareCreditList();
-                        this.setState('credit');
-                    } else if(this.menuChoosing == 'records') { // 메뉴 - 기록
-                        this.playTick();
-                        this.selectedRecordList = selfs.getRecords();
-                        this.selectRecordType = 'local';
-                        this.seeingRecord = null;
-                        if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
-                        this.setState('recordlist');
-                    } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
-                        this.playTick();
-                        if(this.backend != null) {
-                            this.keyEventDisabled = true;
-                            this.pops.root.querySelector('.inp_login_password').value = '';
-                            this.pops.dim.classList.remove('invisible');
-                            this.pops.login.classList.remove('invisible');
-                            this.pops.root.querySelector('.inp_login_email').focus();
-                        }
-                    } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
-                        this.playTick();
-                        if(this.backend != null) {
-                            if(confirm( this.trans('Do you want to logout now?') )) {
-                                this.backend.logout().then(() => {
-                                    try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
-                                    selfs.getMenuList().then((menuList) => {
-                                        selfs.menuListDynamic = menuList;
-                                        selfs.setState('title');
-                                    });
-                                });
-                            }
-                        }
-                    }
-                }
-            } else if(this.state == 'songchoosing') { // 곡 선택 상태
-                if(this.songDisplays.length <= 0) { this.setState('menu'); return; } // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
-                if(this.songChoosingMode == 'mission') {
-                    // mission 모드
+        // 메뉴 상태
+        if(this.menuListDynamic.indexOf(selfs.menuChoosing) >= 0) index = this.menuListDynamic.indexOf(selfs.menuChoosing);
+        this.menuChoosing = this.menuListDynamic[index];
 
-                    if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+        if(key == this.arrowKeys[0]) { // UP
+            index--;
+            if(index < 0) index = this.menuListDynamic.length - 1;
+            this.menuChoosing = this.menuListDynamic[index];
+        } else if(key == this.arrowKeys[1]) { // DOWN
+            index++;
+            if(index >= this.menuListDynamic.length) index = 0;
+            this.menuChoosing = this.menuListDynamic[index];
+        } else if(key == this.enterKey) { // ENTER
+            if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
+                this.audio = null;
+                this.songThumb = null;
+                this.videoBga = null;
 
-                    // 미션 인덱스 구하기
-                    index = 0;
-                    for(let idx=0; idx<this.missions.length; idx++) {
-                        if(this.missions[idx] == this.missionChoosing) {
-                            index = idx;
-                            break;
-                        }
-                    }
-
-                    // 키 적용
-                    if(key == this.arrowKeys[0]) { // UP
-                        index--;
-                        if(index < 0) index = this.missions.length - 1;
-                        this.missionChoosing = this.missions[index];
-                    } else if(key == this.arrowKeys[1]) { // DOWN
-                        index++;
-                        if(index >= this.missions.length) index = 0;
-                        this.missionChoosing = this.missions[index];
-                    } else if(key == this.arrowKeys[2]) { // LEFT
-                        this.songChoosingMode = 'default';
-                        if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
-                    } else if(key == this.arrowKeys[3]) { // RIGHT
-                        this.songChoosingMode = 'default';
-                        if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
-                    } else if(key == this.enterKey) { // ENTER
-                        if(this.missionChoosing == null) return;
-                        this.playTick();
-
-                        this.missionChoosing.prepare(this); // 노트 이 시점에 생성
-                        
-
-                        this.songTitleTime = this.songTitleBaseTime;
-                        this.song = this.missionChoosing;
-                        this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
-
-                        if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-
-                        // 곡 플레이 선택함.
-                        this.mode = this.songChoosingMode;
-                        this.setState('songtitle');
-                        this.difficultyChoosing = false;
-                        this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
-                    }
-
+                this.playTick();
+                this.setState('songchoosing');
+            } else if(selfs.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
+                // 그래픽 퀄리티 해상도는 해상도+3D 관련 사항이므로 따로 처리
+                if(this.resolution.h <= 720) {
+                    this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
                 } else {
-                    // default 모드
+                    if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+                    else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+                }
 
-                    if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
-
-                    // 곡/난이도 인덱스 구하기
-                    index = 0;
-                    if(this.difficultyChoosing) {
-                        for(let idx=0; idx<this.difficultyChoosingList.length; idx++) {
-                            if(this.difficulty == this.difficultyChoosingList[idx]) {
-                                index = idx;
-                                break;
-                            }
-                        }
-                    } else {
-                        for(let idx=0; idx<this.songDisplays.length; idx++) {
-                            if(this.songDisplays[idx] == this.songChoosing) {
-                                index = idx;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 키 적용
-                    if(key == this.arrowKeys[0]) { // UP
-                        if(! this.difficultyChoosing) {
-                            index--;
-                            if(index < 0) index = this.songDisplays.length - 1;
-                            this.songChoosing = this.songDisplays[index];
-                        }
-                    } else if(key == this.arrowKeys[1]) { // DOWN
-                        if(! this.difficultyChoosing) {
-                            index++;
-                            if(index >= this.songDisplays.length) index = 0;
-                            this.songChoosing = this.songDisplays[index];
-                        }
-                    } else if(key == this.arrowKeys[2]) { // LEFT
-                        if(this.difficultyChoosing) {
-                            index--;
-                            if(index < 0) index = this.difficultyChoosingList.length - 1;
-                            this.difficulty = this.difficultyChoosingList[index];
-                        } else {
-                            this.songChoosingMode = 'mission';
-                            if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
-                        }
-                    } else if(key == this.arrowKeys[3]) { // RIGHT
-                        if(this.difficultyChoosing) {
-                            index++;
-                            if(index >= this.difficultyChoosingList.length) index = 0;
-                            this.difficulty = this.difficultyChoosingList[index];    
-                        } else {
-                            this.songChoosingMode = 'mission';
-                            if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
-                        }
-                    } else if(key == this.enterKey) { // ENTER
-                        if(this.songChoosing == null) return;
-                        this.playTick();
-
-                        if(this.difficultyChoosing) {
-                            if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
-                            this.songTitleTime = this.songTitleBaseTime;
-                            if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-
-                            // 곡 플레이 선택함.
-                            this.mode = 'default';
-                            this.setState('songtitle');
-                            this.difficultyChoosing = false;
-                            this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
-                        } else {
-                            this.song = this.songChoosing;
-                            this.difficultyChoosingList = this.song.getDifficultyList();
-                            this.difficulty = this.difficultyChoosingList[0];
-                            this.difficultyChoosing = true;
-                        }
+                this.playTick();
+                this.setState('setting');
+                if(selfs.configDiv != null) {
+                    // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
+                    this.openConfigDiv();
+                }
+            } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
+                this.playTick();
+                this.prepareCreditList();
+                this.setState('credit');
+            } else if(this.menuChoosing == 'records') { // 메뉴 - 기록
+                this.playTick();
+                this.selectedRecordList = selfs.getRecords();
+                this.selectRecordType = 'local';
+                this.seeingRecord = null;
+                if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
+                this.setState('recordlist');
+            } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
+                this.playTick();
+                if(this.backend != null) {
+                    this.keyEventDisabled = true;
+                    this.pops.root.querySelector('.inp_login_password').value = '';
+                    this.pops.dim.classList.remove('invisible');
+                    this.pops.login.classList.remove('invisible');
+                    this.pops.root.querySelector('.inp_login_email').focus();
+                }
+            } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
+                this.playTick();
+                if(this.backend != null) {
+                    if(confirm( this.trans('Do you want to logout now?') )) {
+                        this.backend.logout().then(() => {
+                            try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
+                            selfs.getMenuList().then((menuList) => {
+                                selfs.menuListDynamic = menuList;
+                                selfs.setState('title');
+                            });
+                        });
                     }
                 }
-            } else if(this.state == 'setting') { // 설정 상태
-                if(this.settingList.indexOf(this.settingChoosing) >= 0) index = this.settingList.indexOf(this.settingChoosing);
-                this.settingChoosing = this.settingList[index];
+            }
+        }
+    }
 
-                if(key == this.enterKey) {
-                    if(this.settingChoosing == 'resetAll') {
-                        if(this.settingResetReask) {
-                            this.playTick();
-                            // 초기화
-                            this.resetAll();
-                        } else {
-                            this.playTick();
-                            // 한번 더 물어봄
-                            this.settingResetReask = true;
-                        }
-                    } else if(this.settingModifyingMode) {
-                        this.playTick();
-                        this.settingModifyingMode = false; // 설정 변경 모드 OFF
+    /** 곡 선택 화면 키 입력 핸들링 */
+    handleKeyInputSongChoosing(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
 
-                        if(this.settingChoosing == 'setGraphicQuality') {
-                            // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
-                            this.disable3d = true;
-                            if(this.settingGraphicQualityChoosing == 'LOW') {
-                                this.ressets.w = 1280;
-                                this.ressets.h =  720;
-                            } else if(this.settingGraphicQualityChoosing == 'MEDIUM') {
-                                this.ressets.w = 1920;
-                                this.ressets.h = 1080;
-                            } else if(this.settingGraphicQualityChoosing == 'HIGH') {
-                                this.ressets.w = 1920;
-                                this.ressets.h = 1080;
-                                this.disable3d = false;
-                            }
-                            this.setResolution(this.ressets.w, this.ressets.h);
-                        }
+        // ESC 처리는 공통 사항
+        if(key == this.escKey) {
+            this.playTick();
+            if(this.difficultyChoosing) { this.difficultyChoosing = false; }
+            else { this.setState('menu'); }
+            return;
+        }
 
-                        // 설정 저장
-                        this.saveSettings();
-                    } else {
-                        this.playTick();
-                        this.settingModifyingMode = true; // 설정 변경 모드 ON
-                    }
-                } else if(this.settingModifyingMode) {
-                    this.settingResetReask = false;
-                    if(key == this.arrowKeys[2]) { // LEFT
-                        if(this.settingChoosing == 'fixKeypressTiming') {
-                            this.keypressTiming--;
-                            if(this.keypressTiming < 0) this.keypressTiming = 0;
-                        } else if(this.settingChoosing == 'fixSongTiming') {
-                            this.songTiming--;
-                            if(this.songTiming < 0) this.songTiming = 0;
-                        } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
-                            this.noteSpeedMultiplier--;
-                            if(this.noteSpeedMultiplier < 0.1) this.noteSpeedMultiplier = 0.1;
-                        } else if(this.settingChoosing == 'setGraphicQuality') {
-                            let idxChoose = this.settingsGraphicQuality.indexOf(this.settingGraphicQualityChoosing);
-                            idxChoose--;
-                            if(idxChoose < 0) idxChoose = this.settingsGraphicQuality.length - 1;
-                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[idxChoose];
-                        }
-                    } else if(key == this.arrowKeys[3]) { // RIGHT
-                        if(this.settingChoosing == 'fixKeypressTiming') {
-                            this.keypressTiming++;
-                            if(this.keypressTiming >= 1000) this.keypressTiming = 1000;
-                        } else if(this.settingChoosing == 'fixSongTiming') {
-                            this.songTiming++;
-                            if(this.songTiming >= 1000) this.songTiming = 1000;
-                        } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
-                            this.noteSpeedMultiplier++;
-                            if(this.noteSpeedMultiplier >= 8.0) this.noteSpeedMultiplier = 8.0;
-                        } else if(this.settingChoosing == 'setGraphicQuality') {
-                            let idxChoose = this.settingsGraphicQuality.indexOf(this.settingGraphicQualityChoosing);
-                            if(idxChoose < 0) idxChoose = 0;
-                            idxChoose++;
-                            if(idxChoose >= this.settingsGraphicQuality.length) idxChoose = 0;
-                            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[idxChoose];
-                        }
-                    }
-                } else {
-                    this.settingResetReask = false;
-                    if(key == this.arrowKeys[0]) { // UP
-                        index--;
-                        if(index < 0) index = 0;
-                        this.settingChoosing = this.settingList[index];
-                    } else if(key == this.arrowKeys[1]) { // DOWN
-                        index++;
-                        if(index >= this.settingList.length) index = this.settingList.length - 1;
-                        this.settingChoosing = this.settingList[index];
-                    }
+        // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
+        if((this.songDisplays.length <= 0 && this.songChoosingMode == 'default') || (this.missions.length <= 0 && this.songChoosingMode == 'mission')) { this.setState('menu'); return; }
+        if(this.songChoosingMode == 'mission') {
+            // mission 모드
+
+            if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+
+            // 미션 인덱스 구하기
+            index = 0;
+            for(let idx=0; idx<this.missions.length; idx++) {
+                if(this.missions[idx] == this.missionChoosing) {
+                    index = idx;
+                    break;
                 }
+            }
+
+            // 키 적용
+            if(key == this.arrowKeys[0]) { // UP
+                index--;
+                if(index < 0) index = this.missions.length - 1;
+                this.missionChoosing = this.missions[index];
+            } else if(key == this.arrowKeys[1]) { // DOWN
+                index++;
+                if(index >= this.missions.length) index = 0;
+                this.missionChoosing = this.missions[index];
+            } else if(key == this.arrowKeys[2]) { // LEFT
+                this.songChoosingMode = 'default';
+                if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+            } else if(key == this.arrowKeys[3]) { // RIGHT
+                this.songChoosingMode = 'default';
+                if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+            } else if(key == this.enterKey) { // ENTER
+                if(this.missionChoosing == null) return;
+                this.playTick();
+
+                this.missionChoosing.prepare(this); // 노트 이 시점에 생성
                 
-            } else if(this.state == 'playing' && key == this.enterKey) {
-                // 플레이 중이며 엔터 키
-                if(this.paused) { // 일시정지 중일 때 --> 재개 처리
-                    this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
-                    this.paused = false;
-                }
-            } else if(this.state == 'recordlist') {
-                if(this.seeingRecord == null && this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
-                
-                // 기록 인덱스 구하기
-                index = 0;
-                for(let idx=0; idx<this.selectedRecordList.length; idx++) {
-                    if(this.selectedRecordList[idx] == this.seeingRecord) {
+
+                this.songTitleTime = this.songTitleBaseTime;
+                this.song = this.missionChoosing;
+                this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
+
+                if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+
+                // 곡 플레이 선택함.
+                this.mode = this.songChoosingMode;
+                this.setState('songtitle');
+                this.difficultyChoosing = false;
+                this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
+            }
+
+        } else {
+            // default 모드
+
+            if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+
+            // 곡/난이도 인덱스 구하기
+            index = 0;
+            if(this.difficultyChoosing) {
+                for(let idx=0; idx<this.difficultyChoosingList.length; idx++) {
+                    if(this.difficulty == this.difficultyChoosingList[idx]) {
                         index = idx;
                         break;
                     }
                 }
-                
-                // 키 적용
-                if(key == this.arrowKeys[0]) { // UP
-                    index--;
-                    if(index < 0) index = this.selectedRecordList.length - 1;
-                    this.seeingRecord = this.selectedRecordList[index];
-                } else if(key == this.arrowKeys[1]) { // DOWN
-                    index++;
-                    if(index >= this.selectedRecordList.length) index = 0;
-                    this.seeingRecord = this.selectedRecordList[index];
-                } else if(key == this.arrowKeys[2]) { // LEFT
-                    this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
-                    if(this.backend == null) this.selectRecordType == 'local';
-                    if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
-                    else { this.selectedRecordList = this.getRecords(); }
-                } else if(key == this.arrowKeys[3]) { // RIGHT
-                    this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
-                    if(this.backend == null) this.selectRecordType == 'local';
-                    if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
-                    else { this.selectedRecordList = this.getRecords(); }
-                } else if(key == this.enterKey) { // ENTER
-                    if(this.seeingRecord == null) return;
-                    this.playTick();
-                    this.setState('recorddet');
+            } else {
+                for(let idx=0; idx<this.songDisplays.length; idx++) {
+                    if(this.songDisplays[idx] == this.songChoosing) {
+                        index = idx;
+                        break;
+                    }
                 }
-            } else if(this.state == 'recorddet' && key == this.enterKey) {
-                this.playTick();
-                this.setState('recordlist');
             }
-        } else if(key == this.escKey) { // ESC키
-            if(this.state == 'playing') {
-                // 플레이 중이며 ESC키
-                if(this.paused) {
-                    // 이미 일시정지 중일 때 또 ESC 누름 --> 포기 처리
-                    this.onGameOver();
-                } else {
-                    // 일시정지 중이 아닐 때 --> 일시정지 시작
-                    this.paused = true;
-                    if(this.audio != null) { this.audio.pause(); }
+            
+            // 키 적용
+            if(key == this.arrowKeys[0]) { // UP
+                if(! this.difficultyChoosing) {
+                    index--;
+                    if(index < 0) index = this.songDisplays.length - 1;
+                    this.songChoosing = this.songDisplays[index];
                 }
-            } else if(this.state == 'result') {
-                this.setState('menu');
-            } else if(this.state == 'songchoosing') {
-                this.playTick();
-                if(this.difficultyChoosing) { this.difficultyChoosing = false; }
-                else { this.setState('menu'); }
-            } else if(this.state == 'setting') {
-                this.playTick();
-                this.settingResetReask = false;
-                if(this.settingModifyingMode) {
-                    this.settingModifyingMode = false;
-                    this.loadSettings();
-                } else {
-                    this.setState('menu');
+            } else if(key == this.arrowKeys[1]) { // DOWN
+                if(! this.difficultyChoosing) {
+                    index++;
+                    if(index >= this.songDisplays.length) index = 0;
+                    this.songChoosing = this.songDisplays[index];
                 }
-            } else if(this.state == 'credit') {
+            } else if(key == this.arrowKeys[2]) { // LEFT
+                if(this.difficultyChoosing) {
+                    index--;
+                    if(index < 0) index = this.difficultyChoosingList.length - 1;
+                    this.difficulty = this.difficultyChoosingList[index];
+                } else {
+                    this.songChoosingMode = 'mission';
+                    if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+                }
+            } else if(key == this.arrowKeys[3]) { // RIGHT
+                if(this.difficultyChoosing) {
+                    index++;
+                    if(index >= this.difficultyChoosingList.length) index = 0;
+                    this.difficulty = this.difficultyChoosingList[index];    
+                } else {
+                    this.songChoosingMode = 'mission';
+                    if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+                }
+            } else if(key == this.enterKey) {
+                if(this.songChoosing == null) return;
                 this.playTick();
-                this.setState('menu');
-            } else if(this.state == 'recordlist') {
-                this.playTick();
-                this.selectedRecordList = [];
-                this.setState('menu');
-            } else if(this.state == 'recorddet') {
-                this.playTick();
-                this.setState('recordlist');
+
+                if(this.difficultyChoosing) {
+                    if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
+                    this.songTitleTime = this.songTitleBaseTime;
+                    if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+
+                    // 곡 플레이 선택함.
+                    this.mode = 'default';
+                    this.setState('songtitle');
+                    this.difficultyChoosing = false;
+                    this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
+                } else {
+                    this.song = this.songChoosing;
+                    this.difficultyChoosingList = this.song.getDifficultyList();
+                    this.difficulty = this.difficultyChoosingList[0];
+                    this.difficultyChoosing = true;
+                }
             }
         }
+    }
 
-        // 노트 처리
-        if(this.keyList.indexOf(key) >= 0) {
-            let idx;
-            let notePlacer = null; // 해당 키에 맞는 NotePlacer 를 찾아야 함
-            for(idx=0; idx<this.notePlacers.length; idx++) {
-                if(this.notePlacers[idx].key === key) {
-                    notePlacer = this.notePlacers[idx];
-                    break;
+    /** 설정 화면 키 입력 핸들링 */
+    handleKeyInputSetting(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
+
+        if(this.settingList.indexOf(this.settingChoosing) >= 0) index = this.settingList.indexOf(this.settingChoosing);
+        this.settingChoosing = this.settingList[index];
+
+        if(key == this.enterKey) {
+            if(this.settingChoosing == 'resetAll') {
+                if(this.settingResetReask) {
+                    this.playTick();
+                    // 초기화
+                    this.resetAll();
+                } else {
+                    this.playTick();
+                    // 한번 더 물어봄
+                    this.settingResetReask = true;
+                }
+            } else if(this.settingModifyingMode) {
+                this.playTick();
+                this.settingModifyingMode = false; // 설정 변경 모드 OFF
+
+                if(this.settingChoosing == 'setGraphicQuality') {
+                    // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
+                    this.disable3d = true;
+                    if(this.settingGraphicQualityChoosing == 'LOW') {
+                        this.ressets.w = 1280;
+                        this.ressets.h =  720;
+                    } else if(this.settingGraphicQualityChoosing == 'MEDIUM') {
+                        this.ressets.w = 1920;
+                        this.ressets.h = 1080;
+                    } else if(this.settingGraphicQualityChoosing == 'HIGH') {
+                        this.ressets.w = 1920;
+                        this.ressets.h = 1080;
+                        this.disable3d = false;
+                    }
+                    this.setResolution(this.ressets.w, this.ressets.h);
+                }
+
+                // 설정 저장
+                this.saveSettings();
+            } else {
+                this.playTick();
+                this.settingModifyingMode = true; // 설정 변경 모드 ON
+            }
+        } else if(key == this.escKey) {
+            this.playTick();
+            this.settingResetReask = false;
+            if(this.settingModifyingMode) {
+                this.settingModifyingMode = false;
+                this.loadSettings();
+            } else {
+                this.setState('menu');
+            }
+        } else if(this.settingModifyingMode) {
+            this.settingResetReask = false;
+            if(key == this.arrowKeys[2]) { // LEFT
+                if(this.settingChoosing == 'fixKeypressTiming') {
+                    this.keypressTiming--;
+                    if(this.keypressTiming < 0) this.keypressTiming = 0;
+                } else if(this.settingChoosing == 'fixSongTiming') {
+                    this.songTiming--;
+                    if(this.songTiming < 0) this.songTiming = 0;
+                } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
+                    this.noteSpeedMultiplier--;
+                    if(this.noteSpeedMultiplier < 0.1) this.noteSpeedMultiplier = 0.1;
+                } else if(this.settingChoosing == 'setGraphicQuality') {
+                    let idxChoose = this.settingsGraphicQuality.indexOf(this.settingGraphicQualityChoosing);
+                    idxChoose--;
+                    if(idxChoose < 0) idxChoose = this.settingsGraphicQuality.length - 1;
+                    this.settingGraphicQualityChoosing = this.settingsGraphicQuality[idxChoose];
+                }
+            } else if(key == this.arrowKeys[3]) { // RIGHT
+                if(this.settingChoosing == 'fixKeypressTiming') {
+                    this.keypressTiming++;
+                    if(this.keypressTiming >= 1000) this.keypressTiming = 1000;
+                } else if(this.settingChoosing == 'fixSongTiming') {
+                    this.songTiming++;
+                    if(this.songTiming >= 1000) this.songTiming = 1000;
+                } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
+                    this.noteSpeedMultiplier++;
+                    if(this.noteSpeedMultiplier >= 8.0) this.noteSpeedMultiplier = 8.0;
+                } else if(this.settingChoosing == 'setGraphicQuality') {
+                    let idxChoose = this.settingsGraphicQuality.indexOf(this.settingGraphicQualityChoosing);
+                    if(idxChoose < 0) idxChoose = 0;
+                    idxChoose++;
+                    if(idxChoose >= this.settingsGraphicQuality.length) idxChoose = 0;
+                    this.settingGraphicQualityChoosing = this.settingsGraphicQuality[idxChoose];
                 }
             }
-            if(notePlacer == null) return;
+        } else {
+            this.settingResetReask = false;
+            if(key == this.arrowKeys[0]) { // UP
+                index--;
+                if(index < 0) index = 0;
+                this.settingChoosing = this.settingList[index];
+            } else if(key == this.arrowKeys[1]) { // DOWN
+                index++;
+                if(index >= this.settingList.length) index = this.settingList.length - 1;
+                this.settingChoosing = this.settingList[index];
+            }
+        }
+    }
 
-            this.handleNotePlacerCalled(notePlacer);
+    /** 플레이 화면 키 입력 핸들링 */
+    handleKeyInputPlaying(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
+
+        if(key == this.enterKey) {
+            // 플레이 중이며 엔터 키
+            if(this.paused) { // 일시정지 중일 때 --> 재개 처리
+                this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
+                this.paused = false;
+            }
+        } else if(key == this.escKey) {
+            // 플레이 중이며 ESC키
+            if(this.paused) {
+                // 이미 일시정지 중일 때 또 ESC 누름 --> 포기 처리
+                this.onGameOver();
+            } else {
+                // 일시정지 중이 아닐 때 --> 일시정지 시작
+                this.paused = true;
+                if(this.audio != null) { this.audio.pause(); }
+            }
+        } else {
+            // 노트 처리
+            if(this.keyList.indexOf(key) >= 0) {
+                let idx;
+                let notePlacer = null; // 해당 키에 맞는 NotePlacer 를 찾아야 함
+                for(idx=0; idx<this.notePlacers.length; idx++) {
+                    if(this.notePlacers[idx].key === key) {
+                        notePlacer = this.notePlacers[idx];
+                        break;
+                    }
+                }
+                if(notePlacer == null) return;
+
+                this.handleNotePlacerCalled(notePlacer);
+            }
         }
 
         // 가상 키 강조
@@ -1632,6 +1629,70 @@ class ShuttingStarsCore {
                 }
             }
         }
+    }
+
+    /** 기록 목록 화면 키 입력 핸들링 */
+    handleKeyInputRecordList(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
+
+        if(this.seeingRecord == null && this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
+                
+        // 기록 인덱스 구하기
+        index = 0;
+        for(let idx=0; idx<this.selectedRecordList.length; idx++) {
+            if(this.selectedRecordList[idx] == this.seeingRecord) {
+                index = idx;
+                break;
+            }
+        }
+        
+        // 키 적용
+        if(key == this.arrowKeys[0]) { // UP
+            index--;
+            if(index < 0) index = this.selectedRecordList.length - 1;
+            this.seeingRecord = this.selectedRecordList[index];
+        } else if(key == this.arrowKeys[1]) { // DOWN
+            index++;
+            if(index >= this.selectedRecordList.length) index = 0;
+            this.seeingRecord = this.selectedRecordList[index];
+        } else if(key == this.arrowKeys[2]) { // LEFT
+            this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
+            if(this.backend == null) this.selectRecordType == 'local';
+            if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
+            else { this.selectedRecordList = this.getRecords(); }
+        } else if(key == this.arrowKeys[3]) { // RIGHT
+            this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
+            if(this.backend == null) this.selectRecordType == 'local';
+            if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
+            else { this.selectedRecordList = this.getRecords(); }
+        } else if(key == this.enterKey) { // ENTER
+            if(this.seeingRecord == null) return;
+            this.playTick();
+            this.setState('recorddet');
+        } else if(key == this.escKey) {
+            this.playTick();
+            this.setState('menu');
+        }
+    }
+
+    /** 기록 상세 화면 키 입력 핸들링 */
+    handleKeyInputRecordDetail(key, vkeyExplosion) {
+        this.playTick();
+        this.setState('recordlist');
+    }
+
+    /** 결과 화면 키 입력 핸들링 */
+    handleKeyInputResult(key, vkeyExplosion) {
+        if(key == this.escKey) {
+            this.setState('menu');
+        }
+    }
+
+    /** 크레딧 화면 입력 핸들링 */
+    handleKeyInputCredit(key, vkeyExplosion) {
+        this.playTick();
+        this.setState('menu');
     }
 
     /** NotePlacer 호출 처리 */
