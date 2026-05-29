@@ -165,6 +165,21 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             }
         });
     }
+
+    listRankBoard() {
+        const selfs =  this;
+        return new Promise((resolve, reject) => {
+            let arr = [];
+            selfs.firestore.collection('highscore').get().then((querySnapshot) => { // TODO 테스트
+                querySnapshot.forEach((doc) => {
+
+                    console.log(doc);
+                    arr.push(doc);
+                });
+                resolve({ success : false, list : arr }); 
+            });
+        })
+    }
 }
 
 /** Servlet 기반 서버와 통신하는 방식 */

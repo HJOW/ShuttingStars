@@ -738,6 +738,11 @@ class ShuttingStarsCore {
         }
         // 상태 별 가상 키 및 마우스 이벤트 부여 // 종료
 
+        // 상태별 데이터 조회 요청
+        if(state == 'recordlist') {
+            if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
+        }
+
         // 일부 상태는 스테이지 리셋이 필요
         if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
             this.resetStage();
@@ -5210,9 +5215,18 @@ class ShuttingStarsCore {
         const selfs = this;
         return new Promise((resolve, reject) => {
             if(selfs.backend == null) { resolve(null); return; }
-
-
-            resolve([]);
+            try {
+                selfs.backend.listRankBoard().then((resp) => {
+                    if(! resp.success) { resolve([]); return; }
+                    resolve(resp.list);
+                }).catch((e) => {
+                    console.error(e);
+                    resolve([]);
+                });
+            } catch(ex) {
+                console.error(ex);
+                resolve([]);
+            }
         });
     }
 
