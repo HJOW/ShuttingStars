@@ -34,6 +34,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
     renderer = null;
     resolution = {w : 0, h : 0};
     stageSize = {w : 0, h : 0};
+    backLight = null;
     mainLight = null;
     gridHelper = null;
     init(canvas3d, coreInst) {
@@ -64,6 +65,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         this.renderer.setClearAlpha(0);
 
         // 메인 광원
+        this.backLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
         this.mainLight = new THREE.PointLight(0xFFFFFF, 0.9, 1000, 1);
         // this.mainLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.mainLight.position.set(this.stageSize.w * 2 / 3, this.stageSize.h * 2 / 3, 100);
@@ -76,24 +78,11 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
     simultaneousJob(coreInst) {
         super.simultaneousJob(coreInst);
         let idx;
+        let newObj;
 
         coreInst.object3ds = [];
 
-        /*
-        for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
-            const objOne = coreInst.objectsPlaying[idx];
-            if(objOne.shape != 'circle') continue;
-
-            const newObj = new SphereObject(this);
-            newObj.x = this.convertX(objOne.x);
-            newObj.y = this.convertY(objOne.y);
-            newObj.z = 0;
-            newObj.r = this.convertX(objOne.r);
-            newObj.prepareDefaults();
-            coreInst.object3ds.push(newObj);
-        }
-        */
-
+        // 폭발 객체 이관
         for(idx=0; idx<coreInst.objects.length; idx++) {
             const objOne = coreInst.objects[idx];
             if(objOne.shape != 'circle') continue;
@@ -102,7 +91,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             if(objOne instanceof MouseClickHighlighter) continue;
             if(objOne instanceof Starlight) continue;
 
-            let newObj = new SphereObject(this);
+            newObj = new SphereObject(this);
             newObj.x = this.convertX(objOne.x);
             newObj.y = this.convertY(objOne.y);
             newObj.z = 1;
@@ -111,9 +100,9 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             newObj.prepareDefaults();
             coreInst.object3ds.push(newObj);
 
-            let lightRadius = 0.5;
+            let lightRadius = 1.5;
             if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
-            else                      lightRadius = 0.8 - (0.1 * (objOne.explosing - 3));
+            else                      lightRadius = 1.8 - (0.2 * (objOne.explosing - 3));
 
             newObj = new LightPoint(this, lightRadius);
             newObj.x = this.convertX(objOne.x);
@@ -125,40 +114,20 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             coreInst.object3ds.push(newObj);
         }
 
+        // 지구 객체 그리기
+        let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
+        let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
+        let y      = coreInst.getHpBarYLocation() - radius;
+        const hpBarInsideColor = coreInst.convertColor('' + r + ', ' + g + ', ' + b);
 
-        /*
-        let tempObj = new SphereObject(this);
-        tempObj.x = this.convertX(10);
-        tempObj.y = this.convertY(10);
-        tempObj.z = 10;
-        tempObj.r = this.convertX(10);
-        tempObj.prepareDefaults();
-        coreInst.object3ds.push(tempObj);
-
-        tempObj = new SphereObject(this);
-        tempObj.x = this.convertX(10);
-        tempObj.y = this.convertY(this.stageSize.h - 10);
-        tempObj.z = 10;
-        tempObj.r = this.convertX(10);
-        tempObj.prepareDefaults();
-        coreInst.object3ds.push(tempObj);
-
-        tempObj = new SphereObject(this);
-        tempObj.x = this.convertX(this.stageSize.w - 10);
-        tempObj.y = this.convertY(10);
-        tempObj.z = 10;
-        tempObj.r = this.convertX(10);
-        tempObj.prepareDefaults();
-        coreInst.object3ds.push(tempObj);
-
-        tempObj = new SphereObject(this);
-        tempObj.x = this.convertX(this.stageSize.w - 10);
-        tempObj.y = this.convertY(this.stageSize.h - 10);
-        tempObj.z = 10;
-        tempObj.r = this.convertX(10);
-        tempObj.prepareDefaults();
-        coreInst.object3ds.push(tempObj);
-        */
+        newObj = new SphereObject(this);
+        newObj.x = this.convertX(x);
+        newObj.y = this.convertY(y);
+        newObj.z = 1;
+        newObj.r = this.convertX(r);
+        newObj.setColor(hpBarInsideColor);
+        newObj.prepareDefaults();
+        coreInst.object3ds.push(newObj);
     }
 
     render(canvas3d, objects) {
@@ -169,6 +138,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         this.scene.clear();
 
         // 광원 추가
+        this.scene.add(this.backLight);
         this.scene.add(this.mainLight);
 
         // 그리드 추가 (디버깅용)
@@ -260,7 +230,7 @@ class SphereObject extends ShuttingStars3DObject {
 
 /** 광원 객체 */
 class LightPoint extends SphereObject {
-    bright = 0.5;
+    bright = 1.5;
     light = null;
 
     constructor(manager, bright) {

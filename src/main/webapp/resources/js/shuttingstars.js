@@ -318,10 +318,10 @@ class ShuttingStarsCore {
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                .shuttingstars_root button.btn       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.4); color: rgba(122, 165, 240, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.6); color: rgba(122, 165, 240, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.4); color: rgba(244, 66, 66, 0.4); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.6); color: rgba(244, 66, 66, 0.6); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.7); color: rgba(122, 165, 240, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.8); color: rgba(122, 165, 240, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.7); color: rgba(244, 66, 66, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.8); color: rgba(244, 66, 66, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_dim2 { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1004; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 400px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
@@ -887,7 +887,7 @@ class ShuttingStarsCore {
 
                 if(typeof(settingJson.reverseVertical) != 'undefined') {
                     this.reverseVertical = settingJson.reverseVertical;
-                    if(typeof(this.reverseVertical) == 'string') this.reverseVertical = ( (this.reverseVertical == 'Y' || this.this.reverseVertical == 'true') ? true : false );
+                    if(typeof(this.reverseVertical) == 'string') this.reverseVertical = ( (this.reverseVertical == 'Y' || this.reverseVertical == 'true') ? true : false );
                 }
 
                 if(typeof(settingJson.keypressTiming) != 'undefined') {
@@ -917,6 +917,11 @@ class ShuttingStarsCore {
                         console.error(e2);
                         console.log('Trying with default resolution...')
                     }    
+                }
+
+                if(typeof(settingJson.disable3d) != 'undefined') {
+                    this.disable3d = settingJson.disable3d;
+                    if(typeof(this.disable3d) == 'string') this.disable3d = ( (this.disable3d == 'Y' || this.disable3d == 'true') ? true : false );
                 }
 
                 if(typeof(settingJson.keyList) != 'undefined') {
@@ -960,7 +965,8 @@ class ShuttingStarsCore {
             settingJson.reverseVertical = this.reverseVertical;
             settingJson.keypressTiming = this.keypressTiming;
             settingJson.songTiming = this.songTiming;
-            settingJson.resolution = this.resolution.w + ',' + this.resolution.h;
+            settingJson.resolution = this.ressets.w + ',' + this.ressets.h;
+            settingJson.disable3d = this.disable3d;
             settingJson.language = this.language;
             settingJson.languageDefault = this.languageDefault;
             settingJson.keyList = this.keyList;
@@ -1443,6 +1449,7 @@ class ShuttingStarsCore {
 
                         if(this.settingChoosing == 'setGraphicQuality') {
                             // 그래픽 퀄리티 해상도는 해상도 관련 사항이므로 따로 처리
+                            this.disable3d = true;
                             if(this.settingGraphicQualityChoosing == 'LOW') {
                                 this.ressets.w = 1280;
                                 this.ressets.h =  720;
@@ -1450,14 +1457,9 @@ class ShuttingStarsCore {
                                 this.ressets.w = 1920;
                                 this.ressets.h = 1080;
                             } else if(this.settingGraphicQualityChoosing == 'HIGH') {
-                                this.ressets.w = 2560;
-                                this.ressets.h = 1440;
-                            } else if(this.settingGraphicQualityChoosing == '4K') {
-                                this.ressets.w = 3840;
-                                this.ressets.h = 2160;
-                            } else {
-                                this.ressets.w = 1280;
-                                this.ressets.h =  720;
+                                this.ressets.w = 1920;
+                                this.ressets.h = 1080;
+                                this.disable3d = false;
                             }
                             this.setResolution(this.ressets.w, this.ressets.h);
                         }
@@ -3199,72 +3201,12 @@ class ShuttingStarsCore {
 
     /** HP 표시 수단 (즉 행성) 그리기 */
     renderHpBar() {
-        // HP바 출력
-        let   changes = 0;
-        let   r, g, b;
-
-        // HP 잔여에 따른 컬러 변경
-        if(this.gameOverDelayed) {
-            r = 140;
-            g = 30;
-            b = 30;
-        } if(this.hp >= 80) {
-            changes = 100 - ((this.hp - 80) * 5.0); // 100 ~ 80 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
-            // HP가 감소함에 따라 따라 80, 250, 80 --> 180, 230, 80 으로 변화
-
-            r = 80 + Math.round(100 * (changes / 100.0));
-            if(r >= 180) r = 180;
-
-            g = 250 - Math.round(20 * (changes / 100.0));
-            if(g < 230) g = 230;
-
-            b = 80; // 변화 없음
-        } else if(this.hp >= 60) {
-            changes = 100 - ((this.hp - 60) * 5.0); // 80 ~ 60 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
-            // HP가 감소함에 따라 180, 230, 80 --> 230, 180, 80 으로 변화
-
-            r = 180 + Math.round(50 * (changes / 100.0));
-            if(r >= 230) r = 230;
-
-            g = 230 - Math.round(50 * (changes / 100.0));
-            if(g < 180) g = 180;
-
-            b = 80; // 변화 없음
-        } else if(this.hp >= 40) {
-            changes = 100 - ((this.hp - 40) * 5.0); // 60 ~ 40 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
-            // HP가 감소함에 따라 230, 180, 80 --> 230, 80, 80 으로 변화
-
-            r = 230; // 변화 없음
-
-            g = 180 - Math.round(100 * (changes / 100.0));
-            if(g < 80) g = 80;
-
-            b = 80; // 변화 없음
-        } else if(this.hp >= 20) {
-            changes = 100 - ((this.hp - 20) * 5.0); // 40 ~ 20 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
-            // HP가 감소함에 따라 230, 80, 80 --> 200, 40, 40 으로 변화
-
-            r = 230 - Math.round(30 * (changes / 100.0));
-            if(g < 200) g = 200;
-
-            g = 80 - Math.round(40 * (changes / 100.0));
-            if(g < 40) g = 40;
-
-            b = 80 - Math.round(40 * (changes / 100.0));
-            if(b < 40) b = 40;
-        } else {
-            changes = 100 - (this.hp * 5.0); // 20 ~ 0 을 5를 곱해 100 ~ 0 백분율로 변환
-            // HP가 감소함에 따라 200, 40, 40 --> 40, 20, 20 으로 변화
-
-            r = 200 - Math.round(160 * (changes / 100.0));
-            if(r < 40) r = 40;
-
-            g = 40 - Math.round(20 * (changes / 100.0));
-            if(g < 20) g = 20;
-
-            b = 40 - Math.round(20 * (changes / 100.0));
-            if(b < 20) b = 20;
-        }
+        let arr = this.calculateHpColor();
+        let r, g, b;
+        r = arr[0];
+        g = arr[1];
+        b = arr[2];
+        
         const hpBarInsideColor = this.convertColor('rgba(' + r + ', ' + g + ', ' + b + ', 0.8)');
 
         // HP바 (행성형) 출력
@@ -3485,6 +3427,80 @@ class ShuttingStarsCore {
         } else {
             return '230, 40, 40';
         }
+    }
+
+    /** HP 표시 컬러 계산 (r, g, b 순서대로 0~255 숫자값이 담긴 배열 반환) */
+    calculateHpColor() {
+        let   changes = 0;
+        let   r, g, b;
+
+        // HP 잔여에 따른 컬러 변경
+        if(this.gameOverDelayed) {
+            r = 140;
+            g = 30;
+            b = 30;
+        } if(this.hp >= 80) {
+            changes = 100 - ((this.hp - 80) * 5.0); // 100 ~ 80 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 따라 80, 250, 80 --> 180, 230, 80 으로 변화
+
+            r = 80 + Math.round(100 * (changes / 100.0));
+            if(r >= 180) r = 180;
+
+            g = 250 - Math.round(20 * (changes / 100.0));
+            if(g < 230) g = 230;
+
+            b = 80; // 변화 없음
+        } else if(this.hp >= 60) {
+            changes = 100 - ((this.hp - 60) * 5.0); // 80 ~ 60 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 180, 230, 80 --> 230, 180, 80 으로 변화
+
+            r = 180 + Math.round(50 * (changes / 100.0));
+            if(r >= 230) r = 230;
+
+            g = 230 - Math.round(50 * (changes / 100.0));
+            if(g < 180) g = 180;
+
+            b = 80; // 변화 없음
+        } else if(this.hp >= 40) {
+            changes = 100 - ((this.hp - 40) * 5.0); // 60 ~ 40 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 230, 180, 80 --> 230, 80, 80 으로 변화
+
+            r = 230; // 변화 없음
+
+            g = 180 - Math.round(100 * (changes / 100.0));
+            if(g < 80) g = 80;
+
+            b = 80; // 변화 없음
+        } else if(this.hp >= 20) {
+            changes = 100 - ((this.hp - 20) * 5.0); // 40 ~ 20 을 20 ~ 0 으로 변환 후 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 230, 80, 80 --> 200, 40, 40 으로 변화
+
+            r = 230 - Math.round(30 * (changes / 100.0));
+            if(g < 200) g = 200;
+
+            g = 80 - Math.round(40 * (changes / 100.0));
+            if(g < 40) g = 40;
+
+            b = 80 - Math.round(40 * (changes / 100.0));
+            if(b < 40) b = 40;
+        } else {
+            changes = 100 - (this.hp * 5.0); // 20 ~ 0 을 5를 곱해 100 ~ 0 백분율로 변환
+            // HP가 감소함에 따라 200, 40, 40 --> 40, 20, 20 으로 변화
+
+            r = 200 - Math.round(160 * (changes / 100.0));
+            if(r < 40) r = 40;
+
+            g = 40 - Math.round(20 * (changes / 100.0));
+            if(g < 20) g = 20;
+
+            b = 40 - Math.round(20 * (changes / 100.0));
+            if(b < 20) b = 20;
+        }
+        let arr = [];
+        arr.push(Math.floor(r));
+        arr.push(Math.floor(g));
+        arr.push(Math.floor(b));
+        return arr;
     }
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
@@ -4281,8 +4297,8 @@ class ShuttingStarsCore {
             .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
             .shuttingstar_configlayer .tabarea        { display: none; }
             .shuttingstar_configlayer .tabarea.active { display: block; }
-            .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.4); color: rgba(50, 230, 50, 0.4); }
-            .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.5); color: rgba(50, 230, 50, 0.6); }
+            .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.7); color: rgba(50, 230, 50, 0.7); }
+            .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.8); color: rgba(50, 230, 50, 0.8); }
             .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
             .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 500px; vertical-align: top; }
             .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 500px; }
@@ -4652,11 +4668,11 @@ class ShuttingStarsCore {
         inp = this.configDiv.querySelector('.inp_notespeedrate');
         inp.value = (this.noteSpeedMultiplier);
 
-        if(     this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-        else if(this.resolution.w <= 1920) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-        else if(this.resolution.w <= 2560) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-        else if(this.resolution.w <= 3840) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[3];
-        else                               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        if(this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+        else {
+            this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+            if(! this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
+        }
         
         // 그래픽 설정
         let sel = this.configDiv.querySelector('.sel_graphicquality');
