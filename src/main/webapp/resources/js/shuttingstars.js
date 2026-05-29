@@ -2993,41 +2993,15 @@ class ShuttingStarsCore {
         let divideCount = 2;
         let label = '';
         let lefts, rights;
-        let metric1, metric2, metric3;
-        let metricSize1, metricSize2, metricSize3;
-
-        // 폰트 크기 측정
-        // 선택된 곡인 경우, 배경색 출력
-        //    곡 이름과 점유 공간 크기를 알아야 함
-        fontSize = this.convertFontSize(20);
-        label = 'ABCDE12345';
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        metric1 = this.ctx.measureText(label);
-
-        fontSize = this.convertFontSize(15);
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        metric2 = this.ctx.measureText(label);
-
-        fontSize = this.convertFontSize(30);
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        metric3 = this.ctx.measureText(label);
-
-        metricSize1 = (metric1.actualBoundingBoxAscent + metric1.actualBoundingBoxDescent);
-        metricSize2 = (metric2.actualBoundingBoxAscent + metric2.actualBoundingBoxDescent);
-        metricSize3 = (metric3.actualBoundingBoxAscent + metric3.actualBoundingBoxDescent);
-        gap = Math.floor(metricSize2 / 2.0);
+        
+        this.calculateFontMetric();
+        gap = Math.floor(this.metricSize2 / 2.0);
 
         // 해상도 별 조치
         if(this.resolution.h <=  720) divideCount = 4; // 한 페이지 내에 출력 가능한 곡/미션 수를 조정하는 값 (현재 선택된 값 위에 이 갯수만큼만 있을 수 있음)
-        if(this.resolution.h >= 1080) {
-            // metricSize1 = Math.round(metricSize1 * 0.7); 
-            // metricSize2 = Math.round(metricSize2 * 0.8); 
-            // metricSize3 = Math.round(metricSize3 * 0.7); 
-            // gap = Math.floor(metricSize2 / 1.3);
-        }
 
         // 최초 Y 좌표 계산
-        rows = (this.getStageHeight() / 5);
+        rows = this.convertY(this.getStageHeight() / 5);
 
         // 기록 목록이 비어 있는 경우를 처리
         fontSize = this.convertFontSize(20);
@@ -3038,12 +3012,12 @@ class ShuttingStarsCore {
 
         if(this.selectedRecordList == null) this.selectedRecordList = [];
         if(this.selectedRecordList.length <= 0) {
-            this.ctx.strokeText(this.trans('No records !'), this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+            this.ctx.strokeText(this.trans('No records !'), this.convertX(this.getStageWidth() / 2), rows);
             emptyState = true;
         }
 
         if(emptyState) {
-            rows += metricSize1 + gap;
+            rows += this.metricSize1 + gap;
 
             // ESC 표기
             let escKeyLabel = this.escKey;
@@ -3052,7 +3026,7 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(15);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.textAlign = "right";
-            this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (metricSize2 * 2)), this.convertY(this.getStageHeight() - (metricSize2 * 2)));
+            this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth()) - (fontSize * 2), this.convertY(this.getStageHeight()) - (this.metricSize2 * 2));
 
             if(this.selectRecordType == 'internet') {
                 setTimeout(() => {
@@ -3090,11 +3064,11 @@ class ShuttingStarsCore {
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         if(this.backend != null && this.backend.avail) {
-            this.ctx.strokeText(lefts + this.trans('RECORD') + ' - ' + (this.selectRecordType == 'internet' ? this.trans('INTERNET') : this.trans('LOCAL')) + rights, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+            this.ctx.strokeText(lefts + this.trans('RECORD') + ' - ' + (this.selectRecordType == 'internet' ? this.trans('INTERNET') : this.trans('LOCAL')) + rights, this.convertX(this.getStageWidth() / 2), rows);
         } else {
-            this.ctx.strokeText(lefts + this.trans('RECORD') + rights, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+            this.ctx.strokeText(lefts + this.trans('RECORD') + rights, this.convertX(this.getStageWidth() / 2), rows);
         }
-        rows += metricSize3 + gap;
+        rows += this.metricSize3 + gap;
         
 
         // 기록을 선택하지 않은 상태인 경우 첫 기록을 출력
@@ -3144,7 +3118,7 @@ class ShuttingStarsCore {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
 
-                this.ctx.fillRect(0, this.convertY(rows - (metricSize1 + gap)), this.canvas.width - (this.getLeftMarginStage() * 2), metricSize1 + (metricSize2 * 2) + this.convertY(gap*5));
+                this.ctx.fillRect(0, rows - (this.metricSize1 + gap), this.canvas.width - (this.getLeftMarginStage() * 2), this.metricSize1 + (this.metricSize2 * 2) + gap*5);
             }
 
             // 곡 이름 출력
@@ -3159,14 +3133,14 @@ class ShuttingStarsCore {
             if(choosen) {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
             } else {
                 if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), rows);
             }
             upperY = rows - gap;
-            rows += metricSize1 + gap;
+            rows += this.metricSize1 + gap;
 
             // 작곡가, 노트작성자, bpm 출력
             label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', recordOne.song.composer), '%2', recordOne.song.noteWriter), '%3', String(recordOne.song.bpm));
@@ -3180,20 +3154,20 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
             else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
             if(choosen) {
-                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
             } else {
                 if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
                 else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), rows);
             }
-            rows += metricSize2 + gap;
+            rows += this.metricSize2 + gap;
 
             // 점수 출력
             fontSize = this.convertFontSize(20);
             this.ctx.textAlign = "left";
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             label = String(recordOne.point);
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(rows));
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
 
             // 랭크 출력
             fontSize = this.convertFontSize(80);
@@ -3201,16 +3175,15 @@ class ShuttingStarsCore {
             this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
             label = recordOne.rank;
             this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', ' + opacity + ')');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), this.convertY(upperY + metricSize1 + (gap * 2)));
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY + this.metricSize3 + (gap * 2));
 
-            rows += metricSize2 + (gap*2);
+            rows += this.metricSize2 + (gap*2);
             displayedSongs++;
         }
 
         // 빈 공간 띄우기
-        fontSize = this.convertFontSize(35);
         while(displayedSongs < 5) {
-            rows += fontSize + gap;
+            rows += this.metricSize3 + gap*2;
             displayedSongs++;
         }
 
@@ -3237,7 +3210,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight() - (fontSize * 1.5))));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight() - (this.metricSize2 * 1.5)));
     }
 
     /** 기록 조회 그리기 */
@@ -3250,16 +3223,20 @@ class ShuttingStarsCore {
         let label = '';
         let defColor = null;
 
+        this.calculateFontMetric();
+        gap = Math.floor(this.metricSize2 / 2.0);
+
         if(this.dark) defColor = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          defColor = this.convertColor('rgba(80, 80, 80, 0.9)');
 
         // 타이틀 출력
-        rows = (this.getStageHeight() / 6);
+        rows = this.convertY(this.getStageHeight() / 6);
+        fontSize = this.convertFontSize(30);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.strokeStyle = defColor;
         this.ctx.textAlign = "center";
-        this.ctx.strokeText(this.trans('PLAYING REPORT'), this.convertX(this.getStageWidth() / 2), this.convertY(rows));
-        rows += fontSize + (gap/2);
+        this.ctx.strokeText(this.trans('PLAYING REPORT'), this.convertX(this.getStageWidth() / 2), rows);
+        rows += this.metricSize3 + (gap/2);
 
         // 판정별 숫자 출력
         fontSize = this.convertFontSize(20);
@@ -3267,92 +3244,92 @@ class ShuttingStarsCore {
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.PERFECT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
-        rows += fontSize + (gap/4);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.PERFECT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        rows += this.metricSize1 + (gap/4);
 
         label = 'GREAT';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.GREAT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
-        rows += fontSize + (gap/4);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.GREAT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        rows += this.metricSize1 + (gap/4);
 
         label = 'GOOD';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.GOOD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.GOOD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         rowCenter = rows; // 수직 중앙 위치 기록해두기 (랭크 출력할 때 사용)
-        rows += fontSize + (gap/4);
+        rows += this.metricSize1 + (gap/4);
 
         label = 'BAD';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.BAD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
-        rows += fontSize + (gap/4);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.BAD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        rows += this.metricSize1 + (gap/4);
 
         label = 'MISS';
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.seeingRecord.report.MISS , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
-        rows += fontSize + (gap/2);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.MISS , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        rows += this.metricSize1 + (gap/2);
 
         // 점수 출력
-        label = ShuttingStarsUtility.fitDigit(this.seeingRecord.point, 10);
+        label = ShuttingStarsUtility.fitDigit(this.point, 10);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(this.trans('TOTAL'), this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), this.convertY(rows));
+        this.ctx.fillText(this.trans('TOTAL'), this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.textAlign = "right";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), this.convertY(rows));
-        rows += fontSize + gap;
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        rows += this.metricSize1 + gap;
 
         // 랭크 출력
         this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "center";
         label = this.judgeResultRank(this.seeingRecord);
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', 0.9)');
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 7), this.convertY(rowCenter + (this.convertFontSize(100) / 2)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 7), rowCenter + (this.metricSize3 * 3 / 2));
 
         // 곡 이름 출력
         label = this.seeingRecord.song.name;
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        rows = this.getStageHeight() - ((fontSize * 3) + gap);
+        rows = this.convertY(this.getStageHeight()) - ((this.metricSize3 * 3) + gap);
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY(rows));
+        this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
         // 작곡가, 노트작성자, bpm 출력
         fontSize = this.convertFontSize(20);
-        rows = this.getStageHeight() - ((fontSize * 2) + (gap * 2));
+        rows = this.convertY(this.getStageHeight()) - ((fontSize * 2) + (gap * 2));
         label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.seeingRecord.song.composer), '%2', this.seeingRecord.song.noteWriter), '%3', String(this.seeingRecord.song.bpm));
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(fontSize * 2), this.convertY((rows)));
+        this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
         // 난이도 표기
         label = String(this.seeingRecord.level);
@@ -3361,7 +3338,7 @@ class ShuttingStarsCore {
         this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.seeingRecord.level) + ', 0.9)');
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY((rows)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -3373,7 +3350,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(15);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(rows + (fontSize + gap * 2)));
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(this.getStageHeight() - (fontSize)));
     }
 
     /** HP 표시 수단 (즉 행성) 그리기 */
