@@ -175,11 +175,10 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             let arr = [];
             selfs.firestore.collection('highscore').get().then((querySnapshot) => { // TODO 테스트
                 querySnapshot.forEach((doc) => {
-
-                    console.log(doc);
+                    doc = doc.data();
                     arr.push(doc);
                 });
-                resolve({ success : false, list : arr }); 
+                resolve({ success : true, list : arr }); 
             });
         })
     }
