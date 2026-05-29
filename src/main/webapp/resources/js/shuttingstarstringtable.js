@@ -47,6 +47,7 @@ _shuttingstarcore.stringTable = {
         'Choose your song !' : '곡을 선택하세요 !',
         'Choose your mission !' : '미션을 선택하세요 !',
         'No songs available !' : '현재 선택 가능한 곡이 없습니다 !',
+        'No records !' : '기록이 없습니다. !',
         'Composed by %1, Notes written by %2, %3 BPM' : '작곡 : %1, 노트 작성 : %2, %3 BPM',
         'Composed by %1, Notes written by %2' : '작곡 : %1, 노트 작성 : %2',
         'Random song, random notes (May not fit tempos)' : '랜덤 곡, 랜덤 노트 생성 (박자와 맞지 않음)',
