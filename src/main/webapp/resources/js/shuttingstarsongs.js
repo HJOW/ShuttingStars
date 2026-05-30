@@ -24,7 +24,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 79;
-song.endTime = 1100;
+song.endTime = 7150;
 song.timeConstant = -297;
 song.noteMultiplier = 1;
 song.timeMultiplier = 0.5;
