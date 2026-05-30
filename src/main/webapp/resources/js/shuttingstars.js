@@ -98,8 +98,8 @@ class ShuttingStarsCore {
 
     volume = 1.0; // 마스터 볼륨 (0 ~ 1)
     volumeBackgroundDefault = 0.2; // 배경 음악 기본 볼륨
-    noteSpeedMultiplier = 2.0;  // 노트 이동 속도 배수 (사용자가 지정 가능)
-    useAudioVisualizer = true; // 시각화 사용여부
+    noteSpeedMultiplier = 1.0;     // 노트 이동 속도 배수 (사용자가 지정 가능)
+    useAudioVisualizer = true;     // 시각화 사용여부
 
     volumeBackground = 1.0; // 배경음악 볼륨 (게임 진행 중 변경됨)
     volumeSongAudio  = 1.0; // 플레이 곡 볼륨 (게임 진행 중 변경됨)
