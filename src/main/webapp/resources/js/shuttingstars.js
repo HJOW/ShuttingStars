@@ -660,7 +660,7 @@ class ShuttingStarsCore {
                     // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
                 } catch(exAudio) {
                     console.error(exAudio);
-                    ShuttingStarsUtility.toast('Audio 로딩 실패 !', true);
+                    ShuttingStarsUtility.toast('Loading audio failed !', true);
                 }
 
                 try {
@@ -1177,36 +1177,45 @@ class ShuttingStarsCore {
             //     곡 오디오 세팅
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
-                    this.audio = new Audio(this.convertURL(this.song.musicUrl));
-                    this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
-                    
-                    this.closeAudioSources();
-                    if(this.useAudioVisualizer) {
-                        try {
-                            // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API )
-                            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                            this.audioAnalyser = this.audioCtx.createAnalyser();
-        
-                            this.audioSource = this.audioCtx.createMediaElementSource(this.audio);
-        
-                            this.audioSource.connect(this.audioAnalyser);
-                            this.audioAnalyser.connect(this.audioCtx.destination);
-                            this.audioAnalyser.fftSize = 256;
-        
-                            this.audioBufferLen = this.audioAnalyser.frequencyBinCount; // fftSize 의 절반값
-                            this.audioBuffer = new Uint8Array(this.audioBufferLen);
-                        } catch(exInx) {
-                            console.log('Failed to prepare audio context.');
-                            console.log(exInx);
-        
-                            this.closeAudioSources();
+                    try {
+                        this.audio = new Audio(this.convertURL(this.song.musicUrl));
+                        this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
+                        
+                        this.closeAudioSources();
+                        if(this.useAudioVisualizer) {
+                            try {
+                                // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API )
+                                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                                this.audioAnalyser = this.audioCtx.createAnalyser();
+            
+                                this.audioSource = this.audioCtx.createMediaElementSource(this.audio);
+            
+                                this.audioSource.connect(this.audioAnalyser);
+                                this.audioAnalyser.connect(this.audioCtx.destination);
+                                this.audioAnalyser.fftSize = 256;
+            
+                                this.audioBufferLen = this.audioAnalyser.frequencyBinCount; // fftSize 의 절반값
+                                this.audioBuffer = new Uint8Array(this.audioBufferLen);
+                            } catch(exInx) {
+                                console.log('Failed to prepare audio context.');
+                                console.log(exInx);
+            
+                                this.closeAudioSources();
+                            }
                         }
+                        
+                        // this.audio.addEventListener('ended', function() {
+                        //     console.log('SONG ENDED');
+                        //     console.log(this.timeElapse);
+                        // });
+                    } catch(exc) {
+                        console.error(exc);
+                        ShuttingStarsUtility.toast('Loading audio failed !', true);
+                        if(this.audio != null) { try { this.audio.remove(); } catch(egnores) {} }
+                        this.audio = null;
+                        this.setState('songchoosing');
+                        return;
                     }
-                    
-                    // this.audio.addEventListener('ended', function() {
-                    //     console.log('SONG ENDED');
-                    //     console.log(this.timeElapse);
-                    // });
                 } else {
                     this.audio = null;
                     this.closeAudioSources();
