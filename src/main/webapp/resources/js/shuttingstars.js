@@ -2237,7 +2237,7 @@ class ShuttingStarsCore {
             if(this.virtualKey) label = 'Touch here to start';
             else                label = '% key to start';
         }
-        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight()) - (this.metricSize2 * 1.5));
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
 
         // 빌드 번호 출력
         fontSize = this.convertFontSize(12);
@@ -2245,7 +2245,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight()) - (this.metricSize2 * 1.5));
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
@@ -2258,10 +2258,12 @@ class ShuttingStarsCore {
                     else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                     this.ctx.textAlign = 'left';
 
-                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), this.convertY(this.getStageHeight()) - (this.metricSize2 * 1.5));
+                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
                 }
             }
         }
+
+        this.renderNoticeBottom();
     }
 
     /** 화면 출력 - 메인 메뉴 */
@@ -2343,14 +2345,14 @@ class ShuttingStarsCore {
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY((this.getStageHeight()) - (this.metricSize2 * 1.5)));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
         rows += this.metricSize2 + gap;
 
         // 빌드 번호 출력
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight()) - (this.metricSize2 * 1.5));
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
@@ -2383,8 +2385,28 @@ class ShuttingStarsCore {
             } else {
                 label = this.trans('GUEST') + ' (' + this.trans('LOGIN') + ")";;
             }
-            this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3.5));
+            this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight()) - (this.metricSize2 * 4.5));
         }
+
+        this.renderNoticeBottom();
+    }
+
+    /** 공통 공지사항 (타이틀, 메뉴 화면에서 사용) 출력 */
+    renderNoticeBottom() {
+        if(this.state == 'playing') return;
+
+        let label = (this.language == 'ko' ? this.noticeKo : this.noticeEn);
+        if(label == null) return;
+
+        let x = ((Math.round(this.simultaneousTime / 4.0) % Math.round(this.getStageWidth())) * 3) - this.getStageWidth();
+
+        const fontSize = this.convertFontSize(12);
+        const opacity = 0.9;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(label, this.convertX(x), this.convertY(this.getStageHeight()) - (this.metricSize2 * 1.5));
     }
 
     /** 화면 출력 - 곡 선정 화면 */
