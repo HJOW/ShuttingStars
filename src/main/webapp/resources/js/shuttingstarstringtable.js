@@ -75,6 +75,7 @@ _shuttingstarcore.stringTable = {
         "PASSWORD" : '암호',
         "JOIN" : "가입",
         "LOCAL" : "로컬",
-        "INTERNET" : "인터넷"
+        "INTERNET" : "인터넷",
+        "GUEST" : "GUEST"
     }
 };

@@ -34,6 +34,7 @@ class ShuttingStarsInterface {
     sessionChecked = false;
     logined = false;
     user = null;
+    openGoogleLogin() { return new Promise((resolve, reject) => { resolve({ success : false }); }) }
     login(json) {
         return new Promise((resolve, reject) => { resolve({ success : false, userJson : null }); })
     }
@@ -92,6 +93,31 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         this.avail = true;
     }
 
+    openGoogleLogin() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                const googles = new firebase.auth.GoogleAuthProvider();
+                this.auth.signInWithPopup(googles).then((result) => {
+                    let credential = result.credential;
+                    let token = credential.accessToken;
+                    let user = result.user;
+                    selfs.user = user;
+                    selfs.logined = true;
+                    resolve({ success : true, userJson : user, credential : credential });
+                }).catch((e) => {
+                    console.error(e);
+                    ShuttingStarsUtility.toast('ERROR:' + e);
+                    reject(e);
+                });
+            } catch(ex) {
+                console.error(ex);
+                ShuttingStarsUtility.toast('ERROR:' + ex);
+                reject(ex);
+            }
+        });
+    }
+
     createUser(json) {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -114,7 +140,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
-                    selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
+                selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
                     selfs.user = userCredential.user;
                     selfs.logined = true;
                     resolve({

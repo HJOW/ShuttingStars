@@ -1421,10 +1421,8 @@ class ShuttingStarsCore {
                 this.playTick();
                 if(this.backend != null && this.backend.avail) {
                     this.keyEventDisabled = true;
-                    this.pops.root.querySelector('.inp_login_password').value = '';
                     this.pops.dim.classList.remove('invisible');
                     this.pops.login.classList.remove('invisible');
-                    this.pops.root.querySelector('.inp_login_email').focus();
                 }
             } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
                 this.playTick();
@@ -2078,6 +2076,9 @@ class ShuttingStarsCore {
         // BGA 그리기
         if(this.song) {
             if(this.song.bgaUrl != null && typeof(this.song.bgaUrl) != 'undefined') {
+                // let img = new Image();
+                // img.src = this.song.bgaUrl;
+                // this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
                 // this.song.bgaUrl
             }
         }
@@ -2352,9 +2353,9 @@ class ShuttingStarsCore {
             }
 
             if(logined) {
-                label = this.backend.user.email;
+                label = this.backend.user.email + ' (' + this.trans('LOGOUT') + ")";
             } else {
-                label = this.trans('GUEST');
+                label = this.trans('GUEST') + ' (' + this.trans('LOGIN') + ")";;
             }
             this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3.5));
         }
@@ -2842,7 +2843,7 @@ class ShuttingStarsCore {
 
         // Thumb 있으면 먼저 출력
         if(this.songThumb != null) {
-            this.ctx.drawImage(this.songThumb, 0, 0, this.convertX(this.getStageWidth()), this.convertY(this.getStageHeight()));
+            try { this.ctx.drawImage(this.songThumb, 0, 0, this.canvas.width, this.canvas.height); } catch(e) { console.error(e); }
         }
 
         // 곡 이름 출력
@@ -4118,7 +4119,8 @@ class ShuttingStarsCore {
             hp : this.hp,
             gameover : this.gameOverDelayed,
             clear : (this.hp >= 1 && (! this.gameOverDelayed)),
-            build : this.build
+            notehistory : [],
+            build : this.build,
         });
     }
 
@@ -4359,7 +4361,6 @@ class ShuttingStarsCore {
             <div class='shuttingstars_pop_dim invisible'></div>
             <div class='shuttingstars_pop_content shuttingstars_canvas_config invisible'></div>  
             <div class='shuttingstars_pop_content pop_login invisible'></div>
-            <div class='shuttingstars_pop_content pop_join  invisible'></div>
 
             <div class='shuttingstars_pop_dim2 invisible'></div>
             <div class='shuttingstars_pop_content shuttingstars_pop_content2 pop_conf invisible'></div>
@@ -4377,21 +4378,26 @@ class ShuttingStarsCore {
                 </colgroup>
                 <tbody>
                     <tr>
-                        <th class='target_translate' colspan='2' style='font-size: 3rem; font-weight: bold;'>LOGIN</th>
+                        <td colspan='2' style='text-align: right;'><button type='button' class='target_translate btn btn_login_cancel red' style='font-size: 0.9rem; padding-left: 0.9rem; padding-right: 0.9rem; padding-top: 0.1rem; padding-bottom: 0.1rem;'>X</button></td>
                     </tr>
                     <tr>
-                        <th class='target_translate' style='text-align: left;'>E-MAIL</th>
-                        <td><input type='text'     class='full inp inp_login inp_login_email'/></td>
-                    </tr>
-                    <tr>
-                        <th class='target_translate' style='text-align: left;'>PASSWORD</th>
-                        <td><input type='password' class='full inp inp_login inp_login_password'/></td>
-                    </tr>
-                    <tr>
-                        <td colspan='2' style='text-align: center'>
-                            <button type='button' class='btn btn_login target_translate'>LOGIN</button>
-                            <button type='button' class='btn btn_join  target_translate'>JOIN</button>
-                            <button type='button' class='target_translate btn btn_login_cancel red'>CANCEL</button>
+                        <td colspan='2' style='text-align: center; height: 250px; vertical-align: middle;'>
+                            <button class="gsi-material-button btn_login">
+                                <div class="gsi-material-button-state"></div>
+                                <div class="gsi-material-button-content-wrapper">
+                                    <div class="gsi-material-button-icon">
+                                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display: block;">
+                                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                                            <path fill="none" d="M0 0h48v48H0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="gsi-material-button-contents">Continue with Google</span>
+                                    <span style="display: none;">Continue with Google</span>
+                                </div>
+                            </button>
                         </td>
                     </tr>
                 </tbody>
@@ -4400,32 +4406,30 @@ class ShuttingStarsCore {
         popInside.innerHTML = htmls;
         this.pops.login = popInside;
 
-        let fLogin = function() {
-            selfs.backend.login({
-                email    : selfs.pops.login.querySelector('.inp_login_email').value,
-                password : selfs.pops.login.querySelector('.inp_login_password').value
-            }).then((respJson) => {
-                const success = respJson.success;
-                const user    = respJson.userJson;
-                if(! success) {
-                    selfs.toast(selfs.trans('Login failed.'));
-                } else {
-                    localStorage.setItem('shuttingstar_session', JSON.stringify(user));
-                }
+        const fAfter2 = function() {
+            selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+        };
 
-                selfs.keyEventDisabled = false;
-                selfs.pops.login.classList.add('invisible');
-                selfs.pops.join.classList.add('invisible');
-                selfs.pops.dim.classList.add('invisible');
+        const fAfter1 = function(respJson) {
+            const success = respJson.success;
+            const user    = respJson.userJson;
+            if(! success) {
+                selfs.toast(selfs.trans('Login failed.'));
+            } else {
+                localStorage.setItem('shuttingstar_session', JSON.stringify(user));
+            }
 
-                const fAfter = function() {
-                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
-                };
-                fAfter();
-                if(selfs.backend.authStateChangedEvents) selfs.backend.authStateChangedEvents.push(fAfter);
-            }).catch((err) => {
-                console.error(err);
-                ShuttingStarsUtility.toast(selfs.trans('ERROR : ') + err);
+            selfs.keyEventDisabled = false;
+            selfs.pops.login.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+
+            fAfter2();
+            if(selfs.backend.authStateChangedEvents) selfs.backend.authStateChangedEvents.push(fAfter2);
+        }
+
+        const fLogin = function() {
+            selfs.backend.openGoogleLogin().then((respJson) => {
+                fAfter1(respJson);
             });
         }
 
@@ -4433,90 +4437,11 @@ class ShuttingStarsCore {
         btn = popInside.querySelector('.btn_login');
         btn.addEventListener('click', fLogin);
 
-        this.pops.login.querySelector('.inp_login_password').addEventListener('keypress', function(e) {
-            if(e.keyCode == 13) fLogin();
-        });
-
-        btn = popInside.querySelector('.btn_join');
-        btn.addEventListener('click', () => {
-            selfs.pops.login.classList.add('invisible');
-            selfs.pops.join.classList.remove('invisible');
-        });
-
         btn = popInside.querySelector('.btn_login_cancel');
         btn.addEventListener('click', () => {
             selfs.keyEventDisabled = false;
             selfs.pops.login.classList.add('invisible');
-            selfs.pops.join.classList.add('invisible');
             selfs.pops.dim.classList.add('invisible');
-        });
-
-        popInside = popRoot.querySelector('.pop_join');
-        htmls = `
-            <table class='table_join_form full'>
-                <colgroup>
-                    <col style='width: 10rem;'/>
-                    <col/>
-                </colgroup>
-                <tbody>
-                    <tr>
-                        <th class='target_translate' colspan='2' style='font-size: 3rem; font-weight: bold;'>JOIN</th>
-                    </tr>
-                    <tr>
-                        <th class='target_translate' style='text-align: left;'>E-MAIL</th>
-                        <td><input type='text'     class='full inp inp_join inp_join_email'/></td>
-                    </tr>
-                    <tr>
-                        <th class='target_translate' style='text-align: left;'>PASSWORD</th>
-                        <td><input type='password' class='full inp inp_join inp_join_password'/></td>
-                    </tr>
-                    <tr>
-                        <td colspan='2' style='text-align: center'>
-                            <button type='button' class='target_translate btn btn_join_now'       >JOIN</button>
-                            <button type='button' class='target_translate btn btn_join_cancel red'>BACK</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        `;
-        popInside.innerHTML = htmls;
-        this.pops.join = popInside;
-
-        btn = popInside.querySelector('.btn_join_now');
-        let fJoin = function() {
-            selfs.backend.createUser({
-                email    : selfs.pops.login.querySelector('.inp_login_email').value,
-                password : selfs.pops.login.querySelector('.inp_login_password').value
-            }).then((respJson) => {
-                const success = respJson.success;
-                const user    = respJson.userJson;
-                if(! success) {
-                    selfs.toast(selfs.trans('Join failed.'));
-                } else {
-                    localStorage.setItem('shuttingstar_session', JSON.stringify(user));
-                }
-
-                selfs.keyEventDisabled = false;
-                selfs.pops.login.classList.add('invisible');
-                selfs.pops.join.classList.add('invisible');
-                selfs.pops.dim.classList.add('invisible');
-
-                const fAfter = function() {
-                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
-                };
-                fAfter();
-                if(selfs.backend.authStateChangedEvents) selfs.backend.authStateChangedEvents.push(fAfter);
-            }).catch((err) => {
-                console.error(err);
-                ShuttingStarsUtility.toast(selfs.trans('ERROR : ') + err);
-            });
-        }
-        btn.addEventListener('click', fJoin);
-
-        btn = popInside.querySelector('.btn_join_cancel');
-        btn.addEventListener('click', () => {
-            selfs.pops.join.classList.add('invisible');
-            selfs.pops.login.classList.remove('invisible');
         });
 
         // 스트링 테이블 번역 적용
