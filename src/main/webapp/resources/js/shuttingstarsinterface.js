@@ -32,6 +32,7 @@ class ShuttingStarsInterface {
     auth = null;
     firestore = null;
     messaging = null;
+    remoteConfig = null;
     sessionChecked = false;
     logined = false;
     user = null;
@@ -62,6 +63,9 @@ class ShuttingStarsInterface {
             resolve({ success : false });
         });
     }
+    getRemoteConfigValues() {
+        return new Promise((resolve, reject) => { resolve({ success : false, value : null }); })
+    }
 }
 
 /** Firebase 호스팅 기본제공 API 이용 방식 */
@@ -75,8 +79,13 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
         // Firebase 활성화
         this.auth = firebase.auth();
-        this.firestore = firebase.firestore();
-        this.messaging = firebase.messaging();
+        this.firestore    = firebase.firestore();
+        this.messaging    = firebase.messaging();
+        this.remoteConfig = firebase.remoteConfig();
+
+        // Analytics 등 사용
+        firebase.analytics();
+        firebase.performance();
 
         // 인증 상태 이벤트 부여
         this.auth.onAuthStateChanged((user) => {
@@ -93,12 +102,19 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             }
         });
 
-        // Analytics 등 사용
-        firebase.analytics();
-        firebase.performance();
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-
+        // Remote Config
+        this.remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
+        this.remoteConfig.defaultConfig = {
+            frameTime              : 10
+          , resumeDelayTime        : 16
+          , songTitleBaseTime      : 120
+          , visualizeBarMultiplier : 2.2
+          , backStarlightCount     : 20
+          , noticeEn : ''
+          , noticeKo : ''
+          , noticeWhen : 0
+        };
+        
         this.avail = true;
     }
 
@@ -241,6 +257,18 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 });
             } catch(e) {
                 resolve({ success : false, message : e });
+            }
+        });
+    }
+
+    getRemoteConfigValues() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                const val = selfs.remoteConfig.getAll();
+                resolve({ success : true, value : val });
+            } catch(e) {
+                reject(e);
             }
         });
     }

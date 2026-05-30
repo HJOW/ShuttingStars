@@ -89,6 +89,10 @@ class ShuttingStarsCore {
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
     visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수 (변경 불가)
     backStarlightCount = 20;       // 배경 별빛 장식 갯수
+
+    noticeEn   = ''; // 공지사항 (영문)
+    noticeKo   = ''; // 공지사항 (한글)
+    noticeWhen = 0;  // 마지막 공지사항 게시일시 (백엔드 필요)
     
     margins = { // 여백 (빈 공간)
         page  : { left :  0, top : 0 },
@@ -272,9 +276,28 @@ class ShuttingStarsCore {
         const selfs = this;
         try {
             this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
-            if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
-                selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
-            });
+            if(this.backend != null) {
+                // 로그인 상태 변경 이벤트 부여
+                if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
+                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+                });
+                // 원격 설정 가져오기
+                this.backend.getRemoteConfigValues().then((respJson) => {
+                    if(respJson.success) {
+                        const valuesRecord = respJson.value;
+                        
+                        selfs.frameTime                = valuesRecord.frameTime.asNumber();
+                        selfs.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
+                        selfs.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
+                        selfs.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
+                        selfs.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
+                        selfs.noticeEn                 = valuesRecord.noticeEn.asString();
+                        selfs.noticeKo                 = valuesRecord.noticeKo.asString();
+                        selfs.noticeWhen               = valuesRecord.noticeWhen.asNumber();
+                    }
+                });
+            }
+            
         } catch(e) {
             console.error(e);
             this.backend = null;
