@@ -24,9 +24,11 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 79;
-song.endTime = 3700;
-song.timeConstant = -337;
-song.timeMultiplier = 1;
+song.endTime = 1100;
+song.timeConstant = -297;
+song.noteMultiplier = 1;
+song.timeMultiplier = 0.5;
+song.noteMultiplier = 2;
 song.test = false;
 song.serial = 'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g';
 song.difficulties = [
@@ -496,6 +498,7 @@ song.bgaUrl = '';
 song.musicUrl = './resources/songs/woowahan/track07.mp3';
 song.thumbnailUrl = '';
 song.description = `
+|주의 ! 노트 다시 짜는 중
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
 |License: 
@@ -507,8 +510,9 @@ song.bpm = 120;
 song.endTime = 4350;
 song.timeConstant = -307;
 song.timeMultiplier = 1;
+song.noteMultiplier = 1;
 song.serial = 'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g';
-song.test = false; // 테스트 이후 false 로 변경
+song.test = true; // 테스트 이후 false 로 변경
 song.difficulties = [];
 /* song.difficulties.push({
     difficultyLabel : 'normal',
@@ -2611,6 +2615,7 @@ song.bgaUrl = '';
 song.musicUrl = './resources/songs/ai/aitrack_260528_01.mp3';
 song.thumbnailUrl = '';
 song.description = `
+|주의 ! 노트 다시 짜는 중
 |Music: Google Lyria
 |  https://gemini.google/overview/music-generation/
 |License: All license granted by AI Platform.
@@ -2620,6 +2625,7 @@ song.bpm = 180;
 song.endTime = 5750;
 song.timeConstant = -666;
 song.timeMultiplier = 1;
+song.noteMultiplier = 1;
 song.test = true; // 테스트 이후 false 로 변경
 song.serial = 'nai4ilaHbn7g934634634638zJ93f8gp34qgD39p4g';
 song.difficulties = [];

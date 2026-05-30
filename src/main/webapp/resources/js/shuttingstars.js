@@ -79,10 +79,11 @@ class ShuttingStarsCore {
     urlCtx = './';   // URL Context Path
 
     frameTime = 10;                // render 호출 주기 (변경 불가)
-    timeMultiplier = 16.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
+    timeMultiplier = 32.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
     stageRows = 72;                // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
     sizeFixedConst = 2;            // 노트 크기 상수 (변경 불가)
-    noteSpeedFixedConst = 0.25;    // 노트 이동 속도 배수 (변경 불가)
+    noteLocationConst = 0;         // 노트 위치 보정 상수 (변경 불가)
+    noteSpeedFixedConst = 0.5;     // 노트 이동 속도 배수 (변경 불가)
     resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 (변경 불가)
     songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
@@ -202,6 +203,7 @@ class ShuttingStarsCore {
     songTiming = 0; // 음원 재생 딜레이 보정값
 
     keypressing = {}; // 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량)
+    playPrepared = false; // 게임 시작 준비여부
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     renderDebugMode = false;
@@ -658,6 +660,7 @@ class ShuttingStarsCore {
                     // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
                 } catch(exAudio) {
                     console.error(exAudio);
+                    ShuttingStarsUtility.toast('Audio 로딩 실패 !', true);
                 }
 
                 try {
@@ -1228,7 +1231,7 @@ class ShuttingStarsCore {
         
         // 곡이 플레이 상황일 경우 처리
         if(this.state == 'playing') {
-            this.elapsedTime = 0;
+            this.elapsedTime = -1000; // 처리 끝난 후 아래에서 다시 초기화
             if(this.song == null) { this.closeAudioSources(); this.audio = null; this.setState('menu'); return; }
 
             // 곡 플레이 세팅 중 처리
@@ -1241,6 +1244,26 @@ class ShuttingStarsCore {
                 if(pattern.time > this.songLastPatternTime) {
                     this.songLastPatternTime = pattern.time;
                 }
+            }
+
+            // 노트 미리 생성
+            for(idx=0; idx<patterns.length; idx++) {
+                const pattern = patterns[idx];
+
+                // 패턴 ID 세팅
+                pattern.id = idx;
+                
+                // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
+                if(pattern.locationIndex < 0) {
+                    pattern.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+                }
+
+                // 노트 생성
+                const note = new Note(pattern.locationIndex);
+                note.id = this.lastObjectId; this.lastObjectId++;
+                note.patternId = pattern.id;
+                note.originalTiming = pattern.time;
+                this.objectsPlaying.push(note); // 노트 추가
             }
 
             // 반복 처리 시작 (곡의 bpm 반영)
@@ -1256,7 +1279,7 @@ class ShuttingStarsCore {
                 this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, selfs.songBitGap);
             }
 
-            // 오디오 재생 시작
+            // 오디오 재생 시작 + 시간 타이밍 맞추기
             if(this.audio != null) {
                 setTimeout(() => {
                     selfs.audio.play();
@@ -1264,11 +1287,17 @@ class ShuttingStarsCore {
 
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
+
+                    selfs.elapsedTime = selfs.audio.currentTime - selfs.songTiming; // 타이밍 지정
                 }, (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
+            } else {
+                selfs.elapsedTime = selfs.songTiming * (-1); // 타이밍 지정
             }
+            this.playPrepared = true;
+        } else {
+            this.playPrepared = false;
         }
     }
-
 
 
     /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
@@ -1276,7 +1305,7 @@ class ShuttingStarsCore {
         const selfs = this;
 
         if(this.keyEventDisabled) return;
-        if(this.keyInputDebugMode) console.log('KEY INPUT : ' + this.elapsedTime + ', ' + key);
+        if(this.keyInputDebugMode) console.log('KEY INPUT : ' + ShuttingStarsUtility.floor2(this.elapsedTime) + ', ' + key);
         key = String(key);
 
         // 키 입력 신호 넣기
@@ -2100,7 +2129,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
-            this.ctx.fillText(String(this.elapsedTime), this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight() / 10));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime)), this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight() / 10));
         }
 
         // 게임 오버 그리기
@@ -3666,10 +3695,38 @@ class ShuttingStarsCore {
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
     simultaneousWork(simultaneousWorkCycle) {
         let idx, jdx;
-        // 항상 처리할 사항
-
+        let notePlacer;
+        let calculates, additionals;
+        
         this.simultaneousTime++;
         if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
+
+        // 노트 위치 처리
+        if(this.state == 'playing' && this.elapsedTime >= 0 && this.playPrepared && this.song != null) {
+            for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj instanceof Note) {
+                    // 폭발 중이거나 제거 처리된 노트는 제외
+                    if(obj.removed || obj.explosing >= 1) continue;
+
+                    // 노트에 해당하는 NotePlacer 찾기
+                    notePlacer = this.getNotePlacer(obj.locationIndex);
+                    if(notePlacer == null) continue;
+
+                    // 노트의 실질 위치 계산
+                    calculates = notePlacer.y; // 일단 NotePlacer 위치부터 시작
+
+                    // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
+                    additionals  = ( (obj.originalTiming * this.song.noteMultiplier) - this.elapsedTime );
+                    additionals += (this.noteLocationConst + this.song.timeConstant);
+                    additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * this.song.timeMultiplier;
+                    calculates  += additionals;
+
+                    // 위치 적용
+                    obj.y = calculates;
+                }
+            }
+        }
 
         // 폭발 완료 처리
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
@@ -3822,8 +3879,14 @@ class ShuttingStarsCore {
         if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
         this.elapsedTime++;
+        if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
+            this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60) * this.timeMultiplier) - this.songTiming;
+        }
         if(this.titleDelayTime >= 1) this.titleDelayTime--;
         
+        /*
+        // 노트 생성 프로세스 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
+
         // 현재 시간에 해당하는 패턴이 있는지 확인
         let diff = song.difficulties[ this.difficulty.index ];
         let patterns = diff.patterns;
@@ -3842,6 +3905,7 @@ class ShuttingStarsCore {
                 this.objectsPlaying.push(note); // 패턴 추가
             }
         }
+       */
 
         // 현재 시간에 해당하는 등장 장식이 있는지 확인
         let decos = song.decorations;
@@ -3904,7 +3968,8 @@ class ShuttingStarsCore {
             }
         }
         
-        // 스테이지에 남아있는 노트 이동 TODO 
+        // 스테이지에 남아있는 노트 이동은 하지 않음 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
+        /*
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if(obj instanceof Note) {
@@ -3916,6 +3981,7 @@ class ShuttingStarsCore {
                 // if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
             }
         }
+        */
     }
 
     /** 곡 동시처리 프로세스 종료 (시작하려면 곡 선택 후 resetStage 가 호출되어야 함) */
@@ -3934,14 +4000,14 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 노트 속도 */
+    /** 노트 속도 (Deprecated 더 이상 이 방식을 쓰지 않음) */
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
         return ((this.getNoteRadius() * 2.0) * this.noteSpeedMultiplier * this.noteSpeedFixedConst) / (this.timeMultiplier / 8.0);
     }
 
-    /** 노트 생성 위치 */
+    /** 노트 생성 위치 (이제는 곡 플레이 초기화 시 다 만들어놓고 위치를 매번 갱신하므로, 초기화할 때 만드는 위치로만 사용함) */
     getNoteCreationYLocation() {
         return this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * (this.timeMultiplier / 8.0) );
     }
@@ -4021,6 +4087,7 @@ class ShuttingStarsCore {
         this.audio = null;
         this.songThumb = null;
         this.videoBga = null;
+        this.playPrepared = false;
 
         // Note 갯수 체크
         let diff = this.song.difficulties[ this.difficulty.index ];
@@ -5146,6 +5213,7 @@ class ShuttingStarsCore {
         song.loadingTime    = json.loadingTime;
         song.bpm            = json.bpm;
         song.endTime        = json.endTime;
+        song.noteMultiplier = json.noteMultiplier;
         song.timeConstant   = json.timeConstant;
         song.timeMultiplier = json.timeMultiplier;
         song.difficulties   = [];
@@ -5406,8 +5474,9 @@ class ShuttingStarsSong {
     loadingTime = 10; // 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함)
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 560; // 곡 종료 시간
-    timeMultiplier = 1; // 보정 시간 (노트 등장 time 값에 * 보정값으로 적용)
-    timeConstant = 0; // 보정 시간 (노트 등장 time 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
+    noteMultiplier = 1; // 보정 배수 (패턴 타이밍 값에 * 보정값으로 적용)
+    timeMultiplier = 1; // 보정 시간 (노트 위치 값에 * 보정값으로 적용)
+    timeConstant = 0; // 보정 시간 (노트 위치 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
     autoStars = true; // 자동 Starlight 생성
     test = false; // true 지정 시 곡 디버그 모드에서만 노출됨
     serial = ''; // 수정하지 말 것
@@ -5424,13 +5493,6 @@ class ShuttingStarsSong {
     decorations = [];
 
     constructor() {}
-
-    /** 노트 속도 */
-    getNoteMoveSpeed() {
-        // 설정값에 따른 속도 반환
-        // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
-        return _shuttingstarcore.getNoteMoveSpeed();
-    }
 
     /** 노트 생성 위치 */
     getNoteCreationYLocation() {
@@ -5480,6 +5542,7 @@ class ShuttingStarsSong {
         obj.endTime = this.endTime;
         obj.timeConstant = this.timeConstant;
         obj.timeMultiplier = this.timeMultiplier;
+        obj.noteMultiplier = this.noteMultiplier;
         obj.test = this.test;
         obj.autoStars = this.autoStars;
         obj.serial = this.serial;
@@ -5542,9 +5605,9 @@ class ShuttingStarsMission extends ShuttingStarsSong {
 
         // 난이도에 맞게 패턴 랜덤생성 확률 결정
         let bpmRev = (Math.abs(300.0 - this.bpm) / 300.0); // bpm 이 빠르면 더 쉬워져야 하므로 만든 상수
-        let rateMin   = 0.1 + (0.01 * bpmRev);   // 랜덤값 최소값
-        let ratePoint = 0.1;                     // 랜덤값이 이 이하로 나와야 노트 생성
-        let rateAfter = 0.0005 * bpmRev;         // 노트 생성 안한 타이밍 당 노트 생성확률 증가폭
+        let rateMin   = 0.1 + (0.005 * bpmRev);   // 랜덤값 최소값
+        let ratePoint = 0.05;                     // 랜덤값이 이 이하로 나와야 노트 생성
+        let rateAfter = 0.00025 * bpmRev;         // 노트 생성 안한 타이밍 당 노트 생성확률 증가폭
         
         for(idx=0; idx<level; idx++) {
             ratePoint += (0.02    * bpmRev);
@@ -5555,7 +5618,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
         // 결정한 확률대로 노트 생성
         let noteCreatedAfter = 0;
         let randValue = 0;
-        for(idx=this.loadingTime * _shuttingstarcore.timeMultiplier; idx<this.endTime; idx++) {
+        for(idx=this.loadingTime * _shuttingstarcore.timeMultiplier + 100; idx<this.endTime; idx++) {
             randValue = Math.random() + rateMin; // rateMin ~ (9.99999 + rateMin)
             randValue -= (rateAfter * noteCreatedAfter);
             if(randValue < 0) randValue = 0;
@@ -5616,6 +5679,7 @@ class HardSurvive extends ShuttingStarsMission {
 
 /** 노트가 생성될 위치와 시간 (즉 패턴) */
 class ShuttingStarsNotePattern {
+    id = 0; // 고유 번호, 게임 내에서 초기화됨
     locationIndex = 0; // 음수 지정 시 랜덤 생성
     time = 0.0;
     constructor(locationIndex, time) {
@@ -5804,10 +5868,18 @@ class NotePlacer extends NoteKeyObject {
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
 class Note extends NoteKeyObject {
     removed = false; // 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함
+
+    // 게임 처리 중 초기화됨
+    patternId = 0;   
+    originalTiming = 0;
+
+    // 생성자
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
-        this.speedY = 10;
+        this.speedY = 0;
+        this.removed = false;
+        this.explosing = 0;
 
         // NotePlacer 찾기
         let notePlacer = _shuttingstarcore.getNotePlacer(locationIndex);
@@ -5815,9 +5887,10 @@ class Note extends NoteKeyObject {
 
         this.x = notePlacer.x;
 
+        // 노트 속도 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
         // NOTE SPEED 관련
-        this.speedY = _shuttingstarcore.getNoteMoveSpeed();
-        this.y = _shuttingstarcore.getNoteCreationYLocation();
+        // this.speedY = _shuttingstarcore.getNoteMoveSpeed();
+        this.y = _shuttingstarcore.getNoteCreationYLocation() * 2;
 
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.shape = 'circle';
@@ -6450,6 +6523,22 @@ class ShuttingStarsUtilityClass {
         setTimeout(fStep, timeGapMillis);
 
         return function() { switchStop = true; }
+    }
+
+    round2(numbers) {
+        return Math.round(numbers * 100.0) / 100.0;
+    }
+
+    round3(numbers) {
+        return Math.round(numbers * 1000.0) / 1000.0;
+    }
+
+    floor2(numbers) {
+        return Math.floor(numbers * 100.0) / 100.0;
+    }
+
+    floor3(numbers) {
+        return Math.floor(numbers * 1000.0) / 1000.0;
     }
 }
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
