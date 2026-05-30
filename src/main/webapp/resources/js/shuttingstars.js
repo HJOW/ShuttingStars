@@ -2052,7 +2052,7 @@ class ShuttingStarsCore {
         // 객체 그리기
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if(obj.removed) continue;
+            if(obj.explosing >= obj.explosingMax) continue;
             if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
         }
 
@@ -5803,7 +5803,7 @@ class NotePlacer extends NoteKeyObject {
 
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
 class Note extends NoteKeyObject {
-    removed = false;
+    removed = false; // 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
