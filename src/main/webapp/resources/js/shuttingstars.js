@@ -2052,6 +2052,7 @@ class ShuttingStarsCore {
         // 객체 그리기
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
+            if(obj.removed) continue;
             if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
         }
 
