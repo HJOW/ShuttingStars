@@ -789,6 +789,9 @@ class ShuttingStarsCore {
                     // 로그인된 경우, 로그아웃 메뉴 추가
                     newList.push('logout');
 
+                    // 푸시 권한 획득
+                    // selfs.backend.requestPushPermission();
+
                     resolve(newList);
                 };
 
@@ -4407,7 +4410,10 @@ class ShuttingStarsCore {
         this.pops.login = popInside;
 
         const fAfter2 = function() {
-            selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+            selfs.getMenuList().then((menuList) => {
+                selfs.menuListDynamic = menuList;
+                // selfs.backend.requestPushPermission();
+            });
         };
 
         const fAfter1 = function(respJson) {

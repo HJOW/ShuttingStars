@@ -31,6 +31,7 @@ class ShuttingStarsInterface {
     avail = false; // false 인 경우 사용 불가
     auth = null;
     firestore = null;
+    messaging = null;
     sessionChecked = false;
     logined = false;
     user = null;
@@ -56,18 +57,26 @@ class ShuttingStarsInterface {
     registerRankRecord(json) {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
+    requestPushPermission() {
+        return new Promise((resolve, reject) => { 
+            resolve({ success : false });
+        });
+    }
 }
 
 /** Firebase 호스팅 기본제공 API 이용 방식 */
 class FirebaseHostingImplementation extends ShuttingStarsInterface {
     authStateChangedEvents = [];
+    pushPermRequestedTime = 0;
+    pushPermGranted = 'none';
     constructor() {
         super();
         const selfs = this;
 
-        // 인증 활성화
+        // Firebase 활성화
         this.auth = firebase.auth();
         this.firestore = firebase.firestore();
+        this.messaging = firebase.messaging();
 
         // 인증 상태 이벤트 부여
         this.auth.onAuthStateChanged((user) => {
@@ -207,6 +216,33 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 resolve({ success : true, list : arr }); 
             });
         })
+    }
+
+    requestPushPermission() {
+        const selfs = this;
+        return new Promise((resolve, reject) => { 
+            try {
+                const nows = new Date().getTime();
+                if(nows - selfs.pushPermRequestedTime < 1000 * 60 * 5) {
+                    resolve({ success : ( selfs.pushPermGranted == 'granted' ) , message : selfs.pushPermGranted });
+                    return;
+                }
+
+                Notification.requestPermission().then((permission) => {
+                    if(permission === 'granted') {
+                        selfs.pushPermGranted = permission;
+                        resolve({ success : true, message : permission });
+                    } else {
+                        selfs.pushPermGranted = permission;
+                        resolve({ success : false, message : permission });
+                    }
+                }).catch((ex) => {
+                    resolve({ success : false, message : ex });
+                });
+            } catch(e) {
+                resolve({ success : false, message : e });
+            }
+        });
     }
 }
 
