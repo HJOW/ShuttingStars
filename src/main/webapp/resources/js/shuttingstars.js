@@ -1782,6 +1782,7 @@ class ShuttingStarsCore {
             const obj = this.objectsPlaying[idx];
             if((obj instanceof Note)) {
                 if(obj.locationIndex != notePlacer.locationIndex) continue;
+                if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
 
                 const dist = notePlacer.isMeetVerticalRangeIn(obj);
@@ -1821,7 +1822,8 @@ class ShuttingStarsCore {
         this.processResultMark(resultMark);
         this.displayResultMark(resultMark);
 
-        minimumNote.explosing = 1; // 노트의 폭발 시작
+        minimumNote.explosing = 1;  // 노트의 폭발 시작
+        minimumNote.removed = true; // 처리했음을 표시
 
         // 추가 폭발 객체 추가
         const newExplosinves = new CorrectNoteExplosing(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
@@ -3790,6 +3792,7 @@ class ShuttingStarsCore {
                     for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
                         let objOne = this.objectsPlaying[jdx];
                         if(objOne instanceof Note) {
+                            if(objOne.removed) continue;
                             if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
                                 this.handleNotePlacerCalled(notePlacerOne);
                                 break;
@@ -3859,6 +3862,7 @@ class ShuttingStarsCore {
                     let resultMark = 'MISS';
                     this.processResultMark(resultMark);
                     this.displayResultMark(resultMark);
+                    obj.removed = true;
 
                     // 폭발 시작
                     obj.explosing = 1;
@@ -3899,10 +3903,11 @@ class ShuttingStarsCore {
             }
         }
         
-        // 스테이지에 남아있는 노트 이동
+        // 스테이지에 남아있는 노트 이동 TODO 
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if(obj instanceof Note) {
+                if(obj.removed) continue;
                 if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
                 obj.y -= obj.speedY;
                 if(obj.y < 0) obj.y = 0;
@@ -5797,6 +5802,7 @@ class NotePlacer extends NoteKeyObject {
 
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
 class Note extends NoteKeyObject {
+    removed = false;
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
