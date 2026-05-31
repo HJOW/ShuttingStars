@@ -131,13 +131,14 @@ $(function() {
     }
 
     const fClearAudio = function() {
-        try { if(timer != null) clearInterval(timer); } catch(ignores) {}
+        try { if(timer != null) timer(); } catch(ignores) {}
+        timer = null;
+        try { if(audio != null) { audio.pause(); audio.currentTime = 0; } } catch(ignores) {}
         if(audioSource != null) {
             if(audioSource   != null) { try { audioSource.disconnect();   this.audioSource   = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
             if(audioAnalyser != null) { try { audioAnalyser.disconnect(); this.audioAnalyser = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
             if(audioCtx      != null) { try { audioCtx.close();           this.audioCtx      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         }
-        try { if(audio != null) { audio.pause(); audio.currentTime = 0; } } catch(ignores) {}
     }
 
     btnLoadAudio.on('click', function() {
@@ -165,7 +166,7 @@ $(function() {
             let diff, increaseCount, increaseSum, time, lastAppend, appendStr, totalSums;
             lastAppend = 0;
 
-            timer = setInterval(function() {
+            timer = ShuttingStarsUtility.repeat(function() {
                 audioAnalyser.getByteFrequencyData(audioBuffer);
 
                 if(chkNoLower.is(':checked')) {
@@ -229,6 +230,7 @@ $(function() {
     });
 
     btnClear.on('click', function() {
+        fClearAudio();
         taTimeline.val('');
     });
 

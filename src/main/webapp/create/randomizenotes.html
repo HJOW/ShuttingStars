@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="height=device-height, initial-scale=1"/>
+<title>Shutting Stars</title>
+<link rel="shortcut icon" href="../resources/icons/icon64.ico" type="image/x-icon"/>
+<link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
+<link rel="stylesheet" href="../resources/fonts/fonts.css"/>
+<style type="text/css">
+html {
+    font-size: 11px;
+}
+body {
+    margin: 0;
+    padding: 0;
+    background-color: rgba(5, 5, 5, 0.99);
+    color: rgba(230, 230, 230, 0.99);
+    overflow: hidden;
+}
+html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5, h6, label, table, tr, td, th {
+    font-family: 'D2Coding, Nanum Gothic Coding';
+}
+.invisible {
+    display: none !important;
+}
+.full {
+    width: 100%;
+}
+.shuttingstar_canvas_root {
+    background-image: linear-gradient(180deg, rgba(48, 48, 48, 0.99) 10%, rgba(69, 69, 69, 0.99) 100%);
+    color: rgba(230, 230, 230, 0.99);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.shuttingstar_canvas_root .shuttingstar_canvas {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+</style>
+
+<!-- Google tag (gtag.js) -->
+<script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
+<script type="text/javascript">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-7PWH500WNJ');
+</script>
+<!-- // Google tag (gtag.js) -->
+
+<script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+<script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
+<script type="text/javascript" src='../resources/js/detectbpm.js'></script>
+
+<script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarstringtable.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarsongs.js'></script>
+<script type="text/javascript">
+$(function(){
+    const root = $('.shuttingstars_randomizenotes_root');
+    const taBef = root.find('.ta_before');
+    const taAft = root.find('.ta_after');
+    const btnRun = root.find('.btn_randomize');
+
+    btnRun.on('click', function() {
+        try {
+            taAft.val('[');
+
+            let text = taBef.val();
+            let json = JSON.parse(text);
+            let lastTime = 0;
+            let lastIndex = 0;
+            let createdIndex = 0;
+            let loops = 0;
+            for(let idx=0; idx<json.length; idx++) {
+                const rowOne = json[idx];
+
+                createdIndex = Math.floor(Math.random() * 5.9999);
+                if(lastIndex == createdIndex) {
+                    createdIndex = Math.floor(Math.random() * 5.9999);
+                    loops = 0;
+                    while(lastIndex == createdIndex && lastTime == rowOne.time) { createdIndex = Math.floor(Math.random() * 5.9999); loops++; if(loops >= 6) break; }
+                }
+                rowOne.locationIndex = createdIndex;
+
+                taAft.val(taAft.val() + '\n' + '{"locationIndex":' + rowOne.locationIndex + ',"time":' + rowOne.time + "}" + (idx == json.length - 1 ? '' : ','));
+                lastIndex = rowOne.locationIndex;
+                lastTime = rowOne.time;
+            }
+            taAft.val(taAft.val() + '\n]');
+        } catch(e) {
+            console.error(e);
+            taAft.val('ERROR : ' + e);
+        }
+    });
+
+    const fResize = function() {
+        $('.heightresizetarget').height((window.outerHeight - 250) + 'px');
+    }
+
+    $(window).on('resize', fResize);
+    fResize();
+});
+</script>
+</head>
+<body>
+    <div class="shuttingstars_randomizenotes_root">
+        <table class="full">
+            <tbody>
+                <tr>
+                    <td colspan="2">
+                        <button type="button" class="btn btn_randomize">RANDOMIZE</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <textarea class="ta_before full heightresizetarget"></textarea>
+                    </td>
+                    <td>
+                        <textarea class="ta_after full heightresizetarget" readonly></textarea>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

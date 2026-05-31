@@ -2123,6 +2123,9 @@ class ShuttingStarsCore {
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if(obj.explosing >= obj.explosingMax) continue;
+            if(obj instanceof Note) {
+                if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
+            }
             if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
         }
 
