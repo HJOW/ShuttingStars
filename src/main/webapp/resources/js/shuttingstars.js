@@ -83,7 +83,7 @@ class ShuttingStarsCore {
     stageRows = 72;                // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
     sizeFixedConst = 2;            // 노트 크기 상수 (변경 불가)
     noteLocationConst = 0;         // 노트 위치 보정 상수 (변경 불가)
-    noteSpeedFixedConst = 0.5;     // 노트 이동 속도 배수 (변경 불가)
+    noteSpeedFixedConst = 0.25;    // 노트 이동 속도 배수 (변경 불가)
     resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 (변경 불가)
     songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
@@ -1298,6 +1298,7 @@ class ShuttingStarsCore {
                 note.id = this.lastObjectId; this.lastObjectId++;
                 note.patternId = pattern.id;
                 note.originalTiming = pattern.time;
+                // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
                 this.objectsPlaying.push(note); // 노트 추가
             }
 
@@ -1323,7 +1324,7 @@ class ShuttingStarsCore {
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
 
-                    selfs.elapsedTime = selfs.audio.currentTime - selfs.songTiming; // 타이밍 지정
+                    selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60) * selfs.timeMultiplier) - selfs.songTiming; // 타이밍 지정
                 }, (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             } else {
                 selfs.elapsedTime = selfs.songTiming * (-1); // 타이밍 지정
@@ -2023,70 +2024,74 @@ class ShuttingStarsCore {
 
     /** 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨 */
     render() {
-        // 캔버스 비우기
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        try {
+            // 캔버스 비우기
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        if(this.state == 'songtitle') {
-            // 한 타이밍, 게임 렌더링 시도를 하여 이미지 등 리소스 캐싱 유도
-            if(this.songTitleTime == this.songTitleBaseTime - 1) {
+            if(this.state == 'songtitle') {
+                // 한 타이밍, 게임 렌더링 시도를 하여 이미지 등 리소스 캐싱 유도
+                if(this.songTitleTime == this.songTitleBaseTime - 1) {
+                    this.renderPlaying();
+                    // 다시 비우기
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+            }
+
+            if(this.dark) this.ctx.fillStyle = 'rgba(5, 5, 5, 0.9)';
+            else          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            if(this.backgroundImage != null && this.backgroundImage != '') {
+                // 배경 이미지 존재 시 지금 출력
+                this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            // 디버그 모드 켜진 경우 디버그용 객체 출력
+            if(this.renderDebugMode) {
+                this.renderDebug();
+            }
+
+            // 글로벌 객체 그리기 (우선순위 낮음)
+            for(let idx=0; idx<this.objects.length; idx++) {
+                const obj = this.objects[idx];
+                if(typeof(obj.priority) == 'undefined') continue;
+                if(obj.priority == 'low') {
+                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+                }
+            }
+
+            // 현재 게임 상태별 렌더링
+            if(this.state == 'playing' || this.state == 'gameover') {
                 this.renderPlaying();
-                // 다시 비우기
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            } else if(this.state == 'title') {
+                this.renderTitle();
+            } else if(this.state == 'menu') {
+                this.renderMenu();
+            } else if(this.state == 'songchoosing') {
+                this.renderSongChoosing();
+            } else if(this.state == 'songtitle') {
+                this.renderSongTitle();
+            } else if(this.state == 'result') {
+                this.renderResult();
+            } else if(this.state == 'recordlist') {
+                this.renderRecordList();
+            } else if(this.state == 'recorddet') {
+                this.renderRecordResult();
+            } else if(this.state == 'setting') {
+                this.renderSetting();
+            } else if(this.state == 'credit') {
+                this.renderCredit();
             }
-        }
 
-        if(this.dark) this.ctx.fillStyle = 'rgba(5, 5, 5, 0.9)';
-        else          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        if(this.backgroundImage != null && this.backgroundImage != '') {
-            // 배경 이미지 존재 시 지금 출력
-            this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
-        }
-
-        // 디버그 모드 켜진 경우 디버그용 객체 출력
-        if(this.renderDebugMode) {
-            this.renderDebug();
-        }
-
-        // 글로벌 객체 그리기 (우선순위 낮음)
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
-            if(typeof(obj.priority) == 'undefined') continue;
-            if(obj.priority == 'low') {
-                if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+            // 글로벌 객체 그리기 (우선순위 높음)
+            for(let idx=0; idx<this.objects.length; idx++) {
+                const obj = this.objects[idx];
+                if(typeof(obj.priority) == 'undefined') continue;
+                if(obj.priority == 'high') {
+                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+                }
             }
-        }
-
-        // 현재 게임 상태별 렌더링
-        if(this.state == 'playing' || this.state == 'gameover') {
-            this.renderPlaying();
-        } else if(this.state == 'title') {
-            this.renderTitle();
-        } else if(this.state == 'menu') {
-            this.renderMenu();
-        } else if(this.state == 'songchoosing') {
-            this.renderSongChoosing();
-        } else if(this.state == 'songtitle') {
-            this.renderSongTitle();
-        } else if(this.state == 'result') {
-            this.renderResult();
-        } else if(this.state == 'recordlist') {
-            this.renderRecordList();
-        } else if(this.state == 'recorddet') {
-            this.renderRecordResult();
-        } else if(this.state == 'setting') {
-            this.renderSetting();
-        } else if(this.state == 'credit') {
-            this.renderCredit();
-        }
-
-        // 글로벌 객체 그리기 (우선순위 높음)
-        for(let idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
-            if(typeof(obj.priority) == 'undefined') continue;
-            if(obj.priority == 'high') {
-                if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
-            }
+        } catch(e) {
+            console.error(e);
         }
     }
 
@@ -3540,7 +3545,7 @@ class ShuttingStarsCore {
             if(peakData != null) peakData.values.push(barHeight);
 
             // convert ~255 to ~canvas.height
-            barHeight = ((barHeight * (this.canvas.height - 10)) / 255.0);
+            barHeight = ((barHeight * (this.canvas.height - 10) / 1.5) / 255.0);
 
             barColorVariable = ((barHeight * 100.0) / 255.0); // convert ranges
 
@@ -3941,6 +3946,15 @@ class ShuttingStarsCore {
             this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60) * this.timeMultiplier) - this.songTiming;
         }
         if(this.titleDelayTime >= 1) this.titleDelayTime--;
+
+        /*
+        // 노트 디버깅
+        for(idx=0; idx<this.objectsPlaying.length; idx++) { 
+            const obj = this.objectsPlaying[idx];
+            if(! (obj instanceof Note)) continue;
+            if(obj.debugTarget) { console.log( ShuttingStarsUtility.floor2( this.elapsedTime ) + '\t' + ShuttingStarsUtility.floor2( obj.originalTiming ) + '\t' + ShuttingStarsUtility.floor2( obj.y ) ); }
+        }
+        */
         
         /*
         // 노트 생성 프로세스 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
@@ -5858,6 +5872,9 @@ class Note extends NoteKeyObject {
     // 게임 처리 중 초기화됨
     patternId = 0;   
     originalTiming = 0;
+
+    // 이동할 때마다 콘솔로 위치를 띄울 것인지 지정
+    debugTarget = false;
 
     // 생성자
     constructor(locationIndex) {

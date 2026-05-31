@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="height=device-height, initial-scale=1"/>
 <title>Shutting Stars</title>
-<link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
-<link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
+<link rel="shortcut icon" href="../resources/icons/icon64.ico" type="image/x-icon"/>
+<link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
 
 <!-- Firebase -->
 <script defer src="../__/firebase/12.13.0/firebase-app-compat.js"></script>
@@ -249,6 +249,13 @@ $(function() {
         btnSave.on('click', fSaveSong);
         btnTest.on('click', fTest);
         btnStop.on('click', fStop);
+
+        const fResize = function() {
+            $('.heightresizetarget').height((window.outerHeight - 250) + 'px');
+        }
+
+        $(window).on('resize', fResize);
+        fResize();
         
         fLoadSongList();
         fLoadSong();
@@ -279,10 +286,10 @@ $(function() {
                     </td>
                 </tr>
                 <tr>
-                    <td style="height: 1280px; max-height: 1280px; vertical-align: top;">
-                        <textarea class="full ta_song_json" style="height: 1280px;"></textarea>
+                    <td style="vertical-align: top;">
+                        <textarea class="full ta_song_json heightresizetarget"></textarea>
                     </td>
-                    <td style="width:720px; max-width: 720px; height: 1280px; max-height: 1280px; overflow: hidden;"><div class='shuttingstar_root'></div></td>
+                    <td style="width:720px; max-width: 720px; overflow: hidden;"><div class='shuttingstar_root heightresizetarget'></div></td>
                 </tr>
             </tbody>
         </table>

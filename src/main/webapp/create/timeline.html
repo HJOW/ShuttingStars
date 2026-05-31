@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="height=device-height, initial-scale=1"/>
+<title>Shutting Stars</title>
+<link rel="shortcut icon" href="../resources/icons/icon64.ico" type="image/x-icon"/>
+<link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
+<link rel="stylesheet" href="../resources/fonts/fonts.css"/>
+<style type="text/css">
+html {
+    font-size: 11px;
+}
+body {
+    margin: 0;
+    padding: 0;
+    background-color: rgba(5, 5, 5, 0.99);
+    color: rgba(230, 230, 230, 0.99);
+    overflow: hidden;
+}
+html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5, h6, label, table, tr, td, th {
+    font-family: 'D2Coding, Nanum Gothic Coding';
+}
+.invisible {
+    display: none !important;
+}
+.full {
+    width: 100%;
+}
+.shuttingstar_canvas_root {
+    background-image: linear-gradient(180deg, rgba(48, 48, 48, 0.99) 10%, rgba(69, 69, 69, 0.99) 100%);
+    color: rgba(230, 230, 230, 0.99);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.shuttingstar_canvas_root .shuttingstar_canvas {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+</style>
+
+<!-- Google tag (gtag.js) -->
+<script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
+<script type="text/javascript">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-7PWH500WNJ');
+</script>
+<!-- // Google tag (gtag.js) -->
+
+<script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+<script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
+<script type="text/javascript" src='../resources/js/detectbpm.js'></script>
+
+<script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarstringtable.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarsongs.js'></script>
+<script type="text/javascript">
+$(function() {
+    const root = $('.shuttingstars_timeline_root');
+    
+    const selSongs     = root.find('.sel_songs');
+    const inpAudioUrl  = root.find('.inp_audio_url');
+    const inpAudioBpm  = root.find('.inp_audio_bpm');
+    const inpTotalSum  = root.find('.inp_total_sum');
+    const inpStdCount  = root.find('.inp_count_std');
+    const inpStdSum    = root.find('.inp_sum_std');
+    const inpMinGap    = root.find('.inp_min_gap');
+    const chkNoLower   = root.find('.chk_no_lower_sound');
+    const chkRealtime  = root.find('.chk_realtime');
+    const chkDigitSum  = root.find('.chk_all_sum');
+    const chkIncCount  = root.find('.chk_inc_digit_cnt');
+    const chkIncSum    = root.find('.chk_inc_digit_sum');
+    const chkPattern   = root.find('.chk_pattern');
+    const btnLoadAudio = root.find('.btn_load_audio');
+    const btnClear     = root.find('.btn_clear')
+    const audioObj     = root.find('.audio');
+    const taTimeline   = root.find('.ta_timeline');
+
+    let stdIncreaseCount = 30;
+    let stdIncreaseMax   = 50;
+    let stdTotalMax      = 10;
+    let minGapVal = 1;
+    let idx, jdx;
+
+    let timer = null;
+    let audio = audioObj[0];
+    let audioCtx = null;
+    let audioAnalyser = null;
+    let audioSource = null;
+    let audioBufferLen = null;
+    let audioBuffer = null;
+    let audioBuffer2 = null;
+    let processingTime = 0;
+
+    selSongs.empty();
+    for(idx=0; idx<_shuttingstarcore.songs.length; idx++) {
+        const songOne = _shuttingstarcore.songs[idx];
+        const newOpt = new Option(songOne.name, songOne.serial);
+        selSongs.append(newOpt);
+    }
+    selSongs.on('change', function(e) {
+        let sels = $(this).val();
+        if(sels.length <= 0)  return;
+        sels = sels[0];
+        
+        let song = null;
+        for(idx=0; idx<_shuttingstarcore.songs.length; idx++) {
+            const songOne = _shuttingstarcore.songs[idx];
+            if(songOne.serial == sels) {
+                song = songOne;
+                break;
+            }
+        }
+
+        if(song == null) return;
+
+        inpAudioUrl.val(song.musicUrl);
+        inpAudioBpm.val(song.bpm);
+    });
+
+    const fAppend = function(txt) {
+        taTimeline.val(taTimeline.val() + '\n' + txt);
+        taTimeline[0].scrollTop = taTimeline[0].scrollHeight;
+    }
+
+    const fClearAudio = function() {
+        try { if(timer != null) clearInterval(timer); } catch(ignores) {}
+        if(audioSource != null) {
+            if(audioSource   != null) { try { audioSource.disconnect();   this.audioSource   = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+            if(audioAnalyser != null) { try { audioAnalyser.disconnect(); this.audioAnalyser = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+            if(audioCtx      != null) { try { audioCtx.close();           this.audioCtx      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+        }
+        try { if(audio != null) { audio.pause(); audio.currentTime = 0; } } catch(ignores) {}
+    }
+
+    btnLoadAudio.on('click', function() {
+        try {
+            fClearAudio();
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioAnalyser = audioCtx.createAnalyser();
+            audioSource = audioCtx.createMediaElementSource(audio);
+
+            _shuttingstarcore.urlCtx = '../';
+            let url = _shuttingstarcore.convertURL(inpAudioUrl.val());
+            audioObj.attr('src', url);
+
+            audioSource.connect(audioAnalyser);
+            audioAnalyser.connect(audioCtx.destination);
+            audioAnalyser.fftSize = 256;
+            audioBufferLen = audioAnalyser.frequencyBinCount;
+            audioBuffer  = new Uint8Array(audioBufferLen);
+            audioBuffer2 = new Uint8Array(audioBufferLen);
+
+            let bpmVal = parseFloat(inpAudioBpm.val());
+            if(isNaN(bpmVal)) bpmVal = 120;
+
+            let diff, increaseCount, increaseSum, time, lastAppend, appendStr, totalSums;
+            lastAppend = 0;
+
+            timer = setInterval(function() {
+                audioAnalyser.getByteFrequencyData(audioBuffer);
+
+                if(chkNoLower.is(':checked')) {
+                    for(jdx=0; jdx<15; jdx++) {
+                        audioBuffer[jdx] = 0;
+                    }
+                }
+
+                time = audio.currentTime;
+                processingTime =  (audio.currentTime * (bpmVal / 60) * _shuttingstarcore.timeMultiplier) - _shuttingstarcore.songTiming;
+                increaseCount = 0;
+                increaseSum = 0;
+                totalSums = 0;
+                appendStr = '';
+
+                for(jdx=0; jdx<audioBufferLen; jdx++) {
+                    totalSums += audioBuffer[jdx];
+                }
+
+                if(audioBuffer2 != null) {
+                    for(jdx=0; jdx<audioBufferLen; jdx++) {
+                        diff = audioBuffer[jdx] - audioBuffer2[jdx];
+
+                        if(diff > 0) {
+                            increaseCount++;
+                            increaseSum += diff;
+                        }
+                    }
+
+                    stdTotalMax      = parseInt(inpTotalSum.val());
+                    stdIncreaseCount = parseInt(inpStdCount.val());
+                    stdIncreaseMax   = parseInt(inpStdSum.val());
+                    minGapVal        = parseInt(inpMinGap.val());
+
+                    if(increaseCount >= stdIncreaseCount && increaseSum >= stdIncreaseMax && totalSums >= stdTotalMax) {
+                        if(processingTime - lastAppend >= minGapVal) {
+                            appendStr = String(ShuttingStarsUtility.floor3(processingTime));
+                            if(chkRealtime.is(':checked')) appendStr += ', ' + String(ShuttingStarsUtility.floor3(time));
+                            if(chkDigitSum.is(':checked')) appendStr += ', ' + String(totalSums);
+                            if(chkIncCount.is(':checked')) appendStr += ', ' + String(increaseCount);
+                            if(chkIncSum.is(':checked')) appendStr += ', ' + String(increaseSum);
+                            if(chkPattern.is(':checked')) appendStr += ', ' + JSON.stringify({ locationIndex : Math.floor(Math.random() * 6), time : processingTime });
+
+                            fAppend(appendStr);
+                            lastAppend = processingTime;
+                        }
+                    }
+                }
+
+                for(jdx=0; jdx<audioBufferLen; jdx++) {
+                    audioBuffer2[jdx] = audioBuffer[jdx];
+                }
+            }, Math.round((60000 / bpmVal) / _shuttingstarcore.timeMultiplier));
+            audio.currentTime = 0;
+            audio.play();
+        } catch(e) {
+            console.error(e);
+            fAppend('ERROR : ' + e);
+            fClearAudio();
+        }
+    });
+
+    btnClear.on('click', function() {
+        taTimeline.val('');
+    });
+
+    const fResize = function() {
+        $('.heightresizetarget').height((window.outerHeight - 150) + 'px');
+    }
+
+    $(window).on('resize', fResize);
+    fResize();
+});
+
+</script>
+</head>
+<body>
+    <div class="shuttingstars_timeline_root">
+        <table class="full">
+            <colgroup>
+                <col style="width:200px"/>
+                <col/>
+                <col style="width:30%"/>
+            </colgroup>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top;">
+                        <select class="sel sel_songs full heightresizetarget" style="min-height: 400px;" multiple></select>
+                    </td>
+                    <td style="vertical-align: top;">
+
+                        <div class="shuttingstars_section">
+                            <h1>AUDIO</h1>
+                            <table class="full">
+                                <colgroup>
+                                    <col style="width: 12rem;"/>
+                                    <col/>
+                                </colgroup>
+                                <tbody>
+                                    <tr>
+                                        <th>AUDIO URL</th>
+                                        <td>
+                                            <input type="text" name="url" class="inp inp_audio_url full"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>PARAMETERS</th>
+                                        <td>
+                                            <span class="span_param">BPM           <input type="number" name="bpm"    class="inp inp_audio_bpm" step="0.1" min="30" max="300" value="120"/></span>
+                                            <span class="span_param">MIN TOTAL SUM <input type="number" name="sum"    class="inp inp_total_sum" step="1" min="1" max="999999" value="1000"/></span>
+                                            <span class="span_param">INC COUNT STD <input type="number" name="count"  class="inp inp_count_std" step="1" min="5" max="127"  value="30"/></span>
+                                            <span class="span_param">INC SUM   STD <input type="number" name="sum"    class="inp inp_sum_std"   step="1" min="5" max="9999" value="1500"/></span>
+                                            <br/>
+                                            <span class="span_param">MIN       GAP <input type="number" name="mingap" class="inp inp_min_gap"   step="1" min="1" max="9999" value="15"/></span>
+                                            <span class="span_param">NO LOWER SOUND<input type="checkbox" name="chk_no_lower_sound" class="chk chk_no_lower_sound"/></span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>EXPORTS</th>
+                                        <td>
+                                            <span class="span_param">REAL TIME <input type="checkbox" name="chk_realtime" class="chk chk_realtime"/></span>
+                                            <span class="span_param">TOTAL AMOUNT <input type="checkbox" name="chk_all_sum" class="chk chk_all_sum"/></span>
+                                            <span class="span_param">INCREASED DIGIT COUNT  <input type="checkbox" name="chk_inc_digit_cnt" class="chk chk_inc_digit_cnt"/></span>
+                                            <span class="span_param">INCREASED DIGIT AMOUNT <input type="checkbox" name="chk_inc_digit_sum" class="chk chk_inc_digit_sum"/></span>
+                                            <span class="span_param">PATTERN <input type="checkbox" name="chk_pattern" class="chk chk_pattern"/></span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" style="text-align: center">
+                                            <button type="button" class="btn btn_load_audio">PROCESS</button>
+                                            <button type="button" class="btn btn_clear">CLEAR</button>
+
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" style="text-align: center"><audio class="audio full" controls="controls"></audio></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </td>
+                    <td style="vertical-align: top;">
+                        <textarea class="full ta_timeline heightresizetarget" readonly="readonly" style="min-height: 400px;"></textarea>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+
+    </div>
+</body>
