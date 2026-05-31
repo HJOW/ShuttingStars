@@ -10,7 +10,7 @@ song.name = 'Night Ride';
 song.composer = 'Joshua Moses';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
-song.musicUrl = './resources/songs/night-ride-by-joshua-moses.mp3';
+song.musicUrl = '[CTX]/resources/songs/night-ride-by-joshua-moses.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: Night Ride by Joshua Moses
@@ -495,7 +495,7 @@ song.name = '큰집 18층으로 떠나는 여행';
 song.composer = '우아한형제들';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
-song.musicUrl = './resources/songs/woowahan/track07.mp3';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track07.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |주의 ! 노트 다시 짜는 중
@@ -2612,7 +2612,7 @@ song.name = 'Racing the horizon line';
 song.composer = 'Lyria';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
-song.musicUrl = './resources/songs/ai/aitrack_260528_01.mp3';
+song.musicUrl = '[CTX]/resources/songs/ai/aitrack_260528_01.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |주의 ! 노트 다시 짜는 중

@@ -8,18 +8,18 @@
 <link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
 
 <!-- Firebase -->
-<script defer src="/__/firebase/12.13.0/firebase-app-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-auth-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-firestore-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-messaging-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-analytics-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-remote-config-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-performance-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-app-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-auth-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-firestore-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-messaging-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-analytics-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-remote-config-compat.js"></script>
+<script defer src="../__/firebase/12.13.0/firebase-performance-compat.js"></script>
 <!-- 
     initialize the SDK after all desired features are loaded, set useEmulator to false
     to avoid connecting the SDK to running emulators.
 -->
-<script defer src="/__/firebase/init.js?useEmulator=true"></script>
+<script defer src="../__/firebase/init.js?useEmulator=true"></script>
 <!-- // Firebase -->
 
 <!-- Google tag (gtag.js) -->
@@ -32,7 +32,7 @@
   gtag('config', 'G-7PWH500WNJ');
 </script>
 
-<link rel="stylesheet" href="./resources/fonts/fonts.css"/>
+<link rel="stylesheet" href="../resources/fonts/fonts.css"/>
 <style type="text/css">
 html {
     font-size: 11px;
@@ -79,14 +79,14 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 </script>
 <!-- // Google tag (gtag.js) -->
 
-<script type="text/javascript" src='resources/js/jquery-1.12.4.min.js'></script>
-<script type="text/javascript" src='resources/js/crypto-js.min.js'></script>
-<script type="text/javascript" src='resources/js/detectbpm.js'></script>
+<script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+<script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
+<script type="text/javascript" src='../resources/js/detectbpm.js'></script>
 
-<script type="text/javascript" src='resources/js/shuttingstarsinterface.js'></script>
-<script type="text/javascript" src='resources/js/shuttingstars.js'></script>
-<script type="text/javascript" src='resources/js/shuttingstarstringtable.js'></script>
-<script type="text/javascript" src='resources/js/shuttingstarsongs.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarstringtable.js'></script>
+<script type="text/javascript" src='../resources/js/shuttingstarsongs.js'></script>
 <script type="text/javascript">
 
 /* 페이지 접속 시 호출 */
@@ -96,6 +96,7 @@ $(function() {
         inst.createMode = true;
         inst.fOuterWidth  = function() { return  720;  }
         inst.fOuterHeight = function() { return 1280; }
+        inst.urlCtx = '../';
     }
     initShuttingStars(root[0]);
     _shuttingstarcore.fAfterInit = function(inst) {

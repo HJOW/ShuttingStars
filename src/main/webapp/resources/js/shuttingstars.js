@@ -504,13 +504,13 @@ class ShuttingStarsCore {
 
             // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
             if(this.usingWorker) {
-                this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerRender = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime});
                 this.workerRender.onmessage = function(e) {
                     selfs.render();
                 }
 
-                this.workerSimultaneousWork = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerSimultaneousWork = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
                 this.workerSimultaneousWork.postMessage({interval : this.frameTime});
                 this.workerSimultaneousWork.onmessage = function(e) {
                     // const {drift, time} = e.data;
@@ -678,7 +678,7 @@ class ShuttingStarsCore {
             this.loadAfter().then(() => {
                 selfs.logInit('preparing background audio...');
                 try {
-                    selfs.audioBackground = new Audio(this.convertURL('./resources/songs/woowahan/track09.mp3'));
+                    selfs.audioBackground = new Audio(this.convertURL('[CTX]/resources/songs/woowahan/track09.mp3'));
                     selfs.audioBackground.loop = true;
                     // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
                 } catch(exAudio) {
@@ -687,7 +687,7 @@ class ShuttingStarsCore {
                 }
 
                 try {
-                    selfs.se.tick = new Audio(this.convertURL('./resources/se/tick.ogg'));
+                    selfs.se.tick = new Audio(this.convertURL('[CTX]/resources/se/tick.ogg'));
                 } catch(exAudio) {
                     console.error(exAudio);
                 }
@@ -1191,7 +1191,7 @@ class ShuttingStarsCore {
             if(this.song.thumbnailUrl) {
                 if(this.songThumb == null) {
                     this.songThumb = new Image();
-                    this.songThumb.src = this.song.thumbnailUrl;
+                    this.songThumb.src = this.convertURL(this.song.thumbnailUrl);
                 }
             } else {
                 this.songThumb = null;
@@ -1304,7 +1304,7 @@ class ShuttingStarsCore {
             // 반복 처리 시작 (곡의 bpm 반영)
             this.songBitGap = this.calculateSongBitGap(this.song.bpm);
             if(this.usingWorker) {
-                this.workerSongPlaying = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
+                this.workerSongPlaying = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
                 this.workerSongPlaying.postMessage({interval : selfs.songBitGap});
                 this.workerSongPlaying.onmessage = function(e) {
                     // const {drift, time} = e.data;
@@ -4607,7 +4607,7 @@ class ShuttingStarsCore {
                         <div class='section tools_create_mode'>
                             <h2>Song Creation Mode (TEST)</h2>
                             <div class='section'>
-                                <a href='create.html' target='_blank'>POPUP</a>
+                                <a href='./create/create.html' target='_blank'>POPUP</a>
                             </div>
                         </div>
                     </div>
@@ -5066,6 +5066,7 @@ class ShuttingStarsCore {
     convertURL(url) {
         url = String(url).trim();
         if(url.indexOf('http://') == 0 || url.indexOf('https://') == 0) return url;
+        if(url.indexOf('[CTX]') == 0) url = ShuttingStarsUtility.replaceString(url, '[CTX]', this.urlCtx);
         if(url.indexOf('.') == 0) return url;
 
         if(this.urlCtx.indexOf('/') == this.urlCtx.length - 1) this.urlCtx += '/';
