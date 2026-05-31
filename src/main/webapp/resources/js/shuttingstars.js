@@ -647,6 +647,7 @@ class ShuttingStarsCore {
                 selfs.calculateFontMetric(true);
             };
             fResize(); // 지금 바로 1회 호출
+            setTimeout(fResize, 500); // 0.5초 뒤에 또 호출
             // 창 크기 변경 이벤트로도 등록
             window.addEventListener('resize', fResize);
 
@@ -3760,303 +3761,315 @@ class ShuttingStarsCore {
 
     /*** 공통 동시처리 프로세스 (init 에서 호출) */
     simultaneousWork(simultaneousWorkCycle) {
-        let idx, jdx;
-        let notePlacer;
-        let calculates, additionals;
-        
-        this.simultaneousTime++;
-        if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
+        try {
+            let idx, jdx;
+            let notePlacer;
+            let calculates, additionals;
+            
+            this.simultaneousTime++;
+            if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
 
-        // 노트 위치 처리
-        if(this.state == 'playing' && this.elapsedTime >= 0 && this.playPrepared && this.song != null) {
+            // 노트 위치 처리
+            if(this.state == 'playing' && this.elapsedTime >= 0 && this.playPrepared && this.song != null) {
+                for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                    const obj = this.objectsPlaying[idx];
+                    if(obj instanceof Note) {
+                        // 폭발 중이거나 제거 처리된 노트는 제외
+                        if(obj.removed || obj.explosing >= 1) continue;
+
+                        // 노트에 해당하는 NotePlacer 찾기
+                        notePlacer = this.getNotePlacer(obj.locationIndex);
+                        if(notePlacer == null) continue;
+
+                        // 노트의 실질 위치 계산
+                        calculates = notePlacer.y; // 일단 NotePlacer 위치부터 시작
+
+                        // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
+                        additionals  = ( (obj.originalTiming * this.song.noteMultiplier) - this.elapsedTime );
+                        additionals += (this.noteLocationConst + this.song.timeConstant);
+                        additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * this.song.timeMultiplier;
+                        calculates  += additionals;
+
+                        // 위치 적용
+                        obj.y = calculates;
+                    }
+                }
+            }
+
+            // 폭발 완료 처리
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if(obj instanceof Note) {
-                    // 폭발 중이거나 제거 처리된 노트는 제외
-                    if(obj.removed || obj.explosing >= 1) continue;
-
-                    // 노트에 해당하는 NotePlacer 찾기
-                    notePlacer = this.getNotePlacer(obj.locationIndex);
-                    if(notePlacer == null) continue;
-
-                    // 노트의 실질 위치 계산
-                    calculates = notePlacer.y; // 일단 NotePlacer 위치부터 시작
-
-                    // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
-                    additionals  = ( (obj.originalTiming * this.song.noteMultiplier) - this.elapsedTime );
-                    additionals += (this.noteLocationConst + this.song.timeConstant);
-                    additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * this.song.timeMultiplier;
-                    calculates  += additionals;
-
-                    // 위치 적용
-                    obj.y = calculates;
-                }
-            }
-        }
-
-        // 폭발 완료 처리
-        for(idx=0; idx<this.objectsPlaying.length; idx++) {
-            const obj = this.objectsPlaying[idx];
-            if(obj instanceof Note) {
-                if(obj.explosing >= obj.explosingMax) {
-                    this.objectsPlaying.splice(idx, 1);
-                    idx--;
-                }
-            } else if(obj instanceof NotePlacer) {
-                if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
-            } else if(obj instanceof JudgeMark) {
-                if(obj.explosing >= obj.explosingMax) {
-                    this.objectsPlaying.splice(idx, 1);
-                    idx--;
-                }
-            }
-        }
-
-        // 기타 폭발 / 장식 오브젝트도 처리
-        for(idx=0; idx<this.objects.length; idx++) {
-            const obj = this.objects[idx];
-            if(typeof(obj.explosing) == 'number') {
-                if(typeof(obj.explosingMax) == 'number') {
                     if(obj.explosing >= obj.explosingMax) {
-                        if(obj instanceof VirtualKey) {
-                            obj.explosing = 0;
-                        } else {
-                            this.objects.splice(idx, 1);
-                            idx--;
-                            continue;
+                        this.objectsPlaying.splice(idx, 1);
+                        idx--;
+                    }
+                } else if(obj instanceof NotePlacer) {
+                    if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
+                } else if(obj instanceof JudgeMark) {
+                    if(obj.explosing >= obj.explosingMax) {
+                        this.objectsPlaying.splice(idx, 1);
+                        idx--;
+                    }
+                }
+            }
+
+            // 기타 폭발 / 장식 오브젝트도 처리
+            for(idx=0; idx<this.objects.length; idx++) {
+                const obj = this.objects[idx];
+                if(typeof(obj.explosing) == 'number') {
+                    if(typeof(obj.explosingMax) == 'number') {
+                        if(obj.explosing >= obj.explosingMax) {
+                            if(obj instanceof VirtualKey) {
+                                obj.explosing = 0;
+                            } else {
+                                this.objects.splice(idx, 1);
+                                idx--;
+                                continue;
+                            }
+                        }
+                    }
+
+                    if(obj.explosing >= 1) obj.explosing++;
+                }
+
+                if(obj instanceof Starlight) {
+                    if(obj.x < (-20) || obj.y < this.getStageHeight() * (-20) || obj.x > this.getStageWidth() + 20 || obj.y > this.getStageHeight() + 20) {
+                        this.objects.splice(idx, 1);
+                        idx--;
+                        continue;
+                    }
+                    obj.x += obj.speedX;
+                    obj.y += obj.speedY;
+                }
+            }
+
+            // Starlight 갯수 유지
+            this.remainStarlightCounts();
+
+            // 배경음악 페이드 인/아웃 처리
+            if(this.audioBackgroundPlaying && this.volumeBackgroundSpeed != 0) {
+                this.volumeBackground += this.volumeBackgroundSpeed;
+                if(this.volumeBackground < 0) this.volumeBackground = 0;
+                if(this.volumeBackground > this.volumeBackgroundDefault) this.volumeBackground = this.volumeBackgroundDefault;
+                this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
+                if(this.volumeBackground <= 0) {
+                    this.audioBackground.pause();
+                    this.audioBackgroundPlaying = false;
+                }
+            }
+
+            // 곡 준비 중 남은 시간 처리
+            if(this.state == 'songtitle') {
+                if(this.songTitleTime > 0) this.songTitleTime--;
+                if(this.songTitleTime <= 0) {
+                    this.setState('playing');
+                    return;
+                }
+            }
+
+            // 게임 오버 출력완료 여부 처리
+            if(this.state == 'gameover') {
+                if(this.gameoverTime > 0) this.gameoverTime--;
+                if(this.gameoverTime <= 0) {
+                    this.onSongEnd();
+                    return;
+                }
+            }
+
+            // Credit 처리
+            if(this.state == 'credit') {
+                if(this.simultaneousTime % 2 == 0) this.creditIndexIncreases++;
+                if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
+                if(this.creditIndex < 0) this.creditIndex = 0;
+                if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
+            }
+
+            // 재개 대기 타이밍 처리, NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+            if(! this.paused) {
+                // 재개 타이밍 처리
+                if(this.resumingTime >= 1) {
+                    this.resumingTime--;
+                    if(this.resumingTime <= 0) this.resumed = true;
+                    else                       this.resumed = false;
+                    return;
+                }
+
+                // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+                for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                    const obj = this.objectsPlaying[idx];
+                    if(obj instanceof NoteKeyObject) {
+                        if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
+                            if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
+                        }
+                    } else if(obj instanceof JudgeMark) {
+                        if(obj.explosing < obj.explosingMax) {
+                            if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
                         }
                     }
                 }
-
-                if(obj.explosing >= 1) obj.explosing++;
             }
 
-            if(obj instanceof Starlight) {
-                if(obj.x < (-20) || obj.y < this.getStageHeight() * (-20) || obj.x > this.getStageWidth() + 20 || obj.y > this.getStageHeight() + 20) {
-                    this.objects.splice(idx, 1);
-                    idx--;
-                    continue;
-                }
-                obj.x += obj.speedX;
-                obj.y += obj.speedY;
-            }
-        }
-
-        // Starlight 갯수 유지
-        this.remainStarlightCounts();
-
-        // 배경음악 페이드 인/아웃 처리
-        if(this.audioBackgroundPlaying && this.volumeBackgroundSpeed != 0) {
-            this.volumeBackground += this.volumeBackgroundSpeed;
-            if(this.volumeBackground < 0) this.volumeBackground = 0;
-            if(this.volumeBackground > this.volumeBackgroundDefault) this.volumeBackground = this.volumeBackgroundDefault;
-            this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
-            if(this.volumeBackground <= 0) {
-                this.audioBackground.pause();
-                this.audioBackgroundPlaying = false;
-            }
-        }
-
-        // 곡 준비 중 남은 시간 처리
-        if(this.state == 'songtitle') {
-            if(this.songTitleTime > 0) this.songTitleTime--;
-            if(this.songTitleTime <= 0) {
-                this.setState('playing');
-                return;
-            }
-        }
-
-        // 게임 오버 출력완료 여부 처리
-        if(this.state == 'gameover') {
-            if(this.gameoverTime > 0) this.gameoverTime--;
-            if(this.gameoverTime <= 0) {
-                this.onSongEnd();
-                return;
-            }
-        }
-
-        // Credit 처리
-        if(this.state == 'credit') {
-            if(this.simultaneousTime % 2 == 0) this.creditIndexIncreases++;
-            if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
-            if(this.creditIndex < 0) this.creditIndex = 0;
-            if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
-        }
-
-        // 재개 대기 타이밍 처리, NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-        if(! this.paused) {
-            // 재개 타이밍 처리
-            if(this.resumingTime >= 1) {
-                this.resumingTime--;
-                if(this.resumingTime <= 0) this.resumed = true;
-                else                       this.resumed = false;
-                return;
-            }
-
-            // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-            for(idx=0; idx<this.objectsPlaying.length; idx++) {
-                const obj = this.objectsPlaying[idx];
-                if(obj instanceof NoteKeyObject) {
-                    if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
-                        if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
-                    }
-                } else if(obj instanceof JudgeMark) {
-                    if(obj.explosing < obj.explosingMax) {
-                        if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
-                    }
-                }
-            }
-        }
-
-        // create 모드
-        if(this.createMode) {
-            if(this.state == 'playing') {
-                for(idx=0; idx<this.notePlacers.length; idx++) {
-                    let notePlacerOne = this.notePlacers[idx];
-                    for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
-                        let objOne = this.objectsPlaying[jdx];
-                        if(objOne instanceof Note) {
-                            if(objOne.removed) continue;
-                            if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
-                                this.handleNotePlacerCalled(notePlacerOne);
-                                break;
+            // create 모드
+            if(this.createMode) {
+                if(this.state == 'playing') {
+                    for(idx=0; idx<this.notePlacers.length; idx++) {
+                        let notePlacerOne = this.notePlacers[idx];
+                        for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
+                            let objOne = this.objectsPlaying[jdx];
+                            if(objOne instanceof Note) {
+                                if(objOne.removed) continue;
+                                if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
+                                    this.handleNotePlacerCalled(notePlacerOne);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
+        } catch(e) {
+            console.error(e);
+            ShuttingStarsUtility.toast('ERROR : ' + e);
+            if(this.state == 'playing') this.onGameOver();
         }
     }
 
     /** 곡 동시처리 프로세스 - 시간 진행 (calculateSongBitGap(곡의bpm) 주기마다 1회 호출) */
     timeElapse() {
-        if(this.paused) return;
-        if(this.resumingTime >= 1) return;
+        try {
+            if(this.paused) return;
+            if(this.resumingTime >= 1) return;
 
-        if(this.resumed) {
-            if(this.audio != null) { this.audio.play(); }
-            this.resumed = false;
-        }
+            if(this.resumed) {
+                if(this.audio != null) { this.audio.play(); }
+                this.resumed = false;
+            }
 
-        const song = this.song;
-        let idx;
-        if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
-        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
-        if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
+            const song = this.song;
+            let idx;
+            if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
+            if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
+            if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
-        this.elapsedTime++;
-        if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
-            this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60) * this.timeMultiplier) - this.songTiming;
-        }
-        if(this.titleDelayTime >= 1) this.titleDelayTime--;
+            this.elapsedTime++;
+            if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
+                this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60) * this.timeMultiplier) - this.songTiming;
+            }
+            if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
-        /*
-        // 노트 디버깅
-        for(idx=0; idx<this.objectsPlaying.length; idx++) { 
-            const obj = this.objectsPlaying[idx];
-            if(! (obj instanceof Note)) continue;
-            if(obj.debugTarget) { console.log( ShuttingStarsUtility.floor2( this.elapsedTime ) + '\t' + ShuttingStarsUtility.floor2( obj.originalTiming ) + '\t' + ShuttingStarsUtility.floor2( obj.y ) ); }
-        }
+            /*
+            // 노트 디버깅
+            for(idx=0; idx<this.objectsPlaying.length; idx++) { 
+                const obj = this.objectsPlaying[idx];
+                if(! (obj instanceof Note)) continue;
+                if(obj.debugTarget) { console.log( ShuttingStarsUtility.floor2( this.elapsedTime ) + '\t' + ShuttingStarsUtility.floor2( obj.originalTiming ) + '\t' + ShuttingStarsUtility.floor2( obj.y ) ); }
+            }
+            */
+            
+            /*
+            // 노트 생성 프로세스 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
+
+            // 현재 시간에 해당하는 패턴이 있는지 확인
+            let diff = song.difficulties[ this.difficulty.index ];
+            let patterns = diff.patterns;
+
+            for(idx=0; idx<patterns.length; idx++) {
+                const pattern = patterns[idx];
+                if(this.checkEqualFloats((pattern.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
+                    // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
+                    //     locationIndex 값이 음수인 경우 랜덤 부여
+                    if(pattern.locationIndex < 0) {
+                        pattern.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+                    }
+                    //     노트 생성
+                    const note = new Note(pattern.locationIndex);
+                    note.id = this.lastObjectId++;
+                    this.objectsPlaying.push(note); // 패턴 추가
+                }
+            }
         */
-        
-        /*
-        // 노트 생성 프로세스 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
 
-        // 현재 시간에 해당하는 패턴이 있는지 확인
-        let diff = song.difficulties[ this.difficulty.index ];
-        let patterns = diff.patterns;
-
-        for(idx=0; idx<patterns.length; idx++) {
-            const pattern = patterns[idx];
-            if(this.checkEqualFloats((pattern.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
-                // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
-                //     locationIndex 값이 음수인 경우 랜덤 부여
-                if(pattern.locationIndex < 0) {
-                    pattern.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
-                }
-                //     노트 생성
-                const note = new Note(pattern.locationIndex);
-                note.id = this.lastObjectId++;
-                this.objectsPlaying.push(note); // 패턴 추가
-            }
-        }
-       */
-
-        // 현재 시간에 해당하는 등장 장식이 있는지 확인
-        let decos = song.decorations;
-        for(idx=0; idx<decos.length; idx++) {
-            const decoOne = decos[idx];
-            if(typeof(decoOne.time) != 'number') continue;
-            if(typeof(decoOne.type) == 'undefined') continue;
-            if(this.checkEqualFloats((decoOne.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
-                this.addDecoration(decoOne);
-            }
-        }
-
-        // 이미 지나가버린 패턴 체크
-        for(idx=0; idx<this.objectsPlaying.length; idx++) {
-            const obj = this.objectsPlaying[idx];
-            if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() - 1 )) {
-                if(obj.explosing == 0) {
-                    // 미스 처리
-                    let resultMark = 'MISS';
-                    this.processResultMark(resultMark);
-                    this.displayResultMark(resultMark);
-                    obj.removed = true;
-
-                    // 폭발 시작
-                    obj.explosing = 1;
-
-                    // 추가 폭발 객체 추가
-                    const newExplosinves = new FailExplosing(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
-                    this.objects.push(newExplosinves);
+            // 현재 시간에 해당하는 등장 장식이 있는지 확인
+            let decos = song.decorations;
+            for(idx=0; idx<decos.length; idx++) {
+                const decoOne = decos[idx];
+                if(typeof(decoOne.time) != 'number') continue;
+                if(typeof(decoOne.type) == 'undefined') continue;
+                if(this.checkEqualFloats((decoOne.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
+                    this.addDecoration(decoOne);
                 }
             }
-        }
 
-        // 곡의 끝 체크
-        //     곡의 명시된 종료시간과 마지막 패턴의 시간 비교해 더 큰 값 선택
-        let lastPatternTime = this.songLastPatternTime;
-        if(song.endTime > lastPatternTime + 4) {
-            lastPatternTime = song.endTime;
-        }
-        // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
-        if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
-            this.clearTimeHandler();
+            // 이미 지나가버린 패턴 체크
+            for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() - 1 )) {
+                    if(obj.explosing == 0) {
+                        // 미스 처리
+                        let resultMark = 'MISS';
+                        this.processResultMark(resultMark);
+                        this.displayResultMark(resultMark);
+                        obj.removed = true;
 
-            if(this.audio != null) {
-                try { this.audio.pause(); } catch(ex) {} // 오디오 끄기
-                this.audio = null;
+                        // 폭발 시작
+                        obj.explosing = 1;
+
+                        // 추가 폭발 객체 추가
+                        const newExplosinves = new FailExplosing(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                        this.objects.push(newExplosinves);
+                    }
+                }
             }
 
-            this.onSongEnd(); // 종료
-            return;
-        }
-
-        // hp 체크 (0 미만이면 게임 오버 처리)
-        if(this.hp <= 0) {
-            this.gameOverDelayed = true;
-            if(this.gameOverEnabled) {
+            // 곡의 끝 체크
+            //     곡의 명시된 종료시간과 마지막 패턴의 시간 비교해 더 큰 값 선택
+            let lastPatternTime = this.songLastPatternTime;
+            if(song.endTime > lastPatternTime + 4) {
+                lastPatternTime = song.endTime;
+            }
+            // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
+            if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
                 this.clearTimeHandler();
-                this.onGameOver();
+
+                if(this.audio != null) {
+                    try { this.audio.pause(); } catch(ex) {} // 오디오 끄기
+                    this.audio = null;
+                }
+
+                this.onSongEnd(); // 종료
                 return;
             }
-        }
-        
-        // 스테이지에 남아있는 노트 이동은 하지 않음 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
-        /*
-        for(idx=0; idx<this.objectsPlaying.length; idx++) {
-            const obj = this.objectsPlaying[idx];
-            if(obj instanceof Note) {
-                if(obj.removed) continue;
-                if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
-                obj.y -= obj.speedY;
-                if(obj.y < 0) obj.y = 0;
 
-                // if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
+            // hp 체크 (0 미만이면 게임 오버 처리)
+            if(this.hp <= 0) {
+                this.gameOverDelayed = true;
+                if(this.gameOverEnabled) {
+                    this.clearTimeHandler();
+                    this.onGameOver();
+                    return;
+                }
             }
+            
+            // 스테이지에 남아있는 노트 이동은 하지 않음 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
+            /*
+            for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj instanceof Note) {
+                    if(obj.removed) continue;
+                    if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
+                    obj.y -= obj.speedY;
+                    if(obj.y < 0) obj.y = 0;
+
+                    // if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
+                }
+            }
+            */
+        } catch(e) {
+            console.error(e);
+            ShuttingStarsUtility.toast('ERROR : ' + e);
+            if(this.state == 'playing') this.onGameOver();
         }
-        */
     }
 
     /** 곡 동시처리 프로세스 종료 (시작하려면 곡 선택 후 resetStage 가 호출되어야 함) */
