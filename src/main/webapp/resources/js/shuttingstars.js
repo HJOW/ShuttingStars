@@ -669,6 +669,7 @@ class ShuttingStarsCore {
                 this.logInit('applying creating mode...');
                 this.songDebugMode = true;
                 this.gameOverEnabled = false;
+                this.timeElapseDebugMode = true;
             }
 
             // 미션 생성
