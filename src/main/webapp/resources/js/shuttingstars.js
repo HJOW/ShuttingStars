@@ -2853,7 +2853,7 @@ class ShuttingStarsCore {
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight()) - (fontSize * 1.5));
         
-        // 선택 곡 정보 출력
+        // 선택 곡 상세 정보 (Description) 출력
         if(songChoosen != null) {
             let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
             let descW = Math.floor((this.canvas.width * 1.2) / 4.0);
@@ -2865,16 +2865,20 @@ class ShuttingStarsCore {
 
             let desc = songChoosen.getDescriptionSplit();
             if(desc != null && desc.length > 0) {
+                /*
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
                 this.ctx.fillRect(descX, Math.floor(this.canvas.height * 2.7 / 4.0), descW, Math.floor(this.canvas.height * 1.2 / 4.0));
+                */
 
                 fontSize = this.convertFontSize(12);
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 this.ctx.textAlign = "left";
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+                // if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
+                // else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
                 rows = Math.floor((this.canvas.height * 2.7 / 4.0) + fontSize) + 5;
                 for(const line of desc) {
@@ -2883,6 +2887,22 @@ class ShuttingStarsCore {
                 }
                 this.ctx.textAlign = "center";
             }
+        }
+
+        fontSize = this.convertFontSize(15);
+        rows = this.metricSize2 * 1.5;
+        cols = this.metricSize2 * 1.5;
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, 0.6)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, 0.6)');
+
+        // 적용된 모드 정보 출력
+        //    노트 속도
+        if(! ShuttingStarsUtility.checkEqualFloats(this.noteSpeedMultiplier, 1.0)) {
+            label = '[X' + ShuttingStarsUtility.floor2(this.noteSpeedMultiplier) + ']';
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows));
+            cols += (this.metricSize2 * label.length) + gap;
         }
     }
 
@@ -5430,7 +5450,7 @@ class ShuttingStarsCore {
         return returnVal;
     }
 
-    /** 부동소수 동일여부 확인 (노트 생성 타이밍에 사용) */
+    /** 부동소수 동일여부 확인 (노트 생성 타이밍에 사용, ShuttingStarsUtility 에 있는 동일 메소드와 오차범위를 다르게 지정하게 될 수 있어 분리함) */
     checkEqualFloats(a, b) {
         return Math.abs(a - b) < 0.000001;
     }
@@ -6681,6 +6701,11 @@ class ShuttingStarsUtilityClass {
         setTimeout(fStep, timeGapMillis);
 
         return function() { switchStop = true; }
+    }
+
+    /** 부동소수 동일여부 확인 */
+    checkEqualFloats(a, b) {
+        return Math.abs(a - b) < 0.000001;
     }
 
     round2(numbers) {
