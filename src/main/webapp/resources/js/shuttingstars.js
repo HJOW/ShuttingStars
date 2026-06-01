@@ -3565,7 +3565,8 @@ class ShuttingStarsCore {
         
         this.ctx.beginPath();
         this.ctx.fillStyle = hpBarInsideColor;
-        this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
+        // this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
+        ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertX(radius), r, g, b, 0.8, 7);
         this.ctx.fill();
         /*
         // 기존 바형 HP바
@@ -6031,6 +6032,34 @@ class Note extends NoteKeyObject {
         }
         return opacity;
     }
+
+    draw(ctx) {
+        // let explosiveColors = this.modifyExplosiveColor().split(',');
+        // ShuttingStarsUtility.drawGradientedArc(ctx, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), parseInt(explosiveColors[0].trim()), parseInt(explosiveColors[1].trim()), parseInt(explosiveColors[2].trim()), parseFloat(this.modifyExplosiveOpacity()), 3);
+        super.draw(ctx);
+        
+        ctx.beginPath();
+        ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
+
+        if(this.fill) {
+            ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+            ctx.fill();
+        } else {
+            ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        
+        // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
+        let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
+        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+
+        if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
+        else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+
+        ctx.textAlign = "center";
+        ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+    }
 }
 
 /** 판정 글씨와 콤보 마크 */
@@ -6667,6 +6696,38 @@ class ShuttingStarsUtilityClass {
 
     floor3(numbers) {
         return Math.floor(numbers * 1000.0) / 1000.0;
+    }
+
+    drawGradientedArc(ctx, x, y, radius, red, green, blue, alpha, depth) {
+        ctx.beginPath();
+        if(typeof(depth) == 'undefined') depth = 5;
+        if(typeof(depth) == 'string') depth = parseInt(depth);
+
+        let rad = radius;
+        let r = red;
+        let g = green;
+        let b = blue;
+        let dep = depth;
+
+        // 메인 원 그리기
+        ctx.fillStyle = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+        ctx.arc(x, y, rad, 0, 2 * Math.PI);
+        ctx.fill();
+
+        for(let idx=0; idx<dep; idx++) {
+            ctx.beginPath();
+
+            // 작은 원 그리기
+            rad--;
+
+            r = r + Math.round((255 - r) * 0.1);
+            g = g + Math.round((255 - g) * 0.1);
+            b = b + Math.round((255 - b) * 0.1);
+
+            ctx.fillStyle = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+            ctx.arc(x, y, rad, 0, 2 * Math.PI);
+            ctx.fill();
+        }
     }
 }
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
