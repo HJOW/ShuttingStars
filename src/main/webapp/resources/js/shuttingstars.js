@@ -820,6 +820,10 @@ class ShuttingStarsCore {
         this.broker.visualizePeakDebugMode  = this.visualizePeakDebugMode  ;
         this.broker.gameOverEnabled         = this.gameOverEnabled         ;
         this.broker.virtualKeyForce         = this.virtualKeyForce         ;
+        this.broker.urlCtx                  = this.urlCtx                  ;
+        this.broker.songs                   = this.songs                   ;
+        this.broker.fOuterWidth             = this.fOuterWidth             ;
+        this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.apply = function(obj) {
             if(typeof(obj.createMode             ) != 'undefined') selfs.createMode              = obj.createMode              ;
             if(typeof(obj.dark                   ) != 'undefined') selfs.dark                    = obj.dark                    ;
@@ -847,7 +851,30 @@ class ShuttingStarsCore {
             if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
             if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
+            if(typeof(obj.urlCtx                 ) != 'undefined') selfs.urlCtx                  = obj.urlCtx                  ;
+            if(typeof(obj.fOuterWidth            ) != 'undefined') selfs.fOuterWidth             = obj.fOuterWidth             ;
+            if(typeof(obj.fOuterHeight           ) != 'undefined') selfs.fOuterHeight            = obj.fOuterHeight            ;
+            if(typeof(obj.songs                  ) != 'undefined') selfs.songs                   = obj.songs                   ;
         }
+        this.broker.parseSong  = function(json) { return selfs.parseSong(json); }
+        this.broker.addSong    = function(song) { return selfs.addSong(song);   }
+        this.broker.setSongOne = function(song, idx) { selfs.songs[idx] = song; }
+        this.broker.setSong    = function(song) { selfs.song = song; }
+        this.broker.setDifficultyChoosingList = function(difList) { selfs.difficultyChoosingList = difList; }
+        this.broker.setDifficultyIndex = function(index) { selfs.difficulty = selfs.difficultyChoosingList[parseInt(index)]; }
+        this.broker.prepareCreateModeSong = function() {
+            selfs.difficultyChoosing = false;
+
+            selfs.songTitleTime = selfs.songTitleBaseTime;
+            if(! isNaN(selfs.song.loadingTime)) selfs.songTitleTime += selfs.song.loadingTime;
+
+            // 곡 플레이 선택함.
+            selfs.setState('songtitle');
+            selfs.difficultyChoosing = false;
+            selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
+        }
+        this.broker.stopSong = function() { selfs.onSongEnd(); }
+        this.broker.officialSongSerials = this.officialSongSerials;
         return this.broker;
     }
 
@@ -3995,7 +4022,6 @@ class ShuttingStarsCore {
                                 if(objOne.removed) continue;
                                 if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
                                     this.handleNotePlacerCalled(notePlacerOne);
-                                    break;
                                 }
                             }
                         }

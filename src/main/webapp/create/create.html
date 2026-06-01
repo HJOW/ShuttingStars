@@ -92,14 +92,16 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 /* 페이지 접속 시 호출 */
 $(function() {
     const root = $('.shuttingstar_root');
-    _shuttingstarcore.fBeforeInit = function(inst) {
-        inst.createMode = true;
-        inst.fOuterWidth  = function() { return  720;  }
-        inst.fOuterHeight = function() { return 1280; }
-        inst.urlCtx = '../';
+    _shuttingstarcore.fBeforeInit = function(broker) {
+        broker.apply({
+            createMode : true,
+            fOuterWidth : function() { return  720;  },
+            fOuterHeight : function() { return 1280; },
+            urlCtx : '../'
+        });
     }
     initShuttingStars(root[0]);
-    _shuttingstarcore.fAfterInit = function(inst) {
+    _shuttingstarcore.fAfterInit = function(broker) {
         let idx;
         const ta = $('.ta_song_json');
         const selSongs = $('.sel_songs');
@@ -117,8 +119,8 @@ $(function() {
             btnTest.prop('disabled', true);
             btnStop.prop('disabled', true);
             selSongs.append("<option value=''>- NEW -</option>");
-            for(idx=0; idx<inst.songs.length; idx++) {
-                const songOne = inst.songs[idx];
+            for(idx=0; idx<broker.songs.length; idx++) {
+                const songOne = broker.songs[idx];
                 if(songOne.serial == '') continue;
                 selSongs.append("<option value='" + SSUtil.replaceString(songOne.serial, "'", "\"") + "'>" + SSUtil.replaceString(SSUtil.replaceString(songOne.name, '<', '&lt;'), '>', '&gt;') + "</option>");
             }
@@ -141,8 +143,8 @@ $(function() {
                     patterns : []
                 });
             } else {
-                for(idx=0; idx<inst.songs.length; idx++) {
-                    const songOne = inst.songs[idx];
+                for(idx=0; idx<broker.songs.length; idx++) {
+                    const songOne = broker.songs[idx];
                     if(songOne.serial == songSerial) {
                         song = songOne;
                         break;
@@ -169,7 +171,7 @@ $(function() {
             let songConverted = null;
             try {
                 let json = JSON.parse(text);
-                songConverted = inst.parseSong(json);
+                songConverted = broker.parseSong(json);
             } catch(e) {
                 console.error(e);
                 alert('ERROR : ' + e);
@@ -177,23 +179,23 @@ $(function() {
             }
 
             if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
-                songConverted = inst.addSong(songConverted); 
+                songConverted = broker.addSong(songConverted); 
                 let newSerial = songConverted.serial;
                 fLoadSongList();
                 selSongs.val(newSerial);
             } else { // 기존 곡인 경우
-                if(inst.officialSongSerials.indexOf(songConverted.serial) >= 0) { alert('Cannot modify official songs !'); return; }
+                if(broker.officialSongSerials.indexOf(songConverted.serial) >= 0) { alert('Cannot modify official songs !'); return; }
                 let beforeSongIdx = null;
 
-                for(idx=0; idx<inst.songs.length; idx++) {
-                    const songOne = inst.songs[idx];
+                for(idx=0; idx<broker.songs.length; idx++) {
+                    const songOne = broker.songs[idx];
                     if(songOne.serial == songConverted.serial) {
                         beforeSongIdx = idx;
                         break;
                     }
                 }
 
-                inst.songs[beforeSongIdx] = songConverted;
+                broker.setSongOne(songConverted, beforeSongIdx);
                 fLoadSongList();
                 selSongs.val(songConverted.serial);
             }
@@ -208,7 +210,7 @@ $(function() {
             let text = ta.val();
             let songConverted = null;
             try {
-                songConverted = inst.parseSong(text);
+                songConverted = broker.parseSong(text);
             } catch(e) {
                 console.error(e);
                 alert('ERROR : ' + e);
@@ -222,18 +224,10 @@ $(function() {
                 selDiff.val(diff);
             }
 
-            inst.song = songConverted;
-            inst.difficultyChoosingList = songConverted.getDifficultyList();
-            inst.difficulty = inst.difficultyChoosingList[parseInt(diff)];
-            inst.difficultyChoosing = false;
-
-            inst.songTitleTime = inst.songTitleBaseTime;
-            if(! isNaN(inst.song.loadingTime)) inst.songTitleTime += inst.song.loadingTime;
-
-            // 곡 플레이 선택함.
-            inst.setState('songtitle');
-            inst.difficultyChoosing = false;
-            inst.titleDelayTime = Math.floor(20 * (inst.noteSpeedMultiplier - 1));
+            broker.setSong(songConverted);
+            broker.setDifficultyChoosingList(songConverted.getDifficultyList());
+            broker.setDifficultyIndex(diff);
+            broker.prepareCreateModeSong();
             setTimeout(function() { btnStop.prop('disabled', false); }, 2000);
         }
 
@@ -242,7 +236,7 @@ $(function() {
             btnTest.prop('disabled', false);
             btnLoad.prop('disabled', false);
             btnSave.prop('disabled', false);
-            inst.onSongEnd();
+            broker.stopSong();
         }
 
         btnLoad.on('click', fLoadSong);
