@@ -265,6 +265,9 @@ class ShuttingStarsCore {
     // init 에서 마지막으로 성공한 작업 메시지 (디버그 목적)
     lastInitSuccessMessage = '';
 
+    // 내부 핵심 로직 전체에 액세스하지 못하게 막기 위한 중간 객체
+    broker = {};
+
     // 브라우저 영역 크기 감지 함수 (외부에서 변경해야 할 일이 있음)
     fOuterWidth  = function() { return window.outerWidth;  }
     fOuterHeight = function() { return window.outerHeight; }
@@ -277,6 +280,8 @@ class ShuttingStarsCore {
     init(rootDiv) {
         const selfs = this;
         try {
+            this.rebuildBroker();
+
             this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
             if(this.backend != null) {
                 // 로그인 상태 변경 이벤트 부여
@@ -307,7 +312,7 @@ class ShuttingStarsCore {
         try {
             this.titleScreenWaiting = false;
             this.logInit('init started');
-            try { this.fBeforeInit(this); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
+            try { this.fBeforeInit(this.broker); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
             
             // Set HTML
             if(typeof(rootDiv) == 'undefined') {
@@ -724,7 +729,7 @@ class ShuttingStarsCore {
         this.titleScreenWaiting = true;
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
-        try { this.fAfterInit(this); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
+        try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
     }
 
     /** init 작업 진행현황 기록 (디버그 모드 시에만 의미 있음) */
@@ -783,6 +788,67 @@ class ShuttingStarsCore {
         if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
             this.resetStage();
         }
+    }
+
+    /** Broker 생성 */
+    rebuildBroker() {
+        const selfs = this;
+        this.broker = { };
+        this.broker.createMode              = this.createMode              ;
+        this.broker.dark                    = this.dark                    ;
+        this.broker.reverseVertical         = this.reverseVertical         ;
+        this.broker.keyList                 = this.keyList                 ;
+        this.broker.arrowKeys               = this.arrowKeys               ;
+        this.broker.enterKey                = this.enterKey                ;
+        this.broker.escKey                  = this.escKey                  ;
+        this.broker.keyEventDisabled        = this.keyEventDisabled        ;
+        this.broker.fontFamily              = this.fontFamily              ;
+        this.broker.pointFont               = this.pointFont               ;
+        this.broker.alterFonts              = this.alterFonts              ;
+        this.broker.volume                  = this.volume                  ;
+        this.broker.volumeBackgroundDefault = this.volumeBackgroundDefault ;
+        this.broker.noteSpeedMultiplier     = this.noteSpeedMultiplier     ;
+        this.broker.useAudioVisualizer      = this.useAudioVisualizer      ;
+        this.broker.renderDebugMode         = this.renderDebugMode         ;
+        this.broker.stringTableDebugMode    = this.stringTableDebugMode    ;
+        this.broker.keyInputDebugMode       = this.keyInputDebugMode       ;
+        this.broker.keyReleaseDebugMode     = this.keyReleaseDebugMode     ;
+        this.broker.mouseClickDebugMode     = this.mouseClickDebugMode     ;
+        this.broker.initDebugMode           = this.initDebugMode           ;
+        this.broker.songDebugMode           = this.songDebugMode           ;
+        this.broker.timeElapseDebugMode     = this.timeElapseDebugMode     ;
+        this.broker.visualizePeakDebugMode  = this.visualizePeakDebugMode  ;
+        this.broker.gameOverEnabled         = this.gameOverEnabled         ;
+        this.broker.virtualKeyForce         = this.virtualKeyForce         ;
+        this.broker.apply = function(obj) {
+            if(typeof(obj.createMode             ) != 'undefined') selfs.createMode              = obj.createMode              ;
+            if(typeof(obj.dark                   ) != 'undefined') selfs.dark                    = obj.dark                    ;
+            if(typeof(obj.reverseVertical        ) != 'undefined') selfs.reverseVertical         = obj.reverseVertical         ;
+            if(typeof(obj.keyList                ) != 'undefined') selfs.keyList                 = obj.keyList                 ;
+            if(typeof(obj.arrowKeys              ) != 'undefined') selfs.arrowKeys               = obj.arrowKeys               ;
+            if(typeof(obj.enterKey               ) != 'undefined') selfs.enterKey                = obj.enterKey                ;
+            if(typeof(obj.escKey                 ) != 'undefined') selfs.escKey                  = obj.escKey                  ;
+            if(typeof(obj.keyEventDisabled       ) != 'undefined') selfs.keyEventDisabled        = obj.keyEventDisabled        ;
+            if(typeof(obj.fontFamily             ) != 'undefined') selfs.fontFamily              = obj.fontFamily              ;
+            if(typeof(obj.pointFont              ) != 'undefined') selfs.pointFont               = obj.pointFont               ;
+            if(typeof(obj.alterFonts             ) != 'undefined') selfs.alterFonts              = obj.alterFonts              ;
+            if(typeof(obj.volume                 ) != 'undefined') selfs.volume                  = obj.volume                  ;
+            if(typeof(obj.volumeBackgroundDefault) != 'undefined') selfs.volumeBackgroundDefault = obj.volumeBackgroundDefault ;
+            if(typeof(obj.noteSpeedMultiplier    ) != 'undefined') selfs.noteSpeedMultiplier     = obj.noteSpeedMultiplier     ;
+            if(typeof(obj.useAudioVisualizer     ) != 'undefined') selfs.useAudioVisualizer      = obj.useAudioVisualizer      ;
+            if(typeof(obj.renderDebugMode        ) != 'undefined') selfs.renderDebugMode         = obj.renderDebugMode         ;
+            if(typeof(obj.stringTableDebugMode   ) != 'undefined') selfs.stringTableDebugMode    = obj.stringTableDebugMode    ;
+            if(typeof(obj.keyInputDebugMode      ) != 'undefined') selfs.keyInputDebugMode       = obj.keyInputDebugMode       ;
+            if(typeof(obj.keyReleaseDebugMode    ) != 'undefined') selfs.keyReleaseDebugMode     = obj.keyReleaseDebugMode     ;
+            if(typeof(obj.mouseClickDebugMode    ) != 'undefined') selfs.mouseClickDebugMode     = obj.mouseClickDebugMode     ;
+            if(typeof(obj.initDebugMode          ) != 'undefined') selfs.initDebugMode           = obj.initDebugMode           ;
+            if(typeof(obj.songDebugMode          ) != 'undefined') selfs.songDebugMode           = obj.songDebugMode           ;
+            if(typeof(obj.timeElapseDebugMode    ) != 'undefined') selfs.timeElapseDebugMode     = obj.timeElapseDebugMode     ;
+            if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
+            if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
+            if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
+        }
+        return this.broker;
     }
 
     /** 메뉴 목록 반환, this.menuList 에 더해 로그인 여부 등 동적으로 원소가 추가될 수 있음, Promise */

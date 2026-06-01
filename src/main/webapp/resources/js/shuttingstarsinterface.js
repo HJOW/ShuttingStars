@@ -2,9 +2,10 @@
  * 
  * 백엔드 서버 / DB 통신 구현 파트
  *     필요 시 shuttingstars.js 보다 먼저 불러와야 함 
- *     Crypto-JS 의존성
+ *     Crypto-JS 의존성 있음
  * 
- * 
+ * Backend interface file
+ *    Without this file, the game will run fine, just login and internet recording feature will be disabled.
 */
 /*
 

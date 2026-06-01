@@ -1,6 +1,9 @@
 /** 
  * 정확한 시간 반복을 위한 Worker 
  *     참고 : https://sirius7.tistory.com/156
+ *     이 파일이 없어도 게임 동작은 가능하나 성능에 영향을 끼침
+ * 
+ * Without this file, the game will run fine, but some performance issue will be occred.
 */
 /*
 

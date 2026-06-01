@@ -86,13 +86,15 @@ body {
 /* 페이지 접속 시 호출 */
 document.addEventListener('DOMContentLoaded', function(){
     const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
-    _shuttingstarcore.fBeforeInit = function(inst) {
-        inst.songDebugMode = true;
-        inst.timeElapseDebugMode = true;
-        // inst.visualizePeakDebugMode = true;
-        // inst.keyInputDebugMode = true;
-        inst.gameOverEnabled = false;
-        // inst.virtualKeyForce = true;
+    _shuttingstarcore.fBeforeInit = function(broker) {
+        broker.apply({
+            songDebugMode : true,
+            timeElapseDebugMode : true,
+            gameOverEnabled : false
+         /* virtualKeyForce : true */
+         /* keyInputDebugMode : true */
+         /* visualizePeakDebugMode : true */
+        });
     }
     initShuttingStars(root[0]);
     SSUtil.toast('TEST MODE');
