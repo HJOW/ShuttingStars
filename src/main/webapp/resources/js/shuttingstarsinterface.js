@@ -84,7 +84,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         this.firestore    = firebase.firestore();
         this.messaging    = firebase.messaging();
         this.remoteConfig = firebase.remoteConfig();
-        // this.rtdb         = firebase.database();
+        // this.rtdb         = firebase.database(); // init.js 에서 초기화 안된 경우, 여기서 매개변수에 databaseURL 값을 넣어 주어야 함
 
         // Analytics 등 사용
         firebase.analytics();
