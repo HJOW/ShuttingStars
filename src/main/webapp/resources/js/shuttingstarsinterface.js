@@ -80,15 +80,15 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
 
         // Firebase 활성화
-        this.auth         = firebase.auth();
-        this.firestore    = firebase.firestore();
-        this.messaging    = firebase.messaging();
-        this.remoteConfig = firebase.remoteConfig();
-        // this.rtdb         = firebase.database(); // init.js 에서 초기화 안된 경우, 여기서 매개변수에 databaseURL 값을 넣어 주어야 함
+        try { this.auth         = firebase.auth();         } catch(e) { console.error(e); }
+        try { this.firestore    = firebase.firestore();    } catch(e) { console.error(e); }
+        try { this.messaging    = firebase.messaging();    } catch(e) { console.error(e); }
+        try { this.remoteConfig = firebase.remoteConfig(); } catch(e) { console.error(e); }
+        try { this.rtdb         = firebase.database();     } catch(e) { console.error(e); }
 
         // Analytics 등 사용
-        firebase.analytics();
-        firebase.performance();
+        try { firebase.analytics();    } catch(e) { console.error(e); }
+        try { firebase.performance();  } catch(e) { console.error(e); }
 
         // 인증 상태 이벤트 부여
         this.auth.onAuthStateChanged((user) => {
@@ -125,8 +125,9 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
+                if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
                 const googles = new firebase.auth.GoogleAuthProvider();
-                this.auth.signInWithPopup(googles).then((result) => {
+                selfs.auth.signInWithPopup(googles).then((result) => {
                     let credential = result.credential;
                     let token = credential.accessToken;
                     let user = result.user;
@@ -150,7 +151,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
-                    selfs.auth.createUserWithEmailAndPassword(json.email, json.password).then((userCredential) => {
+                if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
+                selfs.auth.createUserWithEmailAndPassword(json.email, json.password).then((userCredential) => {
                     selfs.user = userCredential.user;
                     selfs.logined = true;
                     resolve({
@@ -168,6 +170,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
+                if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
                 selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
                     selfs.user = userCredential.user;
                     selfs.logined = true;
@@ -195,6 +198,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             selfs.logined = false;
             selfs.user = null;
             try {
+                if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
                 selfs.auth.signOut().then(() => {
                     setTimeout(() => { selfs.authStateChangedEvents = []; }, 1000);
                     resolve({ success : true });
@@ -209,6 +213,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
+                if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
                 if(! selfs.logined) { throw ('No logined.'); }
                 let record = {};
                 for(const k in json) {
@@ -226,6 +231,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     listRankBoard() {
         const selfs =  this;
         return new Promise((resolve, reject) => {
+            if(selfs.firestore == null) { resolve({success : false, list : [], message : 'Failed to load firebase firestore'}); return; }
+
             let arr = [];
             selfs.firestore.collection('highscore').get().then((querySnapshot) => { // TODO 테스트
                 querySnapshot.forEach((doc) => {
@@ -268,6 +275,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
+                if(selfs.remoteConfig == null) { resolve({success : false, value : '', message : 'Failed to load firebase remoteConfig'}); return; }
                 const val = selfs.remoteConfig.getAll();
                 resolve({ success : true, value : val });
             } catch(e) {
