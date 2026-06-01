@@ -37,7 +37,7 @@ class ShuttingStarsCore {
 
     virtualKey = false;      // 가상 키 출력 여부
     virtualKeyNone = false;  // 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음)
-    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음)
+    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음)ㅖ
 
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     canvasZindex = 1;    // canvas 태그의 z-index
@@ -237,6 +237,10 @@ class ShuttingStarsCore {
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
+
+    // 곡 선택 화면에서 커맨드 입력을 방음
+    commandInputs = [];
+    commands = [];
 
     // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
     backgroundImage = null;
@@ -676,6 +680,9 @@ class ShuttingStarsCore {
                 this.gameOverEnabled = false;
                 this.timeElapseDebugMode = true;
             }
+
+            // 커맨드 설정
+            this.prepareCommands();
 
             // 미션 생성
             this.missions.push(new EasySurvive(this));
@@ -1569,6 +1576,14 @@ class ShuttingStarsCore {
     handleKeyInputSongChoosing(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
+
+        // 커맨드 입력 여부 판단
+        for(let idx=0; idx<this.keyList.length; idx++) {
+            if(key == this.keyList[idx]) {
+                this.handleCommand(key);
+                break;
+            }
+        }
 
         // ESC 처리는 공통 사항
         if(key == this.escKey) {
@@ -3717,6 +3732,62 @@ class ShuttingStarsCore {
             rows += fontSize;
             
             displays++;
+        }
+    }
+
+    /** 커맨드 준비 */
+    prepareCommands() {
+        const selfs = this;
+        this.commands = [];
+        this.commands.push({
+            command : [0, 1, 2, 3, 4, 5],
+            act : function() {
+                if(selfs.noteSpeedMultiplier < 1) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier * 2.0);
+                else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier + 1);
+                selfs.saveSettings();
+            }
+        });
+        this.commands.push({
+            command : [5, 4, 3, 2, 1, 0],
+            act : function() {
+                if(selfs.noteSpeedMultiplier >= 2) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier - 1);
+                else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier / 2.0);
+                selfs.saveSettings();
+            }
+        });
+    }
+
+    /** 커맨드 입력 처리 */
+    handleCommand(key) {
+        let idx;
+        let keyNo = -1;
+        for(idx=0; idx<this.keyList.length; idx++) {
+            if(key == this.keyList[idx]) {
+                keyNo = idx;
+                break;
+            }
+        }
+        if(keyNo < 0) return;
+
+        this.commandInputs.push(keyNo);
+        if(this.commandInputs.length > 6) this.commandInputs.splice(0, 1);
+
+        for(idx=0; idx<this.commands.length; idx++) {
+            const commandOne = this.commands[idx];
+            let equals = true;
+
+            for(let jdx=0; jdx<this.commandInputs.length; jdx++) {
+                if(this.commandInputs[jdx] != commandOne.command[jdx]) {
+                    equals = false;
+                    break;
+                }
+            }
+
+            if(equals) {
+                commandOne.act();
+                this.commandInputs = [];
+                break;
+            }
         }
     }
 
