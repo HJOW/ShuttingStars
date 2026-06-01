@@ -79,7 +79,8 @@ class ShuttingStarsCore {
     urlCtx = './';   // URL Context Path
 
     frameTime = 10;                // render 호출 주기 (변경 불가)
-    timeMultiplier = 32.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
+    timeMultiplier = 16.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
+    elapsedTimeMultiplier = 2.0;   // elapsedTime 계산 시 timeMultiplier 값 변경사항 보정 용도
     stageRows = 72;                // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
     sizeFixedConst = 2;            // 노트 크기 상수 (변경 불가)
     noteLocationConst = 0;         // 노트 위치 보정 상수 (변경 불가)
@@ -115,9 +116,10 @@ class ShuttingStarsCore {
     object3ds = [];      // 항상 렌더링 대상인 3D 객체들 (장식, ShuttingStars3DObject 타입만 원소로 입력해야 함)
     notePlacers = [];    // NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관)
 
-    elapsedTime = 0;      // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
-    simultaneousTime = 0; // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
-    titleDelayTime = 0;   // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간
+    elapsedTime = 0;         // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
+    simultaneousTime = 0;    // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
+    titleDelayTime = 0;      // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨)
+    titleDelayTimeMax = 120; // 플레이 준비 시 titleDelayTime 값에 들어가는 초기값
 
     usingWorker = true; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
@@ -1325,7 +1327,7 @@ class ShuttingStarsCore {
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
 
-                    selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60) * selfs.timeMultiplier) - selfs.songTiming; // 타이밍 지정
+                    selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
                 }, (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             } else {
                 selfs.elapsedTime = selfs.songTiming * (-1); // 타이밍 지정
@@ -1530,7 +1532,7 @@ class ShuttingStarsCore {
                 this.mode = this.songChoosingMode;
                 this.setState('songtitle');
                 this.difficultyChoosing = false;
-                this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
+                this.titleDelayTime = this.titleDelayTimeMax;
             }
 
         } else {
@@ -1600,7 +1602,7 @@ class ShuttingStarsCore {
                     this.mode = 'default';
                     this.setState('songtitle');
                     this.difficultyChoosing = false;
-                    this.titleDelayTime = Math.floor(20 * (this.noteSpeedMultiplier - 1));
+                    this.titleDelayTime = this.titleDelayTimeMax;
                 } else {
                     this.song = this.songChoosing;
                     this.difficultyChoosingList = this.song.getDifficultyList();
@@ -3769,6 +3771,11 @@ class ShuttingStarsCore {
             this.simultaneousTime++;
             if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
 
+            if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
+                this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
+            }
+            if(this.titleDelayTime >= 1) this.titleDelayTime--;
+
             // 노트 위치 처리
             if(this.state == 'playing' && this.elapsedTime >= 0 && this.playPrepared && this.song != null) {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
@@ -3952,11 +3959,11 @@ class ShuttingStarsCore {
             if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
             if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
-            this.elapsedTime++;
             if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
-                this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60) * this.timeMultiplier) - this.songTiming;
+                this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
+            } else {
+                this.elapsedTime++;
             }
-            if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
             /*
             // 노트 디버깅
@@ -4088,7 +4095,7 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 노트 속도 (Deprecated 더 이상 이 방식을 쓰지 않음) */
+    /** [미사용] 노트 속도 (Deprecated - 더 이상 이 방식을 쓰지 않음) */
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
@@ -4097,7 +4104,7 @@ class ShuttingStarsCore {
 
     /** 노트 생성 위치 (이제는 곡 플레이 초기화 시 다 만들어놓고 위치를 매번 갱신하므로, 초기화할 때 만드는 위치로만 사용함) */
     getNoteCreationYLocation() {
-        return this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * (this.timeMultiplier / 8.0) );
+        return this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * ((this.timeMultiplier * this.elapsedTimeMultiplier) / 8.0) );
     }
 
     /** 판정선 위치 */
@@ -6526,6 +6533,10 @@ class ShuttingStarsUtilityClass {
 
     /** fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함. */
     repeat(fnWork, timeGapMillis) {
+        if(typeof(fnWork)        != 'function') throw 'fnWork should be a function !';
+        if(typeof(timeGapMillis) != 'number'  ) throw 'timeGapMillis should be a number !';
+        timeGapMillis = Math.floor(timeGapMillis);
+
         let expected = Date.now() + timeGapMillis;
         let switchStop = false;
 
@@ -6534,10 +6545,15 @@ class ShuttingStarsUtilityClass {
             fnWork();
             if(switchStop) return;
 
-            const drift = Date.now() - expected;
-            expected += timeGapMillis;
+            let drift = Date.now() - expected;
+            let futureTime = timeGapMillis - drift;
+
+            let loops = 0;
+            while(futureTime < 0) { futureTime += timeGapMillis; loops++; }
+
+            expected += timeGapMillis * (loops + 1);
             
-            setTimeout(fStep, Math.max(0, timeGapMillis - drift));
+            setTimeout(fStep, Math.max(0, futureTime));
         }
         setTimeout(fStep, timeGapMillis);
 
