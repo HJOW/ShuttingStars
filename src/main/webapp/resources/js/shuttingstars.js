@@ -2600,7 +2600,8 @@ class ShuttingStarsCore {
         if(this.songChoosingMode == 'mission') {
             this.ctx.strokeText(lefts + this.trans('Choose your mission !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         } else {
-            this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
+            if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
+            else this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         }
         rows += (this.metricSize3 * 2) + (gap);
 
@@ -6049,7 +6050,7 @@ class Note extends NoteKeyObject {
             ctx.lineWidth = 1;
             ctx.stroke();
         }
-        
+
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
         let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
         ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
