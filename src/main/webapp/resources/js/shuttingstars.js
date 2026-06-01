@@ -176,7 +176,12 @@ class ShuttingStarsCore {
     audioBackgroundPlaying = false;
 
     se = { // 효과음 (Audio 객체를 원소로 함)
-        tick : null
+        tick : null,
+        accept1 : null,
+        accept2 : null,
+        cancel : null,
+        wrong : null,
+        special1 : null
     }
 
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
@@ -703,7 +708,11 @@ class ShuttingStarsCore {
                 }
 
                 try {
-                    selfs.se.tick = new Audio(this.convertURL('[CTX]/resources/se/tick.ogg'));
+                    selfs.se.tick     = new Audio(this.convertURL('[CTX]/resources/se/tick.ogg'));
+                    selfs.se.accept1  = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button25.mp3'));
+                    selfs.se.accept2  = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button36.mp3'));
+                    selfs.se.cancel   = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button82.mp3'));
+                    selfs.se.special1 = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button83.mp3'));
                 } catch(exAudio) {
                     console.error(exAudio);
                 }
@@ -1476,7 +1485,7 @@ class ShuttingStarsCore {
     /** 타이틀 화면 키 입력 핸들링 */
     handleKeyInputTitle(key, vkeyExplosion) {
         if(key == this.enterKey || key == 'ENTER') {
-            this.playTick();
+            this.playSE('special1');
             this.setState('menu');
 
             if(this.audioBackground != null) {
@@ -1520,7 +1529,7 @@ class ShuttingStarsCore {
                 this.songThumb = null;
                 this.videoBga = null;
 
-                this.playTick();
+                this.playSE('accept1');
                 this.setState('songchoosing');
             } else if(selfs.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
                 // 그래픽 퀄리티 해상도는 해상도+3D 관련 사항이므로 따로 처리
@@ -1531,32 +1540,32 @@ class ShuttingStarsCore {
                     else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
                 }
 
-                this.playTick();
+                this.playSE('accept1');
                 this.setState('setting');
                 if(selfs.configDiv != null) {
                     // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
                     this.openConfigDiv();
                 }
             } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
-                this.playTick();
+                this.playSE('special1');
                 this.prepareCreditList();
                 this.setState('credit');
             } else if(this.menuChoosing == 'records') { // 메뉴 - 기록
-                this.playTick();
+                this.playSE('accept1');
                 this.selectedRecordList = selfs.getRecords();
                 this.selectRecordType = 'local';
                 this.seeingRecord = null;
                 if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
                 this.setState('recordlist');
             } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
-                this.playTick();
+                this.playSE('accept1');
                 if(this.backend != null && this.backend.avail) {
                     this.keyEventDisabled = true;
                     this.pops.dim.classList.remove('invisible');
                     this.pops.login.classList.remove('invisible');
                 }
             } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
-                this.playTick();
+                this.playSE('special1');
                 if(this.backend != null && this.backend.avail) {
                     if(confirm( this.trans('Do you want to logout now?') )) {
                         this.backend.logout().then(() => {
@@ -1587,7 +1596,7 @@ class ShuttingStarsCore {
 
         // ESC 처리는 공통 사항
         if(key == this.escKey) {
-            this.playTick();
+            this.playSE('cancel');
             if(this.difficultyChoosing) { this.difficultyChoosing = false; }
             else { this.setState('menu'); }
             return;
@@ -1626,7 +1635,7 @@ class ShuttingStarsCore {
                 if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
             } else if(key == this.enterKey) { // ENTER
                 if(this.missionChoosing == null) return;
-                this.playTick();
+                this.playSE('accept2');
 
                 this.missionChoosing.prepare(this); // 노트 이 시점에 생성
                 
@@ -1700,7 +1709,7 @@ class ShuttingStarsCore {
                 }
             } else if(key == this.enterKey) {
                 if(this.songChoosing == null) return;
-                this.playTick();
+                this.playSE('accept2');
 
                 if(this.difficultyChoosing) {
                     if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
@@ -1733,16 +1742,16 @@ class ShuttingStarsCore {
         if(key == this.enterKey) {
             if(this.settingChoosing == 'resetAll') {
                 if(this.settingResetReask) {
-                    this.playTick();
+                    this.playSE('special1');
                     // 초기화
                     this.resetAll();
                 } else {
-                    this.playTick();
+                    this.playSE('accept2');
                     // 한번 더 물어봄
                     this.settingResetReask = true;
                 }
             } else if(this.settingModifyingMode) {
-                this.playTick();
+                this.playSE('accept2');
                 this.settingModifyingMode = false; // 설정 변경 모드 OFF
 
                 if(this.settingChoosing == 'setGraphicQuality') {
@@ -1765,11 +1774,11 @@ class ShuttingStarsCore {
                 // 설정 저장
                 this.saveSettings();
             } else {
-                this.playTick();
+                this.playSE('accept2');
                 this.settingModifyingMode = true; // 설정 변경 모드 ON
             }
         } else if(key == this.escKey) {
-            this.playTick();
+            this.playSE('cancel');
             this.settingResetReask = false;
             if(this.settingModifyingMode) {
                 this.settingModifyingMode = false;
@@ -1917,17 +1926,17 @@ class ShuttingStarsCore {
             else { this.selectedRecordList = this.getRecords(); }
         } else if(key == this.enterKey) { // ENTER
             if(this.seeingRecord == null) return;
-            this.playTick();
+            this.playSE('accept1');
             this.setState('recorddet');
         } else if(key == this.escKey) {
-            this.playTick();
+            this.playSE('cancel');
             this.setState('menu');
         }
     }
 
     /** 기록 상세 화면 키 입력 핸들링 */
     handleKeyInputRecordDetail(key, vkeyExplosion) {
-        this.playTick();
+        this.playSE('accept2');
         this.setState('recordlist');
     }
 
@@ -1940,7 +1949,7 @@ class ShuttingStarsCore {
 
     /** 크레딧 화면 입력 핸들링 */
     handleKeyInputCredit(key, vkeyExplosion) {
-        this.playTick();
+        this.playSE('special1');
         this.setState('menu');
     }
 
@@ -5397,6 +5406,15 @@ class ShuttingStarsCore {
         try {
             this.se.tick.currentTime = 0;
             this.se.tick.play();
+        } catch(e) { console.error(e); }
+    }
+
+    /** 효과음 재생 */
+    playSE(seKey) {
+        if(this.se[seKey] == null || typeof(this.se[seKey]) == 'undefined') return;
+        try {
+            this.se[seKey].currentTime = 0;
+            this.se[seKey].play();
         } catch(e) { console.error(e); }
     }
 
