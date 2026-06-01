@@ -32,6 +32,7 @@ class ShuttingStarsInterface {
     avail = false; // false 인 경우 사용 불가
     auth = null;
     firestore = null;
+    rtdb = null;
     messaging = null;
     remoteConfig = null;
     sessionChecked = false;
@@ -79,10 +80,11 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
 
         // Firebase 활성화
-        this.auth = firebase.auth();
+        this.auth         = firebase.auth();
         this.firestore    = firebase.firestore();
         this.messaging    = firebase.messaging();
         this.remoteConfig = firebase.remoteConfig();
+        // this.rtdb         = firebase.database();
 
         // Analytics 등 사용
         firebase.analytics();
@@ -275,7 +277,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
 }
 
-/** Servlet 기반 서버와 통신하는 방식 */
+/** Servlet 기반 서버와 통신하는 방식 (직접 구현해야 함) */
 class ServletImplementation extends ShuttingStarsInterface {
 
 }
