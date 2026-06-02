@@ -125,25 +125,36 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                 newObj.y = this.convertY(objOne.y);
                 newObj.z = 1;
                 newObj.r = this.convertX(objOne.r);
+                newObj.setColor(objOne.color);
                 newObj.prepareDefaults();
                 coreInst.object3ds.push(newObj);
             }
         }
 
         // 지구 객체 그리기
-        let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
-        let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
-        let y      = coreInst.getHpBarYLocation() - radius;
-        const hpBarInsideColor = coreInst.convertColor('' + r + ', ' + g + ', ' + b);
+        if(coreInst.notePlacers.length >= 1) {
+            let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
+            let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
+            let y      = coreInst.getHpBarYLocation() - radius;
 
-        newObj = new SphereObject(this);
-        newObj.x = this.convertX(x);
-        newObj.y = this.convertY(y);
-        newObj.z = 1;
-        newObj.r = this.convertX(r);
-        newObj.setColor(hpBarInsideColor);
-        newObj.prepareDefaults();
-        coreInst.object3ds.push(newObj);
+            let arr = coreInst.calculateHpColor();
+            let r, g, b;
+            r = arr[0];
+            g = arr[1];
+            b = arr[2];
+            
+            const hpBarInsideColor = coreInst.convertColor('rgba(' + r + ', ' + g + ', ' + b + ', 0.8)');
+
+            newObj = new SphereObject(this);
+            newObj.x = this.convertX(x);
+            newObj.y = this.convertY(y);
+            newObj.z = 1;
+            newObj.r = this.convertX(r);
+            newObj.setColor(hpBarInsideColor);
+            newObj.prepareDefaults();
+            coreInst.object3ds.push(newObj);
+        }
+        
     }
 
     render(canvas3d, objects) {

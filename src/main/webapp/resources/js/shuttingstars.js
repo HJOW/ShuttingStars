@@ -3586,15 +3586,18 @@ class ShuttingStarsCore {
         const hpBarInsideColor = this.convertColor('rgba(' + r + ', ' + g + ', ' + b + ', 0.8)');
 
         // HP바 (행성형) 출력
-        let x      = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
-        let radius = Math.round((this.notePlacers[this.notePlacers.length-1].x - this.notePlacers[0].x) / 2.0) * 8;
-        let y      = this.getHpBarYLocation() - radius;
+        if(this.notePlacers.length >= 1) {
+            let x      = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
+            let radius = Math.round((this.notePlacers[this.notePlacers.length-1].x - this.notePlacers[0].x) / 2.0) * 8;
+            let y      = this.getHpBarYLocation() - radius;
+            
+            this.ctx.beginPath();
+            this.ctx.fillStyle = hpBarInsideColor;
+            // this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
+            ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertX(radius), r, g, b, 0.8, 7);
+            this.ctx.fill();
+        }
         
-        this.ctx.beginPath();
-        this.ctx.fillStyle = hpBarInsideColor;
-        // this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
-        ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertX(radius), r, g, b, 0.8, 7);
-        this.ctx.fill();
         /*
         // 기존 바형 HP바
         const hpBarMaxWidth = this.notePlacers[this.notePlacers.length - 1].x + this.notePlacers[this.notePlacers.length - 1].r - this.notePlacers[0].x + this.notePlacers[0].r;
