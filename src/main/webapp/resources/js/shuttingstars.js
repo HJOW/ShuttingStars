@@ -1426,11 +1426,13 @@ class ShuttingStarsCore {
                 this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, selfs.songBitGap);
             }
 
+            // 백그라운드 음악 페이드 아웃 시작
+            if(this.audioBackground != null && this.audioBackgroundPlaying) this.volumeBackgroundSpeed = (-1) * 0.01;
+
             // 오디오 재생 시작 + 시간 타이밍 맞추기
             if(this.audio != null) {
                 setTimeout(() => {
                     selfs.audio.play();
-                    if(selfs.audioBackground != null && selfs.audioBackgroundPlaying) selfs.volumeBackgroundSpeed = (-1) * 0.01;
 
                     selfs.visualizePeakDebugData = [];
                     selfs.visualizePeakDebugRecordTime = 0;
