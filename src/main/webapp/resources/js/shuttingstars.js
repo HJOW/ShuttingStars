@@ -2329,9 +2329,9 @@ class ShuttingStarsCore {
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             metric3 = this.ctx.measureText(label);
 
-            this.metricSize1 = (metric1.actualBoundingBoxAscent + metric1.fontBoundingBoxDescent);
-            this.metricSize2 = (metric2.actualBoundingBoxAscent + metric2.fontBoundingBoxDescent);
-            this.metricSize3 = (metric3.actualBoundingBoxAscent + metric3.fontBoundingBoxDescent);
+            this.metricSize1 = this.convertY(metric1.actualBoundingBoxAscent + metric1.fontBoundingBoxDescent);
+            this.metricSize2 = this.convertY(metric2.actualBoundingBoxAscent + metric2.fontBoundingBoxDescent);
+            this.metricSize3 = this.convertY(metric3.actualBoundingBoxAscent + metric3.fontBoundingBoxDescent);
         }
     }
 
@@ -2541,23 +2541,17 @@ class ShuttingStarsCore {
     /** 화면 출력 - 곡 선정 화면 */
     renderSongChoosing() {
         const selfs = this;
-        let idx, ddx;
+        let idx, ddx, jdx;
         let rows = 0;
         let cols = 0;
         let fontSize = this.convertFontSize(20);
         let opacity = 0.9;
         let gap = Math.floor(fontSize / 2.0);
-        let divideCount = 2;
         let label = '';
         let lefts, rights;
 
         this.calculateFontMetric();
         gap = Math.floor(this.metricSize2 / 2.0);
-
-        // 해상도 별 조치
-        if(this.resolution.h <=  720) {
-            divideCount = 4; // 한 페이지 내에 출력 가능한 곡/미션 수를 조정하는 값 (현재 선택된 값 위에 이 갯수만큼만 있을 수 있음)
-        }
 
         // 최초 Y 좌표 계산
         rows = this.convertY(this.getStageHeight() / 5);
@@ -2581,34 +2575,6 @@ class ShuttingStarsCore {
             }
         }
         
-        if(emptyState) {
-            rows += this.metricSize1 + gap;
-
-            // ESC 표기
-            let escKeyLabel = this.escKey;
-            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
-
-            fontSize = this.convertFontSize(15);
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.textAlign = "right";
-            this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth()) - (this.metricSize2 * 2), this.convertY(this.getStageHeight()) - (this.metricSize2 * 2));
-
-            if(this.songChoosingMode == 'mission') {
-                setTimeout(() => {
-                    // 곡/미션 목록으로 되돌려야 하는데, 미션/곡 목록도 없으면, 메뉴로 이동
-                    if(selfs.songDisplays.length <= 0) selfs.setState('menu');
-                    else selfs.songChoosingMode = 'default';    
-                }, 4000);
-            } else {
-                setTimeout(() => {
-                    // 곡/미션 목록으로 되돌려야 하는데, 미션/곡 목록도 없으면, 메뉴로 이동
-                    if(selfs.missions.length <= 0) selfs.setState('menu');
-                    else selfs.songChoosingMode = 'mission';    
-                }, 4000);
-            }
-            return;
-        }
-        
         // 타이틀 출력
         lefts  = '';
         rights = '';
@@ -2629,9 +2595,42 @@ class ShuttingStarsCore {
         }
         rows += (this.metricSize3 * 2) + (gap);
 
-        let displayedSongs = 0;
+        // 곡 목록이 빈 경우 처리
+        if(emptyState) {
+            rows += this.metricSize1 + gap;
+
+            // ESC 표기
+            let escKeyLabel = this.escKey;
+            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+            fontSize = this.convertFontSize(30);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(this.trans('EMPTY !'), this.convertX(this.getStageWidth() / 2), rows);
+
+            if(this.songChoosingMode == 'mission') {
+                setTimeout(() => {
+                    // 곡/미션 목록으로 되돌려야 하는데, 미션/곡 목록도 없으면, 메뉴로 이동
+                    if(selfs.songDisplays.length <= 0) selfs.setState('menu');
+                    else selfs.songChoosingMode = 'default';    
+                }, 4000);
+            } else {
+                setTimeout(() => {
+                    // 곡/미션 목록으로 되돌려야 하는데, 미션/곡 목록도 없으면, 메뉴로 이동
+                    if(selfs.missions.length <= 0) selfs.setState('menu');
+                    else selfs.songChoosingMode = 'mission';    
+                }, 4000);
+            }
+            return;
+        }
+
+        let centerY = this.convertY(this.getStageHeight() / 2);
+        let currentRow = centerY; // 기존 rows 값을 보존해야 하기 때문
+        let row1Height = 0;
+        let currentIndex = 0;
         let songChoosen = null;
-        let current = false;
+        let opacityOne = 0;
+        opacity = 0.99;
 
         if(this.songChoosingMode == 'mission') {
             // mission 모드 - 난이도만 선택
@@ -2639,217 +2638,181 @@ class ShuttingStarsCore {
             // 미션을 선택하지 않은 상태인 경우 첫 미션을 출력
             if(this.missionChoosing == null) { this.missionChoosing = this.missions[0]; }
 
-            // 미션 목록을 다 출력할 수는 없으니, 현재 선택된 미션 앞뒤 2개만 출력
-            //    현재 선택된 미션을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
-            let frontMissions = [];
-            let backMissions = [];
-            current = false;
+            // 1개 행 높이 사전 계산
+            row1Height = this.metricSize3 + (gap * 3);
 
+            // 선택 중인 미션이 몇 번째인지 확인
             for(idx=0; idx<this.missions.length; idx++) {
-                let missionOne = this.missions[idx];
-                if(missionOne == this.missionChoosing) {
-                    current = true; // 현재 선택된 곡, backSongs 에 넣기 (frontSongs 에 넣어도 문제는 없음)
-                    backMissions.push(missionOne);
-                    continue;
-                }
-                if(! current) { // 아직 현재 선택된 곡을 만나기 이전 - 일단 frontSongs 에 넣고, 원소가 2개에 도달하면 먼저 넣은 것을 제거한다.
-                    frontMissions.push(missionOne);
-                    if(frontMissions.length >= divideCount) frontMissions.splice(0, 1);
-                } else { // 현재 선택된 곡을 지남 - backSongs 에 넣고, 원소가 3개 (현재 선택된 곡이 포함되어 있으므로) 가 되면 반복문을 중지한다.
-                    backMissions.push(missionOne);
-                    if(backMissions.length >= divideCount+1) break;
-                }
+                if(this.missions[idx] == this.missionChoosing) { currentIndex = idx; break; }
             }
 
-            // 하나의 배열로 병합
-            let displayMissions = [];
-            for(idx=0; idx<frontMissions.length; idx++) { displayMissions.push(frontMissions[idx]); }
-            for(idx=0; idx<backMissions.length; idx++) { displayMissions.push(backMissions[idx]); }
-            frontMissions = null;
-            backMissions = null;
-
-            // 출력
-            for(idx=0; idx<displayMissions.length; idx++) {
-                let missionOne = displayMissions[idx];
-                let choosen = (this.missionChoosing == missionOne);
-
-                // 선택된 곡 배경색 출력
-                if(choosen) {
-                    songChoosen = missionOne;
-
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-
-                    this.ctx.fillRect(0, rows - this.metricSize1, this.canvas.width - (this.getLeftMarginStage() * 2), this.metricSize1 + (gap*3));
+            // 미션 목록 3번 출력
+            for(jdx=0; jdx<3; jdx++) {
+                if(jdx == 0) {
+                    currentRow = centerY - (  (row1Height * (this.missions.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+                    opacityOne = ( 0.5 / (this.missions.length + currentIndex) );
+                    opacity = 0.5 - opacityOne;
                 }
+                for(idx=0; idx<this.missions.length; idx++) {
+                    let missionOne = this.missions[idx];
 
-                // 곡 이름 출력
-                opacity = 0.99;
-                // if(choosen) opacity = 0.99;
-                // else opacity = 0.3;
+                    if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
+                        currentRow += row1Height + gap;
+                        continue;
+                    }
 
-                fontSize = this.convertFontSize(20);
-                label = missionOne.name;
-                this.ctx.textAlign = "center";
-                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-                if(choosen) {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
-                } else {
-                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), rows);
+                    let choosen = (jdx == 1 && this.missionChoosing == missionOne);
+                    if(choosen) {
+                        songChoosen = missionOne;
+
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+
+                        this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2), this.convertX(this.getStageWidth()), row1Height);
+                    }
+
+                    // 미션 이름 출력
+                    fontSize = this.convertFontSize(20);
+                    label = missionOne.name;
+                    this.ctx.textAlign = "center";
+                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    if(choosen) {
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2) + (row1Height / 2));
+                    } else {
+                        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
+                    }
+
+                    currentRow += row1Height;
+                    if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
+                    else opacity -= opacityOne;
+                    if(opacity >= 0.99) opacity = 0.99;
+                    if(opacity <= 0) opacity = 0.0;
                 }
-
-                rows += this.metricSize1 + (gap*3);
             }
-
         } else {
             // default 모드 - 곡을 선택해야 함
-
-            // 곡을 선택하지 않은 상태인 경우 첫 곡을 출력
+            //     곡을 선택하지 않은 상태인 경우 첫 곡을 출력
             if(this.songChoosing == null) { this.songChoosing = this.songDisplays[0]; }
 
-            // 곡 목록을 다 출력할 수는 없으니, 현재 선택된 곡 앞뒤 2개만 출력
-            //    현재 선택된 곡을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
-            let frontSongs = [];
-            let backSongs = [];
-            current = false;
+            // 1개 행 높이 사전 계산
+            row1Height = this.metricSize3 + this.metricSize1 + this.metricSize2 + (gap * 5);
+
+            // 선택 중인 미션이 몇 번째인지 확인
             for(idx=0; idx<this.songDisplays.length; idx++) {
-                let songOne = this.songDisplays[idx];
-                if(songOne == this.songChoosing) {
-                    current = true; // 현재 선택된 곡, backSongs 에 넣기 (frontSongs 에 넣어도 문제는 없음)
-                    backSongs.push(songOne);
-                    continue;
-                }
-                if(! current) { // 아직 현재 선택된 곡을 만나기 이전 - 일단 frontSongs 에 넣고, 원소가 2개에 도달하면 먼저 넣은 것을 제거한다.
-                    frontSongs.push(songOne);
-                    if(frontSongs.length >= divideCount) frontSongs.splice(0, 1);
-                } else { // 현재 선택된 곡을 지남 - backSongs 에 넣고, 원소가 3개 (현재 선택된 곡이 포함되어 있으므로) 가 되면 반복문을 중지한다.
-                    backSongs.push(songOne);
-                    if(backSongs.length >= divideCount+1) break;
-                }
+                if(this.songDisplays[idx] == this.songChoosing) { currentIndex = idx; break; }
             }
 
-            // 하나의 배열로 병합
-            let displaySongs = [];
-            for(idx=0; idx<frontSongs.length; idx++) { displaySongs.push(frontSongs[idx]); }
-            for(idx=0; idx<backSongs.length; idx++) { displaySongs.push(backSongs[idx]); }
-            frontSongs = null;
-            backSongs = null;
+            // 곡 목록 3번 출력
+            for(jdx=0; jdx<3; jdx++) {
+                if(jdx == 0) {
+                    currentRow = centerY - (  (row1Height * (this.songDisplays.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+                    opacityOne = ( 0.5 / (this.songDisplays.length + currentIndex) );
+                    opacity = 0.5 - opacityOne;
+                }
+                for(idx=0; idx<this.songDisplays.length; idx++) {
+                    let songOne = this.songDisplays[idx];
 
-            // 출력
-            for(idx=0; idx<displaySongs.length; idx++) {
-                let songOne = displaySongs[idx];
-                let choosen = (this.songChoosing == songOne);
-
-                // 선택된 곡 배경색 출력
-                if(choosen) {
-                    songChoosen = songOne;
-
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-
-                    if(this.difficultyChoosing) {
-                        this.ctx.fillRect(0, rows - (this.metricSize1 + gap), this.canvas.width - (this.getLeftMarginStage() * 2), this.metricSize1 + (this.metricSize2 * 4) + (gap*3));
-                    } else {
-                        this.ctx.fillRect(0, rows - (this.metricSize1 + gap), this.canvas.width - (this.getLeftMarginStage() * 2), this.metricSize1 + (this.metricSize2 * 3) + (gap*3));
+                    if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
+                        currentRow += row1Height + gap;
+                        continue;
                     }
-                }
 
-                // 곡 이름 출력
-                opacity = 0.99;
-                // if(choosen) opacity = 0.99;
-                // else opacity = 0.3;
+                    let choosen = (jdx == 1 && this.songChoosing == songOne);
+                    if(choosen) {
+                        songChoosen = songOne;
 
-                fontSize = this.convertFontSize(20);
-                label = songOne.name;
-                this.ctx.textAlign = "center";
-                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-                if(choosen) {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), (rows));
-                } else {
-                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), (rows));
-                }
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
 
-                rows += this.metricSize1 + gap;
+                        if(this.difficultyChoosing) {
+                            this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2), this.convertX(this.getStageWidth()), (row1Height + this.metricSize2 + (gap * 2)));
+                        } else {
+                            this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2), this.convertX(this.getStageWidth()), (row1Height));
+                        }
+                    }
 
-                // 작곡가, 노트작성자, bpm 출력
-                label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
-                fontSize = this.convertFontSize(15);
-                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    // 곡 이름 출력
+                    fontSize = this.convertFontSize(20);
+                    label = songOne.name;
+                    this.ctx.textAlign = "center";
+                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    if(choosen) {
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2) + (row1Height / 3));
+                    } else {
+                        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
+                    }
 
-                // if(this.songChoosing == songOne) opacity = 0.99;
-                // else opacity = 0.3;
-
-                this.ctx.textAlign = "center";
-                if(choosen) {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), (rows));
-                } else {
-                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), (rows));
-                }
-
-                rows += this.metricSize2 + gap;
-
-                // 현재 선택된 곡이고, 난이도 선택해야 하는 차례인 경우
-                if(choosen && this.difficultyChoosing) {
+                    // 작곡가, 노트작성자, bpm 출력
+                    label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
                     fontSize = this.convertFontSize(15);
                     this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-                    if(this.difficultyChoosingList.length == 0) this.difficultyChoosingList = this.songChoosing.getDifficultyList();
-                    let diffIdx = this.difficultyChoosingList.indexOf(this.difficulty);
-                    if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; }
-                    
-                    cols = 0;
                     this.ctx.textAlign = "center";
-                    for(ddx=0; ddx<this.difficultyChoosingList.length; ddx++) {
-                        const diffOne = this.difficultyChoosingList[ddx];
-                        const difficultyName = diffOne.difficultyLabel;
-                        const difficultyNum  = diffOne.difficultyLevel;
-                        const colors = this.difficultyNumberColor(difficultyNum);
-                        this.ctx.fillStyle = this.convertColor('rgba(' + colors + ', ' + opacity + ')');
-
-                        label = '';
-
-                        if(ddx == diffIdx) label += '[';
-                        
-                        if(     difficultyName == 'easy'  ) label += 'EASY';
-                        else if(difficultyName == 'normal') label += 'NORMAL';
-                        else if(difficultyName == 'hard'  ) label += 'HARD';
-                        else label += 'EX';
-
-                        label += ' (' + difficultyNum + ')';
-                        if(ddx == diffIdx) label += ']';
-
-                        fontSize = this.convertFontSize(15);
-                        if(ddx == diffIdx) this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-                        else               this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-
-                        if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), (rows));
-                        else               this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), (rows));
-                        cols += (fontSize * label.length) + 20;
+                    if(choosen) {
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2) + (row1Height * 2 / 3));
+                    } else {
+                        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height * 2 / 3));
                     }
+
+                    // 현재 선택된 곡이고, 난이도 선택해야 하는 차례인 경우
+                    if(choosen && this.difficultyChoosing) {
+                        fontSize = this.convertFontSize(15);
+                        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+                        if(this.difficultyChoosingList.length == 0) this.difficultyChoosingList = this.songChoosing.getDifficultyList();
+                        let diffIdx = this.difficultyChoosingList.indexOf(this.difficulty);
+                        if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; }
+                        
+                        cols = 0;
+                        this.ctx.textAlign = "center";
+                        for(ddx=0; ddx<this.difficultyChoosingList.length; ddx++) {
+                            const diffOne = this.difficultyChoosingList[ddx];
+                            const difficultyName = diffOne.difficultyLabel;
+                            const difficultyNum  = diffOne.difficultyLevel;
+                            const colors = this.difficultyNumberColor(difficultyNum);
+                            this.ctx.fillStyle = this.convertColor('rgba(' + colors + ', ' + opacity + ')');
+
+                            label = '';
+
+                            if(ddx == diffIdx) label += '[';
+                            
+                            if(     difficultyName == 'easy'  ) label += 'EASY';
+                            else if(difficultyName == 'normal') label += 'NORMAL';
+                            else if(difficultyName == 'hard'  ) label += 'HARD';
+                            else label += 'EX';
+
+                            label += ' (' + difficultyNum + ')';
+                            if(ddx == diffIdx) label += ']';
+
+                            fontSize = this.convertFontSize(15);
+                            if(ddx == diffIdx) this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+                            else               this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+                            if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), this.convertY(this.getStageHeight() / 2) + (row1Height));
+                            else               this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), this.convertY(this.getStageHeight() / 2) + (row1Height));
+                            cols += (fontSize * label.length) + 20;
+                        }
+                    }
+
+                    currentRow += row1Height;
+                    if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
+                    else opacity -= opacityOne;
+                    if(opacity >= 0.99) opacity = 0.99;
+                    if(opacity <= 0) opacity = 0.0;
                 }
-
-                rows += this.metricSize2 + (gap*4);
-                displayedSongs++;
             }
-        }
-
-        // 빈 공간 띄우기
-        fontSize = this.convertFontSize(35);
-        while(displayedSongs < 5) {
-            rows += this.metricSize3 + gap;
-            displayedSongs++;
         }
 
         // 기타 안내 출력
