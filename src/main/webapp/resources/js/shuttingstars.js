@@ -2257,7 +2257,7 @@ class ShuttingStarsCore {
         // 시각화 그리기
         if(this.audioAnalyser != null && this.audioSource != null && this.playPrepared) this.renderAudioVisualizing();
 
-        if(this.disable2d && (! this.disable3d)) {
+        if(! this.disable2d) {
             // 객체 그리기
             for(let idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
