@@ -817,7 +817,6 @@ class ShuttingStarsCore {
         this.broker.arrowKeys               = this.arrowKeys               ;
         this.broker.enterKey                = this.enterKey                ;
         this.broker.escKey                  = this.escKey                  ;
-        this.broker.keyEventDisabled        = this.keyEventDisabled        ;
         this.broker.fontFamily              = this.fontFamily              ;
         this.broker.pointFont               = this.pointFont               ;
         this.broker.alterFonts              = this.alterFonts              ;
@@ -848,7 +847,6 @@ class ShuttingStarsCore {
             if(typeof(obj.arrowKeys              ) != 'undefined') selfs.arrowKeys               = obj.arrowKeys               ;
             if(typeof(obj.enterKey               ) != 'undefined') selfs.enterKey                = obj.enterKey                ;
             if(typeof(obj.escKey                 ) != 'undefined') selfs.escKey                  = obj.escKey                  ;
-            if(typeof(obj.keyEventDisabled       ) != 'undefined') selfs.keyEventDisabled        = obj.keyEventDisabled        ;
             if(typeof(obj.fontFamily             ) != 'undefined') selfs.fontFamily              = obj.fontFamily              ;
             if(typeof(obj.pointFont              ) != 'undefined') selfs.pointFont               = obj.pointFont               ;
             if(typeof(obj.alterFonts             ) != 'undefined') selfs.alterFonts              = obj.alterFonts              ;
@@ -1453,12 +1451,22 @@ class ShuttingStarsCore {
     handleKeyInput(key, vkeyExplosion) {
         const selfs = this;
 
-        if(this.keyEventDisabled) return;
+        if(this.keyEventDisabled && key != this.escKey) return;
         if(this.keyInputDebugMode) console.log('KEY INPUT : ' + ShuttingStarsUtility.floor2(this.elapsedTime) + ', ' + key);
         key = String(key);
 
         // 키 입력 신호 넣기
         this.keypressing[key] = new Date().getTime();
+
+        // ESC - DOM 팝업 떠있으면 닫기
+        if(key == this.escKey && (! this.pops.dim.classList.contains('invisible'))) {
+            this.pops.dim.classList.add('invisible');
+            this.pops.login.classList.add('invisible');
+            this.configDiv.classList.add('invisible');
+            this.setState('menu');
+            this.keyEventDisabled = false;
+            return;
+        }
 
         // 타이틀 화면 키 핸들링
         if(this.state == 'title') {
@@ -5815,11 +5823,11 @@ class ShuttingStarsMission extends ShuttingStarsSong {
             if(randValue > 1) randValue = 1;
 
             if(randValue <= ratePoint) {
-                console.log(idx + '\t MATCHED \t' + randValue + '\t' + ratePoint + ', ' + (rateAfter * noteCreatedAfter));
+                // console.log(idx + '\t MATCHED \t' + randValue + '\t' + ratePoint + ', ' + (rateAfter * noteCreatedAfter));
                 noteCreatedAfter = 0; // 초기화
                 difficulty.patterns.push({ locationIndex : -1, time : idx }); // 노트 타이밍 생성
             } else {
-                console.log(idx + '\t NOT MATCHED \t' + randValue + '\t' + ratePoint + ', ' + (rateAfter * noteCreatedAfter));
+                // console.log(idx + '\t NOT MATCHED \t' + randValue + '\t' + ratePoint + ', ' + (rateAfter * noteCreatedAfter));
                 noteCreatedAfter++; // 다음 번 타이밍에 노트 생성할 확률 증가
             }
         }
