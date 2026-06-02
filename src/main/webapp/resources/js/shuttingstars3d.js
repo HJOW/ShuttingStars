@@ -114,6 +114,22 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             coreInst.object3ds.push(newObj);
         }
 
+        // 노트 등 객체 그리기
+        if(coreInst.disable2d && (! coreInst.disable3d)) {
+            for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+                const objOne = coreInst.objectsPlaying[idx];
+                if(objOne.shape != 'circle') continue;
+
+                const newObj = new SphereObject(this);
+                newObj.x = this.convertX(objOne.x);
+                newObj.y = this.convertY(objOne.y);
+                newObj.z = 1;
+                newObj.r = this.convertX(objOne.r);
+                newObj.prepareDefaults();
+                coreInst.object3ds.push(newObj);
+            }
+        }
+
         // 지구 객체 그리기
         let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
         let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;

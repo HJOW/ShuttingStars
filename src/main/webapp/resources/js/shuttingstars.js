@@ -71,9 +71,10 @@ class ShuttingStarsCore {
     canvas3d = null;  // 3D 장식 출력용 캔버스 객체
     configDiv = null; // 상세 설정 영역
 
-    ctx = null;       // 2D Context 객체
-    ss3d = null;      // ShuttingStars3DManager 객체
-    disable3d = true; // true 지정 시 3D 렌더링하지 않음
+    ctx = null;         // 2D Context 객체
+    ss3d = null;        // ShuttingStars3DManager 객체
+    disable3d = true;   // true 지정 시 3D 렌더링하지 않음
+    disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함.
 
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
@@ -1130,6 +1131,11 @@ class ShuttingStarsCore {
                     if(typeof(this.disable3d) == 'string') this.disable3d = ( (this.disable3d == 'Y' || this.disable3d == 'true') ? true : false );
                 }
 
+                if(typeof(settingJson.disable2d) != 'undefined') {
+                    this.disable2d = settingJson.disable2d;
+                    if(typeof(this.disable2d) == 'string') this.disable2d = ( (this.disable2d == 'Y' || this.disable2d == 'true') ? true : false );
+                }
+
                 if(typeof(settingJson.keyList) != 'undefined') {
                     try {
                         if(typeof(settingJson.keyList) == 'string') settingJson.keyList = JSON.parse(settingJson.keyList);
@@ -1173,6 +1179,7 @@ class ShuttingStarsCore {
             settingJson.songTiming = this.songTiming;
             settingJson.resolution = this.ressets.w + ',' + this.ressets.h;
             settingJson.disable3d = this.disable3d;
+            settingJson.disable2d = this.disable2d;
             settingJson.language = this.language;
             settingJson.languageDefault = this.languageDefault;
             settingJson.keyList = this.keyList;
@@ -2250,18 +2257,20 @@ class ShuttingStarsCore {
         // 시각화 그리기
         if(this.audioAnalyser != null && this.audioSource != null && this.playPrepared) this.renderAudioVisualizing();
 
-        // 객체 그리기
-        for(let idx=0; idx<this.objectsPlaying.length; idx++) {
-            const obj = this.objectsPlaying[idx];
-            if(obj.explosing >= obj.explosingMax) continue;
-            if(obj instanceof Note) {
-                if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
+        if(this.disable2d && (! this.disable3d)) {
+            // 객체 그리기
+            for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj.explosing >= obj.explosingMax) continue;
+                if(obj instanceof Note) {
+                    if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
+                }
+                if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
             }
-            if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
-        }
 
-        // HP바 그리기
-        this.renderHpBar();
+            // HP바 그리기
+            this.renderHpBar();
+        }
 
         // 일시정지 상태 그리기
         if(this.paused) {
