@@ -35,6 +35,7 @@ class ShuttingStarsInterface {
     rtdb = null;
     messaging = null;
     remoteConfig = null;
+    usingGoogleLogin = false;
     sessionChecked = false;
     logined = false;
     user = null;
@@ -60,6 +61,21 @@ class ShuttingStarsInterface {
     registerRankRecord(json) {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
+    listBoardIds() {
+        return [];
+    }
+    listPost(boardId) {
+        return new Promise((resolve, reject) => { resolve({ success : false, list : [] }); })
+    }
+    writePost(boardId, text) {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
+    modifyPost(boardId, postNo, text) {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
+    deletePost(boardId, postNo) {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
     requestPushPermission() {
         return new Promise((resolve, reject) => { 
             resolve({ success : false });
@@ -78,6 +94,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     constructor() {
         super();
         const selfs = this;
+
+        this.usingGoogleLogin = true;
 
         // Firebase 활성화
         try { this.auth         = firebase.auth();         } catch(e) { console.error(e); }
@@ -147,44 +165,6 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         });
     }
 
-    createUser(json) {
-        const selfs = this;
-        return new Promise((resolve, reject) => {
-            try {
-                if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
-                selfs.auth.createUserWithEmailAndPassword(json.email, json.password).then((userCredential) => {
-                    selfs.user = userCredential.user;
-                    selfs.logined = true;
-                    resolve({
-                        success : true,
-                        userJson : userCredential.user
-                    });
-                }).catch((e) => { reject(e); });
-            } catch(exc) {
-                reject(exc);
-            }
-        });
-    }
-
-    login(json) {
-        const selfs = this;
-        return new Promise((resolve, reject) => {
-            try {
-                if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
-                selfs.auth.signInWithEmailAndPassword(json.email, json.password).then((userCredential) => {
-                    selfs.user = userCredential.user;
-                    selfs.logined = true;
-                    resolve({
-                        success : true,
-                        userJson : userCredential.user
-                    });
-                }).catch((e) => { reject(e); });
-            } catch(exc) {
-                reject(exc);
-            }
-        });
-    }
-
     checkLogined(userJson) {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -243,6 +223,25 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             });
         })
     }
+
+
+
+    listBoardIds() {
+        return [];
+    }
+    listPost(boardId) {
+        return new Promise((resolve, reject) => { resolve({ success : false, list : [] }); })
+    }
+    writePost(boardId, text) {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
+    modifyPost(boardId, postNo, text) {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
+    deletePost(boardId, postNo) {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
+
 
     requestPushPermission() {
         const selfs = this;

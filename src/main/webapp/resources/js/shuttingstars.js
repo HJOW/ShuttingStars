@@ -4623,7 +4623,8 @@ class ShuttingStarsCore {
         this.pops.dim = popInside;
 
         popInside = popRoot.querySelector('.pop_login');
-        let htmls = `
+        let htmls = '';
+        htmls = `
             <table class='table_login_form full'>
                 <colgroup>
                     <col style='width: 10rem;'/>
@@ -4684,9 +4685,11 @@ class ShuttingStarsCore {
         }
 
         const fLogin = function() {
-            selfs.backend.openGoogleLogin().then((respJson) => {
-                fAfter1(respJson);
-            });
+            if(selfs.backend.usingGoogleLogin) {
+                selfs.backend.openGoogleLogin().then((respJson) => {
+                    fAfter1(respJson);
+                });
+            }
         }
 
         let btn;
