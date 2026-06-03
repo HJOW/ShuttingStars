@@ -201,6 +201,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 }
                 record.uid = selfs.user.uid;
                 record.email = selfs.user.email;
+                record.date = new Date().getTime();
                 selfs.firestore.collection('highscore').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
             } catch(exc) {
                 reject(exc);
@@ -214,7 +215,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             if(selfs.firestore == null) { resolve({success : false, list : [], message : 'Failed to load firebase firestore'}); return; }
 
             let arr = [];
-            selfs.firestore.collection('highscore').get().then((querySnapshot) => { // TODO 테스트
+            selfs.firestore.collection('highscore').get().then((querySnapshot) => {
                 querySnapshot.forEach((doc) => {
                     doc = doc.data();
                     arr.push(doc);
@@ -227,13 +228,46 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
 
     listBoardIds() {
-        return [];
+        return ['preboard'];
     }
-    listPost(boardId) {
-        return new Promise((resolve, reject) => { resolve({ success : false, list : [] }); })
+    listPost(boardId, condition) {
+        return new Promise((resolve, reject) => {
+            let arr = [];
+            selfs.firestore.collection('board').get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    doc = doc.data();
+                    if(doc.boardName != 'preboard') return;
+                    if(condition) {
+                        for(const k in condition) {
+                            if(doc[k] != condition[k]) return;
+                        }
+                    }
+
+                    arr.push(doc);
+                });
+                resolve({ success : true, list : arr }); 
+            });
+        });
     }
     writePost(boardId, text) {
-        return new Promise((resolve, reject) => { resolve({ success : false }); })
+        return new Promise((resolve, reject) => {
+            try {
+                if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
+                if(text.length >= 256) { resolve({success : false, message : 'Too long !'}); return; }
+                if(! selfs.logined) { throw ('No logined.'); }
+
+                let record = {};
+                for(const k in json) {
+                    record[k] = json[k];
+                }
+                record.uid = selfs.user.uid;
+                record.boardName = boardId;
+                record.regdate = new Date().getTime();
+                selfs.firestore.collection('board').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
+            } catch(exc) {
+                reject(exc);
+            }
+        })
     }
     modifyPost(boardId, postNo, text) {
         return new Promise((resolve, reject) => { resolve({ success : false }); })

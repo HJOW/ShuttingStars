@@ -1326,26 +1326,24 @@ class ShuttingStarsCore {
                         this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
                         
                         this.closeAudioSources();
-                        if(this.useAudioVisualizer) {
-                            try {
-                                // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API )
-                                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                                this.audioAnalyser = this.audioCtx.createAnalyser();
-            
-                                this.audioSource = this.audioCtx.createMediaElementSource(this.audio);
-            
-                                this.audioSource.connect(this.audioAnalyser);
-                                this.audioAnalyser.connect(this.audioCtx.destination);
-                                this.audioAnalyser.fftSize = 256;
-            
-                                this.audioBufferLen = this.audioAnalyser.frequencyBinCount; // fftSize 의 절반값
-                                this.audioBuffer = new Uint8Array(this.audioBufferLen);
-                            } catch(exInx) {
-                                console.log('Failed to prepare audio context.');
-                                console.log(exInx);
-            
-                                this.closeAudioSources();
-                            }
+                        try {
+                            // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API )
+                            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            this.audioAnalyser = this.audioCtx.createAnalyser();
+        
+                            this.audioSource = this.audioCtx.createMediaElementSource(this.audio);
+        
+                            this.audioSource.connect(this.audioAnalyser);
+                            this.audioAnalyser.connect(this.audioCtx.destination);
+                            this.audioAnalyser.fftSize = 256;
+        
+                            this.audioBufferLen = this.audioAnalyser.frequencyBinCount; // fftSize 의 절반값
+                            this.audioBuffer = new Uint8Array(this.audioBufferLen);
+                        } catch(exInx) {
+                            console.log('Failed to prepare audio context.');
+                            console.log(exInx);
+        
+                            this.closeAudioSources();
                         }
                         
                         // this.audio.addEventListener('ended', function() {
@@ -2255,7 +2253,9 @@ class ShuttingStarsCore {
         let fontSize;
 
         // 시각화 그리기
-        if(this.audioAnalyser != null && this.audioSource != null && this.playPrepared) this.renderAudioVisualizing();
+        if(this.useAudioVisualizer && this.playPrepared) {
+            if(this.audioAnalyser != null && this.audioSource != null) this.renderAudioVisualizing();
+        }
 
         if(! this.disable2d) {
             // 객체 그리기
