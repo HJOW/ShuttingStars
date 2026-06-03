@@ -689,6 +689,89 @@ song.difficulties = [
 addShuttingStarSong(song);
 
 song = {};
+song.name = '출발은 떨렸지만';
+song.composer = '우아한형제들';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track01.mp3';
+song.thumbnailUrl = '';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+|노트 임시로 AI로 작성함
+`;
+song.loadingTime = 10;
+song.bpm = 91;
+song.endTime = 3000;
+song.timeConstant = -307;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilaHfdhsdfhfsdhsfgfnJ93f8gp34qgD39p4g';
+song.test = false; // 테스트 이후 false 로 변경
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 1,
+    patterns : [
+{"locationIndex":3,"time":550.229},
+{"locationIndex":0,"time":617.916},
+{"locationIndex":3,"time":949.871},
+{"locationIndex":1,"time":1013.965},
+{"locationIndex":3,"time":1380.574},
+{"locationIndex":1,"time":1419.946},
+{"locationIndex":0,"time":1450.479},
+{"locationIndex":4,"time":1481.542},
+{"locationIndex":0,"time":1513.13},
+{"locationIndex":3,"time":1544.192},
+{"locationIndex":5,"time":1574.971},
+{"locationIndex":3,"time":1607.947},
+{"locationIndex":1,"time":1638.456},
+{"locationIndex":0,"time":1682.242},
+{"locationIndex":3,"time":1712.283},
+{"locationIndex":2,"time":1742.885},
+{"locationIndex":5,"time":1772.996},
+{"locationIndex":4,"time":1803.811},
+{"locationIndex":2,"time":1833.816},
+{"locationIndex":3,"time":1866.215},
+{"locationIndex":0,"time":1898.192},
+{"locationIndex":3,"time":1930.028},
+{"locationIndex":4,"time":1963.696},
+{"locationIndex":3,"time":1999.617},
+{"locationIndex":2,"time":2033.566},
+{"locationIndex":1,"time":2064.205},
+{"locationIndex":5,"time":2095.529},
+{"locationIndex":2,"time":2125.834},
+{"locationIndex":5,"time":2157.802},
+{"locationIndex":3,"time":2188.828},
+{"locationIndex":4,"time":2228.527},
+{"locationIndex":0,"time":2259.588},
+{"locationIndex":4,"time":2290.086},
+{"locationIndex":5,"time":2320.936},
+{"locationIndex":2,"time":2351.011},
+{"locationIndex":1,"time":2406.584},
+{"locationIndex":0,"time":2447.365},
+{"locationIndex":1,"time":2478.145},
+{"locationIndex":0,"time":2511.953},
+{"locationIndex":3,"time":2542.028},
+{"locationIndex":4,"time":2578.654},
+{"locationIndex":0,"time":2609.715},
+{"locationIndex":3,"time":2640.283},
+{"locationIndex":2,"time":2670.359},
+{"locationIndex":0,"time":2700.997},
+{"locationIndex":2,"time":2731.073},
+{"locationIndex":5,"time":2762.134},
+{"locationIndex":1,"time":2792.632},
+{"locationIndex":4,"time":2823.693},
+{"locationIndex":5,"time":2854.296},
+{"locationIndex":1,"time":2886.097}
+    ]
+});
+
+addShuttingStarSong(song);
+
+song = {};
 song.name = '큰집 18층으로 떠나는 여행';
 song.composer = '우아한형제들';
 song.noteWriter = 'HJOW';
