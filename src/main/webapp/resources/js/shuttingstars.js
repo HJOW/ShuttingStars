@@ -33,6 +33,8 @@ class ShuttingStarsCore {
     ressets    = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
     stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
 
+    gap = { w : 0, h : 0 }; // Outer 크기와 Inner 크기 간 차이
+
     backend = null;
 
     virtualKey = false;      // 가상 키 출력 여부
@@ -632,45 +634,14 @@ class ShuttingStarsCore {
             let outWidth  = this.fOuterWidth();
             let outHeight = this.fOuterHeight();
 
-            let hGap = outWidth  - window.innerWidth;
-            let vGap = outHeight - window.innerHeight;
-            if(hGap < 0) hGap = 0;
-            if(vGap < 0) vGap = 0;
+            this.gap.w = outWidth  - window.innerWidth;
+            this.gap.h = outHeight - window.innerHeight;
+            if(this.gap.w < 0) this.gap.w = 0;
+            if(this.gap.h < 0) this.gap.h = 0;
 
             // 화면 크기변경 시 호출될 함수
             const fResize = function() {
-                outWidth  = selfs.fOuterWidth();
-                outHeight = selfs.fOuterHeight();
-
-                selfs.contentRoot.style.height = (outHeight - vGap - selfs.getTopMarginPage() + 1) + 'px';
-
-                // selfs.canvas.style.width  = (outWidth  - hGap + 1) + 'px';
-                selfs.canvas.style.height = (outHeight - vGap - selfs.getTopMarginPage() + 1) + 'px';
-                selfs.canvas.style.marginLeft = selfs.getLeftMarginPage() + 'px';
-                selfs.canvas.style.marginTop  = selfs.getTopMarginPage() + 'px';
-                selfs.renderConfigDiv();
-
-                // 기기의 방향이 바뀐 경우를 처리
-                if((outWidth < outHeight && selfs.canvas.width > selfs.canvas.height) || (outWidth > outHeight && selfs.canvas.width < selfs.canvas.height)) {
-                    selfs.setResolution(selfs.ressets.w, selfs.ressets.h);
-                }
-
-                // 3d 장식용 캔버스 관리
-                if(selfs.canvas3d != null) {
-                    selfs.canvas3d.style.position = 'fixed';
-
-                    const canvasBounding = selfs.canvas.getBoundingClientRect();
-                    selfs.canvas3d.style.left = canvasBounding.left + 'px';
-                    selfs.canvas3d.style.top  = canvasBounding.top + 'px';
-                    selfs.canvas3d.style.width  = canvasBounding.width + 'px';
-                    selfs.canvas3d.style.height = canvasBounding.height + 'px';
-                }
-
-                if(selfs.ss3d != null) {
-                    selfs.ss3d.onWindowResize(selfs.canvas3d, selfs);
-                }
-
-                selfs.calculateFontMetric(true);
+                selfs.handleScreenResized();
             };
             fResize(); // 지금 바로 1회 호출
             // 창 크기 변경 이벤트로 등록
@@ -1468,6 +1439,40 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 화면 크기 변경 대응 */
+    handleScreenResized() {
+        let outWidth  = this.fOuterWidth();
+        let outHeight = this.fOuterHeight();
+
+        this.contentRoot.style.height = (outHeight - this.gap.h - this.getTopMarginPage() + 1) + 'px';
+
+        this.canvas.style.height = (outHeight - this.gap.h - this.getTopMarginPage() + 1) + 'px';
+        this.canvas.style.marginLeft = this.getLeftMarginPage() + 'px';
+        this.canvas.style.marginTop  = this.getTopMarginPage() + 'px';
+        this.renderConfigDiv();
+
+        // 기기의 방향이 바뀐 경우를 처리
+        if((outWidth < outHeight && this.canvas.width > this.canvas.height) || (outWidth > outHeight && this.canvas.width < this.canvas.height)) {
+            this.setResolution(this.ressets.w, this.ressets.h);
+        }
+
+        // 3d 장식용 캔버스 관리
+        if(this.canvas3d != null) {
+            this.canvas3d.style.position = 'fixed';
+
+            const canvasBounding = this.canvas.getBoundingClientRect();
+            this.canvas3d.style.left = canvasBounding.left + 'px';
+            this.canvas3d.style.top  = canvasBounding.top + 'px';
+            this.canvas3d.style.width  = canvasBounding.width + 'px';
+            this.canvas3d.style.height = canvasBounding.height + 'px';
+        }
+
+        if(this.ss3d != null) {
+            this.ss3d.onWindowResize(this.canvas3d, this);
+        }
+
+        this.calculateFontMetric(true);
+    }
 
     /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
     handleKeyInput(key, vkeyExplosion) {
