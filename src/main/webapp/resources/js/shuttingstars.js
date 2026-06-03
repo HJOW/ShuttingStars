@@ -1328,7 +1328,9 @@ class ShuttingStarsCore {
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
                     try {
-                        this.audio = new Audio(this.convertURL(this.song.musicUrl));
+                        if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) this.audio = new Audio(this.convertURL(this.song.musicAlterUrl));
+                        else this.audio = new Audio(this.convertURL(this.song.musicUrl));
+                        
                         this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
                         
                         this.closeAudioSources();
@@ -1351,11 +1353,6 @@ class ShuttingStarsCore {
         
                             this.closeAudioSources();
                         }
-                        
-                        // this.audio.addEventListener('ended', function() {
-                        //     console.log('SONG ENDED');
-                        //     console.log(this.timeElapse);
-                        // });
                     } catch(exc) {
                         console.error(exc);
                         ShuttingStarsUtility.toast('Loading audio failed !', true);
@@ -1730,9 +1727,8 @@ class ShuttingStarsCore {
                 }
             } else if(key == this.enterKey) {
                 if(this.songChoosing == null) return;
-                this.playSE('accept2');
-
                 if(this.difficultyChoosing) {
+                    this.playSE('accept2');
                     if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
                     this.songTitleTime = this.songTitleBaseTime;
                     if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
@@ -1743,6 +1739,7 @@ class ShuttingStarsCore {
                     this.difficultyChoosing = false;
                     this.titleDelayTime = this.titleDelayTimeMax;
                 } else {
+                    this.playSE('accept1');
                     this.song = this.songChoosing;
                     this.difficultyChoosingList = this.song.getDifficultyList();
                     this.difficulty = this.difficultyChoosingList[0];
@@ -1767,12 +1764,12 @@ class ShuttingStarsCore {
                     // 초기화
                     this.resetAll();
                 } else {
-                    this.playSE('accept2');
+                    this.playSE('accept1');
                     // 한번 더 물어봄
                     this.settingResetReask = true;
                 }
             } else if(this.settingModifyingMode) {
-                this.playSE('accept2');
+                this.playSE('accept1');
                 this.settingModifyingMode = false; // 설정 변경 모드 OFF
 
                 if(this.settingChoosing == 'setGraphicQuality') {
@@ -1795,7 +1792,7 @@ class ShuttingStarsCore {
                 // 설정 저장
                 this.saveSettings();
             } else {
-                this.playSE('accept2');
+                this.playSE('accept1');
                 this.settingModifyingMode = true; // 설정 변경 모드 ON
             }
         } else if(key == this.escKey) {
@@ -1957,7 +1954,7 @@ class ShuttingStarsCore {
 
     /** 기록 상세 화면 키 입력 핸들링 */
     handleKeyInputRecordDetail(key, vkeyExplosion) {
-        this.playSE('accept2');
+        this.playSE('accept1');
         this.setState('recordlist');
     }
 
@@ -5429,6 +5426,7 @@ class ShuttingStarsCore {
         song.noteWriter     = json.noteWriter;
         song.bgaUrl         = json.bgaUrl;
         song.musicUrl       = json.musicUrl;
+        song.musicAlterUrl  = json.musicAlterUrl;
         song.thumbnailUrl   = json.thumbnailUrl;
         song.description    = json.description;
         song.loadingTime    = json.loadingTime;
@@ -5497,6 +5495,15 @@ class ShuttingStarsCore {
         // 시리얼 없으면 발급
         if(song.serial == null || song.serial == '') {
             song.serial = 'CUSTOMSONG_' + (Math.random() * 99999999) + '' + (Math.random() * 99999999);
+        }
+
+        // Alter URL 유효여부 검사
+        song.alterUrlUsing = false;
+        if(song.musicAlterUrl != null && song.musicAlterUrl != '') {
+            const target = song;
+            ShuttingStarsUtility.checkAccessibleURL(song.musicAlterUrl).then((availYn) => {
+                target.alterUrlUsing = availYn;
+            });
         }
 
         // 중복 체크
@@ -5690,6 +5697,7 @@ class ShuttingStarsSong {
     noteWriter = ''; // 노트 작가
     description = ''; // 설명
     musicUrl = ''; // 음원 URL
+    musicAlterUrl = ''; // 음원 대체 URL
     thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
     bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
     loadingTime = 10; // 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함)
@@ -5701,6 +5709,8 @@ class ShuttingStarsSong {
     autoStars = true; // 자동 Starlight 생성
     test = false; // true 지정 시 곡 디버그 모드에서만 노출됨
     serial = ''; // 수정하지 말 것
+
+    alterUrlUsing = false; // 게임 동작 중 수정됨, ALTER URL 사용여부
     
     // 난이도 별 패턴
     // 배열로, 각 원소는 JSON객체로 구성
@@ -5756,6 +5766,7 @@ class ShuttingStarsSong {
         obj.noteWriter = this.noteWriter;
         obj.bgaUrl = this.bgaUrl;
         obj.musicUrl = this.musicUrl;
+        obj.musicAlterUrl = this.musicAlterUrl;
         obj.thumbnailUrl = this.thumbnailUrl;
         obj.description = this.description;
         obj.loadingTime = this.loadingTime;
@@ -5803,6 +5814,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
 
         const choosed = inst.songDisplays[rand];
         this.musicUrl       = choosed.musicUrl;
+        this.musicAlterUrl  = choosed.musicAlterUrl;
         this.bpm            = choosed.bpm;
         this.endTime        = choosed.endTime;
         this.timeConstant   = choosed.timeConstant;
@@ -6837,6 +6849,40 @@ class ShuttingStarsUtilityClass {
             ctx.arc(x, y, rad, 0, 2 * Math.PI);
             ctx.fill();
         }
+    }
+
+    checkValidURL(url) {
+        try {
+            new URL(url);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    checkAccessibleURL(url) {
+        return new Promise((resolve, reject) => {
+            let urlx;
+            try {
+                urlx = new URL(url);
+            } catch(e) {
+                resolve(false);
+                return;
+            }
+
+            if(urlx.protocol != 'http:' && urlx.protocol != 'https:') {
+                resolve(false);
+                return;
+            }
+
+            try {
+                fetch(urlx.href, {method : 'HEAD'}).then((r) => {
+                    resolve(true);
+                }).catch((e) => { resolve(false); });
+            } catch(e) {
+                resolve(false);
+            }
+        });
     }
 }
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();

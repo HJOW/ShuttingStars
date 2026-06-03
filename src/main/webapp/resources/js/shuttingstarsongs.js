@@ -30,6 +30,7 @@ song.composer = 'Joshua Moses';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/night-ride-by-joshua-moses.mp3';
+song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/night-ride-by-joshua-moses.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: Night Ride by Joshua Moses
@@ -694,6 +695,7 @@ song.composer = '우아한형제들';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track01.mp3';
+song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/woowahan/track01.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: 우아한형제들
@@ -777,6 +779,7 @@ song.composer = '우아한형제들';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track03.mp3';
+song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/woowahan/track03.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: 우아한형제들
@@ -1560,6 +1563,7 @@ song.composer = '우아한형제들';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track07.mp3';
+song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/woowahan/track07.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: 우아한형제들
@@ -4786,6 +4790,7 @@ song.composer = 'Lyria';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/ai/aitrack_260528_01.mp3';
+song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/ai/aitrack_260528_01.mp3';
 song.thumbnailUrl = '';
 song.description = `
 |Music: Google Lyria
