@@ -475,15 +475,15 @@ class ShuttingStarsCore {
             const canvas3d = rootDiv.querySelector('.shuttingstars_canvas_3d');
 
             if(this.detectScreenLandscape()) {
-                canvas.style.minWidth  = '1280px';
-                canvas.style.minHeight = '720px';
-                canvas3d.style.minWidth  = '1280px';
-                canvas3d.style.minHeight = '720px';
+                canvas.style.minWidth  = '960px';
+                canvas.style.minHeight = '540px';
+                canvas3d.style.minWidth  = '960px';
+                canvas3d.style.minHeight = '540px';
             } else {
-                canvas.style.minWidth  = '720px';
-                canvas.style.minHeight = '1280px';
-                canvas3d.style.minWidth  = '720px';
-                canvas3d.style.minHeight = '1280px';
+                canvas.style.minWidth  = '540px';
+                canvas.style.minHeight = '960px';
+                canvas3d.style.minWidth  = '540px';
+                canvas3d.style.minHeight = '960px';
             }
             canvas.style.zIndex = this.canvasZindex;
             canvas3d.style.zIndex = this.canvasZindex+1;
@@ -639,10 +639,13 @@ class ShuttingStarsCore {
 
             // 화면 크기변경 시 호출될 함수
             const fResize = function() {
-                selfs.contentRoot.style.height = (selfs.fOuterHeight() - vGap - selfs.getTopMarginPage() + 1) + 'px';
+                outWidth  = selfs.fOuterWidth();
+                outHeight = selfs.fOuterHeight();
+
+                selfs.contentRoot.style.height = (outHeight - vGap - selfs.getTopMarginPage() + 1) + 'px';
 
                 // selfs.canvas.style.width  = (outWidth  - hGap + 1) + 'px';
-                selfs.canvas.style.height = (selfs.fOuterHeight() - vGap - selfs.getTopMarginPage() + 1) + 'px';
+                selfs.canvas.style.height = (outHeight - vGap - selfs.getTopMarginPage() + 1) + 'px';
                 selfs.canvas.style.marginLeft = selfs.getLeftMarginPage() + 'px';
                 selfs.canvas.style.marginTop  = selfs.getTopMarginPage() + 'px';
                 selfs.renderConfigDiv();
@@ -1030,8 +1033,8 @@ class ShuttingStarsCore {
                 temp = this.stageSize.w;
                 this.stageSize.w = this.stageSize.h;
                 this.stageSize.h = temp;
-                this.canvas.style.minWidth  = '1280px';
-                this.canvas.style.minHeight = '720px';
+                this.canvas.style.minWidth  = '960px';
+                this.canvas.style.minHeight = '540px';
             }
             this.resolution.w = w;
             this.resolution.h = h;
@@ -1040,8 +1043,8 @@ class ShuttingStarsCore {
                 temp = this.stageSize.w;
                 this.stageSize.w = this.stageSize.h;
                 this.stageSize.h = temp;
-                this.canvas.style.minWidth  = '720px';
-                this.canvas.style.minHeight = '1280px';
+                this.canvas.style.minWidth  = '540px';
+                this.canvas.style.minHeight = '960px';
             }
             this.resolution.w = h;
             this.resolution.h = w;
@@ -2396,7 +2399,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
@@ -2496,6 +2499,7 @@ class ShuttingStarsCore {
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = 'left';
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
         rows += this.metricSize2 + gap;
 
@@ -2503,7 +2507,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() - (fontSize * 1.5)), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight()) - (this.metricSize2 * 3));
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
