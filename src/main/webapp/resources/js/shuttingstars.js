@@ -43,6 +43,7 @@ class ShuttingStarsCore {
     canvasZindex = 1;    // canvas 태그의 z-index
 
     rootDiv = null;
+    contentRoot = null;
     pops = {
         root : null,
         dim : null,
@@ -348,13 +349,16 @@ class ShuttingStarsCore {
 
             let htmls = `
                 <div class='shuttingstars_canvas_root'>              
-                    <canvas class='shuttingstars_canvas'></canvas>   
-                    <canvas class='shuttingstars_canvas_3d'></canvas>
-                    <div class='shuttingstars_pop_root'></div>
+                    <div class='shuttingstars_canvas_content_root'>
+                        <canvas class='shuttingstars_canvas'></canvas>   
+                        <canvas class='shuttingstars_canvas_3d'></canvas>
+                        <div class='shuttingstars_pop_root'></div>
+                    </div>
                 </div>                                     
             `;
             rootDiv.innerHTML = htmls;
             this.rootDiv = rootDiv;
+            this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
 
@@ -635,6 +639,8 @@ class ShuttingStarsCore {
 
             // 화면 크기변경 시 호출될 함수
             const fResize = function() {
+                selfs.contentRoot.style.height = (selfs.fOuterHeight() - vGap - selfs.getTopMarginPage() + 1) + 'px';
+
                 // selfs.canvas.style.width  = (outWidth  - hGap + 1) + 'px';
                 selfs.canvas.style.height = (selfs.fOuterHeight() - vGap - selfs.getTopMarginPage() + 1) + 'px';
                 selfs.canvas.style.marginLeft = selfs.getLeftMarginPage() + 'px';
@@ -664,7 +670,7 @@ class ShuttingStarsCore {
                 selfs.calculateFontMetric(true);
             };
             fResize(); // 지금 바로 1회 호출
-            setTimeout(fResize, 500); // 0.5초 뒤에 또 호출
+            setTimeout(fResize, 1000); // 1초 뒤에 또 호출
             // 창 크기 변경 이벤트로도 등록
             window.addEventListener('resize', fResize);
 
