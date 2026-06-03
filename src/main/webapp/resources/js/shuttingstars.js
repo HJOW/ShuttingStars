@@ -814,6 +814,11 @@ class ShuttingStarsCore {
         if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
             this.resetStage();
         }
+
+        // 상태 변경 로깅
+        if(this.backend != null) {
+            try { this.backend.logEvent('STATE ' + state); } catch(ignores) {}
+        }
     }
 
     /** Broker 생성 */

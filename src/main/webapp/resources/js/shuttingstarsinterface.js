@@ -35,6 +35,8 @@ class ShuttingStarsInterface {
     rtdb = null;
     messaging = null;
     remoteConfig = null;
+    perf = null;
+    analytics = null;
     usingGoogleLogin = false;
     sessionChecked = false;
     logined = false;
@@ -84,6 +86,9 @@ class ShuttingStarsInterface {
     getRemoteConfigValues() {
         return new Promise((resolve, reject) => { resolve({ success : false, value : null }); })
     }
+    perfTraceStart(traceName) { return null; }
+    perfTraceStop(traceObj) {}
+    logEvent(eventMsg) {}
 }
 
 /** Firebase 호스팅 기본제공 API 이용 방식 */
@@ -103,10 +108,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         try { this.messaging    = firebase.messaging();    } catch(e) { console.error(e); }
         try { this.remoteConfig = firebase.remoteConfig(); } catch(e) { console.error(e); }
         try { this.rtdb         = firebase.database();     } catch(e) { console.error(e); }
-
-        // Analytics 등 사용
-        try { firebase.analytics();    } catch(e) { console.error(e); }
-        try { firebase.performance();  } catch(e) { console.error(e); }
+        try { this.perf         = firebase.performance();  } catch(e) { console.error(e); }
+        try { this.analytics    = firebase.analytics();    } catch(e) { console.error(e); }
 
         // 인증 상태 이벤트 부여
         this.auth.onAuthStateChanged((user) => {
@@ -115,6 +118,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 selfs.logined = true;
             } else {
                 selfs.logined = false;
+                if(selfs.analytics != null) { selfs.analytics.setUserId(''); }
             }
 
             for(let idx=0; idx<selfs.authStateChangedEvents.length; idx++) {
@@ -151,6 +155,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                     let user = result.user;
                     selfs.user = user;
                     selfs.logined = true;
+                    if(selfs.analytics != null) { selfs.analytics.setUserId(selfs.user.uid); }
                     resolve({ success : true, userJson : user, credential : credential });
                 }).catch((e) => {
                     console.error(e);
@@ -315,6 +320,20 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 reject(e);
             }
         });
+    }
+
+    perfTraceStart(traceName) {
+        const traceObj = this.perf.trace(traceName);
+        traceObj.start();
+        return traceObj;
+    }
+
+    perfTraceStop(traceObj) {
+        traceObj.stop();
+    }
+
+    logEvent(eventMsg) {
+        this.analytics.logEvent(eventMsg);
     }
 }
 
