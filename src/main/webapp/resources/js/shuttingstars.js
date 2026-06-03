@@ -673,8 +673,7 @@ class ShuttingStarsCore {
                 selfs.calculateFontMetric(true);
             };
             fResize(); // 지금 바로 1회 호출
-            setTimeout(fResize, 1000); // 1초 뒤에 또 호출
-            // 창 크기 변경 이벤트로도 등록
+            // 창 크기 변경 이벤트로 등록
             window.addEventListener('resize', fResize);
 
             this.logInit('setting configuration screens...');
@@ -730,6 +729,7 @@ class ShuttingStarsCore {
                 selfs.menuListDynamic = selfs.menuList;
                 selfs.getMenuList().then((menuList) => {
                     selfs.menuListDynamic = menuList;
+                    setTimeout(fResize, 1000);
                     selfs.logInit('starting game...');
                     selfs.afterInitialized();
                 }).catch((exmenu) => {
