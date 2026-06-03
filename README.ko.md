@@ -7,6 +7,8 @@ HTML canvas 연습 프로젝트로, 리듬 게임을 만들고 있습니다.
 ## 테스트 URL
 
 https://shuttingstars-3eddf.web.app
+또는
+https://hjow.duckdns.org/shuttingstars/
 
 ## 로컬 서버 실행
 
