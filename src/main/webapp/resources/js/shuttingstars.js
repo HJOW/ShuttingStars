@@ -1459,6 +1459,10 @@ class ShuttingStarsCore {
                 selfs.elapsedTime = selfs.songTiming * (-1); // 타이밍 지정
             }
             this.playPrepared = true;
+
+            if(this.backend != null) {
+                try { this.backend.logEvent('PLAY : ' + thos.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {}
+            }
         } else {
             this.playPrepared = false;
         }
