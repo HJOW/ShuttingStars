@@ -29,9 +29,11 @@ limitations under the License.
 class ShuttingStarsCore {
     build = 1;
     
-    resolution = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
-    ressets    = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
-    stageSize  = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
+    resolution    = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
+    ressets       = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
+
+    stageSize     = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
+    realStageSize = {w : 1280, h : 720}; // 화면 비율에 맞게 변형된 실제 크기
 
     gap = { w : 0, h : 0 }; // Outer 크기와 Inner 크기 간 차이
 
@@ -93,7 +95,7 @@ class ShuttingStarsCore {
     songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
     visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수 (변경 불가)
-    backStarlightCount = 20;       // 배경 별빛 장식 갯수
+    backStarlightCount = 30;       // 배경 별빛 장식 갯수
 
     noticeEn   = ''; // 공지사항 (영문)
     noticeKo   = ''; // 공지사항 (한글)
@@ -1003,6 +1005,10 @@ class ShuttingStarsCore {
         this.ressets.w = w;
         this.ressets.h = h;
 
+        let outWidth  = this.fOuterWidth();
+        let outHeight = this.fOuterHeight();
+        let ratio = (outWidth - this.gap.w) / (outHeight - this.gap.h);
+
         let temp;
         if(this.detectScreenLandscape()) {
             if(this.stageSize.w < this.stageSize.h) {
@@ -1025,8 +1031,11 @@ class ShuttingStarsCore {
             this.resolution.w = h;
             this.resolution.h = w;
         }
-        this.canvas.width  = this.resolution.w;
+        this.canvas.width  = this.resolution.h * (ratio); // this.resolution.w;
         this.canvas.height = this.resolution.h;
+
+        this.realStageSize.h = this.stageSize.h;
+        this.realStageSize.w = this.stageSize.h * (ratio);
         
         if(this.ressets.h <= 720) {
             this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0]; 
@@ -1451,10 +1460,8 @@ class ShuttingStarsCore {
         this.canvas.style.marginTop  = this.getTopMarginPage() + 'px';
         this.renderConfigDiv();
 
-        // 기기의 방향이 바뀐 경우를 처리
-        if((outWidth < outHeight && this.canvas.width > this.canvas.height) || (outWidth > outHeight && this.canvas.width < this.canvas.height)) {
-            this.setResolution(this.ressets.w, this.ressets.h);
-        }
+        // 해상도 변경
+        this.setResolution(this.ressets.w, this.ressets.h);
 
         // 3d 장식용 캔버스 관리
         if(this.canvas3d != null) {
@@ -4043,7 +4050,7 @@ class ShuttingStarsCore {
                 }
 
                 if(obj instanceof Starlight) {
-                    if(obj.x < (-20) || obj.y < this.getStageHeight() * (-20) || obj.x > this.getStageWidth() + 20 || obj.y > this.getStageHeight() + 20) {
+                    if(obj.x < (-20) || obj.y < this.getFullRenderHeight() * (-20) || obj.x > this.getFullRenderWidth() + 20 || obj.y > this.getFullRenderHeight() + 20) {
                         this.objects.splice(idx, 1);
                         idx--;
                         continue;
@@ -4487,11 +4494,19 @@ class ShuttingStarsCore {
     }
 
     getStageWidth() {
-        return this.stageSize.w - this.getLeftMarginPage();
+        return this.stageSize.w - this.getLeftMarginStage();
     }
 
     getStageHeight() {
-        return this.stageSize.h - this.getTopMarginPage();
+        return this.stageSize.h - this.getTopMarginStage()
+    }
+
+    getFullRenderWidth() {
+        return this.realStageSize.w - this.getLeftMarginStage();
+    }
+
+    getFullRenderHeight() {
+        return this.realStageSize.h - this.getTopMarginStage();
     }
 
     set3DManager(ss3d) {
