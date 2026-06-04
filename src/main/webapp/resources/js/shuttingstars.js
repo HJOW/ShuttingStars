@@ -2726,6 +2726,13 @@ class ShuttingStarsCore {
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2), this.convertX(this.getStageWidth()), row1Height);
                     }
 
+                    // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
+                    if(! this.screenDirLandscape) {
+                        if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3)) {
+                            opacity = opacity / 4;
+                        }
+                    }
+
                     // 미션 이름 출력
                     fontSize = this.convertFontSize(20);
                     label = missionOne.name;
@@ -2736,9 +2743,9 @@ class ShuttingStarsCore {
                         else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2) + (row1Height / 2));
                     } else {
-                        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                        this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
                     }
 
                     currentRow += row1Height;
@@ -2790,6 +2797,13 @@ class ShuttingStarsCore {
                         }
                     }
 
+                    // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
+                    if(! this.screenDirLandscape) {
+                        if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3)) {
+                            opacity = opacity / 4;
+                        }
+                    }
+
                     // 곡 이름 출력
                     fontSize = this.convertFontSize(20);
                     label = songOne.name;
@@ -2800,9 +2814,9 @@ class ShuttingStarsCore {
                         else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2) + (row1Height / 3));
                     } else {
-                        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                        this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
                     }
 
                     // 작곡가, 노트작성자, bpm 출력
