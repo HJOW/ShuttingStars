@@ -5422,7 +5422,8 @@ class ShuttingStarsCore {
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
             newOne = new Starlight();
-            newOne.x = -2;
+            newOne.x = -2 + (Math.random() * this.backStarlightSpdY);
+            newOne.y = -2 + (Math.random() * this.backStarlightSpdX);
             newOne.speedX = this.backStarlightSpdX;
             newOne.speedY = this.backStarlightSpdY;
             this.objects.push(newOne);
