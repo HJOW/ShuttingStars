@@ -96,6 +96,8 @@ class ShuttingStarsCore {
     volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
     visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수 (변경 불가)
     backStarlightCount = 30;       // 배경 별빛 장식 갯수
+    backStarlightSpdX = 1;         // 배경 별빛 장식 X 속도
+    backStarlightSpdY = 0;         // 배경 별빛 장식 Y 속도
 
     noticeEn   = ''; // 공지사항 (영문)
     noticeKo   = ''; // 공지사항 (한글)
@@ -106,6 +108,8 @@ class ShuttingStarsCore {
         stage : { left :  0, top : 0 },
         note  : { left : 20, top : 0 }
     };
+
+    screenDirLandscape = true; // 수평 방향이면 true, 수직 방향이면 false (게임 진행 중 변경됨)
 
     volume = 1.0; // 마스터 볼륨 (0 ~ 1)
     volumeBackgroundDefault = 0.2; // 배경 음악 기본 볼륨
@@ -1009,8 +1013,10 @@ class ShuttingStarsCore {
         let outHeight = this.fOuterHeight();
         let ratio = (outWidth - this.gap.w) / (outHeight - this.gap.h);
 
+        this.screenDirLandscape = this.detectScreenLandscape();
+
         let temp;
-        if(this.detectScreenLandscape()) {
+        if(this.screenDirLandscape) {
             if(this.stageSize.w < this.stageSize.h) {
                 temp = this.stageSize.w;
                 this.stageSize.w = this.stageSize.h;
@@ -1450,6 +1456,8 @@ class ShuttingStarsCore {
 
     /** 화면 크기 변경 대응 */
     handleScreenResized() {
+        this.screenDirLandscape = this.detectScreenLandscape();
+
         let outWidth  = this.fOuterWidth();
         let outHeight = this.fOuterHeight();
 
@@ -5335,7 +5343,7 @@ class ShuttingStarsCore {
     loadAfter() {
         const selfs = this;
         return new Promise((resolve, reject) => {
-            selfs.addStarlights();
+            selfs.setStarlights();
             selfs.loadPlugins().then(() => {
                 selfs.loadPackages().then(() => {
                     setTimeout(() => {
@@ -5346,8 +5354,8 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 장식용 별빛 추가 */
-    addStarlights() {
+    /** 장식용 별빛 세팅 */
+    setStarlights() {
         let idx;
         // 기존 별빛 제거
         for(idx=0; idx<this.objects.length; idx++) {
@@ -5356,10 +5364,12 @@ class ShuttingStarsCore {
         }
 
         // 별빛 추가
+        this.backStarlightSpdX = 1;
+        this.backStarlightSpdY = Math.random();
         for(idx=0; idx<this.backStarlightCount; idx++) {
             const obj = new Starlight();
-            obj.speedX = 1;
-            obj.speedY = 0;
+            obj.speedX = this.backStarlightSpdX;
+            obj.speedY = this.backStarlightSpdY;
             this.objects.push(obj);
         }
     }
@@ -5382,10 +5392,24 @@ class ShuttingStarsCore {
         while(count < this.backStarlightCount) {
             newOne = new Starlight();
             newOne.x = -2;
-            newOne.speedX = 1;
+            newOne.speedX = this.backStarlightSpdX;
+            newOne.speedY = this.backStarlightSpdY;
             this.objects.push(newOne);
 
             count++;
+        }
+    }
+
+    /** 장식용 별빛 방향 일괄 바꾸기 */
+    modifyStarlightDirections(xSpeed, ySpeed) {
+        this.backStarlightSpdX = xSpeed;
+        this.backStarlightSpdY = ySpeed;
+        for(idx=0; idx<this.objects.length; idx++) {
+            const obj = this.objects[idx];
+            if(obj instanceof Starlight) {
+                obj.speedX = xSpeed;
+                obj.speedY = ySpeed;
+            }
         }
     }
 
