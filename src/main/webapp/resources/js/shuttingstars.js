@@ -3699,8 +3699,12 @@ class ShuttingStarsCore {
     /** 오디오 시각화 그리기 */
     renderAudioVisualizing() {
         if(this.audioBuffer == null || this.audioBufferLen == 0) return;
-        
         this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
+
+        if(this.ss3d != null && (! this.disable3d)) {
+            this.ss3d.soundVisualizing(this.audioBuffer);
+            if(this.disable2d) return;
+        }
 
         // 막대그래프형 - 크기 계산
         const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * this.visualizeBarMultiplier;

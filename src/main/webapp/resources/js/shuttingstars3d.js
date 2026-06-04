@@ -166,6 +166,12 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         
     }
 
+    /** 시각화 동작 시 호출 */
+    soundVisualizing(audioBuffer) {
+        
+    }
+
+    /** 렌더링 (만들어 뒀던 객체들을 scene 에 넣기) */
     render(canvas3d, objects) {
         if(canvas3d == null) return;
         this.scene.background = null; // 배경 투명을 위한 또다른 조치
