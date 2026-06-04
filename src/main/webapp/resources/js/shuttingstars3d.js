@@ -81,6 +81,52 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         let newObj;
 
         coreInst.object3ds = [];
+        if(coreInst.state == 'playing') {
+            // 노트 등 객체 그리기
+            if(coreInst.disable2d && (! coreInst.disable3d)) {
+                for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+                    const objOne = coreInst.objectsPlaying[idx];
+                    if(objOne.shape != 'circle') continue;
+
+                    const newObj = new SphereObject(this);
+                    newObj.x = this.convertX(objOne.x);
+                    newObj.y = this.convertY(objOne.y);
+                    newObj.z = 1;
+                    newObj.r = this.convertX(objOne.r);
+                    newObj.opacity = objOne.opacity;
+                    newObj.fill = ((objOne instanceof NotePlacer) ? false : true);
+                    newObj.setColor(objOne.color);
+                    newObj.prepareDefaults();
+                    coreInst.object3ds.push(newObj);
+                }
+            }
+
+            // 지구 객체 그리기
+            if(coreInst.notePlacers.length >= 1) {
+                let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
+                let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
+                let y      = coreInst.getHpBarYLocation() - radius;
+
+                let arr = coreInst.calculateHpColor();
+                let r, g, b;
+                r = arr[0];
+                g = arr[1];
+                b = arr[2];
+                
+                const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
+
+                newObj = new SphereObject(this);
+                newObj.x = this.convertX(x);
+                newObj.y = this.convertY(y);
+                newObj.z = 1;
+                newObj.r = this.convertX(r);
+                newObj.opacity = 1.0;
+                newObj.fill = true;
+                newObj.setColor(hpBarInsideColor);
+                newObj.prepareDefaults();
+                coreInst.object3ds.push(newObj);
+            }
+        }
 
         // 폭발 객체 이관
         for(idx=0; idx<coreInst.objects.length; idx++) {
@@ -96,6 +142,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             newObj.y = this.convertY(objOne.y);
             newObj.z = 1;
             newObj.r = this.convertX(objOne.r);
+            newObj.opacity = objOne.opacity;
             newObj.setColor(objOne.color);
             newObj.prepareDefaults();
             if(newObj.x >= -200 && newObj.x <= coreInst.getStageWidth() * 2 && newObj.y >= -200 && newObj.y <= coreInst.getStageHeight() * 2 ) {
@@ -111,49 +158,8 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             newObj.y = this.convertY(objOne.y);
             newObj.z = 1;
             newObj.r = this.convertX(objOne.r);
+            newObj.opacity = objOne.opacity;
             newObj.setColor(objOne.color);
-            newObj.prepareDefaults();
-            coreInst.object3ds.push(newObj);
-        }
-
-        // 노트 등 객체 그리기
-        if(coreInst.disable2d && (! coreInst.disable3d)) {
-            for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
-                const objOne = coreInst.objectsPlaying[idx];
-                if(objOne.shape != 'circle') continue;
-
-                const newObj = new SphereObject(this);
-                newObj.x = this.convertX(objOne.x);
-                newObj.y = this.convertY(objOne.y);
-                newObj.z = 1;
-                newObj.r = this.convertX(objOne.r);
-                newObj.fill = ((objOne instanceof NotePlacer) ? false : true);
-                newObj.setColor(objOne.color);
-                newObj.prepareDefaults();
-                coreInst.object3ds.push(newObj);
-            }
-        }
-
-        // 지구 객체 그리기
-        if(coreInst.notePlacers.length >= 1) {
-            let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
-            let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
-            let y      = coreInst.getHpBarYLocation() - radius;
-
-            let arr = coreInst.calculateHpColor();
-            let r, g, b;
-            r = arr[0];
-            g = arr[1];
-            b = arr[2];
-            
-            const hpBarInsideColor = coreInst.convertColor('rgba(' + r + ', ' + g + ', ' + b + ', 0.8)');
-
-            newObj = new SphereObject(this);
-            newObj.x = this.convertX(x);
-            newObj.y = this.convertY(y);
-            newObj.z = 1;
-            newObj.r = this.convertX(r);
-            newObj.setColor(hpBarInsideColor);
             newObj.prepareDefaults();
             coreInst.object3ds.push(newObj);
         }
@@ -226,13 +232,14 @@ class SphereObject extends ShuttingStars3DObject {
     r = 1;
     color = 0x00ff00;
     fill = true;
+    opacity = 1.0;
     constructor(manager) {
         super(manager);
     }
 
     prepareDefaults() {
         this.geometry = new THREE.SphereGeometry(this.r);
-        this.material = new THREE.MeshStandardMaterial({ color : this.color, wireframe: (! this.fill) });
+        this.material = new THREE.MeshStandardMaterial({ color : this.color, wireframe: (! this.fill), transparent : (this.opacity < 1.0 ? true : false), opacity : this.opacity });
         this.sphere = new THREE.Mesh(this.geometry, this.material);
         this.sphere.position.set(this.x, this.y, this.z);
     }
@@ -242,6 +249,19 @@ class SphereObject extends ShuttingStars3DObject {
     }
 
     setColor(colorRGB) { // color : 255, 0, 0 형식
+        let obj = colorRGB;
+        if(typeof(obj) == 'number') {
+            this.color = obj;
+            return;
+        }
+
+        obj = String(obj);
+        if(obj.indexOf('rgb(') == 0 || obj.indexOf('rgba(') == 0) {
+            if(obj.indexOf('rgb(') == 0) obj = obj.substring(4, obj.length - 1);
+            else                         obj = obj.substring(5, obj.length - 1);
+        }
+        colorRGB = obj;
+
         const splits = colorRGB.split(',');
         const r = parseInt(splits[0].trim());
         const g = parseInt(splits[1].trim());
