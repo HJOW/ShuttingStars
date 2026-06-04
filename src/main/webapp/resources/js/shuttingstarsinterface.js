@@ -78,6 +78,9 @@ class ShuttingStarsInterface {
     deletePost(boardId, postNo) {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
+    getAdditionalContents() {
+        return new Promise((resolve, reject) => { resolve({ success : false, list : [] }); })
+    }
     requestPushPermission() {
         return new Promise((resolve, reject) => { 
             resolve({ success : false });
@@ -153,9 +156,13 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                     let credential = result.credential;
                     let token = credential.accessToken;
                     let user = result.user;
+
+                    // 로그인 처리
                     selfs.user = user;
                     selfs.logined = true;
                     if(selfs.analytics != null) { selfs.analytics.setUserId(selfs.user.uid); }
+
+                    // 응답
                     resolve({ success : true, userJson : user, credential : credential });
                 }).catch((e) => {
                     console.error(e);
@@ -281,6 +288,25 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
 
+    getAdditionalContents() {
+        const selfs = this;
+        return new Promise((resolve, reject) => { 
+            try {
+                if(selfs.firestore == null) { resolve({success : false, list : [], message : 'Failed to load firebase firestore'}); return; }
+                if(! selfs.logined) { throw ('No logined.'); }
+
+                let arr = [];
+                selfs.firestore.collection('additionals').where('uid', '==', selfs.user.uid).get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        arr.push(doc.data());
+                    });
+                    resolve({ success : true, list : arr }); 
+                }).catch((e) => { reject(e); });
+            } catch(exc) {
+                reject(exc);
+            }
+        });
+    }
 
     requestPushPermission() {
         const selfs = this;

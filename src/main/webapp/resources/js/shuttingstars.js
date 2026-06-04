@@ -4730,9 +4730,26 @@ class ShuttingStarsCore {
         popInside.innerHTML = htmls;
         this.pops.login = popInside;
 
+        const fLoadAddiContent = async function(rowOne) {
+            if(rowOne.uid != selfs.user.uid) return;
+            if(rowOne.type == 'song') {
+                let resp = await fetch(rowOne.url);
+                resp.contentname = rowOne.contentname;
+                selfs.addSong(resp);
+            }
+        }
+
         const fAfter2 = function() {
             selfs.getMenuList().then((menuList) => {
                 selfs.menuListDynamic = menuList;
+                selfs.backend.getAdditionalContents().then((resp) => {
+                    if(resp.success) {
+                        const list = resp.list;
+                        for(const rowOne in list) {
+                            fLoadAddiContent(rowOne);
+                        }
+                    }
+                });
                 // selfs.backend.requestPushPermission();
             });
         };
@@ -5763,17 +5780,23 @@ const _shuttingstarcore = new ShuttingStarsCore();
 
 /** 곡 */
 class ShuttingStarsSong {
-    name = '';
-    composer = '';
+    // 기본정보
+    name = ''; // 곡 이름
+    composer = ''; // 작곡가
     noteWriter = ''; // 노트 작가
     description = ''; // 설명
-    musicUrl = ''; // 음원 URL
-    musicAlterUrl = ''; // 음원 대체 URL
-    thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
-    bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
-    loadingTime = 10; // 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함)
     bpm = 120.0; // beat per minute, 곡의 속도
     endTime = 560; // 곡 종료 시간
+
+    contentname = ''; // 추가 패키지인 경우 추가 패키지 이름이 들어감
+
+    musicUrl = ''; // 음원 URL
+    musicAlterUrl = ''; // 음원 대체 URL
+
+    thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
+    bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
+
+    loadingTime = 10; // 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함)
     noteMultiplier = 1; // 보정 배수 (패턴 타이밍 값에 * 보정값으로 적용)
     timeMultiplier = 1; // 보정 시간 (노트 위치 값에 * 보정값으로 적용)
     timeConstant = 0; // 보정 시간 (노트 위치 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
