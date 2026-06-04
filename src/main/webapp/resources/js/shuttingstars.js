@@ -4072,7 +4072,7 @@ class ShuttingStarsCore {
                 }
 
                 if(obj instanceof Starlight) {
-                    if(obj.x < (-20) || obj.y < this.getFullRenderHeight() * (-20) || obj.x > this.getFullRenderWidth() + 20 || obj.y > this.getFullRenderHeight() + 20) {
+                    if(obj.x < (this.getFullRenderWidth() * (-3)) || obj.y < this.getFullRenderHeight() * (-3) || obj.x > this.getFullRenderWidth() * 1.1 || obj.y > this.getFullRenderHeight() * 1.1) {
                         this.objects.splice(idx, 1);
                         idx--;
                         continue;
@@ -5423,7 +5423,7 @@ class ShuttingStarsCore {
         while(count < this.backStarlightCount) {
             newOne = new Starlight();
             newOne.x = -2 + (Math.random() * (this.backStarlightSpdY / 2));
-            newOne.y = -2 + (Math.random() * this.convertX(this.getFullRenderHeight()));
+            newOne.y = -2 + (Math.random() * this.convertX(this.getFullRenderHeight() * 2));
             newOne.speedX = this.backStarlightSpdX;
             newOne.speedY = this.backStarlightSpdY;
             this.objects.push(newOne);
