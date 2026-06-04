@@ -48,6 +48,7 @@ class ShuttingStarsCore {
 
     rootDiv = null;
     contentRoot = null;
+    videoBga = null;
     pops = {
         root : null,
         dim : null,
@@ -165,11 +166,11 @@ class ShuttingStarsCore {
     missions = []; // 특수한 곡들 (mission 모드일 때 선택)
     songChoosingMode = 'default'; // default / mission
 
-    difficulty = null; // 선택된 난이도
-    audio = null;      // 현재 선택된 곡의 오디오 객체
-    songThumb = null;  // 현재 선택된 곡의 썸네일 이미지 URL
-    videoBga = null;   // 현재 선택된 곡의 BGA URL
-    songBitGap = 0;    // 현재 선택된 곡의 1사이클 길이 (bpm에 따라 다름)
+    difficulty = null;  // 선택된 난이도
+    audio = null;       // 현재 선택된 곡의 오디오 객체
+    songThumb = null;   // 현재 선택된 곡의 썸네일 이미지 URL
+    videoBgaUrl = null; // 현재 선택된 곡의 BGA URL
+    songBitGap = 0;     // 현재 선택된 곡의 1사이클 길이 (bpm에 따라 다름)
     songLastPatternTime = 0; // 현재 선택된 곡의 마지막 패턴의 시간
     audioSource = null; // 시각화를 위한 변수 중 하나
 
@@ -358,6 +359,7 @@ class ShuttingStarsCore {
             let htmls = `
                 <div class='shuttingstars_canvas_root'>              
                     <div class='shuttingstars_canvas_content_root'>
+                        <video class='shuttingstars_bga' preload='metadata'></video>
                         <canvas class='shuttingstars_canvas'></canvas>   
                         <canvas class='shuttingstars_canvas_3d'></canvas>
                         <div class='shuttingstars_pop_root'></div>
@@ -367,6 +369,7 @@ class ShuttingStarsCore {
             rootDiv.innerHTML = htmls;
             this.rootDiv = rootDiv;
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
+            this.videoBga = rootDiv.querySelector('.shuttingstars_bga');
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
 
@@ -493,8 +496,9 @@ class ShuttingStarsCore {
                 canvas3d.style.minWidth  = '540px';
                 canvas3d.style.minHeight = '960px';
             }
-            canvas.style.zIndex = this.canvasZindex;
-            canvas3d.style.zIndex = this.canvasZindex+1;
+            this.videoBga.style.zIndex = this.canvasZindex;
+            canvas.style.zIndex = this.canvasZindex+1;
+            canvas3d.style.zIndex = this.canvasZindex+2;
             canvas3d.style.background = 'transparent';
 
             this.logInit('preparing 2d context...');
@@ -1320,7 +1324,7 @@ class ShuttingStarsCore {
 
             //     곡 오디오 세팅
             if(this.audio == null) {
-                if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '') {
+                if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.musicUrl)) {
                     try {
                         if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) this.audio = new Audio(this.convertURL(this.song.musicAlterUrl));
                         else this.audio = new Audio(this.convertURL(this.song.musicUrl));
@@ -1360,7 +1364,15 @@ class ShuttingStarsCore {
                     this.closeAudioSources();
                 }
             }
+            
+            if(this.videoBgaUrl == null) {
+                if(typeof(this.song.bgaUrl) != 'undefined' && this.song.bgaUrl != null && this.song.bgaUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.bgaUrl)) {
+                    this.videoBgaUrl = this.song.bgaUrl;
+                    this.videoBga.src = this.videoBgaUrl;
+                }
+            }
         }
+
 
         // 배경 오디오 존재 시 재생
         if(this.audioBackground != null) {
@@ -1440,6 +1452,10 @@ class ShuttingStarsCore {
                     selfs.visualizePeakDebugRecordTime = 0;
 
                     selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
+
+                    if(selfs.videoBga != null) {
+                        if(selfs.videoBgaUrl != null) selfs.videoBga.play();
+                    }
                 }, (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             } else {
                 selfs.elapsedTime = selfs.songTiming * (-1); // 타이밍 지정
@@ -1470,12 +1486,20 @@ class ShuttingStarsCore {
 
         // 해상도 변경
         this.setResolution(this.ressets.w, this.ressets.h);
+        const canvasBounding = this.canvas.getBoundingClientRect();
+
+        // bga 용 video 관리
+        if(this.videoBga != null) {
+            this.videoBga.style.position = 'fixed';
+            this.videoBga.style.left = canvasBounding.left + 'px';
+            this.videoBga.style.top  = canvasBounding.top + 'px';
+            this.videoBga.style.width  = canvasBounding.width + 'px';
+            this.videoBga.style.height = canvasBounding.height + 'px';
+        }
 
         // 3d 장식용 캔버스 관리
         if(this.canvas3d != null) {
             this.canvas3d.style.position = 'fixed';
-
-            const canvasBounding = this.canvas.getBoundingClientRect();
             this.canvas3d.style.left = canvasBounding.left + 'px';
             this.canvas3d.style.top  = canvasBounding.top + 'px';
             this.canvas3d.style.width  = canvasBounding.width + 'px';
@@ -1577,7 +1601,7 @@ class ShuttingStarsCore {
             if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
                 this.audio = null;
                 this.songThumb = null;
-                this.videoBga = null;
+                this.videoBgaUrl = null; // TODO
 
                 this.playSE('accept1');
                 this.setState('songchoosing');
@@ -1906,6 +1930,9 @@ class ShuttingStarsCore {
                 // 일시정지 중이 아닐 때 --> 일시정지 시작
                 this.paused = true;
                 if(this.audio != null) { this.audio.pause(); }
+                if(this.videoBga != null) {
+                    if(this.videoBgaUrl != null) this.videoBga.pause();
+                }
             }
         } else {
             // 노트 처리
@@ -2208,6 +2235,19 @@ class ShuttingStarsCore {
                 }
             }
 
+            // BGA 처리 (canvas에 그리는 것이 아닌, canvas 뒤에 있는 video 태그를 작동시킴)
+            if(this.state == 'playing') {
+                if(this.song) {
+                    if(this.song.bgaUrl != null && typeof(this.song.bgaUrl) != 'undefined') {
+                        // TODO
+                        // let img = new Image();
+                        // img.src = this.song.bgaUrl;
+                        // this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                        // this.song.bgaUrl
+                    }
+                }
+            }
+
             if(this.dark) this.ctx.fillStyle = 'rgba(5, 5, 5, 0.9)';
             else          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -2273,16 +2313,6 @@ class ShuttingStarsCore {
         if(this.titleDelayTime >= 1) {
             this.renderSongTitle();
             return;
-        }
-
-        // BGA 그리기
-        if(this.song) {
-            if(this.song.bgaUrl != null && typeof(this.song.bgaUrl) != 'undefined') {
-                // let img = new Image();
-                // img.src = this.song.bgaUrl;
-                // this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
-                // this.song.bgaUrl
-            }
         }
 
         let fontSize;
@@ -4183,7 +4213,10 @@ class ShuttingStarsCore {
             if(this.resumingTime >= 1) return;
 
             if(this.resumed) {
-                if(this.audio != null) { this.audio.play(); }
+                if(this.audio    != null) { this.audio.play(); }
+                if(this.videoBga != null) {
+                    if(this.videoBgaUrl != null) { try { this.videoBga.play(); } catch(e) { console.error(e); } }
+                }
                 this.resumed = false;
             }
 
@@ -4274,8 +4307,15 @@ class ShuttingStarsCore {
                 this.clearTimeHandler();
 
                 if(this.audio != null) {
-                    try { this.audio.pause(); } catch(ex) {} // 오디오 끄기
+                    try { this.audio.pause(); } catch(ex) { console.error(ex); } // 오디오 끄기
                     this.audio = null;
+                }
+
+                if(this.videoBga != null) {
+                    if(this.videoBgaUrl != null) {
+                        try { this.videoBga.pause(); } catch(ex) { console.error(ex); } // BGA 끄기
+                        this.videoBgaUrl = null;
+                    }
                 }
 
                 this.onSongEnd(); // 종료
@@ -4415,7 +4455,7 @@ class ShuttingStarsCore {
         this.stopAudio();
         this.audio = null;
         this.songThumb = null;
-        this.videoBga = null;
+        this.videoBgaUrl = null; // TODO
         this.playPrepared = false;
 
         // Note 갯수 체크
@@ -4451,6 +4491,14 @@ class ShuttingStarsCore {
             this.audio = null;
         }
         this.closeAudioSources();
+
+        // BGA도 종료
+        if(this.videoBga != null) {
+            if(this.videoBgaUrl != null) {
+                try { this.videoBga.pause(); } catch(ex) {  console.error(ex); } // BGA 끄기
+                this.videoBgaUrl = null;
+            }
+        }
     }
 
     /** 오디오 관련 리소스 닫기 (예외 발생해도 무시) */
