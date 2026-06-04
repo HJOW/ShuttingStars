@@ -78,7 +78,7 @@ class ShuttingStarsCore {
 
     ctx = null;         // 2D Context 객체
     ss3d = null;        // ShuttingStars3DManager 객체
-    disable3d = true;   // true 지정 시 3D 렌더링하지 않음
+    disable3d = false;  // true 지정 시 3D 렌더링하지 않음
     disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함.
 
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
@@ -5422,8 +5422,8 @@ class ShuttingStarsCore {
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
             newOne = new Starlight();
-            newOne.x = -2 + (Math.random() * this.backStarlightSpdY);
-            newOne.y = -2 + (Math.random() * this.backStarlightSpdX);
+            newOne.x = -2 + (Math.random() * (this.backStarlightSpdY / 2));
+            newOne.y = -2 + (Math.random() * this.convertX(this.getFullRenderHeight()));
             newOne.speedX = this.backStarlightSpdX;
             newOne.speedY = this.backStarlightSpdY;
             this.objects.push(newOne);

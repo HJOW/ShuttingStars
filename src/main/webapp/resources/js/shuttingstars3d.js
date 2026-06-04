@@ -65,8 +65,8 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         this.renderer.setClearAlpha(0);
 
         // 메인 광원
-        this.backLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
-        this.mainLight = new THREE.PointLight(0xFFFFFF, 0.9, 1000, 1);
+        this.backLight = new THREE.AmbientLight(0xFFFFFF, 2);
+        this.mainLight = new THREE.PointLight(0xFFFFFF, 2000, 100000, 1);
         // this.mainLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.mainLight.position.set(this.stageSize.w * 2 / 3, this.stageSize.h * 2 / 3, 100);
         this.mainLight.visible = true;
@@ -98,7 +98,9 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             newObj.r = this.convertX(objOne.r);
             newObj.setColor(objOne.color);
             newObj.prepareDefaults();
-            coreInst.object3ds.push(newObj);
+            if(newObj.x >= -200 && newObj.x <= coreInst.getStageWidth() * 2 && newObj.y >= -200 && newObj.y <= coreInst.getStageHeight() * 2 ) {
+                coreInst.object3ds.push(newObj);
+            }
 
             let lightRadius = 1.5;
             if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
@@ -125,6 +127,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                 newObj.y = this.convertY(objOne.y);
                 newObj.z = 1;
                 newObj.r = this.convertX(objOne.r);
+                newObj.fill = ((objOne instanceof NotePlacer) ? false : true);
                 newObj.setColor(objOne.color);
                 newObj.prepareDefaults();
                 coreInst.object3ds.push(newObj);
@@ -222,13 +225,14 @@ class SphereObject extends ShuttingStars3DObject {
     z = 0;
     r = 1;
     color = 0x00ff00;
+    fill = true;
     constructor(manager) {
         super(manager);
     }
 
     prepareDefaults() {
         this.geometry = new THREE.SphereGeometry(this.r);
-        this.material = new THREE.MeshBasicMaterial({ color : this.color, wireframe: false });
+        this.material = new THREE.MeshStandardMaterial({ color : this.color, wireframe: (! this.fill) });
         this.sphere = new THREE.Mesh(this.geometry, this.material);
         this.sphere.position.set(this.x, this.y, this.z);
     }
