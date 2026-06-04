@@ -167,7 +167,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
     }
 
     /** 시각화 동작 시 호출 */
-    soundVisualizing(audioBuffer) {
+    soundVisualizing(coreInst, audioAnalyzer, audioBuffer) {
         
     }
 

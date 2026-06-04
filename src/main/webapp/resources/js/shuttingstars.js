@@ -3702,7 +3702,7 @@ class ShuttingStarsCore {
         this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
 
         if(this.ss3d != null && (! this.disable3d)) {
-            this.ss3d.soundVisualizing(this.audioBuffer);
+            this.ss3d.soundVisualizing(this, this.audioAnalyser, this.audioBuffer);
             if(this.disable2d) return;
         }
 
