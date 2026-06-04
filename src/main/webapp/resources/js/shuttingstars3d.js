@@ -99,32 +99,32 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                     newObj.prepareDefaults();
                     coreInst.object3ds.push(newObj);
                 }
-            }
 
-            // 지구 객체 그리기
-            if(coreInst.notePlacers.length >= 1) {
-                let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
-                let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
-                let y      = coreInst.getHpBarYLocation() - radius;
+                // 지구 객체 그리기
+                if(coreInst.notePlacers.length >= 1) {
+                    let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
+                    let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
+                    let y      = coreInst.getHpBarYLocation() - radius;
 
-                let arr = coreInst.calculateHpColor();
-                let r, g, b;
-                r = arr[0];
-                g = arr[1];
-                b = arr[2];
-                
-                const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
+                    let arr = coreInst.calculateHpColor();
+                    let r, g, b;
+                    r = arr[0];
+                    g = arr[1];
+                    b = arr[2];
+                    
+                    const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
 
-                newObj = new SphereObject(this);
-                newObj.x = this.convertX(x);
-                newObj.y = this.convertY(y);
-                newObj.z = 1;
-                newObj.r = this.convertX(r);
-                newObj.opacity = 1.0;
-                newObj.fill = true;
-                newObj.setColor(hpBarInsideColor);
-                newObj.prepareDefaults();
-                coreInst.object3ds.push(newObj);
+                    newObj = new SphereObject(this);
+                    newObj.x = this.convertX(x);
+                    newObj.y = this.convertY(y);
+                    newObj.z = 1;
+                    newObj.r = this.convertX(r);
+                    newObj.opacity = 1.0;
+                    newObj.fill = true;
+                    newObj.setColor(hpBarInsideColor);
+                    newObj.prepareDefaults();
+                    coreInst.object3ds.push(newObj);
+                }
             }
         }
 
