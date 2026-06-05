@@ -593,7 +593,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
             this.shaderMaterial.uniforms.u_blue.value = this.uniforms.u_blue.value;
 
             // Mesh 객체 위치 지정
-            this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
+            this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() * 2 / 3), coreInst.convertY(coreInst.getStageHeight() * 2 / 3), 50);
         }        
     }
 
