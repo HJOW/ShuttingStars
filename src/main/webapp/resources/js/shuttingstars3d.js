@@ -317,15 +317,20 @@ class LightPoint extends SphereObject {
 }
 
 class AudioVisualizingObject {
-    preparedObjects = [];
+    preparedMeshes = [];
     constructor() {}
 
     onSoundVisualizing(coreInst, manager, audioAnalyzer, audioBuffer) {
+        this.preparedMeshes = [];
+        // TODO : 3D 오디오 시각화 - 이 곳에서 audioBuffer 를 읽어 this.preparedMeshes 에 Three.js Mesh 객체를 만들어 넣어야 함
+        //             이 메소드는 곡 비트 시간 / 16초 마다 호출됨
+        //             audioBuffer 는 크기가 128인 Uint8Array 배열로 AudioAnalyzer 의 ByteFrequencyData 데이터가 들어가 있음
+
         
     }
 
     getMeshes(manager) {
-        return this.preparedObjects;
+        return this.preparedMeshes;
     }
 }
 
