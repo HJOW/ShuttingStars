@@ -1289,10 +1289,6 @@ class ShuttingStarsCore {
         const selfs = this;
         let idx;
         this.clearTimeHandler();
-
-        this.lastObjectId = 0;
-        this.objectsPlaying = [];
-        this.notePlacers = [];
         this.hp = 100.0;
         this.point = 0;
         this.combo = 0;
@@ -1311,16 +1307,53 @@ class ShuttingStarsCore {
         if(this.visualizePeakDebugData.length >= 1 && this.state == 'playing' && this.elapsedTime >= 80) this.consoleVisualizeDebugData();
         this.visualizePeakDebugData = [];
         this.visualizePeakDebugRecordTime = 0;
-        
-        for(idx=0; idx<this.keyList.length; idx++) {
-            const notePlacer = new NotePlacer(idx);
-            notePlacer.id = this.lastObjectId++;
-            this.objectsPlaying.push(notePlacer);
-            this.notePlacers.push(notePlacer);
-        }
 
         // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
         if(this.state == 'songtitle') {
+            this.lastObjectId = 0;
+            this.objectsPlaying = [];
+            this.notePlacers = [];
+
+            for(idx=0; idx<this.keyList.length; idx++) {
+                const notePlacer = new NotePlacer(idx);
+                notePlacer.id = this.lastObjectId++;
+                this.objectsPlaying.push(notePlacer);
+                this.notePlacers.push(notePlacer);
+            }
+
+            // 곡 플레이 세팅 중 처리
+            //     곡 마지막 패턴 시간 체크
+            this.songLastPatternTime = 0;
+            let diff = this.song.difficulties[ this.difficulty.index ];
+            let patterns = diff.patterns;
+            for(idx=0; idx<patterns.length; idx++) {
+                const pattern = patterns[idx];
+                if(pattern.time > this.songLastPatternTime) {
+                    this.songLastPatternTime = pattern.time;
+                }
+            }
+
+            // 노트 미리 생성
+            for(idx=0; idx<patterns.length; idx++) {
+                const pattern = patterns[idx];
+
+                // 패턴 ID 세팅
+                pattern.id = idx;
+                
+                // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
+                if(pattern.locationIndex < 0) {
+                    pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
+                }
+
+                // 노트 생성
+                const note = new Note(pattern.locationIndex);
+                note.id = this.lastObjectId; this.lastObjectId++;
+                note.patternId = pattern.id;
+                note.originalTiming = pattern.time;
+                // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
+                this.objectsPlaying.push(note); // 노트 추가
+            }
+
             // 썸네일 체크해 이미지 객체 만들기
             if(this.song.thumbnailUrl) {
                 if(this.songThumb == null) {
@@ -1377,67 +1410,21 @@ class ShuttingStarsCore {
                 }
             }
             
+            // BGA 초기화
             if(this.videoBgaUrl == null) {
                 if(typeof(this.song.bgaUrl) != 'undefined' && this.song.bgaUrl != null && this.song.bgaUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.bgaUrl)) {
                     this.videoBgaUrl = this.song.bgaUrl;
                     this.videoBga.src = this.videoBgaUrl;
                 }
             }
-        }
 
-
-        // 배경 오디오 존재 시 재생
-        if(this.audioBackground != null) {
-            if(this.state == 'menu') {
-                if(! this.audioBackgroundPlaying) {
-                    this.audioBackground.currentTime = 0;
-                    this.audioBackground.loop = true;
-                    this.audioBackground.play();
-                    this.audioBackgroundPlaying = true;
-                    this.volumeBackground = 0;
-                    this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
-                    this.volumeBackgroundSpeed = 0.01;
-                }
+            // 3D 매니저 이벤트 호출
+            if(this.ss3d != null && (! this.disable3d)) {
+                this.ss3d.onSongPlayPreparing(this);
             }
-        }
-        
-        // 곡이 플레이 상황일 경우 처리
-        if(this.state == 'playing') {
+        } else if(this.state == 'playing') { // 곡이 플레이 상황일 경우 처리
             this.elapsedTime = -1000; // 처리 끝난 후 아래에서 다시 초기화
             if(this.song == null) { this.closeAudioSources(); this.audio = null; this.setState('menu'); return; }
-
-            // 곡 플레이 세팅 중 처리
-            //     곡 마지막 패턴 시간 체크
-            this.songLastPatternTime = 0;
-            let diff = this.song.difficulties[ this.difficulty.index ];
-            let patterns = diff.patterns;
-            for(idx=0; idx<patterns.length; idx++) {
-                const pattern = patterns[idx];
-                if(pattern.time > this.songLastPatternTime) {
-                    this.songLastPatternTime = pattern.time;
-                }
-            }
-
-            // 노트 미리 생성
-            for(idx=0; idx<patterns.length; idx++) {
-                const pattern = patterns[idx];
-
-                // 패턴 ID 세팅
-                pattern.id = idx;
-                
-                // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
-                if(pattern.locationIndex < 0) {
-                    pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
-                }
-
-                // 노트 생성
-                const note = new Note(pattern.locationIndex);
-                note.id = this.lastObjectId; this.lastObjectId++;
-                note.patternId = pattern.id;
-                note.originalTiming = pattern.time;
-                // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
-                this.objectsPlaying.push(note); // 노트 추가
-            }
 
             // 반복 처리 시작 (곡의 bpm 반영)
             this.songBitGap = this.calculateSongBitGap(this.song.bpm);
@@ -1479,6 +1466,32 @@ class ShuttingStarsCore {
             }
         } else {
             this.playPrepared = false;
+
+            this.lastObjectId = 0;
+            this.objectsPlaying = [];
+            this.notePlacers = [];
+
+            for(idx=0; idx<this.keyList.length; idx++) {
+                const notePlacer = new NotePlacer(idx);
+                notePlacer.id = this.lastObjectId++;
+                this.objectsPlaying.push(notePlacer);
+                this.notePlacers.push(notePlacer);
+            }
+
+            // 배경 오디오 존재 시 재생
+            if(this.audioBackground != null) {
+                if(this.state == 'menu') {
+                    if(! this.audioBackgroundPlaying) {
+                        this.audioBackground.currentTime = 0;
+                        this.audioBackground.loop = true;
+                        this.audioBackground.play();
+                        this.audioBackgroundPlaying = true;
+                        this.volumeBackground = 0;
+                        this.audioBackground.volume = this.volume * this.volumeBackground * this.volumeMultiplier;
+                        this.volumeBackgroundSpeed = 0.01;
+                    }
+                }
+            }
         }
     }
 
@@ -4553,6 +4566,11 @@ class ShuttingStarsCore {
             notehistory : [],
             build : this.build,
         });
+
+        // 3D 매니저 이벤트 호출
+        if(this.ss3d != null) {
+            this.ss3d.onSongEnd(this);
+        }
     }
 
     /** 곡 재생 종료 */
@@ -4615,6 +4633,27 @@ class ShuttingStarsCore {
         return null;
     }
 
+    find3DObject(uniqueSerial) {
+        for(let idx=0; idx<this.object3ds.length; idx++) {
+            const obj = this.object3ds[idx];
+            if(obj.uniqueSerial === uniqueSerial) {
+                return obj;
+            }
+        }
+        return null;
+    }
+
+    find3DObjects(uniqueSerial) {
+        let arr = [];
+        for(let idx=0; idx<this.object3ds.length; idx++) {
+            const obj = this.object3ds[idx];
+            if(obj.uniqueSerial === uniqueSerial) {
+                arr.push(obj);
+            }
+        }
+        return arr;
+    }
+
     getLeftMarginStage() {
         return this.margins.stage.left;
     }
@@ -4669,7 +4708,7 @@ class ShuttingStarsCore {
                 }
 
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
-                this.workerRender.postMessage({interval : this.frameTime * 2});
+                this.workerRender.postMessage({interval : this.frameTime});
                 this.workerRender.onmessage = function(e) {
                     if(selfs.ss3d != null) { 
                         if(selfs.disable3d) {  
@@ -4694,7 +4733,7 @@ class ShuttingStarsCore {
                             }
                         } else { ss3dworked = true; selfs.ss3d.simultaneousJob(selfs); }
                     }
-                }, this.frameTime * 2);
+                }, this.frameTime);
             }
         }
         else throw 'Only for ShuttingStars3DManager type !';
@@ -6830,8 +6869,11 @@ class ShuttingStars3DManager {
     onWindowResize(canvas3d, coreInst) {}
 }
 class ShuttingStars3DObject {
+    uniqueSerial = -1;
+    hidden = false;
     constructor(manager) {}
     getMeshes(manager) { return []; }
+    dispose() {}
 }
 /********************** // 3D 를 다루는 Class 세팅 ************************/
 /********************** 기타 Util 성 Class 세팅 ************************/

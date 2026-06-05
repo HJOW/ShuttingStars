@@ -105,126 +105,221 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         this.gridHelper = new THREE.GridHelper(10, 10);
     }
 
-    simultaneousJob(coreInst) {
-        super.simultaneousJob(coreInst);
+    /** shuttingstars.js 에서 resetStage 메소드 내에서 state 가 songtitle 일 때 호출됨 (즉 곡 플레이 직전 초기화 작업 중 호출됨) */
+    onSongPlayPreparing(coreInst) {
         let idx;
         let newObj;
 
         coreInst.object3ds = [];
         if(! coreInst.disable3d) {
-            if(coreInst.state == 'playing') {
+            if(coreInst.state == 'songtitle' || coreInst.state == 'playing') {
+                // 노트 그리기
+                this.synchronizeNotePart(coreInst);
+                
+                // NotePlacer 그리기
+                this.synchronizeNotePlacerPart(coreInst);
+
+                // 행성 그리기
+                this.synchronizePlanetPart(coreInst);
+
+                // 시각화
+                coreInst.object3ds.push(this.audioVisualizer);
+            }
+        }
+    }
+
+    /** shuttingstars.js 에서 곡 플레이 종료 시 호출  */
+    onSongEnd(coreInst){
+        if(coreInst.object3ds) {
+            for(let idx=0; idx<coreInst.object3ds.length; idx++) {
+                coreInst.object3ds[idx].dispose();
+            }
+        }
+        coreInst.object3ds = [];
+    }
+
+    /** 동기화 - Notes */
+    synchronizeNotePart(coreInst) {
+        if(! coreInst.disable3d) {
+            if(coreInst.state == 'songtitle' || coreInst.state == 'playing') {
                 // 노트 등 객체 그리기
                 if(coreInst.use3d.notes) {
                     // 노트 그리기
-                    for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+                    for(let idx=0; idx<coreInst.objectsPlaying.length; idx++) {
                         const objOne = coreInst.objectsPlaying[idx];
                         if(objOne.shape != 'circle') continue;
                         if(! (objOne instanceof Note)) continue;
 
                         const newObj = new SphereObject(this);
+                        newObj.uniqueSerial = objOne.uniqueSerial;
                         newObj.x = this.convertX(objOne.x);
                         newObj.y = this.convertY(objOne.y);
                         newObj.z = 1;
                         newObj.r = this.convertX(objOne.r);
                         newObj.opacity = objOne.opacity;
                         newObj.fill = true;
+                        newObj.hidden = false;
                         newObj.setColor(objOne.color);
                         newObj.prepareDefaults();
                         coreInst.object3ds.push(newObj);
                     }
                 }
-
-                if(coreInst.use3d.notePlacer) {
-                    // NotePlacer 그리기
-                    for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
-                        const objOne = coreInst.objectsPlaying[idx];
-                        if(objOne.shape != 'circle') continue;
-                        if(! (objOne instanceof NotePlacer)) continue;
-
-                        const newObj = new SphereObject(this);
-                        newObj.x = this.convertX(objOne.x);
-                        newObj.y = this.convertY(objOne.y);
-                        newObj.z = 1;
-                        newObj.r = this.convertX(objOne.r);
-                        newObj.opacity = 0.1;
-                        if(newObj.explosing == 1) newObj.opacity = 0.2;
-                        if(newObj.explosing == 2) newObj.opacity = 0.5;
-                        if(newObj.explosing == 3) newObj.opacity = 0.8;
-                        if(newObj.explosing == 4) newObj.opacity = 0.5;
-                        if(newObj.explosing == 5) newObj.opacity = 0.2;
-                        newObj.fill = false;
-                        newObj.setColor(objOne.color);
-                        newObj.prepareDefaults();
-                        coreInst.object3ds.push(newObj);
-                    }
-                }
-
-                if(coreInst.use3d.planet) {
-                    // 지구 객체 그리기
-                    if(coreInst.notePlacers.length >= 1) {
-                        let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
-                        let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
-                        let y      = coreInst.getHpBarYLocation() - radius;
-
-                        let arr = coreInst.calculateHpColor();
-                        let r, g, b;
-                        r = arr[0];
-                        g = arr[1];
-                        b = arr[2];
-                        
-                        const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
-
-                        newObj = new SphereObject(this);
-                        newObj.x = this.convertX(x);
-                        newObj.y = this.convertY(y);
-                        newObj.z = 1;
-                        newObj.r = this.convertX(r);
-                        newObj.opacity = 1.0;
-                        newObj.fill = true;
-                        newObj.setColor(hpBarInsideColor);
-                        newObj.prepareDefaults();
-                        coreInst.object3ds.push(newObj);
-                    }
-                }
-
-                // 시각화
-                coreInst.object3ds.push(this.audioVisualizer);
             }
+        }
+    }
 
-            // 폭발 객체 이관
-            for(idx=0; idx<coreInst.objects.length; idx++) {
-                const objOne = coreInst.objects[idx];
+    /** 동기화 - NotePlacer */
+    synchronizeNotePlacerPart(coreInst) {
+        if(coreInst.use3d.notePlacer) {
+            for(let idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+                const objOne = coreInst.objectsPlaying[idx];
                 if(objOne.shape != 'circle') continue;
-                if(objOne instanceof VirtualKey) continue;
-                if(objOne instanceof MouseEventArea) continue;
-                if(objOne instanceof MouseClickHighlighter) continue;
-                if(objOne instanceof Starlight) continue;
+                if(! (objOne instanceof NotePlacer)) continue;
 
-                newObj = new SphereObject(this);
+                const newObj = new SphereObject(this);
+                newObj.uniqueSerial = objOne.uniqueSerial;
                 newObj.x = this.convertX(objOne.x);
                 newObj.y = this.convertY(objOne.y);
                 newObj.z = 1;
                 newObj.r = this.convertX(objOne.r);
-                newObj.opacity = objOne.opacity;
+                newObj.opacity = 0.1;
+                if(newObj.explosing == 1) newObj.opacity = 0.2;
+                if(newObj.explosing == 2) newObj.opacity = 0.5;
+                if(newObj.explosing == 3) newObj.opacity = 0.8;
+                if(newObj.explosing == 4) newObj.opacity = 0.5;
+                if(newObj.explosing == 5) newObj.opacity = 0.2;
+                newObj.fill = false;
+                newObj.hidden = false;
                 newObj.setColor(objOne.color);
                 newObj.prepareDefaults();
-                if(newObj.x >= -200 && newObj.x <= coreInst.getStageWidth() * 2 && newObj.y >= -200 && newObj.y <= coreInst.getStageHeight() * 2 ) {
-                    coreInst.object3ds.push(newObj);
-                }
+                coreInst.object3ds.push(newObj);
+            }
+        }
+    }
 
-                let lightRadius = 1.5;
-                if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
-                else                      lightRadius = 1.8 - (0.2 * (objOne.explosing - 3));
+    /** 동기화 - 행성 */
+    synchronizePlanetPart(coreInst) {
+        if(coreInst.use3d.planet) {
+            // 지구 객체 그리기
+            if(coreInst.notePlacers.length >= 1) {
+                let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
+                let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
+                let y      = coreInst.getHpBarYLocation() - radius;
 
+                let arr = coreInst.calculateHpColor();
+                let r, g, b;
+                r = arr[0];
+                g = arr[1];
+                b = arr[2];
+                
+                const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
+
+                const newObj = new SphereObject(this);
+                newObj.uniqueSerial = ShuttingStarsUtility.randomInt();
+                newObj.x = this.convertX(x);
+                newObj.y = this.convertY(y);
+                newObj.z = 1;
+                newObj.r = this.convertX(r);
+                newObj.opacity = 1.0;
+                newObj.fill = true;
+                newObj.hidden = false;
+                newObj.setColor(hpBarInsideColor);
+                newObj.prepareDefaults();
+                coreInst.object3ds.push(newObj);
+            }
+        }
+    }
+
+    /** 동시 처리 (반복 호출됨) */
+    simultaneousJob(coreInst) {
+        super.simultaneousJob(coreInst);
+        let newObj;
+        let idx;
+
+        /*
+        coreInst.object3ds = [];
+        
+        // 노트 그리기
+        this.synchronizeNotePart(coreInst);
+        
+        // NotePlacer 그리기
+        this.synchronizeNotePlacerPart(coreInst);
+
+        // 행성 그리기
+        this.synchronizePlanetPart(coreInst);
+
+        // 시각화
+        coreInst.object3ds.push(this.audioVisualizer);
+        */
+
+        // 동기화
+        for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+            const objOne = coreInst.objectsPlaying[idx];
+            const obj3d  = coreInst.find3DObject(objOne.uniqueSerial);
+            if(obj3d == null) continue;
+
+            obj3d.setPosition(this.convertX(objOne.x), this.convertY(objOne.y), 1);
+            if(objOne.r) obj3d.setR(this.convertX(objOne.r));
+            if(objOne.color  ) obj3d.setColor(objOne.color);
+            if(objOne.opacity) { obj3d.setOpacity(objOne.opacity * objOne.opacity); } // 티가 거의 안남
+
+            if(objOne.explosing) {
+                if(objOne.explosing >= objOne.explosingMax) obj3d.hidden = true;
+            }
+        }
+
+        // 폭발 객체 동기화 (순방향)
+        for(idx=0; idx<coreInst.objects.length; idx++) {
+            const objOne = coreInst.objects[idx];
+            if(objOne.shape != 'circle') continue;
+            if(objOne instanceof VirtualKey) continue;
+            if(objOne instanceof MouseEventArea) continue;
+            if(objOne instanceof MouseClickHighlighter) continue;
+            if(objOne instanceof Starlight) continue;
+
+            let lightRadius = 1.5;
+            if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
+            else                      lightRadius = 1.8 - (0.2 * (objOne.explosing - 3));
+
+            newObj = coreInst.find3DObject(objOne.uniqueSerial);
+            if(newObj == null) {
                 newObj = new LightPoint(this, lightRadius);
+                newObj.uniqueSerial = objOne.uniqueSerial;
                 newObj.x = this.convertX(objOne.x);
                 newObj.y = this.convertY(objOne.y);
                 newObj.z = 1;
                 newObj.r = this.convertX(objOne.r);
+                newObj.hidden = false;
                 newObj.opacity = objOne.opacity;
                 newObj.setColor(objOne.color);
                 newObj.prepareDefaults();
                 coreInst.object3ds.push(newObj);
+            }
+        }
+
+        // 폭발 객체 동기화 (역방향)
+        for(idx=0; idx<coreInst.object3ds.length; idx++) {
+            const newObj = coreInst.object3ds[idx];
+            if(newObj instanceof LightPoint) {
+                if(newObj.uniqueSerial) {
+                    // 폭발 객체가 아직 남아있는지 확인
+                    let existsNow = false;
+                    for(let jdx=0; jdx<coreInst.objects.length; jdx++) {
+                        const objOne = coreInst.objects[jdx];
+                        if(objOne.shape != 'circle') continue;
+                        if(objOne instanceof VirtualKey) continue;
+                        if(objOne instanceof MouseEventArea) continue;
+                        if(objOne instanceof MouseClickHighlighter) continue;
+                        if(objOne instanceof Starlight) continue;
+                        if(objOne.uniqueSerial == newObj.uniqueSerial) { existsNow = true; break; }
+                    }
+                    if(! existsNow) {
+                        newObj.dispose();
+                        newObj.hidden = true;
+                        coreInst.object3ds.splice(idx, 1);
+                        idx--;
+                    }
+                }
             }
         }
     }
@@ -252,6 +347,8 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         // 3D 객체 추가
         for(let idx=0; idx<objects.length; idx++) {
             const objOne = objects[idx]; // ShuttingStars3DObject 타입
+            if(objOne.hidden) continue;
+
             const arr = objOne.getMeshes(this);
             for(let mesh of arr) {
                 this.scene.add(mesh);
@@ -294,8 +391,8 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
 
 }
 
-// 표준 구형 객체
-class SphereObject extends ShuttingStars3DObject {
+// 표준 3D 객체
+class Locational3DObject extends ShuttingStars3DObject {
     x = 0;
     y = 0;
     z = 0;
@@ -303,22 +400,33 @@ class SphereObject extends ShuttingStars3DObject {
     color = 0x00ff00;
     fill = true;
     opacity = 1.0;
+    geometry = null;
+    material = null;
+    mesh = null;
+
     constructor(manager) {
         super(manager);
     }
 
-    prepareDefaults() {
-        this.geometry = new THREE.SphereGeometry(this.r);
-        this.material = new THREE.MeshStandardMaterial({ color : this.color, wireframe: (! this.fill), transparent : (this.opacity < 1.0 ? true : false), opacity : this.opacity });
-        this.sphere = new THREE.Mesh(this.geometry, this.material);
-        this.sphere.position.set(this.x, this.y, this.z);
+    setPosition(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
-    getMeshes(manager) {
-        return [ this.sphere ];
+    setR(r) {
+        this.r = r;
     }
 
-    setColor(colorRGB) { // color : 255, 0, 0 형식
+    setFill(fillyn) {
+        this.fill = fillyn;
+    }
+
+    setOpacity(opa) {
+        this.opacity = opa;
+    }
+
+    setColor(colorRGB) {
         let obj = colorRGB;
         if(typeof(obj) == 'number') {
             this.color = obj;
@@ -346,6 +454,60 @@ class SphereObject extends ShuttingStars3DObject {
         if(hb.length == 1) hb = '0' + hb;
 
         this.color = parseInt('0x' + hr + '' + hg + '' + hb);
+    }
+
+    dispose() {
+        if(this.geometry != null) { if(this.geometry.dispose) this.geometry.dispose(); }
+        if(this.material != null) { if(this.material.dispose) this.material.dispose(); }
+    }
+}
+
+// 표준 구형 객체
+class SphereObject extends Locational3DObject {
+    constructor(manager) {
+        super(manager);
+    }
+
+    prepareDefaults() {
+        this.geometry = new THREE.SphereGeometry(this.r);
+        this.material = new THREE.MeshStandardMaterial({ color : this.color, wireframe: (! this.fill), transparent : true, opacity : this.opacity });
+        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        this.mesh.position.set(this.x, this.y, this.z);
+    }
+
+    setColor(colorRGB) {
+        super.setColor(colorRGB);
+        if(this.material != null) this.material.color.setHex(this.color);
+    }
+
+    setOpacity(opa) {
+        super.setOpacity(opa);
+        if(this.material != null) {
+            this.material.opacity = opa;
+            this.material.needsUpdate = true;
+        }
+    }
+
+    setFill(fillyn) {
+        super.setFill(fillyn);
+        if(this.material != null) {
+            this.material.wireframe = (! fillyn);
+            this.material.needsUpdate = true;
+        }
+    }
+
+    setPosition(x, y, z) {
+        super.setPosition(x, y, z);
+        if(this.mesh != null) this.mesh.position.set(this.x, this.y, this.z);
+    }
+
+    setR(r) {
+        super.setR(r);
+        // SphereGeometry 에서 반지름은 중간에 변경이 불가능
+    }
+
+    getMeshes(manager) {
+        return [ this.mesh ];
     }
 }
 
