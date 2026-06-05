@@ -7,9 +7,9 @@ to make my own rhythm game !
 
 ## TEST URL
 
-https://shuttingstars-3eddf.web.app
-OR
 https://hjow.duckdns.org/shuttingstars/
+OR
+https://shuttingstars-3eddf.web.app
 
 ## 하드웨어 의존성
 
