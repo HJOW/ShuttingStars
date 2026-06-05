@@ -132,10 +132,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             }
 
             // 시각화
-            const visualizingArr = this.audioVisualizer.getMeshes(this);
-            for(idx=0; idx<visualizingArr.length; idx++) {
-                coreInst.object3ds.push(newObj);
-            }
+            coreInst.object3ds.push(this.audioVisualizer);
         }
 
         // 폭발 객체 이관
@@ -322,11 +319,46 @@ class AudioVisualizingObject {
 
     onSoundVisualizing(coreInst, manager, audioAnalyzer, audioBuffer) {
         this.preparedMeshes = [];
-        // TODO : 3D 오디오 시각화 - 이 곳에서 audioBuffer 를 읽어 this.preparedMeshes 에 Three.js Mesh 객체를 만들어 넣어야 함
-        //             이 메소드는 곡 비트 시간 / 16초 마다 호출됨
-        //             audioBuffer 는 크기가 128인 Uint8Array 배열로 AudioAnalyzer 의 ByteFrequencyData 데이터가 들어가 있음
+        if(audioBuffer == null || audioBuffer.length <= 0) return;
 
-        
+        // 흑색 바형 시각화가 나타나는 소스, 좀더 화려한 다른 방법은 없을까?
+        //    그리고 2D 뒤에 나타낼 방법도 고민해야 할 듯
+        /*
+        const count = audioBuffer.length;
+        const width = manager.resolution.w;
+        const maxHeight = Math.max(24, manager.resolution.h * 0.42);
+        const step = width / count;
+        const barWidth = Math.max(2, step * 0.58);
+        const depth = Math.max(8, barWidth * 1.4);
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshStandardMaterial({
+            vertexColors : true,
+            transparent : true,
+            opacity : 0.86,
+            roughness : 0.45,
+            metalness : 0.15
+        });
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
+        const matrix = new THREE.Matrix4();
+        const color = new THREE.Color();
+        const position = new THREE.Vector3();
+        const quaternion = new THREE.Quaternion();
+        const scale = new THREE.Vector3();
+
+        for(let idx=0; idx<count; idx++) {
+            const power = audioBuffer[idx] / 255.0;
+            const height = 4 + (power * power * maxHeight);
+            position.set((idx + 0.5) * step, height / 2, 20 + (power * 80));
+            scale.set(barWidth, height, depth);
+            matrix.compose(position, quaternion, scale);
+            mesh.setMatrixAt(idx, matrix);
+            color.setHSL(0.58 - (power * 0.42), 0.92, 0.45 + (power * 0.22));
+            mesh.setColorAt(idx, color);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+        if(mesh.instanceColor != null) mesh.instanceColor.needsUpdate = true;
+        this.preparedMeshes.push(mesh);
+        */
     }
 
     getMeshes(manager) {
