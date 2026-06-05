@@ -133,7 +133,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         uniform float u_frequency;
         uniform float u_time;
         void main() { 
-            float noise = pnoise(position + u_time, vec3(10.));
+            float noise = 3. * pnoise(position + u_time, vec3(10.));
             float displacement = (u_frequency / 30.) * (noise / 10.);
             vec3 newPosition = position + normal * displacement;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
@@ -199,7 +199,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         this.mainLight.visible = true;
 
         // 오디오 시각화 객체
-        this.audioVisualizer = new AudioVisualizingObject();
+        this.audioVisualizer = new AudioVisualizingObject(this);
 
         // 그리드 디버거
         this.gridHelper = new THREE.GridHelper(10, 10);
@@ -328,7 +328,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             }
         }
 
-        this.renderer.render(this.scene, this.camera);
+        // this.renderer.render(this.scene, this.camera);
         this.effectComposer.render();
     }
 
@@ -445,20 +445,32 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
     preparedMeshes = [];
     vertexShader = null;
     fragmentShader = null;
+
+    shaderMaterial = null;
+    geometry = null;
+    mainMesh = null;
     
-    constructor() {
+    constructor(manager) {
         super(); 
+
+        // https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/ 참고하여 구현 중
         this.vertexShader = document.getElementById('ss_vertexshader');
         this.fragmentShader = document.getElementById('ss_fragmentshader');
+
+        this.shaderMaterial = new THREE.ShaderMaterial({
+            wireframe : true,
+            uniforms : manager.uniforms,
+            vertexShader : this.vertexShader.textContent,
+            fragmentShader : this.fragmentShader.textContent
+        });
+        this.geometry = new THREE.IcosahedronGeometry(200, 30); // 크기 및 복잡도 지정
+        this.mainMesh = new THREE.Mesh(this.geometry, this.shaderMaterial);
+        this.preparedMeshes.push(this.mainMesh);
     }
 
     onSoundVisualizing(coreInst, manager, audioAnalyzer, audioBuffer) {
         const selfs = this;
         if(audioBuffer == null || audioBuffer.length <= 0) { this.preparedMeshes = []; return; }
-
-        // 흑색 바형 시각화가 나타나는 소스, 좀더 화려한 다른 방법은 없을까?
-        //    중앙을 침범하지 않는 타입이 필요함. 그게 아니면, 2D 레이어 뒤에 출력할 방법을 찾아야 함
-
 
         // https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/ 참고하여 구현 중
         let avg = 0;
@@ -469,22 +481,15 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
 
         manager.uniforms.u_time.value = coreInst.elapsedTime;
         manager.uniforms.u_frequency.value = avg;
-        const uniforms = manager.uniforms; 
-
-        const mat = new THREE.ShaderMaterial({
-            wireframe : true,
-            uniforms,
-            vertexShader : this.vertexShader.textContent,
-            fragmentShader : this.fragmentShader.textContent
-        });
-        const geo = new THREE.IcosahedronGeometry(200, 30);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 2), coreInst.convertY(coreInst.getStageHeight() / 2), 30);
-        this.preparedMeshes = [];
-        this.preparedMeshes.push(mesh);
+        for(const k in manager.uniforms) {
+            this.shaderMaterial.uniforms[k].value = manager.uniforms[k].value;
+        }
+        
+        this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 2), coreInst.convertY(coreInst.getStageHeight() / 2), 30);
 
 
         /*
+        // 다른 예제 - 바형
         const count = audioBuffer.length;
         const width = manager.resolution.w;
         const maxHeight = Math.max(24, manager.resolution.h * 0.42);
