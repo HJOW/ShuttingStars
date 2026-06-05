@@ -350,7 +350,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
     uniforms = {
         u_time : { value : 0 },
         u_frequency : {value : 0 },
-        u_size : {value : 5000.0 },
+        u_size : {value : 500.0 },
         u_red : {value : 1.0},
         u_green : {value : 1.0},
         u_blue : {value : 1.0}
@@ -478,43 +478,6 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
         this.shaderMaterial.uniforms.u_frequency.value = this.uniforms.u_frequency.value;
 
         this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
-        /*
-        // 다른 예제 - 바형
-        const count = audioBuffer.length;
-        const width = manager.resolution.w;
-        const maxHeight = Math.max(24, manager.resolution.h * 0.42);
-        const step = width / count;
-        const barWidth = Math.max(2, step * 0.58);
-        const depth = Math.max(8, barWidth * 1.4);
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshStandardMaterial({
-            vertexColors : true,
-            transparent : true,
-            opacity : 0.86,
-            roughness : 0.45,
-            metalness : 0.15
-        });
-        const mesh = new THREE.InstancedMesh(geometry, material, count);
-        const matrix = new THREE.Matrix4();
-        const color = new THREE.Color();
-        const position = new THREE.Vector3();
-        const quaternion = new THREE.Quaternion();
-        const scale = new THREE.Vector3();
-
-        for(let idx=0; idx<count; idx++) {
-            const power = audioBuffer[idx] / 255.0;
-            const height = 4 + (power * power * maxHeight);
-            position.set((idx + 0.5) * step, height / 2, 20 + (power * 80));
-            scale.set(barWidth, height, depth);
-            matrix.compose(position, quaternion, scale);
-            mesh.setMatrixAt(idx, matrix);
-            color.setHSL(0.58 - (power * 0.42), 0.92, 0.45 + (power * 0.22));
-            mesh.setColorAt(idx, color);
-        }
-        mesh.instanceMatrix.needsUpdate = true;
-        if(mesh.instanceColor != null) mesh.instanceColor.needsUpdate = true;
-        this.preparedMeshes.push(mesh);
-        */
     }
 
     getMeshes(manager) {
