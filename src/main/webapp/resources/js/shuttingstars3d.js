@@ -467,18 +467,86 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
         const selfs = this;
         if(audioBuffer == null || audioBuffer.length <= 0) { this.preparedMeshes = []; return; }
 
+        // 곡 주파수 데이터 전체 평균 구하기
         let avg = 0;
         for(let idx=0; idx<audioBuffer.length; idx++) {
             avg += audioBuffer[idx];
         }
         avg = avg / audioBuffer.length;
 
+        // 곡 진행 시간
+        let time = (coreInst.elapsedTime < 0 ? 0 : coreInst.elapsedTime);
+
+        let hp = coreInst.hp + 0; // 100 이 최대
+        if(coreInst.gameOverDelayed) hp = 0;
+
+        /*
+           HP와 곡 진행 시간에 따라 컬러를 변경
+           진행 시간이 지날수록 흰색에서 은은한 초록/파랑 계열로 이동하며,
+           HP가 떨어질수록 붉은 기운 추가
+           HP가 20 이하일 때는 0에 가까워질수록 검은색에 가까워지도록 변경
+        */
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const lerp = (start, end, ratio) => start + (end - start) * ratio;
+
+        let progress = 0.0;
+        if(coreInst.song && typeof coreInst.song.endTime === 'number' && coreInst.song.endTime > 0) {
+            progress = clamp(time / coreInst.song.endTime, 0.0, 1.0);
+        } else {
+            progress = clamp(time / 120.0, 0.0, 1.0); // 기본값: 2분 기준
+        }
+
+        const white = { r: 1.0, g: 1.0, b: 1.0 };
+        const softGreen = { r: 0.75, g: 1.0, b: 0.85 };
+        const softBlue  = { r: 0.7,  g: 0.9, b: 1.0 };
+
+        let baseColor;
+        if(progress < 0.5) {
+            const ratio = progress * 2.0;
+            baseColor = {
+                r: lerp(white.r, softGreen.r, ratio),
+                g: lerp(white.g, softGreen.g, ratio),
+                b: lerp(white.b, softGreen.b, ratio)
+            };
+        } else {
+            const ratio = (progress - 0.5) * 2.0;
+            baseColor = {
+                r: lerp(softGreen.r, softBlue.r, ratio),
+                g: lerp(softGreen.g, softBlue.g, ratio),
+                b: lerp(softGreen.b, softBlue.b, ratio)
+            };
+        }
+
+        const hpRatio = clamp(hp / 100.0, 0.0, 1.0);
+        const danger = 1.0 - hpRatio;
+
+        let red = clamp(baseColor.r + danger * 0.35, 0.0, 1.0);
+        let green = clamp(baseColor.g - danger * 0.15, 0.0, 1.0);
+        let blue = clamp(baseColor.b - danger * 0.15, 0.0, 1.0);
+
+        if(hp <= 20) {
+            const blackFade = clamp((20 - hp) / 20.0, 0.0, 1.0);
+            red   = red   * (1.0 - blackFade) + 0.18 * blackFade;
+            green = green * (1.0 - blackFade);
+            blue  = blue  * (1.0 - blackFade);
+        }
+
+        this.uniforms.u_red.value   = red;
+        this.uniforms.u_green.value = green;
+        this.uniforms.u_blue.value  = blue;
+
+
         // https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/ 참고하여 구현 중
-        this.uniforms.u_time.value = (coreInst.elapsedTime < 0 ? 0 : coreInst.elapsedTime);
+        // uniform 에 값을 넣어 쉐이더에 값을 전달
+        this.uniforms.u_time.value = time;
         this.uniforms.u_frequency.value = avg;
         this.shaderMaterial.uniforms.u_time.value = this.uniforms.u_time.value;
         this.shaderMaterial.uniforms.u_frequency.value = this.uniforms.u_frequency.value;
+        this.shaderMaterial.uniforms.u_red.value = this.uniforms.u_red.value;
+        this.shaderMaterial.uniforms.u_green.value = this.uniforms.u_green.value;
+        this.shaderMaterial.uniforms.u_blue.value = this.uniforms.u_blue.value;
 
+        // Mesh 객체 위치 지정
         this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
     }
 
