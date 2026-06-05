@@ -236,6 +236,8 @@ class ShuttingStarsCore {
     keyReleaseDebugMode = false;
     // 마우스 클릭 디버그 모드
     mouseClickDebugMode = false;
+    // 좌표계 디버그 모드
+    coordinate2dDebugMode = false;
     // init 디버그 모드
     initDebugMode = false;
     // 테스트 곡 노출 여부
@@ -584,8 +586,9 @@ class ShuttingStarsCore {
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
 
+                // TODO 마우스 포인트 위치 이상함
                 // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
-                const rx = Math.floor((x * selfs.getStageWidth())  / rect.width );
+                const rx = Math.floor((x * selfs.getStageWidth()) / rect.width );
                 const ry = Math.floor((y * selfs.getStageHeight()) / rect.height);
 
                 if(mouseDown) {
@@ -593,7 +596,6 @@ class ShuttingStarsCore {
                 } else {
                     if(selfs.mouseClickDebugMode) console.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
                 }
-                
 
                 // 임시 객체 (충돌여부 판단 위함)
                 const mouseCursorObject = new MouseClickHighlighter(0, 0, '255, 255, 255', '255, 255, 255');
@@ -827,6 +829,7 @@ class ShuttingStarsCore {
         this.broker.mouseClickDebugMode     = this.mouseClickDebugMode     ;
         this.broker.initDebugMode           = this.initDebugMode           ;
         this.broker.songDebugMode           = this.songDebugMode           ;
+        this.broker.coordinate2dDebugMode   = this.coordinate2dDebugMode   ;
         this.broker.timeElapseDebugMode     = this.timeElapseDebugMode     ;
         this.broker.visualizePeakDebugMode  = this.visualizePeakDebugMode  ;
         this.broker.gameOverEnabled         = this.gameOverEnabled         ;
@@ -857,6 +860,7 @@ class ShuttingStarsCore {
             if(typeof(obj.mouseClickDebugMode    ) != 'undefined') selfs.mouseClickDebugMode     = obj.mouseClickDebugMode     ;
             if(typeof(obj.initDebugMode          ) != 'undefined') selfs.initDebugMode           = obj.initDebugMode           ;
             if(typeof(obj.songDebugMode          ) != 'undefined') selfs.songDebugMode           = obj.songDebugMode           ;
+            if(typeof(obj.coordinate2dDebugMode  ) != 'undefined') selfs.coordinate2dDebugMode   = obj.coordinate2dDebugMode   ;
             if(typeof(obj.timeElapseDebugMode    ) != 'undefined') selfs.timeElapseDebugMode     = obj.timeElapseDebugMode     ;
             if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
@@ -2226,6 +2230,12 @@ class ShuttingStarsCore {
             // 캔버스 비우기
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+            // 좌표계 디버그 모드
+            if(this.coordinate2dDebugMode) {
+                this.renderCoordinate2dDebug();
+            }
+
+            // 곡 타이틀 (플레이 전 로딩시간)
             if(this.state == 'songtitle') {
                 // 한 타이밍, 게임 렌더링 시도를 하여 이미지 등 리소스 캐싱 유도
                 if(this.songTitleTime == this.songTitleBaseTime - 1) {
@@ -3725,6 +3735,35 @@ class ShuttingStarsCore {
             }
         }
     }
+
+    /** 2D 좌표계 디버그 */
+    renderCoordinate2dDebug() {
+        this.ctx.strokeStyle = 'blue';
+        this.ctx.fillStyle = 'green';
+        this.ctx.lineWidth = 5;
+        this.ctx.font = 'normal 18px ' + this.getRenderFontFamily();
+        let idx, jdx;
+        
+        for(idx=0; idx<this.getFullRenderWidth(); idx += 100) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.convertX(idx), this.convertY(0));
+            this.ctx.lineTo(this.convertX(idx), this.convertY(this.getFullRenderHeight()));
+            this.ctx.stroke();
+        }
+        
+        for(jdx=0; jdx<this.getFullRenderHeight(); jdx += 100) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.convertX(0), this.convertY(jdx));
+            this.ctx.lineTo(this.convertX(this.getFullRenderWidth()), this.convertY(jdx));
+            this.ctx.stroke();
+        }
+
+        for(idx=0; idx<this.getFullRenderWidth(); idx += 100) {
+            for(jdx=0; jdx<this.getFullRenderHeight(); jdx += 100) {
+                this.ctx.fillText(idx + ',' + jdx, this.convertX(idx), this.convertY(jdx));
+            }
+        }
+    }   
 
     /** 오디오 시각화 그리기 */
     renderAudioVisualizing() {
