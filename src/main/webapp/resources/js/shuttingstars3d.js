@@ -226,8 +226,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             }
         }
 
-        // this.renderer.render(this.scene, this.camera);
-        this.effectComposer.render();
+        this.effectComposer.render(); // this.renderer.render(this.scene, this.camera); 대신 사용
     }
 
     clear() {
@@ -351,19 +350,16 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
     uniforms = {
         u_time : { value : 0 },
         u_frequency : {value : 0 },
-        u_size : {value : 5.0 }
+        u_size : {value : 5000.0 },
+        u_red : {value : 1.0},
+        u_green : {value : 1.0},
+        u_blue : {value : 1.0}
     };
     
     constructor(coreInst, manager) {
         super(); 
-        const idVertex = 'ss_vertexshader';
-        const idFragment = 'ss_fragmentshader';
-
-        // DOM 영역에 vertex, fragment 태그 준비 (3D 시각화용, 참고 : https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/)
-        let scriptBlock = document.createElement('script');
-        scriptBlock.id = idVertex;
-        scriptBlock.type = 'vertex';
-        let htmls = `
+        // 참고 : https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/
+        const vertexShaderCodes = `
         vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
         vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
         vec4 permute(vec4 x) { return mod289(((x*34.0)+10.0)*x); }
@@ -446,26 +442,19 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
         }
         `;
-        scriptBlock.innerHTML = String(htmls).trim();
-        coreInst.contentRoot.append(scriptBlock);
-
-        scriptBlock = document.createElement('script');
-        scriptBlock.id = idFragment;
-        scriptBlock.type = 'fragment';
-        htmls = `
-        void main() { gl_FragColor = vec4(1.0); }
+        
+        const fragmentShaderCodes = `
+        uniform float u_red;
+        uniform float u_green;
+        uniform float u_blue;
+        void main() { gl_FragColor = vec4(vec3(u_red, u_green, u_blue), 1. ); }
         `;
-        scriptBlock.innerHTML = String(htmls).trim();
-        coreInst.contentRoot.append(scriptBlock);
-
-        this.vertexShader = document.getElementById(idVertex);
-        this.fragmentShader = document.getElementById(idFragment);
 
         this.shaderMaterial = new THREE.ShaderMaterial({
             wireframe : true,
             uniforms : this.uniforms,
-            vertexShader : this.vertexShader.textContent,
-            fragmentShader : this.fragmentShader.textContent
+            vertexShader : vertexShaderCodes,
+            fragmentShader : fragmentShaderCodes
         });
         this.geometry = new THREE.IcosahedronGeometry(200, 30); // 크기 및 복잡도 지정
         this.mainMesh = new THREE.Mesh(this.geometry, this.shaderMaterial);
@@ -488,11 +477,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
         this.shaderMaterial.uniforms.u_time.value = this.uniforms.u_time.value;
         this.shaderMaterial.uniforms.u_frequency.value = this.uniforms.u_frequency.value;
 
-        console.log(this.uniforms)
-        
         this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
-
-
         /*
         // 다른 예제 - 바형
         const count = audioBuffer.length;
