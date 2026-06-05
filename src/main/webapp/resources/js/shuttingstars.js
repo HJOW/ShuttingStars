@@ -5904,6 +5904,8 @@ const _shuttingstarcore = new ShuttingStarsCore();
 
 /** 곡 */
 class ShuttingStarsSong {
+    uniqueSerial = ShuttingStarsUtility.randomInt();
+
     // 기본정보
     name = ''; // 곡 이름
     composer = ''; // 작곡가
@@ -5941,7 +5943,9 @@ class ShuttingStarsSong {
     // 장식
     decorations = [];
 
-    constructor() {}
+    constructor() {
+        this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
+    }
 
     /** 노트 생성 위치 */
     getNoteCreationYLocation() {
@@ -6141,7 +6145,7 @@ class ShuttingStarsNotePattern {
 
 /* 게임 내 Note 및 NotePlacer 의 상위 클래스 */
 class ShuttingStarsObject {
-    uniqueSerial = Math.floor(9999999 * ShuttingStarsUtility.random());
+    uniqueSerial = ShuttingStarsUtility.randomInt();
     id = 0;
     x = 0;
     y = 0;
@@ -6157,7 +6161,7 @@ class ShuttingStarsObject {
     explosingMax = 8;
     explosingSpeed = 1; // 폭발 속도
     constructor() {
-        this.uniqueSerial = 10000000 + Math.floor(9999999 * ShuttingStarsUtility.random()) + Math.floor(9999999 * ShuttingStarsUtility.random()); // 고유값
+        this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
     draw(ctx) {
         if(this.shape === 'circle') {
@@ -7044,8 +7048,28 @@ class ShuttingStarsUtilityClass {
         return Math.floor(numbers * 1000.0) / 1000.0;
     }
 
+    /** 0 ~ 4294967296 사이 랜덤 정수 반환 */
+    randomInt() {
+        if(window.crypto) {
+            try {
+                const buff = new Uint32Array(1);
+                window.crypto.getRandomValues(buff);
+                return buff[0];
+            } catch(ignores) {}
+        }
+        return Math.floor(this.random() * 4294967296);
+    }
+
     /** 0 ~ 1.0 사이 랜덤 수 반환 */
     random() {
+        // crypto 사용 가능한 경우 더 확실한 random 반환
+        if(window.crypto) {
+            try {
+                const buff = new Uint32Array(1);
+                window.crypto.getRandomValues(buff);
+                return buff[0] / 4294967296.0;
+            } catch(ignores) {}
+        }
         return Math.random();
     }
 
