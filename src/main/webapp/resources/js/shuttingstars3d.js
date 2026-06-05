@@ -26,12 +26,20 @@ limitations under the License.
  
  */
 
-import * as THREE from './three.module.min.js';
+import * as THREE from './threejs/three.module.min.js';
+import { EffectComposer  } from './threejs/postprocessing/EffectComposer.js';
+import { RenderPass      } from './threejs/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from './threejs/postprocessing/UnrealBloomPass.js';
+import { OutputPass      } from './threejs/postprocessing/OutputPass.js';
 
 class ShuttingStars3DModule extends ShuttingStars3DManager {
     scene = null;
     camera = null;
     renderer = null;
+    renderPass = null;
+    bloomPass = null;
+    outputPass = null;
+    effectComposer = null;
     resolution = {w : 0, h : 0};
     stageSize = {w : 0, h : 0};
     backLight = null;
@@ -171,6 +179,18 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         // 배경 투명 지정
         this.renderer.setClearAlpha(0);
 
+        // Pass 준비
+        this.renderPass = new RenderPass(this.scene, this.camera);
+        this.bloomPass = new UnrealBloomPass(new THREE.Vector2(canvasBound.width, canvasBound.height));
+        this.bloomPass.threshold = 0.5;
+        this.bloomPass.strength = 0.4;
+        this.bloomPass.radius = 0.8;
+        this.outputPass = new OutputPass();
+        this.effectComposer = new EffectComposer(this.renderer);
+        this.effectComposer.addPass(this.renderPass);
+        this.effectComposer.addPass(this.bloomPass);
+        this.effectComposer.addPass(this.outputPass);
+
         // 메인 광원
         this.backLight = new THREE.AmbientLight(0xFFFFFF, 2);
         this.mainLight = new THREE.PointLight(0xFFFFFF, 2000, 100000, 1);
@@ -309,6 +329,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         }
 
         this.renderer.render(this.scene, this.camera);
+        this.effectComposer.render();
     }
 
     clear() {
@@ -326,6 +347,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
 
         const canvasBound = canvas3d.getBoundingClientRect();
         this.renderer.setSize(canvasBound.width, canvasBound.height);
+        this.effectComposer.setSize(canvasBound.width, canvasBound.height);
         this.resolution.w = canvasBound.width;
         this.resolution.h = canvasBound.height;
         this.stageSize = coreInst.stageSize;
