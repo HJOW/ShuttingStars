@@ -338,6 +338,7 @@ class LightPoint extends SphereObject {
     }
 }
 
+/** 3D 시각화 담당 클래스 */
 class AudioVisualizingObject extends ShuttingStars3DObject {
     preparedMeshes = [];
     vertexShader = null;
@@ -350,7 +351,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
     uniforms = {
         u_time : { value : 0 },
         u_frequency : {value : 0 },
-        u_size : {value : 500.0 },
+        u_size : {value : 50.0 },
         u_red : {value : 1.0},
         u_green : {value : 1.0},
         u_blue : {value : 1.0}
@@ -439,7 +440,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
             float noise = u_size * pnoise(position + u_time, vec3(10.));
             float displacement = (u_frequency / 10.) * (noise / 10.);
             vec3 newPosition = position + normal * displacement;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0); 
         }
         `;
         
@@ -461,6 +462,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
         this.preparedMeshes.push(this.mainMesh);
     }
 
+    /** 주기적으로 호출됨 (60000 / 음악bpm / 16 밀리초마다) */
     onSoundVisualizing(coreInst, manager, audioAnalyzer, audioBuffer) {
         const selfs = this;
         if(audioBuffer == null || audioBuffer.length <= 0) { this.preparedMeshes = []; return; }
@@ -480,6 +482,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
         this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
     }
 
+    /** Three.js Mesh 객체 반환 */
     getMeshes(manager) {
         return this.preparedMeshes;
     }
