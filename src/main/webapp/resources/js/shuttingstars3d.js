@@ -42,6 +42,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
     effectComposer = null;
     resolution = {w : 0, h : 0};
     stageSize = {w : 0, h : 0};
+    fullStages = {w : 0, h : 0};
     backLight = null;
     mainLight = null;
     gridHelper = null;
@@ -56,6 +57,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         this.resolution.w = canvasBound.width;
         this.resolution.h = canvasBound.height;
         this.stageSize = coreInst.stageSize;
+        this.fullStages = coreInst.realStageSize;
 
         // 장면 준비
         this.scene = new THREE.Scene();
@@ -109,92 +111,122 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         let newObj;
 
         coreInst.object3ds = [];
-        if(coreInst.state == 'playing') {
-            // 노트 등 객체 그리기
-            if(coreInst.disable2d && (! coreInst.disable3d)) {
-                for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
-                    const objOne = coreInst.objectsPlaying[idx];
-                    if(objOne.shape != 'circle') continue;
+        if(! coreInst.disable3d) {
+            if(coreInst.state == 'playing') {
+                // 노트 등 객체 그리기
+                if(coreInst.use3d.notes) {
+                    // 노트 그리기
+                    for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+                        const objOne = coreInst.objectsPlaying[idx];
+                        if(objOne.shape != 'circle') continue;
+                        if(! (objOne instanceof Note)) continue;
 
-                    const newObj = new SphereObject(this);
-                    newObj.x = this.convertX(objOne.x);
-                    newObj.y = this.convertY(objOne.y);
-                    newObj.z = 1;
-                    newObj.r = this.convertX(objOne.r);
-                    newObj.opacity = objOne.opacity;
-                    newObj.fill = ((objOne instanceof NotePlacer) ? false : true);
-                    newObj.setColor(objOne.color);
-                    newObj.prepareDefaults();
-                    coreInst.object3ds.push(newObj);
+                        const newObj = new SphereObject(this);
+                        newObj.x = this.convertX(objOne.x);
+                        newObj.y = this.convertY(objOne.y);
+                        newObj.z = 1;
+                        newObj.r = this.convertX(objOne.r);
+                        newObj.opacity = objOne.opacity;
+                        newObj.fill = true;
+                        newObj.setColor(objOne.color);
+                        newObj.prepareDefaults();
+                        coreInst.object3ds.push(newObj);
+                    }
                 }
 
-                // 지구 객체 그리기
-                if(coreInst.notePlacers.length >= 1) {
-                    let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
-                    let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
-                    let y      = coreInst.getHpBarYLocation() - radius;
+                if(coreInst.use3d.notePlacer) {
+                    // NotePlacer 그리기
+                    for(idx=0; idx<coreInst.objectsPlaying.length; idx++) {
+                        const objOne = coreInst.objectsPlaying[idx];
+                        if(objOne.shape != 'circle') continue;
+                        if(! (objOne instanceof NotePlacer)) continue;
 
-                    let arr = coreInst.calculateHpColor();
-                    let r, g, b;
-                    r = arr[0];
-                    g = arr[1];
-                    b = arr[2];
-                    
-                    const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
-
-                    newObj = new SphereObject(this);
-                    newObj.x = this.convertX(x);
-                    newObj.y = this.convertY(y);
-                    newObj.z = 1;
-                    newObj.r = this.convertX(r);
-                    newObj.opacity = 1.0;
-                    newObj.fill = true;
-                    newObj.setColor(hpBarInsideColor);
-                    newObj.prepareDefaults();
-                    coreInst.object3ds.push(newObj);
+                        const newObj = new SphereObject(this);
+                        newObj.x = this.convertX(objOne.x);
+                        newObj.y = this.convertY(objOne.y);
+                        newObj.z = 1;
+                        newObj.r = this.convertX(objOne.r);
+                        newObj.opacity = 0.1;
+                        if(newObj.explosing == 1) newObj.opacity = 0.2;
+                        if(newObj.explosing == 2) newObj.opacity = 0.5;
+                        if(newObj.explosing == 3) newObj.opacity = 0.8;
+                        if(newObj.explosing == 4) newObj.opacity = 0.5;
+                        if(newObj.explosing == 5) newObj.opacity = 0.2;
+                        newObj.fill = false;
+                        newObj.setColor(objOne.color);
+                        newObj.prepareDefaults();
+                        coreInst.object3ds.push(newObj);
+                    }
                 }
+
+                if(coreInst.use3d.planet) {
+                    // 지구 객체 그리기
+                    if(coreInst.notePlacers.length >= 1) {
+                        let x      = Math.round((coreInst.notePlacers[0].x + coreInst.notePlacers[coreInst.notePlacers.length-1].x) / 2.0);
+                        let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
+                        let y      = coreInst.getHpBarYLocation() - radius;
+
+                        let arr = coreInst.calculateHpColor();
+                        let r, g, b;
+                        r = arr[0];
+                        g = arr[1];
+                        b = arr[2];
+                        
+                        const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
+
+                        newObj = new SphereObject(this);
+                        newObj.x = this.convertX(x);
+                        newObj.y = this.convertY(y);
+                        newObj.z = 1;
+                        newObj.r = this.convertX(r);
+                        newObj.opacity = 1.0;
+                        newObj.fill = true;
+                        newObj.setColor(hpBarInsideColor);
+                        newObj.prepareDefaults();
+                        coreInst.object3ds.push(newObj);
+                    }
+                }
+
+                // 시각화
+                coreInst.object3ds.push(this.audioVisualizer);
             }
 
-            // 시각화
-            coreInst.object3ds.push(this.audioVisualizer);
-        }
+            // 폭발 객체 이관
+            for(idx=0; idx<coreInst.objects.length; idx++) {
+                const objOne = coreInst.objects[idx];
+                if(objOne.shape != 'circle') continue;
+                if(objOne instanceof VirtualKey) continue;
+                if(objOne instanceof MouseEventArea) continue;
+                if(objOne instanceof MouseClickHighlighter) continue;
+                if(objOne instanceof Starlight) continue;
 
-        // 폭발 객체 이관
-        for(idx=0; idx<coreInst.objects.length; idx++) {
-            const objOne = coreInst.objects[idx];
-            if(objOne.shape != 'circle') continue;
-            if(objOne instanceof VirtualKey) continue;
-            if(objOne instanceof MouseEventArea) continue;
-            if(objOne instanceof MouseClickHighlighter) continue;
-            if(objOne instanceof Starlight) continue;
+                newObj = new SphereObject(this);
+                newObj.x = this.convertX(objOne.x);
+                newObj.y = this.convertY(objOne.y);
+                newObj.z = 1;
+                newObj.r = this.convertX(objOne.r);
+                newObj.opacity = objOne.opacity;
+                newObj.setColor(objOne.color);
+                newObj.prepareDefaults();
+                if(newObj.x >= -200 && newObj.x <= coreInst.getStageWidth() * 2 && newObj.y >= -200 && newObj.y <= coreInst.getStageHeight() * 2 ) {
+                    coreInst.object3ds.push(newObj);
+                }
 
-            newObj = new SphereObject(this);
-            newObj.x = this.convertX(objOne.x);
-            newObj.y = this.convertY(objOne.y);
-            newObj.z = 1;
-            newObj.r = this.convertX(objOne.r);
-            newObj.opacity = objOne.opacity;
-            newObj.setColor(objOne.color);
-            newObj.prepareDefaults();
-            if(newObj.x >= -200 && newObj.x <= coreInst.getStageWidth() * 2 && newObj.y >= -200 && newObj.y <= coreInst.getStageHeight() * 2 ) {
+                let lightRadius = 1.5;
+                if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
+                else                      lightRadius = 1.8 - (0.2 * (objOne.explosing - 3));
+
+                newObj = new LightPoint(this, lightRadius);
+                newObj.x = this.convertX(objOne.x);
+                newObj.y = this.convertY(objOne.y);
+                newObj.z = 1;
+                newObj.r = this.convertX(objOne.r);
+                newObj.opacity = objOne.opacity;
+                newObj.setColor(objOne.color);
+                newObj.prepareDefaults();
                 coreInst.object3ds.push(newObj);
             }
-
-            let lightRadius = 1.5;
-            if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
-            else                      lightRadius = 1.8 - (0.2 * (objOne.explosing - 3));
-
-            newObj = new LightPoint(this, lightRadius);
-            newObj.x = this.convertX(objOne.x);
-            newObj.y = this.convertY(objOne.y);
-            newObj.z = 1;
-            newObj.r = this.convertX(objOne.r);
-            newObj.opacity = objOne.opacity;
-            newObj.setColor(objOne.color);
-            newObj.prepareDefaults();
-            coreInst.object3ds.push(newObj);
         }
-        
     }
 
     /** 시각화 동작 시 호출 */
@@ -252,12 +284,12 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
 
     /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
     convertX(x) {
-        return Math.round((x * this.resolution.w / this.stageSize.w));
+        return Math.round((x * this.resolution.w / this.fullStages.w));
     }
 
     /** 게임 내 무대 크기 (stageSize.h) 를 실제 화면 내 좌표 (resolution.h) 로 변환 */
     convertY(y) {
-        return this.resolution.h - Math.round((y * this.resolution.h / this.stageSize.h));
+        return this.resolution.h - Math.round((y * this.resolution.h / this.fullStages.h));
     }
 
 }
@@ -359,107 +391,119 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
     
     constructor(coreInst, manager) {
         super(); 
-        // 참고 : https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/
-        const vertexShaderCodes = `
-        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-        vec4 permute(vec4 x) { return mod289(((x*34.0)+10.0)*x); }
-        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-        vec3 fade(vec3 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
-        float pnoise(vec3 P, vec3 rep) {
-            vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
-            vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, mod period
-            Pi0 = mod289(Pi0);
-            Pi1 = mod289(Pi1);
-            vec3 Pf0 = fract(P); // Fractional part for interpolation
-            vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
-            vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-            vec4 iy = vec4(Pi0.yy, Pi1.yy);
-            vec4 iz0 = Pi0.zzzz;
-            vec4 iz1 = Pi1.zzzz;
+        this.init(coreInst, manager);
+    }
 
-            vec4 ixy = permute(permute(ix) + iy);
-            vec4 ixy0 = permute(ixy + iz0);
-            vec4 ixy1 = permute(ixy + iz1);
+    /** 초기화 */
+    init(coreInst, manager) {
+        if(coreInst.use3d.visualization) {
+            if(this.shaderMaterial == null) {
+                // 참고 : https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/
+                const vertexShaderCodes = `
+                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 permute(vec4 x) { return mod289(((x*34.0)+10.0)*x); }
+                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+                vec3 fade(vec3 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
+                float pnoise(vec3 P, vec3 rep) {
+                    vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
+                    vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, mod period
+                    Pi0 = mod289(Pi0);
+                    Pi1 = mod289(Pi1);
+                    vec3 Pf0 = fract(P); // Fractional part for interpolation
+                    vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+                    vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+                    vec4 iy = vec4(Pi0.yy, Pi1.yy);
+                    vec4 iz0 = Pi0.zzzz;
+                    vec4 iz1 = Pi1.zzzz;
 
-            vec4 gx0 = ixy0 * (1.0 / 7.0);
-            vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
-            gx0 = fract(gx0);
-            vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-            vec4 sz0 = step(gz0, vec4(0.0));
-            gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-            gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+                    vec4 ixy = permute(permute(ix) + iy);
+                    vec4 ixy0 = permute(ixy + iz0);
+                    vec4 ixy1 = permute(ixy + iz1);
 
-            vec4 gx1 = ixy1 * (1.0 / 7.0);
-            vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
-            gx1 = fract(gx1);
-            vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-            vec4 sz1 = step(gz1, vec4(0.0));
-            gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-            gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+                    vec4 gx0 = ixy0 * (1.0 / 7.0);
+                    vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+                    gx0 = fract(gx0);
+                    vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+                    vec4 sz0 = step(gz0, vec4(0.0));
+                    gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+                    gy0 -= sz0 * (step(0.0, gy0) - 0.5);
 
-            vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
-            vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-            vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
-            vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-            vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
-            vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-            vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
-            vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+                    vec4 gx1 = ixy1 * (1.0 / 7.0);
+                    vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+                    gx1 = fract(gx1);
+                    vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+                    vec4 sz1 = step(gz1, vec4(0.0));
+                    gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+                    gy1 -= sz1 * (step(0.0, gy1) - 0.5);
 
-            vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-            g000 *= norm0.x;
-            g010 *= norm0.y;
-            g100 *= norm0.z;
-            g110 *= norm0.w;
-            vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-            g001 *= norm1.x;
-            g011 *= norm1.y;
-            g101 *= norm1.z;
-            g111 *= norm1.w;
+                    vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+                    vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+                    vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+                    vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+                    vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+                    vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+                    vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+                    vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
 
-            float n000 = dot(g000, Pf0);
-            float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-            float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-            float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-            float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-            float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-            float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-            float n111 = dot(g111, Pf1);
+                    vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+                    g000 *= norm0.x;
+                    g010 *= norm0.y;
+                    g100 *= norm0.z;
+                    g110 *= norm0.w;
+                    vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+                    g001 *= norm1.x;
+                    g011 *= norm1.y;
+                    g101 *= norm1.z;
+                    g111 *= norm1.w;
 
-            vec3 fade_xyz = fade(Pf0);
-            vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-            vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-            float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
-            return 2.2 * n_xyz;
+                    float n000 = dot(g000, Pf0);
+                    float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+                    float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+                    float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+                    float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+                    float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+                    float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+                    float n111 = dot(g111, Pf1);
+
+                    vec3 fade_xyz = fade(Pf0);
+                    vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+                    vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+                    float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+                    return 2.2 * n_xyz;
+                }
+                uniform float u_frequency;
+                uniform float u_time;
+                uniform float u_size;
+                void main() { 
+                    float noise = u_size * pnoise(position + u_time, vec3(10.));
+                    float displacement = (u_frequency / 10.) * (noise / 10.);
+                    vec3 newPosition = position + normal * displacement;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0); 
+                }
+                `;
+                
+                const fragmentShaderCodes = `
+                uniform float u_red;
+                uniform float u_green;
+                uniform float u_blue;
+                void main() { gl_FragColor = vec4(vec3(u_red, u_green, u_blue), 1. ); }
+                `;
+
+                this.shaderMaterial = new THREE.ShaderMaterial({
+                    wireframe : true,
+                    uniforms : this.uniforms,
+                    vertexShader : vertexShaderCodes,
+                    fragmentShader : fragmentShaderCodes
+                });
+                this.geometry = new THREE.IcosahedronGeometry(200, 30); // 크기 및 복잡도 지정
+                this.mainMesh = new THREE.Mesh(this.geometry, this.shaderMaterial);
+                this.preparedMeshes.push(this.mainMesh);
+            }
+        } else {
+            this.shaderMaterial = null;
+            this.preparedMeshes = [];
         }
-        uniform float u_frequency;
-        uniform float u_time;
-        uniform float u_size;
-        void main() { 
-            float noise = u_size * pnoise(position + u_time, vec3(10.));
-            float displacement = (u_frequency / 10.) * (noise / 10.);
-            vec3 newPosition = position + normal * displacement;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0); 
-        }
-        `;
-        
-        const fragmentShaderCodes = `
-        uniform float u_red;
-        uniform float u_green;
-        uniform float u_blue;
-        void main() { gl_FragColor = vec4(vec3(u_red, u_green, u_blue), 1. ); }
-        `;
-
-        this.shaderMaterial = new THREE.ShaderMaterial({
-            wireframe : true,
-            uniforms : this.uniforms,
-            vertexShader : vertexShaderCodes,
-            fragmentShader : fragmentShaderCodes
-        });
-        this.geometry = new THREE.IcosahedronGeometry(200, 30); // 크기 및 복잡도 지정
-        this.mainMesh = new THREE.Mesh(this.geometry, this.shaderMaterial);
-        this.preparedMeshes.push(this.mainMesh);
     }
 
     /** 주기적으로 호출됨 (60000 / 음악bpm / 16 밀리초마다) */
@@ -467,87 +511,90 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
         const selfs = this;
         if(audioBuffer == null || audioBuffer.length <= 0) { this.preparedMeshes = []; return; }
 
-        // 곡 주파수 데이터 전체 평균 구하기
-        let avg = 0;
-        for(let idx=0; idx<audioBuffer.length; idx++) {
-            avg += audioBuffer[idx];
-        }
-        avg = avg / audioBuffer.length;
+        this.init(coreInst, manager);
+        if(this.shaderMaterial != null) {
+            // 곡 주파수 데이터 전체 평균 구하기
+            let avg = 0;
+            for(let idx=0; idx<audioBuffer.length; idx++) {
+                avg += audioBuffer[idx];
+            }
+            avg = avg / audioBuffer.length;
 
-        // 곡 진행 시간
-        let time = (coreInst.elapsedTime < 0 ? 0 : coreInst.elapsedTime);
+            // 곡 진행 시간
+            let time = (coreInst.elapsedTime < 0 ? 0 : coreInst.elapsedTime);
 
-        let hp = coreInst.hp + 0; // 100 이 최대
-        if(coreInst.gameOverDelayed) hp = 0;
+            let hp = coreInst.hp + 0; // 100 이 최대
+            if(coreInst.gameOverDelayed) hp = 0;
 
-        /*
-           HP와 곡 진행 시간에 따라 컬러를 변경
-           진행 시간이 지날수록 흰색에서 은은한 초록/파랑 계열로 이동하며,
-           HP가 떨어질수록 붉은 기운 추가
-           HP가 20 이하일 때는 0에 가까워질수록 검은색에 가까워지도록 변경
-        */
-        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-        const lerp = (start, end, ratio) => start + (end - start) * ratio;
+            /*
+            HP와 곡 진행 시간에 따라 컬러를 변경
+            진행 시간이 지날수록 흰색에서 은은한 초록/파랑 계열로 이동하며,
+            HP가 떨어질수록 붉은 기운 추가
+            HP가 20 이하일 때는 0에 가까워질수록 검은색에 가까워지도록 변경
+            */
+            const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+            const lerp = (start, end, ratio) => start + (end - start) * ratio;
 
-        let progress = 0.0;
-        if(coreInst.song && typeof coreInst.song.endTime === 'number' && coreInst.song.endTime > 0) {
-            progress = clamp(time / coreInst.song.endTime, 0.0, 1.0);
-        } else {
-            progress = clamp(time / 120.0, 0.0, 1.0); // 기본값: 2분 기준
-        }
+            let progress = 0.0;
+            if(coreInst.song && typeof coreInst.song.endTime === 'number' && coreInst.song.endTime > 0) {
+                progress = clamp(time / coreInst.song.endTime, 0.0, 1.0);
+            } else {
+                progress = clamp(time / 120.0, 0.0, 1.0); // 기본값: 2분 기준
+            }
 
-        const white = { r: 1.0, g: 1.0, b: 1.0 };
-        const softGreen = { r: 0.75, g: 1.0, b: 0.85 };
-        const softBlue  = { r: 0.7,  g: 0.9, b: 1.0 };
+            const white = { r: 1.0, g: 1.0, b: 1.0 };
+            const softGreen = { r: 0.75, g: 1.0, b: 0.85 };
+            const softBlue  = { r: 0.7,  g: 0.9, b: 1.0 };
 
-        let baseColor;
-        if(progress < 0.5) {
-            const ratio = progress * 2.0;
-            baseColor = {
-                r: lerp(white.r, softGreen.r, ratio),
-                g: lerp(white.g, softGreen.g, ratio),
-                b: lerp(white.b, softGreen.b, ratio)
-            };
-        } else {
-            const ratio = (progress - 0.5) * 2.0;
-            baseColor = {
-                r: lerp(softGreen.r, softBlue.r, ratio),
-                g: lerp(softGreen.g, softBlue.g, ratio),
-                b: lerp(softGreen.b, softBlue.b, ratio)
-            };
-        }
+            let baseColor;
+            if(progress < 0.5) {
+                const ratio = progress * 2.0;
+                baseColor = {
+                    r: lerp(white.r, softGreen.r, ratio),
+                    g: lerp(white.g, softGreen.g, ratio),
+                    b: lerp(white.b, softGreen.b, ratio)
+                };
+            } else {
+                const ratio = (progress - 0.5) * 2.0;
+                baseColor = {
+                    r: lerp(softGreen.r, softBlue.r, ratio),
+                    g: lerp(softGreen.g, softBlue.g, ratio),
+                    b: lerp(softGreen.b, softBlue.b, ratio)
+                };
+            }
 
-        const hpRatio = clamp(hp / 100.0, 0.0, 1.0);
-        const danger = 1.0 - hpRatio;
+            const hpRatio = clamp(hp / 100.0, 0.0, 1.0);
+            const danger = 1.0 - hpRatio;
 
-        let red = clamp(baseColor.r + danger * 0.35, 0.0, 1.0);
-        let green = clamp(baseColor.g - danger * 0.15, 0.0, 1.0);
-        let blue = clamp(baseColor.b - danger * 0.15, 0.0, 1.0);
+            let red = clamp(baseColor.r + danger * 0.35, 0.0, 1.0);
+            let green = clamp(baseColor.g - danger * 0.15, 0.0, 1.0);
+            let blue = clamp(baseColor.b - danger * 0.15, 0.0, 1.0);
 
-        if(hp <= 20) {
-            const blackFade = clamp((20 - hp) / 20.0, 0.0, 1.0);
-            red   = red   * (1.0 - blackFade) + 0.18 * blackFade;
-            green = green * (1.0 - blackFade);
-            blue  = blue  * (1.0 - blackFade);
-        }
+            if(hp <= 20) {
+                const blackFade = clamp((20 - hp) / 20.0, 0.0, 1.0);
+                red   = red   * (1.0 - blackFade) + 0.18 * blackFade;
+                green = green * (1.0 - blackFade);
+                blue  = blue  * (1.0 - blackFade);
+            }
 
-        this.uniforms.u_red.value   = red;
-        this.uniforms.u_green.value = green;
-        this.uniforms.u_blue.value  = blue;
+            this.uniforms.u_red.value   = red;
+            this.uniforms.u_green.value = green;
+            this.uniforms.u_blue.value  = blue;
 
 
-        // https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/ 참고하여 구현 중
-        // uniform 에 값을 넣어 쉐이더에 값을 전달
-        this.uniforms.u_time.value = time;
-        this.uniforms.u_frequency.value = avg;
-        this.shaderMaterial.uniforms.u_time.value = this.uniforms.u_time.value;
-        this.shaderMaterial.uniforms.u_frequency.value = this.uniforms.u_frequency.value;
-        this.shaderMaterial.uniforms.u_red.value = this.uniforms.u_red.value;
-        this.shaderMaterial.uniforms.u_green.value = this.uniforms.u_green.value;
-        this.shaderMaterial.uniforms.u_blue.value = this.uniforms.u_blue.value;
+            // https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/ 참고하여 구현 중
+            // uniform 에 값을 넣어 쉐이더에 값을 전달
+            this.uniforms.u_time.value = time;
+            this.uniforms.u_frequency.value = avg;
+            this.shaderMaterial.uniforms.u_time.value = this.uniforms.u_time.value;
+            this.shaderMaterial.uniforms.u_frequency.value = this.uniforms.u_frequency.value;
+            this.shaderMaterial.uniforms.u_red.value = this.uniforms.u_red.value;
+            this.shaderMaterial.uniforms.u_green.value = this.uniforms.u_green.value;
+            this.shaderMaterial.uniforms.u_blue.value = this.uniforms.u_blue.value;
 
-        // Mesh 객체 위치 지정
-        this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
+            // Mesh 객체 위치 지정
+            this.mainMesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 3), coreInst.convertY(coreInst.getStageHeight() / 3), 50);
+        }        
     }
 
     /** Three.js Mesh 객체 반환 */

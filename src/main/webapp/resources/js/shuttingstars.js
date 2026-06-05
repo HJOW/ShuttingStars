@@ -82,6 +82,13 @@ class ShuttingStarsCore {
     disable3d = false;  // true 지정 시 3D 렌더링하지 않음
     disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함.
 
+    use3d = {
+        notePlacer : false,
+        notes : true,
+        planet : true,
+        visualization : true
+    };
+
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
