@@ -208,7 +208,7 @@ $(function() {
                             if(chkDigitSum.is(':checked')) appendStr += ', ' + String(totalSums);
                             if(chkIncCount.is(':checked')) appendStr += ', ' + String(increaseCount);
                             if(chkIncSum.is(':checked')) appendStr += ', ' + String(increaseSum);
-                            if(chkPattern.is(':checked')) appendStr += ', ' + JSON.stringify({ locationIndex : Math.floor(Math.random() * 6), time : processingTime });
+                            if(chkPattern.is(':checked')) appendStr += ', ' + JSON.stringify({ locationIndex : Math.floor(ShuttingStarsUtility.random() * 6), time : processingTime });
 
                             fAppend(appendStr);
                             lastAppend = processingTime;

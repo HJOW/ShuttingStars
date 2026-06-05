@@ -81,11 +81,11 @@ $(function(){
             for(let idx=0; idx<json.length; idx++) {
                 const rowOne = json[idx];
 
-                createdIndex = Math.floor(Math.random() * 5.9999);
+                createdIndex = Math.floor(ShuttingStarsUtility.random() * 5.9999);
                 if(lastIndex == createdIndex) {
-                    createdIndex = Math.floor(Math.random() * 5.9999);
+                    createdIndex = Math.floor(ShuttingStarsUtility.random() * 5.9999);
                     loops = 0;
-                    while(lastIndex == createdIndex && lastTime == rowOne.time) { createdIndex = Math.floor(Math.random() * 5.9999); loops++; if(loops >= 6) break; }
+                    while(lastIndex == createdIndex && lastTime == rowOne.time) { createdIndex = Math.floor(ShuttingStarsUtility.random() * 5.9999); loops++; if(loops >= 6) break; }
                 }
                 rowOne.locationIndex = createdIndex;
 

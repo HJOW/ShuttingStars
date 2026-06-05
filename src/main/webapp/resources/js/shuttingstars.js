@@ -1264,7 +1264,7 @@ class ShuttingStarsCore {
             if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
 
             // 시리얼 없는 경우 임의 시리얼 부여
-            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(Math.random() * 999999999) + '' + Math.floor(Math.random() * 999999999);
+            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(ShuttingStarsUtility.random() * 999999999) + '' + Math.floor(ShuttingStarsUtility.random() * 999999999);
             list.push(songOne.toJSONObject());
         }
 
@@ -1425,7 +1425,7 @@ class ShuttingStarsCore {
                 
                 // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
                 if(pattern.locationIndex < 0) {
-                    pattern.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+                    pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
                 }
 
                 // 노트 생성
@@ -4324,7 +4324,7 @@ class ShuttingStarsCore {
                     // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
                     //     locationIndex 값이 음수인 경우 랜덤 부여
                     if(pattern.locationIndex < 0) {
-                        pattern.locationIndex = Math.floor(Math.random() * this.notePlacers.length);
+                        pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
                     }
                     //     노트 생성
                     const note = new Note(pattern.locationIndex);
@@ -5310,7 +5310,7 @@ class ShuttingStarsCore {
             if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
 
             // 시리얼 없는 경우 임의 시리얼 부여
-            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(Math.random() * 999999999) + '' + Math.floor(Math.random() * 999999999);
+            if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(ShuttingStarsUtility.random() * 999999999) + '' + Math.floor(ShuttingStarsUtility.random() * 999999999);
             list.push(songOne);
         }
 
@@ -5518,7 +5518,7 @@ class ShuttingStarsCore {
 
         // 별빛 추가
         this.backStarlightSpdX = 1;
-        this.backStarlightSpdY = Math.random();
+        this.backStarlightSpdY = ShuttingStarsUtility.random();
         for(idx=0; idx<this.backStarlightCount; idx++) {
             const obj = new Starlight();
             obj.speedX = this.backStarlightSpdX;
@@ -5544,7 +5544,7 @@ class ShuttingStarsCore {
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
             newOne = new Starlight();
-            newOne.y = -2 + (Math.random() * this.convertX(this.getFullRenderHeight() * 2));
+            newOne.y = -2 + (ShuttingStarsUtility.random() * this.convertX(this.getFullRenderHeight() * 2));
             if(newOne.y >= this.convertX(this.getFullRenderHeight())) newOne.x = newOne.y - this.convertX(this.getFullRenderHeight());
             else newOne.x = -2;
             newOne.speedX = this.backStarlightSpdX;
@@ -5679,7 +5679,7 @@ class ShuttingStarsCore {
         if(json.serial != null && json.serial != '') {
             song.serial = json.serial;
         } else {
-            song.serial = 'CUSTOMSONG_' + (Math.random() * 99999999) + '' + (Math.random() * 99999999);
+            song.serial = 'CUSTOMSONG_' + (ShuttingStarsUtility.random() * 99999999) + '' + (ShuttingStarsUtility.random() * 99999999);
         }
 
         if(json.decorations) {
@@ -5706,7 +5706,7 @@ class ShuttingStarsCore {
 
         // 시리얼 없으면 발급
         if(song.serial == null || song.serial == '') {
-            song.serial = 'CUSTOMSONG_' + (Math.random() * 99999999) + '' + (Math.random() * 99999999);
+            song.serial = 'CUSTOMSONG_' + (ShuttingStarsUtility.random() * 99999999) + '' + (ShuttingStarsUtility.random() * 99999999);
         }
 
         // Alter URL 유효여부 검사
@@ -6028,7 +6028,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
     prepare(inst) {}
     prepareNotes(inst, level) {
         const allCnt = inst.songDisplays.length;
-        const rand   = Math.floor(Math.random() * allCnt);
+        const rand   = Math.floor(ShuttingStarsUtility.random() * allCnt);
 
         const choosed = inst.songDisplays[rand];
         this.musicUrl       = choosed.musicUrl;
@@ -6070,7 +6070,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
         let noteCreatedAfter = 0;
         let randValue = 0;
         for(idx=this.loadingTime * _shuttingstarcore.timeMultiplier + 100; idx<this.endTime; idx++) {
-            randValue = Math.random() + rateMin; // rateMin ~ (9.99999 + rateMin)
+            randValue = ShuttingStarsUtility.random() + rateMin; // rateMin ~ (9.99999 + rateMin)
             randValue -= (rateAfter * noteCreatedAfter);
             if(randValue < 0) randValue = 0;
             if(randValue > 1) randValue = 1;
@@ -6141,6 +6141,7 @@ class ShuttingStarsNotePattern {
 
 /* 게임 내 Note 및 NotePlacer 의 상위 클래스 */
 class ShuttingStarsObject {
+    uniqueSerial = Math.floor(9999999 * ShuttingStarsUtility.random());
     id = 0;
     x = 0;
     y = 0;
@@ -6155,7 +6156,9 @@ class ShuttingStarsObject {
     explosing = 0; // 0 : 일반적인 상황, 1~8 : 폭발 처리 애니메이션 진행상황
     explosingMax = 8;
     explosingSpeed = 1; // 폭발 속도
-    constructor() {}
+    constructor() {
+        this.uniqueSerial = 10000000 + Math.floor(9999999 * ShuttingStarsUtility.random()) + Math.floor(9999999 * ShuttingStarsUtility.random()); // 고유값
+    }
     draw(ctx) {
         if(this.shape === 'circle') {
             ctx.beginPath();
@@ -6485,11 +6488,11 @@ class DecorationObject extends ShuttingStarsObject {
 class Starlight extends DecorationObject {
     constructor() {
         super(0);
-        this.r = Math.round(Math.random() * 3.0) + 1;
-        this.x = Math.round(Math.random() * _shuttingstarcore.getStageWidth());
-        this.y = Math.round(Math.random() * _shuttingstarcore.getStageHeight());
+        this.r = Math.round(ShuttingStarsUtility.random() * 3.0) + 1;
+        this.x = Math.round(ShuttingStarsUtility.random() * _shuttingstarcore.getStageWidth());
+        this.y = Math.round(ShuttingStarsUtility.random() * _shuttingstarcore.getStageHeight());
         this.shape = 'circle';
-        this.opacity = 0.5 + (0.49 * Math.random());
+        this.opacity = 0.5 + (0.49 * ShuttingStarsUtility.random());
         this.color = '255, 255, 255';
         this.priority = 'low';
         this.dark = false;
@@ -6871,7 +6874,7 @@ class ShuttingStarsUtilityClass {
 
         msg = String(msg);
 
-        let uniqid = 'toast' + (Math.random() * 99999999) + '' + uniqNo;
+        let uniqid = 'toast' + (ShuttingStarsUtility.random() * 99999999) + '' + uniqNo;
         let area = document.createElement('div');
         area.id = uniqid;
         area.classList.add('toast');
@@ -7021,20 +7024,29 @@ class ShuttingStarsUtilityClass {
         return Math.abs(a - b) < 0.000001;
     }
 
+    /** 소수 2째자리까지 남기고 반올림 */
     round2(numbers) {
         return Math.round(numbers * 100.0) / 100.0;
     }
 
+    /** 소수 3째자리까지 남기고 반올림 */
     round3(numbers) {
         return Math.round(numbers * 1000.0) / 1000.0;
     }
 
+    /** 소수 2째자리까지 남기고 버림 */
     floor2(numbers) {
         return Math.floor(numbers * 100.0) / 100.0;
     }
 
+    /** 소수 3째자리까지 남기고 버림 */
     floor3(numbers) {
         return Math.floor(numbers * 1000.0) / 1000.0;
+    }
+
+    /** 0 ~ 1.0 사이 랜덤 수 반환 */
+    random() {
+        return Math.random();
     }
 
     drawGradientedArc(ctx, x, y, radius, red, green, blue, alpha, depth) {
