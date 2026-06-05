@@ -586,15 +586,14 @@ class ShuttingStarsCore {
                 const x = event.clientX - rect.left;
                 const y = event.clientY - rect.top;
 
-                // TODO 마우스 포인트 위치 이상함
                 // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
-                const rx = Math.floor((x * selfs.getStageWidth()) / rect.width );
-                const ry = Math.floor((y * selfs.getStageHeight()) / rect.height);
+                const rx = Math.floor((x * selfs.getFullRenderWidth())  / rect.width );
+                const ry = Math.floor((y * selfs.getFullRenderHeight()) / rect.height);
 
                 if(mouseDown) {
-                    if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+                    if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
                 } else {
-                    if(selfs.mouseClickDebugMode) console.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry);
+                    if(selfs.mouseClickDebugMode) console.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
                 }
 
                 // 임시 객체 (충돌여부 판단 위함)
@@ -3763,6 +3762,29 @@ class ShuttingStarsCore {
                 this.ctx.fillText(idx + ',' + jdx, this.convertX(idx), this.convertY(jdx));
             }
         }
+
+        // canvas 경계선에도 선 긋기
+        this.ctx.lineWidth = 8;
+        this.ctx.strokeStyle = 'red';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.convertX(0), this.convertY(0));
+        this.ctx.lineTo(this.convertX(0), this.convertY(this.getStageHeight()));
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.convertX(0), this.convertY(0));
+        this.ctx.lineTo(this.convertX(this.getStageWidth()), this.convertY(0));
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.convertX(0), this.convertY(this.getStageHeight()));
+        this.ctx.lineTo(this.convertX(this.getStageWidth()), this.convertY(this.getStageHeight()));
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.convertX(this.getStageWidth()), this.convertY(0));
+        this.ctx.lineTo(this.convertX(this.getStageWidth()), this.convertY(this.getStageHeight()));
+        this.ctx.stroke();
     }   
 
     /** 오디오 시각화 그리기 */
