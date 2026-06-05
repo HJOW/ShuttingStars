@@ -11,7 +11,7 @@ https://hjow.duckdns.org/shuttingstars/
 OR
 https://shuttingstars-3eddf.web.app
 
-## 하드웨어 의존성
+## HTTP Server needs
 
 As of now, it is configured to operate using only a pure web server and is compatible without dynamic server pages.    
 (Some feature using firebase authentication and firestore to upload clear records. - Not necessary)
