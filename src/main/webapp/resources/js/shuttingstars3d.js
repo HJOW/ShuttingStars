@@ -396,7 +396,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
 
     /** 초기화 */
     init(coreInst, manager) {
-        if(coreInst.use3d.visualization) {
+        if(coreInst.useAudioVisualizer && coreInst.use3d.visualization) {
             if(this.shaderMaterial == null) {
                 // 참고 : https://waelyasmina.net/articles/how-to-create-a-3d-audio-visualizer-using-three-js/
                 const vertexShaderCodes = `

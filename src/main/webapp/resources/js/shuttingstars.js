@@ -2345,6 +2345,7 @@ class ShuttingStarsCore {
                 if(obj.explosing >= obj.explosingMax) continue;
                 if(obj instanceof Note) {
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
+                    if((! this.disable3d) && this.use3d.notes) continue;
                 }
                 if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
             }
@@ -3801,6 +3802,7 @@ class ShuttingStarsCore {
 
         if(this.ss3d != null && (! this.disable3d)) {
             this.ss3d.soundVisualizing(this, this.audioAnalyser, this.audioBuffer);
+            if(this.use3d.visualization) return;
             if(this.disable2d) return;
         }
 
