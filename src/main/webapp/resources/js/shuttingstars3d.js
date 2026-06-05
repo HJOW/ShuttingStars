@@ -37,6 +37,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
     backLight = null;
     mainLight = null;
     gridHelper = null;
+    audioVisualizer = null;
     init(canvas3d, coreInst) {
         const canvasBound = canvas3d.getBoundingClientRect();
         // 해상도 준비
@@ -70,6 +71,9 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         // this.mainLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.mainLight.position.set(this.stageSize.w * 2 / 3, this.stageSize.h * 2 / 3, 100);
         this.mainLight.visible = true;
+
+        // 오디오 시각화 객체
+        this.audioVisualizer = new AudioVisualizingObject();
 
         // 그리드 디버거
         this.gridHelper = new THREE.GridHelper(10, 10);
@@ -126,6 +130,12 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                     coreInst.object3ds.push(newObj);
                 }
             }
+
+            // 시각화
+            const visualizingArr = this.audioVisualizer.getMeshes(this);
+            for(idx=0; idx<visualizingArr.length; idx++) {
+                coreInst.object3ds.push(newObj);
+            }
         }
 
         // 폭발 객체 이관
@@ -168,7 +178,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
 
     /** 시각화 동작 시 호출 */
     soundVisualizing(coreInst, audioAnalyzer, audioBuffer) {
-        
+        this.audioVisualizer.onSoundVisualizing(coreInst, this, audioAnalyzer, audioBuffer);
     }
 
     /** 렌더링 (만들어 뒀던 객체들을 scene 에 넣기) */
@@ -303,6 +313,19 @@ class LightPoint extends SphereObject {
 
     getMeshes(manager) {
         return [ this.light ];
+    }
+}
+
+class AudioVisualizingObject {
+    preparedObjects = [];
+    constructor() {}
+
+    onSoundVisualizing(coreInst, manager, audioAnalyzer, audioBuffer) {
+        
+    }
+
+    getMeshes(manager) {
+        return this.preparedObjects;
     }
 }
 
