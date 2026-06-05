@@ -454,8 +454,7 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
 
     onSoundVisualizing(coreInst, manager, audioAnalyzer, audioBuffer) {
         const selfs = this;
-        this.preparedMeshes = [];
-        if(audioBuffer == null || audioBuffer.length <= 0) return;
+        if(audioBuffer == null || audioBuffer.length <= 0) { this.preparedMeshes = []; return; }
 
         // 흑색 바형 시각화가 나타나는 소스, 좀더 화려한 다른 방법은 없을까?
         //    중앙을 침범하지 않는 타입이 필요함. 그게 아니면, 2D 레이어 뒤에 출력할 방법을 찾아야 함
@@ -478,9 +477,10 @@ class AudioVisualizingObject extends ShuttingStars3DObject {
             vertexShader : this.vertexShader.textContent,
             fragmentShader : this.fragmentShader.textContent
         });
-        const geo = new THREE.IcosahedronGeometry(4, 30);
+        const geo = new THREE.IcosahedronGeometry(200, 30);
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 2), coreInst.convertY(coreInst.getStageHeight), 10);
+        mesh.position.set( coreInst.convertX(coreInst.getStageWidth() / 2), coreInst.convertY(coreInst.getStageHeight() / 2), 30);
+        this.preparedMeshes = [];
         this.preparedMeshes.push(mesh);
 
 
