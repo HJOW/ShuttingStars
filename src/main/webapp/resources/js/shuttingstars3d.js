@@ -261,9 +261,10 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             obj3d.setPosition(this.convertX(objOne.x), this.convertY(objOne.y), 1);
             if(objOne.r) obj3d.setR(this.convertX(objOne.r));
             if(objOne.color  ) obj3d.setColor(objOne.color);
-            if(objOne.opacity) { obj3d.setOpacity(objOne.opacity * objOne.opacity); } // 티가 거의 안남
+            if(objOne.opacity) { obj3d.setOpacity(objOne.opacity); }
 
             if(objOne.explosing) {
+                if(objOne.explosing >= 2) obj3d.hidden = true;
                 if(objOne.explosing >= objOne.explosingMax) obj3d.hidden = true;
             }
         }
