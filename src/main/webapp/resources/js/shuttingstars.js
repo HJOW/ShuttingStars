@@ -306,9 +306,11 @@ class ShuttingStarsCore {
     constructor() {}
     
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
-    init(rootDiv) {
+    init(rootDiv, urlContext) {
         const selfs = this;
         try {
+            if(urlContext) this.urlCtx = urlContext;
+
             this.rebuildBroker();
 
             this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
@@ -7156,6 +7158,6 @@ function setShuttingStar3D(obj) {
 }
 
 /** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
-function initShuttingStars(param) {
-    try { return _shuttingstarcore.init(param); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
+function initShuttingStars(mainDiv, urlContext) {
+    try { return _shuttingstarcore.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
 }
