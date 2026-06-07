@@ -2427,8 +2427,8 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime   )), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10));
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + this.metricSize2);
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime   )), this.convertX(this.getStageWidth() * 3 / 5), this.convertY(this.getStageHeight() / 10));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 3 / 5), this.convertY(this.getStageHeight() / 10) + this.metricSize2);
         }
 
         // 게임 오버 그리기
@@ -6765,7 +6765,7 @@ class VirtualKey extends DecorationObject {
 
         const charUnitW = (this.fontSize * 2) + this.wGap;
         const charUnitH = (this.fontSize * 2) + this.hGap;
-        const charUnitWP = Math.round(charUnitW * 1.5);
+        const charUnitWP = Math.round(charUnitW * 1);
         const charUnitHP = Math.round(charUnitH * 1.5);
 
         this.key = key;
