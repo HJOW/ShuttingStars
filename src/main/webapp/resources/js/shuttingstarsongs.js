@@ -24,152 +24,6 @@ limitations under the License.
 
 let song;
 
-
-song = {};
-song.name = 'Morning Sky';
-song.composer = 'Roa';
-song.noteWriter = 'HJOW';
-song.bgaUrl = '';
-song.musicUrl = '[CTX]/resources/songs/audiolibrary/morning-sky-by-roa-music.mp3';
-song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/night-ride-by-joshua-moses.mp3';
-song.thumbnailUrl = '';
-song.description = `
-|Music: Morning Sky by Roa 
-|    https://soundcloud.com/roa_music1031
-|License: Creative Commons
-|    Attribution 3.0 Unported — CC BY 3.0
-|Free Download / Stream
-|    https://links.al/DQ0
-|Music promoted by 
-|    Audio Library: https://links.al/youtube
-`;
-song.loadingTime = 10;
-song.bpm = 96;
-song.endTime = 5080;
-song.timeConstant = 0; // -506.7
-song.noteMultiplier = 1;
-song.timeMultiplier = 1;
-song.test = false;
-song.serial = 'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g';
-song.difficulties = [
-    {
-        difficultyLabel : 'easy',
-        difficultyLevel : 1,
-        patterns : [
-{"locationIndex":0,"time":568.647},
-{"locationIndex":5,"time":600.672},
-{"locationIndex":2,"time":632.697},
-{"locationIndex":3,"time":665.168},
-{"locationIndex":4,"time":697.415},
-{"locationIndex":1,"time":740.437},
-{"locationIndex":3,"time":776.252},
-{"locationIndex":3,"time":816.153},
-{"locationIndex":5,"time":848.178},
-{"locationIndex":3,"time":881.243},
-{"locationIndex":1,"time":920.178},
-{"locationIndex":2,"time":952.203},
-{"locationIndex":2,"time":992.105},
-{"locationIndex":4,"time":1033.046},
-{"locationIndex":3,"time":1068.935},
-{"locationIndex":4,"time":1104.938},
-{"locationIndex":5,"time":1144.837},
-{"locationIndex":2,"time":1196.663},
-{"locationIndex":2,"time":1232.763},
-{"locationIndex":5,"time":1272.642},
-{"locationIndex":3,"time":1324.391},
-{"locationIndex":4,"time":1360.503},
-{"locationIndex":3,"time":1400.404},
-{"locationIndex":0,"time":1432.418},
-{"locationIndex":4,"time":1496.108},
-{"locationIndex":2,"time":1528.133},
-{"locationIndex":3,"time":1560.158},
-{"locationIndex":5,"time":1592.174},
-{"locationIndex":4,"time":1624.951},
-{"locationIndex":2,"time":1673.052},
-{"locationIndex":0,"time":1712.941},
-{"locationIndex":3,"time":1752.865},
-{"locationIndex":4,"time":1800.828},
-{"locationIndex":2,"time":1840.729},
-{"locationIndex":1,"time":1876.543},
-{"locationIndex":0,"time":1912.605},
-{"locationIndex":0,"time":1956.42},
-{"locationIndex":2,"time":1992.52},
-{"locationIndex":1,"time":2040.383},
-{"locationIndex":3,"time":2080.359},
-{"locationIndex":5,"time":2120.249},
-{"locationIndex":3,"time":2160.235},
-{"locationIndex":5,"time":2200.137},
-{"locationIndex":0,"time":2232.905},
-{"locationIndex":5,"time":2264.93},
-{"locationIndex":4,"time":2328.162},
-{"locationIndex":5,"time":2360.91},
-{"locationIndex":4,"time":2412.423},
-{"locationIndex":5,"time":2444.596},
-{"locationIndex":3,"time":2480.698},
-{"locationIndex":0,"time":2520.66},
-{"locationIndex":2,"time":2560.581},
-{"locationIndex":5,"time":2632.549},
-{"locationIndex":0,"time":2696.263},
-{"locationIndex":3,"time":2804.004},
-{"locationIndex":0,"time":3047.721},
-{"locationIndex":1,"time":3080.736},
-{"locationIndex":2,"time":3128.632},
-{"locationIndex":3,"time":3160.652},
-{"locationIndex":4,"time":3208.514},
-{"locationIndex":2,"time":3248.193},
-{"locationIndex":4,"time":3280.404},
-{"locationIndex":2,"time":3316.329},
-{"locationIndex":5,"time":3352.144},
-{"locationIndex":4,"time":3384.169},
-{"locationIndex":1,"time":3424.07},
-{"locationIndex":0,"time":3472.962},
-{"locationIndex":1,"time":3504.987},
-{"locationIndex":5,"time":3540.875},
-{"locationIndex":4,"time":3576.69},
-{"locationIndex":4,"time":3608.891},
-{"locationIndex":5,"time":3664.74},
-{"locationIndex":0,"time":3704.715},
-{"locationIndex":5,"time":3756.654},
-{"locationIndex":1,"time":3792.468},
-{"locationIndex":2,"time":3824.493},
-{"locationIndex":1,"time":3864.394},
-{"locationIndex":4,"time":3900.456},
-{"locationIndex":5,"time":3936.321},
-{"locationIndex":2,"time":3968.345},
-{"locationIndex":4,"time":4013.076},
-{"locationIndex":2,"time":4048.222},
-{"locationIndex":4,"time":4080.99},
-{"locationIndex":1,"time":4120.099},
-{"locationIndex":4,"time":4152.916},
-{"locationIndex":3,"time":4184.941},
-{"locationIndex":1,"time":4232.793},
-{"locationIndex":3,"time":4268.833},
-{"locationIndex":1,"time":4304.719},
-{"locationIndex":2,"time":4344.695},
-{"locationIndex":0,"time":4400.422},
-{"locationIndex":2,"time":4432.447},
-{"locationIndex":4,"time":4464.472},
-{"locationIndex":2,"time":4504.448},
-{"locationIndex":0,"time":4544.349},
-{"locationIndex":4,"time":4584.324},
-{"locationIndex":2,"time":4632.176},
-{"locationIndex":4,"time":4664.201},
-{"locationIndex":1,"time":4697.118},
-{"locationIndex":5,"time":4736.042},
-{"locationIndex":4,"time":4768.045},
-{"locationIndex":0,"time":4816.96},
-{"locationIndex":3,"time":4852.784},
-{"locationIndex":4,"time":4888.599},
-{"locationIndex":0,"time":4944.772},
-{"locationIndex":5,"time":4984.674},
-{"locationIndex":3,"time":5020.488},
-{"locationIndex":0,"time":5056.6}
-]
-    }
-];
-
-addShuttingStarSong(song);
-
 song = {};
 song.name = 'Night Ride';
 song.composer = 'Joshua Moses';
@@ -192,7 +46,7 @@ song.loadingTime = 10;
 song.bpm = 79;
 song.endTime = 7150;
 song.timeConstant = 0; // -506.7
-song.noteMultiplier = 1;
+song.noteMultiplier = 0.5;
 song.timeMultiplier = 1;
 song.test = false;
 song.serial = 'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g';
@@ -855,7 +709,7 @@ song.bpm = 91;
 song.endTime = 3000;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
-song.noteMultiplier = 1;
+song.noteMultiplier = 0.5;
 song.serial = 'nai4ilaHfdhsdfhfsdhsfgfnJ93f8gp34qgD39p4g';
 song.test = false; // 테스트 이후 false 로 변경
 song.difficulties = [];
@@ -939,7 +793,7 @@ song.bpm = 115;
 song.endTime = 4000;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
-song.noteMultiplier = 1;
+song.noteMultiplier = 0.5;
 song.serial = 'nai4ilagwaifiuIBTUcfasgp34qgD39p4g';
 song.test = false; // 테스트 이후 false 로 변경
 song.difficulties = [];
@@ -1723,7 +1577,7 @@ song.bpm = 120;
 song.endTime = 7500;
 song.timeConstant = -307;
 song.timeMultiplier = 1;
-song.noteMultiplier = 1;
+song.noteMultiplier = 0.5;
 song.serial = 'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g';
 song.test = false; // 테스트 이후 false 로 변경
 song.difficulties = [];
@@ -4948,7 +4802,7 @@ song.bpm = 180;
 song.endTime = 10600;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
-song.noteMultiplier = 1;
+song.noteMultiplier = 0.5;
 song.test = false; // 테스트 이후 false 로 변경
 song.serial = 'nai4ilaHbn7g934634634638zJ93f8gp34qgD39p4g';
 song.difficulties = [];
@@ -6791,5 +6645,150 @@ song.difficulties.push({
 {"locationIndex":5,"time":10411.363}
 ]
 });
+
+addShuttingStarSong(song);
+
+song = {};
+song.name = 'Morning Sky';
+song.composer = 'Roa';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/audiolibrary/morning-sky-by-roa-music.mp3';
+song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/night-ride-by-joshua-moses.mp3';
+song.thumbnailUrl = '';
+song.description = `
+|Music: Morning Sky by Roa 
+|    https://soundcloud.com/roa_music1031
+|License: Creative Commons
+|    Attribution 3.0 Unported — CC BY 3.0
+|Free Download / Stream
+|    https://links.al/DQ0
+|Music promoted by 
+|    Audio Library: https://links.al/youtube
+`;
+song.loadingTime = 10;
+song.bpm = 96;
+song.endTime = 5080;
+song.timeConstant = 0; // -506.7
+song.noteMultiplier = 0.5;
+song.timeMultiplier = 1;
+song.test = false;
+song.serial = 'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g';
+song.difficulties = [
+    {
+        difficultyLabel : 'easy',
+        difficultyLevel : 1,
+        patterns : [
+{"locationIndex":0,"time":568.647},
+{"locationIndex":5,"time":600.672},
+{"locationIndex":2,"time":632.697},
+{"locationIndex":3,"time":665.168},
+{"locationIndex":4,"time":697.415},
+{"locationIndex":1,"time":740.437},
+{"locationIndex":3,"time":776.252},
+{"locationIndex":3,"time":816.153},
+{"locationIndex":5,"time":848.178},
+{"locationIndex":3,"time":881.243},
+{"locationIndex":1,"time":920.178},
+{"locationIndex":2,"time":952.203},
+{"locationIndex":2,"time":992.105},
+{"locationIndex":4,"time":1033.046},
+{"locationIndex":3,"time":1068.935},
+{"locationIndex":4,"time":1104.938},
+{"locationIndex":5,"time":1144.837},
+{"locationIndex":2,"time":1196.663},
+{"locationIndex":2,"time":1232.763},
+{"locationIndex":5,"time":1272.642},
+{"locationIndex":3,"time":1324.391},
+{"locationIndex":4,"time":1360.503},
+{"locationIndex":3,"time":1400.404},
+{"locationIndex":0,"time":1432.418},
+{"locationIndex":4,"time":1496.108},
+{"locationIndex":2,"time":1528.133},
+{"locationIndex":3,"time":1560.158},
+{"locationIndex":5,"time":1592.174},
+{"locationIndex":4,"time":1624.951},
+{"locationIndex":2,"time":1673.052},
+{"locationIndex":0,"time":1712.941},
+{"locationIndex":3,"time":1752.865},
+{"locationIndex":4,"time":1800.828},
+{"locationIndex":2,"time":1840.729},
+{"locationIndex":1,"time":1876.543},
+{"locationIndex":0,"time":1912.605},
+{"locationIndex":0,"time":1956.42},
+{"locationIndex":2,"time":1992.52},
+{"locationIndex":1,"time":2040.383},
+{"locationIndex":3,"time":2080.359},
+{"locationIndex":5,"time":2120.249},
+{"locationIndex":3,"time":2160.235},
+{"locationIndex":5,"time":2200.137},
+{"locationIndex":0,"time":2232.905},
+{"locationIndex":5,"time":2264.93},
+{"locationIndex":4,"time":2328.162},
+{"locationIndex":5,"time":2360.91},
+{"locationIndex":4,"time":2412.423},
+{"locationIndex":5,"time":2444.596},
+{"locationIndex":3,"time":2480.698},
+{"locationIndex":0,"time":2520.66},
+{"locationIndex":2,"time":2560.581},
+{"locationIndex":5,"time":2632.549},
+{"locationIndex":0,"time":2696.263},
+{"locationIndex":3,"time":2804.004},
+{"locationIndex":0,"time":3047.721},
+{"locationIndex":1,"time":3080.736},
+{"locationIndex":2,"time":3128.632},
+{"locationIndex":3,"time":3160.652},
+{"locationIndex":4,"time":3208.514},
+{"locationIndex":2,"time":3248.193},
+{"locationIndex":4,"time":3280.404},
+{"locationIndex":2,"time":3316.329},
+{"locationIndex":5,"time":3352.144},
+{"locationIndex":4,"time":3384.169},
+{"locationIndex":1,"time":3424.07},
+{"locationIndex":0,"time":3472.962},
+{"locationIndex":1,"time":3504.987},
+{"locationIndex":5,"time":3540.875},
+{"locationIndex":4,"time":3576.69},
+{"locationIndex":4,"time":3608.891},
+{"locationIndex":5,"time":3664.74},
+{"locationIndex":0,"time":3704.715},
+{"locationIndex":5,"time":3756.654},
+{"locationIndex":1,"time":3792.468},
+{"locationIndex":2,"time":3824.493},
+{"locationIndex":1,"time":3864.394},
+{"locationIndex":4,"time":3900.456},
+{"locationIndex":5,"time":3936.321},
+{"locationIndex":2,"time":3968.345},
+{"locationIndex":4,"time":4013.076},
+{"locationIndex":2,"time":4048.222},
+{"locationIndex":4,"time":4080.99},
+{"locationIndex":1,"time":4120.099},
+{"locationIndex":4,"time":4152.916},
+{"locationIndex":3,"time":4184.941},
+{"locationIndex":1,"time":4232.793},
+{"locationIndex":3,"time":4268.833},
+{"locationIndex":1,"time":4304.719},
+{"locationIndex":2,"time":4344.695},
+{"locationIndex":0,"time":4400.422},
+{"locationIndex":2,"time":4432.447},
+{"locationIndex":4,"time":4464.472},
+{"locationIndex":2,"time":4504.448},
+{"locationIndex":0,"time":4544.349},
+{"locationIndex":4,"time":4584.324},
+{"locationIndex":2,"time":4632.176},
+{"locationIndex":4,"time":4664.201},
+{"locationIndex":1,"time":4697.118},
+{"locationIndex":5,"time":4736.042},
+{"locationIndex":4,"time":4768.045},
+{"locationIndex":0,"time":4816.96},
+{"locationIndex":3,"time":4852.784},
+{"locationIndex":4,"time":4888.599},
+{"locationIndex":0,"time":4944.772},
+{"locationIndex":5,"time":4984.674},
+{"locationIndex":3,"time":5020.488},
+{"locationIndex":0,"time":5056.6}
+]
+    }
+];
 
 addShuttingStarSong(song);

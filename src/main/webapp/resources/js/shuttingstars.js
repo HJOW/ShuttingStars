@@ -27,7 +27,7 @@ limitations under the License.
 
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
-    build = 2;
+    build = 3;
     
     resolution    = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
     ressets       = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
@@ -94,7 +94,7 @@ class ShuttingStarsCore {
 
     frameTime = 10;                // render 호출 주기 (변경 불가)
     timeMultiplier = 16.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
-    elapsedTimeMultiplier = 2.0;   // elapsedTime 계산 시 timeMultiplier 값 변경사항 보정 용도
+    elapsedTimeMultiplier = 1.0;   // elapsedTime 계산 시 timeMultiplier 값 변경사항 보정 용도
     stageRows = 72;                // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
     sizeFixedConst = 2;            // 노트 크기 상수 (변경 불가)
     noteLocationConst = 0;         // 노트 위치 보정 상수 (변경 불가)
@@ -135,6 +135,7 @@ class ShuttingStarsCore {
     notePlacers = [];    // NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관)
 
     elapsedTime = 0;         // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
+    elapsedTimeOld = 0;      // 진행 시간 (예전 방식)
     simultaneousTime = 0;    // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
     titleDelayTime = 0;      // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨)
     titleDelayTimeMax = 120; // 플레이 준비 시 titleDelayTime 값에 들어가는 초기값
@@ -1298,10 +1299,11 @@ class ShuttingStarsCore {
             PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0
         };
         this.songBitGap = 0;
+        this.elapsedTime = 0;
+        this.elapsedTimeOld = 0;
         this.resumed = false;
         this.paused = false;
         this.gameOverDelayed = false;
-        this.elapsedTime = 0;
         this.resumingTime = 0;
 
         if(this.visualizePeakDebugData.length >= 1 && this.state == 'playing' && this.elapsedTime >= 80) this.consoleVisualizeDebugData();
@@ -1423,7 +1425,9 @@ class ShuttingStarsCore {
                 this.ss3d.onSongPlayPreparing(this);
             }
         } else if(this.state == 'playing') { // 곡이 플레이 상황일 경우 처리
-            this.elapsedTime = -1000; // 처리 끝난 후 아래에서 다시 초기화
+            // 진행 시간 - 처리 끝난 후 아래에서 다시 초기화
+            this.elapsedTime = -1000; 
+            this.elapsedTimeOld = -1000;
             if(this.song == null) { this.closeAudioSources(); this.audio = null; this.setState('menu'); return; }
 
             // 반복 처리 시작 (곡의 bpm 반영)
@@ -1451,13 +1455,15 @@ class ShuttingStarsCore {
                     selfs.visualizePeakDebugRecordTime = 0;
 
                     selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
+                    selfs.elapsedTimeOld = selfs.songTiming * (-1);
 
                     if(selfs.videoBga != null) {
                         if(selfs.videoBgaUrl != null) selfs.videoBga.play();
                     }
                 }, (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming); // 노트가 올라가는 시간은 주고 재생 시작
             } else {
-                selfs.elapsedTime = selfs.songTiming * (-1); // 타이밍 지정
+                selfs.elapsedTime    = selfs.songTiming * (-1); // 타이밍 지정
+                selfs.elapsedTimeOld = selfs.songTiming * (-1);
             }
             this.playPrepared = true;
 
@@ -2410,7 +2416,8 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime)), this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight() / 10));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime)), this.convertX(this.getStageWidth() / 5), this.convertY(this.getStageHeight() / 10));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() / 5), this.convertY(this.getStageHeight() / 10) + this.metricSize2);
         }
 
         // 게임 오버 그리기
@@ -4316,6 +4323,7 @@ class ShuttingStarsCore {
             } else {
                 this.elapsedTime++;
             }
+            this.elapsedTimeOld++;
 
             /*
             // 노트 디버깅
