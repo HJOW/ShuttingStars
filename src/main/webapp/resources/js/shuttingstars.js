@@ -743,8 +743,9 @@ class ShuttingStarsCore {
 
     /** 초기화 완료 후 호출 */
     afterInitialized() {
+        const selfs = this;
         this.menuChoosing = this.menuListDynamic[0];
-        this.titleScreenWaiting = true;
+        setTimeout(() => { selfs.titleScreenWaiting = true; }, 2000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
         try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
@@ -6479,9 +6480,17 @@ class JudgeMark extends ShuttingStarsObject {
         let opa = this.getNowOpacity();
         ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + _shuttingstarcore.judgeMarkColor(this.judgeResult) + ', ' + opa + ')');
         
-        let midX = _shuttingstarcore.getStageWidth()  / 2;
+        // 노트들 중앙에 출력
+        let midX = 0;
         let midY = _shuttingstarcore.getStageHeight() / 2;
-        ctx.fillText(this.judgeResult, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY)); // 화면 중앙에 출력
+        let notePlacers = _shuttingstarcore.getNotePlacers();
+
+        for(let idx=0; idx<notePlacers.length; idx++) {
+            midX += notePlacers[idx].x;
+        }
+        midX = midX / notePlacers.length;
+
+        ctx.fillText(this.judgeResult, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY));
 
         let combo = _shuttingstarcore.combo;
         if(this.judgeResult == 'MISS') combo = _shuttingstarcore.missCombo;
