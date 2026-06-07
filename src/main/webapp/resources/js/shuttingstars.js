@@ -4588,6 +4588,7 @@ class ShuttingStarsCore {
                 clear : (this.hp >= 1 && (! this.gameOverDelayed)),
                 notehistory : [],
                 build : this.build,
+                userAgent : window.navigator.userAgent
             });
         }
         
@@ -6909,6 +6910,19 @@ class ShuttingStars3DObject {
     dispose() {}
 }
 /********************** // 3D 를 다루는 Class 세팅 ************************/
+/********************** 브라우저 감지 Class 세팅 ************************/
+class BrowserDetector {
+    constructor() {
+
+    }
+    getBrowserInformation() {
+        return {
+            name : 'Unknown',
+            version : 'Unknown'
+        };
+    }
+}
+/********************** // 브라우저 감지 Class 세팅 ************************/
 /********************** 기타 Util 성 Class 세팅 ************************/
 class ShuttingStarsUtilityClass {
     toastIndex = 0;
