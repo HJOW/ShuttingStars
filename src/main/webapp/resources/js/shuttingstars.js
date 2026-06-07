@@ -166,6 +166,7 @@ class ShuttingStarsCore {
     gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
 
     state = 'title'; // 현재 상태, title / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
+    beforeState = 'none'; // 이전 상태
 
     mode = 'default'; // default / mission
     song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
@@ -721,7 +722,6 @@ class ShuttingStarsCore {
                 selfs.menuListDynamic = selfs.menuList;
                 selfs.getMenuList().then((menuList) => {
                     selfs.menuListDynamic = menuList;
-                    setTimeout(fResize, 4000);
                     selfs.logInit('starting game...');
                     selfs.afterInitialized();
                 }).catch((exmenu) => {
@@ -745,7 +745,7 @@ class ShuttingStarsCore {
     afterInitialized() {
         const selfs = this;
         this.menuChoosing = this.menuListDynamic[0];
-        setTimeout(() => { selfs.titleScreenWaiting = true; }, 2000);
+        setTimeout(() => { selfs.handleScreenResized(); selfs.titleScreenWaiting = true; }, 2000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
         try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
@@ -762,6 +762,7 @@ class ShuttingStarsCore {
         const selfs = this;
         let idx;
 
+        this.beforeState = this.state;
         this.state = state;
 
         // 마우스 이벤트 제거
@@ -806,6 +807,11 @@ class ShuttingStarsCore {
         // 일부 상태는 스테이지 리셋이 필요
         if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
             this.resetStage();
+        }
+
+        // 최초 메뉴 진입 시 창 크기 다시 새로고침
+        if(this.beforeState == 'title' && state == 'menu') {
+            this.handleScreenResized();
         }
 
         // 상태 변경 로깅
@@ -1057,6 +1063,10 @@ class ShuttingStarsCore {
         }
         this.canvas.width  = this.resolution.h * (ratio); // this.resolution.w;
         this.canvas.height = this.resolution.h;
+        if(this.canvas3d != null) {
+            this.canvas3d.width  = this.resolution.h * (ratio);
+            this.canvas3d.height = this.resolution.h;
+        }
 
         this.realStageSize.h = this.stageSize.h;
         this.realStageSize.w = this.stageSize.h * (ratio);
@@ -2417,8 +2427,8 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime)), this.convertX(this.getStageWidth() / 5), this.convertY(this.getStageHeight() / 10));
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() / 5), this.convertY(this.getStageHeight() / 10) + this.metricSize2);
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime   )), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + this.metricSize2);
         }
 
         // 게임 오버 그리기
@@ -4392,9 +4402,12 @@ class ShuttingStarsCore {
 
             // 곡의 끝 체크
             //     곡의 명시된 종료시간과 마지막 패턴의 시간 비교해 더 큰 값 선택
-            let lastPatternTime = this.songLastPatternTime;
-            if(song.endTime > lastPatternTime + 4) {
-                lastPatternTime = song.endTime;
+            let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
+            if(this.song != null) lastPatternTime = lastPatternTime * this.song.noteMultiplier + this.song.timeConstant;
+            let calcRealEndTime = song.endTime + this.noteLocationConst;
+            if(this.song != null) calcRealEndTime = calcRealEndTime * this.song.noteMultiplier + this.song.timeConstant;
+            if(calcRealEndTime > lastPatternTime + 4) {
+                lastPatternTime = calcRealEndTime;
             }
             // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
             if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
@@ -4557,25 +4570,27 @@ class ShuttingStarsCore {
         let count = diff.patterns.length;
         let rank = this.judgeResultRank();
 
-        // 기록 남기기
-        this.addRecords({
-            date : new Date().getTime(),
-            mode : this.mode,
-            song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter, bpm : this.song.bpm },
-            difficulty : this.difficulty.difficultyLabel,
-            level : this.difficulty.difficultyLevel,
-            point : this.point,
-            report : this.report,
-            notes : count,
-            combo : this.maxCombo,
-            rank : rank,
-            hp : this.hp,
-            gameover : this.gameOverDelayed,
-            clear : (this.hp >= 1 && (! this.gameOverDelayed)),
-            notehistory : [],
-            build : this.build,
-        });
-
+        if(! this.createMode) {
+            // 기록 남기기
+            this.addRecords({
+                date : new Date().getTime(),
+                mode : this.mode,
+                song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter, bpm : this.song.bpm },
+                difficulty : this.difficulty.difficultyLabel,
+                level : this.difficulty.difficultyLevel,
+                point : this.point,
+                report : this.report,
+                notes : count,
+                combo : this.maxCombo,
+                rank : rank,
+                hp : this.hp,
+                gameover : this.gameOverDelayed,
+                clear : (this.hp >= 1 && (! this.gameOverDelayed)),
+                notehistory : [],
+                build : this.build,
+            });
+        }
+        
         // 3D 매니저 이벤트 호출
         if(this.ss3d != null) {
             this.ss3d.onSongEnd(this);
@@ -5399,8 +5414,9 @@ class ShuttingStarsCore {
 #      , loadingTime    : (integer) Additional loading time
 #      , bpm            : (integer) BPM (Bit per minutes)
 #      , endTime        : (integer) This song's length ( Not seconds ! Need to test. )
+#      , timeMultiplier : (integer) Game total speed multiplier (Just set 1)
 #      , timeConstant   : (integer) Note timing correction value (+)
-#      , timeMultiplier : (integer) Note timing correction value (×)
+#      , noteMultiplier : (integer) Note timing correction value (×)
 #      , serial         : (string) Just input empty text (Need only for official songs)
 #      , difficulties   : (array)
 #            element : (object)
