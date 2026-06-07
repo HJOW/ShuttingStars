@@ -721,7 +721,7 @@ class ShuttingStarsCore {
                 selfs.menuListDynamic = selfs.menuList;
                 selfs.getMenuList().then((menuList) => {
                     selfs.menuListDynamic = menuList;
-                    setTimeout(fResize, 1000);
+                    setTimeout(fResize, 4000);
                     selfs.logInit('starting game...');
                     selfs.afterInitialized();
                 }).catch((exmenu) => {
