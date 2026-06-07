@@ -535,6 +535,10 @@ class ShuttingStarsCore {
 
             this.logInit('load settings...');
 
+            // 최초 실행 감지
+            const firsts = this.checkFirstUsing();
+            // TODO : 최초 실행인 경우 사용 언어와 성능 옵션 묻기
+
             // 설정 불러오기
             this.loadSettings();
 
@@ -1082,6 +1086,25 @@ class ShuttingStarsCore {
     /** 디스플레이 방향 (수직 portrait / 수평 landscape) 구분, landscape 인 경우 true, 그외의 경우 false 반환 */
     detectScreenLandscape() {
         return (this.fOuterWidth() >= this.fOuterHeight());
+    }
+
+    /** 최초 사용 감지 */
+    checkFirstUsing() {
+        const selfs = this;
+        const settingJsonStr = localStorage.getItem('shuttingstar_settings');
+        try {
+            if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
+                JSON.parse(settingJsonStr);
+                return false;
+            }
+        } catch(e) {
+            console.error(e);
+            ShuttingStarsUtility.toast('ERROR : ' + e);
+            this.resetAll(() => {
+                setTimeout(() => { location.reload(); }, 4000);
+            });
+        }
+        return true;
     }
 
     /** 설정 불러오기 */
@@ -5898,8 +5921,11 @@ class ShuttingStarsCore {
     }
 
     /** 전체 초기화 */
-    resetAll() {
-        const fAfter = function() { location.reload(); }
+    resetAll(callbackAfter) {
+        const fAfter = function() {
+            if(typeof(callbackAfter) == 'function') callbackAfter();
+            else location.reload();
+        }
         try { localStorage.setItem('shuttingstar_settings', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
