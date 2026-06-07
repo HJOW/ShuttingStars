@@ -135,7 +135,7 @@ class ShuttingStarsCore {
     notePlacers = [];    // NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관)
 
     elapsedTime = 0;         // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
-    elapsedTimeOld = 0;      // 진행 시간 (예전 방식)
+    elapsedTimeOld = 0;      // 진행 시간 (예전 방식, 순수 timeElapsed 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함)
     simultaneousTime = 0;    // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
     titleDelayTime = 0;      // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨)
     titleDelayTimeMax = 120; // 플레이 준비 시 titleDelayTime 값에 들어가는 초기값
