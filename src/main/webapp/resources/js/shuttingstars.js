@@ -140,7 +140,7 @@ class ShuttingStarsCore {
     elapsedTimeOld = 0;      // 진행 시간 (예전 방식, 순수 timeElapsed 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함)
     simultaneousTime = 0;    // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
     titleDelayTime = 0;      // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨)
-    titleDelayTimeMax = 120; // 플레이 준비 시 titleDelayTime 값에 들어가는 초기값
+    titleDelayTimeMax = 240; // 플레이 준비 시 titleDelayTime 값에 들어가는 초기값
 
     usingWorker = true; // Worker 사용여부
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
@@ -218,7 +218,11 @@ class ShuttingStarsCore {
     // 공식 곡 시리얼 목록
     officialSongSerials = [
         'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g',
-        'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g'
+        'nai4ilaHfdhsdfhfsdhsfgfnJ93f8gp34qgD39p4g',
+        'nai4ilagwaifiuIBTUcfasgp34qgD39p4g',
+        'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g',
+        'nai4ilaHbn7g934634634638zJ93f8gp34qgD39p4g',
+        'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g'
     ];
 
     colorManualAlpha = false;
@@ -321,6 +325,7 @@ class ShuttingStarsCore {
     /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
     init(rootDiv, urlContext) {
         const selfs = this;
+        this.titleScreenWaiting = false;
         try {
             if(urlContext) this.urlCtx = urlContext;
 
@@ -354,7 +359,6 @@ class ShuttingStarsCore {
             this.backend = null;
         }
         try {
-            this.titleScreenWaiting = false;
             this.logInit('init started');
             try { this.fBeforeInit(this.broker); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
             
@@ -1473,9 +1477,11 @@ class ShuttingStarsCore {
                 this.ss3d.onSongPlayPreparing(this);
             }
         } else if(this.state == 'playing') { // 곡이 플레이 상황일 경우 처리
+            
+
             // 진행 시간 - 처리 끝난 후 아래에서 다시 초기화
-            this.elapsedTime = -1000; 
-            this.elapsedTimeOld = -1000;
+            this.elapsedTime = (-1) * ((this.stageRows * 2) + this.songTiming); 
+            this.elapsedTimeOld = this.elapsedTime;
             if(this.song == null) { this.closeAudioSources(); this.audio = null; this.setState('menu'); return; }
 
             // 반복 처리 시작 (곡의 bpm 반영)
@@ -1639,6 +1645,7 @@ class ShuttingStarsCore {
 
     /** 타이틀 화면 키 입력 핸들링 */
     handleKeyInputTitle(key, vkeyExplosion) {
+        if(! this.titleScreenWaiting) return;
         if(key == this.enterKey || key == 'ENTER') {
             this.playSE('special1');
             this.setState('menu');
