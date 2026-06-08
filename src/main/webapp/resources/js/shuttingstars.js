@@ -3128,6 +3128,7 @@ class ShuttingStarsCore {
         let opacity = 0.9;
         let gap = Math.floor(fontSize / 2.0);
         let label = '';
+        let label2 = '';
         
         this.calculateFontMetric(true);
 
@@ -3140,55 +3141,68 @@ class ShuttingStarsCore {
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), rows);
-        rows += (this.metricSize3 * 3) + gap;
+        rows += (this.metricSize3 * 2) + gap;
 
+
+        fontSize = this.convertFontSize(20);
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(this.trans('First Settings'), this.convertX(this.getStageWidth() / 2), rows);
+        rows += (this.metricSize1 * 2) + gap;
+
+
+        fontSize = this.convertFontSize(20);
         let firstSetMenuList = ['language', 'quality', 'confirm'];
         for(idx=0; idx<firstSetMenuList.length; idx++) {
             const settingOne = firstSetMenuList[idx];
             const choosen    = (this.firstSetMode == settingOne);
 
             label = '';
-            fontSize = this.convertFontSize(20);
+            label2 = '';
 
             if(settingOne == 'language') {
+                label = this.trans('Language') + ' :\t';
                 if(choosen) {
                     if(this.language == 'ko') {
-                        label = this.trans('Language') + ' :\t' + 'English ◀[한글]▶';
+                        label2 = 'English ◀[한글]▶';
                     } else {
                         this.language = 'en';
-                        label = this.trans('Language') + ' :\t' + '◀[English]▶ 한글';
+                        label2 = '◀[English]▶ 한글';
                     }
                 } else {
                     if(this.language == 'ko') {
-                    label = this.trans('Language') + ' :\t' + 'English [한글]';
+                    label2 = 'English [한글]';
                     } else {
                         this.language = 'en';
-                        label = this.trans('Language') + ' :\t' + '[English] 한글';
+                        label2 = '[English] 한글';
                     }
                 }
             } else if(settingOne == 'quality') {
+                label = this.trans('Quality') + ' :\t';
                 if(choosen) {
                     if(this.ressets.h <= 720) {
-                        label = this.trans('Quality') + ' :\t' + '◀[' + this.trans('LOW') + ']▶ ' + this.trans('MEDIUM');
+                        label2 = '◀[' + this.trans('LOW') + ']▶ ' + this.trans('MEDIUM');
                     } else {
                         this.ressets.w = 1920;
                         this.ressets.h = 1080;
-                        label = this.trans('Quality') + ' :\t' + this.trans('LOW') + ' ◀[' + this.trans('MEDIUM') + ']▶';
+                        label2 = this.trans('LOW') + ' ◀[' + this.trans('MEDIUM') + ']▶';
                     }
                 } else {
                     if(this.ressets.h <= 720) {
-                        label = this.trans('Quality') + ' :\t' + '[' + this.trans('LOW') + '] ' + this.trans('MEDIUM');
+                        label2 = '[' + this.trans('LOW') + '] ' + this.trans('MEDIUM');
                     } else {
                         this.ressets.w = 1920;
                         this.ressets.h = 1080;
-                        label = this.trans('Quality') + ' :\t' + this.trans('LOW') + ' [' + this.trans('MEDIUM') + ']';
+                        label2 = this.trans('LOW') + ' [' + this.trans('MEDIUM') + ']';
                     }
                 }
             } else {
                 if(choosen) {
-                    label = '[[' + this.trans('ACCEPT') + ']]';
+                    label = '[[' + this.trans('START') + ']]';
                 } else {
-                    label = this.trans('ACCEPT');
+                    label = this.trans('START');
                 }
             }
 
@@ -3198,7 +3212,16 @@ class ShuttingStarsCore {
 
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
+
+            if(settingOne == 'language' || settingOne == 'quality') {
+                this.ctx.textAlign = "left";
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() * 3 / 8), rows);
+                this.ctx.textAlign = "right";
+                this.ctx.fillText(label2, this.convertX(this.getStageWidth() * 5 / 8), rows);
+            } else {
+                this.ctx.textAlign = "center";
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
+            }
 
             rows += (this.metricSize1 * 2) + gap;
         }
