@@ -46,86 +46,88 @@ class ShuttingStarsCore {
     fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
     canvasZindex = 1;    // canvas 태그의 z-index
 
-    rootDiv = null;
-    contentRoot = null;
-    videoBga = null;
-    pops = {
-        root : null,
-        dim : null,
-        config : null,
-        login : null,
-        join : null
+    rootDiv = null;      // ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV
+    contentRoot = null;  // 위 rootDiv 를 div로 한번 더 감싼 div
+    videoBga = null;     // 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역
+    pops = {             // 팝업 (별도 창이 아닌 인앱 대화상자 형태)
+        root : null,     // 팝업 최상위 div
+        dim : null,      // 모달 팝업 구현을 위한 흐린 투명 레이어 div, canvas 보다 위층을 차지함
+        config : null,   // 설정 팝업 영역 div
+        login : null,    // 로그인 팝업 영역 div
+        join : null      // 회원가입 팝업 영역 div (현재 미사용)
     };
     
-    createMode = false; // 곡 생성 모드, 키보드 컨트롤 불가
+    createMode = false; // 곡 생성 모드, true 시 키보드 컨트롤 불가하며 자동 플레이가 진행됨. 플레이 완주해도 기록이 남지 않음. 기본값은 물론 false.
 
     dark = true;             // 다크 모드 (기본)
-    reverseVertical = false; // 수직 반전
+    reverseVertical = false; // 수직 반전 (convertY 메소드 사용 시 위 아래가 반전됨, 함부로 변경하지 말 것 ! 모든 render 메소드 점검해야 함.)
     
-    keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 입력 키
-    arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'];
-    enterKey = 'ENTER';
-    escKey = 'ESCAPE';
+    keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 곡 플레이 시 입력 키 (6자리)
+    arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT']; // 방향키
+    enterKey = 'ENTER'; // 확인 키
+    escKey = 'ESCAPE';  // 취소 키
     
-    keyEventDisabled = false;
+    keyEventDisabled = false; // true 시 키 입력 처리가 먹히지 않음. 인앱 팝업이 떴을 때 이 값을 true로 넣어 뒷배경에서 게임이 멋대로 돌아가는 현상을 방지함. 즉 함부로 손대면 안 됨 !
 
     fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
     pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
     alterFonts = 'NanumGothicCoding NanumGothic'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
 
-    canvas = null;    // 캔버스 객체 (메인 게임 동작)
-    canvas3d = null;  // 3D 장식 출력용 캔버스 객체
+    canvas = null;    // 2D 캔버스 객체 (메인 게임 동작)
+    canvas3d = null;  // 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치)
     configDiv = null; // 상세 설정 영역
-
-    ctx = null;         // 2D Context 객체
-    ss3d = null;        // ShuttingStars3DManager 객체
-    disable3d = false;  // true 지정 시 3D 렌더링하지 않음
-    disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함.
-
-    use3d = {
-        notePlacer : false,
-        notes : true,
-        planet : true,
-        visualization : true
-    };
 
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
 
-    frameTime = 10;                // render 호출 주기 (변경 불가)
-    timeMultiplier = 16.0;         // 노트의 촘촘함 최대값으로, 8로 지정 시 8배속 속도의 폭타까지 등장할 수 있다는 것을 의미 (변경 불가)
-    elapsedTimeMultiplier = 1.0;   // elapsedTime 계산 시 timeMultiplier 값 변경사항 보정 용도
-    stageRows = 72;                // 스테이지의 세로를 N등분하여 패턴의 시간과 매칭 (변경 불가)
-    sizeFixedConst = 2;            // 노트 크기 상수 (변경 불가)
-    noteLocationConst = 0;         // 노트 위치 보정 상수 (변경 불가)
-    noteSpeedFixedConst = 0.25;    // 노트 이동 속도 배수 (변경 불가)
-    resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 (변경 불가)
-    songTitleBaseTime = 120;       // 곡 로딩 기본 시간 (변경 불가)
-    volumeMultiplier = 1.0;        // 볼륨 상수 (변경 불가)
-    visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수 (변경 불가)
-    backStarlightCount = 30;       // 배경 별빛 장식 갯수
-    backStarlightSpdX = 1;         // 배경 별빛 장식 X 속도
-    backStarlightSpdY = 0;         // 배경 별빛 장식 Y 속도
+    ctx = null;         // 2D Context 객체
+    ss3d = null;        // ShuttingStars3DManager 객체
+    disable3d = false;  // true 지정 시 3D 렌더링하지 않음, 설정 화면에서 그래픽 설정 변경 시 자동 변경되는 항목이므로 손대지 말 것.
+    disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 NotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것
+
+    // 3D 각 구성요소 사용여부
+    use3d = {
+        notePlacer : false,    // NotePlacer - 3D로 띄우면 투명도가 적용이 안되어 2D 것을 사용하므로 false 지정
+        notes : true,          // Note - 노트들은 3D 띄워도 별 문제 없었음
+        planet : true,         // 행성 (HP바) - 3D 객체가 아예 안뜨는 문제가 있음. 그래서 true 로 두든 false 로 두든 상관이 없는 상황.
+        visualization : true   // 시각화 - 구현 완료
+    };
+
+    frameTime = 10;                // render 호출 주기 (변경 불가) - 밀리초 단위로, 이 시간 주기마다 render 메소드가 호출되며, 낮을수록 화면이 부드럽게 변함.
+    timeMultiplier = 16.0;         // 최소 시간 단위에 영향. 이 게임 내 소요시간 (elapsedTime) 최소단위는 해당곡의 1비트 시간을 이 값으로 나눈 값.
+    elapsedTimeMultiplier = 1.0;   // timeMultiplier 값와 같이 움직임. 1.0 으로 둘 것.
+    stageRows = 72;                // 스테이지의 세로를 이 숫자만큼 등분하여, 노트의 크기, 초기 생성 위치를 계산함.
+    sizeFixedConst = 2;            // 노트 크기 상수, 이 값이 증가하면 노트 크기가 증가함. 노트 속도에도 비례하게 영향을 끼침.
+    noteLocationConst = 0;         // 노트 위치 보정 상수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음)
+    noteSpeedFixedConst = 0.25;    // 노트 이동 속도 배수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음)
+    resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 상수
+    songTitleBaseTime = 120;       // 곡 로딩 기본 시간
+    volumeMultiplier = 1.0;        // 볼륨 상수
+    visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수
+    backStarlightCount = 30;       // 배경 별빛 장식 최대 갯수
+    backStarlightSpdX = 1;         // 배경 별빛 장식 X 속도 (게임 중 변경됨)
+    backStarlightSpdY = 0;         // 배경 별빛 장식 Y 속도 (게임 중 변경됨)
 
     noticeEn   = ''; // 공지사항 (영문)
     noticeKo   = ''; // 공지사항 (한글)
     noticeWhen = 0;  // 마지막 공지사항 게시일시 (백엔드 필요)
     
-    margins = { // 여백 (빈 공간)
-        page  : { left :  0, top : 0 },
-        stage : { left :  0, top : 0 },
-        note  : { left : 20, top : 0 }
+    // 여백 (빈 공간)
+    margins = {
+        page  : { left :  0, top : 0 }, // 페이지 전체 여백
+        stage : { left :  0, top : 0 }, // 스테이지 여백 (캔버스 내 빈 공간으로 구현됨)
+        note  : { left : 20, top : 0 }  // 노트 여백 (노트 안쪽 여백)
     };
 
-    screenDirLandscape = true; // 수평 방향이면 true, 수직 방향이면 false (게임 진행 중 변경됨)
+    screenDirLandscape = true; // 기기 방향값, 수평 방향이면 true, 수직 방향이면 false (창 크기 변경 시 자동 탐지되어 변경됨)
 
-    volume = 1.0; // 마스터 볼륨 (0 ~ 1)
+    volume = 1.0;                  // 마스터 볼륨 (0 ~ 1)
     volumeBackgroundDefault = 0.2; // 배경 음악 기본 볼륨
     noteSpeedMultiplier = 1.0;     // 노트 이동 속도 배수 (사용자가 지정 가능)
     useAudioVisualizer = true;     // 시각화 사용여부
 
-    volumeBackground = 1.0; // 배경음악 볼륨 (게임 진행 중 변경됨)
-    volumeSongAudio  = 1.0; // 플레이 곡 볼륨 (게임 진행 중 변경됨)
+    volumeBackground = 1.0;    // 배경음악 볼륨 (게임 진행 중 변경됨)
+    volumeSongAudio  = 1.0;    // 플레이 곡 볼륨 (게임 진행 중 변경됨)
     volumeBackgroundSpeed = 0; // 배경음악 볼륨 페이드 인/아웃 속도값 (음수일 때는 volumeBackground 값이 감소하며 0 이하가 되면 멈춤, 양수일 때는 값이 증가하며 1 이상이 되면 멈춤)
 
     lastObjectId = 0;    // 객체 ID 부여용 카운터
@@ -144,6 +146,7 @@ class ShuttingStarsCore {
     timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
     titleScreenWaiting = false; // 상태가 title 이면서 로딩은 끝났음을 나타내는 변수
 
+    // Worker 종료 함수들
     workerRender = null;
     workerSongPlaying = null;
     workerSimultaneousWork = null;
@@ -165,7 +168,7 @@ class ShuttingStarsCore {
     gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
     gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
 
-    state = 'title'; // 현재 상태, title / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
+    state = 'title'; // 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
     beforeState = 'none'; // 이전 상태
 
     mode = 'default'; // default / mission
@@ -205,13 +208,14 @@ class ShuttingStarsCore {
     }
 
     songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
-    gameoverTime = 0; // 게임 오버 마크 화면 남은 시간
-    resumingTime = 0; // 일시정지 후 재개 전 대기 시간
+    gameoverTime = 0;  // 게임 오버 마크 화면 남은 시간
+    resumingTime = 0;  // 일시정지 후 재개 전 대기 시간
 
-    paused = false;
-    resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값
+    paused = false;  // 일시정지 여부 - 사용자 조작에 따라 변경됨
+    resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값 - 당연히 게임 중에 변경됨
     simultaneousWorkCycle = 0;
 
+    // 공식 곡 시리얼 목록
     officialSongSerials = [
         'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g',
         'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g'
@@ -219,22 +223,28 @@ class ShuttingStarsCore {
 
     colorManualAlpha = false;
 
-    menuList = ['play', 'records', 'setting', 'credit'];
+    // 초기 설정 화면 관련
+    firstSetMode = 'language'; // language / graphic
+
+    // 메뉴 화면 관련
+    menuList = ['play', 'records', 'setting', 'credit']; // 메뉴들
     menuListDynamic = []; // 위 menuList 에 데이터가 추가됨
     menuChoosing = null;
 
-    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
+    // 설정 화면 관련
+    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll']; // 설정 가능한 옵션 목록
     settingChoosing = null;
     settingModifyingMode = false;
     settingsGraphicQuality = ['LOW', 'MEDIUM', 'HIGH'];
     settingGraphicQualityChoosing = null;
     settingResetReask = false;
 
-    keypressTiming = 0; // 키 입력 추가 딜레이 보정값
-    songTiming = 0; // 음원 재생 딜레이 보정값
+    // 타이밍 보정값
+    keypressTiming = 0; // 키 입력 추가 딜레이 보정값 (설정에서 변경 가능)
+    songTiming = 0;     // 음원 재생 딜레이 보정값 (설정에서 변경 가능)
 
-    keypressing = {}; // 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량)
-    playPrepared = false; // 게임 시작 준비여부
+    keypressing = {}; // 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨
+    playPrepared = false; // 게임 시작 준비여부 - 게임 중 자동 변경되는 값
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     renderDebugMode = false;
@@ -286,6 +296,7 @@ class ShuttingStarsCore {
         'ko' : {}
     };
 
+    // 글자 실제 크기 (게임 동작 중 자동 측정됨)
     metricSize1 = 20;
     metricSize2 = 15;
     metricSize3 = 30;
@@ -299,7 +310,7 @@ class ShuttingStarsCore {
     // 내부 핵심 로직 전체에 액세스하지 못하게 막기 위한 중간 객체
     broker = {};
 
-    // 브라우저 영역 크기 감지 함수 (외부에서 변경해야 할 일이 있음)
+    // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
     fOuterWidth  = function() { return window.outerWidth;  }
     fOuterHeight = function() { return window.outerHeight; }
     fBeforeInit  = function(obj) {  }
@@ -537,8 +548,7 @@ class ShuttingStarsCore {
 
             // 최초 실행 감지
             const firsts = this.checkFirstUsing();
-            // TODO : 최초 실행인 경우 사용 언어와 성능 옵션 묻기
-
+            
             // 설정 불러오기
             this.loadSettings();
 
@@ -727,6 +737,10 @@ class ShuttingStarsCore {
                 selfs.getMenuList().then((menuList) => {
                     selfs.menuListDynamic = menuList;
                     selfs.logInit('starting game...');
+
+                    // 최초 실행인 경우 최초 설정 화면 띄우기
+                    if(firsts) this.setState('firstset');
+
                     selfs.afterInitialized();
                 }).catch((exmenu) => {
                     ShuttingStarsUtility.toast('ERROR : ' + exmenu, true);
@@ -1602,6 +1616,8 @@ class ShuttingStarsCore {
         // 타이틀 화면 키 핸들링
         if(this.state == 'title') {
             this.handleKeyInputTitle(key, vkeyExplosion);
+        } else if(this.state == 'firstset') { 
+            this.handleKeyInputFirstSet(key, vkeyExplosion);
         } else if(this.state == 'menu') { 
             this.handleKeyInputMenu(key, vkeyExplosion);
         } else if(this.state == 'songchoosing') {
@@ -1866,6 +1882,43 @@ class ShuttingStarsCore {
                     this.difficulty = this.difficultyChoosingList[0];
                     this.difficultyChoosing = true;
                 }
+            }
+        }
+    }
+
+    /** 최초 설정 화면 키 입력 핸들링 */
+    handleKeyInputFirstSet(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
+
+        if(key == this.arrowKeys[0]) { // UP
+            if(     this.firstSetMode == 'language') this.firstSetMode = 'confirm';
+            else if(this.firstSetMode == 'quality' ) this.firstSetMode = 'language';
+            else                                     this.firstSetMode = 'quality';
+        } else if(key == this.arrowKeys[1]) { // DOWN
+            if(     this.firstSetMode == 'language') this.firstSetMode = 'quality';
+            else if(this.firstSetMode == 'quality' ) this.firstSetMode = 'confirm';
+            else                                     this.firstSetMode = 'language';
+        } else if(key == this.arrowKeys[2] || key == this.arrowKeys[3]) { // LEFT / RIGHT
+            if(this.firstSetMode == 'language') {
+                if(this.language == 'ko') this.language = 'en';
+                else this.language = 'ko';
+            } else if(this.firstSetMode == 'quality' ) {
+                if(this.ressets.h <= 720) {
+                    this.ressets.w = 1920;
+                    this.ressets.h = 1080;
+                    this.setResolution(1920, 1080);
+                } else {
+                    this.ressets.w = 1280;
+                    this.ressets.h =  720;
+                    this.setResolution(1280,  720);
+                }
+            }
+        } else if(key == this.enterKey) {
+            if(this.firstSetMode == 'confirm') {
+                this.playSE('accept1');
+                this.saveSettings();
+                this.setState('menu');
             }
         }
     }
@@ -2344,6 +2397,8 @@ class ShuttingStarsCore {
             // 현재 게임 상태별 렌더링
             if(this.state == 'playing' || this.state == 'gameover') {
                 this.renderPlaying();
+            } else if(this.state == 'firstset') {
+                this.renderFirstSet();
             } else if(this.state == 'title') {
                 this.renderTitle();
             } else if(this.state == 'menu') {
@@ -3063,6 +3118,113 @@ class ShuttingStarsCore {
             this.ctx.fillText(label, this.convertX(cols), this.convertY(rows));
             cols += (this.metricSize2 * label.length) + gap;
         }
+    }
+
+    /** 화면 출력 - 최초 설정 */
+    renderFirstSet() {
+        let idx;
+        let rows = 0;
+        let fontSize = this.convertFontSize(30);
+        let opacity = 0.9;
+        let gap = Math.floor(fontSize / 2.0);
+        let label = '';
+        
+        this.calculateFontMetric(true);
+
+        gap = Math.floor(this.metricSize2 / 2.0);
+
+        fontSize = this.convertFontSize(30);
+        rows = this.convertY(this.getStageHeight() / 5);
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+        this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), rows);
+        rows += (this.metricSize3 * 3) + gap;
+
+        let firstSetMenuList = ['language', 'quality', 'confirm'];
+        for(idx=0; idx<firstSetMenuList.length; idx++) {
+            const settingOne = firstSetMenuList[idx];
+            const choosen    = (this.firstSetMode == settingOne);
+
+            label = '';
+            fontSize = this.convertFontSize(20);
+
+            if(settingOne == 'language') {
+                if(choosen) {
+                    if(this.language == 'ko') {
+                        label = this.trans('Language') + ' :\t' + 'English ◀[한글]▶';
+                    } else {
+                        this.language = 'en';
+                        label = this.trans('Language') + ' :\t' + '◀[English]▶ 한글';
+                    }
+                } else {
+                    if(this.language == 'ko') {
+                    label = this.trans('Language') + ' :\t' + 'English [한글]';
+                    } else {
+                        this.language = 'en';
+                        label = this.trans('Language') + ' :\t' + '[English] 한글';
+                    }
+                }
+            } else if(settingOne == 'quality') {
+                if(choosen) {
+                    if(this.ressets.h <= 720) {
+                        label = this.trans('Quality') + ' :\t' + '◀[' + this.trans('LOW') + ']▶ ' + this.trans('MEDIUM');
+                    } else {
+                        this.ressets.w = 1920;
+                        this.ressets.h = 1080;
+                        label = this.trans('Quality') + ' :\t' + this.trans('LOW') + ' ◀[' + this.trans('MEDIUM') + ']▶';
+                    }
+                } else {
+                    if(this.ressets.h <= 720) {
+                        label = this.trans('Quality') + ' :\t' + '[' + this.trans('LOW') + '] ' + this.trans('MEDIUM');
+                    } else {
+                        this.ressets.w = 1920;
+                        this.ressets.h = 1080;
+                        label = this.trans('Quality') + ' :\t' + this.trans('LOW') + ' [' + this.trans('MEDIUM') + ']';
+                    }
+                }
+            } else {
+                if(choosen) {
+                    label = '[[' + this.trans('ACCEPT') + ']]';
+                } else {
+                    label = this.trans('ACCEPT');
+                }
+            }
+
+            this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+            opacity = 0.8;
+            if(choosen) opacity = 0.99;
+
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
+
+            rows += (this.metricSize1 * 2) + gap;
+        }
+
+
+        fontSize = this.convertFontSize(12);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        opacity = 0.9;
+        label = this.trans('MOVE : ');
+        for(idx=0; idx<this.arrowKeys.length; idx++) {
+            let arrowKeyOne = this.arrowKeys[idx];
+            let arrowKeyLabel = String(arrowKeyOne);
+            if(     arrowKeyOne == 'ARROWUP'   ) arrowKeyLabel = '↑';
+            else if(arrowKeyOne == 'ARROWDOWN' ) arrowKeyLabel = '↓';
+            else if(arrowKeyOne == 'ARROWLEFT' ) arrowKeyLabel = '←';
+            else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
+            else arrowKeyLabel = String(arrowKeyOne);
+
+            label += arrowKeyLabel;
+        }
+        label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() * 9 / 10)));
+        rows += fontSize + gap;
     }
 
     /** 화면 출력 - 설정 화면 */

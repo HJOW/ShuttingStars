@@ -43,6 +43,7 @@ _shuttingstarcore.stringTable = {
         'Reset All' : '전체 초기화',
         'Reset ALL' : '전체 초기화',
         'Language' : '언어',
+        'Quality' : '품질',
         "Line Keys" : '라인 키',
         'Choose your song !' : '곡을 선택하세요 !',
         'Choose your mission !' : '미션을 선택하세요 !',
@@ -77,6 +78,8 @@ _shuttingstarcore.stringTable = {
         "JOIN" : "가입",
         "LOCAL" : "로컬",
         "INTERNET" : "인터넷",
-        "GUEST" : "GUEST"
+        "GUEST" : "GUEST",
+        "LOW" : "낮음",
+        "MEDIUM" : "보통"
     }
 };
