@@ -1911,6 +1911,7 @@ class ShuttingStarsCore {
                 if(this.language == 'ko') this.language = 'en';
                 else this.language = 'ko';
             } else if(this.firstSetMode == 'quality' ) {
+                this.disable3d = true;
                 if(this.ressets.h <= 720) {
                     this.ressets.w = 1920;
                     this.ressets.h = 1080;
@@ -2252,7 +2253,7 @@ class ShuttingStarsCore {
         const timeDiff = (typeof(this.keypressing[key]) == 'undefined' || this.keypressing[key] == null) ? 0 : new Date().getTime() - this.keypressing[key];
         this.keypressing[key] = null;
 
-        // TODO
+        // TODO 롱노트 구현 시 꼭 수정되어야 하는 파트
     }
 
     /** 마우스 클릭 해제 / 터치 해제 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
@@ -2363,19 +2364,6 @@ class ShuttingStarsCore {
                     this.renderPlaying();
                     // 다시 비우기
                     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                }
-            }
-
-            // BGA 처리 (canvas에 그리는 것이 아닌, canvas 뒤에 있는 video 태그를 작동시킴)
-            if(this.state == 'playing') {
-                if(this.song) {
-                    if(this.song.bgaUrl != null && typeof(this.song.bgaUrl) != 'undefined') {
-                        // TODO
-                        // let img = new Image();
-                        // img.src = this.song.bgaUrl;
-                        // this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
-                        // this.song.bgaUrl
-                    }
                 }
             }
 
@@ -5550,7 +5538,11 @@ class ShuttingStarsCore {
         let sel = this.configDiv.querySelector('.sel_graphicquality');
         let html = '';
         for(idx=0; idx<this.settingsGraphicQuality.length; idx++) {
-            html += "<option value='" + this.settingsGraphicQuality[idx] + "'>" + this.settingsGraphicQuality[idx] + "</option>";
+            const values = ShuttingStarsUtility.purifyHTML( this.settingsGraphicQuality[idx] );
+            let   labels = ShuttingStarsUtility.purifyHTML(this.trans(String(values)));
+            if(values == 'HIGH') labels += ' (' + this.trans('EXPERIMENTAL') + ')';
+
+            html += "<option value='" + values + "'>" + labels + "</option>";
         }
         sel.innerHTML = html;
         sel.value = this.settingGraphicQualityChoosing;
@@ -7168,6 +7160,17 @@ class ShuttingStarsUtilityClass {
             res += line + '\n';
         }
         return res.trim();
+    }
+
+    /** 문자열에서 따옴표, <> 기호를 HTML 특수문자로 변환 */
+    purifyHTML(str) {
+        if(str == null) return '';
+        str = String(str);
+        str = this.replaceString(str, '<', '&lt;');
+        str = this.replaceString(str, '>', '&gt;');
+        str = this.replaceString(str, '"', '&quot;');
+        str = this.replaceString(str, "'", '&apos;');
+        return str;
     }
 
     /** 자연수 (양의 정수)와 자리수(역시 양의 정수) 입력 받아, 해당 자리수에 맞는 문자열로 변환, 숫자를 표현하고 남은 자리수는 빈 문자열(공백) 로 앞부분을 채움 */

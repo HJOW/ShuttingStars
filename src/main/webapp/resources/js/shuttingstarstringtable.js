@@ -82,6 +82,8 @@ _shuttingstarcore.stringTable = {
         "INTERNET" : "인터넷",
         "GUEST" : "GUEST",
         "LOW" : "낮음",
-        "MEDIUM" : "보통"
+        "MEDIUM" : "보통",
+        "HIGH" : "높음",
+        "EXPERIMENTAL" : "실험기능"
     }
 };
