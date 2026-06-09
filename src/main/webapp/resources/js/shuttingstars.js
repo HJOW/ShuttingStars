@@ -2203,8 +2203,14 @@ class ShuttingStarsCore {
         minimumNote.removed = true; // 처리했음을 표시
 
         // 추가 폭발 객체 추가
-        const newExplosinves = new CorrectNoteExplosing(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
-        this.objects.push(newExplosinves);
+        if(resultMark == 'MISS') {
+            minimumNote.missed = true;
+            const newExplosinves = new FailExplosing(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+            this.objects.push(newExplosinves);
+        } else {
+            const newExplosinves = new CorrectNoteExplosing(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+            this.objects.push(newExplosinves);
+        }
     }
 
     /** 마우스 클릭 / 터치 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
@@ -4549,6 +4555,7 @@ class ShuttingStarsCore {
                         this.processResultMark(resultMark);
                         this.displayResultMark(resultMark);
                         obj.removed = true;
+                        obj.missed = true;
 
                         // 폭발 시작
                         obj.explosing = 1;
@@ -6465,6 +6472,7 @@ class NoteKeyObject extends ShuttingStarsObject {
         let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
         ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
 
+        // 글자 출력
         if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
         else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
 
@@ -6510,14 +6518,21 @@ class NoteKeyObject extends ShuttingStarsObject {
         }
 
         if(gradientIndex >= 1) {
-            r = r + Math.floor(((250 - r) / 6.0) * (gradientIndex + 1));
-            g = g + Math.floor(((250 - g) / 6.0) * (gradientIndex + 1));
-            b = b + Math.floor(((250 - b) / 6.0) * (gradientIndex + 1));
+            return this.applyGradientIndex(r, g, b, gradientIndex);
         }
 
         return r + ', ' + g + ', ' + b;
     }
+    applyGradientIndex(r, g, b, gradientIndex) {
+        if(gradientIndex >= 1) {
+            r = r + Math.floor(((250 - r) / 7.0) * (gradientIndex + 1));
+            g = g + Math.floor(((250 - g) / 7.0) * (gradientIndex + 1));
+            b = b + Math.floor(((250 - b) / 7.0) * (gradientIndex + 1));
+        }
+        return r + ', ' + g + ', ' + b;
+    }
     modifyExplosiveColor(gradientIndex) {
+        if(this.explosing >= 3) return '255, 255, 255';
         return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
     }
 }
@@ -6541,6 +6556,7 @@ class NotePlacer extends NoteKeyObject {
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
 class Note extends NoteKeyObject {
     removed = false; // 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함
+    missed = false; // 미스로 인해 처리되는 경우를 표시
 
     // 게임 처리 중 초기화됨
     patternId = 0;   
@@ -6575,18 +6591,25 @@ class Note extends NoteKeyObject {
     }
     /** 기존 투명도 (Opacity) 에 explosing 반영 */
     getNowOpacity() {
-        // this.explosing 반영된 opacity 값 반환
-        // this.opacity 값인 0.9 에서 시작, this.explosing 값이 0~3 까지 증가하는 동안 점진적으로 1.0 까지 증가
-        // 이후 this.explosing 값이 4~8 까지 점진적으로 감소하여 8 이 되면 0이 되어야 함
-        let opacity = this.opacity;
-        if(this.explosing >= 0 && this.explosing <= 3) {
-            opacity += (0.1 * this.explosing); // 0.9 -> 1.0
-        } else if(this.explosing > 3 && this.explosing <= this.explosingMax) {
-            opacity += (0.4 - (0.08 * (this.explosing - 3))); // 1.0 -> 0.0
-        } else if(this.explosing > this.explosingMax) {
-            opacity = 0.0;
+        // 0.9 부터 시작하여 급격히 감소
+        if(this.explosing <= 0) {
+            return this.opacity;
+        } else {
+            let opa = this.opacity - (this.explosing * 0.3);
+            if(opa < 0) opa = 0;
+            return opa;
         }
-        return opacity;
+    }
+
+    modifyExplosiveColor(gradientIndex) {
+        if(this.explosing >= 3) {
+            if(this.missed) {
+                return '255, 0, 0';
+            } else {
+                return '255, 255, 255';   
+            }
+        }
+        return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
     }
 
     draw(ctx) {
@@ -6611,14 +6634,16 @@ class Note extends NoteKeyObject {
         }
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
-        let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
-        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+        if(this.explosing < 2) {
+            let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
+            ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
 
-        if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
-        else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+            if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
+            else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
 
-        ctx.textAlign = "center";
-        ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+            ctx.textAlign = "center";
+            ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+        }
     }
 }
 
@@ -7094,10 +7119,10 @@ class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
             const angle = (i / realtimeAudioBufferLength) * Math.PI * 2; 
 
             // 막대의 시작점과 끝점
-            const x1 = centerX + Math.cos(angle) * this.radius;
-            const y1 = centerY + Math.sin(angle) * this.radius;
-            const x2 = centerX + Math.cos(angle) * (this.radius + Math.floor(Math.random() * 10) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 2);
-            const y2 = centerY + Math.sin(angle) * (this.radius + Math.floor(Math.random() * 10) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 2);
+            const x1 = Math.floor(centerX + Math.cos(angle) * this.radius);
+            const y1 = Math.floor(centerY + Math.sin(angle) * this.radius);
+            const x2 = Math.floor(centerX + Math.cos(angle) * (this.radius + (Math.random() * 50) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
+            const y2 = Math.floor(centerY + Math.sin(angle) * (this.radius + (Math.random() * 50) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
 
             ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', ' + this.opacity + ')';
             ctx.lineWidth = 3;
