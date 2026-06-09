@@ -308,6 +308,9 @@ class ShuttingStarsCore {
     // 내부 핵심 로직 전체에 액세스하지 못하게 막기 위한 중간 객체
     broker = {};
 
+    // URL 매개변수들 (null 혹은 URLSearchParams 타입 객체가 들어감)
+    urlParameters = null;
+
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
     fOuterWidth  = function() { return window.outerWidth;  }
     fOuterHeight = function() { return window.outerHeight; }
@@ -323,6 +326,7 @@ class ShuttingStarsCore {
         try {
             if(urlContext) this.urlCtx = urlContext;
 
+            this.readURLParameters();
             this.rebuildBroker();
 
             this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
@@ -837,6 +841,15 @@ class ShuttingStarsCore {
         if(this.backend != null) {
             try { this.backend.logEvent('STATE ' + state); } catch(ignores) {}
         }
+    }
+
+    /** URL 로부터 매개변수 읽기 */
+    readURLParameters() {
+        // Check this browser support window.location.search and URLSearchParams
+        if(typeof(URLSearchParams       ) == 'undefined') { this.urlParameters = null; return; }
+        if(typeof(window.location.search) == 'undefined') { this.urlParameters = null; return; }
+
+        try { this.urlParameters = new URLSearchParams(window.location.search); } catch(e) { console.error(e); this.urlParameters = null; }
     }
 
     /** Broker 재생성 (변경 가능한 변수들만 대리로 변경할 수 있도록 하는 중간 매개 객체) */
