@@ -6372,7 +6372,7 @@ class ShuttingStarsObject {
         }
     }
 
-    modifyExplosiveColor() {
+    modifyExplosiveColor(gradientIndex) {
         return this.color;
     }
 
@@ -6441,25 +6441,6 @@ class ShuttingStarsObject {
         }
         return false;
     }
-
-    /** 라인 별 컬러 */
-    getColorOfLocationIndex(locationIndex) {
-        // 총 6개의 라인, 순서대로 빨주노초파남
-        if(locationIndex == 0) {
-            return '180, 80, 180';
-        } else if(locationIndex == 1) {
-            return '230, 180, 80';
-        } else if(locationIndex == 2) {
-            return '230, 230, 80';
-        } else if(locationIndex == 3) {
-            return '180, 230, 80';
-        } else if(locationIndex == 4) {
-            return '80, 230, 80';
-        } else if(locationIndex == 5) {
-            return '80, 230, 230';
-        }
-        return '200, 200, 200';
-    }
 }
 
 /** Note 제거기 혹은 Note 그 자체의 상위 클래스, "키"를 가짐 */
@@ -6471,6 +6452,7 @@ class NoteKeyObject extends ShuttingStarsObject {
         super();
         this.locationIndex = locationIndex;
         this.key = _shuttingstarcore.keyList[locationIndex];
+        this.color = this.getColorOfLocationIndex(locationIndex);
     }
     /** 기존 투명도 (Opacity) 에 explosing 반영 */
     getNowOpacity() {
@@ -6488,6 +6470,55 @@ class NoteKeyObject extends ShuttingStarsObject {
 
         ctx.textAlign = "center";
         ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+    }
+    /** 라인 별 컬러 */
+    getColorOfLocationIndex(locationIndex, gradientIndex) {
+        if(typeof(gradientIndex) == 'undefined') gradientIndex = 0;
+        if(gradientIndex < 0) gradientIndex = 0;
+        if(gradientIndex > 3) gradientIndex = 3;
+        let r, g, b;
+
+        // 총 6개의 라인, 순서대로 빨주노초파남
+        if(locationIndex == 0) {
+            r = 180;
+            g = 80;
+            b = 180;
+        } else if(locationIndex == 1) {
+            r = 230;
+            g = 180;
+            b = 80;
+        } else if(locationIndex == 2) {
+            r = 230;
+            g = 230;
+            b = 80;
+        } else if(locationIndex == 3) {
+            r = 180;
+            g = 230;
+            b = 80;
+        } else if(locationIndex == 4) {
+            r = 80;
+            g = 230;
+            b = 80;
+        } else if(locationIndex == 5) {
+            r = 80;
+            g = 230;
+            b = 230;
+        } else {
+            r = 200;
+            g = 200;
+            b = 200;
+        }
+
+        if(gradientIndex >= 1) {
+            r = r + Math.floor(((250 - r) / 6.0) * (gradientIndex + 1));
+            g = g + Math.floor(((250 - g) / 6.0) * (gradientIndex + 1));
+            b = b + Math.floor(((250 - b) / 6.0) * (gradientIndex + 1));
+        }
+
+        return r + ', ' + g + ', ' + b;
+    }
+    modifyExplosiveColor(gradientIndex) {
+        return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
     }
 }
 
@@ -6563,16 +6594,20 @@ class Note extends NoteKeyObject {
         // ShuttingStarsUtility.drawGradientedArc(ctx, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), parseInt(explosiveColors[0].trim()), parseInt(explosiveColors[1].trim()), parseInt(explosiveColors[2].trim()), parseFloat(this.modifyExplosiveOpacity()), 3);
         super.draw(ctx);
         
-        ctx.beginPath();
-        ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
+        for(let idx=0; idx<=3; idx++) {
+            ctx.beginPath();
+            ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r - idx), 0, 2 * Math.PI);
 
-        if(this.fill) {
-            ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
-            ctx.fill();
-        } else {
-            ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            if(this.fill) {
+                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fill();
+            } else {
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.stroke();
+            }
+
+            if(this.r - idx <= 3) break;
         }
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
