@@ -167,6 +167,7 @@ $(function() {
             lastAppend = 0;
             appendCounts = 0;
 
+            const timeGaps = _shuttingstarcore.calculateSongBitGap(bpmVal);
             timer = ShuttingStarsUtility.repeat(function() {
                 audioAnalyser.getByteFrequencyData(audioBuffer);
 
@@ -225,7 +226,7 @@ $(function() {
                 for(jdx=0; jdx<audioBufferLen; jdx++) {
                     audioBuffer2[jdx] = audioBuffer[jdx];
                 }
-            }, Math.round((60000 / bpmVal) / _shuttingstarcore.timeMultiplier));
+            }, timeGaps);
             audio.currentTime = 0;
             audio.play();
         } catch(e) {
