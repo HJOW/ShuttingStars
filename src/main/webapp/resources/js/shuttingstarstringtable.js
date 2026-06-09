@@ -84,6 +84,8 @@ _shuttingstarcore.stringTable = {
         "LOW" : "낮음",
         "MEDIUM" : "보통",
         "HIGH" : "높음",
-        "EXPERIMENTAL" : "실험기능"
+        "EXPERIMENTAL" : "실험기능",
+        "YES" : "예",
+        "NO" : "아니오"
     }
 };

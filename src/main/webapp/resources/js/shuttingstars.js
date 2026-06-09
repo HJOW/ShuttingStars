@@ -299,6 +299,12 @@ class ShuttingStarsCore {
     metricSize2 = 15;
     metricSize3 = 30;
 
+    // confirm (예/아니오 묻기) 진행 중 여부
+    confirmAsking = false;
+    confirmMessage = '';
+    confirmChoosingYes = false; // true 시 "예" 를 선택 중
+    afterConfirmCallback = function(yn) {}
+
     // 불러온 플러그인 목록
     pluginApplied = [];
 
@@ -1622,6 +1628,20 @@ class ShuttingStarsCore {
             return;
         }
 
+        // CONFIRM 묻고 있는 상황이면 CONFIRM 최우선 처리
+        if(this.confirmAsking) {
+            if(key == this.arrowKeys[2]) { // LEFT
+                this.confirmChoosingYes = (! this.confirmChoosingYes);
+            } else if(key == this.arrowKeys[3]) { // RIGHT
+                this.confirmChoosingYes = (! this.confirmChoosingYes);
+            } else if(key == this.enterKey) {
+                this.playSE('accept1');
+                this.afterConfirmCallback(this.confirmChoosingYes);
+                this.confirmAsking = false;
+            }
+            return;
+        }
+
         // 타이틀 화면 키 핸들링
         if(this.state == 'title') {
             this.handleKeyInputTitle(key, vkeyExplosion);
@@ -1732,15 +1752,17 @@ class ShuttingStarsCore {
             } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
                 this.playSE('special1');
                 if(this.backend != null && this.backend.avail) {
-                    if(confirm( this.trans('Do you want to logout now?') )) {
-                        this.backend.logout().then(() => {
-                            try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
-                            selfs.getMenuList().then((menuList) => {
-                                selfs.menuListDynamic = menuList;
-                                selfs.setState('title');
+                    this.confirm( this.trans('Do you want to logout now?') ).then((yn) => {
+                        if(yn) {
+                            selfs.backend.logout().then(() => {
+                                try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
+                                selfs.getMenuList().then((menuList) => {
+                                    selfs.menuListDynamic = menuList;
+                                    selfs.setState('title');
+                                });
                             });
-                        });
-                    }
+                        }
+                    });
                 }
             }
         }
@@ -2285,6 +2307,21 @@ class ShuttingStarsCore {
             }
         }
     }
+
+    /** 강력 알림 메시지 출력 */
+    alert(msg, red) {
+        ShuttingStarsUtility.toast(String(msg), red);
+    }
+
+    /** 예 / 아니오 선택 받기 (Promise) */
+    confirm(msg) {
+        return new Promise((resolve, reject) => {
+            this.afterConfirmCallback = function(yn) { resolve(yn); }
+            this.confirmMessage = String(msg);
+            this.confirmAsking = true;
+            this.confirmChoosingYes = false;
+        });
+    }
     
     /** 거리에 따른 판정 산출 */
     createResultMark(distance) {
@@ -2430,6 +2467,11 @@ class ShuttingStarsCore {
                 if(obj.priority == 'high') {
                     if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
                 }
+            }
+
+            // confirm 그리기
+            if(this.confirmAsking) {
+                this.renderConfirmBlock();
             }
         } catch(e) {
             console.error(e);
@@ -4095,6 +4137,43 @@ class ShuttingStarsCore {
         }
     }
 
+    /** Confirm (예/아니오) 창 그리기 */
+    renderConfirmBlock() {
+        if(! this.confirmAsking) return;
+
+        // 무조건 화면 중앙에 띄우기
+        let row = (this.getStageHeight() / 2) - this.metricSize3;
+        let gap = this.metricSize2;
+        let gap2 = 0;
+        if(this.ressets.h > 720) gap2 = this.metricSize3;
+
+        // 전체크기 DIM 배경 사각형 그리기
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.7)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.7)');
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 메시지 사각형 그리기
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+        this.ctx.fillRect(0, this.convertY(row - this.metricSize3 - gap, false), this.convertX(this.getStageWidth()), ((this.metricSize3 * 3) + (gap * 2 + gap2)));
+
+        // 메시지 그리기
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        this.ctx.font = 'normal ' + this.convertFontSize(30) + 'px ' + this.getRenderFontFamily();
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(this.confirmMessage, this.convertX(this.getStageWidth() / 2), this.convertY(row, false));
+        row += this.metricSize3 + gap;
+
+        // 예 / 아니오 그리기
+        this.ctx.font = 'normal ' + this.convertFontSize(20) + 'px ' + this.getRenderFontFamily();
+        if(this.confirmChoosingYes) {
+            this.ctx.fillText('◀[' + this.trans('YES') + ']▶    ' + this.trans('NO'), this.convertX(this.getStageWidth() / 2), this.convertY(row, false));
+        } else {
+            this.ctx.fillText(this.trans('YES') + '    ◀[' + this.trans('NO') + ']▶', this.convertX(this.getStageWidth() / 2), this.convertY(row, false));
+        }
+    }
+
     /** 커맨드 준비 */
     prepareCommands() {
         const selfs = this;
@@ -5409,9 +5488,7 @@ class ShuttingStarsCore {
         btnCancel.addEventListener('click', fCancel);
 
         btnReset.addEventListener('click', () => {
-            if(confirm(selfs.trans('Do you want to reset all?'))) {
-                selfs.resetAll();
-            }
+            if(confirm(selfs.trans('Do you want to reset all?'))) selfs.resetAll(); // this.confirm 쓰면 안 됨. DOM 영역에 뜨는 버튼들이라...
         });
 
         // 버튼 이벤트 (곡)
