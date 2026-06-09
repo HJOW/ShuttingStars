@@ -67,6 +67,11 @@ This Font Software is licensed under the SIL Open Font License, Version 1.1.
 
 Visit https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
 
++ Google Fonts - Noto Sans Series
+
+SIL Open font license 1.1
+https://fonts.google.com/noto
+
 ## Third Party Icons
 
 + Google Fonts - Material Symbols

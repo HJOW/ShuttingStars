@@ -74,6 +74,11 @@ http://www.kurage-kosho.info/
 
 전문 : https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
 
++ Google Fonts - Noto Sans Series
+
+SIL Open font license 1.1
+https://fonts.google.com/noto
+
 ## 써드파티 아이콘
 
 + Google Fonts - Material Symbols

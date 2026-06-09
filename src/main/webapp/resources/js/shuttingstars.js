@@ -71,7 +71,7 @@ class ShuttingStarsCore {
 
     fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
     pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
-    alterFonts = 'NanumGothicCoding NanumGothic'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
+    alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
 
     canvas = null;    // 2D 캔버스 객체 (메인 게임 동작)
     canvas3d = null;  // 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치)
