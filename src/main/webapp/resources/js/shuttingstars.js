@@ -103,7 +103,6 @@ class ShuttingStarsCore {
     resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 상수
     songTitleBaseTime = 120;       // 곡 로딩 기본 시간
     volumeMultiplier = 1.0;        // 볼륨 상수
-    visualizeBarMultiplier = 2.2;  // 시각화 각 필드 길이 배수
     backStarlightCount = 30;       // 배경 별빛 장식 최대 갯수
     backStarlightSpdX = 1;         // 배경 별빛 장식 X 속도 (게임 중 변경됨)
     backStarlightSpdY = 0;         // 배경 별빛 장식 Y 속도 (게임 중 변경됨)
@@ -267,14 +266,9 @@ class ShuttingStarsCore {
     songDebugMode = false;
     // 시간 소요 출력 여부
     timeElapseDebugMode = false;
-    // 시각화 중 피크치 디버깅
-    visualizePeakDebugMode = false;
 
-    // 시각화 피크치 디버깅 데이터
-    visualizePeakDebugRecordTime = 0;
-    visualizePeakDebugShortestTime = 2; // 얼마나 시간을 촘촘하게 측정할 것인지 지정
-    visualizePeakDebugAvgtGap = 10; // 이 시간 동안의 평균을 측정
-    visualizePeakDebugData = [];
+    // 2D 시각화 객체
+    vizualizer2d = null;
     
     // 마우스 이벤트 처리기
     mouseEvents = [];
@@ -542,6 +536,9 @@ class ShuttingStarsCore {
             this.setResolution(this.ressets.w, this.ressets.h);
 
             this.logInit('detecting touchscreen...');
+
+            // 시각화 설정
+            this.vizualizer2d = new CircleTypeAudio2DVisualizer(); // new BarTypeAudio2DVisualizer();
 
             // 가상 키 사용여부 지정
             if(this.virtualKeyNone) this.virtualKey = false;
@@ -1358,10 +1355,6 @@ class ShuttingStarsCore {
         this.gameOverDelayed = false;
         this.resumingTime = 0;
 
-        if(this.visualizePeakDebugData.length >= 1 && this.state == 'playing' && this.elapsedTime >= 80) this.consoleVisualizeDebugData();
-        this.visualizePeakDebugData = [];
-        this.visualizePeakDebugRecordTime = 0;
-
         // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
         if(this.state == 'songtitle') {
             this.lastObjectId = 0;
@@ -1504,9 +1497,6 @@ class ShuttingStarsCore {
             if(this.audio != null) {
                 setTimeout(() => {
                     selfs.audio.play();
-
-                    selfs.visualizePeakDebugData = [];
-                    selfs.visualizePeakDebugRecordTime = 0;
 
                     selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
                     selfs.elapsedTimeOld = selfs.songTiming * (-1);
@@ -4042,40 +4032,7 @@ class ShuttingStarsCore {
             if(this.disable2d) return;
         }
 
-        // 막대그래프형 - 크기 계산
-        const barWidth = Math.round(this.canvas.width * 1.0 / this.audioBufferLen) * this.visualizeBarMultiplier;
-        let barHeight, barColorVariable;
-        let x = 0;
-
-        // 디버그 데이터
-        let peakData = null;
-        let oldData;
-        if(this.visualizePeakDebugMode) {
-            peakData = {}
-            peakData.time = this.elapsedTime;
-            peakData.values = [];
-
-            oldData = this.visualizePeakDebugRecordTime;
-            if(this.visualizePeakDebugRecordTime + this.visualizePeakDebugShortestTime >= this.elapsedTime) peakData = null;
-            else this.visualizePeakDebugRecordTime = this.elapsedTime;
-        }
-
-        for(let i=0; i<this.audioBufferLen; i++) {
-            barHeight = this.audioBuffer[i]; // 0 ~ 255
-
-            if(peakData != null) peakData.values.push(barHeight);
-
-            // convert ~255 to ~canvas.height
-            barHeight = ((barHeight * (this.canvas.height - 10) / 1.5) / 255.0);
-
-            barColorVariable = ((barHeight * 100.0) / 255.0); // convert ranges
-
-            this.ctx.fillStyle = 'rgba(' + (barColorVariable + 140) + ', 100, 120, 0.1)';
-            this.ctx.fillRect(x, this.canvas.height - barHeight, barWidth - 2, barHeight);
-            x += barWidth;
-        }
-
-        if(peakData != null) this.visualizePeakDebugData.push(peakData);
+        if(this.vizualizer2d != null) this.vizualizer2d.draw(this.ctx, this.canvas.width, this.canvas.height, this.audioBuffer, this.audioBufferLen, this.elapsedTime, this.gameOverDelayed ? 0 : this.hp);
     }
 
     /** 크레딧 그리기 */
@@ -6125,64 +6082,6 @@ class ShuttingStarsCore {
         try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         fAfter();
     }
-
-    /** 시각화 디버깅 데이터 콘솔에 출력 */
-    consoleVisualizeDebugData() {
-        let idx, jdx;
-        let line;
-        let averages = []; // TODO : 그냥 평균을 낼 게 아니라 일정 시간 동안만 평균을 내야 함
-
-        let maxLen = 0;
-        // 각 데이터 길이 최대 필드 감지
-        for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
-            const dataOne = this.visualizePeakDebugData[idx];
-            if(maxLen <= dataOne.values.length) maxLen = dataOne.values.length;
-        }
-
-        // 평균 데이터 미리 0으로 채우기 (합 먼저 진행)
-        for(idx=0; idx<maxLen; idx++) {
-            averages.push(0);
-        }
-
-        console.log('[ DATA START ]');
-        for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
-            const dataOne = this.visualizePeakDebugData[idx];
-            
-            line = String(dataOne.time);
-            for(jdx=0; jdx<dataOne.values.length; jdx++) {
-                line += ', ' + String(dataOne.values[jdx]);
-                averages[jdx] += dataOne.values[jdx];
-            }
-            console.log(line);
-        }
-        console.log('[ DATA END ]');
-
-        // 평균 산출
-        console.log('[ AVERAGES ]');
-        line = '';
-        for(idx=0; idx<averages.length; idx++) {
-            averages[idx] = averages[idx] * 1.0 / this.visualizePeakDebugData.length;
-            if(idx > 0) line += ', ';
-            line += String(averages[idx]);
-            console.log(line);
-        }
-
-        // 평균 이상인 시간대 출력
-        console.log('[ OVERTIMES ]');
-        for(idx=0; idx<this.visualizePeakDebugData.length; idx++) {
-            const dataOne = this.visualizePeakDebugData[idx];
-            let peaks = 0;
-
-            for(jdx=0; jdx<dataOne.values.length; jdx++) {
-                const valueOne = dataOne.values[jdx];
-                if(valueOne > averages[jdx]) {
-                    peaks++;
-                }
-            }
-
-            if(peaks >= averages.length / 2.0) console.log(dataOne.time);
-        }
-    }
 }
 
 const _shuttingstarcore = new ShuttingStarsCore();
@@ -7077,6 +6976,101 @@ class VirtualKey extends DecorationObject {
         //    출력
         ctx.textAlign = 'center';
         ctx.fillText(label, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y) + _shuttingstarcore.convertY(this.fontSize / 4.0));
+    }
+}
+
+/** 2D 오디오 시각화 공통 클래스 */
+class Audio2DVisualizer {
+    sizeMultiplier = 2.2;  // 시각화 각 필드 길이 배수
+    r = 0; // 컬러 RED
+    g = 0; // 컬러 GREEN
+    b = 0; // 컬러 BLUE
+    opacity = 0.3;
+    constructor() {}
+    draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
+        // 이 메소드에 시각화 구현
+    }
+    /** 진행시간과 HP 상태에 따른 컬러 계산 */
+    calculateColor(elapsedTime, hp) {
+        this.r = 120;
+        this.g = 150;
+        this.b = 150;
+
+        let elapsed1000 = elapsedTime % 1000;
+        if(elapsed1000 >= 0 && elapsed1000 < 250) {
+            this.r += 10;
+            this.g += 50;
+            this.b += 20;
+        } else if(elapsed1000 >= 250 && elapsed1000 < 500) {
+            this.r += 15;
+            this.g += 30;
+            this.b += 30;
+        } else if(elapsed1000 >= 500 && elapsed1000 < 750) {
+            this.r += 15;
+            this.g += 20;
+            this.b += 40;
+        } else {
+            this.r += 30;
+            this.g += 10;
+            this.b += 50;
+        }
+
+        this.r += Math.floor(( 100.0 - hp ));
+        this.g -= Math.floor(( 100.0 - hp ) / 2);
+        this.b -= Math.floor(( 100.0 - hp ) / 2);
+    }
+}
+
+/** 바형 2D 오디오 시각화 클래스 */
+class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
+    constructor() { super(); }
+    draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
+        this.calculateColor(elapsedTime, hp);
+        let x = 0;
+
+        // 막대그래프형
+        const barWidth = Math.round(canvasWidth * 1.0 / realtimeAudioBufferLength) * this.sizeMultiplier;
+        let barHeight;
+        for(let i=0; i<realtimeAudioBufferLength; i++) {
+            barHeight = realtimeAudioBuffer[i]; // 0 ~ 255
+
+            // convert ~255 to ~canvas.height
+            barHeight = ((barHeight * (canvasHeight - 10) / 1.5) / 255.0) + Math.floor(Math.random() * 10);
+
+            ctx.fillStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', ' + this.opacity + ')';
+            ctx.fillRect(x, canvasHeight - barHeight, barWidth - 2, barHeight);
+            x += barWidth;
+        }
+    }
+}
+
+/** 원형 2D 오디오 시각화 클래스 */
+class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
+    radius = 100;
+    constructor() { super(); }
+    draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
+        this.calculateColor(elapsedTime, hp);
+        // 중앙 위치
+        const centerX = canvasWidth  / 2;
+        const centerY = canvasHeight / 2;
+
+        for(let i=0; i<realtimeAudioBufferLength; i++) {
+            // 방향
+            const angle = (i / realtimeAudioBufferLength) * Math.PI * 2; 
+
+            // 막대의 시작점과 끝점
+            const x1 = centerX + Math.cos(angle) * this.radius;
+            const y1 = centerY + Math.sin(angle) * this.radius;
+            const x2 = centerX + Math.cos(angle) * (this.radius + Math.floor(Math.random() * 10) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 2);
+            const y2 = centerY + Math.sin(angle) * (this.radius + Math.floor(Math.random() * 10) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 2);
+
+            ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', ' + this.opacity + ')';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
     }
 }
 
