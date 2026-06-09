@@ -67,6 +67,13 @@ This Font Software is licensed under the SIL Open Font License, Version 1.1.
 
 Visit https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
 
+## Third Party Icons
+
++ Google Fonts - Material Symbols
+
+Apache License 2.0
+https://developers.google.com/fonts/docs/material_symbols?hl=ko
+
 ## Third Party Libraries
 
 + jQuery (Only for Create Mode)

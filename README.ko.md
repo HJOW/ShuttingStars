@@ -74,6 +74,13 @@ http://www.kurage-kosho.info/
 
 전문 : https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
 
+## 써드파티 아이콘
+
++ Google Fonts - Material Symbols
+
+Apache License 2.0
+https://developers.google.com/fonts/docs/material_symbols?hl=ko
+
 ## 써드파티 Library
 
 + jQuery (Create Mode 에서만 사용)
