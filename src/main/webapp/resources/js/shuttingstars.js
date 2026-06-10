@@ -5152,7 +5152,7 @@ class ShuttingStarsCore {
                         <td colspan='2' style='text-align: right;'><button type='button' class='target_translate btn btn_login_cancel red' style='font-size: 0.9rem; padding-left: 0.9rem; padding-right: 0.9rem; padding-top: 0.1rem; padding-bottom: 0.1rem;'>X</button></td>
                     </tr>
                     <tr>
-                        <td colspan='2' style='text-align: center; height: 250px; vertical-align: middle;'>
+                        <td colspan='2' style='text-align: center; height: 180px; vertical-align: middle;'>
                             <button class="gsi-material-button btn_login">
                                 <div class="gsi-material-button-state"></div>
                                 <div class="gsi-material-button-content-wrapper">
@@ -5169,6 +5169,11 @@ class ShuttingStarsCore {
                                     <span style="display: none;">Continue with Google</span>
                                 </div>
                             </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan='2' style='text-align: center; vertical-align: middle;'>
+                            <a href='privacy.html' target='_blank' class='a_privacy target_translate' style='font-size: 0.8rem;'>Privacy Policy</a>
                         </td>
                     </tr>
                 </tbody>

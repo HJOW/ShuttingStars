@@ -86,6 +86,7 @@ _shuttingstarcore.stringTable = {
         "HIGH" : "높음",
         "EXPERIMENTAL" : "실험기능",
         "YES" : "예",
-        "NO" : "아니오"
+        "NO" : "아니오",
+        "Privacy Policy" : "개인정보처리방침"
     }
 };
