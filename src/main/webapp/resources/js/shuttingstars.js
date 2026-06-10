@@ -4423,6 +4423,12 @@ class ShuttingStarsCore {
                         additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * this.song.timeMultiplier;
                         calculates  += additionals;
 
+                        // 이전 위치 기록
+                        if(obj.tail) {
+                            obj.beforeLocations.push({x : obj.x, y : obj.y});
+                            if(obj.beforeLocations.length > obj.beforeLocationCountMax) obj.beforeLocations.splice(0, 1);
+                        }
+
                         // 위치 적용
                         obj.y = calculates;
                     }
@@ -4472,6 +4478,14 @@ class ShuttingStarsCore {
                         idx--;
                         continue;
                     }
+
+                    // 이전 위치 기록
+                    if(obj.tail) {
+                        obj.beforeLocations.push({x : obj.x, y : obj.y});
+                        if(obj.beforeLocations.length > obj.beforeLocationCountMax) obj.beforeLocations.splice(0, 1);
+                    }
+
+                    // 위치 적용
                     obj.x += obj.speedX;
                     obj.y += obj.speedY;
                 }
@@ -6437,9 +6451,12 @@ class ShuttingStarsObject {
     y = 0;
     r = 0; // rect 타입인 경우 w 대신
     h = 0;
-    speedX = 0;
+    speedX = 0; // 속도
     speedY = 0;
-    opacity = 1.0;
+    beforeLocations = []; // 이전 위치
+    beforeLocationCountMax = 32;
+    tail = false; // 꼬리 출력 (이전 위치 사용)
+    opacity = 1.0; // 선명도 (0~1)
     shape = 'circle';
     color = 'rgba(200, 200, 200, 0.99)';
     fill = true; // 채우기 여부 / false 인 경우 채우기 없이 테두리만 출력
@@ -6464,13 +6481,43 @@ class ShuttingStarsObject {
             }
         } else if(this.shape == 'rect') {
             if(this.fill) {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.color + ', ' + this.opacity + ')');
+                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.fillRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
             } else {
-                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.color + ', ' + this.opacity + ')');
+                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.lineWidth = 1;
                 ctx.strokeRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
             }
+        }
+
+        if(this.tail) {
+            for(let idx=this.beforeLocations.length-1; idx>=0; idx--) {
+                if(idx % 4 != 0) continue;
+                const beforeLoc = this.beforeLocations[idx];
+                if(this.shape === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
+
+                    if(this.fill) {
+                        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.fill();
+                    } else {
+                        ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                } else if(this.shape == 'rect') {
+                    if(this.fill) {
+                        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.fillRect(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
+                    } else {
+                        ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
+                    }
+                }
+            }
+            
         }
     }
 
@@ -6667,6 +6714,7 @@ class Note extends NoteKeyObject {
         this.speedY = 0;
         this.removed = false;
         this.explosing = 0;
+        this.tail = false; // TODO
 
         // NotePlacer 찾기
         let notePlacer = _shuttingstarcore.getNotePlacer(locationIndex);
@@ -6708,10 +6756,42 @@ class Note extends NoteKeyObject {
     }
 
     draw(ctx) {
-        // let explosiveColors = this.modifyExplosiveColor().split(',');
-        // ShuttingStarsUtility.drawGradientedArc(ctx, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), parseInt(explosiveColors[0].trim()), parseInt(explosiveColors[1].trim()), parseInt(explosiveColors[2].trim()), parseFloat(this.modifyExplosiveOpacity()), 3);
         super.draw(ctx);
+
+        // 꼬리 먼저 그리기
+        if(this.tail) {
+            let tailR   = 0.5;
+            let tailOpa = this.modifyExplosiveOpacity();
+            let calculatedR = 0;
+            for(let jdx=this.beforeLocations.length-1; jdx>=0; jdx--) {
+                tailR   = tailR   - 0.0625;
+                tailOpa = tailOpa * 0.5;
+
+                if(jdx % 4 == 0) continue;
+                if(tailR <= 0) continue;
+                if(tailOpa <= 0) continue;
+
+                const beforeLoc = this.beforeLocations[jdx];
+                for(let idx=0; idx<=3; idx++) {
+                    calculatedR = Math.floor(_shuttingstarcore.convertX(this.r - idx) * tailR);
+                    if(calculatedR <= 0) break;
+
+                    ctx.beginPath();
+                    ctx.arc(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), calculatedR, 0, 2 * Math.PI);
+
+                    if(this.fill) {
+                        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.fill();
+                    } else {
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
         
+        // 본 노트 그리기
         for(let idx=0; idx<=3; idx++) {
             ctx.beginPath();
             ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r - idx), 0, 2 * Math.PI);
