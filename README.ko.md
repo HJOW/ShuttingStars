@@ -40,6 +40,10 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 라이선스에 따른 특정 언어별 사용 권한 및 제한 사항은 라이선스를 참조하십시오.
 
+## 개인정보처리방침
+
+https://hjow.duckdns.org/shuttingstars/privacy.html
+
 ## 써드파티 곡
 
 + Night Ride

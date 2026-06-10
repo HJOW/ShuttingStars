@@ -34,6 +34,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. 
 
+## Privacy Policy
+
+https://hjow.duckdns.org/shuttingstars/privacy.html
+
 ## Third Party Songs
 
 + Night Ride
