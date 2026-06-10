@@ -1099,15 +1099,20 @@ class ShuttingStarsCore {
             this.resolution.w = h;
             this.resolution.h = w;
         }
-        this.canvas.width  = this.resolution.h * (ratio); // this.resolution.w;
+        this.canvas.width  = Math.floor(this.resolution.h * ratio); // this.resolution.w;
         this.canvas.height = this.resolution.h;
         if(this.canvas3d != null) {
-            this.canvas3d.width  = this.resolution.h * (ratio);
+            this.canvas3d.width  = Math.floor(this.resolution.h * ratio);
             this.canvas3d.height = this.resolution.h;
         }
 
         this.realStageSize.h = this.stageSize.h;
         this.realStageSize.w = this.stageSize.h * (ratio);
+
+        if(ratio < 1.69) { // 가로 : 세로 비율이 16:9보다 작은 경우 - 가로 길이를 다시 현 디스플레이 비율에 맞게 변경 (설정값은 높이만 가지고 판단하므로)
+            this.stageSize.w  = Math.floor(this.stageSize.h  * ratio);
+            this.resolution.w = Math.floor(this.resolution.h * ratio);
+        }
         
         if(this.ressets.h <= 720) {
             this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0]; 
@@ -1262,7 +1267,7 @@ class ShuttingStarsCore {
             settingJson.reverseVertical = this.reverseVertical;
             settingJson.keypressTiming = this.keypressTiming;
             settingJson.songTiming = this.songTiming;
-            settingJson.resolution = this.ressets.w + ',' + this.ressets.h;
+            settingJson.resolution = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
             settingJson.disable3d = this.disable3d;
             settingJson.disable2d = this.disable2d;
             settingJson.language = this.language;
@@ -1571,9 +1576,11 @@ class ShuttingStarsCore {
         let outWidth  = this.fOuterWidth();
         let outHeight = this.fOuterHeight();
 
-        this.contentRoot.style.height = (outHeight - this.gap.h - this.getTopMarginPage() + 1) + 'px';
+        this.contentRoot.style.width  = (outWidth  - this.gap.w - this.getLeftMarginPage() + 1) + 'px';
+        this.contentRoot.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  + 1) + 'px';
 
-        this.canvas.style.height = (outHeight - this.gap.h - this.getTopMarginPage() + 1) + 'px';
+        this.canvas.style.width  = (outWidth  - this.gap.w - this.getLeftMarginPage() + 1) + 'px';
+        this.canvas.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  + 1) + 'px';
         this.canvas.style.marginLeft = this.getLeftMarginPage() + 'px';
         this.canvas.style.marginTop  = this.getTopMarginPage() + 'px';
         this.renderConfigDiv();
