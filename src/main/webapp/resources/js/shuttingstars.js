@@ -3193,6 +3193,15 @@ class ShuttingStarsCore {
             cols += (this.metricSize2 * label.length) + gap;
         }
 
+        //    게임오버 활성화
+        if(! this.gameOverEnabled) {
+            label = '[UNDEAD]';
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
+            cols += (this.metricSize2 * label.length) + gap;
+        }
+
         //    커맨드 입력 진행 중 표시
         const numCommandInput = this.isCommandInputProgressing();
         if(numCommandInput >= 0) {
@@ -4236,6 +4245,12 @@ class ShuttingStarsCore {
                 if(selfs.noteSpeedMultiplier >= 2) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier - 1);
                 else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier / 2.0);
                 selfs.saveSettings();
+            }
+        });
+        this.commands.push({
+            command : [0, 1, 0, 1, 0, 1],
+            act : function() {
+                selfs.gameOverEnabled = (! selfs.gameOverEnabled);
             }
         });
     }
