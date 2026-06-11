@@ -199,7 +199,7 @@ $(function() {
             btnSave.prop('disabled', true);
             btnPaus.prop('disabled', false);
             btnRsum.prop('disabled', true);
-            inpElps.prop('disabled', false);
+            inpElps.prop('disabled', true);
 
             let text = ta.val();
             let songConverted = null;
@@ -245,18 +245,24 @@ $(function() {
         }
 
         const fResume = function() {
-            const valueElps = inpElps.val();
+            let valueElps = inpElps.val();
             btnPaus.prop('disabled', false);
             btnRsum.prop('disabled', true);
             inpElps.prop('disabled', true);
             if(isNaN(valueElps)) valueElps = 0;
             valueElps = parseFloat(valueElps);
-            _shuttingstarcore.elapsedTime = valueElps;
+
             if(_shuttingstarcore.audio) {
-                // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
-                _shuttingstarcore.audio.currentTime = (valueElps + _shuttingstarcore.songTiming) / ((_shuttingstarcore.song.bpm / 60.0) * (_shuttingstarcore.timeMultiplier * _shuttingstarcore.elapsedTimeMultiplier));
+                const newTime = Math.floor((valueElps + _shuttingstarcore.songTiming) / ((_shuttingstarcore.song.bpm / 60.0) * (_shuttingstarcore.timeMultiplier * _shuttingstarcore.elapsedTimeMultiplier)));
+                _shuttingstarcore.audio.currentTime = newTime;
             }
-            _shuttingstarcore.resumeSong();
+            _shuttingstarcore.elapsedTime = valueElps;
+            _shuttingstarcore.elapsedTimeOld = valueElps;
+
+            // _shuttingstarcore.resumeSong();
+            _shuttingstarcore.resumingTime = 0;
+            _shuttingstarcore.paused = false;
+            _shuttingstarcore.resumed = true;
         }
 
         btnLoad.on('click', fLoadSong);
@@ -277,6 +283,7 @@ $(function() {
         fLoadSong();
 
         ShuttingStarsUtility.repeat(() => {
+            if(_shuttingstarcore.paused) return;
             inpElps.val(_shuttingstarcore.elapsedTime);
         }, 16);
     }
