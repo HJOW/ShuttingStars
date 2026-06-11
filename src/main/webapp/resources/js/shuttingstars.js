@@ -1788,11 +1788,19 @@ class ShuttingStarsCore {
             }
         }
 
-        // ESC 처리는 공통 사항
+        // ESC 처리
         if(key == this.escKey) {
             this.playSE('cancel');
-            if(this.difficultyChoosing) { this.difficultyChoosing = false; }
-            else { this.setState('menu'); }
+
+            // 커맨드 입력 중인 경우
+            if(this.isCommandInputProgressing() >= 0) {
+                this.commandInputs = []; // 커맨드 입력 내용 지우기
+                return;
+            }
+
+            // 그외의 경우
+            if(this.difficultyChoosing) { this.difficultyChoosing = false; } // 난이도 선택 중인 경우 - 난이도 선택 해제 (다시 곡 선택 모드로)
+            else { this.setState('menu'); } // 그외의 경우 - 이전 화면인 메뉴로 이동
             return;
         }
 
@@ -3175,10 +3183,26 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, 0.6)');
         else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, 0.6)');
 
-        // 적용된 모드 정보 출력
+        // 적용된 커맨드 모드 정보 출력
         //    노트 속도
         if(! ShuttingStarsUtility.checkEqualFloats(this.noteSpeedMultiplier, 1.0)) {
             label = '[X' + ShuttingStarsUtility.floor2(this.noteSpeedMultiplier) + ']';
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
+            cols += (this.metricSize2 * label.length) + gap;
+        }
+
+        //    커맨드 입력 진행 중 표시
+        const numCommandInput = this.isCommandInputProgressing();
+        if(numCommandInput >= 0) {
+            label = '[';
+            for(idx=numCommandInput+2; idx<this.commandInputs.length; idx++) {
+                label += this.keyList[ this.commandInputs[idx] ];
+            }
+            if(this.commandInputs.length == 8) label += ']';
+            else label += '|]';
+
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.textAlign = "left";
             this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
@@ -4216,7 +4240,7 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 커맨드 입력 처리 */
+    /** 커맨드 입력 처리 (곡 선택 화면에서 플레이 키 (sdfjkl) 입력 시 이 메소드가 호출됨) */
     handleCommand(key) {
         let idx;
         let keyNo = -1;
@@ -4228,26 +4252,48 @@ class ShuttingStarsCore {
         }
         if(keyNo < 0) return;
 
+        // 커맨드는 sk (양끝 플레이 키) 로 시작하고, 뒤 6자리는 각 커맨드에 따라 다름. 총 8자리로 구성
+
         this.commandInputs.push(keyNo);
-        if(this.commandInputs.length > 6) this.commandInputs.splice(0, 1);
+        if(this.commandInputs.length > 8) this.commandInputs.splice(0, 1); // 8자리 넘어가면 맨 뒤의 값 제거
+        if(this.commandInputs[0] != 0 || this.commandInputs[1] != 5) return; // 맨앞은 s, 그뒤에 k, 그 뒤에 커맨드가 나와야 함. 그게 되지 않으면 무효
 
         for(idx=0; idx<this.commands.length; idx++) {
             const commandOne = this.commands[idx];
             let equals = true;
 
-            for(let jdx=0; jdx<this.commandInputs.length; jdx++) {
-                if(this.commandInputs[jdx] != commandOne.command[jdx]) {
-                    equals = false;
-                    break;
-                }
+            for(let jdx=0; jdx<commandOne.command.length; jdx++) {
+                const commandKeyNoOne = commandOne.command[jdx];
+                if(this.commandInputs.length < jdx + 2) {          equals = false; break; }
+                if(this.commandInputs[jdx+2] != commandKeyNoOne) { equals = false; break; }
             }
 
             if(equals) {
+                this.playSE('special1');
                 commandOne.act();
                 this.commandInputs = [];
                 break;
             }
         }
+    }
+
+    /** 커맨드 입력 중인지 탐지, 입력 중인 경우 입력 시작 위치 반환, 입력 중이지 않으면 -1 반환 */
+    isCommandInputProgressing() {
+        if(this.state != 'songchoosing') return -1; // 곡 선택 화면에서만 커맨드 입력 가능
+        let idx;
+        let sInputAlready = true;
+
+        // 위치 상관없이 sk 입력 탐지 (단, sk는 연속으로 입력된 상태여야 함)
+        for(idx=0; idx<this.commandInputs.length; idx++) {
+            if(this.commandInputs[idx] == 0) { sInputAlready = true; continue; }
+            if(sInputAlready) {
+                if(this.commandInputs[idx] == 0) { continue; }
+                else if(this.commandInputs[idx] == 5) { return idx - 1; } // s 시작 위치를 반환해야 하므로 뒷자리 번호를 반환
+                else sInputAlready = false;
+            }
+        }
+
+        return -1;
     }
 
     /** 랭크 탐지 */
