@@ -2076,8 +2076,7 @@ class ShuttingStarsCore {
         if(key == this.enterKey) {
             // 플레이 중이며 엔터 키
             if(this.paused) { // 일시정지 중일 때 --> 재개 처리
-                this.resumingTime = this.resumeDelayTime * _shuttingstarcore.timeMultiplier;
-                this.paused = false;
+                this.resumeSong();
             }
         } else if(key == this.escKey) {
             // 플레이 중이며 ESC키
@@ -2086,11 +2085,7 @@ class ShuttingStarsCore {
                 this.onGameOver();
             } else {
                 // 일시정지 중이 아닐 때 --> 일시정지 시작
-                this.paused = true;
-                if(this.audio != null) { this.audio.pause(); }
-                if(this.videoBga != null) {
-                    if(this.videoBgaUrl != null) this.videoBga.pause();
-                }
+                this.pauseSong();
             }
         } else {
             // 노트 처리
@@ -2315,6 +2310,23 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 플레이 일시정지 */
+    pauseSong() {
+        this.paused = true;
+        if(this.audio != null) { this.audio.pause(); }
+        if(this.videoBga != null) {
+            if(this.videoBgaUrl != null) this.videoBga.pause();
+        }
+    }
+
+    /** 플레이 재개 */
+    resumeSong() {
+        if(this.paused) { // 일시정지 중일 때 --> 재개 처리
+            this.resumingTime = this.resumeDelayTime * this.timeMultiplier;
+            this.paused = false;
+        }
+    }
+
     /** 강력 알림 메시지 출력 */
     alert(msg, red) {
         ShuttingStarsUtility.toast(String(msg), red);
@@ -2506,6 +2518,7 @@ class ShuttingStarsCore {
             for(let idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if(obj.explosing >= obj.explosingMax) continue;
+                if(obj.hidden) continue;
                 if(obj instanceof Note) {
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
                     if((! this.disable3d) && this.use3d.notes) continue;
@@ -4442,13 +4455,29 @@ class ShuttingStarsCore {
                 }
             }
 
+            // CreateMode 인 경우 이미 폭발한 노트도 다시 살리기 (곡 플레이 진행시간을 조절할 수 있기 때문)
+            if(this.createMode) {
+                for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                    const obj = this.objectsPlaying[idx];    
+                    if(obj instanceof Note) {
+                        if(obj.hidden) {
+                            if(this.elapsedTime + this.timeMultiplier <= obj.originalTiming) {
+                                obj.explosing = 0;
+                                obj.removed = false;
+                                obj.hidden = false;
+                            }
+                        }
+                    }
+                }
+            }
+
             // 폭발 완료 처리
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if(obj instanceof Note) {
                     if(obj.explosing >= obj.explosingMax) {
-                        this.objectsPlaying.splice(idx, 1);
-                        idx--;
+                        this.removed = true;
+                        this.hidden  = true;
                     }
                 } else if(obj instanceof NotePlacer) {
                     if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
@@ -6463,6 +6492,7 @@ class ShuttingStarsObject {
     beforeLocations = []; // 이전 위치
     beforeLocationCountMax = 32;
     tail = false; // 꼬리 출력 (이전 위치 사용)
+    hidden = false; // 숨김 여부
     opacity = 1.0; // 선명도 (0~1)
     shape = 'circle';
     color = 'rgba(200, 200, 200, 0.99)';
@@ -6474,6 +6504,7 @@ class ShuttingStarsObject {
         this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
     draw(ctx) {
+        if(this.hidden) return;
         if(this.shape === 'circle') {
             ctx.beginPath();
             ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
@@ -6616,6 +6647,7 @@ class NoteKeyObject extends ShuttingStarsObject {
     }
     draw(ctx) {
         super.draw(ctx);
+        if(this.hidden) return;
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
         let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
@@ -6699,6 +6731,7 @@ class NotePlacer extends NoteKeyObject {
         this.dark = true;
         this.color = this.getColorOfLocationIndex(locationIndex);
         this.fill = false;
+        this.hidden = false;
     }
 }
 
@@ -6721,8 +6754,9 @@ class Note extends NoteKeyObject {
         this.speedY = 0;
         this.removed = false;
         this.explosing = 0;
+        this.hidden = false;
         this.tail = false; // TODO
-
+        
         // NotePlacer 찾기
         let notePlacer = _shuttingstarcore.getNotePlacer(locationIndex);
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
@@ -6764,6 +6798,7 @@ class Note extends NoteKeyObject {
 
     draw(ctx) {
         super.draw(ctx);
+        if(this.hidden) return;
 
         // 꼬리 먼저 그리기
         if(this.tail) {

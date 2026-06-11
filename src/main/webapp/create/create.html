@@ -91,10 +91,13 @@ $(function() {
         const ta = $('.ta_song_json');
         const selSongs = $('.sel_songs');
         const selDiff = $('.sel_diff');
+        const inpElps = $('.inp_elapsedTime');
         const btnLoad = $('.btn_load');
         const btnSave = $('.btn_save');
         const btnTest = $('.btn_test');
         const btnStop = $('.btn_stop');
+        const btnPaus = $('.btn_pause');
+        const btnRsum = $('.btn_resume');
 
         let songSelected = null;
 
@@ -115,6 +118,9 @@ $(function() {
             selDiff.empty();
             btnTest.prop('disabled', true);
             btnStop.prop('disabled', true);
+            btnPaus.prop('disabled', true);
+            btnRsum.prop('disabled', true);
+            inpElps.prop('disabled', true);
 
             let song = null;
             let songSerial = selSongs.val();
@@ -191,6 +197,9 @@ $(function() {
             btnTest.prop('disabled', true);
             btnLoad.prop('disabled', true);
             btnSave.prop('disabled', true);
+            btnPaus.prop('disabled', false);
+            btnRsum.prop('disabled', true);
+            inpElps.prop('disabled', false);
 
             let text = ta.val();
             let songConverted = null;
@@ -216,18 +225,46 @@ $(function() {
             setTimeout(function() { btnStop.prop('disabled', false); }, 2000);
         }
 
+
         const fStop = function() {
             btnStop.prop('disabled', true);
             btnTest.prop('disabled', false);
             btnLoad.prop('disabled', false);
             btnSave.prop('disabled', false);
+            btnPaus.prop('disabled', true);
+            btnRsum.prop('disabled', true);
+            inpElps.prop('disabled', true);
             broker.stopSong();
+        }
+
+        const fPause = function() {
+            btnPaus.prop('disabled', true);
+            btnRsum.prop('disabled', false);
+            inpElps.prop('disabled', false);
+            _shuttingstarcore.pauseSong();
+        }
+
+        const fResume = function() {
+            const valueElps = inpElps.val();
+            btnPaus.prop('disabled', false);
+            btnRsum.prop('disabled', true);
+            inpElps.prop('disabled', true);
+            if(isNaN(valueElps)) valueElps = 0;
+            valueElps = parseFloat(valueElps);
+            _shuttingstarcore.elapsedTime = valueElps;
+            if(_shuttingstarcore.audio) {
+                // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
+                _shuttingstarcore.audio.currentTime = (valueElps + _shuttingstarcore.songTiming) / ((_shuttingstarcore.song.bpm / 60.0) * (_shuttingstarcore.timeMultiplier * _shuttingstarcore.elapsedTimeMultiplier));
+            }
+            _shuttingstarcore.resumeSong();
         }
 
         btnLoad.on('click', fLoadSong);
         btnSave.on('click', fSaveSong);
         btnTest.on('click', fTest);
         btnStop.on('click', fStop);
+        btnPaus.on('click', fPause);
+        btnRsum.on('click', fResume);
 
         const fResize = function() {
             $('.heightresizetarget').height((window.outerHeight - 250) + 'px');
@@ -238,6 +275,10 @@ $(function() {
         
         fLoadSongList();
         fLoadSong();
+
+        ShuttingStarsUtility.repeat(() => {
+            inpElps.val(_shuttingstarcore.elapsedTime);
+        }, 16);
     }
 });
 </script>
@@ -247,28 +288,37 @@ $(function() {
         <table class="full">
             <colgroup>
                 <col/>
+                <col style="width: 240px;"/>
                 <col style="width: 720px;"/>
             </colgroup>
             <tbody>
                 <tr>
-                    <td colspan="2">
-                        <span>
-                            <select class="sel sel_songs"></select>
-                            <button type="button" class="btn btn_load">LOAD</button>
-                            <button type="button" class="btn btn_save">SAVE</button>
-                        </span>
-                        <span>
-                            <select class="sel sel_diff" disabled="disabled"></select>
-                            <button type="button" class="btn btn_test" disabled="disabled">TEST</button>
-                            <button type="button" class="btn btn_stop" disabled="disabled">STOP</button>
-                        </span>
+                    <td>
+                        <select class="sel sel_songs"></select>
+                        <button type="button" class="btn btn_load">LOAD</button>
+                        <button type="button" class="btn btn_save">SAVE</button>
+                    </td>
+                    <td>
+                        <select class="sel sel_diff" disabled="disabled"></select>
+                        <button type="button" class="btn btn_test" disabled="disabled">TEST</button>
+                        <button type="button" class="btn btn_stop" disabled="disabled">STOP</button>
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" min="0" class="inp inp_elapsedTime" disabled="disabled"/>
+                        <button type="button" class="btn btn_pause" disabled="disabled">PAUSE</button>
+                        <button type="button" class="btn btn_resume" disabled="disabled">RESUME</button>
                     </td>
                 </tr>
                 <tr>
-                    <td style="vertical-align: top;">
+                    <td style="vertical-align: top;" colspan="2">
                         <textarea class="full ta_song_json heightresizetarget"></textarea>
                     </td>
                     <td style="width:720px; max-width: 720px; overflow: hidden;"><div class='shuttingstar_root heightresizetarget'></div></td>
+                </tr>
+                <tr>
+                    <td class="td_audio_controls">
+
+                    </td>
                 </tr>
             </tbody>
         </table>
