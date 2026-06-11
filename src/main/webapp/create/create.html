@@ -222,7 +222,18 @@ $(function() {
             broker.setDifficultyChoosingList(songConverted.getDifficultyList());
             broker.setDifficultyIndex(diff);
             broker.prepareCreateModeSong();
-            setTimeout(function() { btnStop.prop('disabled', false); }, 2000);
+            setTimeout(function() {
+                if(_shuttingstarcore.audio != null) {
+                    $('.td_audio_controls').empty().append(_shuttingstarcore.audio);
+                    _shuttingstarcore.audio.controls = true;
+                    // _shuttingstarcore.audio.preload = 'metadata';
+                    _shuttingstarcore.audio.addEventListener('play', fResume);
+                    _shuttingstarcore.audio.addEventListener('pause', fPause);
+                    _shuttingstarcore.audio.addEventListener('ended', fPause);
+                }
+
+                btnStop.prop('disabled', false); 
+            }, 2000);
         }
 
 
@@ -235,6 +246,7 @@ $(function() {
             btnRsum.prop('disabled', true);
             inpElps.prop('disabled', true);
             broker.stopSong();
+            $('.td_audio_controls').empty();
         }
 
         const fPause = function() {
@@ -262,7 +274,15 @@ $(function() {
             // _shuttingstarcore.resumeSong();
             _shuttingstarcore.resumingTime = 0;
             _shuttingstarcore.paused = false;
-            _shuttingstarcore.resumed = true;
+            _shuttingstarcore.resumed = false;
+
+            if(_shuttingstarcore.audio) {
+                _shuttingstarcore.audio.play();
+            }
+
+            if(_shuttingstarcore.videoBga) {
+                if(_shuttingstarcore.videoBgaUrl) _shuttingstarcore.videoBga.play();
+            }
         }
 
         btnLoad.on('click', fLoadSong);
@@ -296,7 +316,8 @@ $(function() {
             <colgroup>
                 <col/>
                 <col style="width: 240px;"/>
-                <col style="width: 720px;"/>
+                <col style="width: 360px;"/>
+                <col style="width: 360px;"/>
             </colgroup>
             <tbody>
                 <tr>
@@ -315,17 +336,15 @@ $(function() {
                         <button type="button" class="btn btn_pause" disabled="disabled">PAUSE</button>
                         <button type="button" class="btn btn_resume" disabled="disabled">RESUME</button>
                     </td>
+                    <td class="td_audio_controls">
+
+                    </td>
                 </tr>
                 <tr>
                     <td style="vertical-align: top;" colspan="2">
                         <textarea class="full ta_song_json heightresizetarget"></textarea>
                     </td>
-                    <td style="width:720px; max-width: 720px; overflow: hidden;"><div class='shuttingstar_root heightresizetarget'></div></td>
-                </tr>
-                <tr>
-                    <td class="td_audio_controls">
-
-                    </td>
+                    <td style="width:720px; max-width: 720px; overflow: hidden;" colspan="2"><div class='shuttingstar_root heightresizetarget'></div></td>
                 </tr>
             </tbody>
         </table>

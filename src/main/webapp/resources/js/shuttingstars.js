@@ -4723,7 +4723,8 @@ class ShuttingStarsCore {
                 this.clearTimeHandler();
 
                 if(this.audio != null) {
-                    try { this.audio.pause(); } catch(ex) { console.error(ex); } // 오디오 끄기
+                    try { this.audio.pause();  } catch(ex) { console.error(ex); } // 오디오 끄기
+                    try { this.audio.remove(); } catch(ex) { console.error(ex); } 
                     this.audio = null;
                 }
 
