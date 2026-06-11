@@ -1494,7 +1494,6 @@ class ShuttingStarsCore {
                 this.ss3d.onSongPlayPreparing(this);
             }
         } else if(this.state == 'playing') { // 곡이 플레이 상황일 경우 처리
-            
 
             // 진행 시간 - 처리 끝난 후 아래에서 다시 초기화
             this.elapsedTime = (-1) * ((this.stageRows * 2) + this.songTiming); 
@@ -1520,6 +1519,7 @@ class ShuttingStarsCore {
             // 오디오 재생 시작 + 시간 타이밍 맞추기
             if(this.audio != null) {
                 setTimeout(() => {
+                    if(selfs.state != 'playing') return; // 곡 재생 전 esc 눌러 나가버린 경우
                     selfs.audio.play();
 
                     selfs.elapsedTime = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
@@ -3177,14 +3177,21 @@ class ShuttingStarsCore {
             }
         }
 
+        // 적용된 커맨드 모드 정보 출력
+        this.renderCommands();
+    }
+
+    /** 적용된 커맨드 정보 출력 */
+    renderCommands() {
+        let label, idx, fontSize, rows, cols, gap;
+
         fontSize = this.convertFontSize(15);
         rows = this.metricSize2 * 1.5;
         cols = this.metricSize2 * 1.5;
+        gap  = this.metricSize2;
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, 0.6)');
         else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, 0.6)');
 
-        // 적용된 커맨드 모드 정보 출력
-        //    노트 속도
         if(! ShuttingStarsUtility.checkEqualFloats(this.noteSpeedMultiplier, 1.0)) {
             label = '[X' + ShuttingStarsUtility.floor2(this.noteSpeedMultiplier) + ']';
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
@@ -3638,6 +3645,9 @@ class ShuttingStarsCore {
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), rows + (this.metricSize2 + gap * 2));
+
+        // 적용된 커맨드 모드 정보 출력
+        this.renderCommands();
     }
 
     /** 기록 목록 그리기 */
