@@ -2652,15 +2652,17 @@ class ShuttingStarsCore {
             if(this.virtualKey) label = 'Touch here to start';
             else                label = '% key to start';
         }
-        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3));
+        rows = this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3);
+        this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans(label), '%', this.enterKey), this.convertX(this.getStageWidth() / 2), rows);
 
-        // 빌드 번호 출력
+        // Copyright, 빌드 번호 출력
         fontSize = this.convertFontSize(12);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3));
+        this.ctx.fillText('Copyright 2026 HJOW', this.convertX(this.getStageWidth() * 9 / 10), rows);
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
@@ -2673,7 +2675,7 @@ class ShuttingStarsCore {
                     else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
                     this.ctx.textAlign = 'left';
 
-                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3));
+                    this.ctx.fillText(this.backend.user.email, this.convertX(fontSize * 1.5), rows);
                 }
             }
         }
@@ -2761,14 +2763,15 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'left';
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3));
-        rows += this.metricSize2 + gap;
+        rows = this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3);
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), rows);
 
-        // 빌드 번호 출력
+        // Copyright, 빌드 번호 출력
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3));
+        this.ctx.fillText('Copyright 2026 HJOW', this.convertX(this.getStageWidth() * 9 / 10), rows);
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
@@ -2822,7 +2825,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(label, this.convertX(x), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
+        this.ctx.fillText(label, this.convertX(x), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.2));
     }
 
     /** 화면 출력 - 곡 선정 화면 */
