@@ -27,25 +27,49 @@ limitations under the License.
 
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
-    build = 3;
+    /*** 게임 버전 ***/
+    build = 3; // 빌드 번호
     
-    resolution    = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함, 최소 크기 : 1280 720
-    ressets       = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w)
+    /*** 화면 크기와 캔버스 렌더링 해상도 관련 ***/
+    resolution    = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함.
+    ressets       = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w, 짧은 길이가 h)
 
     stageSize     = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
-    realStageSize = {w : 1280, h : 720}; // 화면 비율에 맞게 변형된 실제 크기
+    realStageSize = {w : 1280, h : 720}; // 화면 비율에 맞게 변형된 실제 크기. 화면 비율이 16:9보다 커지는 경우 stageSize 와 값이 달라짐. 이 경우 stageSize 외 영역에는 장식용 객체만 배치될 수 있음.
 
-    gap = { w : 0, h : 0 }; // Outer 크기와 Inner 크기 간 차이
+    gap = { w : 0, h : 0 }; // 브라우저 영역 Outer 크기와 Inner 크기 간 차이, 게임 초기화 시 계산하며, 이후 창 크기 변경될 때마다 canvas 크기값 계산에 사용됨
+    margins = {
+        page  : { left :  0, top : 0 }, // 페이지 전체 여백
+        stage : { left :  0, top : 0 }, // 스테이지 여백 (캔버스 내 빈 공간으로 구현됨)
+        note  : { left : 20, top : 0 }  // 노트 여백 (노트 안쪽 여백)
+    };
 
-    backend = null;
+    screenDirLandscape = true; // 기기 방향값, 수평 방향이면 true, 수직 방향이면 false (창 크기 변경 시 자동 탐지되어 변경됨)
 
-    virtualKey = false;      // 가상 키 출력 여부
-    virtualKeyNone = false;  // 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음)
-    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음)ㅖ
+    /*** 백엔드 **/
+    backend = null; // 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨.
 
-    fontSizeRatio = 1.0; // 글꼴 크기 비율 (해상도와 별도)
-    canvasZindex = 1;    // canvas 태그의 z-index
+    /*** 대체 모드 (게임 구동이 아닌 다른 형태로 이 js 사용 시 변경) ***/
+    createMode = false; // 곡 생성 모드, true 시 키보드 컨트롤 불가하며 자동 플레이가 진행됨. 플레이 완주해도 기록이 남지 않음. 기본값은 물론 false.
 
+    /*** 가상키 출력 관련 설정 ***/
+    virtualKey      = false; // 가상 키 출력 여부
+    virtualKeyNone  = false; // 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음)
+    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음)
+
+    /**** 화면 출력 관련 세부 설정 ****/
+    canvasZindex = 1;         // z-index 값, BGA 출력되는 video 영역 z-index 가 이 값으로 설정되며, 그 위의 메인 canvas 가 이 값 + 1, 그 위 3D 담당 canvas 가 이 값 + 2 의 z-index 를 가짐.
+    dark = true;              // 다크 모드 (기본)
+    reverseVertical = false;  // 수직 반전 (convertY 메소드 사용 시 위 아래가 반전됨, 함부로 변경하지 말 것 ! 모든 render 메소드 점검해야 함.)
+    fontSizeRatio = 1.0;      // 글꼴 크기 비율 (해상도와 별도)
+    colorManualAlpha = false; // 선명도 (alpha) 값 미지원하는 경우 rgb 값 자체를 변경하여 비슷하게 구현하는 기능 사용여부
+
+    /*** 글꼴 관련 ***/
+    fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
+    pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
+    alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
+
+    /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
     rootDiv = null;      // ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV
     contentRoot = null;  // 위 rootDiv 를 div로 한번 더 감싼 div
     videoBga = null;     // 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역
@@ -56,26 +80,19 @@ class ShuttingStarsCore {
         login : null,    // 로그인 팝업 영역 div
         join : null      // 회원가입 팝업 영역 div (현재 미사용)
     };
-    
-    createMode = false; // 곡 생성 모드, true 시 키보드 컨트롤 불가하며 자동 플레이가 진행됨. 플레이 완주해도 기록이 남지 않음. 기본값은 물론 false.
+    configDiv = null; // 상세 설정 영역
 
-    dark = true;             // 다크 모드 (기본)
-    reverseVertical = false; // 수직 반전 (convertY 메소드 사용 시 위 아래가 반전됨, 함부로 변경하지 말 것 ! 모든 render 메소드 점검해야 함.)
+    /*** DOM 영역 변수들 (Canvas 객체들) ***/
+    canvas = null;    // 2D 캔버스 객체 (메인 게임 동작)
+    canvas3d = null;  // 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치)
     
+    /*** 입력키 설정 ***/
     keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 곡 플레이 시 입력 키 (6자리)
     arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT']; // 방향키
     enterKey = 'ENTER'; // 확인 키
     escKey = 'ESCAPE';  // 취소 키
     
     keyEventDisabled = false; // true 시 키 입력 처리가 먹히지 않음. 인앱 팝업이 떴을 때 이 값을 true로 넣어 뒷배경에서 게임이 멋대로 돌아가는 현상을 방지함. 즉 함부로 손대면 안 됨 !
-
-    fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
-    pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
-    alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
-
-    canvas = null;    // 2D 캔버스 객체 (메인 게임 동작)
-    canvas3d = null;  // 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치)
-    configDiv = null; // 상세 설정 영역
 
     audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
     urlCtx = './';   // URL Context Path
@@ -85,7 +102,7 @@ class ShuttingStarsCore {
     disable3d = false;  // true 지정 시 3D 렌더링하지 않음, 설정 화면에서 그래픽 설정 변경 시 자동 변경되는 항목이므로 손대지 말 것.
     disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 NotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것
 
-    // 3D 각 구성요소 사용여부
+    /*** 3D 각 구성요소 사용여부 설정 ***/
     use3d = {
         notePlacer : false,    // NotePlacer - 3D로 띄우면 투명도가 적용이 안되어 2D 것을 사용하므로 false 지정
         notes : true,          // Note - 노트들은 3D 띄워도 별 문제 없었음
@@ -93,6 +110,7 @@ class ShuttingStarsCore {
         visualization : true   // 시각화 - 구현 완료
     };
 
+    /*** 게임 밸런스 관련 설정값 중 상수에 해당하는 값들 (저장되는 설정이 아님) ***/
     frameTime = 10;                // render 호출 주기 (변경 불가) - 밀리초 단위로, 이 시간 주기마다 render 메소드가 호출되며, 낮을수록 화면이 부드럽게 변함.
     timeMultiplier = 16.0;         // 최소 시간 단위에 영향. 이 게임 내 소요시간 (elapsedTime) 최소단위는 해당곡의 1비트 시간을 이 값으로 나눈 값.
     elapsedTimeMultiplier = 1.0;   // timeMultiplier 값와 같이 움직임. 1.0 으로 둘 것.
@@ -107,18 +125,11 @@ class ShuttingStarsCore {
     backStarlightSpdX = 1;         // 배경 별빛 장식 X 속도 (게임 중 변경됨)
     backStarlightSpdY = 0;         // 배경 별빛 장식 Y 속도 (게임 중 변경됨)
 
+    /*** 공지사항 메시지 (타이틀 및 메뉴 화면 하단에 출력됨) ***/
     noticeEn   = ''; // 공지사항 (영문)
     noticeKo   = ''; // 공지사항 (한글)
     noticeWhen = 0;  // 마지막 공지사항 게시일시 (백엔드 필요)
     
-    // 여백 (빈 공간)
-    margins = {
-        page  : { left :  0, top : 0 }, // 페이지 전체 여백
-        stage : { left :  0, top : 0 }, // 스테이지 여백 (캔버스 내 빈 공간으로 구현됨)
-        note  : { left : 20, top : 0 }  // 노트 여백 (노트 안쪽 여백)
-    };
-
-    screenDirLandscape = true; // 기기 방향값, 수평 방향이면 true, 수직 방향이면 false (창 크기 변경 시 자동 탐지되어 변경됨)
 
     volume = 1.0;                  // 마스터 볼륨 (0 ~ 1)
     volumeBackgroundDefault = 0.2; // 배경 음악 기본 볼륨
@@ -224,7 +235,7 @@ class ShuttingStarsCore {
         'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g'
     ];
 
-    colorManualAlpha = false;
+    
 
     // 초기 설정 화면 관련
     firstSetMode = 'language'; // language / graphic
@@ -5508,7 +5519,7 @@ class ShuttingStarsCore {
 
         // 레이어 영역 (안쪽)
         const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
-        layer.style.zIndex = this.canvasZindex + 2;
+        layer.style.zIndex = this.canvasZindex + 3;
         layer.style.width  = '80%';
         layer.style.height = Math.round(this.canvas.offsetHeight * 0.8) + 'px';
 
