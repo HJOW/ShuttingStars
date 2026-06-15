@@ -28,81 +28,121 @@ limitations under the License.
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
-    build = 3; // 빌드 번호
+    /** @type {number} 빌드 번호 */
+    build = 3;
     
     /*** 화면 크기와 캔버스 렌더링 해상도 관련 ***/
-    resolution    = {w : 1280, h : 720}; // 렌더링 해상도, 화면 출력 품질을 결정함.
-    ressets       = {w : 1280, h : 720}; // 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w, 짧은 길이가 h)
+    /** @type {{w: number, h: number}} 렌더링 해상도, 화면 출력 품질을 결정함. */
+    resolution    = {w : 1280, h : 720};
+    /** @type {{w: number, h: number}} 해상도의 설정값 (기기 방향과 관계없이 더 긴 길이가 w, 짧은 길이가 h) */
+    ressets       = {w : 1280, h : 720};
 
-    stageSize     = {w : 1280, h : 720}; // 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위
-    realStageSize = {w : 1280, h : 720}; // 화면 비율에 맞게 변형된 실제 크기. 화면 비율이 16:9보다 커지는 경우 stageSize 와 값이 달라짐. 이 경우 stageSize 외 영역에는 장식용 객체만 배치될 수 있음.
+    /** @type {{w: number, h: number}} 게임 내 무대의 절대크기, 해상도와는 별도로, 게임 내 객체들의 위치의 범위 */
+    stageSize     = {w : 1280, h : 720};
+    /** @type {{w: number, h: number}} 화면 비율에 맞게 변형된 실제 크기. 화면 비율이 16:9보다 커지는 경우 stageSize 와 값이 달라짐. 이 경우 stageSize 외 영역에는 장식용 객체만 배치될 수 있음. */
+    realStageSize = {w : 1280, h : 720};
 
-    gap = { w : 0, h : 0 }; // 브라우저 영역 Outer 크기와 Inner 크기 간 차이, 게임 초기화 시 계산하며, 이후 창 크기 변경될 때마다 canvas 크기값 계산에 사용됨
+    /** @type {{w: number, h: number}} 브라우저 영역 Outer 크기와 Inner 크기 간 차이, 게임 초기화 시 계산하며, 이후 창 크기 변경될 때마다 canvas 크기값 계산에 사용됨 */
+    gap = { w : 0, h : 0 };
+    /** @type {Object} 페이지, 스테이지, 노트 영역별 여백 설정 */
     margins = {
         page  : { left :  0, top : 0 }, // 페이지 전체 여백
         stage : { left :  0, top : 0 }, // 스테이지 여백 (캔버스 내 빈 공간으로 구현됨)
         note  : { left : 20, top : 0 }  // 노트 여백 (노트 안쪽 여백)
     };
 
-    screenDirLandscape = true; // 기기 방향값, 수평 방향이면 true, 수직 방향이면 false (창 크기 변경 시 자동 탐지되어 변경됨)
+    /** @type {boolean} 기기 방향값, 수평 방향이면 true, 수직 방향이면 false (창 크기 변경 시 자동 탐지되어 변경됨) */
+    screenDirLandscape = true;
 
     /*** 백엔드 **/
-    backend = null; // 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨.
+    /** @type {ShuttingStarsInterface|null} 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨. */
+    backend = null;
 
     /*** 대체 모드 (게임 구동이 아닌 다른 형태로 이 js 사용 시 변경) ***/
-    createMode = false; // 곡 생성 모드, true 시 키보드 컨트롤 불가하며 자동 플레이가 진행됨. 플레이 완주해도 기록이 남지 않음. 기본값은 물론 false.
+    /** @type {boolean} 곡 생성 모드, true 시 키보드 컨트롤 불가하며 자동 플레이가 진행됨. 플레이 완주해도 기록이 남지 않음. 기본값은 물론 false. */
+    createMode = false;
 
     /*** 가상키 출력 관련 설정 ***/
-    virtualKey      = false; // 가상 키 출력 여부
-    virtualKeyNone  = false; // 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음)
-    virtualKeyForce = false; // 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음)
+    /** @type {boolean} 가상 키 출력 여부 */
+    virtualKey      = false;
+    /** @type {boolean} 가상 키 강제 비활성화 옵션 (init 에서만 효과가 있음) */
+    virtualKeyNone  = false;
+    /** @type {boolean} 가상 키 강제 활성화 옵션 (init 에서만 효과가 있음, virtualKeyNone 보다 우선순위 낮음) */
+    virtualKeyForce = false;
 
-    /**** 화면 출력 관련 세부 설정 ****/
-    canvasZindex = 1;         // z-index 값, BGA 출력되는 video 영역 z-index 가 이 값으로 설정되며, 그 위의 메인 canvas 가 이 값 + 1, 그 위 3D 담당 canvas 가 이 값 + 2 의 z-index 를 가짐.
-    dark = true;              // 다크 모드 (기본)
-    reverseVertical = false;  // 수직 반전 (convertY 메소드 사용 시 위 아래가 반전됨, 함부로 변경하지 말 것 ! 모든 render 메소드 점검해야 함.)
-    fontSizeRatio = 1.0;      // 글꼴 크기 비율 (해상도와 별도)
-    colorManualAlpha = false; // 선명도 (alpha) 값 미지원하는 경우 rgb 값 자체를 변경하여 비슷하게 구현하는 기능 사용여부
+    /*** 화면 출력 관련 세부 설정 ***/
+    /** @type {number} z-index 값, BGA 출력되는 video 영역 z-index 가 이 값으로 설정되며, 그 위의 메인 canvas 가 이 값 + 1, 그 위 3D 담당 canvas 가 이 값 + 2 의 z-index 를 가짐. */
+    canvasZindex = 1;
+    /** @type {boolean} 어두운 색상 테마 적용 여부입니다. */
+    dark = true;
+    /** @type {boolean} 수직 반전 (convertY 메소드 사용 시 위 아래가 반전됨, 함부로 변경하지 말 것 ! 모든 render 메소드 점검해야 함.) */
+    reverseVertical = false;
+    /** @type {number} 글꼴 크기 비율 (해상도와 별도) */
+    fontSizeRatio = 1.0;
+    /** @type {boolean} 선명도 (alpha) 값 미지원하는 경우 rgb 값 자체를 변경하여 비슷하게 구현하는 기능 사용여부 */
+    colorManualAlpha = false;
 
     /*** 글꼴 관련 ***/
-    fontFamily = 'D2Coding'; // 메인 폰트, alterFonts 가 뒤에 붙음
-    pointFont  = 'NanumMyeongjo'; // 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음
-    alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"'; // 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다.
+    /** @type {string} 메인 폰트, alterFonts 가 뒤에 붙음 */
+    fontFamily = 'D2Coding';
+    /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
+    pointFont  = 'NanumMyeongjo';
+    /** @type {string} 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다. */
+    alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"';
 
     /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
-    rootDiv = null;      // ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV
-    contentRoot = null;  // 위 rootDiv 를 div로 한번 더 감싼 div
-    videoBga = null;     // 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역
-    pops = {             // 팝업 (별도 창이 아닌 인앱 대화상자 형태)
+    /** @type {HTMLElement|null} ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV */
+    rootDiv = null;
+    /** @type {HTMLElement|null} 위 rootDiv 를 div로 한번 더 감싼 div */
+    contentRoot = null;
+    /** @type {HTMLVideoElement|null} 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역 */
+    videoBga = null;
+    /** @type {Object} 팝업 (별도 창이 아닌 인앱 대화상자 형태) */
+    pops = {
         root : null,     // 팝업 최상위 div
         dim : null,      // 모달 팝업 구현을 위한 흐린 투명 레이어 div, canvas 보다 위층을 차지함
         config : null,   // 설정 팝업 영역 div
         login : null,    // 로그인 팝업 영역 div
         join : null      // 회원가입 팝업 영역 div (현재 미사용)
     };
-    configDiv = null; // 상세 설정 영역
+    /** @type {HTMLElement|null} 상세 설정 영역 */
+    configDiv = null;
 
     /*** DOM 영역 변수들 (Canvas 객체들) ***/
-    canvas = null;    // 2D 캔버스 객체 (메인 게임 동작)
-    canvas3d = null;  // 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치)
+    /** @type {HTMLCanvasElement|null} 2D 캔버스 객체 (메인 게임 동작) */
+    canvas = null;
+    /** @type {HTMLCanvasElement|null} 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치) */
+    canvas3d = null;
     
     /*** 입력키 설정 ***/
-    keyList = ['S', 'D', 'F', 'H', 'J', 'K']; // 곡 플레이 시 입력 키 (6자리)
-    arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT']; // 방향키
-    enterKey = 'ENTER'; // 확인 키
-    escKey = 'ESCAPE';  // 취소 키
+    /** @type {Array<string>} 곡 플레이 시 입력 키 (6자리) */
+    keyList = ['S', 'D', 'F', 'H', 'J', 'K'];
+    /** @type {Array<string>} 방향키 */
+    arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'];
+    /** @type {string} 확인 키 */
+    enterKey = 'ENTER';
+    /** @type {string} 취소 키 */
+    escKey = 'ESCAPE';
     
-    keyEventDisabled = false; // true 시 키 입력 처리가 먹히지 않음. 인앱 팝업이 떴을 때 이 값을 true로 넣어 뒷배경에서 게임이 멋대로 돌아가는 현상을 방지함. 즉 함부로 손대면 안 됨 !
+    /** @type {boolean} true 시 키 입력 처리가 먹히지 않음. 인앱 팝업이 떴을 때 이 값을 true로 넣어 뒷배경에서 게임이 멋대로 돌아가는 현상을 방지함. 즉 함부로 손대면 안 됨 ! */
+    keyEventDisabled = false;
 
-    audioCtx = null; // Audio Context 객체 (미지원 시 null 유지)
-    urlCtx = './';   // URL Context Path
+    /** @type {AudioContext|null} Audio Context 객체 (미지원 시 null 유지) */
+    audioCtx = null;
+    /** @type {string} URL Context Path */
+    urlCtx = './';
 
-    ctx = null;         // 2D Context 객체
-    ss3d = null;        // ShuttingStars3DManager 객체
-    disable3d = false;  // true 지정 시 3D 렌더링하지 않음, 설정 화면에서 그래픽 설정 변경 시 자동 변경되는 항목이므로 손대지 말 것.
-    disable2d = false;  // true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 NotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것
+    /** @type {CanvasRenderingContext2D|null} 2D Context 객체 */
+    ctx = null;
+    /** @type {ShuttingStars3DManager|null} ShuttingStars3DManager 객체 */
+    ss3d = null;
+    /** @type {boolean} true 지정 시 3D 렌더링하지 않음, 설정 화면에서 그래픽 설정 변경 시 자동 변경되는 항목이므로 손대지 말 것. */
+    disable3d = false;
+    /** @type {boolean} true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 NotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것 */
+    disable2d = false;
 
     /*** 3D 각 구성요소 사용여부 설정 ***/
+    /** @type {Object} 게임 요소별 3D 렌더링 사용 여부를 저장합니다. */
     use3d = {
         notePlacer : false,    // NotePlacer - 3D로 띄우면 투명도가 적용이 안되어 2D 것을 사용하므로 false 지정
         notes : true,          // Note - 노트들은 3D 띄워도 별 문제 없었음
@@ -111,104 +151,180 @@ class ShuttingStarsCore {
     };
 
     /*** 게임 밸런스 관련 설정값 중 상수에 해당하는 값들 (저장되는 설정이 아님) ***/
-    frameTime = 10;                // render 호출 주기 (변경 불가) - 밀리초 단위로, 이 시간 주기마다 render 메소드가 호출되며, 낮을수록 화면이 부드럽게 변함.
-    timeMultiplier = 16.0;         // 최소 시간 단위에 영향. 이 게임 내 소요시간 (elapsedTime) 최소단위는 해당곡의 1비트 시간을 이 값으로 나눈 값.
-    elapsedTimeMultiplier = 1.0;   // timeMultiplier 값와 같이 움직임. 1.0 으로 둘 것.
-    stageRows = 72;                // 스테이지의 세로를 이 숫자만큼 등분하여, 노트의 크기, 초기 생성 위치를 계산함.
-    sizeFixedConst = 2;            // 노트 크기 상수, 이 값이 증가하면 노트 크기가 증가함. 노트 속도에도 비례하게 영향을 끼침.
-    noteLocationConst = 0;         // 노트 위치 보정 상수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음)
-    noteSpeedFixedConst = 0.25;    // 노트 이동 속도 배수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음)
-    resumeDelayTime = 16;          // 일시정지 후 재개 전 대기 타임 상수
-    songTitleBaseTime = 120;       // 곡 로딩 기본 시간
-    volumeMultiplier = 1.0;        // 볼륨 상수
-    backStarlightCount = 30;       // 배경 별빛 장식 최대 갯수
-    backStarlightSpdX = 1;         // 배경 별빛 장식 X 속도 (게임 중 변경됨)
-    backStarlightSpdY = 0;         // 배경 별빛 장식 Y 속도 (게임 중 변경됨)
+    /** @type {number} render 호출 주기 (변경 불가) - 밀리초 단위로, 이 시간 주기마다 render 메소드가 호출되며, 낮을수록 화면이 부드럽게 변함. */
+    frameTime = 10;
+    /** @type {number} 최소 시간 단위에 영향. 이 게임 내 소요시간 (elapsedTime) 최소단위는 해당곡의 1비트 시간을 이 값으로 나눈 값. */
+    timeMultiplier = 16.0;
+    /** @type {number} timeMultiplier 값와 같이 움직임. 1.0 으로 둘 것. */
+    elapsedTimeMultiplier = 1.0;
+    /** @type {number} 스테이지의 세로를 이 숫자만큼 등분하여, 노트의 크기, 초기 생성 위치를 계산함. */
+    stageRows = 72;
+    /** @type {number} 노트 크기 상수, 이 값이 증가하면 노트 크기가 증가함. 노트 속도에도 비례하게 영향을 끼침. */
+    sizeFixedConst = 2;
+    /** @type {number} 노트 위치 보정 상수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음) */
+    noteLocationConst = 0;
+    /** @type {number} 노트 이동 속도 배수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음) */
+    noteSpeedFixedConst = 0.25;
+    /** @type {number} 일시정지 후 재개 전 대기 타임 상수 */
+    resumeDelayTime = 16;
+    /** @type {number} 곡 로딩 기본 시간 */
+    songTitleBaseTime = 120;
+    /** @type {number} 볼륨 상수 */
+    volumeMultiplier = 1.0;
+    /** @type {number} 배경 별빛 장식 최대 갯수 */
+    backStarlightCount = 30;
+    /** @type {number} 배경 별빛 장식 X 속도 (게임 중 변경됨) */
+    backStarlightSpdX = 1;
+    /** @type {number} 배경 별빛 장식 Y 속도 (게임 중 변경됨) */
+    backStarlightSpdY = 0;
 
     /*** 공지사항 메시지 (타이틀 및 메뉴 화면 하단에 출력됨) ***/
-    noticeEn   = ''; // 공지사항 (영문)
-    noticeKo   = ''; // 공지사항 (한글)
-    noticeWhen = 0;  // 마지막 공지사항 게시일시 (백엔드 필요)
+    /** @type {string} 공지사항 (영문) */
+    noticeEn   = '';
+    /** @type {string} 공지사항 (한글) */
+    noticeKo   = '';
+    /** @type {number} 마지막 공지사항 게시일시 (백엔드 필요) */
+    noticeWhen = 0;
     
 
-    volume = 1.0;                  // 마스터 볼륨 (0 ~ 1)
-    volumeBackgroundDefault = 0.2; // 배경 음악 기본 볼륨
-    noteSpeedMultiplier = 1.0;     // 노트 이동 속도 배수 (사용자가 지정 가능)
-    useAudioVisualizer = true;     // 시각화 사용여부
+    /** @type {number} 마스터 볼륨 (0 ~ 1) */
+    volume = 1.0;
+    /** @type {number} 배경 음악 기본 볼륨 */
+    volumeBackgroundDefault = 0.2;
+    /** @type {number} 노트 이동 속도 배수 (사용자가 지정 가능) */
+    noteSpeedMultiplier = 1.0;
+    /** @type {boolean} 시각화 사용여부 */
+    useAudioVisualizer = true;
 
-    volumeBackground = 1.0;    // 배경음악 볼륨 (게임 진행 중 변경됨)
-    volumeSongAudio  = 1.0;    // 플레이 곡 볼륨 (게임 진행 중 변경됨)
-    volumeBackgroundSpeed = 0; // 배경음악 볼륨 페이드 인/아웃 속도값 (음수일 때는 volumeBackground 값이 감소하며 0 이하가 되면 멈춤, 양수일 때는 값이 증가하며 1 이상이 되면 멈춤)
+    /** @type {number} 배경음악 볼륨 (게임 진행 중 변경됨) */
+    volumeBackground = 1.0;
+    /** @type {number} 플레이 곡 볼륨 (게임 진행 중 변경됨) */
+    volumeSongAudio  = 1.0;
+    /** @type {number} 배경음악 볼륨 페이드 인/아웃 속도값 (음수일 때는 volumeBackground 값이 감소하며 0 이하가 되면 멈춤, 양수일 때는 값이 증가하며 1 이상이 되면 멈춤) */
+    volumeBackgroundSpeed = 0;
 
-    lastObjectId = 0;    // 객체 ID 부여용 카운터
-    objects = [];        // 항상 렌더링 대상인 객체들 (주로 장식)
-    objectsPlaying = []; // 상태가 playing 중일 때 렌더링 대상 객체들 (NotePlacer, Note 등 주요 게임 구성요소)
-    object3ds = [];      // 항상 렌더링 대상인 3D 객체들 (장식, ShuttingStars3DObject 타입만 원소로 입력해야 함)
-    notePlacers = [];    // NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관)
+    /** @type {number} 객체 ID 부여용 카운터 */
+    lastObjectId = 0;
+    /** @type {Array<ShuttingStarsObject>} 항상 렌더링 대상인 객체들 (주로 장식) */
+    objects = [];
+    /** @type {Array<ShuttingStarsObject>} 상태가 playing 중일 때 렌더링 대상 객체들 (NotePlacer, Note 등 주요 게임 구성요소) */
+    objectsPlaying = [];
+    /** @type {Array<ShuttingStars3DObject>} 항상 렌더링 대상인 3D 객체들 (장식, ShuttingStars3DObject 타입만 원소로 입력해야 함) */
+    object3ds = [];
+    /** @type {Array<NotePlacer>} NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관) */
+    notePlacers = [];
 
-    elapsedTime = 0;         // 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당)
-    elapsedTimeOld = 0;      // 진행 시간 (예전 방식, 순수 timeElapsed 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함)
-    simultaneousTime = 0;    // 진행 시간 (곡과 관련 없이 동시 처리 횟수)
-    titleDelayTime = 0;      // 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨)
-    titleDelayTimeMax = 240; // 플레이 준비 시 titleDelayTime 값에 들어가는 초기값
+    /** @type {number} 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당) */
+    elapsedTime = 0;
+    /** @type {number} 진행 시간 (예전 방식, 순수 timeElapsed 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함) */
+    elapsedTimeOld = 0;
+    /** @type {number} 진행 시간 (곡과 관련 없이 동시 처리 횟수) */
+    simultaneousTime = 0;
+    /** @type {number} 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨) */
+    titleDelayTime = 0;
+    /** @type {number} 플레이 준비 시 titleDelayTime 값에 들어가는 초기값 */
+    titleDelayTimeMax = 240;
 
-    usingWorker = true; // Worker 사용여부
-    timeProgressKey = null; // 시간 진행 타이머 키가 들어가는 변수
-    titleScreenWaiting = false; // 상태가 title 이면서 로딩은 끝났음을 나타내는 변수
+    /** @type {boolean} Worker 사용여부 */
+    usingWorker = true;
+    /** @type {number|null} 시간 진행 타이머 키가 들어가는 변수 */
+    timeProgressKey = null;
+    /** @type {boolean} 상태가 title 이면서 로딩은 끝났음을 나타내는 변수 */
+    titleScreenWaiting = false;
 
     // Worker 종료 함수들
+    /** @type {Function|null} 렌더링 Worker 반복을 중단하는 함수입니다. */
     workerRender = null;
+    /** @type {Function|null} 곡 진행 Worker 반복을 중단하는 함수입니다. */
     workerSongPlaying = null;
+    /** @type {Function|null} 동시 작업 Worker 반복을 중단하는 함수입니다. */
     workerSimultaneousWork = null;
 
-    point = 0;     // 점수
-    combo = 0;     // 콤보
-    maxCombo = 0;  // 최대 콤보
-    missCombo = 0; // 미스 콤보
+    /** @type {number} 점수 */
+    point = 0;
+    /** @type {number} 콤보 */
+    combo = 0;
+    /** @type {number} 최대 콤보 */
+    maxCombo = 0;
+    /** @type {number} 미스 콤보 */
+    missCombo = 0;
+    /** @type {Object} 판정 종류별 누적 횟수입니다. */
     report = {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0 // 각 판정별 통계
     };
-    hp = 100.0; // 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시)
+    /** @type {number} 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시) */
+    hp = 100.0;
     
-    selectRecordType = 'local'; // local / internet
-    selectedRecordIndex = -1; // 기록 조회 화면에서 사용
-    selectedRecordList = []; // 기록 조회 화면 들어갈 때 탑재됨
-    seeingRecord = null; // 기록 조회 시 해당 기록 JSON 객체 탑재
+    /** @type {string} local / internet */
+    selectRecordType = 'local';
+    /** @type {number} 기록 조회 화면에서 사용 */
+    selectedRecordIndex = -1;
+    /** @type {Array<string>} 기록 조회 화면 들어갈 때 탑재됨 */
+    selectedRecordList = [];
+    /** @type {*|null} 기록 조회 시 해당 기록 JSON 객체 탑재 */
+    seeingRecord = null;
 
-    gameOverEnabled = true;  // true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능
-    gameOverDelayed = false; // hp 가 한번이라도 0 이하로 내려간 경우 true
+    /** @type {boolean} true 시 hp 0 이면 게임 오버, false 시 일단 곡 끝까지 진행은 가능 */
+    gameOverEnabled = true;
+    /** @type {boolean} hp 가 한번이라도 0 이하로 내려간 경우 true */
+    gameOverDelayed = false;
 
-    state = 'title'; // 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / setting / credit
-    beforeState = 'none'; // 이전 상태
+    /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / setting / credit */
+    state = 'title';
+    /** @type {string} 이전 상태 */
+    beforeState = 'none';
 
-    mode = 'default'; // default / mission
-    song = null; // 현재 플레이 중인 곡, ShuttingStarsSong 객체
-    songs = [];  // 불러온 곡들, ShuttingStarsSong 객체 배열
-    songDisplays = []; // 선택 가능한 곡들, ShuttingStarsSong 객체 배열, songs 과 다른 점은 디버그 모드에 따른 노출 여부
-    missions = []; // 특수한 곡들 (mission 모드일 때 선택)
-    songChoosingMode = 'default'; // default / mission
+    /** @type {string} default / mission */
+    mode = 'default';
+    /** @type {ShuttingStarsSong|null} 현재 플레이 중인 곡, ShuttingStarsSong 객체 */
+    song = null;
+    /** @type {Array<ShuttingStarsSong>} 불러온 곡들, ShuttingStarsSong 객체 배열 */
+    songs = [];
+    /** @type {Array<ShuttingStarsSong>} 선택 가능한 곡들, ShuttingStarsSong 객체 배열, songs 과 다른 점은 디버그 모드에 따른 노출 여부 */
+    songDisplays = [];
+    /** @type {Array<ShuttingStarsMission>} 특수한 곡들 (mission 모드일 때 선택) */
+    missions = [];
+    /** @type {string} default / mission */
+    songChoosingMode = 'default';
 
-    difficulty = null;  // 선택된 난이도
-    audio = null;       // 현재 선택된 곡의 오디오 객체
-    songThumb = null;   // 현재 선택된 곡의 썸네일 이미지 URL
-    videoBgaUrl = null; // 현재 선택된 곡의 BGA URL
-    songBitGap = 0;     // 현재 선택된 곡의 1사이클 길이 (bpm에 따라 다름)
-    songLastPatternTime = 0; // 현재 선택된 곡의 마지막 패턴의 시간
-    audioSource = null; // 시각화를 위한 변수 중 하나
+    /** @type {Object|null} 선택된 난이도 */
+    difficulty = null;
+    /** @type {HTMLAudioElement|null} 현재 선택된 곡의 오디오 객체 */
+    audio = null;
+    /** @type {string|null} 현재 선택된 곡의 썸네일 이미지 URL */
+    songThumb = null;
+    /** @type {string|null} 현재 선택된 곡의 BGA URL */
+    videoBgaUrl = null;
+    /** @type {number} 현재 선택된 곡의 1사이클 길이 (bpm에 따라 다름) */
+    songBitGap = 0;
+    /** @type {number} 현재 선택된 곡의 마지막 패턴의 시간 */
+    songLastPatternTime = 0;
+    /** @type {MediaElementAudioSourceNode|null} 시각화를 위한 변수 중 하나 */
+    audioSource = null;
 
-    audioAnalyser = null; // Audio Analyser 객체 (미지원 시 null 유지)
-    audioBufferLen = 0;   // Audio 시각화에 쓰일 배열 크기
-    audioBuffer = null;   // Audio 시각화에 쓰일 배열
+    /** @type {AnalyserNode|null} Audio Analyser 객체 (미지원 시 null 유지) */
+    audioAnalyser = null;
+    /** @type {number} Audio 시각화에 쓰일 배열 크기 */
+    audioBufferLen = 0;
+    /** @type {Uint8Array|null} Audio 시각화에 쓰일 배열 */
+    audioBuffer = null;
 
-    songChoosing = null; // 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함
+    /** @type {ShuttingStarsSong|null} 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함 */
+    songChoosing = null;
+    /** @type {ShuttingStarsMission|null} 현재 선택된 미션입니다. */
     missionChoosing = null;
-    difficultyChoosing = false; // 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시
-    difficultyChoosingList = [];// 매번 배열 추출할 수는 없으니 난이도 목록을 임시로 넣어두는 배열
+    /** @type {boolean} 곡 선택은 됐고 난이도를 선택하고 있는 상황임을 표시 */
+    difficultyChoosing = false;
+    /** @type {Array<string>} 매번 배열 추출할 수는 없으니 난이도 목록을 임시로 넣어두는 배열 */
+    difficultyChoosingList = [];
 
-    audioBackground = null; // 플레이 곡이 아닌, 배경 곡
+    /** @type {HTMLAudioElement|null} 플레이 곡이 아닌, 배경 곡 */
+    audioBackground = null;
+    /** @type {boolean} 배경 음악의 재생 여부입니다. */
     audioBackgroundPlaying = false;
 
-    se = { // 효과음 (Audio 객체를 원소로 함)
+    /** @type {Object} 효과음 (Audio 객체를 원소로 함) */
+    se = {
         tick : null,
         accept1 : null,
         accept2 : null,
@@ -217,15 +333,21 @@ class ShuttingStarsCore {
         special1 : null
     }
 
-    songTitleTime = 0; // 선택된 곡 준비 중 화면 남은 시간
-    gameoverTime = 0;  // 게임 오버 마크 화면 남은 시간
-    resumingTime = 0;  // 일시정지 후 재개 전 대기 시간
+    /** @type {number} 선택된 곡 준비 중 화면 남은 시간 */
+    songTitleTime = 0;
+    /** @type {number} 게임 오버 마크 화면 남은 시간 */
+    gameoverTime = 0;
+    /** @type {number} 일시정지 후 재개 전 대기 시간 */
+    resumingTime = 0;
 
-    paused = false;  // 일시정지 여부 - 사용자 조작에 따라 변경됨
-    resumed = false; // 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값 - 당연히 게임 중에 변경됨
+    /** @type {boolean} 일시정지 여부 - 사용자 조작에 따라 변경됨 */
+    paused = false;
+    /** @type {boolean} 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값 - 당연히 게임 중에 변경됨 */
+    resumed = false;
+    /** @type {number} 현재 동시 처리 사이클 번호입니다. */
     simultaneousWorkCycle = 0;
 
-    // 공식 곡 시리얼 목록
+    /** @type {Array<string>} 공식 곡 시리얼 목록 */
     officialSongSerials = [
         'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g',
         'nai4ilaHfdhsdfhfsdhsfgfnJ93f8gp34qgD39p4g',
@@ -238,105 +360,157 @@ class ShuttingStarsCore {
     
 
     // 초기 설정 화면 관련
-    firstSetMode = 'language'; // language / graphic
+    /** @type {string} language / graphic */
+    firstSetMode = 'language';
 
     // 메뉴 화면 관련
-    menuList = ['play', 'records', 'setting', 'credit']; // 메뉴들
-    menuListDynamic = []; // 위 menuList 에 데이터가 추가됨
+    /** @type {Array<string>} 메뉴들 */
+    menuList = ['play', 'records', 'setting', 'credit'];
+    /** @type {Array<string>} 위 menuList 에 데이터가 추가됨 */
+    menuListDynamic = [];
+    /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
     menuChoosing = null;
 
     // 설정 화면 관련
-    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll']; // 설정 가능한 옵션 목록
+    /** @type {Array<string>} 설정 가능한 옵션 목록 */
+    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
+    /** @type {string|null} 설정 화면에서 현재 선택 중인 설정 항목 */
     settingChoosing = null;
+    /** @type {boolean} 설정값을 수정 모드 (변경할 설정 항목을 선택한 상황을 의미) */
     settingModifyingMode = false;
+    /** @type {Array<string>} 선택 가능한 그래픽 품질 목록입니다. */
     settingsGraphicQuality = ['LOW', 'MEDIUM', 'HIGH'];
+    /** @type {string|null} 현재 선택된 그래픽 품질 */
     settingGraphicQualityChoosing = null;
+    /** @type {boolean} 전체 초기화 선택 시 다시 묻고 있는지 여부. */
     settingResetReask = false;
 
     // 타이밍 보정값
-    keypressTiming = 0; // 키 입력 추가 딜레이 보정값 (설정에서 변경 가능)
-    songTiming = 0;     // 음원 재생 딜레이 보정값 (설정에서 변경 가능)
+    /** @type {number} 키 입력 추가 딜레이 보정값 (설정에서 변경 가능) */
+    keypressTiming = 0;
+    /** @type {number} 음원 재생 딜레이 보정값 (설정에서 변경 가능) */
+    songTiming = 0;
 
-    keypressing = {}; // 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨
-    playPrepared = false; // 게임 시작 준비여부 - 게임 중 자동 변경되는 값
+    /** @type {Object} 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨 */
+    keypressing = {};
+    /** @type {boolean} 게임 시작 준비여부 - 게임 중 자동 변경되는 값 */
+    playPrepared = false;
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
+    /** @type {boolean} 임의 도형 렌더링 디버그 */
     renderDebugMode = false;
     // 스트링 테이블 디버그 모드, 번역 가능 키워드가 화면에 나올 때마다 콘솔에도 출력
+    /** @type {boolean} 번역 키 출력 디버그 */
     stringTableDebugMode = true;
     // 키보드 입력 디버그 모드
+    /** @type {boolean} 키 입력 디버그 */
     keyInputDebugMode = false;
+    /** @type {boolean} 키 해제 디버그 */
     keyReleaseDebugMode = false;
     // 마우스 클릭 디버그 모드
+    /** @type {boolean} 마우스 클릭 디버그 */
     mouseClickDebugMode = false;
     // 좌표계 디버그 모드
+    /** @type {boolean} 2D 좌표계 디버그 */
     coordinate2dDebugMode = false;
     // init 디버그 모드
+    /** @type {boolean} 초기화 과정 디버그 */
     initDebugMode = false;
     // 테스트 곡 노출 여부
+    /** @type {boolean} 테스트 곡 노출 여부 */
     songDebugMode = false;
     // 시간 소요 출력 여부
+    /** @type {boolean} 작업 소요 시간 출력 여부 */
     timeElapseDebugMode = false;
 
     // 2D 시각화 객체
+    /** @type {Audio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
     vizualizer2d = null;
     
     // 마우스 이벤트 처리기
+    /** @type {Array<Object>} 마우스 입력 판정 영역 목록 */
     mouseEvents = [];
 
     // 곡 선택 화면에서 커맨드 입력을 방음
+    /** @type {Array<string>} 곡 선택 화면에서 누적된 키 입력 값들 (커맨드 입력 판정에 사용) */
     commandInputs = [];
+    /** @type {Array<Object>} 곡 선택 화면에서 사용할 커맨드 정의 목록 */
     commands = [];
 
-    // 배경 이미지 URL, BASE64 가능, 입력 시 화면 맨 뒤에 이미지를 바탕화면처럼 출력하고 그 위에 렌더링
+    /** @type {string|null} 게임 배경에 표시할 이미지 URL 또는 BASE64 데이터, 없으면 투명 (clearRect) 사용 */
     backgroundImage = null;
 
-    // 크레딧 출력 목록
+    /** @type {Array<string>} 크레딧 화면에 출력할 텍스트 목록 */
     creditContents = [];
-    creditIndex = 0; // 현재 출력 중인 순번
-    creditIndexIncreases = 0; // creditIndex 증가속도를 줄이기 위한 수단
+    /** @type {number} 현재 출력 중인 크레딧의 순번 */
+    creditIndex = 0;
+    /** @type {number} 크레딧이 올라가는 위치값 */
+    creditIndexIncreases = 0;
+    /** @type {number} 크레딧이 올라가는 위치 한도값 (이 값을 넘어서면 다음 크레딧을 정위치에 올림.) - 크레딧이 올라가는 속도를 제어하는 데 사용 */
     creditIndexIncreaseMax = 100;
 
     // 언어
+    /** @type {string} 현재 선택된 언어 코드 */
     language = 'en';
-    languageDefault = true; // 기본 플랫폼 언어 사용여부
-    // 언어 번역 테이블
+    /** @type {boolean} 기본 플랫폼 언어 사용여부 (true 시 게임 초기화할 때 위 language 값이 브라우저 언어 코드값으로 바뀜) */
+    languageDefault = true;
+    /** @type {Object} 언어별 번역 문자열 테이블 (shuttingstarstringtable.js 참고) */
     stringTable = {
         'ko' : {}
     };
 
     // 글자 실제 크기 (게임 동작 중 자동 측정됨)
+    /** @type {number} 기본 본문 글꼴의 실측 크기 */
     metricSize1 = 20;
+    /** @type {number} 보조 글꼴의 실측 크기 */
     metricSize2 = 15;
+    /** @type {number} 강조 글꼴의 실측 크기 */
     metricSize3 = 30;
 
     // confirm (예/아니오 묻기) 진행 중 여부
+    /** @type {boolean} 확인 대화상자가 열려 있는지 여부 */
     confirmAsking = false;
+    /** @type {string} 확인 대화상자에 표시할 메시지 */
     confirmMessage = '';
-    confirmChoosingYes = false; // true 시 "예" 를 선택 중
+    /** @type {boolean} true 시 "예" 를 선택 중임을 의미 */
+    confirmChoosingYes = false;
+    /** @type {function(boolean): void} 확인 대화상자 선택 후 호출할 콜백 함수, 매개변수 yn 에는 true/false 입력됨. */
     afterConfirmCallback = function(yn) {}
 
-    // 불러온 플러그인 목록
+    /** @type {Array<string>} 적용 완료된 플러그인 식별자 목록 */
     pluginApplied = [];
 
-    // init 에서 마지막으로 성공한 작업 메시지 (디버그 목적)
+    /** @type {string} 마지막으로 성공한 초기화 (init 메소드) 단계 메시지 */
     lastInitSuccessMessage = '';
 
     // 내부 핵심 로직 전체에 액세스하지 못하게 막기 위한 중간 객체
+    /** @type {Object} 외부에 제한된 코어 기능만 노출하는 중간 객체 */
     broker = {};
 
     // URL 매개변수들 (null 혹은 URLSearchParams 타입 객체가 들어감)
+    /** @type {URLSearchParams|null} 현재 URL에서 읽은 쿼리 매개변수들 */
     urlParameters = null;
 
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
+    /** @type {function(): number} 플랫폼별 브라우저 외부 너비를 반환하는 함수 */
     fOuterWidth  = function() { return window.outerWidth;  }
+    /** @type {function(): number} 플랫폼별 브라우저 외부 높이를 반환하는 함수 */
     fOuterHeight = function() { return window.outerHeight; }
+    /** @type {function(Object): void} 코어 초기화 직전에 실행할 훅 */
     fBeforeInit  = function(obj) {  }
+    /** @type {function(Object): void} 코어 초기화 직후에 실행할 훅 */
     fAfterInit   = function(obj) {  }
 
+    /**
+     * 객체 생성 (초기화하려면 init 메소드까지 호출해야 함)
+     */
     constructor() {}
     
-    /** 초기화 (게임이 출력될 div 영역 객체를 입력) */
+    /**
+     * 초기화 (게임이 출력될 div 영역 객체를 입력)
+     * @param {HTMLElement} rootDiv 게임 UI를 배치할 최상위 요소
+     * @param {string} urlContext 리소스 URL의 기준 경로
+     */
     init(rootDiv, urlContext) {
         const selfs = this;
         this.titleScreenWaiting = false;
@@ -781,7 +955,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 초기화 완료 후 호출 */
+    /**
+     * 초기화 완료 후 호출
+     */
     afterInitialized() {
         const selfs = this;
         this.menuChoosing = this.menuListDynamic[0];
@@ -791,13 +967,19 @@ class ShuttingStarsCore {
         try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
     }
 
-    /** init 작업 진행현황 기록 (디버그 모드 시에만 의미 있음) */
+    /**
+     * init 작업 진행현황 기록 (디버그 모드 시에만 의미 있음)
+     * @param {string} msg msg 값
+     */
     logInit(msg) {
         this.lastInitSuccessMessage = msg;
         if(this.initDebugMode) ShuttingStarsUtility.toast(msg);
     }
 
-    /** 게임 자체의 상태 변경 */
+    /**
+     * 게임 자체의 상태 변경
+     * @param {string} state state 값
+     */
     setState(state) {
         const selfs = this;
         let idx;
@@ -860,7 +1042,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** URL 로부터 매개변수 읽기 */
+    /**
+     * URL 로부터 매개변수 읽기
+     */
     readURLParameters() {
         // Check this browser support window.location.search and URLSearchParams
         if(typeof(URLSearchParams       ) == 'undefined') { this.urlParameters = null; return; }
@@ -869,7 +1053,10 @@ class ShuttingStarsCore {
         try { this.urlParameters = new URLSearchParams(window.location.search); } catch(e) { console.error(e); this.urlParameters = null; }
     }
 
-    /** Broker 재생성 (변경 가능한 변수들만 대리로 변경할 수 있도록 하는 중간 매개 객체) */
+    /**
+     * Broker 재생성 (변경 가능한 변수들만 대리로 변경할 수 있도록 하는 중간 매개 객체)
+     * @returns {Object} 새로 구성된 broker 객체
+     */
     rebuildBroker() {
         const selfs = this;
         this.broker = { };
@@ -957,7 +1144,10 @@ class ShuttingStarsCore {
         return this.broker;
     }
 
-    /** 메뉴 목록 반환, this.menuList 에 더해 로그인 여부 등 동적으로 원소가 추가될 수 있음, Promise */
+    /**
+     * 메뉴 목록 반환, this.menuList 에 더해 로그인 여부 등 동적으로 원소가 추가될 수 있음, Promise
+     * @returns {Promise<*>} 처리 결과 (새 메뉴 목록으로 string 배열이 탑재됨)
+     */
     getMenuList() {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -1039,7 +1229,10 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 가상 키 추가 */
+    /**
+     * 가상 키 추가
+     * @param {string} realkey realkey 값
+     */
     addDeclaredKeys(realkey) {
         const selfs = this;
         const rkey = realkey;
@@ -1077,7 +1270,11 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 해상도 (그래픽 품질) 변경, 디스플레이 방향이 landscape 이라고 가정하에 매개변수를 넣어야 함.  */
+    /**
+     * 해상도 (그래픽 품질) 변경, 디스플레이 방향이 landscape 이라고 가정하에 매개변수를 넣어야 함.
+     * @param {number} w w 값
+     * @param {number} h h 값
+     */
     setResolution(w, h) {
         this.ressets.w = w;
         this.ressets.h = h;
@@ -1133,12 +1330,18 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 디스플레이 방향 (수직 portrait / 수평 landscape) 구분, landscape 인 경우 true, 그외의 경우 false 반환 */
+    /**
+     * 디스플레이 방향 (수직 portrait / 수평 landscape) 구분, landscape 인 경우 true, 그외의 경우 false 반환
+     * @returns {boolean} 처리 결과
+     */
     detectScreenLandscape() {
         return (this.fOuterWidth() >= this.fOuterHeight());
     }
 
-    /** 최초 사용 감지 */
+    /**
+     * 최초 사용 감지
+     * @returns {boolean} 처리 결과
+     */
     checkFirstUsing() {
         const selfs = this;
         const settingJsonStr = localStorage.getItem('shuttingstar_settings');
@@ -1157,7 +1360,9 @@ class ShuttingStarsCore {
         return true;
     }
 
-    /** 설정 불러오기 */
+    /**
+     * 설정 불러오기
+     */
     loadSettings() {
         try {
             let settingJsonStr = localStorage.getItem('shuttingstar_settings');
@@ -1265,7 +1470,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 설정 저장 */
+    /**
+     * 설정 저장
+     */
     saveSettings() {
         try {
             let settingJson = {}
@@ -1292,7 +1499,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 목록 불러오기 */
+    /**
+     * 곡 목록 불러오기
+     */
     loadSongs() {
         let idx;
 
@@ -1340,7 +1549,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 목록 저장 */
+    /**
+     * 곡 목록 저장
+     */
     saveSongs() {
         let idx;
 
@@ -1364,12 +1575,18 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 처리 프로세스 반복주기 계산, bpm 은 number 타입 (소수 가능) 을 넣어야 함 */
+    /**
+     * 곡 처리 프로세스 반복주기 계산, bpm 은 number 타입 (소수 가능) 을 넣어야 함
+     * @param {number} bpm bpm 값
+     * @returns {number} 처리 결과
+     */
     calculateSongBitGap(bpm) {
         return Math.round((60000 / bpm) / this.timeMultiplier);
     }
 
-    /** 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행 */
+    /**
+     * 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행
+     */
     resetStage() {
         const selfs = this;
         let idx;
@@ -1580,7 +1797,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 화면 크기 변경 대응 */
+    /**
+     * 화면 크기 변경 대응
+     */
     handleScreenResized() {
         this.screenDirLandscape = this.detectScreenLandscape();
 
@@ -1625,7 +1844,11 @@ class ShuttingStarsCore {
         this.calculateFontMetric(true);
     }
 
-    /** 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시 */
+    /**
+     * 키 입력 처리, vkeyExplosion 를 true 지정 시 해당 가상 키도 강조 표시
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInput(key, vkeyExplosion) {
         const selfs = this;
 
@@ -1684,7 +1907,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 타이틀 화면 키 입력 핸들링 */
+    /**
+     * 타이틀 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputTitle(key, vkeyExplosion) {
         if(! this.titleScreenWaiting) return;
         if(key == this.enterKey || key == 'ENTER') {
@@ -1701,7 +1928,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 메뉴 화면 키 입력 핸들링 */
+    /**
+     * 메뉴 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputMenu(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
@@ -1786,7 +2017,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 선택 화면 키 입력 핸들링 */
+    /**
+     * 곡 선택 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputSongChoosing(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
@@ -1944,7 +2179,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 최초 설정 화면 키 입력 핸들링 */
+    /**
+     * 최초 설정 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputFirstSet(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
@@ -1982,7 +2221,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 설정 화면 키 입력 핸들링 */
+    /**
+     * 설정 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputSetting(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
@@ -2087,7 +2330,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 플레이 화면 키 입력 핸들링 */
+    /**
+     * 플레이 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputPlaying(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
@@ -2138,7 +2385,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 기록 목록 화면 키 입력 핸들링 */
+    /**
+     * 기록 목록 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputRecordList(key, vkeyExplosion) {
         const selfs = this;
         let index = 0;
@@ -2183,26 +2434,41 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 기록 상세 화면 키 입력 핸들링 */
+    /**
+     * 기록 상세 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputRecordDetail(key, vkeyExplosion) {
         this.playSE('accept1');
         this.setState('recordlist');
     }
 
-    /** 결과 화면 키 입력 핸들링 */
+    /**
+     * 결과 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputResult(key, vkeyExplosion) {
         if(key == this.escKey) {
             this.setState('menu');
         }
     }
 
-    /** 크레딧 화면 입력 핸들링 */
+    /**
+     * 크레딧 화면 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
     handleKeyInputCredit(key, vkeyExplosion) {
         this.playSE('special1');
         this.setState('menu');
     }
 
-    /** NotePlacer 호출 처리 */
+    /**
+     * NotePlacer 호출 처리
+     * @param {NotePlacer} notePlacer notePlacer 객체
+     */
     handleNotePlacerCalled(notePlacer) {
         let idx = 0;
 
@@ -2269,7 +2535,12 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 마우스 클릭 / 터치 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
+    /**
+     * 마우스 클릭 / 터치 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원
+     * @param {number} x x 값
+     * @param {number} y y 값
+     * @param {ShuttingStarsObject} mouseCursorObject mouseCursorObject 값
+     */
     handleMouseClick(x, y, mouseCursorObject) {
         const selfs = this;
 
@@ -2297,7 +2568,10 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 키 입력 해제 (손가락을 뗌) 처리 */
+    /**
+     * 키 입력 해제 (손가락을 뗌) 처리
+     * @param {string} key 입력 또는 해제된 키
+     */
     handleKeyRelease(key) {
         if(this.keyReleaseDebugMode) console.log('KEY RELEASE : ' + this.elapsedTime + ', ' + key);
         key = String(key);
@@ -2308,7 +2582,12 @@ class ShuttingStarsCore {
         // TODO 롱노트 구현 시 꼭 수정되어야 하는 파트
     }
 
-    /** 마우스 클릭 해제 / 터치 해제 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원 */
+    /**
+     * 마우스 클릭 해제 / 터치 해제 이벤트 처리, mouseCursorObject 는 마우스 클릭 위치에 생성되는 임시 객체로 isConflicted 지원
+     * @param {number} x x 값
+     * @param {number} y y 값
+     * @param {ShuttingStarsObject} mouseCursorObject mouseCursorObject 값
+     */
     handleMouseRelease(x, y, mouseCursorObject) {
         const selfs = this;
         // 각 영역 별 터치 지점을 mouseEvents 배열에 담아놨음
@@ -2329,7 +2608,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 플레이 일시정지 */
+    /**
+     * 플레이 일시정지
+     */
     pauseSong() {
         this.paused = true;
         if(this.audio != null) { this.audio.pause(); }
@@ -2338,7 +2619,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 플레이 재개 */
+    /**
+     * 플레이 재개
+     */
     resumeSong() {
         if(this.paused) { // 일시정지 중일 때 --> 재개 처리
             this.resumingTime = this.resumeDelayTime * this.timeMultiplier;
@@ -2346,12 +2629,19 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 강력 알림 메시지 출력 */
+    /**
+     * 강력 알림 메시지 출력
+     * @param {string} msg msg 값
+     * @param {number|boolean} red 빨간색 성분 또는 경고 강조 여부
+     */
     alert(msg, red) {
         ShuttingStarsUtility.toast(String(msg), red);
     }
 
-    /** 예 / 아니오 선택 받기 (Promise) */
+    /**
+     * 예 / 아니오 선택 받기 (Promise)
+     * @param {string} msg msg 값
+     */
     confirm(msg) {
         return new Promise((resolve, reject) => {
             this.afterConfirmCallback = function(yn) { resolve(yn); }
@@ -2361,7 +2651,11 @@ class ShuttingStarsCore {
         });
     }
     
-    /** 거리에 따른 판정 산출 */
+    /**
+     * 거리에 따른 판정 산출
+     * @param {number} distance distance 값
+     * @returns {string} 처리 결과
+     */
     createResultMark(distance) {
         if(distance < 10.0) {
             return 'PERFECT';
@@ -2373,7 +2667,10 @@ class ShuttingStarsCore {
         return 'BAD';
     }
     
-    /** 판정 결과에 따라 HP, 콤보 처리 */
+    /**
+     * 판정 결과에 따라 HP, 콤보 처리
+     * @param {string} resultMark resultMark 값
+     */
     processResultMark(resultMark) {
         if(resultMark == null) return;
         if(resultMark == 'PERFECT') {
@@ -2418,19 +2715,27 @@ class ShuttingStarsCore {
         }
     }
     
-    /** 판정 띄우기 */
+    /**
+     * 판정 띄우기
+     * @param {string} resultMark resultMark 값
+     */
     displayResultMark(resultMark) {
         if(resultMark == null) return;
         this.accelerateExplosingJudgeMarks();
         this.objectsPlaying.push(new JudgeMark(resultMark));
     }
 
-    /** 노트의 반지름 */
+    /**
+     * 노트의 반지름
+     * @returns {number} 현재 해상도에 맞춘 노트 반지름
+     */
     getNoteRadius() {
         return ((this.stageSize.h * this.sizeFixedConst) / this.stageRows) / 2.0;
     }
 
-    /** 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨 */
+    /**
+     * 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨
+     */
     render() {
         try {
             // 캔버스 비우기
@@ -2516,7 +2821,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 화면 출력 - 플레이 중 출력 */
+    /**
+     * 화면 출력 - 플레이 중 출력
+     */
     renderPlaying() {
         // titleDelayTime 값이 있으면, 플레이 중임에도 타이틀 화면 출력
         //    노트 올라오는 속도 때문에 게임이 시작됐음에도 곡이 늦게 재생도록 한 데에 대한 대응책, 노트속도 배수에 따라 이 값을 조절할 예정
@@ -2605,7 +2912,10 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 폰트 실제크기 계산 */
+    /**
+     * 폰트 실제크기 계산
+     * @param {boolean} force 측정값을 강제로 다시 계산할지 여부
+     */
     calculateFontMetric(force) {
         if(this.metricSize1 == 20 || force) {
             let metric1, metric2, metric3, fontSize, label;
@@ -2632,7 +2942,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 화면 출력 - 타이틀 */
+    /**
+     * 화면 출력 - 타이틀
+     */
     renderTitle() {
         let idx;
         let rows = 0;
@@ -2694,7 +3006,9 @@ class ShuttingStarsCore {
         this.renderNoticeBottom();
     }
 
-    /** 화면 출력 - 메인 메뉴 */
+    /**
+     * 화면 출력 - 메인 메뉴
+     */
     renderMenu() {
         const selfs = this;
         let idx;
@@ -2821,7 +3135,9 @@ class ShuttingStarsCore {
         this.renderNoticeBottom();
     }
 
-    /** 공통 공지사항 (타이틀, 메뉴 화면에서 사용) 출력 */
+    /**
+     * 공통 공지사항 (타이틀, 메뉴 화면에서 사용) 출력
+     */
     renderNoticeBottom() {
         if(this.state == 'playing') return;
 
@@ -2839,7 +3155,9 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(x), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.2));
     }
 
-    /** 화면 출력 - 곡 선정 화면 */
+    /**
+     * 화면 출력 - 곡 선정 화면
+     */
     renderSongChoosing() {
         const selfs = this;
         let idx, ddx, jdx;
@@ -3195,7 +3513,9 @@ class ShuttingStarsCore {
         this.renderCommands();
     }
 
-    /** 적용된 커맨드 정보 출력 */
+    /**
+     * 적용된 커맨드 정보 출력
+     */
     renderCommands() {
         let label, idx, fontSize, rows, cols, gap;
 
@@ -3240,7 +3560,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 화면 출력 - 최초 설정 */
+    /**
+     * 화면 출력 - 최초 설정
+     */
     renderFirstSet() {
         let idx;
         let rows = 0;
@@ -3370,7 +3692,9 @@ class ShuttingStarsCore {
         rows += fontSize + gap;
     }
 
-    /** 화면 출력 - 설정 화면 */
+    /**
+     * 화면 출력 - 설정 화면
+     */
     renderSetting() {
         let idx;
         let rows = 0;
@@ -3462,7 +3786,9 @@ class ShuttingStarsCore {
         rows += fontSize + gap;
     }
 
-    /** 화면 출력 - 곡 시작 직전 썸네일과 곡 제목 크게 뜨는 화면, 사용자는 아무것도 할 수 없으며, 시간이 지나면 자동으로 playing 상태로 전환되어 플레이가 시작됨 */
+    /**
+     * 화면 출력 - 곡 시작 직전 썸네일과 곡 제목 크게 뜨는 화면, 사용자는 아무것도 할 수 없으며, 시간이 지나면 자동으로 playing 상태로 전환되어 플레이가 시작됨
+     */
     renderSongTitle() {
         const selfs = this;
         let songOne = this.song;
@@ -3514,7 +3840,9 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
     }
 
-    /** 화면 출력 - 플레이 종료 후 결과 화면 */
+    /**
+     * 화면 출력 - 플레이 종료 후 결과 화면
+     */
     renderResult() {
         // 첫 줄
         let rows = 0;
@@ -3664,7 +3992,9 @@ class ShuttingStarsCore {
         this.renderCommands();
     }
 
-    /** 기록 목록 그리기 */
+    /**
+     * 기록 목록 그리기
+     */
     renderRecordList() {
         const selfs = this;
         let idx, ddx;
@@ -3896,7 +4226,9 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight() - (this.metricSize2 * 1.5), false));
     }
 
-    /** 기록 조회 그리기 */
+    /**
+     * 기록 조회 그리기
+     */
     renderRecordResult() {
         // 첫 줄
         let rows = 0;
@@ -4036,7 +4368,9 @@ class ShuttingStarsCore {
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), this.convertY(this.getStageHeight() - (fontSize), false));
     }
 
-    /** HP 표시 수단 (즉 행성) 그리기 */
+    /**
+     * HP 표시 수단 (즉 행성) 그리기
+     */
     renderHpBar() {
         let arr = this.calculateHpColor();
         let r, g, b;
@@ -4083,7 +4417,9 @@ class ShuttingStarsCore {
         */
     }
 
-    /** 렌더링 디버그 모드에서, 디버깅 용 객체 출력 */
+    /**
+     * 렌더링 디버그 모드에서, 디버깅 용 객체 출력
+     */
     renderDebug() {
         for(const obj of this.objectsPlaying) {
             if(typeof(obj.draw)  == 'function' ) continue;
@@ -4107,7 +4443,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 2D 좌표계 디버그 */
+    /**
+     * 2D 좌표계 디버그
+     */
     renderCoordinate2dDebug() {
         this.ctx.strokeStyle = 'blue';
         this.ctx.fillStyle = 'green';
@@ -4159,7 +4497,9 @@ class ShuttingStarsCore {
         this.ctx.stroke();
     }   
 
-    /** 오디오 시각화 그리기 */
+    /**
+     * 오디오 시각화 그리기
+     */
     renderAudioVisualizing() {
         if(this.audioBuffer == null || this.audioBufferLen == 0) return;
         this.audioAnalyser.getByteFrequencyData(this.audioBuffer);
@@ -4173,7 +4513,9 @@ class ShuttingStarsCore {
         if(this.vizualizer2d != null) this.vizualizer2d.draw(this.ctx, this.canvas.width, this.canvas.height, this.audioBuffer, this.audioBufferLen, this.elapsedTime, this.gameOverDelayed ? 0 : this.hp);
     }
 
-    /** 크레딧 그리기 */
+    /**
+     * 크레딧 그리기
+     */
     renderCredit() {
         let idx;
         let displays = 0;
@@ -4214,7 +4556,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** Confirm (예/아니오) 창 그리기 */
+    /**
+     * Confirm (예/아니오) 창 그리기
+     */
     renderConfirmBlock() {
         if(! this.confirmAsking) return;
 
@@ -4251,7 +4595,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 커맨드 준비 */
+    /**
+     * 커맨드 준비
+     */
     prepareCommands() {
         const selfs = this;
         this.commands = [];
@@ -4279,7 +4625,10 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 커맨드 입력 처리 (곡 선택 화면에서 플레이 키 (sdfjkl) 입력 시 이 메소드가 호출됨) */
+    /**
+     * 커맨드 입력 처리 (곡 선택 화면에서 플레이 키 (sdfjkl) 입력 시 이 메소드가 호출됨)
+     * @param {string} key 입력 또는 해제된 키
+     */
     handleCommand(key) {
         let idx;
         let keyNo = -1;
@@ -4316,7 +4665,10 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 커맨드 입력 중인지 탐지, 입력 중인 경우 입력 시작 위치 반환, 입력 중이지 않으면 -1 반환 */
+    /**
+     * 커맨드 입력 중인지 탐지, 입력 중인 경우 입력 시작 위치 반환, 입력 중이지 않으면 -1 반환
+     * @returns {number} 커맨드 입력 시작 위치. 입력 중이 아니면 -1
+     */
     isCommandInputProgressing() {
         if(this.state != 'songchoosing') return -1; // 곡 선택 화면에서만 커맨드 입력 가능
         let idx;
@@ -4335,7 +4687,11 @@ class ShuttingStarsCore {
         return -1;
     }
 
-    /** 랭크 탐지 */
+    /**
+     * 랭크 탐지
+     * @param {Object} record record 값
+     * @returns {string} 처리 결과
+     */
     judgeResultRank(record) {
         let count, percents;
         if(record) {
@@ -4378,7 +4734,11 @@ class ShuttingStarsCore {
         return 'D';
     }
 
-    /** 랭크 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255) */
+    /**
+     * 랭크 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255)
+     * @param {string} resultRankChar resultRankChar 값
+     * @returns {string} 처리 결과
+     */
     judgeResultRankColor(resultRankChar) {
         if(resultRankChar == 'P') return '255, 215, 0';
         if(resultRankChar == 'S') return '255, 215, 0';
@@ -4389,7 +4749,11 @@ class ShuttingStarsCore {
         return '153, 0, 76';
     }
 
-    /** 판정 별 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255) */
+    /**
+     * 판정 별 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255)
+     * @param {string} judgeResult judgeResult 값
+     * @returns {string} 처리 결과
+     */
     judgeMarkColor(judgeResult) {
         if(     judgeResult == 'MISS'   ) return '230, 40, 40';
         else if(judgeResult == 'BAD'    ) return '102, 37, 0';
@@ -4399,7 +4763,11 @@ class ShuttingStarsCore {
         return '230, 40, 40';
     }
 
-    /** 난이도 표시 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255) */
+    /**
+     * 난이도 표시 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255)
+     * @param {number} difficultyNumber difficultyNumber 값
+     * @returns {string} 처리 결과
+     */
     difficultyNumberColor(difficultyNumber) {
         if(difficultyNumber <= 2) {
             return '159, 201, 60';
@@ -4418,7 +4786,10 @@ class ShuttingStarsCore {
         }
     }
 
-    /** HP 표시 컬러 계산 (r, g, b 순서대로 0~255 숫자값이 담긴 배열 반환) */
+    /**
+     * HP 표시 컬러 계산 (r, g, b 순서대로 0~255 숫자값이 담긴 배열 반환)
+     * @returns {Array<number>} 빨강, 초록, 파랑 성분 배열
+     */
     calculateHpColor() {
         let   changes = 0;
         let   r, g, b;
@@ -4492,7 +4863,10 @@ class ShuttingStarsCore {
         return arr;
     }
 
-    /*** 공통 동시처리 프로세스 (init 에서 호출) */
+    /**
+     * 공통 동시처리 프로세스 (init 에서 호출)
+     * @param {number} simultaneousWorkCycle simultaneousWorkCycle 값
+     */
     simultaneousWork(simultaneousWorkCycle) {
         try {
             let idx, jdx;
@@ -4702,7 +5076,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 동시처리 프로세스 - 시간 진행 (calculateSongBitGap(곡의bpm) 주기마다 1회 호출) */
+    /**
+     * 곡 동시처리 프로세스 - 시간 진행 (calculateSongBitGap(곡의bpm) 주기마다 1회 호출)
+     */
     timeElapse() {
         try {
             if(this.paused) return;
@@ -4855,7 +5231,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 동시처리 프로세스 종료 (시작하려면 곡 선택 후 resetStage 가 호출되어야 함) */
+    /**
+     * 곡 동시처리 프로세스 종료 (시작하려면 곡 선택 후 resetStage 가 호출되어야 함)
+     */
     clearTimeHandler() {
         if(this.timeProgressKey != null) {
             if(typeof(this.timeProgressKey) == 'function') {
@@ -4871,29 +5249,43 @@ class ShuttingStarsCore {
         }
     }
 
-    /** [미사용] 노트 속도 (Deprecated - 더 이상 이 방식을 쓰지 않음) */
+    /**
+     * [미사용] 노트 속도 (Deprecated - 더 이상 이 방식을 쓰지 않음)
+     * @returns {number} 프레임당 노트 이동 거리
+     */
     getNoteMoveSpeed() {
         // 설정값에 따른 속도 반환
         // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
         return ((this.getNoteRadius() * 2.0) * this.noteSpeedMultiplier * this.noteSpeedFixedConst) / (this.timeMultiplier / 8.0);
     }
 
-    /** 노트 생성 위치 (이제는 곡 플레이 초기화 시 다 만들어놓고 위치를 매번 갱신하므로, 초기화할 때 만드는 위치로만 사용함) */
+    /**
+     * 노트 생성 위치 (이제는 곡 플레이 초기화 시 다 만들어놓고 위치를 매번 갱신하므로, 초기화할 때 만드는 위치로만 사용함)
+     * @returns {number} 노트가 생성될 Y 좌표
+     */
     getNoteCreationYLocation() {
         return this.getNotePlacerYLocation() + (this.getNoteRadius() * 2 * this.stageRows * this.noteSpeedMultiplier * this.noteSpeedFixedConst * ((this.timeMultiplier * this.elapsedTimeMultiplier) / 8.0) );
     }
 
-    /** 판정선 위치 */
+    /**
+     * 판정선 위치
+     * @returns {number} 노트 판정선의 Y 좌표
+     */
     getNotePlacerYLocation() {
         return (this.getNoteRadius() * 4) + this.getTopMarginNote();
     }
 
-    /** HP바 Y좌표 */
+    /**
+     * HP바 Y좌표
+     * @returns {number} 처리 결과
+     */
     getHpBarYLocation() {
         return 15;
     }
 
-    /** 폭발 중인 Note 폭발속도 가속 */
+    /**
+     * 폭발 중인 Note 폭발속도 가속
+     */
     accelerateExplosingNotes() {
         const notes = this.getNotes();
         for(let idx=0; idx<notes.length; idx++) {
@@ -4905,7 +5297,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 폭발 중인 JudgeMark 폭발속도 가속 */
+    /**
+     * 폭발 중인 JudgeMark 폭발속도 가속
+     */
     accelerateExplosingJudgeMarks() {
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
@@ -4918,7 +5312,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 게임 오버 판정 시 호출 */
+    /**
+     * 게임 오버 판정 시 호출
+     */
     onGameOver() {
         // 전 노트 및 NotePlacer 폭발 조치
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
@@ -4950,7 +5346,9 @@ class ShuttingStarsCore {
         this.paused = false;
     }
 
-    /** 곡 플레이 종료 시 호출 */
+    /**
+     * 곡 플레이 종료 시 호출
+     */
     onSongEnd() {
         this.setState('result');
         this.paused = false;
@@ -4993,7 +5391,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 재생 종료 */
+    /**
+     * 곡 재생 종료
+     */
     stopAudio() {
         if(this.audio != null) {
             try { this.audio.pause();  } catch(e) { console.error(e); }
@@ -5011,14 +5411,19 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 오디오 관련 리소스 닫기 (예외 발생해도 무시) */
+    /**
+     * 오디오 관련 리소스 닫기 (예외 발생해도 무시)
+     */
     closeAudioSources() {
         if(this.audioSource   != null) { try { this.audioSource.disconnect();   this.audioSource   = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioAnalyser != null) { try { this.audioAnalyser.disconnect(); this.audioAnalyser = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioCtx      != null) { try { this.audioCtx.close();           this.audioCtx      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
     }
 
-    /** 현재 로드된 노트들 반환 */
+    /**
+     * 현재 로드된 노트들 반환
+     * @returns {Array<Note>} 현재 플레이 객체에 포함된 노트 목록
+     */
     getNotes() {
         let arr = [];
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
@@ -5030,6 +5435,10 @@ class ShuttingStarsCore {
         return arr;
     }
 
+    /**
+     * 현재 등록된 노트 판정 객체 목록을 반환합니다.
+     * @returns {Array<NotePlacer>} 노트 판정 객체 목록
+     */
     getNotePlacers() {
         let arr = [];
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
@@ -5041,6 +5450,11 @@ class ShuttingStarsCore {
         return arr;
     }
 
+    /**
+     * 지정한 레인의 노트 판정 객체를 반환합니다.
+     * @param {number} locationIndex 노트 레인의 인덱스
+     * @returns {NotePlacer|null} 해당 레인의 판정 객체
+     */
     getNotePlacer(locationIndex) {
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
@@ -5053,6 +5467,11 @@ class ShuttingStarsCore {
         return null;
     }
 
+    /**
+     * 고유 일련번호와 일치하는 첫 번째 3D 객체를 찾습니다.
+     * @param {number} uniqueSerial uniqueSerial 값
+     * @returns {ShuttingStars3DObject|null} 일치하는 첫 번째 3D 객체
+     */
     find3DObject(uniqueSerial) {
         for(let idx=0; idx<this.object3ds.length; idx++) {
             const obj = this.object3ds[idx];
@@ -5063,6 +5482,11 @@ class ShuttingStarsCore {
         return null;
     }
 
+    /**
+     * 고유 일련번호와 일치하는 모든 3D 객체를 찾습니다.
+     * @param {number} uniqueSerial uniqueSerial 값
+     * @returns {Array<ShuttingStars3DObject>} 일치하는 3D 객체 목록
+     */
     find3DObjects(uniqueSerial) {
         let arr = [];
         for(let idx=0; idx<this.object3ds.length; idx++) {
@@ -5074,46 +5498,90 @@ class ShuttingStarsCore {
         return arr;
     }
 
+    /**
+     * 스테이지의 왼쪽 여백을 반환합니다.
+     * @returns {number} 스테이지 왼쪽 여백
+     */
     getLeftMarginStage() {
         return this.margins.stage.left;
     }
 
+    /**
+     * 스테이지의 위쪽 여백을 반환합니다.
+     * @returns {number} 스테이지 위쪽 여백
+     */
     getTopMarginStage() {
         return this.margins.stage.top;
     }
 
+    /**
+     * 노트 영역의 왼쪽 여백을 반환합니다.
+     * @returns {number} 노트 영역 왼쪽 여백
+     */
     getLeftMarginNote() {
         return this.margins.note.left;
     }
 
+    /**
+     * 노트 영역의 위쪽 여백을 반환합니다.
+     * @returns {number} 노트 영역 위쪽 여백
+     */
     getTopMarginNote() {
         return this.margins.note.top;
     }
 
+    /**
+     * 페이지의 왼쪽 여백을 반환합니다.
+     * @returns {number} 페이지 왼쪽 여백
+     */
     getLeftMarginPage() {
         return this.margins.page.left;
     }
 
+    /**
+     * 페이지의 위쪽 여백을 반환합니다.
+     * @returns {number} 페이지 위쪽 여백
+     */
     getTopMarginPage() {
         return this.margins.page.top;
     }
 
+    /**
+     * 게임 스테이지 너비를 반환합니다.
+     * @returns {number} 게임 스테이지 너비
+     */
     getStageWidth() {
         return this.stageSize.w - this.getLeftMarginStage();
     }
 
+    /**
+     * 게임 스테이지 높이를 반환합니다.
+     * @returns {number} 게임 스테이지 높이
+     */
     getStageHeight() {
         return this.stageSize.h - this.getTopMarginStage()
     }
 
+    /**
+     * 전체 렌더링 영역 너비 반환
+     * @returns {number} 전체 렌더링 영역 너비
+     */
     getFullRenderWidth() {
         return this.realStageSize.w - this.getLeftMarginStage();
     }
 
+    /**
+     * 전체 렌더링 영역 높이 반환
+     * @returns {number} 전체 렌더링 영역 높이
+     */
     getFullRenderHeight() {
         return this.realStageSize.h - this.getTopMarginStage();
     }
 
+    /**
+     * 3D 매니저 (ShuttingStars3DManager 객체) 입력
+     * @param {ShuttingStars3DManager|null} ss3d ss3d 값
+     */
     set3DManager(ss3d) {
         const selfs = this;
         let ss3dworked = false;
@@ -5159,7 +5627,10 @@ class ShuttingStarsCore {
         else throw 'Only for ShuttingStars3DManager type !';
     }
 
-    /** 곡에 포함되어 있던 장식 추가문구 해석해 집행 */
+    /**
+     * 곡에 포함되어 있던 장식 추가문구 해석해 집행
+     * @param {Object} decoJson decoJson 값
+     */
     addDecoration(decoJson) {
         let obj = null;
         let type = String(decoJson.type).toLowerCase();
@@ -5184,7 +5655,9 @@ class ShuttingStarsCore {
         if(obj != null) this.objects.push(obj);
     }
 
-    /** Credit 목록 그리기 */
+    /**
+     * Credit 목록 그리기
+     */
     prepareCreditList() {
         this.creditContents = [];
         this.creditIndex = 0;
@@ -5259,7 +5732,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 팝업 화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) */
+    /**
+     * 팝업 화면 구현 (캔버스에 그리지 않고, 별도 div에 출력)
+     */
     renderPopupDiv() {
         const selfs = this;
         const popRoot = this.pops.root;
@@ -5384,7 +5859,9 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) renderPopupDiv 보다 나중에 호출되어야 함 */
+    /**
+     * 상세 설정화면 구현 (캔버스에 그리지 않고, 별도 div에 출력) renderPopupDiv 보다 나중에 호출되어야 함
+     */
     renderConfigDiv() {
         if(this.configDiv == null) return;
         const selfs = this;
@@ -5709,7 +6186,9 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 상세설정 창 열기 */
+    /**
+     * 상세설정 창 열기
+     */
     openConfigDiv() {
         let idx;
 
@@ -5792,7 +6271,9 @@ class ShuttingStarsCore {
         this.configDiv.querySelector('.inp_keypressdelay').focus();
     }
 
-    /** 상세설정 창 닫기 */
+    /**
+     * 상세설정 창 닫기
+     */
     closeConfigDiv() {
         this.configDiv.classList.add('invisible');
         this.pops.dim.classList.add('invisible');
@@ -5800,7 +6281,10 @@ class ShuttingStarsCore {
         this.canvas.focus();
     }
 
-    /** 커스텀 곡 JSON 상단 주석 내용 반환 */
+    /**
+     * 커스텀 곡 JSON 상단 주석 내용 반환
+     * @returns {string} 처리 결과
+     */
     defaultCustomSongComments() {
         return String(`
 # Caution ! Lines start with '#' will be ignored.
@@ -5861,7 +6345,11 @@ class ShuttingStarsCore {
         `).trim();
     }
 
-    /** 언어 번역 (stringTable 이용, 없으면 매개변수 값 그대로 반환) */
+    /**
+     * 언어 번역 (stringTable 이용, 없으면 매개변수 값 그대로 반환)
+     * @param {string} english english 값
+     * @returns {string} 처리 결과
+     */
     trans(english) {
         if(typeof(this.language) == 'undefined') return english;
         if(this.language == 'en') return english;
@@ -5878,7 +6366,11 @@ class ShuttingStarsCore {
         return translated;
     }
 
-    /** render 메소드 내에서 사용되는 font 값 중 글꼴 파트 반환, pointFont 는 강조하고 싶을 때 true 를 입력 (선택사항) */
+    /**
+     * render 메소드 내에서 사용되는 font 값 중 글꼴 파트 반환, pointFont 는 강조하고 싶을 때 true 를 입력 (선택사항)
+     * @param {boolean} pointFont pointFont 값
+     * @returns {string} 처리 결과
+     */
     getRenderFontFamily(pointFont) {
         let alters = '';
         if(this.alterFonts != null && this.alterFonts != '') {
@@ -5893,12 +6385,21 @@ class ShuttingStarsCore {
         return               "'" + this.fontFamily + "'" + (alters == '' ? '' : ', ' + alters);
     }
     
-    /** 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환 */
+    /**
+     * 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환
+     * @param {number} x x 값
+     * @returns {number} 처리 결과
+     */
     convertX(x) {
         return Math.round((x * this.resolution.w / this.getStageWidth()) + this.getLeftMarginStage());
     }
 
-    /** 게임 내 무대 크기 (stageSize.h) 를 실제 화면 내 좌표 (resolution.h) 로 변환 */
+    /**
+     * 게임 내 무대 크기 (stageSize.h) 를 실제 화면 내 좌표 (resolution.h) 로 변환
+     * @param {number} y y 값
+     * @param {boolean} allowReverse 수직 반전 설정을 적용할지 여부
+     * @returns {number} 처리 결과
+     */
     convertY(y, allowReverse) {
         if(allowReverse) {
             if(this.reverseVertical) {
@@ -5908,7 +6409,11 @@ class ShuttingStarsCore {
         return Math.round((y * this.resolution.h / this.getStageHeight()) + this.getTopMarginStage());
     }
 
-    /** convertY 본작업 없이 reverseVertical 만 반영 */
+    /**
+     * convertY 본작업 없이 reverseVertical 만 반영
+     * @param {number} y y 값
+     * @returns {number} 수직 반전 설정이 적용된 Y 좌표
+     */
     applyY(y) {
         if(this.reverseVertical) {
             return (this.resolution.h - y);
@@ -5916,15 +6421,29 @@ class ShuttingStarsCore {
         return y;
     }
 
+    /**
+     * reverseConvertX 결과를 계산합니다.
+     * @param {number} x x 값
+     * @returns {number} 처리 결과
+     */
     reverseConvertX(x) {
         return (x * this.getStageWidth() / this.resolution.w) + this.getLeftMarginStage();
     }
 
+    /**
+     * reverseConvertY 결과를 계산합니다.
+     * @param {number} y y 값
+     * @returns {number} 처리 결과
+     */
     reverseConvertY(y) {
         return (y * this.getStageHeight() / this.resolution.h) + this.getTopMarginStage();
     }
 
-    /** 컬러 변환 시도 (alpha 값 미지원 시) */
+    /**
+     * 컬러 변환 시도 (alpha 값 미지원 시)
+     * @param {string} rgbaColor rgbaColor 값
+     * @returns {string} 렌더링에 사용할 CSS 색상 문자열
+     */
     convertColor(rgbaColor) {
         if(rgbaColor.indexOf('rgba(') != 0) return rgbaColor;
 
@@ -5951,12 +6470,20 @@ class ShuttingStarsCore {
         return rgbaColor;
     }
 
-    /** 폰트 크기 변환 */
+    /**
+     * 폰트 크기 변환
+     * @param {number} num num 값
+     * @returns {number} 처리 결과
+     */
     convertFontSize(num) {
         return Math.floor(num * (this.resolution.h * 1.0 / this.stageSize.h) * this.fontSizeRatio); // 해상도와 스테이지 크기 비율 구하기 (세로 길이만 반영)
     }
 
-    /** URL 변환 */
+    /**
+     * URL 변환
+     * @param {string} url url 값
+     * @returns {string} URL 컨텍스트가 적용된 URL
+     */
     convertURL(url) {
         url = String(url).trim();
         if(url.indexOf('http://') == 0 || url.indexOf('https://') == 0) return url;
@@ -5969,7 +6496,9 @@ class ShuttingStarsCore {
         return url;
     }
 
-    /** 타이틀 화면 내 로딩 화면 중 처리 작업 */
+    /**
+     * 타이틀 화면 내 로딩 화면 중 처리 작업
+     */
     loadAfter() {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -5984,7 +6513,9 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 장식용 별빛 세팅 */
+    /**
+     * 장식용 별빛 세팅
+     */
     setStarlights() {
         let idx;
         // 기존 별빛 제거
@@ -6004,7 +6535,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 장식용 별빛 갯수 맞추기 */
+    /**
+     * 장식용 별빛 갯수 맞추기
+     */
     remainStarlightCounts() {
         let idx, count, newOne;
         count = 0;
@@ -6032,7 +6565,11 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 장식용 별빛 방향 일괄 바꾸기 */
+    /**
+     * 장식용 별빛 방향 일괄 바꾸기
+     * @param {number} xSpeed xSpeed 값
+     * @param {number} ySpeed ySpeed 값
+     */
     modifyStarlightDirections(xSpeed, ySpeed) {
         this.backStarlightSpdX = xSpeed;
         this.backStarlightSpdY = ySpeed;
@@ -6045,7 +6582,10 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 곡 패키지 불러오기 */
+    /**
+     * 곡 패키지 불러오기
+     * @returns {Promise<void>} 패키지 로드 작업
+     */
     async loadPackages() {
         let idx, jdx;
 
@@ -6080,7 +6620,9 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 틱 효과음 재생 */
+    /**
+     * 틱 효과음 재생
+     */
     playTick() {
         if(this.se.tick == null) return;
         try {
@@ -6089,7 +6631,10 @@ class ShuttingStarsCore {
         } catch(e) { console.error(e); }
     }
 
-    /** 효과음 재생 */
+    /**
+     * 효과음 재생
+     * @param {string} seKey seKey 값
+     */
     playSE(seKey) {
         if(this.se[seKey] == null || typeof(this.se[seKey]) == 'undefined') return;
         try {
@@ -6098,12 +6643,19 @@ class ShuttingStarsCore {
         } catch(e) { console.error(e); }
     }
 
-    /** 플러그인 불러오기 */
+    /**
+     * 플러그인 불러오기
+     * @returns {Promise<void>} 플러그인 로드 작업
+     */
     async loadPlugins() {
         this.pluginApplied = [];
     }
 
-    /** JSON 객체를 읽어 ShuttingStarsSong 객체 생성 */
+    /**
+     * JSON 객체를 읽어 ShuttingStarsSong 객체 생성
+     * @param {Object|string} json json 값
+     * @returns {ShuttingStarsSong} 변환된 곡 객체
+     */
     parseSong(json) {
         if(typeof(json) == 'string') json = JSON.parse(json);
 
@@ -6167,7 +6719,12 @@ class ShuttingStarsCore {
         return song;
     }
 
-    /** 외부에서 곡 추가 시 호출 */
+    /**
+     * 외부에서 곡 추가 시 호출
+     * @param {ShuttingStarsSong} song 추가하거나 처리할 곡
+     * @param {boolean} noSave 곡 목록 저장을 생략할지 여부
+     * @returns {ShuttingStarsSong} 실제로 목록에 추가된 곡 객체
+     */
     addSong(song, noSave) {
         let returnVal = null;
         let idx;
@@ -6229,12 +6786,20 @@ class ShuttingStarsCore {
         return returnVal;
     }
 
-    /** 부동소수 동일여부 확인 (노트 생성 타이밍에 사용, ShuttingStarsUtility 에 있는 동일 메소드와 오차범위를 다르게 지정하게 될 수 있어 분리함) */
+    /**
+     * 부동소수 동일여부 확인 (노트 생성 타이밍에 사용, ShuttingStarsUtility 에 있는 동일 메소드와 오차범위를 다르게 지정하게 될 수 있어 분리함)
+     * @param {number} a a 값
+     * @param {number} b b 값
+     * @returns {boolean} 두 값이 허용 오차 안에서 같은지 여부
+     */
     checkEqualFloats(a, b) {
         return Math.abs(a - b) < 0.000001;
     }
 
-    /** 저장된 로컬 기록들 반환 */
+    /**
+     * 저장된 로컬 기록들 반환
+     * @returns {Array<Object>} 최신 기록부터 정렬된 로컬 기록 목록
+     */
     getRecords() {
         let storageStrings = localStorage.getItem('shuttingstar_records');
         if(typeof(storageStrings) == 'undefined' || storageStrings == '' || storageStrings == null) return [];
@@ -6243,7 +6808,10 @@ class ShuttingStarsCore {
         return storageJson;
     }
 
-    /** 저장된 인터넷 기록들 반환, 백엔드 연결 없으면 null 반환, Promise */
+    /**
+     * 저장된 인터넷 기록들 반환, 백엔드 연결 없으면 null 반환, Promise
+     * @returns {Promise<*>} 처리 결과
+     */
     getInternetRecords() {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -6264,7 +6832,10 @@ class ShuttingStarsCore {
         });
     }
 
-    /** 기록 저장 */
+    /**
+     * 기록 저장
+     * @param {Object} recordOne recordOne 값
+     */
     addRecords(recordOne) {
         if(typeof(recordOne) == 'undefined') return;
         if(recordOne == null) return;
@@ -6307,7 +6878,10 @@ class ShuttingStarsCore {
         }
     }
 
-    /** 전체 초기화 */
+    /**
+     * 설정 전체 초기화 (로컬 스토리지에 저장된 ShuttingStars 관련 저장값들을 모두 삭제)
+     * @param {Function} callbackAfter 작업 완료 후 호출할 콜백 (넣지 않으면, 설정 전체 초기화 후 화면을 새로고침함)
+     */
     resetAll(callbackAfter) {
         const fAfter = function() {
             if(typeof(callbackAfter) == 'function') callbackAfter();
@@ -6322,37 +6896,58 @@ class ShuttingStarsCore {
     }
 }
 
+/*** ShuttingStars 게임 Core 객체 탑재 변수 **/
 const _shuttingstarcore = new ShuttingStarsCore();
 
 /** 곡 */
 class ShuttingStarsSong {
+    /** @type {number} 인스턴스를 식별하는 고유 일련번호입니다. */
     uniqueSerial = ShuttingStarsUtility.randomInt();
 
     // 기본정보
-    name = ''; // 곡 이름
-    composer = ''; // 작곡가
-    noteWriter = ''; // 노트 작가
-    description = ''; // 설명
-    bpm = 120.0; // beat per minute, 곡의 속도
-    endTime = 560; // 곡 종료 시간
+    /** @type {string} 곡 이름 */
+    name = '';
+    /** @type {string} 작곡가 */
+    composer = '';
+    /** @type {string} 노트 작가 */
+    noteWriter = '';
+    /** @type {string} 설명 */
+    description = '';
+    /** @type {number} beat per minute, 곡의 속도 */
+    bpm = 120.0;
+    /** @type {number} 곡 종료 시간 */
+    endTime = 560;
 
-    contentname = ''; // 추가 패키지인 경우 추가 패키지 이름이 들어감
+    /** @type {string} 추가 패키지인 경우 추가 패키지 이름이 들어감 */
+    contentname = '';
 
-    musicUrl = ''; // 음원 URL
-    musicAlterUrl = ''; // 음원 대체 URL
+    /** @type {string} 음원 URL */
+    musicUrl = '';
+    /** @type {string} 음원 대체 URL */
+    musicAlterUrl = '';
 
-    thumbnailUrl = ''; // 썸네일 이미지 URL (BASE64 가능)
-    bgaUrl = ''; // 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원
+    /** @type {string} 썸네일 이미지 URL (BASE64 가능) */
+    thumbnailUrl = '';
+    /** @type {string} 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원 */
+    bgaUrl = '';
 
-    loadingTime = 10; // 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함)
-    noteMultiplier = 1; // 보정 배수 (패턴 타이밍 값에 * 보정값으로 적용)
-    timeMultiplier = 1; // 보정 시간 (노트 위치 값에 * 보정값으로 적용)
-    timeConstant = 0; // 보정 시간 (노트 위치 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용)
-    autoStars = true; // 자동 Starlight 생성
-    test = false; // true 지정 시 곡 디버그 모드에서만 노출됨
-    serial = ''; // 수정하지 말 것
+    /** @type {number} 추가 로딩시간 (곡 선택 후 곡 타이틀이 풀스크린으로 나오는 시간 증가, 0으로 해도 기본 시간이 존재함) */
+    loadingTime = 10;
+    /** @type {number} 보정 배수 (패턴 타이밍 값에  보정값으로 적용) */
+    noteMultiplier = 1;
+    /** @type {number} 보정 시간 (노트 위치 값에  보정값으로 적용) */
+    timeMultiplier = 1;
+    /** @type {number} 보정 시간 (노트 위치 값에 + 보정값으로 적용, timeMultiply 보다 후순위로 적용) */
+    timeConstant = 0;
+    /** @type {boolean} 자동 Starlight 생성 */
+    autoStars = true;
+    /** @type {boolean} true 지정 시 곡 디버그 모드에서만 노출됨 */
+    test = false;
+    /** @type {string} 수정하지 말 것 */
+    serial = '';
 
-    alterUrlUsing = false; // 게임 동작 중 수정됨, ALTER URL 사용여부
+    /** @type {boolean} 게임 동작 중 수정됨, ALTER URL 사용여부 */
+    alterUrlUsing = false;
     
     // 난이도 별 패턴
     // 배열로, 각 원소는 JSON객체로 구성
@@ -6360,20 +6955,32 @@ class ShuttingStarsSong {
     //     difficultyLabel : easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
     //     difficultyLevel : 1, 2, 3, ... (정수로  입력)
     //     patterns : 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
+    /** @type {Array<Object>} 곡에 정의된 난이도 및 패턴 목록입니다. */
     difficulties = [];
 
     // 장식
+    /** @type {Array<Object>} 곡에 정의된 장식 객체 목록입니다. */
     decorations = [];
 
+    /**
+     * 인스턴스를 초기화합니다.
+     */
     constructor() {
         this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
 
-    /** 노트 생성 위치 */
+    /**
+     * 노트 생성 위치
+     * @returns {number} 노트가 생성될 Y 좌표
+     */
     getNoteCreationYLocation() {
         return _shuttingstarcore.getNoteCreationYLocation();
     }
 
+    /**
+     * 곡에 정의된 난이도 목록을 반환합니다.
+     * @returns {Array<Object>} 난이도 객체 목록
+     */
     getDifficultyList() {
         let arr = [];
         let idx;
@@ -6388,6 +6995,10 @@ class ShuttingStarsSong {
         return arr;
     }
 
+    /**
+     * 곡 설명을 출력 가능한 줄 목록으로 나눕니다.
+     * @returns {Array<string>} 설명의 각 줄
+     */
     getDescriptionSplit() {
         let desc = this.description;
         if(desc == null) return '';
@@ -6402,6 +7013,10 @@ class ShuttingStarsSong {
         return arr;
     }
 
+    /**
+     * 곡 정보를 저장 가능한 일반 객체로 변환합니다.
+     * @returns {Object} 직렬화 가능한 곡 정보
+     */
     toJSONObject() {
         let idx, jdx;
         let obj = {};
@@ -6450,8 +7065,21 @@ class ShuttingStarsSong {
 
 /** 미션 (mission 모드) 기본 구조 */
 class ShuttingStarsMission extends ShuttingStarsSong {
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
+     */
     constructor(inst) { super(); }
+    /**
+     * 객체 사전준비
+     * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
+     */
     prepare(inst) {}
+    /**
+     * 노트들을 난이도에 맞게 사전생성, Survive 미션 공통 메소드이며, prepare 메소드를 통해 호출되도록 만들 예정
+     * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
+     * @param {number} level 난이도 레벨
+     */
     prepareNotes(inst, level) {
         const allCnt = inst.songDisplays.length;
         const rand   = Math.floor(ShuttingStarsUtility.random() * allCnt);
@@ -6515,7 +7143,12 @@ class ShuttingStarsMission extends ShuttingStarsSong {
     }
 }
 
+/** EASY 생존 미션 */
 class EasySurvive extends ShuttingStarsMission {
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
+     */
     constructor(inst) {
         super(inst);
         this.name = 'SURVIVE (EASY)'
@@ -6523,12 +7156,21 @@ class EasySurvive extends ShuttingStarsMission {
         desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
         this.description = desc;
     }
+    /**
+     * 사전 준비
+     * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
+     */
     prepare(inst) {
         this.prepareNotes(inst, 3);
     }
 }
 
+/** NORMAL 생존 미션 */
 class NormalSurvive extends ShuttingStarsMission {
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStarsCore} inst inst 값
+     */
     constructor(inst) {
         super(inst);
         this.name = 'SURVIVE (NORMAL)'
@@ -6536,12 +7178,21 @@ class NormalSurvive extends ShuttingStarsMission {
         desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
         this.description = desc;
     }
+    /**
+     * 사전 준비
+     * @param {ShuttingStarsCore} inst inst 값
+     */
     prepare(inst) {
         this.prepareNotes(inst, 5);
     }
 }
 
+/** HARD 생존 미션 */
 class HardSurvive extends ShuttingStarsMission {
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStarsCore} inst inst 값
+     */
     constructor(inst) {
         super(inst);
         this.name = 'SURVIVE (HARD)'
@@ -6549,6 +7200,10 @@ class HardSurvive extends ShuttingStarsMission {
         desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
         this.description = desc;
     }
+    /**
+     * 사전 준비
+     * @param {ShuttingStarsCore} inst inst 값
+     */
     prepare(inst) {
         this.prepareNotes(inst, 9);
     }
@@ -6556,9 +7211,17 @@ class HardSurvive extends ShuttingStarsMission {
 
 /** 노트가 생성될 위치와 시간 (즉 패턴) */
 class ShuttingStarsNotePattern {
-    id = 0; // 고유 번호, 게임 내에서 초기화됨
-    locationIndex = 0; // 음수 지정 시 랜덤 생성
+    /** @type {number} 게임 내부에서 사용하는 객체 고유 식별자 */
+    id = 0;
+    /** @type {number} 객체가 배치된 노트 라인 번호 */
+    locationIndex = 0;
+    /** @type {number} 노트 패턴이 판정선에 위치할 타이밍 */
     time = 0.0;
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 라인의 번호
+     * @param {number} time 노트 패턴이 판정선에 위치할 타이밍
+     */
     constructor(locationIndex, time) {
         this.locationIndex = locationIndex;
         this.time = time;
@@ -6567,28 +7230,54 @@ class ShuttingStarsNotePattern {
 
 /* 게임 내 Note 및 NotePlacer 의 상위 클래스 */
 class ShuttingStarsObject {
+    /** @type {number} 인스턴스를 식별하는 고유 번호 */
     uniqueSerial = ShuttingStarsUtility.randomInt();
+    /** @type {number} 게임 내부에서 사용하는 객체 식별자 */
     id = 0;
+    /** @type {number} 객체의 X 좌표 */
     x = 0;
+    /** @type {number} 객체의 Y 좌표 */
     y = 0;
-    r = 0; // rect 타입인 경우 w 대신
+    /** @type {number} 원의 반지름 또는 사각형의 너비 */
+    r = 0;
+    /** @type {number} 객체의 높이 (사각형일 때만 사용) */
     h = 0;
-    speedX = 0; // 속도
+    /** @type {number} X 속도 */
+    speedX = 0;
+    /** @type {number} Y 속도 */
     speedY = 0;
-    beforeLocations = []; // 이전 위치
+    /** @type {Array<{x: number, y: number}>} >} >}>} 이전 위치 (꼬리 렌더링에 사용) */
+    beforeLocations = [];
+    /** @type {number} 꼬리 렌더링에 보관할 이전 좌표의 최대 개수 */
     beforeLocationCountMax = 32;
-    tail = false; // 꼬리 출력 (이전 위치 사용)
-    hidden = false; // 숨김 여부
-    opacity = 1.0; // 선명도 (0~1)
+    /** @type {boolean} 꼬리 출력 (이전 위치 사용) */
+    tail = false;
+    /** @type {boolean} 렌더링에서 숨길지 여부 */
+    hidden = false;
+    /** @type {number} 객체의 불투명도 */
+    opacity = 1.0;
+    /** @type {string} 렌더링할 도형 종류 */
     shape = 'circle';
+    /** @type {string} 객체의 색상 (rgba 혹은 rgb 키워드 포함 전체를 입력해야 함) */
     color = 'rgba(200, 200, 200, 0.99)';
-    fill = true; // 채우기 여부 / false 인 경우 채우기 없이 테두리만 출력
-    explosing = 0; // 0 : 일반적인 상황, 1~8 : 폭발 처리 애니메이션 진행상황
+    /** @type {boolean} 도형 내부 채움 여부 (false 시 테두리만 그려짐) */
+    fill = true;
+    /** @type {number} 폭발 (강조) 효과의 현재 진행 단계 */
+    explosing = 0;
+    /** @type {number} 폭발 (강조) 효과의 최종 진행 단계 */
     explosingMax = 8;
-    explosingSpeed = 1; // 폭발 속도
+    /** @type {number} 폭발 (강조) 효과의 진행 속도 */
+    explosingSpeed = 1;
+    /**
+     * 인스턴스 초기화
+     */
     constructor() {
         this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         if(this.hidden) return;
         if(this.shape === 'circle') {
@@ -6645,10 +7334,19 @@ class ShuttingStarsObject {
         }
     }
 
+    /**
+     * modifyExplosiveColor 관련 상태를 갱신
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} 처리 결과
+     */
     modifyExplosiveColor(gradientIndex) {
         return this.color;
     }
 
+    /**
+     * 폭발 진행 상태를 반영한 불투명도를 계산
+     * @returns {number} 현재 불투명도
+     */
     modifyExplosiveOpacity() {
         let opa = this.opacity;
         if(this.explosing >= 1) {
@@ -6657,7 +7355,11 @@ class ShuttingStarsObject {
         return opa;
     }
 
-    /** 다른 객체와 적정거리 이내 접근 감지 (수직 충돌만 감지) 접근이 감지된 경우 두 객체간의 수직거리를 양수로 반환, 그외의 경우 음수를 반환 */
+    /**
+     * 다른 객체와 적정거리 이내 접근 감지 (수직 충돌만 감지) 접근이 감지된 경우 두 객체간의 수직거리를 양수로 반환, 그외의 경우 음수를 반환
+     * @param {ShuttingStarsObject} otherObject otherObject 값
+     * @returns {number} 두 객체 사이의 수직 거리. 범위를 벗어나면 음수
+     */
     isMeetVerticalRangeIn(otherObject) {
         if(((this instanceof NotePlacer) && (otherObject instanceof Note)) || ((this instanceof Note) && (otherObject instanceof NotePlacer))) {
             const distance = Math.abs(this.y - otherObject.y);
@@ -6668,7 +7370,11 @@ class ShuttingStarsObject {
         return -1;
     }
 
-    /** 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) */
+    /**
+     * 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지)
+     * @param {ShuttingStarsObject} otherObject otherObject 값
+     * @returns {boolean} 처리 결과
+     */
     isConflictedVertical(otherObject) {
         if(this.shape === 'circle' && otherObject.shape === 'circle') {
             const distance = Math.abs(this.y - otherObject.y);
@@ -6687,7 +7393,11 @@ class ShuttingStarsObject {
         return false;
     }
 
-    /** 다른 객체와의 충돌 감지 */
+    /**
+     * 다른 객체와의 충돌 감지
+     * @param {ShuttingStarsObject} otherObject otherObject 값
+     * @returns {boolean} 처리 결과
+     */
     isConflicted(otherObject) {
         if(this.shape === 'circle' && otherObject.shape === 'circle') {
             const dx = this.x - otherObject.x;
@@ -6718,19 +7428,33 @@ class ShuttingStarsObject {
 
 /** Note 제거기 혹은 Note 그 자체의 상위 클래스, "키"를 가짐 */
 class NoteKeyObject extends ShuttingStarsObject {
+    /** @type {string} 입력 키 */
     key = '';
+    /** @type {number} 라인 번호 */
     locationIndex = 0;
+    /** @type {boolean} 다크 모드 */
     dark = false;
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 라인 번호
+     */
     constructor(locationIndex) {
         super();
         this.locationIndex = locationIndex;
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
-    /** 기존 투명도 (Opacity) 에 explosing 반영 */
+    /**
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * @returns {number} 현재 불투명도
+     */
     getNowOpacity() {
         return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
     }
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         super.draw(ctx);
         if(this.hidden) return;
@@ -6746,7 +7470,12 @@ class NoteKeyObject extends ShuttingStarsObject {
         ctx.textAlign = "center";
         ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
     }
-    /** 라인 별 컬러 */
+    /**
+     * 라인 별 컬러
+     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} RGB 색상 문자열
+     */
     getColorOfLocationIndex(locationIndex, gradientIndex) {
         if(typeof(gradientIndex) == 'undefined') gradientIndex = 0;
         if(gradientIndex < 0) gradientIndex = 0;
@@ -6790,6 +7519,14 @@ class NoteKeyObject extends ShuttingStarsObject {
 
         return r + ', ' + g + ', ' + b;
     }
+    /**
+     * RGB 색상에 지정한 그라데이션 단계를 적용
+     * @param {number} r r 값
+     * @param {number} g g 값
+     * @param {number} b b 값
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} 그라데이션이 적용된 RGB 색상 문자열
+     */
     applyGradientIndex(r, g, b, gradientIndex) {
         if(gradientIndex >= 1) {
             r = r + Math.floor(((250 - r) / 7.0) * (gradientIndex + 1));
@@ -6798,6 +7535,11 @@ class NoteKeyObject extends ShuttingStarsObject {
         }
         return r + ', ' + g + ', ' + b;
     }
+    /**
+     * modifyExplosiveColor 관련 상태를 갱신
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} 처리 결과
+     */
     modifyExplosiveColor(gradientIndex) {
         if(this.explosing >= 3) return '255, 255, 255';
         return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
@@ -6806,6 +7548,10 @@ class NoteKeyObject extends ShuttingStarsObject {
 
 /** Note 제거기, 화면 내 고정위치에 떠 있으며, 플레이어가 해당 키 입력 시, 해당 위치를 지나는 노트를 제거하며 점수를 획득함. 또한 노트와 위치가 얼마나 동일한지에 따라 점수 계산 */
 class NotePlacer extends NoteKeyObject {
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 레인의 인덱스
+     */
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
@@ -6823,17 +7569,26 @@ class NotePlacer extends NoteKeyObject {
 
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
 class Note extends NoteKeyObject {
-    removed = false; // 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함
-    missed = false; // 미스로 인해 처리되는 경우를 표시
+    /** @type {boolean} 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함 */
+    removed = false;
+    /** @type {boolean} 미스로 인해 처리되는 경우를 표시 */
+    missed = false;
 
     // 게임 처리 중 초기화됨
+    /** @type {number} 노트를 생성한 패턴의 식별자 */
     patternId = 0;   
+    /** @type {number} 보정 전 원래 노트 타이밍 */
     originalTiming = 0;
 
     // 이동할 때마다 콘솔로 위치를 띄울 것인지 지정
+    /** @type {boolean} 디버그 강조 대상 여부 */
     debugTarget = false;
 
     // 생성자
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 레인의 인덱스
+     */
     constructor(locationIndex) {
         super(locationIndex);
         this.r = _shuttingstarcore.getNoteRadius();
@@ -6859,7 +7614,10 @@ class Note extends NoteKeyObject {
         this.opacity = 0.9;
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
-    /** 기존 투명도 (Opacity) 에 explosing 반영 */
+    /**
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환합니다.
+     * @returns {number} 현재 불투명도
+     */
     getNowOpacity() {
         // 0.9 부터 시작하여 급격히 감소
         if(this.explosing <= 0) {
@@ -6871,6 +7629,11 @@ class Note extends NoteKeyObject {
         }
     }
 
+    /**
+     * modifyExplosiveColor 관련 상태를 갱신합니다.
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} 처리 결과
+     */
     modifyExplosiveColor(gradientIndex) {
         if(this.explosing >= 3) {
             if(this.missed) {
@@ -6882,6 +7645,10 @@ class Note extends NoteKeyObject {
         return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
     }
 
+    /**
+     * draw 대상을 화면에 렌더링합니다.
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         super.draw(ctx);
         if(this.hidden) return;
@@ -6952,14 +7719,25 @@ class Note extends NoteKeyObject {
 
 /** 판정 글씨와 콤보 마크 */
 class JudgeMark extends ShuttingStarsObject {
-    judgeResult = null; // PERFECT / GREAT / GOOD / BAD / MISS
-    explosing = 1; // 0 : 일반적인 상황, 그 이상으로 가면 이 마크 제거 (혹은 Note 제거기 동작) 1~16 : 처리 애니메이션 진행상황
+    /** @type {string|null} PERFECT / GREAT / GOOD / BAD / MISS */
+    judgeResult = null;
+    /** @type {number} 폭발 효과의 현재 진행 단계 */
+    explosing = 1;
+    /** @type {number} 폭발 효과의 마지막 진행 단계 */
     explosingMax = 16;
+    /**
+     * 인스턴스를 초기화합니다.
+     * @param {string} judgeResult judgeResult 값
+     */
     constructor(judgeResult) {
         super();
         this.judgeResult = judgeResult;
     }
 
+    /**
+     * draw 대상을 화면에 렌더링합니다.
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         // explosing 에 따른 폰트 크기 조절
         let dynamicFontSize = 26;
@@ -7006,7 +7784,10 @@ class JudgeMark extends ShuttingStarsObject {
         }
     }
 
-    /** 기존 투명도 (Opacity) 에 explosing 반영 */
+    /**
+     * 현재 효과 진행 상태를 반영한 불투명도 반환
+     * @returns {number} 현재 불투명도
+     */
     getNowOpacity() {
         let opa = 0.9;
         if(this.explosing >= 3) opa -= 0.2;
@@ -7018,12 +7799,20 @@ class JudgeMark extends ShuttingStarsObject {
         return opa;
     }
 
-    /** 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) - 판정 마크는 충돌 없음 */
+    /**
+     * 다른 객체와의 충돌 감지 (수평 좌표는 동일하다고 가정하여 수직 충돌만 감지) - 판정 마크는 충돌 없음
+     * @param {ShuttingStarsObject} otherObject otherObject 값
+     * @returns {boolean} 처리 결과
+     */
     isConflictedVertical(otherObject) {
         return false;
     }
 
-    /** 다른 객체와의 충돌 감지 - 판정 마크는 충돌 없음 */
+    /**
+     * 다른 객체와의 충돌 감지 - 판정 마크는 충돌 없음
+     * @param {ShuttingStarsObject} otherObject otherObject 값
+     * @returns {boolean} 처리 결과
+     */
     isConflicted(otherObject) {
         return false;
     }
@@ -7036,8 +7825,14 @@ class MouseEventArea extends ShuttingStarsObject {
 
 /** 장식용 상위 객체 */
 class DecorationObject extends ShuttingStarsObject {
+    /** @type {string} 폭발 효과가 정점일 때 사용할 색상 */
     peakColor = '255, 255, 255';
+    /** @type {string} 장식 객체의 렌더링 우선순위 */
     priority = 'low';
+    /**
+     * 인스턴스를 초기화합니다.
+     * @param {number} locationIndex 라인 번호
+     */
     constructor(locationIndex) {
         super(locationIndex);
     }
@@ -7045,6 +7840,9 @@ class DecorationObject extends ShuttingStarsObject {
 
 /** 장식용 별빛 객체 */
 class Starlight extends DecorationObject {
+    /**
+     * 인스턴스 초기화
+     */
     constructor() {
         super(0);
         this.r = Math.round(ShuttingStarsUtility.random() * 3.0) + 1;
@@ -7064,6 +7862,13 @@ class Starlight extends DecorationObject {
 
 /** 장식용 폭발 객체 */
 class ExplosingObject extends DecorationObject {
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} y y 값
+     * @param {string} color color 값
+     * @param {string} peakColor peakColor 값
+     */
     constructor(locationIndex, y, color, peakColor) {
         super(locationIndex);
         this.peakColor = '255, 255, 255';
@@ -7086,6 +7891,10 @@ class ExplosingObject extends DecorationObject {
         }
     }
 
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         ctx.beginPath();
         ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
@@ -7094,6 +7903,10 @@ class ExplosingObject extends DecorationObject {
         ctx.fill();
     }
 
+    /**
+     * 폭발 진행 상태를 반영한 반지름을 계산
+     * @returns {number} 현재 폭발 반지름
+     */
     modifyExplosiveR() {
         let r = this.r;
         let max = this.r * 1.5;
@@ -7107,6 +7920,10 @@ class ExplosingObject extends DecorationObject {
         return r;
     }
 
+    /**
+     * modifyExplosiveColor 관련 상태를 갱신
+     * @returns {string} 처리 결과
+     */
     modifyExplosiveColor() {
         let color = this.color;
         let splits = color.split(',');
@@ -7149,6 +7966,10 @@ class ExplosingObject extends DecorationObject {
         return color;
     }
 
+    /**
+     * 폭발 진행 상태를 반영한 불투명도를 계산
+     * @returns {number} 현재 불투명도
+     */
     modifyExplosiveOpacity() {
         let opa = this.opacity;
         let d = 1.0 - opa;
@@ -7165,6 +7986,13 @@ class ExplosingObject extends DecorationObject {
 
 /** 노트 명중 효과 */
 class CorrectNoteExplosing extends ExplosingObject {
+    /**
+     * 인스턴스를 초기화합니다.
+     * @param {number} locationIndex 라인 번호
+     * @param {number} y y 값
+     * @param {string} color color 값
+     * @param {string} peakColor peakColor 값
+     */
     constructor(locationIndex, y, color, peakColor) {
         super(locationIndex, y, color, peakColor);
     }
@@ -7172,6 +8000,13 @@ class CorrectNoteExplosing extends ExplosingObject {
 
 /** 노트 미스 폭발 효과 */
 class FailExplosing extends ExplosingObject {
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 라인 번호
+     * @param {number} y y 값
+     * @param {string} color color 값
+     * @param {string} peakColor peakColor 값
+     */
     constructor(locationIndex, y, color, peakColor) {
         super(locationIndex, y, color, peakColor);
     }
@@ -7179,6 +8014,13 @@ class FailExplosing extends ExplosingObject {
 
 /** 게임오버 최종 폭발 효과 */
 class PlanetExplosing extends ExplosingObject {
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 라인 번호
+     * @param {number} y y 값
+     * @param {string} color color 값
+     * @param {string} peakColor peakColor 값
+     */
     constructor(locationIndex, y, color, peakColor) {
         super(locationIndex, y, color, peakColor);
     }
@@ -7186,6 +8028,9 @@ class PlanetExplosing extends ExplosingObject {
 
 /** 마우스 클릭 표시 */
 class MouseClickHighlighter extends ExplosingObject {
+    /**
+     * 인스턴스를 초기화합니다.
+     */
     constructor() {
         super(0, 0, '255,255,255', '255,255,255');
     }
@@ -7193,9 +8038,21 @@ class MouseClickHighlighter extends ExplosingObject {
 
 /** 텍스트 출력 장식 */
 class TextDeco extends DecorationObject {
+    /** @type {string} 화면에 출력할 텍스트 */
     text = '';
+    /** @type {number} 텍스트 렌더링에 사용할 글꼴 크기 */
     fontSize = 10;
+    /** @type {string} 텍스트의 수평 정렬 방식 */
     align = 'center';
+    /**
+     * 인스턴스를 초기화합니다.
+     * @param {string} text text 값
+     * @param {number} x x 값
+     * @param {number} y y 값
+     * @param {number} fontSize fontSize 값
+     * @param {CanvasTextAlign} align align 값
+     * @param {string} color color 값
+     */
     constructor(text, x, y, fontSize, align, color) {
         super(locationIndex);
         this.key = _shuttingstarcore.keyList[locationIndex];
@@ -7217,6 +8074,10 @@ class TextDeco extends DecorationObject {
         this.explosing = 1;
     }
 
+    /**
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * @returns {number} 현재 불투명도
+     */
     getNowOpacity() {
         let opa = 0.9;
         if(this.explosing >= 3) opa -= 0.2;
@@ -7226,6 +8087,10 @@ class TextDeco extends DecorationObject {
         return opa;
     }
 
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         this.ctx.textAlign = this.align;
         this.ctx.fillStyle = this.convertColor('rgba(' + this.color + ', ' + this.getNowOpacity() + ')');
@@ -7235,12 +8100,22 @@ class TextDeco extends DecorationObject {
 
 /** 가상 키 객체 */
 class VirtualKey extends DecorationObject {
+    /** @type {string} 객체에 연결된 입력 키 */
     key = 'S';
+    /** @type {number} 텍스트 렌더링에 사용할 글꼴 크기 */
     fontSize = 30;
+    /** @type {number} 가상 키의 가로 여백 */
     wGap = 12;
+    /** @type {number} 가상 키의 세로 여백 */
     hGap = 12;
+    /** @type {Function} 가상 키를 누를 때 호출할 콜백 */
     click = function() {};
+    /** @type {Function} 가상 키를 놓을 때 호출할 콜백 */
     release = function() {}
+    /**
+     * 인스턴스 초기화
+     * @param {string} key 입력 또는 해제된 키
+     */
     constructor(key) {
         super(0);
 
@@ -7309,9 +8184,17 @@ class VirtualKey extends DecorationObject {
             this.y = Math.round(_shuttingstarcore.getStageHeight()  * 1.0 / 10.0);
         }
     }
+    /**
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * @returns {number} 현재 불투명도
+     */
     getNowOpacity() {
         return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
     }
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     */
     draw(ctx) {
         if(! _shuttingstarcore.virtualKey) return;
         if(_shuttingstarcore.state == 'title' || _shuttingstarcore.state == 'songtitle') return;
@@ -7344,16 +8227,38 @@ class VirtualKey extends DecorationObject {
 
 /** 2D 오디오 시각화 공통 클래스 */
 class Audio2DVisualizer {
-    sizeMultiplier = 2.2;  // 시각화 각 필드 길이 배수
-    r = 0; // 컬러 RED
-    g = 0; // 컬러 GREEN
-    b = 0; // 컬러 BLUE
+    /** @type {number} 시각화 각 필드 길이 배수 */
+    sizeMultiplier = 2.2;
+    /** @type {number} 원의 반지름 또는 사각형의 너비 */
+    r = 0;
+    /** @type {number} 컬러 GREEN */
+    g = 0;
+    /** @type {number} 컬러 BLUE */
+    b = 0;
+    /** @type {number} 객체의 불투명도 */
     opacity = 0.3;
+    /**
+     * 인스턴스를 초기화합니다.
+     */
     constructor() {}
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {number} canvasWidth canvasWidth 값
+     * @param {number} canvasHeight canvasHeight 값
+     * @param {Uint8Array} realtimeAudioBuffer realtimeAudioBuffer 값
+     * @param {number} realtimeAudioBufferLength realtimeAudioBufferLength 값
+     * @param {number} elapsedTime 게임 진행 시간
+     * @param {number} hp 현재 HP
+     */
     draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
         // 이 메소드에 시각화 구현
     }
-    /** 진행시간과 HP 상태에 따른 컬러 계산 */
+    /**
+     * 진행시간과 HP 상태에 따른 컬러 계산
+     * @param {number} elapsedTime 게임 진행 시간
+     * @param {number} hp 현재 HP
+     */
     calculateColor(elapsedTime, hp) {
         this.r = 120;
         this.g = 150;
@@ -7386,7 +8291,20 @@ class Audio2DVisualizer {
 
 /** 바형 2D 오디오 시각화 클래스 */
 class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
+    /**
+     * 인스턴스 초기화
+     */
     constructor() { super(); }
+    /**
+     * draw 대상을 화면에 렌더링합니다.
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {number} canvasWidth canvasWidth 값
+     * @param {number} canvasHeight canvasHeight 값
+     * @param {Uint8Array} realtimeAudioBuffer realtimeAudioBuffer 값
+     * @param {number} realtimeAudioBufferLength realtimeAudioBufferLength 값
+     * @param {number} elapsedTime 게임 진행 시간
+     * @param {number} hp 현재 HP
+     */
     draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
         this.calculateColor(elapsedTime, hp);
         let x = 0;
@@ -7409,8 +8327,22 @@ class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
 
 /** 원형 2D 오디오 시각화 클래스 */
 class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
+    /** @type {number} 원형 시각화의 기준 반지름 */
     radius = 100;
+    /**
+     * 인스턴스 초기화
+     */
     constructor() { super(); }
+    /**
+     * draw 대상을 화면에 렌더링합니다.
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {number} canvasWidth canvasWidth 값
+     * @param {number} canvasHeight canvasHeight 값
+     * @param {Uint8Array} realtimeAudioBuffer realtimeAudioBuffer 값
+     * @param {number} realtimeAudioBufferLength realtimeAudioBufferLength 값
+     * @param {number} elapsedTime 게임 진행 시간
+     * @param {number} hp 현재 HP
+     */
     draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
         this.calculateColor(elapsedTime, hp);
         // 중앙 위치
@@ -7439,6 +8371,10 @@ class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
 
 /********************** 기타 Util 성 prototype 세팅 ************************/
 if(!String.prototype.hexEncode) {
+	/**
+	 * 문자열의 각 UTF-16 코드 단위를 4자리 16진수 문자열로 인코딩
+	 * @returns {string} 16진수로 인코딩된 문자열
+	 */
 	String.prototype.hexEncode = function(){
 	    var hex, i;
 
@@ -7453,6 +8389,10 @@ if(!String.prototype.hexEncode) {
 }
 
 if(!String.prototype.hexDecode) {
+	/**
+	 * 4자리 16진수 단위로 인코딩된 문자열을 원래 문자열로 디코딩
+	 * @returns {string} 디코딩된 문자열
+	 */
 	String.prototype.hexDecode = function(){
 	    var j;
 	    var hexes = this.match(/.{1,4}/g) || [];
@@ -7468,28 +8408,64 @@ if(!String.prototype.hexDecode) {
 /********************** // 기타 Util 성 prototype 세팅 ************************/
 /********************** 3D 를 다루는 Class 세팅 ************************/
 class ShuttingStars3DManager {
-    /** 초기화 작업 (scene, renderer 를 여기서 생성) */
+    /**
+     * 초기화 작업 (scene, renderer 를 여기서 생성)
+     * @param {HTMLCanvasElement} canvas3d 3D 렌더링 대상 캔버스
+     * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
+     */
     init(canvas3d, coreInst) {}
-    /** 동시처리 작업이 필요한 경우 여기서 진행 */
+    /**
+     * 동시처리 작업이 필요한 경우 여기서 진행
+     * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
+     */
     simultaneousJob(coreInst) {}
-    /** 렌더링 시마다 호출해야 함 */
+    /**
+     * 렌더링 시마다 호출해야 함
+     * @param {HTMLCanvasElement} canvas3d 3D 렌더링 대상 캔버스
+     * @param {Array<ShuttingStars3DObject>} objects objects 값
+     */
     render(canvas3d, objects) {} // object3ds
-    /** 창 크기 변경 시 호출해야 함 */
+    /**
+     * 창 크기 변경 시 호출해야 함
+     * @param {HTMLCanvasElement} canvas3d 3D 렌더링 대상 캔버스
+     * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
+     */
     onWindowResize(canvas3d, coreInst) {}
 }
 class ShuttingStars3DObject {
+    /** @type {number} 인스턴스를 식별하는 고유 일련번호 */
     uniqueSerial = -1;
+    /** @type {boolean} 숨김 여부 */
     hidden = false;
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStars3DManager} manager 3D 관리자 인스턴스
+     */
     constructor(manager) {}
+    /**
+     * 3D 객체가 관리하는 메시 목록을 반환
+     * @param {ShuttingStars3DManager} manager 3D 관리자 인스턴스
+     * @returns {Array<*>} 처리 결과
+     */
     getMeshes(manager) { return []; }
+    /**
+     * 3D 객체가 점유한 리소스를 해제
+     */
     dispose() {}
 }
 /********************** // 3D 를 다루는 Class 세팅 ************************/
 /********************** 브라우저 감지 Class 세팅 ************************/
 class BrowserDetector {
+    /**
+     * 인스턴스를 초기화합니다.
+     */
     constructor() {
 
     }
+    /**
+     * 현재 브라우저의 이름과 버전 정보를반환
+     * @returns {Object} 처리 결과
+     */
     getBrowserInformation() {
         return {
             name : 'Unknown',
@@ -7500,14 +8476,26 @@ class BrowserDetector {
 /********************** // 브라우저 감지 Class 세팅 ************************/
 /********************** 기타 Util 성 Class 세팅 ************************/
 class ShuttingStarsUtilityClass {
+    /** @type {number} 토스트 메시지에 부여할 고유 순번의 현재 최대값 */
     toastIndex = 0;
 
-    /** 문자열 치환 */
+    /**
+     * 문자열 치환
+     * @param {string} originalStr originalStr 값
+     * @param {string} targetStr targetStr 값
+     * @param {Object} replacements replacements 값
+     * @returns {string} 처리 결과
+     */
     replaceString(originalStr, targetStr, replacements) {
         return String(originalStr).split(targetStr).join(replacements); 
     }
 
-    /** 해당 문자열을 각 줄로 나눠, commentChar 문자로 시작하는 줄 제거하고 다시 합쳐 반환 */
+    /**
+     * 해당 문자열을 각 줄로 나눠, commentChar 문자로 시작하는 줄 제거하고 다시 합쳐 반환
+     * @param {string} originalString originalString 값
+     * @param {string} commentChar commentChar 값
+     * @returns {string} 지정한 주석 줄이 제거된 문자열
+     */
     removeLinesStartKey(originalString, commentChar) {
         let res = '';
         let splits = String(originalString).split('\n');
@@ -7519,7 +8507,11 @@ class ShuttingStarsUtilityClass {
         return res.trim();
     }
 
-    /** 문자열에서 따옴표, <> 기호를 HTML 특수문자로 변환 */
+    /**
+     * 문자열에서 따옴표, <> 기호를 HTML 특수문자로 변환
+     * @param {string} str str 값
+     * @returns {string} HTML 특수문자로 치환된 문자열
+     */
     purifyHTML(str) {
         if(str == null) return '';
         str = String(str);
@@ -7530,7 +8522,12 @@ class ShuttingStarsUtilityClass {
         return str;
     }
 
-    /** 자연수 (양의 정수)와 자리수(역시 양의 정수) 입력 받아, 해당 자리수에 맞는 문자열로 변환, 숫자를 표현하고 남은 자리수는 빈 문자열(공백) 로 앞부분을 채움 */
+    /**
+     * 자연수 (양의 정수)와 자리수(역시 양의 정수) 입력 받아, 해당 자리수에 맞는 문자열로 변환, 숫자를 표현하고 남은 자리수는 빈 문자열(공백) 로 앞부분을 채움
+     * @param {number} naturalValue naturalValue 값
+     * @param {number} digit digit 값
+     * @returns {string} 지정한 자릿수에 맞춘 문자열
+     */
     fitDigit(naturalValue, digit) {
         let res = String(naturalValue);
         while(res.length < digit) {
@@ -7539,7 +8536,10 @@ class ShuttingStarsUtilityClass {
         return res;
     }
 
-    /** 모바일 환경인지 감지 */
+    /**
+     * 모바일 환경인지 감지
+     * @returns {boolean} 처리 결과
+     */
     isTouchScreenPlatform() {
         let val1 = false;
         let val2 = false;
@@ -7548,7 +8548,12 @@ class ShuttingStarsUtilityClass {
         return val1 || val2;
     }
 
-    /** 토스트 메시지 출력, msg 에는 출력할 텍스트 입력 (필수), red 는 배경색 강조표시로 bool (true/false, 선택사항) 로 입력, duration 은 유지시간으로 정수값 (milliseconds, 선택사항) 입력  */
+    /**
+     * 토스트 메시지 출력, msg 에는 출력할 텍스트 입력 (필수), red 는 배경색 강조표시로 bool (true/false, 선택사항) 로 입력, duration 은 유지시간으로 정수값 (milliseconds, 선택사항) 입력
+     * @param {string} msg msg 값
+     * @param {number|boolean} red 빨간색 성분 또는 경고 강조 여부
+     * @param {number} duration 표시 유지 시간(밀리초)
+     */
     toast(msg, red, duration) {
         let uniqNo = this.toastIndex;
         this.toastIndex++;
@@ -7671,7 +8676,12 @@ class ShuttingStarsUtilityClass {
         }, 50);
     }
 
-    /** fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함. */
+    /**
+     * fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함.
+     * @param {Function} fnWork fnWork 값
+     * @param {number} timeGapMillis timeGapMillis 값
+     * @returns {Function} 반복 호출을 중단하는 함수
+     */
     repeat(fnWork, timeGapMillis) {
         if(typeof(fnWork)        != 'function') throw 'fnWork should be a function !';
         if(typeof(timeGapMillis) != 'number'  ) throw 'timeGapMillis should be a number !';
@@ -7700,32 +8710,56 @@ class ShuttingStarsUtilityClass {
         return function() { switchStop = true; }
     }
 
-    /** 부동소수 동일여부 확인 */
+    /**
+     * 부동소수 동일여부 확인
+     * @param {number} a a 값
+     * @param {number} b b 값
+     * @returns {boolean} 두 값이 허용 오차 안에서 같은지 여부
+     */
     checkEqualFloats(a, b) {
         return Math.abs(a - b) < 0.000001;
     }
 
-    /** 소수 2째자리까지 남기고 반올림 */
+    /**
+     * 소수 2째자리까지 남기고 반올림
+     * @param {number} numbers numbers 값
+     * @returns {number} 처리 결과
+     */
     round2(numbers) {
         return Math.round(numbers * 100.0) / 100.0;
     }
 
-    /** 소수 3째자리까지 남기고 반올림 */
+    /**
+     * 소수 3째자리까지 남기고 반올림
+     * @param {number} numbers numbers 값
+     * @returns {number} 처리 결과
+     */
     round3(numbers) {
         return Math.round(numbers * 1000.0) / 1000.0;
     }
 
-    /** 소수 2째자리까지 남기고 버림 */
+    /**
+     * 소수 2째자리까지 남기고 버림
+     * @param {number} numbers numbers 값
+     * @returns {number} 처리 결과
+     */
     floor2(numbers) {
         return Math.floor(numbers * 100.0) / 100.0;
     }
 
-    /** 소수 3째자리까지 남기고 버림 */
+    /**
+     * 소수 3째자리까지 남기고 버림
+     * @param {number} numbers numbers 값
+     * @returns {number} 처리 결과
+     */
     floor3(numbers) {
         return Math.floor(numbers * 1000.0) / 1000.0;
     }
 
-    /** 0 ~ 4294967296 사이 랜덤 정수 반환 */
+    /**
+     * 0 ~ 4294967296 사이 랜덤 정수 반환
+     * @returns {number} 0 이상 4294967296 미만의 난수
+     */
     randomInt() {
         if(window.crypto) {
             try {
@@ -7737,7 +8771,10 @@ class ShuttingStarsUtilityClass {
         return Math.floor(this.random() * 4294967296);
     }
 
-    /** 0 ~ 1.0 사이 랜덤 수 반환 */
+    /**
+     * 0 ~ 1.0 사이 랜덤 수 반환
+     * @returns {number} 0 이상 1 미만의 난수
+     */
     random() {
         // crypto 사용 가능한 경우 더 확실한 random 반환
         if(window.crypto) {
@@ -7750,6 +8787,18 @@ class ShuttingStarsUtilityClass {
         return Math.random();
     }
 
+    /**
+     * 그라디언트 적용 원을 2D 로 그리기
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {number} x x 값
+     * @param {number} y y 값
+     * @param {number} radius radius 값
+     * @param {number|boolean} red 빨간색 성분 또는 경고 강조 여부
+     * @param {number} green green 값
+     * @param {number} blue blue 값
+     * @param {number} alpha alpha 값
+     * @param {number} depth depth 값
+     */
     drawGradientedArc(ctx, x, y, radius, red, green, blue, alpha, depth) {
         ctx.beginPath();
         if(typeof(depth) == 'undefined') depth = 5;
@@ -7782,6 +8831,11 @@ class ShuttingStarsUtilityClass {
         }
     }
 
+    /**
+     * URL 유효성 확인
+     * @param {string} url url 값
+     * @returns {boolean} 처리 결과
+     */
     checkValidURL(url) {
         try {
             new URL(url);
@@ -7791,6 +8845,11 @@ class ShuttingStarsUtilityClass {
         }
     }
 
+    /**
+     * URL 유효성 확인, 접속 가능 여부도 판단, Promise
+     * @param {string} url url 값
+     * @returns {Promise<*>} 처리 결과
+     */
     checkAccessibleURL(url) {
         return new Promise((resolve, reject) => {
             let urlx;
@@ -7822,17 +8881,30 @@ const SSUtil = ShuttingStarsUtility;
 
 /********************** 외부에서 호출할 수 있도록 함수 구현 ************************/
 
-/** 곡 추가 */
+/**
+ * 게임의 곡 목록에 곡을 추가
+ * @param {ShuttingStarsSong} song 추가할 곡
+ * @returns {ShuttingStarsSong} 실제로 목록에 추가된 곡 객체
+ */
 function addShuttingStarSong(song) {
     return _shuttingstarcore.addSong(song);
 }
 
-/** 3D 매니저 등록 / 해제 */
+/**
+ * 3D 매니저 객체를 등록하거나 해제
+ * @param {ShuttingStars3DManager|null} obj 등록할 3D 매니저. null이면 현재 매니저를 해제
+ * @returns {void}
+ */
 function setShuttingStar3D(obj) {
     setTimeout(function() { _shuttingstarcore.set3DManager(obj); }, 1000);
 }
 
-/** 게임 활성화 - 특정 영역에 게임 캔버스를 배치하려는 경우 매개변수로 DOM객체를 입력 */
+/**
+ * 지정한 영역에 ShuttingStars 게임 적용
+ * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
+ * @param {string} urlContext 리소스 URL의 기준 경로
+ * @returns {*|undefined} 코어 초기화 결과
+ */
 function initShuttingStars(mainDiv, urlContext) {
     try { return _shuttingstarcore.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
 }
