@@ -17,6 +17,6 @@
         "start": "node nodeserver/nodeserver.js"
     },
     "devDependencies": {
-        "firebase-tools": "^13.13.3"
+        "firebase-tools": "^15.20.0"
     }
 }
