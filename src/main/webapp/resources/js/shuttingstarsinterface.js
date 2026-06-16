@@ -51,6 +51,9 @@ class ShuttingStarsInterface {
     logout() {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
+    applyUserInfo() {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
     deleteAllMyData() {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
@@ -207,6 +210,91 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         });
     }
 
+    /** 사용자 정보 동기화 (다운로드) - Promise */
+    loadUserInfo() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
+                if(! selfs.logined) { resolve({success : false, message : 'Not logined'}); return; }
+
+                // 데이터 조회
+                const collOne = selfs.firestore.collection('user');
+                collOne.where('uid', '==', selfs.user.uid).limit(1).then((query) => {
+                    query.get().then((snapshot) => {
+                        if(snapshot.empty) {
+                            resolve({success : true, data : null });
+                        } else {
+                            let responsed = false;
+                            snapshot.docs.forEach((doc) => { 
+                                if(responsed) return;
+                                responsed = true;
+                                resolve({success : true, data : doc.data() });
+                            });
+                        }
+                    }).catch((ex2) => { reject(ex2); });
+                }).catch((ex1) => { reject(ex1); });
+            } catch(exc) {
+                reject(exc);
+            }
+
+            resolve({ success : false }); 
+        });
+    }
+
+    /** 사용자 정보 동기화 (업로드) - Promise */
+    applyUserInfo() {
+        const selfs = this;
+        return new Promise((resolve, reject) => { 
+
+            try {
+                if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
+                if(! selfs.logined) { resolve({success : false, message : 'Not logined'}); return; }
+
+                // 데이터 만들기
+                let record = {};
+                
+                record.uid = selfs.user.uid;
+                record.email = selfs.user.email;
+                record.date = new Date().getTime();
+
+                // TODO : credit 관련 정보 추가 (Firestore 에서 필드 먼저 추가하고 해야 함)
+                record.credits = {
+                    antiMatter : 0,
+                    darkMatter : 0
+                };
+
+                // Firestore 상에 데이터 존재여부 검사
+                let existsAlready = true;
+                const collOne = selfs.firestore.collection('user');
+                collOne.where('uid', '==', selfs.user.uid).limit(1).then((query) => {
+                    query.get().then((snapshot) => {
+                        if(snapshot.empty) existsAlready = false;
+                        const fAfter = () => {
+                            selfs.firestore.collection('user').add(record).then((docRef) => {
+                                resolve({ success : true });
+                            }).catch((ex4) => { reject(ex4); });
+                        };
+
+                        if(existsAlready) { // 데이터 이미 존재 시 삭제하고 다시 넣기 --> 여기선 삭제해야 함
+                            const batch = selfs.firestore.batch();
+                            snapshot.docs.forEach((doc) => { 
+                                batch.delete(doc.ref);
+                            });
+                            batch.commit().then(() => {
+                                fAfter();
+                            }).catch((ex3) => { reject(ex3); });
+                        } else {
+                            fAfter();
+                        }
+                    }).catch((ex2) => { reject(ex2); });
+                }).catch((ex1) => { reject(ex1); });
+            } catch(exc) {
+                reject(exc);
+            }
+        });
+    }
+
     /** 탈퇴 - 이 계정 정보 (uid) 가 있는 모든 데이터 삭제 + 로그아웃 처리도 진행 */
     deleteAllMyData() {
         const selfs = this;
@@ -228,7 +316,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     /** 직접 호출하지 말 것 */
     async deleteAllMyDataIn() {
         const selfs = this;
-        const collections = ['higscore', 'board', 'additionals'];
+        const collections = ['higscore', 'board', 'additionals', 'user'];
         let counts = 0;
         let notEmptyDetected = false;
         for(let idx=0; idx<collections.length; idx++) {
@@ -241,7 +329,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             notEmptyDetected = true; // empty 가 아닌 경우 일단 표시 (재귀 호출해 다시 돌려야 함)
 
             const batch = selfs.firestore.batch();
-            batch.docs.forEach((doc) => { batch.delete(doc.ref); counts++; });
+            snapshot.docs.forEach((doc) => { batch.delete(doc.ref); counts++; });
 
             await batch.commit();
         }

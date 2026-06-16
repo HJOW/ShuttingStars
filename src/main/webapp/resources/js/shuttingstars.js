@@ -1513,7 +1513,7 @@ class ShuttingStarsCore {
 
     /** Credit 불러오기 (Promise) */
     async loadCredit() {
-        // antiMatterCredit 불러오기
+        // antiMatterCredit 로컬에서 불러오기
         try {
             const step1 = localStorage.getItem('shuttingstar_credit');
             if(step1 != null && typeof(step1) != 'undefined' && step1 != '') {
@@ -1544,11 +1544,34 @@ class ShuttingStarsCore {
             this.antiMatterCredit = 0;
             this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
         }
+
+        // 백엔드에서 불러오기
+        try {
+            if(this.backend != null) {
+                const checkLoginRes = await this.backend.checkLogined();
+                if(checkLoginRes.loginAvail) {
+                    const userInfo = await this.backend.loadUserInfo();
+                    if(userInfo == null) {
+                        this.antiMatterCredit = 0;
+                        this.darkMatterCredit = 0;
+                        this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+                    } else {
+                        // TODO : 다운로드 받은 사용자 정보 적용
+                    }
+                    console.log(userInfo);
+                }
+            }
+        } catch(e) {
+            console.log('Failed to load anti-matter credit.');
+            console.error(e);
+            this.antiMatterCredit = 0;
+            this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+        }
     }
 
     /** Credit 저장 (Promise) */
     async saveCredit() {
-        // antiMatterCredit 저장
+        // antiMatterCredit 로컬 저장
         try {
             const newPackage = {};
             newPackage.PERFECT   = this.reportSaved.PERFECT;
@@ -1563,6 +1586,16 @@ class ShuttingStarsCore {
             newPackage.hashKey   = await this.hashCredit(newPackage);
 
             localStorage.setItem('shuttingstar_credit', JSON.stringify(newPackage));
+        } catch(e) {
+            console.log('Failed to save anti-matter credit.');
+            console.error(e);
+        }
+
+        // 백엔드에 저장
+        try {
+            if(this.backend != null) {
+                await this.backend.applyUserInfo();
+            }
         } catch(e) {
             console.log('Failed to save anti-matter credit.');
             console.error(e);
@@ -2085,13 +2118,7 @@ class ShuttingStarsCore {
                 if(this.backend != null && this.backend.avail) {
                     this.confirm( this.trans('Do you want to logout now?') ).then((yn) => {
                         if(yn) {
-                            selfs.backend.logout().then(() => {
-                                try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
-                                selfs.getMenuList().then((menuList) => {
-                                    selfs.menuListDynamic = menuList;
-                                    selfs.setState('title');
-                                });
-                            });
+                            selfs.handleLogout();
                         }
                     });
                 }
@@ -2688,6 +2715,33 @@ class ShuttingStarsCore {
                 if(typeof(evOne.release) == 'function') evOne.release();
             }
         }
+    }
+
+    /** 로그아웃 처리 (Promise) */
+    handleLogout() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            if(selfs.backend == null) { resolve(true); return; }
+            // 로그아웃 전 사용자 정보 동기화 해야 함
+            selfs.applyUserInfo().then(() => {
+                // 백엔드 로그아웃
+                selfs.backend.logout().then(() => {
+                    // 로컬 스토리지에서 세션 비우기
+                    try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
+                    try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
+                    // Credit 초기화
+                    selfs.antiMatterCredit = 0;
+                    selfs.darkMatterCredit = 0;
+                    selfs.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+                    // 메뉴 목록 다시 갱신
+                    selfs.getMenuList().then((menuList) => {
+                        selfs.menuListDynamic = menuList;
+                        selfs.setState('title');
+                        resolve(true);
+                    }).catch((e3) => { reject(e3); });
+                }).catch((e2) => { reject(e2); });
+            }).catch((e) => { reject(e); });
+        });
     }
 
     /**
