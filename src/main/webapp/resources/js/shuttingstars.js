@@ -2934,7 +2934,7 @@ class ShuttingStarsCore {
                 const obj = this.objects[idx];
                 if(typeof(obj.priority) == 'undefined') continue;
                 if(obj.priority == 'low') {
-                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx, this);
                 }
             }
 
@@ -2968,7 +2968,7 @@ class ShuttingStarsCore {
                 const obj = this.objects[idx];
                 if(typeof(obj.priority) == 'undefined') continue;
                 if(obj.priority == 'high') {
-                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx, this);
                 }
             }
 
@@ -3009,7 +3009,7 @@ class ShuttingStarsCore {
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
                     if((! this.disable3d) && this.use3d.notes) continue;
                 }
-                if(typeof(obj.draw) == 'function') obj.draw(this.ctx);
+                if(typeof(obj.draw) == 'function') obj.draw(this.ctx, this);
             }
 
             // HP바 그리기
@@ -4670,7 +4670,7 @@ class ShuttingStarsCore {
             if(this.disable2d) return;
         }
 
-        if(this.vizualizer2d != null) this.vizualizer2d.draw(this.ctx, this.canvas.width, this.canvas.height, this.audioBuffer, this.audioBufferLen, this.elapsedTime, this.gameOverDelayed ? 0 : this.hp);
+        if(this.vizualizer2d != null) this.vizualizer2d.draw(this.ctx, this, this.canvas.width, this.canvas.height, this.audioBuffer, this.audioBufferLen, this.elapsedTime, this.gameOverDelayed ? 0 : this.hp);
     }
 
     /**
@@ -7474,8 +7474,9 @@ class ShuttingStarsObject {
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
-    draw(ctx) {
+    draw(ctx, coreInst) {
         if(this.hidden) return;
         if(this.shape === 'circle') {
             ctx.beginPath();
@@ -7651,9 +7652,10 @@ class NoteKeyObject extends ShuttingStarsObject {
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      */
-    draw(ctx) {
-        super.draw(ctx);
+    draw(ctx, coreInst) {
+        super.draw(ctx, coreInst);
         if(this.hidden) return;
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
@@ -7845,9 +7847,10 @@ class Note extends NoteKeyObject {
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      */
-    draw(ctx) {
-        super.draw(ctx);
+    draw(ctx, coreInst) {
+        super.draw(ctx, coreInst);
         if(this.hidden) return;
 
         // 꼬리 먼저 그리기
@@ -7934,8 +7937,9 @@ class JudgeMark extends ShuttingStarsObject {
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      */
-    draw(ctx) {
+    draw(ctx, coreInst) {
         // explosing 에 따른 폰트 크기 조절
         let dynamicFontSize = 26;
         if(this.explosing >=  3) dynamicFontSize--;
@@ -8091,8 +8095,9 @@ class ExplosingObject extends DecorationObject {
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      */
-    draw(ctx) {
+    draw(ctx, coreInst) {
         ctx.beginPath();
         ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
 
@@ -8287,8 +8292,9 @@ class TextDeco extends DecorationObject {
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      */
-    draw(ctx) {
+    draw(ctx, coreInst) {
         this.ctx.textAlign = this.align;
         this.ctx.fillStyle = this.convertColor('rgba(' + this.color + ', ' + this.getNowOpacity() + ')');
         this.ctx.fillText(this.text, this.convertX(this.x), this.convertY(this.y));
@@ -8391,12 +8397,13 @@ class VirtualKey extends DecorationObject {
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      */
-    draw(ctx) {
+    draw(ctx, coreInst) {
         if(! _shuttingstarcore.virtualKey) return;
         if(_shuttingstarcore.state == 'title' || _shuttingstarcore.state == 'songtitle') return;
 
-        super.draw(ctx);
+        super.draw(ctx, coreInst);
 
         // 중앙에 가상키 글자를 찍기
         //    먼저 글자 컬러 세팅
@@ -8441,6 +8448,7 @@ class Audio2DVisualizer {
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      * @param {number} canvasWidth canvasWidth 값
      * @param {number} canvasHeight canvasHeight 값
      * @param {Uint8Array} realtimeAudioBuffer realtimeAudioBuffer 값
@@ -8448,7 +8456,7 @@ class Audio2DVisualizer {
      * @param {number} elapsedTime 게임 진행 시간
      * @param {number} hp 현재 HP
      */
-    draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
+    draw(ctx, coreInst, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
         // 이 메소드에 시각화 구현
     }
     /**
@@ -8495,6 +8503,7 @@ class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      * @param {number} canvasWidth canvasWidth 값
      * @param {number} canvasHeight canvasHeight 값
      * @param {Uint8Array} realtimeAudioBuffer realtimeAudioBuffer 값
@@ -8502,7 +8511,7 @@ class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
      * @param {number} elapsedTime 게임 진행 시간
      * @param {number} hp 현재 HP
      */
-    draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
+    draw(ctx, coreInst, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
         this.calculateColor(elapsedTime, hp);
         let x = 0;
 
@@ -8533,6 +8542,7 @@ class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
      * @param {number} canvasWidth canvasWidth 값
      * @param {number} canvasHeight canvasHeight 값
      * @param {Uint8Array} realtimeAudioBuffer realtimeAudioBuffer 값
@@ -8540,7 +8550,7 @@ class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
      * @param {number} elapsedTime 게임 진행 시간
      * @param {number} hp 현재 HP
      */
-    draw(ctx, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
+    draw(ctx, coreInst, canvasWidth, canvasHeight, realtimeAudioBuffer, realtimeAudioBufferLength, elapsedTime, hp) {
         this.calculateColor(elapsedTime, hp);
         // 중앙 위치
         const centerX = canvasWidth  / 2;
