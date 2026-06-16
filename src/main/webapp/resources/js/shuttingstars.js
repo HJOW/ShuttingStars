@@ -87,7 +87,9 @@ class ShuttingStarsCore {
     fontFamily = 'D2Coding';
     /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
     pointFont  = 'NanumMyeongjo';
-    /** @type {string} 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다. */
+    /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
+    judgeFont  = 'D2Coding';
+    /** @type {string} 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다. fontFamily, pointFont, judgeFont 와 중복되는 폰트는 기재하지 않아야 한다. */
     alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"';
 
     /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
@@ -6563,6 +6565,22 @@ class ShuttingStarsCore {
         if(pointFont) return "'" + this.pointFont  + "'" + (alters == '' ? '' : ', ' + alters);
         return               "'" + this.fontFamily + "'" + (alters == '' ? '' : ', ' + alters);
     }
+
+    /**
+     * 판정 마크 출력에 쓰일 글꼴 파트 반환
+     * @returns {string} 처리 결과
+     */
+    getJudgeFontFamily() {
+        let alters = '';
+        if(this.alterFonts != null && this.alterFonts != '') {
+            let splits = this.alterFonts.split(' ');
+            for(let idx=0; idx<splits.length; idx++) {
+                if(idx >= 1) alters += ', ';
+                alters += "'" + splits[idx].trim() + "'";
+            }
+        }
+        return "'" + this.judgeFont + "'" + (alters == '' ? '' : ', ' + alters);
+    }
     
     /**
      * 게임 내 무대 크기 (stageSize.w) 를 실제 화면 내 좌표 (resolution.w) 로 변환
@@ -7929,7 +7947,7 @@ class JudgeMark extends ShuttingStarsObject {
 
         // 화면에 판정 결과 띄우기
         let fontSize = _shuttingstarcore.convertFontSize(dynamicFontSize);
-        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getJudgeFontFamily();
 
         let opa = this.getNowOpacity();
         ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + _shuttingstarcore.judgeMarkColor(this.judgeResult) + ', ' + opa + ')');
