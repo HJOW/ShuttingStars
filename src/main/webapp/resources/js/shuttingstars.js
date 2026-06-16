@@ -630,7 +630,7 @@ class ShuttingStarsCore {
             // 상세설정 영역 공통 css 준비
             styles += `
                 .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; overflow-y: auto; }
-                .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
+                .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2.5rem; }
                 .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
                 .shuttingstar_configlayer table th { border: 0; text-align: left; }
                 .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
@@ -5914,12 +5914,12 @@ class ShuttingStarsCore {
                                 <tr>
                                     <th class='target_translate'>Line Keys</th>
                                     <td>
-                                        <span style='margin-left: 20px;'><span>1</span><input type='text' class='inp inp_linekey inp_linekey_1' maxlength='1' style='width:2rem;'/></span>
-                                        <span style='margin-left: 20px;'><span>2</span><input type='text' class='inp inp_linekey inp_linekey_2' maxlength='1' style='width:2rem;'/></span>
-                                        <span style='margin-left: 20px;'><span>3</span><input type='text' class='inp inp_linekey inp_linekey_3' maxlength='1' style='width:2rem;'/></span>
-                                        <span style='margin-left: 20px;'><span>4</span><input type='text' class='inp inp_linekey inp_linekey_4' maxlength='1' style='width:2rem;'/></span>
-                                        <span style='margin-left: 20px;'><span>5</span><input type='text' class='inp inp_linekey inp_linekey_5' maxlength='1' style='width:2rem;'/></span>
-                                        <span style='margin-left: 20px;'><span>6</span><input type='text' class='inp inp_linekey inp_linekey_6' maxlength='1' style='width:2rem;'/></span>
+                                        <span style='margin-left: 20px;'><span style='margin-right:1rem;'>1</span><input type='text' class='inp inp_linekey inp_linekey_1' maxlength='1' style='width:4rem; text-align: center;'/></span>
+                                        <span style='margin-left: 20px;'><span style='margin-right:1rem;'>2</span><input type='text' class='inp inp_linekey inp_linekey_2' maxlength='1' style='width:4rem; text-align: center;'/></span>
+                                        <span style='margin-left: 20px;'><span style='margin-right:1rem;'>3</span><input type='text' class='inp inp_linekey inp_linekey_3' maxlength='1' style='width:4rem; text-align: center;'/></span>
+                                        <span style='margin-left: 20px;'><span style='margin-right:1rem;'>4</span><input type='text' class='inp inp_linekey inp_linekey_4' maxlength='1' style='width:4rem; text-align: center;'/></span>
+                                        <span style='margin-left: 20px;'><span style='margin-right:1rem;'>5</span><input type='text' class='inp inp_linekey inp_linekey_5' maxlength='1' style='width:4rem; text-align: center;'/></span>
+                                        <span style='margin-left: 20px;'><span style='margin-right:1rem;'>6</span><input type='text' class='inp inp_linekey inp_linekey_6' maxlength='1' style='width:4rem; text-align: center;'/></span>
                                     </td>
                                 </tr>
                             </tbody>
