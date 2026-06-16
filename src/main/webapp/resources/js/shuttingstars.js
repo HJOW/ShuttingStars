@@ -1222,8 +1222,8 @@ class ShuttingStarsCore {
                 });
             } catch(e) {
                 console.error(e);
+                resolve( selfs.menuList );
             }
-            resolve( selfs.menuList );
         });
     }
 
