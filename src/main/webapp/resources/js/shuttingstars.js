@@ -8997,7 +8997,7 @@ class ShuttingStarsUtilityClass {
     }
 
     /** 
-     * 해당 문자열을 SHA-384 암호화 (Promise)
+     * 해당 문자열을 SHA-384 (SHA 버전 2임 ! 384는 자리수일 뿐) 암호화 (Promise)
      * 
      * @param {string} str 암호화할 값
      * @returns {Promise<*>} 암호화 결과 (HEX String 으로 반환)
@@ -9013,6 +9013,21 @@ class ShuttingStarsUtilityClass {
                     const hashHex = hashArr.map((b) => { return b.toString(16).padStart(2, '0') }).join('');
                     resolve(hashHex);
                 });
+            } else reject('No CryptoJS detected.');
+        });
+    }
+
+    /** 
+     * 해당 문자열을 SHA-3 암호화 (Promise)
+     *     CryptoJS 필요 (아직 웹표준 Crypto API 는 SHA3 미지원)
+     * 
+     * @param {string} str 암호화할 값
+     * @returns {Promise<*>} 암호화 결과 (HEX String 으로 반환)
+    */
+    sha3str(str) {
+        return new Promise((resolve, reject) => {
+            if(typeof(CryptoJS) != 'undefined') {
+                resolve(CryptoJS.SHA3( String(str) ).toString());
             } else reject('No CryptoJS detected.');
         });
     }
