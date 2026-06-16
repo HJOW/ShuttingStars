@@ -5720,6 +5720,11 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'https://github.com/brix/crypto-js/blob/develop/LICENSE', fontSize : 15 });
         this.creditContents.push({ label : '', fontSize : 25 });
 
+        this.creditContents.push({ label : 'Pure CSS', fontSize : 25 });
+        this.creditContents.push({ label : 'The BSD License - Copyright 2013 Yahoo! Inc.', fontSize : 15 });
+        this.creditContents.push({ label : 'https://github.com/pure-css/pure/blob/main/LICENSE', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
         this.creditContents.push({ label : '나눔고딕, 나눔명조, 나눔고딕코딩, D2Coding', fontSize : 25 });
         this.creditContents.push({ label : 'SIL Open Font License, Version 1.1.', fontSize : 15 });
         this.creditContents.push({ label : 'https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko', fontSize : 15 });

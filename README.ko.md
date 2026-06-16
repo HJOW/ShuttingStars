@@ -109,3 +109,9 @@ The MIT License
 Copyright (c) 2009-2013 Jeff Mott  
 Copyright (c) 2013-2016 Evan Vosberg
 https://github.com/brix/crypto-js/blob/develop/LICENSE
+
++ Pure CSS (선택사항)
+
+BSD License
+Copyright 2013 Yahoo! Inc.
+https://github.com/pure-css/pure/blob/main/LICENSE
