@@ -629,7 +629,7 @@ class ShuttingStarsCore {
             //     설정 영역 CSS
             // 상세설정 영역 공통 css 준비
             styles += `
-                .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; }
+                .shuttingstar_configlayer { margin-left: 2rem; margin-top: 2rem; font-size: 2rem; line-height: 2rem; padding: 20px 20px 20px 20px; overflow-y: auto; }
                 .shuttingstar_configlayer input, .shuttingstar_configlayer select, .shuttingstar_configlayer button { font-size: 2rem; line-height: 2rem; }
                 .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
                 .shuttingstar_configlayer table th { border: 0; text-align: left; }
@@ -1813,8 +1813,14 @@ class ShuttingStarsCore {
         this.canvas.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  + 1) + 'px';
         this.canvas.style.marginLeft = this.getLeftMarginPage() + 'px';
         this.canvas.style.marginTop  = this.getTopMarginPage() + 'px';
-        this.renderConfigDiv();
-
+        
+        if(this.configDiv != null) {
+            this.configDiv.style.top    = '10px';
+            this.configDiv.style.left   = '10px';
+            this.configDiv.style.width  = (outWidth  - this.gap.w - this.getLeftMarginPage() - 100) + 'px';
+            this.configDiv.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  - 100) + 'px';
+        }
+        
         // 해상도 변경
         this.setResolution(this.ressets.w, this.ressets.h);
         const canvasBounding = this.canvas.getBoundingClientRect();
@@ -5982,12 +5988,13 @@ class ShuttingStarsCore {
         this.configDiv.innerHTML = html;
         this.configDiv.style.zIndex = 1002;
         this.configDiv.style.position = 'fixed';
-        this.configDiv.style.top  = this.canvas.offsetTop  + 'px';
-        this.configDiv.style.left = this.canvas.offsetLeft + 'px';
-        this.configDiv.style.width = this.canvas.offsetWidth + 'px';
-        this.configDiv.style.height = this.canvas.offsetHeight + 'px';
+        this.configDiv.style.top    = '10px';
+        this.configDiv.style.left   = '10px';
+        this.configDiv.style.width  = (this.fOuterWidth()  - this.gap.w - this.getLeftMarginPage() - 100) + 'px';
+        this.configDiv.style.height = (this.fOuterHeight() - this.gap.h - this.getTopMarginPage()  - 100) + 'px';
         this.configDiv.style.textAlign = 'center';
         this.configDiv.style.verticalAlign = 'middle';
+        this.configDiv.style.overflowY = 'auto';
 
         // 스트링 테이블 번역 적용
         this.configDiv.querySelectorAll('.target_translate').forEach((itemOne) => {
@@ -5997,8 +6004,8 @@ class ShuttingStarsCore {
         // 레이어 영역 (안쪽)
         const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
         layer.style.zIndex = this.canvasZindex + 3;
-        layer.style.width  = '80%';
-        layer.style.height = Math.round(this.canvas.offsetHeight * 0.8) + 'px';
+        layer.style.width  = '90%';
+        layer.style.minHeight = Math.floor((this.fOuterHeight() - this.gap.h) / 2.0) + 'px';
 
         // 탭 이벤트
         layer.querySelectorAll('button.tab').forEach((itemOne) => {
