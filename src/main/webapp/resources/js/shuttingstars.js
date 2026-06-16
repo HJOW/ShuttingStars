@@ -240,20 +240,29 @@ class ShuttingStarsCore {
     /** @type {Function|null} 동시 작업 Worker 반복을 중단하는 함수입니다. */
     workerSimultaneousWork = null;
 
-    /** @type {number} 점수 */
+    /** @type {number} 점수 (곡 플레이 시작 시 초기화) */
     point = 0;
-    /** @type {number} 콤보 */
+    /** @type {number} 콤보 (곡 플레이 시작 / MISS나 BAD 발생 시 초기화) */
     combo = 0;
-    /** @type {number} 최대 콤보 */
+    /** @type {number} 최대 콤보 (곡 플레이 시작 / 최대 combo값 갱신 시 초기화) */
     maxCombo = 0;
-    /** @type {number} 미스 콤보 */
+    /** @type {number} 미스 콤보 (곡 플레이 시작 / MISS 외 판정 발생 시 초기화) */
     missCombo = 0;
-    /** @type {Object} 판정 종류별 누적 횟수입니다. */
+    /** @type {Object} 판정 종류별 누적 횟수 (곡 플레이 시작 시 초기화) */
     report = {
         PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0 // 각 판정별 통계
     };
-    /** @type {number} 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시) */
+    /** @type {number} 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시) 물론 곡 플레이 시작 시 초기화 */
     hp = 100.0;
+
+    /** @type {number} 게임 내 재화 1 (플레이 중 획득) */
+    antiMatterCredit = 0;
+    /** @type {number} 게임 내 재화 2 (플레이만으로는 획득 불가) */
+    darkMatterCredit = 0;
+    /** @type {Object} 판정 종류별 누적 횟수 (누적) */
+    reportSaved = {
+        PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0
+    }
     
     /** @type {string} local / internet */
     selectRecordType = 'local';
@@ -1468,6 +1477,7 @@ class ShuttingStarsCore {
             console.log('Continue with default settings.');
             this.saveSettings();
         }
+        this.loadCredit();
     }
 
     /**
@@ -1495,6 +1505,66 @@ class ShuttingStarsCore {
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
             console.log('Failed to save settings.');
+            console.error(e);
+        }
+
+        this.saveCredit();
+    }
+
+    /** Credit 불러오기 (Promise) */
+    async loadCredit() {
+        // antiMatterCredit 불러오기
+        try {
+            const step1 = localStorage.getItem('shuttingstar_credit');
+            if(step1 != null && typeof(step1) != 'undefined' && step1 != '') {
+                const step2 = JSON.parse(step1);
+                
+                const hashKey1 = step2.hashKey;
+                const hashKey2 = await this.hashCredit(step2);
+
+                if(hashKey1 == hashKey2) {
+                    this.antiMatterCredit = step2.credit;
+                    this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+                    this.reportSaved.PERFECT   = step2.PERFECT;
+                    this.reportSaved.GREAT     = step2.GREAT;
+                    this.reportSaved.GOOD      = step2.GOOD;
+                    this.reportSaved.BAD       = step2.BAD;
+                    this.reportSaved.MISS      = step2.MISS;
+                    this.reportSaved.maxCombo  = step2.maxCombo;
+                    this.reportSaved.playCount = step2.playCount;
+                    this.reportSaved.used      = step2.used;
+
+                } else {
+                    this.antiMatterCredit = 0;
+                }
+            }
+        } catch(e) {
+            console.log('Failed to load anti-matter credit.');
+            console.error(e);
+            this.antiMatterCredit = 0;
+            this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+        }
+    }
+
+    /** Credit 저장 (Promise) */
+    async saveCredit() {
+        // antiMatterCredit 저장
+        try {
+            const newPackage = {};
+            newPackage.PERFECT   = this.reportSaved.PERFECT;
+            newPackage.GREAT     = this.reportSaved.GREAT;
+            newPackage.GOOD      = this.reportSaved.GOOD;
+            newPackage.BAD       = this.reportSaved.BAD;
+            newPackage.MISS      = this.reportSaved.MISS;
+            newPackage.maxCombo  = this.reportSaved.maxCombo;
+            newPackage.playCount = this.reportSaved.playCount;
+            newPackage.used      = this.reportSaved.used;
+            newPackage.credit    = this.antiMatterCredit;
+            newPackage.hashKey   = await this.hashCredit(newPackage);
+
+            localStorage.setItem('shuttingstar_credit', JSON.stringify(newPackage));
+        } catch(e) {
+            console.log('Failed to save anti-matter credit.');
             console.error(e);
         }
     }
@@ -1582,6 +1652,12 @@ class ShuttingStarsCore {
      */
     calculateSongBitGap(bpm) {
         return Math.round((60000 / bpm) / this.timeMultiplier);
+    }
+
+    /** Credit 해시 검증값 계산 (Promise) */
+    async hashCredit(hashJson) {
+        let hashPackage = String(hashJson['PERFECT']) + ':' + String(hashJson['GREAT']) + ':' + String(hashJson['GOOD']) + ':' + String(hashJson['BAD']) + ':' + String(hashJson['MISS']) + ':' + String(hashJson['maxCombo']) + ':' + String(hashJson['playCount']) + ":" + String(hashJson['used']);
+        await ShuttingStarsUtility.sha384str( hashPackage );
     }
 
     /**
@@ -5370,6 +5446,17 @@ class ShuttingStarsCore {
         let rank = this.judgeResultRank();
 
         if(! this.createMode) {
+            // Credit 반영
+            this.reportSaved.PERFECT  += this.report.PERFECT;
+            this.reportSaved.GREAT    += this.report.GREAT;
+            this.reportSaved.GOOD     += this.report.GOOD;
+            this.reportSaved.BAD      += this.report.BAD;
+            this.reportSaved.MISS     += this.report.MISS;
+            this.reportSaved.maxCombo += this.maxCombo;
+            this.reportSaved.playCount++;
+            this.antiMatterCredit += ( this.reportSaved.maxCombo ) * Math.floor(((this.hp >= 1 ? 4 : 1) * (3 + diff.difficultyLevel)) / 4.0);
+            this.saveCredit();
+
             // 기록 남기기
             this.addRecords({
                 date : new Date().getTime(),
@@ -6904,6 +6991,7 @@ class ShuttingStarsCore {
         try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_records' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         fAfter();
     }
 }
@@ -8858,7 +8946,7 @@ class ShuttingStarsUtilityClass {
     }
 
     /**
-     * URL 유효성 확인, 접속 가능 여부도 판단, Promise
+     * URL 유효성 확인, 접속 가능 여부도 판단 (Promise)
      * @param {string} url url 값
      * @returns {Promise<*>} 처리 결과
      */
@@ -8884,6 +8972,48 @@ class ShuttingStarsUtilityClass {
             } catch(e) {
                 resolve(false);
             }
+        });
+    }
+
+    /** 
+     * 해당 문자열을 SHA-256 암호화 (Promise)
+     * 
+     * @param {string} str 암호화할 값
+     * @returns {Promise<*>} 암호화 결과 (HEX String 으로 반환)
+    */
+    sha256str(str) {
+        return new Promise((resolve, reject) => {
+            if(typeof(CryptoJS) != 'undefined') {
+                resolve(CryptoJS.SHA256( String(str) ).toString());
+            } else if(typeof(crypto) != 'undefined') {
+                const msgBuff = new TextEncoder().encode( String(str) );
+                crypto.subtle.digest('SHA-256', msgBuff).then((hashBuff) => {
+                    const hashArr = Array.from(new Uint8Array(hashBuff));
+                    const hashHex = hashArr.map((b) => { return b.toString(16).padStart(2, '0') }).join('');
+                    resolve(hashHex);
+                });
+            } else reject('No CryptoJS detected.');
+        });
+    }
+
+    /** 
+     * 해당 문자열을 SHA-384 암호화 (Promise)
+     * 
+     * @param {string} str 암호화할 값
+     * @returns {Promise<*>} 암호화 결과 (HEX String 으로 반환)
+    */
+    sha384str(str) {
+        return new Promise((resolve, reject) => {
+            if(typeof(CryptoJS) != 'undefined') {
+                resolve(CryptoJS.SHA384( String(str) ).toString());
+            } else if(typeof(crypto) != 'undefined') {
+                const msgBuff = new TextEncoder().encode( String(str) );
+                crypto.subtle.digest('SHA-384', msgBuff).then((hashBuff) => {
+                    const hashArr = Array.from(new Uint8Array(hashBuff));
+                    const hashHex = hashArr.map((b) => { return b.toString(16).padStart(2, '0') }).join('');
+                    resolve(hashHex);
+                });
+            } else reject('No CryptoJS detected.');
         });
     }
 }
