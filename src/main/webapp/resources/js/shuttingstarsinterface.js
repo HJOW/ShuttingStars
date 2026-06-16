@@ -51,6 +51,9 @@ class ShuttingStarsInterface {
     logout() {
         return new Promise((resolve, reject) => { resolve({ success : false }); })
     }
+    deleteAllMyData() {
+        return new Promise((resolve, reject) => { resolve({ success : false }); })
+    }
     createUser(json) {
         return new Promise((resolve, reject) => { resolve({ success : false, userJson : null }); })
     }
@@ -146,6 +149,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         this.avail = true;
     }
 
+    /** 구글 로그인 열기 */
     openGoogleLogin() {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -177,6 +181,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         });
     }
 
+    /** 세션 유지 여부 확인 */
     checkLogined(userJson) {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -184,6 +189,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         });
     }
 
+    /** 로그아웃 */
     logout() {
         const selfs = this;
         return new Promise((resolve, reject) => {
@@ -198,6 +204,28 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             } catch(exc) {
                 reject(exc);
             }
+        });
+    }
+
+    /** 탈퇴 - 이 계정 정보 (uid) 가 있는 모든 데이터 삭제 */
+    deleteAllMyData() {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            selfs.checkLogined().then((checkRes) => {
+                if(! checkRes.success   ) { reject('Not logined !'); return; }
+                if(! checkRes.loginAvail) { reject('Not logined !'); return; }
+
+                /*
+                TODO
+                Firestore 컬렉션 higscore, board, additionals 모두 uid 필드가 있다.
+                    이 로그인한 사용자의 uid 값과 일치하는 모든 문서를 삭제하고, 로그아웃 처리해야 한다.
+                    현재 로그인한 사용자의 uid 값은 selfs.user.uid 로 액세스 가능
+                */
+                
+
+            }).catch((e) => {
+                reject(e);
+            });
         });
     }
 
