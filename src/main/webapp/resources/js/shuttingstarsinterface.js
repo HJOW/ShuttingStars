@@ -207,26 +207,46 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         });
     }
 
-    /** 탈퇴 - 이 계정 정보 (uid) 가 있는 모든 데이터 삭제 */
+    /** 탈퇴 - 이 계정 정보 (uid) 가 있는 모든 데이터 삭제 + 로그아웃 처리도 진행 */
     deleteAllMyData() {
         const selfs = this;
         return new Promise((resolve, reject) => {
             selfs.checkLogined().then((checkRes) => {
                 if(! checkRes.success   ) { reject('Not logined !'); return; }
                 if(! checkRes.loginAvail) { reject('Not logined !'); return; }
-
-                /*
-                TODO
-                Firestore 컬렉션 higscore, board, additionals 모두 uid 필드가 있다.
-                    이 로그인한 사용자의 uid 값과 일치하는 모든 문서를 삭제하고, 로그아웃 처리해야 한다.
-                    현재 로그인한 사용자의 uid 값은 selfs.user.uid 로 액세스 가능
-                */
+                if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
                 
-
+                selfs.deleteAllMyDataIn().then((counts) => {
+                    selfs.logout().then((logoutRes) => { resolve(logoutRes); }).catch((exc) => { reject(exc); });
+                }).catch((ex) => { reject(ex); });
             }).catch((e) => {
                 reject(e);
             });
         });
+    }
+
+    /** 직접 호출하지 말 것 */
+    async deleteAllMyDataIn() {
+        const selfs = this;
+        const collections = ['higscore', 'board', 'additionals'];
+        let counts = 0;
+        let notEmptyDetected = false;
+        for(let idx=0; idx<collections.length; idx++) {
+            const collName = collections[idx];
+            const collOne  = selfs.firestore.collection(collName);
+            const query    = await collOne.where('uid', '==', selfs.user.uid).limit(500); // 최대 500개까지만 삭제 가능
+            const snapshot = await query.get();
+
+            if(snapshot.empty) continue;
+            notEmptyDetected = true; // empty 가 아닌 경우 일단 표시 (재귀 호출해 다시 돌려야 함)
+
+            const batch = selfs.firestore.batch();
+            batch.docs.forEach((doc) => { batch.delete(doc.ref); counts++; });
+
+            await batch.commit();
+        }
+        if(notEmptyDetected) return counts + await this.deleteAllMyDataIn();
+        else return counts;
     }
 
     registerRankRecord(json) {
