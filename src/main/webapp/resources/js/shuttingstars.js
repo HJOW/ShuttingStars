@@ -943,10 +943,14 @@ class ShuttingStarsCore {
                     selfs.menuListDynamic = menuList;
                     selfs.logInit('starting game...');
 
-                    // 최초 실행인 경우 최초 설정 화면 띄우기
-                    if(firsts) this.setState('firstset');
-
-                    selfs.afterInitialized();
+                    selfs.loadCredit().then(() => {
+                        // 최초 실행인 경우 최초 설정 화면 띄우기
+                        if(firsts) selfs.setState('firstset');
+                        selfs.afterInitialized();
+                    }).catch((excredit) => {
+                        ShuttingStarsUtility.toast('ERROR : ' + excredit, true);
+                        console.error(excredit);    
+                    });
                 }).catch((exmenu) => {
                     ShuttingStarsUtility.toast('ERROR : ' + exmenu, true);
                     console.error(exmenu);
@@ -1166,14 +1170,6 @@ class ShuttingStarsCore {
             }
 
             try {
-                // User 정보 로컬 스토리지에서 탐지
-                let userInfo = localStorage.getItem('shuttingstar_session');
-                if(userInfo == null || typeof(userInfo) == 'undefined' || userInfo == '' || userInfo == 'undefined') userInfo = null;
-                if(userInfo != null) {
-                    if(typeof(userInfo) == 'string') userInfo = JSON.parse(userInfo);
-                    if(userInfo.uid == null || typeof(userInfo.uid) == 'undefined') userInfo = null;
-                }
-
                 const fLogined = () => {
                     let newList = [];
                     let classicList = selfs.menuList;
@@ -1212,25 +1208,18 @@ class ShuttingStarsCore {
                     resolve(newList);
                 };
 
-                if(userInfo == null) {
-                    // 로그인 안됨
-                    fNotLogined();
-                } else {
-                    if(typeof(userInfo) == 'string') userInfo = JSON.parse(userInfo);
-                    selfs.backend.user = userInfo;
-                    if(! selfs.backend.sessionChecked) {
-                        selfs.backend.checkLogined(selfs.backend.user).then((res) => {
-                            if(res.loginAvail) {
-                                // 로그인 성공
-                                fLogined();
-                            } else {
-                                // 로그인 안됨
-                                fNotLogined();
-                            }
-                        }).catch((e) => { console.error(e); resolve( selfs.menuList ); });
-                        return;
+                selfs.backend.checkLogined().then((checkRes) => {
+                    if(checkRes.loginAvail) {
+                        // 로그인 성공
+                        fLogined();
+                    } else {
+                        // 로그인 안됨
+                        fNotLogined();
                     }
-                }
+                }).catch((exc) => {
+                    console.error(exc);
+                    fNotLogined();
+                });
             } catch(e) {
                 console.error(e);
             }
@@ -1477,7 +1466,6 @@ class ShuttingStarsCore {
             console.log('Continue with default settings.');
             this.saveSettings();
         }
-        this.loadCredit();
     }
 
     /**
@@ -1551,14 +1539,30 @@ class ShuttingStarsCore {
                 const checkLoginRes = await this.backend.checkLogined();
                 if(checkLoginRes.loginAvail) {
                     const userInfo = await this.backend.loadUserInfo();
-                    if(userInfo == null) {
+                    if((! userInfo.success) || (userInfo.data == null)) {
                         this.antiMatterCredit = 0;
                         this.darkMatterCredit = 0;
                         this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
                     } else {
-                        // TODO : 다운로드 받은 사용자 정보 적용
+                        const creditInfo = userInfo.data.credits;
+                        const hashes = await this.hashCredit(creditInfo);
+                        if(hashes == userInfo.data.hashKey) {
+                            this.antiMatterCredit = creditInfo.antiMatter;
+                            this.darkMatterCredit = creditInfo.darkMatter;
+                            this.reportSaved.PERFECT   = creditInfo.PERFECT;
+                            this.reportSaved.GREAT     = creditInfo.GREAT;
+                            this.reportSaved.GOOD      = creditInfo.GOOD;
+                            this.reportSaved.BAD       = creditInfo.BAD;
+                            this.reportSaved.MISS      = creditInfo.MISS;
+                            this.reportSaved.maxCombo  = creditInfo.maxCombo;
+                            this.reportSaved.playCount = creditInfo.playCount;
+                            this.reportSaved.used      = creditInfo.used;
+                        } else {
+                            this.antiMatterCredit = 0;
+                            this.darkMatterCredit = 0;
+                            this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+                        }
                     }
-                    console.log(userInfo);
                 }
             }
         } catch(e) {
@@ -1571,20 +1575,24 @@ class ShuttingStarsCore {
 
     /** Credit 저장 (Promise) */
     async saveCredit() {
+        const selfs = this;
+        
         // antiMatterCredit 로컬 저장
-        try {
-            const newPackage = {};
-            newPackage.PERFECT   = this.reportSaved.PERFECT;
-            newPackage.GREAT     = this.reportSaved.GREAT;
-            newPackage.GOOD      = this.reportSaved.GOOD;
-            newPackage.BAD       = this.reportSaved.BAD;
-            newPackage.MISS      = this.reportSaved.MISS;
-            newPackage.maxCombo  = this.reportSaved.maxCombo;
-            newPackage.playCount = this.reportSaved.playCount;
-            newPackage.used      = this.reportSaved.used;
-            newPackage.credit    = this.antiMatterCredit;
-            newPackage.hashKey   = await this.hashCredit(newPackage);
+        const newPackage = {};
+        newPackage.PERFECT   = this.reportSaved.PERFECT;
+        newPackage.GREAT     = this.reportSaved.GREAT;
+        newPackage.GOOD      = this.reportSaved.GOOD;
+        newPackage.BAD       = this.reportSaved.BAD;
+        newPackage.MISS      = this.reportSaved.MISS;
+        newPackage.maxCombo  = this.reportSaved.maxCombo;
+        newPackage.playCount = this.reportSaved.playCount;
+        newPackage.used      = this.reportSaved.used;
+        newPackage.credit    = this.antiMatterCredit;
 
+        const hashKey = await this.hashCredit(newPackage);
+
+        try {
+            newPackage.hashKey   = hashKey;
             localStorage.setItem('shuttingstar_credit', JSON.stringify(newPackage));
         } catch(e) {
             console.log('Failed to save anti-matter credit.');
@@ -1594,7 +1602,20 @@ class ShuttingStarsCore {
         // 백엔드에 저장
         try {
             if(this.backend != null) {
-                await this.backend.applyUserInfo();
+
+                await this.backend.applyUserInfo({
+                    antiMatter : selfs.antiMatterCredit,
+                    darkMatter : selfs.darkMatterCredit,
+                    PERFECT    : selfs.reportSaved.PERFECT  ,
+                    GREAT      : selfs.reportSaved.GREAT    ,
+                    GOOD       : selfs.reportSaved.GOOD     ,
+                    BAD        : selfs.reportSaved.BAD      ,
+                    MISS       : selfs.reportSaved.MISS     ,
+                    maxCombo   : selfs.reportSaved.maxCombo ,
+                    playCount  : selfs.reportSaved.playCount,
+                    used       : selfs.reportSaved.used     ,
+                    hashKey    : hashKey
+                });
             }
         } catch(e) {
             console.log('Failed to save anti-matter credit.');
@@ -1690,7 +1711,7 @@ class ShuttingStarsCore {
     /** Credit 해시 검증값 계산 (Promise) */
     async hashCredit(hashJson) {
         let hashPackage = String(hashJson['PERFECT']) + ':' + String(hashJson['GREAT']) + ':' + String(hashJson['GOOD']) + ':' + String(hashJson['BAD']) + ':' + String(hashJson['MISS']) + ':' + String(hashJson['maxCombo']) + ':' + String(hashJson['playCount']) + ":" + String(hashJson['used']);
-        await ShuttingStarsUtility.sha384str( hashPackage );
+        return await ShuttingStarsUtility.sha384str( hashPackage );
     }
 
     /**
@@ -2723,11 +2744,12 @@ class ShuttingStarsCore {
         return new Promise((resolve, reject) => {
             if(selfs.backend == null) { resolve(true); return; }
             // 로그아웃 전 사용자 정보 동기화 해야 함
-            selfs.applyUserInfo().then(() => {
+            selfs.backend.applyUserInfo({
+
+            }).then(() => {
                 // 백엔드 로그아웃
                 selfs.backend.logout().then(() => {
                     // 로컬 스토리지에서 세션 비우기
-                    try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
                     try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
                     // Credit 초기화
                     selfs.antiMatterCredit = 0;
@@ -4520,7 +4542,7 @@ class ShuttingStarsCore {
         if(this.notePlacers.length >= 1) {
             let x      = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
             let radius = Math.round((this.notePlacers[this.notePlacers.length-1].x - this.notePlacers[0].x) / 2.0) * 8;
-            let y      = this.getHpBarYLocation() - radius;
+            let y      = this.getHpBarYLocation() - radius;  // - this.notePlacers[0].y;
             
             this.ctx.beginPath();
             this.ctx.fillStyle = hpBarInsideColor;
@@ -5957,15 +5979,21 @@ class ShuttingStarsCore {
         const fAfter2 = function() {
             selfs.getMenuList().then((menuList) => {
                 selfs.menuListDynamic = menuList;
-                selfs.backend.getAdditionalContents().then((resp) => {
-                    if(resp.success) {
-                        const list = resp.list;
-                        for(const rowOne in list) {
-                            fLoadAddiContent(rowOne);
+
+                // selfs.backend.loadUserInfo();
+                selfs.loadCredit().then(() => {
+                    selfs.backend.getAdditionalContents().then((resp) => {
+                        if(resp.success) {
+                            
+
+                            const list = resp.list;
+                            for(const rowOne in list) {
+                                fLoadAddiContent(rowOne);
+                            }
                         }
-                    }
+                    });
+                    // selfs.backend.requestPushPermission();
                 });
-                // selfs.backend.requestPushPermission();
             });
         };
 
@@ -5974,8 +6002,6 @@ class ShuttingStarsCore {
             const user    = respJson.userJson;
             if(! success) {
                 selfs.toast(selfs.trans('Login failed.'));
-            } else {
-                localStorage.setItem('shuttingstar_session', JSON.stringify(user));
             }
 
             selfs.keyEventDisabled = false;
@@ -6707,8 +6733,8 @@ class ShuttingStarsCore {
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
             newOne = new Starlight();
-            newOne.y = -2 + (ShuttingStarsUtility.random() * this.convertX(this.getFullRenderHeight() * 2));
-            if(newOne.y >= this.convertX(this.getFullRenderHeight())) newOne.x = newOne.y - this.convertX(this.getFullRenderHeight());
+            newOne.y = -2 + (ShuttingStarsUtility.random() * this.convertY(this.getFullRenderHeight() * 2));
+            if(newOne.y >= this.convertY(this.getFullRenderHeight())) newOne.x = Math.floor((this.convertX(this.getFullRenderHeight()) / 2) * Math.random());
             else newOne.x = -2;
             newOne.speedX = this.backStarlightSpdX;
             newOne.speedY = this.backStarlightSpdY;
@@ -7044,7 +7070,6 @@ class ShuttingStarsCore {
         try { localStorage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_records' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
-        try { localStorage.setItem('shuttingstar_session' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         fAfter();
     }

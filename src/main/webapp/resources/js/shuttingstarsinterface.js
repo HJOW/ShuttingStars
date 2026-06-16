@@ -120,6 +120,9 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         try { this.perf         = firebase.performance();  } catch(e) { console.error(e); }
         try { this.analytics    = firebase.analytics();    } catch(e) { console.error(e); }
 
+        // 인증 유지력 지정
+        this.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
         // 인증 상태 이벤트 부여
         this.auth.onAuthStateChanged((user) => {
             if(user) {
@@ -185,10 +188,27 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
 
     /** 세션 유지 여부 확인 */
-    checkLogined(userJson) {
+    checkLogined() {
         const selfs = this;
         return new Promise((resolve, reject) => {
-            resolve({ success : true, loginAvail : selfs.logined });
+            const userObj = selfs.auth.currentUser;
+            const fNotLogined = () => {
+                selfs.logined = false;
+                selfs.user = null;
+                resolve({ success : true, loginAvail : selfs.logined });
+            };
+
+            if(userObj) {
+                if(typeof(userObj.uid) != 'undefined' && typeof(userObj.email) != 'undefined') {
+                    selfs.user = userObj;
+                    selfs.logined = true;
+                    resolve({ success : true, loginAvail : selfs.logined });
+                } else {
+                    fNotLogined();    
+                }
+            } else {
+                fNotLogined();
+            }
         });
     }
 
@@ -220,30 +240,28 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
                 // 데이터 조회
                 const collOne = selfs.firestore.collection('user');
-                collOne.where('uid', '==', selfs.user.uid).limit(1).then((query) => {
-                    query.get().then((snapshot) => {
-                        if(snapshot.empty) {
-                            resolve({success : true, data : null });
-                        } else {
-                            let responsed = false;
-                            snapshot.docs.forEach((doc) => { 
-                                if(responsed) return;
-                                responsed = true;
-                                resolve({success : true, data : doc.data() });
-                            });
-                        }
-                    }).catch((ex2) => { reject(ex2); });
-                }).catch((ex1) => { reject(ex1); });
+                const query = collOne.where('uid', '==', selfs.user.uid).limit(1);
+                query.get().then((snapshot) => {
+                    if(snapshot.empty) {
+                        resolve({success : true, data : null });
+                    } else {
+                        let responsed = false;
+                        snapshot.docs.forEach((doc) => { 
+                            if(responsed) return;
+                            responsed = true;
+                            resolve({success : true, data : doc.data() });
+                        });
+                    }
+                }).catch((ex2) => { reject(ex2); });
             } catch(exc) {
                 reject(exc);
+                resolve({ success : false }); 
             }
-
-            resolve({ success : false }); 
         });
     }
 
     /** 사용자 정보 동기화 (업로드) - Promise */
-    applyUserInfo() {
+    applyUserInfo(creditJson) {
         const selfs = this;
         return new Promise((resolve, reject) => { 
 
@@ -257,38 +275,32 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 record.uid = selfs.user.uid;
                 record.email = selfs.user.email;
                 record.date = new Date().getTime();
-
-                // TODO : credit 관련 정보 추가 (Firestore 에서 필드 먼저 추가하고 해야 함)
-                record.credits = {
-                    antiMatter : 0,
-                    darkMatter : 0
-                };
+                record.credits = creditJson;
 
                 // Firestore 상에 데이터 존재여부 검사
                 let existsAlready = true;
                 const collOne = selfs.firestore.collection('user');
-                collOne.where('uid', '==', selfs.user.uid).limit(1).then((query) => {
-                    query.get().then((snapshot) => {
-                        if(snapshot.empty) existsAlready = false;
-                        const fAfter = () => {
-                            selfs.firestore.collection('user').add(record).then((docRef) => {
-                                resolve({ success : true });
-                            }).catch((ex4) => { reject(ex4); });
-                        };
+                const query = collOne.where('uid', '==', selfs.user.uid).limit(1);
+                query.get().then((snapshot) => {
+                    if(snapshot.empty) existsAlready = false;
+                    const fAfter = () => {
+                        selfs.firestore.collection('user').add(record).then((docRef) => {
+                            resolve({ success : true });
+                        }).catch((ex4) => { reject(ex4); });
+                    };
 
-                        if(existsAlready) { // 데이터 이미 존재 시 삭제하고 다시 넣기 --> 여기선 삭제해야 함
-                            const batch = selfs.firestore.batch();
-                            snapshot.docs.forEach((doc) => { 
-                                batch.delete(doc.ref);
-                            });
-                            batch.commit().then(() => {
-                                fAfter();
-                            }).catch((ex3) => { reject(ex3); });
-                        } else {
+                    if(existsAlready) { // 데이터 이미 존재 시 삭제하고 다시 넣기 --> 여기선 삭제해야 함
+                        const batch = selfs.firestore.batch();
+                        snapshot.docs.forEach((doc) => { 
+                            batch.delete(doc.ref);
+                        });
+                        batch.commit().then(() => {
                             fAfter();
-                        }
-                    }).catch((ex2) => { reject(ex2); });
-                }).catch((ex1) => { reject(ex1); });
+                        }).catch((ex3) => { reject(ex3); });
+                    } else {
+                        fAfter();
+                    }
+                }).catch((ex2) => { reject(ex2); });
             } catch(exc) {
                 reject(exc);
             }
@@ -322,7 +334,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         for(let idx=0; idx<collections.length; idx++) {
             const collName = collections[idx];
             const collOne  = selfs.firestore.collection(collName);
-            const query    = await collOne.where('uid', '==', selfs.user.uid).limit(500); // 최대 500개까지만 삭제 가능
+            const query    = collOne.where('uid', '==', selfs.user.uid).limit(500); // 최대 500개까지만 삭제 가능
             const snapshot = await query.get();
 
             if(snapshot.empty) continue;
