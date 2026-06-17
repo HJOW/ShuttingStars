@@ -71,8 +71,8 @@ class ShuttingStarsCore {
     virtualKeyForce = false;
 
     /*** 화면 출력 관련 세부 설정 ***/
-    /** @type {number} z-index 값, BGA 출력되는 video 영역 z-index 가 이 값으로 설정되며, 그 위의 메인 canvas 가 이 값 + 1, 그 위 3D 담당 canvas 가 이 값 + 2 의 z-index 를 가짐. */
-    canvasZindex = 1;
+    /** @type {number} 사용하는 최소 z-index 값, video, canvas 등 여러 겹 레이어 중 최하위 레이어의 z-index 값, 그 위 레이어는 +1 씩 사용하게 됨 */
+    mainZindex = 1;
     /** @type {boolean} 어두운 색상 테마 적용 여부입니다. */
     dark = true;
     /** @type {boolean} 수직 반전 (convertY 메소드 사용 시 위 아래가 반전됨, 함부로 변경하지 말 것 ! 모든 render 메소드 점검해야 함.) */
@@ -724,9 +724,9 @@ class ShuttingStarsCore {
                 canvas3d.style.minWidth  = '540px';
                 canvas3d.style.minHeight = '960px';
             }
-            this.videoBga.style.zIndex = this.canvasZindex;
-            canvas.style.zIndex = this.canvasZindex+1;
-            canvas3d.style.zIndex = this.canvasZindex+2;
+            this.videoBga.style.zIndex = this.mainZindex;
+            canvas.style.zIndex = this.mainZindex+1;
+            canvas3d.style.zIndex = this.mainZindex+2;
             canvas3d.style.background = 'transparent';
 
             this.logInit('preparing 2d context...');
@@ -1746,7 +1746,7 @@ class ShuttingStarsCore {
             this.notePlacers = [];
 
             for(idx=0; idx<this.keyList.length; idx++) {
-                const notePlacer = new NotePlacer(idx);
+                const notePlacer = new NotePlacer(idx, this);
                 notePlacer.id = this.lastObjectId++;
                 this.objectsPlaying.push(notePlacer);
                 this.notePlacers.push(notePlacer);
@@ -1777,7 +1777,7 @@ class ShuttingStarsCore {
                 }
 
                 // 노트 생성
-                const note = new Note(pattern.locationIndex);
+                const note = new Note(pattern.locationIndex, this);
                 note.id = this.lastObjectId; this.lastObjectId++;
                 note.patternId = pattern.id;
                 note.originalTiming = pattern.time;
@@ -1906,7 +1906,7 @@ class ShuttingStarsCore {
             this.notePlacers = [];
 
             for(idx=0; idx<this.keyList.length; idx++) {
-                const notePlacer = new NotePlacer(idx);
+                const notePlacer = new NotePlacer(idx, this);
                 notePlacer.id = this.lastObjectId++;
                 this.objectsPlaying.push(notePlacer);
                 this.notePlacers.push(notePlacer);
@@ -2616,7 +2616,7 @@ class ShuttingStarsCore {
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
 
-                const dist = notePlacer.isMeetVerticalRangeIn(obj);
+                const dist = notePlacer.isMeetVerticalRangeIn(obj, this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4) );
                 if(dist < 0) continue;
 
                 notes.push({
@@ -2646,8 +2646,8 @@ class ShuttingStarsCore {
         }
 
         // 거리를 백분율로 환산 - 이후 노트 속도 반영해야 함
-        const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4) ) );
-
+        const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4) ) );
+        
         // 거리에 따른 판정, 점수 계산
         let resultMark = this.createResultMark(distance);
         this.processResultMark(resultMark);
@@ -5265,38 +5265,6 @@ class ShuttingStarsCore {
             }
             this.elapsedTimeOld++;
 
-            /*
-            // 노트 디버깅
-            for(idx=0; idx<this.objectsPlaying.length; idx++) { 
-                const obj = this.objectsPlaying[idx];
-                if(! (obj instanceof Note)) continue;
-                if(obj.debugTarget) { console.log( ShuttingStarsUtility.floor2( this.elapsedTime ) + '\t' + ShuttingStarsUtility.floor2( obj.originalTiming ) + '\t' + ShuttingStarsUtility.floor2( obj.y ) ); }
-            }
-            */
-            
-            /*
-            // 노트 생성 프로세스 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
-
-            // 현재 시간에 해당하는 패턴이 있는지 확인
-            let diff = song.difficulties[ this.difficulty.index ];
-            let patterns = diff.patterns;
-
-            for(idx=0; idx<patterns.length; idx++) {
-                const pattern = patterns[idx];
-                if(this.checkEqualFloats((pattern.time * song.timeMultiplier) + this.songBitGap + song.timeConstant, this.elapsedTime * 1.0)) {
-                    // 패턴이 존재하는 경우, 해당 패턴에 따라 Note 생성
-                    //     locationIndex 값이 음수인 경우 랜덤 부여
-                    if(pattern.locationIndex < 0) {
-                        pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
-                    }
-                    //     노트 생성
-                    const note = new Note(pattern.locationIndex);
-                    note.id = this.lastObjectId++;
-                    this.objectsPlaying.push(note); // 패턴 추가
-                }
-            }
-        */
-
             // 현재 시간에 해당하는 등장 장식이 있는지 확인
             let decos = song.decorations;
             for(idx=0; idx<decos.length; idx++) {
@@ -5501,7 +5469,7 @@ class ShuttingStarsCore {
         this.accelerateExplosingJudgeMarks();
 
         // 게임오버 상태로 변경
-        this.gameoverTime = 16 * _shuttingstarcore.timeMultiplier;
+        this.gameoverTime = 16 * this.timeMultiplier;
         this.setState('gameover');
         this.paused = false;
     }
@@ -6177,7 +6145,7 @@ class ShuttingStarsCore {
 
         // 레이어 영역 (안쪽)
         const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
-        layer.style.zIndex = this.canvasZindex + 3;
+        layer.style.zIndex = this.mainZindex + 3;
         layer.style.width  = '90%';
         layer.style.minHeight = Math.floor((this.fOuterHeight() - this.gap.h) / 2.0) + 'px';
 
@@ -7167,14 +7135,6 @@ class ShuttingStarsSong {
     }
 
     /**
-     * 노트 생성 위치
-     * @returns {number} 노트가 생성될 Y 좌표
-     */
-    getNoteCreationYLocation() {
-        return _shuttingstarcore.getNoteCreationYLocation();
-    }
-
-    /**
      * 곡에 정의된 난이도 목록을 반환합니다.
      * @returns {Array<Object>} 난이도 객체 목록
      */
@@ -7320,7 +7280,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
         // 결정한 확률대로 노트 생성
         let noteCreatedAfter = 0;
         let randValue = 0;
-        for(idx=this.loadingTime * _shuttingstarcore.timeMultiplier + 100; idx<this.endTime; idx++) {
+        for(idx=this.loadingTime * inst.timeMultiplier + 100; idx<this.endTime; idx++) {
             randValue = ShuttingStarsUtility.random() + rateMin; // rateMin ~ (9.99999 + rateMin)
             randValue -= (rateAfter * noteCreatedAfter);
             if(randValue < 0) randValue = 0;
@@ -7480,24 +7440,24 @@ class ShuttingStarsObject {
         if(this.hidden) return;
         if(this.shape === 'circle') {
             ctx.beginPath();
-            ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
+            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.fill();
             } else {
-                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
         } else if(this.shape == 'rect') {
             if(this.fill) {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
-                ctx.fillRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fillRect(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
             } else {
-                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.lineWidth = 1;
-                ctx.strokeRect(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
+                ctx.strokeRect(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
             }
         }
 
@@ -7507,24 +7467,24 @@ class ShuttingStarsObject {
                 const beforeLoc = this.beforeLocations[idx];
                 if(this.shape === 'circle') {
                     ctx.beginPath();
-                    ctx.arc(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), _shuttingstarcore.convertX(this.r), 0, 2 * Math.PI);
+                    ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
                     if(this.fill) {
-                        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
                         ctx.fill();
                     } else {
-                        ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
                 } else if(this.shape == 'rect') {
                     if(this.fill) {
-                        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
-                        ctx.fillRect(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.fillRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     } else {
-                        ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
                         ctx.lineWidth = 1;
-                        ctx.strokeRect(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), _shuttingstarcore.convertX(this.r), _shuttingstarcore.convertY(this.h));
+                        ctx.strokeRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     }
                 }
             }
@@ -7556,13 +7516,15 @@ class ShuttingStarsObject {
     /**
      * 다른 객체와 적정거리 이내 접근 감지 (수직 충돌만 감지) 접근이 감지된 경우 두 객체간의 수직거리를 양수로 반환, 그외의 경우 음수를 반환
      * @param {ShuttingStarsObject} otherObject otherObject 값
+     * @param {number} multiplier
      * @returns {number} 두 객체 사이의 수직 거리. 범위를 벗어나면 음수
      */
-    isMeetVerticalRangeIn(otherObject) {
+    isMeetVerticalRangeIn(otherObject, multiplier) {
+        if(typeof(multiplier) == 'undefined') multiplier = 1.0;
         if(((this instanceof NotePlacer) && (otherObject instanceof Note)) || ((this instanceof Note) && (otherObject instanceof NotePlacer))) {
             const distance = Math.abs(this.y - otherObject.y);
 
-            if(distance < (this.r + otherObject.r) * _shuttingstarcore.noteSpeedMultiplier * (_shuttingstarcore.noteSpeedFixedConst * 4)) return distance;
+            if(distance < (this.r + otherObject.r) * multiplier) return distance;
             return -1;
         }
         return -1;
@@ -7635,11 +7597,12 @@ class NoteKeyObject extends ShuttingStarsObject {
     /**
      * 인스턴스 초기화
      * @param {number} locationIndex 노트 라인 번호
+     * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex) {
+    constructor(locationIndex, coreInst) {
         super();
         this.locationIndex = locationIndex;
-        this.key = _shuttingstarcore.keyList[locationIndex];
+        this.key = coreInst.keyList[locationIndex];
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
     /**
@@ -7659,15 +7622,15 @@ class NoteKeyObject extends ShuttingStarsObject {
         if(this.hidden) return;
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
-        let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
-        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+        let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
+        ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
         // 글자 출력
-        if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
-        else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+        if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
+        else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
 
         ctx.textAlign = "center";
-        ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+        ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
     }
     /**
      * 라인 별 컬러
@@ -7750,13 +7713,14 @@ class NotePlacer extends NoteKeyObject {
     /**
      * 인스턴스 초기화
      * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex) {
-        super(locationIndex);
-        this.r = _shuttingstarcore.getNoteRadius();
-        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMarginNote();
-        this.y = _shuttingstarcore.getNotePlacerYLocation();
-        this.key = _shuttingstarcore.keyList[locationIndex];
+    constructor(locationIndex, coreInst) {
+        super(locationIndex, coreInst);
+        this.r = coreInst.getNoteRadius();
+        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + coreInst.getLeftMarginNote();
+        this.y = coreInst.getNotePlacerYLocation();
+        this.key = coreInst.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.2;
         this.dark = true;
@@ -7787,10 +7751,11 @@ class Note extends NoteKeyObject {
     /**
      * 인스턴스 초기화
      * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex) {
-        super(locationIndex);
-        this.r = _shuttingstarcore.getNoteRadius();
+    constructor(locationIndex, coreInst) {
+        super(locationIndex, coreInst);
+        this.r = coreInst.getNoteRadius();
         this.speedY = 0;
         this.removed = false;
         this.explosing = 0;
@@ -7798,7 +7763,7 @@ class Note extends NoteKeyObject {
         this.tail = false; // TODO
         
         // NotePlacer 찾기
-        let notePlacer = _shuttingstarcore.getNotePlacer(locationIndex);
+        let notePlacer = coreInst.getNotePlacer(locationIndex);
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
         this.x = notePlacer.x;
@@ -7806,9 +7771,9 @@ class Note extends NoteKeyObject {
         // 노트 속도 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
         // NOTE SPEED 관련
         // this.speedY = _shuttingstarcore.getNoteMoveSpeed();
-        this.y = _shuttingstarcore.getNoteCreationYLocation() * 2;
+        this.y = coreInst.getNoteCreationYLocation() * 2;
 
-        this.key = _shuttingstarcore.keyList[locationIndex];
+        this.key = coreInst.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.9;
         this.color = this.getColorOfLocationIndex(locationIndex);
@@ -7868,18 +7833,18 @@ class Note extends NoteKeyObject {
 
                 const beforeLoc = this.beforeLocations[jdx];
                 for(let idx=0; idx<=3; idx++) {
-                    calculatedR = Math.floor(_shuttingstarcore.convertX(this.r - idx) * tailR);
+                    calculatedR = Math.floor(coreInst.convertX(this.r - idx) * tailR);
                     if(calculatedR <= 0) break;
 
                     ctx.beginPath();
-                    ctx.arc(_shuttingstarcore.convertX(beforeLoc.x), _shuttingstarcore.convertY(beforeLoc.y, true), calculatedR, 0, 2 * Math.PI);
+                    ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), calculatedR, 0, 2 * Math.PI);
 
                     if(this.fill) {
-                        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
                         ctx.fill();
                     } else {
                         ctx.lineWidth = 1;
-                        ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
                         ctx.stroke();
                     }
                 }
@@ -7889,14 +7854,14 @@ class Note extends NoteKeyObject {
         // 본 노트 그리기
         for(let idx=0; idx<=3; idx++) {
             ctx.beginPath();
-            ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.r - idx), 0, 2 * Math.PI);
+            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r - idx), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.fill();
             } else {
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
                 ctx.stroke();
             }
 
@@ -7905,14 +7870,14 @@ class Note extends NoteKeyObject {
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
         if(this.explosing < 2) {
-            let fontSize = _shuttingstarcore.convertFontSize(Math.round(this.r / 1.1));
-            ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+            let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
+            ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
-            if(this.dark) ctx.fillStyle = _shuttingstarcore.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
-            else          ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
+            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
 
             ctx.textAlign = "center";
-            ctx.fillText(this.key, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+            ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
         }
     }
 }
@@ -7950,38 +7915,38 @@ class JudgeMark extends ShuttingStarsObject {
         if(this.explosing >= 13) dynamicFontSize--;
 
         // 화면에 판정 결과 띄우기
-        let fontSize = _shuttingstarcore.convertFontSize(dynamicFontSize);
-        ctx.font = 'bold ' + fontSize + 'px ' + _shuttingstarcore.getJudgeFontFamily();
+        let fontSize = coreInst.convertFontSize(dynamicFontSize);
+        ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getJudgeFontFamily();
 
         let opa = this.getNowOpacity();
-        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + _shuttingstarcore.judgeMarkColor(this.judgeResult) + ', ' + opa + ')');
+        ctx.fillStyle = coreInst.convertColor('rgba(' + coreInst.judgeMarkColor(this.judgeResult) + ', ' + opa + ')');
         
         // 노트들 중앙에 출력
         let midX = 0;
-        let midY = _shuttingstarcore.getStageHeight() / 2;
-        let notePlacers = _shuttingstarcore.getNotePlacers();
+        let midY = coreInst.getStageHeight() / 2;
+        let notePlacers = coreInst.getNotePlacers();
 
         for(let idx=0; idx<notePlacers.length; idx++) {
             midX += notePlacers[idx].x;
         }
         midX = midX / notePlacers.length;
 
-        ctx.fillText(this.judgeResult, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY));
+        ctx.fillText(this.judgeResult, coreInst.convertX(midX), coreInst.convertY(midY));
 
-        let combo = _shuttingstarcore.combo;
-        if(this.judgeResult == 'MISS') combo = _shuttingstarcore.missCombo;
+        let combo = coreInst.combo;
+        if(this.judgeResult == 'MISS') combo = coreInst.missCombo;
 
         // 콤보 띄우기
         if(combo > 1) {
-            fontSize = _shuttingstarcore.convertFontSize(15);
-            ctx.font = 'normal ' + fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+            fontSize = coreInst.convertFontSize(15);
+            ctx.font = 'normal ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
             if(this.judgeResult == 'MISS') {
-                ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 0, 0, ' + opa + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(255, 0, 0, ' + opa + ')');
             } else {
-                if(_shuttingstarcore.dark) ctx.strokeStyle = _shuttingstarcore.convertColor('rgba(230, 230, 230, ' + opa + ')');
-                else ctx.fillStyle = _shuttingstarcore.convertColor('rgba(80, 80, 80, ' + opa + ')');
+                if(coreInst.dark) ctx.strokeStyle = coreInst.convertColor('rgba(230, 230, 230, ' + opa + ')');
+                else ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + opa + ')');
             }
-            ctx.fillText('COMBO ' + combo, _shuttingstarcore.convertX(midX), _shuttingstarcore.convertY(midY + 30)); // 판정 결과 아래에 출력
+            ctx.fillText('COMBO ' + combo, coreInst.convertX(midX), coreInst.convertY(midY + 30)); // 판정 결과 아래에 출력
         }
     }
 
