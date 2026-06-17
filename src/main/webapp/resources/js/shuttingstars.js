@@ -9140,6 +9140,29 @@ class ShuttingStarsManager {
     }
 
     /**
+     * 게임 코어 초기화 전 호출할 함수 (훅) 입력
+     * 
+     * @param {Function} funcObj 게임 코어 초기화 전 호출할 함수, 함수의 매개변수로 설정값 변경을 위한 브로커 객체가 입력됨.
+     */
+    setBeforeInitializeHook(funcObj) {
+        this.#originalInstances.fBeforeInit = funcObj;
+    }
+
+    /**
+     * 게임 코어 초기화 후 호출할 함수 (훅) 입력
+     * 
+     * @param {Function} funcObj 게임 코어 초기화 후 호출할 함수, 함수의 매개변수로 설정값 변경을 위한 브로커 객체가 입력됨.
+     */
+    setAfterInitializeHook(funcObj) {
+        this.#originalInstances.fAfterInit = funcObj;
+    }
+
+    /** 스트링 테이블 설정 */
+    setStringTable(tableObj) {
+        this.#originalInstances.stringTable = tableObj;
+    }
+
+    /**
      * 게임의 곡 목록에 곡을 추가
      * @param {ShuttingStarsSong} song 추가할 곡
      * @returns {ShuttingStarsSong} 실제로 목록에 추가된 곡 객체

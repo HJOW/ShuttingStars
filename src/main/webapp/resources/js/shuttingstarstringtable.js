@@ -18,7 +18,7 @@ See the License for the specific language governing permissions and
 limitations under the License. 
  
  */
-_shuttingstarcore.stringTable = {
+ShuttingStars.setStringTable({
     'ko' : {
         'PLAY' : '플레이',
         'SETTING' : '설정',
@@ -89,4 +89,4 @@ _shuttingstarcore.stringTable = {
         "NO" : "아니오",
         "Privacy Policy" : "개인정보처리방침"
     }
-};
+});
