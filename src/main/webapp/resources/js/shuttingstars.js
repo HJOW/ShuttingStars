@@ -5436,16 +5436,6 @@ class ShuttingStarsCore {
     }
 
     /**
-     * [미사용] 노트 속도 (Deprecated - 더 이상 이 방식을 쓰지 않음)
-     * @returns {number} 프레임당 노트 이동 거리
-     */
-    getNoteMoveSpeed() {
-        // 설정값에 따른 속도 반환
-        // 노트들이 곡의 bpm 에 맞는 타이밍마다 이 메소드의 리턴값 만큼 이동함 (이미 bpm 이 반영되어 있음)
-        return ((this.getNoteRadius() * 2.0) * this.noteSpeedMultiplier * this.noteSpeedFixedConst) / (this.timeMultiplier / 8.0);
-    }
-
-    /**
      * 노트 생성 위치 (이제는 곡 플레이 초기화 시 다 만들어놓고 위치를 매번 갱신하므로, 초기화할 때 만드는 위치로만 사용함)
      * @returns {number} 노트가 생성될 Y 좌표
      */
