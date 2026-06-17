@@ -192,6 +192,7 @@
     <script type="text/javascript" src='resources/js/shuttingstarstringtable.js'></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', () => { 
+        // 화면 제어에 사용할 주요 DOM 요소들
         const root = document.querySelector('.exit_root');
         const panels = {
             loading: document.getElementById('exit_panel_loading'),
@@ -205,11 +206,15 @@
         const accountNode = document.getElementById('exit_account');
         let backend = null;
         let busy = false;
+
+        // 브라우저 언어가 ko 또는 ko-KR 인 경우만 한국어, 그 외에는 영어로 표시
         const browserLanguages = (navigator.languages && navigator.languages.length >= 1) ? navigator.languages : [navigator.language || 'en'];
         const currentLanguage = browserLanguages.some((language) => {
             const lower = String(language || '').toLowerCase();
             return lower === 'ko' || lower === 'ko-kr';
         }) ? 'ko' : 'en';
+
+        // 안내 문구 및 confirm/status 메시지 모음
         const messages = {
             ko: {
                 loadingDesc: 'Firebase 로그인 상태를 확인하고 있습니다.',
@@ -251,20 +256,26 @@
         const text = messages[currentLanguage];
         document.documentElement.lang = currentLanguage;
 
+        // data-i18n 속성이 있는 화면 문구를 현재 언어로 치환
         document.querySelectorAll('[data-i18n]').forEach((node) => {
             const key = node.getAttribute('data-i18n');
             if(typeof(text[key]) != 'undefined') node.textContent = text[key];
         });
 
+        // 현재 단계에 맞는 패널 하나만 표시
         const setPanel = (name) => {
             for(const key in panels) {
                 panels[key].hidden = key !== name;
             }
         };
+
+        // 하단 상태 메시지 표시
         const setStatus = (message, error) => {
             statusNode.textContent = message || '';
             statusNode.classList.toggle('error', !! error);
         };
+
+        // 비동기 처리 중에는 중복 클릭 방지를 위해 버튼을 잠금
         const setBusy = (value) => {
             busy = value;
             loginButton.disabled = value;
@@ -272,6 +283,8 @@
             cancelButton.disabled = value;
             root.setAttribute('aria-busy', value ? 'true' : 'false');
         };
+
+        // 로그인 상태에 따라 로그인 화면 또는 탈퇴 확인 화면으로 전환
         const render = () => {
             if(backend != null && backend.logined && backend.user != null) {
                 accountNode.textContent = backend.user.email || backend.user.uid || '';
@@ -281,22 +294,29 @@
                 setPanel('login');
             }
         };
+
+        // 공통 오류 처리
         const handleError = (error) => {
             console.error(error);
             setStatus(text.errorPrefix + String(error), true);
             render();
         };
 
+        // shuttingstarsinterface.js 에 준비된 Firebase 백엔드 구현체 초기화
         try {
             if(typeof(__ssBackEnd) == 'undefined') throw 'Backend is not available.';
             backend = __ssBackEnd();
             if(backend == null || ! backend.avail) throw 'Firebase backend is not available.';
+
+            // Firebase 인증 상태가 바뀌면 현재 화면을 다시 계산
             if(backend.authStateChangedEvents) backend.authStateChangedEvents.push(() => {
                 if(! busy) {
                     setStatus('');
                     render();
                 }
             });
+
+            // 이미 로그인된 브라우저인지 먼저 확인
             backend.checkLogined().then(() => {
                 render();
             }).catch(handleError);
@@ -304,6 +324,7 @@
             handleError(error);
         }
 
+        // Google 로그인 버튼: 로그인 성공 시 탈퇴 확인 화면으로 이동
         loginButton.addEventListener('click', () => {
             if(backend == null || busy) return;
             setBusy(true);
@@ -317,6 +338,7 @@
             });
         });
 
+        // 탈퇴 버튼: 최종 확인 후 Firestore 회원정보 삭제 및 로그아웃
         deleteButton.addEventListener('click', () => {
             if(backend == null || busy) return;
             if(! confirm(text.deleteConfirm)) return;
@@ -331,6 +353,7 @@
             });
         });
 
+        // 취소 버튼: 탈퇴하지 않고 로그아웃한 뒤 초기 로그인 화면으로 복귀
         cancelButton.addEventListener('click', () => {
             if(backend == null || busy) return;
             setBusy(true);
