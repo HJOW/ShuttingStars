@@ -7772,7 +7772,6 @@ class Note extends NoteKeyObject {
 
         // 노트 속도 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
         // NOTE SPEED 관련
-        // this.speedY = _shuttingstarcore.getNoteMoveSpeed();
         this.y = coreInst.getNoteCreationYLocation() * 2;
 
         this.key = coreInst.keyList[locationIndex];
@@ -8019,8 +8018,8 @@ class Starlight extends DecorationObject {
     constructor(coreInst) {
         super(0);
         this.r = Math.round(ShuttingStarsUtility.random() * 3.0) + 1;
-        this.x = Math.round(ShuttingStarsUtility.random() * _shuttingstarcore.getStageWidth());
-        this.y = Math.round(ShuttingStarsUtility.random() * _shuttingstarcore.getStageHeight());
+        this.x = Math.round(ShuttingStarsUtility.random() * coreInst.getStageWidth());
+        this.y = Math.round(ShuttingStarsUtility.random() * coreInst.getStageHeight());
         this.shape = 'circle';
         this.opacity = 0.5 + (0.49 * ShuttingStarsUtility.random());
         this.color = '255, 255, 255';
@@ -8047,10 +8046,10 @@ class ExplosingObject extends DecorationObject {
         super(coreInst);
         this.peakColor = '255, 255, 255';
         this.priority = 'high';
-        this.r = _shuttingstarcore.getNoteRadius();
-        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + _shuttingstarcore.getLeftMarginNote();
+        this.r = coreInst.getNoteRadius();
+        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + coreInst.getLeftMarginNote();
         this.y = y;
-        this.key = _shuttingstarcore.keyList[locationIndex];
+        this.key = coreInst.keyList[locationIndex];
         this.shape = 'circle';
         this.opacity = 0.1;
         this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
@@ -8072,9 +8071,9 @@ class ExplosingObject extends DecorationObject {
      */
     draw(ctx, coreInst) {
         ctx.beginPath();
-        ctx.arc(_shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y, true), _shuttingstarcore.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
+        ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
 
-        ctx.fillStyle = _shuttingstarcore.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
         ctx.fill();
     }
 
@@ -8236,7 +8235,7 @@ class TextDeco extends DecorationObject {
      */
     constructor(coreInst, text, x, y, fontSize, align, color) {
         super(coreInst, locationIndex);
-        this.key = _shuttingstarcore.keyList[locationIndex];
+        this.key = coreInst.keyList[locationIndex];
         this.priority = 'high';
         this.r = 0;
         this.x = x;
@@ -8310,12 +8309,12 @@ class VirtualKey extends DecorationObject {
         this.key = key;
         this.shape = 'circle';
         this.x = 0;
-        this.y = Math.round(_shuttingstarcore.getStageHeight() - (_shuttingstarcore.getStageHeight() / 9.0));
+        this.y = Math.round(coreInst.getStageHeight() - (coreInst.getStageHeight() / 9.0));
         this.r = 0;
         this.speedX = 0;
         this.speedY = 0;
         this.opacity = 0.9;
-        if(_shuttingstarcore.dark) {
+        if(coreInst.dark) {
             this.color = '200, 200, 200';
             this.peakColor = '255, 255, 255';
         } else {
@@ -8326,45 +8325,45 @@ class VirtualKey extends DecorationObject {
         this.priority = 'high';
         this.explosing = 0;
         this.explosing = 2;
-        this.fontSize = _shuttingstarcore.convertFontSize(this.fontSize);
-        this.x = Math.round((_shuttingstarcore.getStageWidth() / 2.0) - (charUnitW * 3.0));
+        this.fontSize = coreInst.convertFontSize(this.fontSize);
+        this.x = Math.round((coreInst.getStageWidth() / 2.0) - (charUnitW * 3.0));
         this.r = Math.round(charUnitW / 2.0);
 
-        if(this.key == _shuttingstarcore.keyList[0]) { // S
+        if(this.key == coreInst.keyList[0]) { // S
             this.y -= charUnitH;
-        } else if(this.key == _shuttingstarcore.keyList[1]) { // D
+        } else if(this.key == coreInst.keyList[1]) { // D
             this.x += charUnitWP;
             this.y -= charUnitH;
-        } else if(this.key == _shuttingstarcore.keyList[2]) { // F
+        } else if(this.key == coreInst.keyList[2]) { // F
             this.x += (charUnitWP * 2);
             this.y -= charUnitH;
-        } else if(this.key == _shuttingstarcore.keyList[3]) { // H
+        } else if(this.key == coreInst.keyList[3]) { // H
             this.x += (charUnitWP * 3);
             this.y -= charUnitH;
-        } else if(this.key == _shuttingstarcore.keyList[4]) { // J
+        } else if(this.key == coreInst.keyList[4]) { // J
             this.x += (charUnitWP * 4);
             this.y -= charUnitH;
-        } else if(this.key == _shuttingstarcore.keyList[5]) { // K
+        } else if(this.key == coreInst.keyList[5]) { // K
             this.x += (charUnitWP * 5);
             this.y -= charUnitH;
-        } else if(this.key == _shuttingstarcore.arrowKeys[0]) { // UP
-            this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0);
-            this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0) - charUnitH;
-        } else if(this.key == _shuttingstarcore.arrowKeys[1]) { // DOWN
-            this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0);  // UP과 동일
-            this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0); // UP보다 한 칸 아래
-        } else if(this.key == _shuttingstarcore.arrowKeys[2]) { // LEFT
-            this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0) - charUnitW;  // DOWN 보다 한 칸 왼쪽
-            this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0);
-        } else if(this.key == _shuttingstarcore.arrowKeys[3]) { // RIGHT
-            this.x = Math.round(_shuttingstarcore.getStageWidth()  * 2.0 / 4.0) + charUnitW;  // DOWN 보다 한 칸 오른쪽
-            this.y = Math.round(_shuttingstarcore.getStageHeight() * 9.0 / 10.0);
-        } else if(this.key == _shuttingstarcore.escKey) {
-            this.x = Math.round(_shuttingstarcore.getStageWidth()   * 9.0 / 10.0);
-            this.y = Math.round(_shuttingstarcore.getStageHeight()  * 1.0 / 10.0) + charUnitH;
-        } else if(this.key == _shuttingstarcore.enterKey) {
-            this.x = Math.round(_shuttingstarcore.getStageWidth()   * 9.0 / 10.0);
-            this.y = Math.round(_shuttingstarcore.getStageHeight()  * 1.0 / 10.0);
+        } else if(this.key == coreInst.arrowKeys[0]) { // UP
+            this.x = Math.round(coreInst.getStageWidth()  * 2.0 / 4.0);
+            this.y = Math.round(coreInst.getStageHeight() * 9.0 / 10.0) - charUnitH;
+        } else if(this.key == coreInst.arrowKeys[1]) { // DOWN
+            this.x = Math.round(coreInst.getStageWidth()  * 2.0 / 4.0);  // UP과 동일
+            this.y = Math.round(coreInst.getStageHeight() * 9.0 / 10.0); // UP보다 한 칸 아래
+        } else if(this.key == coreInst.arrowKeys[2]) { // LEFT
+            this.x = Math.round(coreInst.getStageWidth()  * 2.0 / 4.0) - charUnitW;  // DOWN 보다 한 칸 왼쪽
+            this.y = Math.round(coreInst.getStageHeight() * 9.0 / 10.0);
+        } else if(this.key == coreInst.arrowKeys[3]) { // RIGHT
+            this.x = Math.round(coreInst.getStageWidth()  * 2.0 / 4.0) + charUnitW;  // DOWN 보다 한 칸 오른쪽
+            this.y = Math.round(coreInst.getStageHeight() * 9.0 / 10.0);
+        } else if(this.key == coreInst.escKey) {
+            this.x = Math.round(coreInst.getStageWidth()   * 9.0 / 10.0);
+            this.y = Math.round(coreInst.getStageHeight()  * 1.0 / 10.0) + charUnitH;
+        } else if(this.key == coreInst.enterKey) {
+            this.x = Math.round(coreInst.getStageWidth()   * 9.0 / 10.0);
+            this.y = Math.round(coreInst.getStageHeight()  * 1.0 / 10.0);
         }
     }
     /**
@@ -8380,20 +8379,20 @@ class VirtualKey extends DecorationObject {
      * @param {ShuttingStarsCore} coreInst
      */
     draw(ctx, coreInst) {
-        if(! _shuttingstarcore.virtualKey) return;
-        if(_shuttingstarcore.state == 'title' || _shuttingstarcore.state == 'songtitle') return;
+        if(! coreInst.virtualKey) return;
+        if(coreInst.state == 'title' || coreInst.state == 'songtitle') return;
 
         super.draw(ctx, coreInst);
 
         // 중앙에 가상키 글자를 찍기
         //    먼저 글자 컬러 세팅
-        if(_shuttingstarcore.dark) {
-            ctx.fillStyle = _shuttingstarcore.convertColor('rgba(0, 0, 0, ' + this.getNowOpacity() + ')');
+        if(coreInst.dark) {
+            ctx.fillStyle = coreInst.convertColor('rgba(0, 0, 0, ' + this.getNowOpacity() + ')');
         } else {
-            ctx.fillStyle = _shuttingstarcore.convertColor('rgba(255, 255, 255, ' + this.getNowOpacity() + ')');
+            ctx.fillStyle = coreInst.convertColor('rgba(255, 255, 255, ' + this.getNowOpacity() + ')');
         }
         //    글자 폰트 세팅
-        ctx.font = 'bold ' + this.fontSize + 'px ' + _shuttingstarcore.getRenderFontFamily();
+        ctx.font = 'bold ' + this.fontSize + 'px ' + coreInst.getRenderFontFamily();
 
         let label = this.key;
         if(     label == 'ARROWUP'   ) label = '▲';
@@ -8405,7 +8404,7 @@ class VirtualKey extends DecorationObject {
 
         //    출력
         ctx.textAlign = 'center';
-        ctx.fillText(label, _shuttingstarcore.convertX(this.x), _shuttingstarcore.convertY(this.y) + _shuttingstarcore.convertY(this.fontSize / 4.0));
+        ctx.fillText(label, coreInst.convertX(this.x), coreInst.convertY(this.y) + coreInst.convertY(this.fontSize / 4.0));
     }
 }
 
@@ -9063,6 +9062,16 @@ class ShuttingStarsUtilityClass {
     }
 
     /** 
+     * 일정 시간 (밀리초) 만큼 기다림. Promise.
+     * @returns {Promise<*>}
+     */
+    waitTime(timeMilliSeconds) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => { resolve(true); }, timeMilliSeconds);
+        });
+    }
+
+    /** 
      * 해당 문자열을 SHA-256 암호화 (Promise)
      * 
      * @param {string} str 암호화할 값
@@ -9123,7 +9132,43 @@ const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
 const SSUtil = ShuttingStarsUtility;
 /********************** // 기타 Util 성 Class 세팅 ************************/
 
-/********************** 외부에서 호출할 수 있도록 함수 구현 ************************/
+/********************** 외부에서 호출할 수 있는 객체 및 함수 구현 ************************/
+class ShuttingStarsManager {
+    #originalInstances = null;
+    constructor(originalInst) {
+        this.#originalInstances = originalInst;
+    }
+
+    /**
+     * 게임의 곡 목록에 곡을 추가
+     * @param {ShuttingStarsSong} song 추가할 곡
+     * @returns {ShuttingStarsSong} 실제로 목록에 추가된 곡 객체
+     */
+    addSong(song) {
+        this.#originalInstances.addSong(song);
+    }
+
+    /**
+     * 3D 매니저 객체를 등록하거나 해제 (Promise)
+     * @param {ShuttingStars3DManager|null} obj 등록할 3D 매니저. null이면 현재 매니저를 해제
+     * @returns {Promise<*>}
+     */
+    async set3DManager(ss3d) {
+        await ShuttingStarsUtility.waitTime(1000);
+        this.#originalInstances.set3DManager(ss3d);
+    }
+
+    /**
+     * 지정한 영역에 ShuttingStars 게임 적용
+     * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
+     * @param {string} urlContext 리소스 URL의 기준 경로
+     */
+    init(mainDiv, urlContext) {
+        try { return this.#originalInstances.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
+    }
+}
+
+const ShuttingStars = new ShuttingStarsManager(_shuttingstarcore);
 
 /**
  * 게임의 곡 목록에 곡을 추가
@@ -9131,24 +9176,23 @@ const SSUtil = ShuttingStarsUtility;
  * @returns {ShuttingStarsSong} 실제로 목록에 추가된 곡 객체
  */
 function addShuttingStarSong(song) {
-    return _shuttingstarcore.addSong(song);
+    return ShuttingStars.addSong(song);
 }
 
 /**
- * 3D 매니저 객체를 등록하거나 해제
+ * 3D 매니저 객체를 등록하거나 해제 (Promise)
  * @param {ShuttingStars3DManager|null} obj 등록할 3D 매니저. null이면 현재 매니저를 해제
- * @returns {void}
+ * @returns {Promise<*>}
  */
 function setShuttingStar3D(obj) {
-    setTimeout(function() { _shuttingstarcore.set3DManager(obj); }, 1000);
+    return ShuttingStars.set3DManager(obj);
 }
 
 /**
  * 지정한 영역에 ShuttingStars 게임 적용
  * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
  * @param {string} urlContext 리소스 URL의 기준 경로
- * @returns {*|undefined} 코어 초기화 결과
  */
 function initShuttingStars(mainDiv, urlContext) {
-    try { return _shuttingstarcore.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
+    ShuttingStars.init(mainDiv, urlContext);
 }
