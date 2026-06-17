@@ -41,6 +41,10 @@
     <script defer src="/__/firebase/12.13.0/firebase-auth-compat.js"></script>
     <script defer src="/__/firebase/12.13.0/firebase-database-compat.js"></script>
     <script defer src="/__/firebase/12.13.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/12.13.0/firebase-messaging-compat.js"></script>
+    <script defer src="/__/firebase/12.13.0/firebase-analytics-compat.js"></script>
+    <script defer src="/__/firebase/12.13.0/firebase-remote-config-compat.js"></script>
+    <script defer src="/__/firebase/12.13.0/firebase-performance-compat.js"></script>
     <script defer src="/__/firebase/init.js?useEmulator=true"></script>
     <!-- Google fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -58,7 +62,124 @@
         padding: 0;
         background-color: rgba(5, 5, 5, 0.99);
         color: rgba(230, 230, 230, 0.99);
-        overflow: hidden;
+        overflow: auto;
+        min-height: 100vh;
+        font-family: "Noto Sans KR", "Noto Sans JP", "Noto Sans SC", Arial, sans-serif;
+    }
+    .exit_root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 2.4rem;
+    }
+    .exit_panel {
+        width: min(52rem, 100%);
+        box-sizing: border-box;
+        border: 1px solid rgba(122, 165, 240, 0.28);
+        background: rgba(18, 20, 25, 0.96);
+        padding: 3rem;
+        box-shadow: 0 1.2rem 4rem rgba(0, 0, 0, 0.34);
+    }
+    .exit_panel[hidden] {
+        display: none;
+    }
+    .exit_title {
+        margin: 0 0 1rem 0;
+        color: rgba(238, 242, 255, 0.98);
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 0;
+    }
+    .exit_desc {
+        margin: 0 0 2.4rem 0;
+        color: rgba(216, 223, 238, 0.82);
+        font-size: 1.3rem;
+        line-height: 1.7;
+    }
+    .exit_account {
+        margin: 0 0 2rem 0;
+        color: rgba(180, 199, 240, 0.95);
+        font-size: 1.2rem;
+        word-break: break-all;
+    }
+    .exit_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+    .exit_btn {
+        min-height: 4rem;
+        border: 1px solid rgba(122, 165, 240, 0.72);
+        background: transparent;
+        color: rgba(178, 203, 255, 0.96);
+        cursor: pointer;
+        font-size: 1.2rem;
+        font-weight: 700;
+        padding: 0.85rem 1.6rem;
+    }
+    .exit_btn:hover,
+    .exit_btn:focus {
+        background: rgba(122, 165, 240, 0.12);
+        outline: none;
+    }
+    .exit_btn.danger {
+        border-color: rgba(244, 94, 94, 0.84);
+        color: rgba(255, 171, 171, 0.98);
+    }
+    .exit_btn.danger:hover,
+    .exit_btn.danger:focus {
+        background: rgba(244, 94, 94, 0.12);
+    }
+    .exit_btn:disabled,
+    .gsi-material-button:disabled {
+        cursor: wait;
+        opacity: 0.62;
+    }
+    .exit_status {
+        width: min(52rem, 100%);
+        box-sizing: border-box;
+        min-height: 2.2rem;
+        margin-top: 1.8rem;
+        color: rgba(216, 223, 238, 0.78);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+    .exit_status.error {
+        color: rgba(255, 171, 171, 0.98);
+    }
+    .exit_privacy {
+        margin-top: 1.6rem;
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: rgba(216, 223, 238, 0.68);
+    }
+    .exit_privacy a {
+        color: rgba(178, 203, 255, 0.98);
+    }
+    @media (max-width: 480px) {
+        .exit_root {
+            padding: 1.4rem;
+            align-items: stretch;
+        }
+        .exit_panel {
+            padding: 2.2rem;
+        }
+        .exit_title {
+            font-size: 1.7rem;
+        }
+        .exit_actions {
+            align-items: stretch;
+            flex-direction: column;
+        }
+        .exit_btn,
+        .gsi-material-button {
+            width: 100%;
+        }
     }
     </style>
     <link rel="stylesheet" href="./resources/css/googleloginbuttons.css"/>
@@ -71,11 +192,200 @@
     <script type="text/javascript" src='resources/js/shuttingstarstringtable.js'></script>
     <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', () => { 
-        
+        const root = document.querySelector('.exit_root');
+        const panels = {
+            loading: document.getElementById('exit_panel_loading'),
+            login: document.getElementById('exit_panel_login'),
+            confirm: document.getElementById('exit_panel_confirm')
+        };
+        const loginButton = document.getElementById('exit_google_login');
+        const deleteButton = document.getElementById('exit_delete_account');
+        const cancelButton = document.getElementById('exit_cancel_delete');
+        const statusNode = document.getElementById('exit_status');
+        const accountNode = document.getElementById('exit_account');
+        let backend = null;
+        let busy = false;
+        const browserLanguages = (navigator.languages && navigator.languages.length >= 1) ? navigator.languages : [navigator.language || 'en'];
+        const currentLanguage = browserLanguages.some((language) => {
+            const lower = String(language || '').toLowerCase();
+            return lower === 'ko' || lower === 'ko-kr';
+        }) ? 'ko' : 'en';
+        const messages = {
+            ko: {
+                loadingDesc: 'Firebase 로그인 상태를 확인하고 있습니다.',
+                loginTitle: '회원탈퇴',
+                loginDesc: '게임 접속이 어려운 경우 이 화면에서 Google 로그인 후 Firestore에 저장된 회원정보를 삭제할 수 있습니다.',
+                privacyBefore: '로그인하면 ',
+                privacyLink: '개인정보처리방침',
+                privacyAfter: '에 동의한 것으로 간주됩니다.',
+                confirmTitle: '탈퇴하시겠습니까?',
+                confirmDesc: '탈퇴를 선택하면 현재 Google 계정으로 저장된 Shutting Stars의 Firestore 회원정보가 삭제되고 로그아웃됩니다.',
+                deleteButton: '탈퇴',
+                cancelButton: '취소',
+                errorPrefix: '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. ',
+                loginProgress: 'Google 로그인을 진행하고 있습니다...',
+                deleteConfirm: 'Shutting Stars의 Firestore 회원정보를 삭제하고 로그아웃합니다. 계속하시겠습니까?',
+                deleteProgress: 'Firestore 회원정보를 삭제하고 있습니다...',
+                deleteComplete: '탈퇴 처리가 완료되었습니다. 다시 Google 로그인부터 시작할 수 있습니다.',
+                logoutProgress: '로그아웃하고 초기 화면으로 돌아갑니다...'
+            },
+            en: {
+                loadingDesc: 'Checking your Firebase sign-in status.',
+                loginTitle: 'Delete Account',
+                loginDesc: 'If you cannot access the game, sign in with Google here to delete your account information stored in Firestore.',
+                privacyBefore: 'By signing in, you agree to the ',
+                privacyLink: 'Privacy Policy',
+                privacyAfter: '.',
+                confirmTitle: 'Delete your account?',
+                confirmDesc: 'If you continue, Shutting Stars will delete the Firestore account information saved for the current Google account and sign you out.',
+                deleteButton: 'Delete Account',
+                cancelButton: 'Cancel',
+                errorPrefix: 'An error occurred. Please try again later. ',
+                loginProgress: 'Signing in with Google...',
+                deleteConfirm: 'This will delete your Shutting Stars account information from Firestore and sign you out. Continue?',
+                deleteProgress: 'Deleting your Firestore account information...',
+                deleteComplete: 'Account deletion is complete. You can start again from Google sign-in.',
+                logoutProgress: 'Signing out and returning to the first screen...'
+            }
+        };
+        const text = messages[currentLanguage];
+        document.documentElement.lang = currentLanguage;
+
+        document.querySelectorAll('[data-i18n]').forEach((node) => {
+            const key = node.getAttribute('data-i18n');
+            if(typeof(text[key]) != 'undefined') node.textContent = text[key];
+        });
+
+        const setPanel = (name) => {
+            for(const key in panels) {
+                panels[key].hidden = key !== name;
+            }
+        };
+        const setStatus = (message, error) => {
+            statusNode.textContent = message || '';
+            statusNode.classList.toggle('error', !! error);
+        };
+        const setBusy = (value) => {
+            busy = value;
+            loginButton.disabled = value;
+            deleteButton.disabled = value;
+            cancelButton.disabled = value;
+            root.setAttribute('aria-busy', value ? 'true' : 'false');
+        };
+        const render = () => {
+            if(backend != null && backend.logined && backend.user != null) {
+                accountNode.textContent = backend.user.email || backend.user.uid || '';
+                setPanel('confirm');
+            } else {
+                accountNode.textContent = '';
+                setPanel('login');
+            }
+        };
+        const handleError = (error) => {
+            console.error(error);
+            setStatus(text.errorPrefix + String(error), true);
+            render();
+        };
+
+        try {
+            if(typeof(__ssBackEnd) == 'undefined') throw 'Backend is not available.';
+            backend = __ssBackEnd();
+            if(backend == null || ! backend.avail) throw 'Firebase backend is not available.';
+            if(backend.authStateChangedEvents) backend.authStateChangedEvents.push(() => {
+                if(! busy) {
+                    setStatus('');
+                    render();
+                }
+            });
+            backend.checkLogined().then(() => {
+                render();
+            }).catch(handleError);
+        } catch(error) {
+            handleError(error);
+        }
+
+        loginButton.addEventListener('click', () => {
+            if(backend == null || busy) return;
+            setBusy(true);
+            setStatus(text.loginProgress, false);
+            backend.openGoogleLogin().then((result) => {
+                if(result == null || ! result.success) throw ((result && result.message) ? result.message : 'Login failed.');
+                setStatus('');
+                render();
+            }).catch(handleError).finally(() => {
+                setBusy(false);
+            });
+        });
+
+        deleteButton.addEventListener('click', () => {
+            if(backend == null || busy) return;
+            if(! confirm(text.deleteConfirm)) return;
+            setBusy(true);
+            setStatus(text.deleteProgress, false);
+            backend.deleteAllMyData().then((result) => {
+                if(result == null || ! result.success) throw ((result && result.message) ? result.message : 'Delete failed.');
+                setStatus(text.deleteComplete, false);
+                render();
+            }).catch(handleError).finally(() => {
+                setBusy(false);
+            });
+        });
+
+        cancelButton.addEventListener('click', () => {
+            if(backend == null || busy) return;
+            setBusy(true);
+            setStatus(text.logoutProgress, false);
+            backend.logout().then(() => {
+                setStatus('');
+                render();
+            }).catch(handleError).finally(() => {
+                setBusy(false);
+            });
+        });
     });    
     </script>
   </head>
   <body>
+    <main class="exit_root" aria-busy="false">
+        <section id="exit_panel_loading" class="exit_panel" aria-live="polite">
+            <h1 class="exit_title">Shutting Stars</h1>
+            <p class="exit_desc" data-i18n="loadingDesc">Firebase 로그인 상태를 확인하고 있습니다.</p>
+        </section>
 
+        <section id="exit_panel_login" class="exit_panel" hidden>
+            <h1 class="exit_title" data-i18n="loginTitle">회원탈퇴</h1>
+            <p class="exit_desc" data-i18n="loginDesc">게임 접속이 어려운 경우 이 화면에서 Google 로그인 후 Firestore에 저장된 회원정보를 삭제할 수 있습니다.</p>
+            <div class="exit_actions">
+                <button id="exit_google_login" class="gsi-material-button" type="button">
+                    <div class="gsi-material-button-state"></div>
+                    <div class="gsi-material-button-content-wrapper">
+                        <div class="gsi-material-button-icon">
+                            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="display: block;">
+                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                                <path fill="none" d="M0 0h48v48H0z"></path>
+                            </svg>
+                        </div>
+                        <span class="gsi-material-button-contents">Continue with Google</span>
+                        <span style="display: none;">Continue with Google</span>
+                    </div>
+                </button>
+            </div>
+            <p class="exit_privacy"><span data-i18n="privacyBefore">로그인하면 </span><a href="privacy.html" target="_blank" rel="noopener" data-i18n="privacyLink">개인정보처리방침</a><span data-i18n="privacyAfter">에 동의한 것으로 간주됩니다.</span></p>
+        </section>
+
+        <section id="exit_panel_confirm" class="exit_panel" hidden>
+            <h1 class="exit_title" data-i18n="confirmTitle">탈퇴하시겠습니까?</h1>
+            <p class="exit_desc" data-i18n="confirmDesc">탈퇴를 선택하면 현재 Google 계정으로 저장된 Shutting Stars의 Firestore 회원정보가 삭제되고 로그아웃됩니다.</p>
+            <p id="exit_account" class="exit_account"></p>
+            <div class="exit_actions">
+                <button id="exit_delete_account" class="exit_btn danger" type="button" data-i18n="deleteButton">탈퇴</button>
+                <button id="exit_cancel_delete" class="exit_btn" type="button" data-i18n="cancelButton">취소</button>
+            </div>
+        </section>
+        <div id="exit_status" class="exit_status" role="status" aria-live="polite"></div>
+    </main>
   </body>
 </html>
