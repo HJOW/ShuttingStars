@@ -140,7 +140,7 @@ a {
                  aria-labelledby="privacy-tab-ko" lang="ko">
             <header class="privacy_header">
                 <h1>Shutting Stars 개인정보처리방침</h1>
-                <p>시행일: 2026년 6월 10일</p>
+                <p>시행일: 2026년 6월 17일</p>
                 <p>
                     Shutting Stars 운영자(이하 "운영자")는 이용자의 개인정보를 중요하게 여기며,
                     본 방침을 통해 어떤 정보를 왜 처리하는지 안내합니다.
@@ -165,6 +165,14 @@ a {
                                 기본 프로필 정보(예: 표시 이름, 프로필 사진), 인증 기록과 보안 관련 정보
                             </td>
                             <td>이용자가 Google 로그인 기능을 선택할 때 Google 및 Firebase를 통해 처리</td>
+                        </tr>
+                        <tr>
+                            <td>Firestore 계정 정보</td>
+                            <td>
+                                UID, 이메일 주소, 계정 정보 저장 일시, 게임 내 크레딧 등 로그인 계정에
+                                연결된 서비스 이용 정보
+                            </td>
+                            <td>Google 로그인 후 계정 정보를 동기화할 때 Cloud Firestore에 저장</td>
                         </tr>
                         <tr>
                             <td>온라인 플레이 기록 및 순위</td>
@@ -193,9 +201,10 @@ a {
                     </tbody>
                 </table>
                 <p class="privacy_notice">
-                    운영자는 별도의 자체 회원 데이터베이스를 구축하지 않습니다. 다만 로그인 제공을 위해
-                    Firebase Authentication에 인증 계정 정보가 처리되며, 온라인 플레이 기록에는 이용자를
-                    식별하고 순위를 운영하기 위해 UID와 이메일 주소가 함께 저장됩니다.
+                    운영자는 로그인 제공을 위해 Firebase Authentication을 사용하며, Google 로그인 후
+                    계정 식별, 서비스 동기화 및 탈퇴 처리를 위해 UID와 이메일 주소를 Cloud Firestore의
+                    계정 정보에 저장합니다. 온라인 플레이 기록에도 이용자를 식별하고 순위를 운영하기 위해
+                    UID와 이메일 주소가 함께 저장됩니다.
                 </p>
                 <p>
                     게임 설정, 내려받은 곡 정보 및 최대 100개의 로컬 플레이 기록 등 일부 정보는 이용자의
@@ -209,6 +218,7 @@ a {
                 <h2>2. 처리 목적</h2>
                 <ul>
                     <li>Google 로그인, 이용자 인증 및 로그인 상태 유지</li>
+                    <li>로그인 계정 식별, 계정 정보 동기화 및 이용자 직접 탈퇴 처리</li>
                     <li>게임 플레이 기록 저장, 온라인 순위 제공 및 부정 이용 방지</li>
                     <li>서비스 이용 현황과 성능 분석, 오류 파악, 게임 설정 제공 및 품질 개선</li>
                     <li>서비스 보안 유지와 법적 의무 이행</li>
@@ -234,6 +244,10 @@ a {
                     <li>
                         Firebase 인증 정보는 계정 삭제 요청 또는 서비스 종료 시까지 보유하며, 삭제 처리 후
                         Google의 백업 시스템에서 완전히 삭제되기까지 일정 기간이 걸릴 수 있습니다.
+                    </li>
+                    <li>
+                        Firestore 계정 정보는 계정 삭제 요청, 설정 화면의 탈퇴 버튼 실행 또는 서비스 종료
+                        시까지 보유하며, 삭제 사유가 발생하면 지체 없이 삭제합니다.
                     </li>
                     <li>
                         Firestore의 온라인 플레이 기록은 순위 및 기록 서비스를 제공하는 동안 보유합니다.
@@ -270,7 +284,7 @@ a {
                         <tr>
                             <td>Google LLC</td>
                             <td>Firebase Authentication, Cloud Firestore, Firebase Analytics / Google Analytics, Performance Monitoring, Remote Config, Google 로그인</td>
-                            <td>제1항에 기재된 인증 정보, 온라인 플레이 기록, 분석 및 기술 정보</td>
+                            <td>제1항에 기재된 인증 정보, Firestore 계정 정보, 온라인 플레이 기록, 분석 및 기술 정보</td>
                             <td>
                                 미국 및 Google 또는 그 처리자가 시설을 운영하는 국가에서 처리될 수 있으며,
                                 제4항의 보유기간 또는 Google의 서비스별 정책에 따름
@@ -289,9 +303,11 @@ a {
                 <h2>6. 이용자의 권리</h2>
                 <p>
                     이용자는 자신의 개인정보에 대한 열람, 정정, 삭제 및 처리 정지를 요청할 수 있습니다.
-                    아래 이메일로 Google 로그인에 사용한 이메일 주소와 요청 내용을 보내면 본인 확인 후
-                    합리적인 기간 내에 처리합니다. 서비스에서 로그아웃하거나 Google 계정의 연결 권한을
-                    해제하는 것만으로 이미 Firestore에 저장된 기록이 자동 삭제되지는 않습니다.
+                    설정 화면의 탈퇴 버튼을 통해 현재 로그인한 UID에 연결된 Firestore 계정 정보를 직접
+                    삭제할 수 있으며, 삭제 후 로그아웃 처리됩니다. 아래 이메일로 Google
+                    로그인에 사용한 이메일 주소와 요청 내용을 보내면 본인 확인 후 합리적인 기간 내에
+                    처리합니다. 서비스에서 로그아웃하거나 Google 계정의 연결 권한을 해제하는 것만으로
+                    이미 Firestore에 저장된 기록이 자동 삭제되지는 않습니다.
                 </p>
             </section>
 
@@ -315,7 +331,7 @@ a {
             <section class="privacy_section">
                 <h2>9. 문의처</h2>
                 <p>
-                    개인정보 관련 문의, 권리 행사 또는 계정·온라인 기록 삭제 요청:<br/>
+                    개인정보 관련 문의, 권리 행사 또는 설정 화면에서 직접 처리할 수 없는 계정·온라인 기록 삭제 요청:<br/>
                     운영자: HJOW<br/>
                     이메일: <a href="mailto:hujinone22@naver.com">hujinone22@naver.com</a>
                 </p>
@@ -334,7 +350,7 @@ a {
                  aria-labelledby="privacy-tab-en" lang="en" hidden>
             <header class="privacy_header" lang="en">
                 <h1>Shutting Stars Privacy Policy</h1>
-                <p>Effective date: June 10, 2026</p>
+                <p>Effective date: June 17, 2026</p>
                 <p>
                     The operator of Shutting Stars ("we", "us", or the "Operator") values your privacy.
                     This Policy explains what information is processed and why.
@@ -361,6 +377,14 @@ a {
                                     authentication records, and security-related information
                                 </td>
                                 <td>Processed through Google and Firebase when you choose Google Sign-In</td>
+                            </tr>
+                            <tr>
+                                <td>Firestore account information</td>
+                                <td>
+                                    UID, email address, account information storage time, in-game credits, and
+                                    other service-use information linked to the signed-in account
+                                </td>
+                                <td>Stored in Cloud Firestore when account information is synchronized after Google Sign-In</td>
                             </tr>
                             <tr>
                                 <td>Online gameplay records and rankings</td>
@@ -391,9 +415,10 @@ a {
                         </tbody>
                     </table>
                     <p class="privacy_notice">
-                        We do not maintain a separate proprietary account database. However, authentication
-                        account information is processed by Firebase Authentication, and your UID and email
-                        address are stored with online gameplay records to identify users and operate rankings.
+                        We use Firebase Authentication to provide sign-in. After Google Sign-In, we store your
+                        UID and email address in Cloud Firestore account information to identify the account,
+                        synchronize service information, and process account deletion. Your UID and email address
+                        are also stored with online gameplay records to identify users and operate rankings.
                     </p>
                     <p>
                         Some information, including game settings, downloaded song information, and up to 100
@@ -407,6 +432,7 @@ a {
                     <h2>2. Purposes of Processing</h2>
                     <ul>
                         <li>Provide Google Sign-In, authenticate users, and maintain login sessions</li>
+                        <li>Identify signed-in accounts, synchronize account information, and process user-initiated account deletion</li>
                         <li>Store gameplay records, provide online rankings, and prevent abuse</li>
                         <li>Analyze service usage and performance, diagnose errors, provide game configuration, and improve quality</li>
                         <li>Maintain service security and comply with legal obligations</li>
@@ -431,13 +457,18 @@ a {
                     <ul>
                         <li>
                             Firebase authentication information is retained until you request account deletion
-                            or the service ends. After deletion is initiated, removal from Google's backup
-                            systems may take additional time.
+                            or the service ends. After deletion is initiated, removal from Google's backup systems
+                            may take additional time.
+                        </li>
+                        <li>
+                            Firestore account information is retained until you request deletion, use the account
+                            deletion button in the settings screen, or the service ends. We will delete it without
+                            undue delay when a deletion reason occurs.
                         </li>
                         <li>
                             Online gameplay records in Firestore are retained while the ranking and record
-                            services are provided. We will delete them without undue delay upon a valid deletion
-                            request or termination of the service, unless applicable law requires retention.
+                            services are provided. We will delete them without undue delay when you make a valid
+                            deletion request or the service is terminated, unless applicable law requires retention.
                         </li>
                         <li>
                             Analytics information is automatically deleted according to the Google Analytics
@@ -470,7 +501,7 @@ a {
                             <tr>
                                 <td>Google LLC</td>
                                 <td>Firebase Authentication, Cloud Firestore, Firebase Analytics / Google Analytics, Performance Monitoring, Remote Config, and Google Sign-In</td>
-                                <td>Authentication, online gameplay, analytics, and technical information described in Section 1</td>
+                                <td>Authentication, Firestore account, online gameplay, analytics, and technical information described in Section 1</td>
                                 <td>
                                     May be processed in the United States and other countries where Google or
                                     its processors operate facilities; retained as described in Section 4 or
@@ -491,10 +522,13 @@ a {
                     <h2>6. Your Rights</h2>
                     <p>
                         You may request access to, correction or deletion of, or restriction of processing of
-                        your personal information. Email us at the address below with the email address used to
-                        sign in and details of your request. We will verify your identity and respond within a
-                        reasonable period. Signing out or revoking access from your Google Account does not
-                        automatically delete gameplay records already stored in Firestore.
+                        your personal information. You can use the account deletion button in the settings screen
+                        to directly delete Firestore account information linked to the currently signed-in UID;
+                        the service will sign you out after deletion. Email us at the
+                        address below with the email address used to sign in and details of your request. We will
+                        verify your identity and respond within a reasonable period. Signing out or revoking access
+                        from your Google Account does not automatically delete gameplay records already stored in
+                        Firestore.
                     </p>
                 </section>
 
@@ -519,7 +553,7 @@ a {
                 <section class="privacy_section">
                     <h2>9. Contact</h2>
                     <p>
-                        For privacy questions, rights requests, or deletion of an account or online records:<br/>
+                        For privacy questions, rights requests, or deletion of account or online records that cannot be handled from the settings screen:<br/>
                         Operator: HJOW<br/>
                         Email: <a href="mailto:hujinone22@naver.com">hujinone22@naver.com</a>
                     </p>
