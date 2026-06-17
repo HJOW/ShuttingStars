@@ -107,8 +107,10 @@ class ShuttingStarsCore {
         login : null,    // 로그인 팝업 영역 div
         join : null      // 회원가입 팝업 영역 div (현재 미사용)
     };
-    /** @type {HTMLElement|null} 상세 설정 영역 */
+    /** @type {HTMLElement|null} 상세 설정 화면 영역 */
     configDiv = null;
+    /** @type {HTMLElement|null} 로딩 스크린 영역 */
+    globalLoadingLayer = null;
 
     /*** DOM 영역 변수들 (Canvas 객체들) ***/
     /** @type {HTMLCanvasElement|null} 2D 캔버스 객체 (메인 게임 동작) */
@@ -591,6 +593,7 @@ class ShuttingStarsCore {
                         <canvas class='shuttingstars_canvas'></canvas>   
                         <canvas class='shuttingstars_canvas_3d'></canvas>
                         <div class='shuttingstars_pop_root'></div>
+                        <div class='shuttingstars_global_loading'></div>
                     </div>
                 </div>                                     
             `;
@@ -598,6 +601,18 @@ class ShuttingStarsCore {
             this.rootDiv = rootDiv;
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
             this.videoBga = rootDiv.querySelector('.shuttingstars_bga');
+
+            this.globalLoadingLayer = rootDiv.querySelector('.shuttingstars_global_loading');
+            this.globalLoadingLayer.innerHTML = "<progress class='ss_prog_global_loading'></progress>";
+            this.globalLoadingLayer.style.background = 'transparent';
+            this.globalLoadingLayer.style.width = '100%';
+            this.globalLoadingLayer.style.height = '30px';
+            this.globalLoadingLayer.style.position = 'fixed';
+            this.globalLoadingLayer.style.left = '0px';
+            this.globalLoadingLayer.style.top = '700px';
+            this.globalLoadingLayer.style.textAlign = 'center';
+            this.globalLoadingLayer.style.verticalAlign = 'middle';
+
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
 
@@ -978,7 +993,13 @@ class ShuttingStarsCore {
     afterInitialized() {
         const selfs = this;
         this.menuChoosing = this.menuListDynamic[0];
-        setTimeout(() => { selfs.handleScreenResized(); selfs.titleScreenWaiting = true; }, 2000);
+        setTimeout(() => {
+            selfs.handleScreenResized(); selfs.titleScreenWaiting = true;
+
+            if(selfs.globalLoadingLayer != null) {
+                selfs.globalLoadingLayer.classList.add('invisible');
+            }
+        }, 2000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
         try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
@@ -1991,6 +2012,12 @@ class ShuttingStarsCore {
             this.videoBga.style.height = canvasBounding.height + 'px';
         }
 
+        // 전역 로딩 화면 처리
+        if(this.globalLoadingLayer != null) {
+            this.globalLoadingLayer.style.top = (canvasBounding.height - 20) + 'px';
+            this.globalLoadingLayer.style.zIndex = this.mainZindex + 4;
+        }
+
         // 3d 장식용 캔버스 관리
         if(this.canvas3d != null) {
             this.canvas3d.style.position = 'fixed';
@@ -2004,6 +2031,7 @@ class ShuttingStarsCore {
             this.ss3d.onWindowResize(this.canvas3d, this);
         }
 
+        // 폰트 크기 재계산
         this.calculateFontMetric(true);
     }
 
