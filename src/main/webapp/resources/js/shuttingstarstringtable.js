@@ -89,6 +89,7 @@ ShuttingStars.setStringTable({
         "NO" : "아니오",
         "Privacy Policy" : "개인정보처리방침",
         "DELETE ACCOUNT" : "탈퇴",
-        "Do you want to delete your all informations on this game?" : "이 게임 내에서 당신의 정보를 모두 삭제하시겠습니까?"
+        "Do you want to delete your all informations on this game?" : "이 게임 내에서 당신의 정보를 모두 삭제하시겠습니까?",
+        "Logging in means you agree to our Privacy Policy." : "로그인과 동시에 개인정보처리방침에도 동의하시게 됩니다."
     }
 });

@@ -5956,7 +5956,7 @@ class ShuttingStarsCore {
                         <td colspan='2' style='text-align: right;'><button type='button' class='target_translate btn btn_login_cancel red' style='font-size: 0.9rem; padding-left: 0.9rem; padding-right: 0.9rem; padding-top: 0.1rem; padding-bottom: 0.1rem;'>X</button></td>
                     </tr>
                     <tr>
-                        <td colspan='2' style='text-align: center; height: 180px; vertical-align: middle;'>
+                        <td colspan='2' style='text-align: center; height: 160px; vertical-align: middle;'>
                             <button class="gsi-material-button btn_login">
                                 <div class="gsi-material-button-state"></div>
                                 <div class="gsi-material-button-content-wrapper">
@@ -5977,7 +5977,8 @@ class ShuttingStarsCore {
                     </tr>
                     <tr>
                         <td colspan='2' style='text-align: center; vertical-align: middle;'>
-                            <a href='privacy.html' target='_blank' class='a_privacy target_translate' style='font-size: 0.8rem;'>Privacy Policy</a>
+                            <div style='line-height: 1rem;'><span class='span_desc_privacy target_translate' style='font-size: 0.9rem;'>Logging in means you agree to our Privacy Policy.</span></div>
+                            <div style='line-height: 1rem;'><a href='privacy.html' target='_blank' class='a_privacy target_translate' style='font-size: 0.9rem;'>Privacy Policy</a></div>
                         </td>
                     </tr>
                 </tbody>
