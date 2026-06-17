@@ -87,6 +87,8 @@ ShuttingStars.setStringTable({
         "EXPERIMENTAL" : "실험기능",
         "YES" : "예",
         "NO" : "아니오",
-        "Privacy Policy" : "개인정보처리방침"
+        "Privacy Policy" : "개인정보처리방침",
+        "DELETE ACCOUNT" : "탈퇴",
+        "Do you want to delete your all informations on this game?" : "이 게임 내에서 당신의 정보를 모두 삭제하시겠습니까?"
     }
 });

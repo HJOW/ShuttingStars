@@ -623,6 +623,8 @@ class ShuttingStarsCore {
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .shuttingstars_root.ss_backend_guest   .ss_only_for_login_user { display: none !important; }
+                .shuttingstars_root.ss_backend_logined .ss_only_for_guest      { display: none !important; }
                 .shuttingstars_root button.btn       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.7); color: rgba(122, 165, 240, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.8); color: rgba(122, 165, 240, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.7); color: rgba(244, 66, 66, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
@@ -1188,6 +1190,12 @@ class ShuttingStarsCore {
                     // 푸시 권한 획득
                     // selfs.backend.requestPushPermission();
 
+                    // rootDiv 에 표시
+                    if(selfs.rootDiv != null) {
+                        selfs.rootDiv.classList.add('ss_backend_logined');
+                        selfs.rootDiv.classList.remove('ss_backend_guest');
+                    }
+
                     resolve(newList);
                 };
 
@@ -1206,6 +1214,12 @@ class ShuttingStarsCore {
 
                     // 로그인 안된 경우, 로그인 메뉴 추가
                     newList.push('login');
+
+                    // rootDiv 에 표시
+                    if(selfs.rootDiv != null) {
+                        selfs.rootDiv.classList.remove('ss_backend_logined');
+                        selfs.rootDiv.classList.add('ss_backend_guest');
+                    }
 
                     resolve(newList);
                 };
@@ -1564,6 +1578,17 @@ class ShuttingStarsCore {
                             this.darkMatterCredit = 0;
                             this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
                         }
+                    }
+                }
+
+                // rootDiv 에 표시
+                if(this.rootDiv != null) {
+                    if(checkLoginRes.loginAvail) {
+                        this.rootDiv.classList.add('ss_backend_logined');
+                        this.rootDiv.classList.remove('ss_backend_guest');
+                    } else {
+                        this.rootDiv.classList.add('ss_backend_guest');
+                        this.rootDiv.classList.remove('ss_backend_logined');
                     }
                 }
             }
@@ -2757,6 +2782,11 @@ class ShuttingStarsCore {
                     selfs.antiMatterCredit = 0;
                     selfs.darkMatterCredit = 0;
                     selfs.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
+                    // DOM에 표시
+                    if(selfs.rootDiv != null) {
+                        selfs.rootDiv.classList.remove('ss_backend_logined');
+                        selfs.rootDiv.classList.add('ss_backend_guest');
+                    }
                     // 메뉴 목록 다시 갱신
                     selfs.getMenuList().then((menuList) => {
                         selfs.menuListDynamic = menuList;
@@ -6073,6 +6103,7 @@ class ShuttingStarsCore {
                         <button type='button' class='btn btn_config_cancel target_translate red'>Cancel</button>
                         
                         <button type='button' class='btn btn_config_resetall target_translate' style='margin-left: 30px;'>Reset All</button>
+                        <button type='button' class='btn btn_config_deleteaccount ss_only_for_login_user target_translate'>DELETE ACCOUNT</button>
                     </div>
                 </div>
                 <div class='shuttingstar_songssections tabarea'>
@@ -6176,6 +6207,7 @@ class ShuttingStarsCore {
         const btnAccept  = controlDiv.querySelector('.btn_config_accept');
         const btnCancel  = controlDiv.querySelector('.btn_config_cancel');
         const btnReset   = controlDiv.querySelector('.btn_config_resetall');
+        const btnDelAcc  = controlDiv.querySelector('.btn_config_deleteaccount');
 
         const fCancel = function() {
             selfs.loadSettings();
@@ -6257,6 +6289,15 @@ class ShuttingStarsCore {
 
         btnReset.addEventListener('click', () => {
             if(confirm(selfs.trans('Do you want to reset all?'))) selfs.resetAll(); // this.confirm 쓰면 안 됨. DOM 영역에 뜨는 버튼들이라...
+        });
+
+        if(this.backend == null) btnDelAcc.classList.add('invisible');
+        else                     btnDelAcc.classList.remove('invisible');
+        btnDelAcc.addEventListener('click', () => {
+            if(selfs.backend == null) return;
+            if(confirm( selfs.trans('Do you want to delete your all informations on this game?') )) { // this.confirm 쓰면 안 됨. DOM 영역에 뜨는 버튼들이라...
+                selfs.backend.deleteAllMyData().then(() => { alert('COMPLETE !'); selfs.resetAll(); }).catch((e) => { console.error(e); ShuttingStarsUtility.toast('ERROR : ' + e); });
+            }
         });
 
         // 버튼 이벤트 (곡)
