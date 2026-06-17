@@ -829,7 +829,7 @@ class ShuttingStarsCore {
                 }
 
                 // 임시 객체 (충돌여부 판단 위함)
-                const mouseCursorObject = new MouseClickHighlighter(0, 0, '255, 255, 255', '255, 255, 255');
+                const mouseCursorObject = new MouseClickHighlighter(selfs);
                 mouseCursorObject.type = 'circle';
                 mouseCursorObject.x    = rx;
                 mouseCursorObject.y    = ry;
@@ -1236,7 +1236,7 @@ class ShuttingStarsCore {
     addDeclaredKeys(realkey) {
         const selfs = this;
         const rkey = realkey;
-        const vkey = new VirtualKey(rkey);
+        const vkey = new VirtualKey(this, rkey);
         selfs.objects.push(vkey);
         
         vkey.click = function() {
@@ -2659,10 +2659,10 @@ class ShuttingStarsCore {
         // 추가 폭발 객체 추가
         if(resultMark == 'MISS') {
             minimumNote.missed = true;
-            const newExplosinves = new FailExplosing(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+            const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
             this.objects.push(newExplosinves);
         } else {
-            const newExplosinves = new CorrectNoteExplosing(minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+            const newExplosinves = new CorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
             this.objects.push(newExplosinves);
         }
     }
@@ -2882,7 +2882,7 @@ class ShuttingStarsCore {
     displayResultMark(resultMark) {
         if(resultMark == null) return;
         this.accelerateExplosingJudgeMarks();
-        this.objectsPlaying.push(new JudgeMark(resultMark));
+        this.objectsPlaying.push(new JudgeMark(this, resultMark));
     }
 
     /**
@@ -5292,7 +5292,7 @@ class ShuttingStarsCore {
                         obj.explosing = 1;
 
                         // 추가 폭발 객체 추가
-                        const newExplosinves = new FailExplosing(obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                        const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                         this.objects.push(newExplosinves);
                     }
                 }
@@ -5447,6 +5447,7 @@ class ShuttingStarsCore {
         // 전 노트 및 NotePlacer 폭발 조치
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             let obj = this.objectsPlaying[idx];
+            if(obj.hidden) continue;
             if(typeof(obj.explosing) == 'number') {
                 if(obj.explosing <= 0) obj.explosing = 1;
             }
@@ -5457,7 +5458,7 @@ class ShuttingStarsCore {
         this.gameOverDelayed = true;
 
         // 거대 폭발 객체 생성
-        const bigExp = new PlanetExplosing(0, 0, '180, 0, 0', '250, 80, 80');
+        const bigExp = new PlanetExplosing(this, 0, 0, '180, 0, 0', '250, 80, 80');
         bigExp.x = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
         bigExp.y = this.getHpBarYLocation();
         bigExp.r = 64;
@@ -5775,20 +5776,20 @@ class ShuttingStarsCore {
         let type = String(decoJson.type).toLowerCase();
 
         if(type == 'explosion') {
-            obj = new ExplosingObject(0, 0, '255, 255, 255', '255, 255, 255');
+            obj = new ExplosingObject(this, 0, 0, '255, 255, 255', '255, 255, 255');
             obj.x = decoJson.x;
             obj.y = decoJson.y;
             obj.r = decoJson.r;
             obj.explosing = 1;
         } else if(type == 'star' || type == 'starlight') {
-            obj = new Starlight();
+            obj = new Starlight(this);
             obj.x = decoJson.x;
             obj.y = decoJson.y;
             obj.r = decoJson.r;
             obj.speedX = 1;
             obj.speedY = 0;
         } else if(type == 'text') {
-            obj = new TextDeco(decoJson.text, decoJson.x, decoJson.y, decoJson.fontSize, decoJson.align, decoJson.color);
+            obj = new TextDeco(this, decoJson.text, decoJson.x, decoJson.y, decoJson.fontSize, decoJson.align, decoJson.color);
             if(decoJson.explosingMax) obj.explosingMax = decoJson.explosingMax;
         }
         if(obj != null) this.objects.push(obj);
@@ -6693,7 +6694,7 @@ class ShuttingStarsCore {
         this.backStarlightSpdX = 1;
         this.backStarlightSpdY = ShuttingStarsUtility.random();
         for(idx=0; idx<this.backStarlightCount; idx++) {
-            const obj = new Starlight();
+            const obj = new Starlight(this);
             obj.speedX = this.backStarlightSpdX;
             obj.speedY = this.backStarlightSpdY;
             this.objects.push(obj);
@@ -6718,7 +6719,7 @@ class ShuttingStarsCore {
 
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
-            newOne = new Starlight();
+            newOne = new Starlight(this);
             newOne.y = -2 + (ShuttingStarsUtility.random() * this.convertY(this.getFullRenderHeight() * 2));
             if(newOne.y >= this.convertY(this.getFullRenderHeight())) newOne.x = Math.floor((this.convertX(this.getFullRenderHeight()) / 2) * Math.random());
             else newOne.x = -2;
@@ -7427,8 +7428,9 @@ class ShuttingStarsObject {
     explosingSpeed = 1;
     /**
      * 인스턴스 초기화
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
-    constructor() {
+    constructor(coreInst) {
         this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
     /**
@@ -7600,7 +7602,7 @@ class NoteKeyObject extends ShuttingStarsObject {
      * @param {ShuttingStarsCore} coreInst
      */
     constructor(locationIndex, coreInst) {
-        super();
+        super(coreInst);
         this.locationIndex = locationIndex;
         this.key = coreInst.keyList[locationIndex];
         this.color = this.getColorOfLocationIndex(locationIndex);
@@ -7892,10 +7894,11 @@ class JudgeMark extends ShuttingStarsObject {
     explosingMax = 16;
     /**
      * 인스턴스를 초기화합니다.
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {string} judgeResult judgeResult 값
      */
-    constructor(judgeResult) {
-        super();
+    constructor(coreInst, judgeResult) {
+        super(coreInst);
         this.judgeResult = judgeResult;
     }
 
@@ -7986,7 +7989,9 @@ class JudgeMark extends ShuttingStarsObject {
 
 /** 마우스 클릭 지점 확인을 위한 객체 (충돌여부 판단을 통해 해당 객체를 클릭했음을 인식) */
 class MouseEventArea extends ShuttingStarsObject {
-
+    constructor(coreInst) {
+        super(coreInst);
+    }
 }
 
 /** 장식용 상위 객체 */
@@ -7997,10 +8002,10 @@ class DecorationObject extends ShuttingStarsObject {
     priority = 'low';
     /**
      * 인스턴스를 초기화합니다.
-     * @param {number} locationIndex 라인 번호
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
-    constructor(locationIndex) {
-        super(locationIndex);
+    constructor(coreInst) {
+        super(coreInst);
     }
 }
 
@@ -8008,8 +8013,10 @@ class DecorationObject extends ShuttingStarsObject {
 class Starlight extends DecorationObject {
     /**
      * 인스턴스 초기화
+     * 
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
-    constructor() {
+    constructor(coreInst) {
         super(0);
         this.r = Math.round(ShuttingStarsUtility.random() * 3.0) + 1;
         this.x = Math.round(ShuttingStarsUtility.random() * _shuttingstarcore.getStageWidth());
@@ -8030,13 +8037,14 @@ class Starlight extends DecorationObject {
 class ExplosingObject extends DecorationObject {
     /**
      * 인스턴스 초기화
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} locationIndex 노트 레인의 인덱스
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(locationIndex, y, color, peakColor) {
-        super(locationIndex);
+    constructor(coreInst, locationIndex, y, color, peakColor) {
+        super(coreInst);
         this.peakColor = '255, 255, 255';
         this.priority = 'high';
         this.r = _shuttingstarcore.getNoteRadius();
@@ -8155,13 +8163,15 @@ class ExplosingObject extends DecorationObject {
 class CorrectNoteExplosing extends ExplosingObject {
     /**
      * 인스턴스를 초기화합니다.
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} locationIndex 라인 번호
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(locationIndex, y, color, peakColor) {
-        super(locationIndex, y, color, peakColor);
+    constructor(coreInst, locationIndex, y, color, peakColor) {
+        super(coreInst, locationIndex, y, color, peakColor);
+        this.r = Math.round(this.r * 1.2);
     }
 }
 
@@ -8169,13 +8179,15 @@ class CorrectNoteExplosing extends ExplosingObject {
 class FailExplosing extends ExplosingObject {
     /**
      * 인스턴스 초기화
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} locationIndex 라인 번호
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(locationIndex, y, color, peakColor) {
-        super(locationIndex, y, color, peakColor);
+    constructor(coreInst, locationIndex, y, color, peakColor) {
+        super(coreInst, locationIndex, y, color, peakColor);
+        this.r = Math.round(this.r * 1.2);
     }
 }
 
@@ -8183,13 +8195,14 @@ class FailExplosing extends ExplosingObject {
 class PlanetExplosing extends ExplosingObject {
     /**
      * 인스턴스 초기화
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} locationIndex 라인 번호
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(locationIndex, y, color, peakColor) {
-        super(locationIndex, y, color, peakColor);
+    constructor(coreInst, locationIndex, y, color, peakColor) {
+        super(coreInst, locationIndex, y, color, peakColor);
     }
 }
 
@@ -8198,8 +8211,8 @@ class MouseClickHighlighter extends ExplosingObject {
     /**
      * 인스턴스를 초기화합니다.
      */
-    constructor() {
-        super(0, 0, '255,255,255', '255,255,255');
+    constructor(coreInst) {
+        super(coreInst, 0, 0, '255,255,255', '255,255,255');
     }
 }
 
@@ -8213,6 +8226,7 @@ class TextDeco extends DecorationObject {
     align = 'center';
     /**
      * 인스턴스를 초기화합니다.
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {string} text text 값
      * @param {number} x x 값
      * @param {number} y y 값
@@ -8220,8 +8234,8 @@ class TextDeco extends DecorationObject {
      * @param {CanvasTextAlign} align align 값
      * @param {string} color color 값
      */
-    constructor(text, x, y, fontSize, align, color) {
-        super(locationIndex);
+    constructor(coreInst, text, x, y, fontSize, align, color) {
+        super(coreInst, locationIndex);
         this.key = _shuttingstarcore.keyList[locationIndex];
         this.priority = 'high';
         this.r = 0;
@@ -8282,10 +8296,11 @@ class VirtualKey extends DecorationObject {
     release = function() {}
     /**
      * 인스턴스 초기화
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {string} key 입력 또는 해제된 키
      */
-    constructor(key) {
-        super(0);
+    constructor(coreInst, key) {
+        super(coreInst);
 
         const charUnitW = (this.fontSize * 2) + this.wGap;
         const charUnitH = (this.fontSize * 2) + this.hGap;
