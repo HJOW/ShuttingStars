@@ -84,13 +84,13 @@ class ShuttingStarsCore {
 
     /*** 글꼴 관련 ***/
     /** @type {string} 메인 폰트, alterFonts 가 뒤에 붙음 */
-    fontFamily = 'Nanum Gothic Coding';
+    fontFamily = 'D2 coding';
     /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
     pointFont  = 'Nanum Pen Script';
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
-    judgeFont  = 'Nanum Gothic Coding';
+    judgeFont  = 'D2 coding';
     /** @type {string} 대체 폰트들 */
-    alterFonts = ['D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script'];
+    alterFonts = ['D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script'];
 
     /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
     /** @type {HTMLElement|null} ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV */

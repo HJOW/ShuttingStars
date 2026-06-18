@@ -81,21 +81,21 @@
     font-family: 'D2 coding';
     font-style: normal;
     font-weight: normal;
-    src : url('D2Coding.woff2') format('woff2')
+    src: url('https://cdn.jsdelivr.net/npm/d2coding@1.3.2/fonts/d2coding-full.woff2') format('woff2');
 }
 
 @font-face {
     font-family: 'D2Coding';
     font-style: normal;
     font-weight: normal;
-    src : url('D2Coding.woff2') format('woff2')
+    src : url('D2Coding.woff2') format('woff2');
 }
 
 @font-face {
     font-family: 'D2 coding';
     font-style: normal;
     font-weight: bold;
-    src : url('D2CodingBold.woff2') format('woff2')
+    src : url('https://cdn.jsdelivr.net/npm/d2coding@1.3.2/fonts/d2coding-bold-full.woff2') format('woff2')
 }
 
 @font-face {
