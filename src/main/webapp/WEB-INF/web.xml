@@ -4,12 +4,4 @@
   <welcome-file-list>
       <welcome-file>index.html</welcome-file>
   </welcome-file-list>
-  <servlet>
-      <servlet-name>FirestoreServlet</servlet-name>
-      <servlet-class>org.duckdns.hjow.shuttingstars.servlet.FirestoreServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-      <servlet-name>FirestoreServlet</servlet-name>
-      <url-pattern>/firebase/db</url-pattern>
-  </servlet-mapping>
 </web-app>

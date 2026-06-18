@@ -511,15 +511,10 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
 }
 
-/** Servlet 기반 서버와 통신하는 방식 (직접 구현해야 함) */
-class ServletImplementation extends ShuttingStarsInterface {
-
-}
-
 /** 직접 호출하지 말 것 (shuttingstars.js 에서 호출함) */
 function __ssBackEnd() {
     let _ssbackend;
-    if(typeof(firebase) == 'undefined') _ssbackend = new ServletImplementation(); // 서블릿 따로 구현하는 경우 ServletImplementation 에도 구현을 해야 함
+    if(typeof(firebase) == 'undefined') _ssbackend = null;
     else                                _ssbackend = new FirebaseHostingImplementation(); // Firebase 사용 가능한 경우 (Firebase 호스팅 환경) 자동 사용
     return _ssbackend;
 }
