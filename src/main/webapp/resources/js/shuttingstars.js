@@ -90,7 +90,7 @@ class ShuttingStarsCore {
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
     judgeFont  = 'D2 coding';
     /** @type {string} 대체 폰트들 */
-    alterFonts = ['D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script'];
+    alterFonts = ['D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script', 'monospace'];
 
     /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
     /** @type {HTMLElement|null} ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV */
@@ -6600,7 +6600,10 @@ class ShuttingStarsCore {
             }
 
             if(added) alters += ', ';
-            alters += "'" + fontOne + "'";
+
+            if(fontOne == 'monospace' || fontOne == 'sans-serif' || fontOne == 'serif') alters += fontOne; // CSS 기본 폰트 그룹 - 따옴표 미사용
+            else alters += "'" + fontOne + "'";
+
             added = true;
         }
 
@@ -6619,7 +6622,10 @@ class ShuttingStarsCore {
             const fontOne = this.alterFonts[idx].trim();
 
             if(added) alters += ', ';
-            alters += "'" + fontOne + "'";
+
+            if(fontOne == 'monospace' || fontOne == 'sans-serif' || fontOne == 'serif') alters += fontOne; // CSS 기본 폰트 그룹 - 따옴표 미사용
+            else alters += "'" + fontOne + "'";
+
             added = true;
         }
         return "'" + this.judgeFont + "'" + (alters == '' ? '' : ', ' + alters);
