@@ -4604,6 +4604,11 @@ class ShuttingStarsCore {
             let x      = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
             let radius = Math.round((this.notePlacers[this.notePlacers.length-1].x - this.notePlacers[0].x) / 2.0) * 8;
             let y      = this.getHpBarYLocation() - radius;  // - this.notePlacers[0].y;
+
+            if(y + radius >= this.notePlacers[0].y) { // 가끔 HP바 (행성) 가 NotePlacer 위치를 덮어버리는 위치에 출력되는 경우가 있음
+                console.log('HP BAR OVER ' + (y + radius));
+                y = this.notePlacers[0].y - radius - 10;
+            }
             
             this.ctx.beginPath();
             this.ctx.fillStyle = hpBarInsideColor;
