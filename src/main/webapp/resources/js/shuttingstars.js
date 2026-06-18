@@ -84,13 +84,13 @@ class ShuttingStarsCore {
 
     /*** 글꼴 관련 ***/
     /** @type {string} 메인 폰트, alterFonts 가 뒤에 붙음 */
-    fontFamily = 'D2Coding';
+    fontFamily = 'Nanum Gothic Coding';
     /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
-    pointFont  = 'NanumMyeongjo';
+    pointFont  = 'Nanum Pen Script';
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
-    judgeFont  = 'D2Coding';
-    /** @type {string} 대체 폰트, 여러 개 지정 시 뒤쪽에 한 칸 띄고 다음 폰트를 기재하면 된다. fontFamily, pointFont, judgeFont 와 중복되는 폰트는 기재하지 않아야 한다. */
-    alterFonts = 'NanumGothicCoding NanumGothic "Noto Sans KR" "Noto Sans JP" "Noto Sans SC"';
+    judgeFont  = 'Nanum Gothic Coding';
+    /** @type {string} 대체 폰트들 */
+    alterFonts = ['D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script'];
 
     /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
     /** @type {HTMLElement|null} ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV */
@@ -994,12 +994,13 @@ class ShuttingStarsCore {
         const selfs = this;
         this.menuChoosing = this.menuListDynamic[0];
         setTimeout(() => {
-            selfs.handleScreenResized(); selfs.titleScreenWaiting = true;
+            selfs.handleScreenResized();
+            selfs.titleScreenWaiting = true;
 
             if(selfs.globalLoadingLayer != null) {
                 selfs.globalLoadingLayer.classList.add('invisible');
             }
-        }, 2000);
+        }, 4000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
         try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
@@ -6583,12 +6584,19 @@ class ShuttingStarsCore {
      */
     getRenderFontFamily(pointFont) {
         let alters = '';
-        if(this.alterFonts != null && this.alterFonts != '') {
-            let splits = this.alterFonts.split(' ');
-            for(let idx=0; idx<splits.length; idx++) {
-                if(idx >= 1) alters += ', ';
-                alters += "'" + splits[idx].trim() + "'";
+        let added = false;
+        for(let idx=0; idx<this.alterFonts.length; idx++) {
+            const fontOne = this.alterFonts[idx].trim();
+
+            if(pointFont) {
+                if(this.pointFont ==  fontOne) continue;
+            } else {
+                if(this.fontFamily == fontOne) continue;
             }
+
+            if(added) alters += ', ';
+            alters += "'" + fontOne + "'";
+            added = true;
         }
 
         if(pointFont) return "'" + this.pointFont  + "'" + (alters == '' ? '' : ', ' + alters);
@@ -6601,12 +6609,13 @@ class ShuttingStarsCore {
      */
     getJudgeFontFamily() {
         let alters = '';
-        if(this.alterFonts != null && this.alterFonts != '') {
-            let splits = this.alterFonts.split(' ');
-            for(let idx=0; idx<splits.length; idx++) {
-                if(idx >= 1) alters += ', ';
-                alters += "'" + splits[idx].trim() + "'";
-            }
+        let added = false;
+        for(let idx=0; idx<this.alterFonts.length; idx++) {
+            const fontOne = this.alterFonts[idx].trim();
+
+            if(added) alters += ', ';
+            alters += "'" + fontOne + "'";
+            added = true;
         }
         return "'" + this.judgeFont + "'" + (alters == '' ? '' : ', ' + alters);
     }
