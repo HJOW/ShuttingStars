@@ -101,11 +101,13 @@ class ShuttingStarsCore {
     videoBga = null;
     /** @type {Object} 팝업 (별도 창이 아닌 인앱 대화상자 형태) */
     pops = {
-        root : null,     // 팝업 최상위 div
-        dim : null,      // 모달 팝업 구현을 위한 흐린 투명 레이어 div, canvas 보다 위층을 차지함
-        config : null,   // 설정 팝업 영역 div
-        login : null,    // 로그인 팝업 영역 div
-        join : null      // 회원가입 팝업 영역 div (현재 미사용)
+        root : null,      // 팝업 최상위 div
+        dim : null,       // 모달 팝업 구현을 위한 흐린 투명 레이어 div, canvas 보다 위층을 차지함
+        config : null,    // 설정 팝업 영역 div
+        login : null,     // 로그인 팝업 영역 div
+        join : null,      // 회원가입 팝업 영역 div (현재 미사용)
+        community : null, // 커뮤니티 팝업 영역 div
+        iframes : null    // 외부 페이지 (iframe) div
     };
     /** @type {HTMLElement|null} 상세 설정 화면 영역 */
     configDiv = null;
@@ -378,7 +380,7 @@ class ShuttingStarsCore {
 
     // 메뉴 화면 관련
     /** @type {Array<string>} 메뉴들 */
-    menuList = ['play', 'records', 'setting', 'credit'];
+    menuList = ['play', 'records', 'community', 'setting', 'credit'];
     /** @type {Array<string>} 위 menuList 에 데이터가 추가됨 */
     menuListDynamic = [];
     /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
@@ -503,6 +505,11 @@ class ShuttingStarsCore {
     // URL 매개변수들 (null 혹은 URLSearchParams 타입 객체가 들어감)
     /** @type {URLSearchParams|null} 현재 URL에서 읽은 쿼리 매개변수들 */
     urlParameters = null;
+
+    /** @type {Object} 기타 페이지 URL */
+    otherPages = {
+        board : 'http://wo.to/board/board.php?id=a.5.hujinone11'
+    }
 
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
     /** @type {function(): number} 플랫폼별 브라우저 외부 너비를 반환하는 함수 */
@@ -653,6 +660,35 @@ class ShuttingStarsCore {
                     line-height: 2.5rem;
                 }
                 .shuttingstars_root .shuttingstars_pop_content.shuttingstars_pop_content2 { z-index: 1005; }
+            `;
+            //     팝업 영역 CSS
+            styles += `
+                .shuttingstars_root .shuttingstars_pop_root .menu {
+                    border: 0;
+                    background: transparent;
+                    margin-bottom: 10px;
+                    padding: 0;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .menu .btn_menu {
+                    background-color: transparent;
+                    color: rgba(120, 250, 120, 0.7);
+                    border: 0;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .menu .btn_menu:hover {
+                    background-color: rgba(120, 250, 120, 0.1);
+                    color: rgba(120, 250, 120, 0.8);
+                }
+                .shuttingstars_root .shuttingstars_pop_root .menu .btn_menu.active {
+                    background-color: rgba(120, 250, 120, 0.3);
+                    color: rgba(120, 250, 120, 0.99);
+                }
+                .shuttingstars_root .shuttingstars_pop_root .menu .btn_exit {
+                    border: 0;
+                    float: right;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .menu .btn_exit:hover {
+                    border: 0;
+                }
             `;
             //     설정 영역 CSS
             // 상세설정 영역 공통 css 준비
@@ -2060,6 +2096,8 @@ class ShuttingStarsCore {
         if(key == this.escKey && (! this.pops.dim.classList.contains('invisible'))) {
             this.pops.dim.classList.add('invisible');
             this.pops.login.classList.add('invisible');
+            this.pops.community.classList.add('invisible');
+            this.pops.iframes.classList.add('invisible');
             this.configDiv.classList.add('invisible');
             this.setState('menu');
             this.keyEventDisabled = false;
@@ -2188,12 +2226,13 @@ class ShuttingStarsCore {
                 this.seeingRecord = null;
                 if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
                 this.setState('recordlist');
+            } else if(this.menuChoosing == 'community') {
+                this.playSE('accept1');
+                this.showCommunityPopup();
             } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
                 this.playSE('accept1');
                 if(this.backend != null && this.backend.avail) {
-                    this.keyEventDisabled = true;
-                    this.pops.dim.classList.remove('invisible');
-                    this.pops.login.classList.remove('invisible');
+                    this.showLoginPopup();
                 }
             } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
                 this.playSE('special1');
@@ -3261,12 +3300,13 @@ class ShuttingStarsCore {
 
             if(menuOne == 'login' || menuOne == 'logout') continue;
 
-            if(menuOne == 'play'   ) label = this.trans('PLAY');
-            if(menuOne == 'setting') label = this.trans('SETTING');
-            if(menuOne == 'credit' ) label = this.trans('CREDIT');
-            if(menuOne == 'records') label = this.trans('RECORDS');
-            if(menuOne == 'login'  ) label = this.trans('LOGIN');
-            if(menuOne == 'logout' ) label = this.trans('LOGOUT');
+            if(menuOne == 'play'     ) label = this.trans('PLAY');
+            if(menuOne == 'setting'  ) label = this.trans('SETTING');
+            if(menuOne == 'credit'   ) label = this.trans('CREDIT');
+            if(menuOne == 'community') label = this.trans('COMMUNITY');
+            if(menuOne == 'records'  ) label = this.trans('RECORDS');
+            if(menuOne == 'login'    ) label = this.trans('LOGIN');
+            if(menuOne == 'logout'   ) label = this.trans('LOGOUT');
 
             fontSize = this.convertFontSize(20);
 
@@ -4824,6 +4864,84 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 로그인 팝업 열기 */
+    showLoginPopup() {
+        this.keyEventDisabled = true;
+        this.pops.dim.classList.remove('invisible');
+        this.pops.login.classList.remove('invisible');
+    }
+
+    /** 커뮤니티 팝업 열기 */
+    showCommunityPopup() {
+        const selfs = this;
+        this.keyEventDisabled = true;
+        this.pops.dim.classList.remove('invisible');
+
+        const area = this.pops.community;
+        const canvasBounding = this.canvas.getBoundingClientRect();
+
+        // 영역 크기 조절
+        area.style.width  = Math.floor(canvasBounding.width  - 100) + 'px';
+        area.style.height = Math.floor(canvasBounding.height - 100) + 'px';
+        area.style.left   = '20px';
+        area.style.top    = '20px';
+        
+        // iframe 크기 조절
+        const iframes = area.querySelector('iframe');
+        iframes.style.height = Math.floor(canvasBounding.height - 150) + 'px';
+
+        // 메뉴
+        const divMenu = area.querySelector('.div_community_menu');
+        const menus   = divMenu.querySelectorAll('.btn_menu');
+
+        // 메뉴 각 항목 이벤트 중 공통항목
+        const fCommonMenuClickAct = function(selfObj) {
+            for(let idx=0; idx<menus.length; idx++) {
+                const menuOne = menus[idx];
+                menuOne.classList.remove('active');
+            }
+            selfObj.classList.add('active');
+        }
+
+        // 메뉴 항목별 이벤트 부여
+        let menuOne = divMenu.querySelector('.btn_community_board');
+        if(! menuOne.classList.contains('binded_click')) {
+            menuOne.addEventListener('click', function() {
+                fCommonMenuClickAct(this);
+                iframes.src = selfs.otherPages.board;
+                iframes.classList.remove('invisible');
+            });
+            menuOne.classList.add('binded_click');
+        }
+
+        // 메뉴 첫 번째 항목 클릭 처리
+        if(menus) menus[0].click();
+
+        // 영역 보이기
+        area.classList.remove('invisible');
+    }
+
+    /** iframe 팝업 열기 */
+    showIframePopup(url) {
+        this.keyEventDisabled = true;
+        this.pops.dim.classList.remove('invisible');
+
+        const area = this.pops.iframes;
+        const canvasBounding = this.canvas.getBoundingClientRect();
+
+        area.style.width  = Math.floor(canvasBounding.width  - 100) + 'px';
+        area.style.height = Math.floor(canvasBounding.height - 100) + 'px';
+        area.style.left   = '20px';
+        area.style.top    = '20px';
+        area.classList.remove('invisible');
+
+        const iframes = area.querySelector('iframe');
+        iframes.style.height = Math.floor(canvasBounding.height - 150) + 'px';
+        iframes.src = url;
+
+        area.classList.remove('invisible');
+    }
+
     /**
      * 커맨드 준비
      */
@@ -5946,6 +6064,8 @@ class ShuttingStarsCore {
             <div class='shuttingstars_pop_dim invisible'></div>
             <div class='shuttingstars_pop_content shuttingstars_canvas_config invisible'></div>  
             <div class='shuttingstars_pop_content pop_login invisible'></div>
+            <div class='shuttingstars_pop_content pop_community invisible'></div>
+            <div class='shuttingstars_pop_content pop_iframe invisible'></div>
 
             <div class='shuttingstars_pop_dim2 invisible'></div>
             <div class='shuttingstars_pop_content shuttingstars_pop_content2 pop_conf invisible'></div>
@@ -6061,6 +6181,41 @@ class ShuttingStarsCore {
             selfs.pops.login.classList.add('invisible');
             selfs.pops.dim.classList.add('invisible');
         });
+
+        // 커뮤니티 팝업 pop_community
+        popInside = popRoot.querySelector('.pop_community');
+        htmls = '';
+        htmls = `
+            <div class='div_community_menu menu'>
+                <button type='button' class='btn btn_menu btn_community_board target_translate active'>BOARD</button>
+                <button type='button' class='btn btn_exit red target_translate'>X</button>
+            </div>
+            <iframe class='ss_iframe_community full'></iframe>
+        `;
+        popInside.innerHTML = htmls;
+        popInside.querySelector('.btn_exit').addEventListener('click', () => {
+            selfs.pops.community.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+            selfs.keyEventDisabled = false;
+        });
+        this.pops.community = popInside;
+
+        // iframe 팝업
+        popInside = popRoot.querySelector('.pop_iframe');
+        htmls = '';
+        htmls = `
+            <div class='div_others_menu menu'>
+                <button type='button' class='btn btn_exit red target_translate'>X</button>
+            </div>
+            <iframe class='ss_iframe_other full'></iframe>
+        `;
+        popInside.innerHTML = htmls;
+        popInside.querySelector('.btn_exit').addEventListener('click', () => {
+            selfs.pops.iframes.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+            selfs.keyEventDisabled = false;
+        });
+        this.pops.iframes = popInside;
 
         // 스트링 테이블 번역 적용
         this.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
