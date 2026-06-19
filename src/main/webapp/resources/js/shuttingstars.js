@@ -662,11 +662,16 @@ class ShuttingStarsCore {
                 .shuttingstar_configlayer table, .shuttingstar_configlayer table td { border: 0; }
                 .shuttingstar_configlayer table th { border: 0; text-align: left; }
                 .shuttingstar_configlayer .shuttingstar_configsections th, .shuttingstar_configlayer .shuttingstar_configsections td { line-height: 3rem; }
+                .shuttingstar_configlayer .shuttingstar_config_tabbuttons { width: 100%; text-align: left; }
+                .shuttingstar_configlayer .shuttingstar_config_tabbuttons .btn_exit { float: right; }
                 .shuttingstar_configlayer .tabarea        { display: none; }
                 .shuttingstar_configlayer .tabarea.active { display: block; }
-                .shuttingstar_configlayer button.tab        { background: transparent; border: 3px solid rgba(50, 230, 50, 0.7); color: rgba(50, 230, 50, 0.7); }
-                .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 3px solid rgba(50, 230, 50, 0.8); color: rgba(50, 230, 50, 0.8); }
-                .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 3px solid rgba(50, 230, 50, 0.9); color: rgba(50, 230, 50, 0.9); }
+                .shuttingstar_configlayer button.tab        { background: transparent; border: 0; color: rgba(50, 230, 50, 0.7); }
+                .shuttingstar_configlayer button.tab:hover  { background: rgba(50, 230, 50, 0.1); border: 0; color: rgba(50, 230, 50, 0.8); }
+                .shuttingstar_configlayer button.tab.active { background: rgba(50, 230, 50, 0.2); border: 0; color: rgba(50, 230, 50, 0.9); }
+                .shuttingstar_configlayer .shuttingstar_config_tabbuttons button.btn.red        { background: transparent; border: 0; color: rgba(250, 70, 70, 0.7); }
+                .shuttingstar_configlayer .shuttingstar_config_tabbuttons button.btn.red:hover  { background: rgba(250, 70, 70, 0.1); border: 0; color: rgba(250, 70, 70, 0.8); }
+                .shuttingstar_configlayer .shuttingstar_config_tabbuttons button.btn.red.active { background: rgba(250, 70, 70, 0.2); border: 0; color: rgba(250, 70, 70, 0.9); }
                 .shuttingstar_configlayer .shuttingstar_config_inner { min-height: 500px; vertical-align: top; }
                 .shuttingstar_configlayer .ta_json_song, .shuttingstar_configlayer .ta_packages { min-height: 500px; }
                 .shuttingstar_configlayer .shuttingstar_tools_inner { height: 600px; overflow-y: scroll; }
@@ -6078,6 +6083,7 @@ class ShuttingStarsCore {
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custom Songs</button>
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_packagessections'>Packages</button>
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_toolssections'>Tools</button>
+                    <button type='button' class='btn btn_exit red'>X</button>
                 </div>
                 <div class='shuttingstar_configsections tabarea active'>
                     <h1 class='target_translate'>Configuration</h1>
@@ -6125,10 +6131,9 @@ class ShuttingStarsCore {
                     </div>
                     <div class='shuttingstar_configcontrols'>
                         <button type='button' class='btn btn_config_accept target_translate'>Accept</button>
-                        <button type='button' class='btn btn_config_cancel target_translate red'>Cancel</button>
                         
-                        <button type='button' class='btn btn_config_resetall target_translate' style='margin-left: 30px;'>Reset All</button>
-                        <button type='button' class='btn btn_config_deleteaccount ss_only_for_login_user target_translate'>DELETE ACCOUNT</button>
+                        <button type='button' class='btn red btn_config_resetall target_translate' style='margin-left: 30px;'>Reset All</button>
+                        <button type='button' class='btn red btn_config_deleteaccount ss_only_for_login_user target_translate'>DELETE ACCOUNT</button>
                     </div>
                 </div>
                 <div class='shuttingstar_songssections tabarea'>
@@ -6136,7 +6141,6 @@ class ShuttingStarsCore {
                     <textarea class='full ta_json_song'></textarea>
                     <div class='shuttingstar_songcontrols'>
                         <button type='button' class='btn btn_song_accept target_translate'>Save</button>
-                        <button type='button' class='btn btn_song_cancel target_translate red'>Cancel</button>
                     </div>
                 </div>
                 <div class='shuttingstar_packagessections tabarea'>
@@ -6146,7 +6150,6 @@ class ShuttingStarsCore {
 </textarea>
                     <div class='shuttingstar_packagescontrols'>
                         <button type='button' class='btn btn_packages_accept target_translate'>Save</button>
-                        <button type='button' class='btn btn_packages_cancel target_translate red'>Cancel</button>
                     </div>
                 </div>
                 <div class='shuttingstar_toolssections tabarea'>
@@ -6177,7 +6180,7 @@ class ShuttingStarsCore {
                         </div>
                     </div>
                     <div class='shuttingstar_toolcontrols'>
-                        <button type='button' class='btn btn_tool_cancel target_translate red'>Cancel</button>
+                        
                     </div>
                 </div>
             </div>
@@ -6230,9 +6233,9 @@ class ShuttingStarsCore {
         // 버튼 이벤트 (설정)
         const controlDiv = this.configDiv.querySelector('.shuttingstar_configcontrols');
         const btnAccept  = controlDiv.querySelector('.btn_config_accept');
-        const btnCancel  = controlDiv.querySelector('.btn_config_cancel');
         const btnReset   = controlDiv.querySelector('.btn_config_resetall');
         const btnDelAcc  = controlDiv.querySelector('.btn_config_deleteaccount');
+        const btnTabExit = layer.querySelector('.shuttingstar_config_tabbuttons .btn_exit');
 
         const fCancel = function() {
             selfs.loadSettings();
@@ -6310,7 +6313,7 @@ class ShuttingStarsCore {
             selfs.setState('menu');
         });
 
-        btnCancel.addEventListener('click', fCancel);
+        btnTabExit.addEventListener('click', fCancel);
 
         btnReset.addEventListener('click', () => {
             if(confirm(selfs.trans('Do you want to reset all?'))) selfs.resetAll(); // this.confirm 쓰면 안 됨. DOM 영역에 뜨는 버튼들이라...
@@ -6329,7 +6332,6 @@ class ShuttingStarsCore {
         let ta = this.configDiv.querySelector('.ta_json_song');
         const control2Div = this.configDiv.querySelector('.shuttingstar_songcontrols');
         const btnSave     = control2Div.querySelector('.btn_song_accept');
-        const btnCancel2  = control2Div.querySelector('.btn_song_cancel');
 
         btnSave.addEventListener('click', () => {
             let json = String(ta.value).trim();
@@ -6348,13 +6350,10 @@ class ShuttingStarsCore {
             selfs.setState('menu');
         });
 
-        btnCancel2.addEventListener('click', fCancel);
-
         // 버튼 이벤트 (패키지)
         let ta2 = this.configDiv.querySelector('.ta_packages');
         const control3Div = this.configDiv.querySelector('.shuttingstar_packagessections');
         const btnSave3    = control3Div.querySelector('.btn_packages_accept');
-        const btnCancel3  = control3Div.querySelector('.btn_packages_cancel');
 
         btnSave3.addEventListener('click', () => {
             let urls = String(ta2.value).trim();
@@ -6370,13 +6369,9 @@ class ShuttingStarsCore {
             selfs.closeConfigDiv();
             selfs.setState('menu');
         });
-        btnCancel3.addEventListener('click', fCancel);
 
         // 버튼 이벤트 (도구)
         const control4Div = this.configDiv.querySelector('.shuttingstar_toolssections');
-        const btnCancel4 = control4Div.querySelector('.btn_tool_cancel');
-
-        btnCancel4.addEventListener('click', fCancel);
 
         // Detect BPM
         let toolAreaOne = this.configDiv.querySelector('.tools_detect_bpm');

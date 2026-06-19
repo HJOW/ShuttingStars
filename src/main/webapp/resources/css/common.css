@@ -1,0 +1,104 @@
+/*
+    공통 CSS
+        게임 영역 내 CSS는 건드리지 않음
+        외부 페이지 설정
+*/
+/*
+    LICENSE
+
+    Copyright 2026 HJOW (hujinone22@naver.com)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License. 
+*/
+
+html {
+    font-size: 11px;
+}
+body {
+    margin: 0;
+    padding: 0;
+    background-color: rgba(5, 5, 5, 0.99);
+    color: rgba(230, 230, 230, 0.99);
+    overflow: hidden;
+}
+
+/* pure css 관련 (본 게임 내에서는 쓰이지 않으며, 일부 웹 페이지 출력에만 사용) */
+
+.pure-menu {
+    width: 150px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1003; /* so the menu or its navicon stays above all content */
+    background: #191818;
+    overflow-y: auto;
+    border: none;
+}
+
+/*
+All anchors inside the menu should be styled like this.
+*/
+.pure-menu a {
+    color: #999;
+    border: none;
+    padding: 0.6em 0 0.6em 0.6em;
+    font-size: 1rem;
+}
+
+/*
+Remove all background/borders, since we are applying them to .pure-menu.
+*/
+.pure-menu ul {
+    border: none;
+    background: transparent;
+}
+
+/*
+Add that light border to separate items into groups.
+*/
+.pure-menu ul,
+.pure-menu .menu-item-divided {
+    border-top: 1px solid #333;
+}
+/*
+Change color of the anchor links on hover/focus.
+*/
+.pure-menu li a:hover,
+.pure-menu li a:focus {
+    background: #333;
+}
+
+/*
+This styles the selected menu item `<li>`.
+*/
+.pure-menu .pure-menu-selected,
+.pure-menu .pure-menu-heading {
+    background: #1f8dd6;
+}
+/*
+This styles a link within a selected menu item `<li>`.
+*/
+.pure-menu .pure-menu-selected a {
+    color: #fff;
+}
+
+/*
+This styles the menu heading.
+*/
+.pure-menu .pure-menu-heading {
+    font-size: 110%;
+    color: #fff;
+    margin: 0;
+    font-size: 1.2rem;
+}
