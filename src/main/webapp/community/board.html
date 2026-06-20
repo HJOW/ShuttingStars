@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Shutting Stars</title>
+    <link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
+    <link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
+    <link rel="manifest" href="manifest.webmanifest"/>
+    <link rel="stylesheet" href="./resources/css/pure-min.css"/>
+
+    <!--
+    LICENSE
+
+    Copyright 2026 HJOW (hujinone22@naver.com)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License. 
+    -->
+
+    
+    <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
+    <!-- This part is not my code, Only for backend, not necessary for game engine works -->
+    <!-- Firebase Codes (update the version number as needed) -->
+    <!--
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-database-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-remote-config-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-performance-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js"></script>
+    -->
+    <script defer src="../__/firebase/12.13.0/firebase-app-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-auth-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-database-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-firestore-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-messaging-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-analytics-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-remote-config-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-performance-compat.js"></script>
+    <!--
+    <script defer src="../__/firebase/12.13.0/firebase-functions-compat.js"></script>
+    <script defer src="../__/firebase/12.13.0/firebase-storage-compat.js"></script>
+    -->
+    <!--FIREBASE INIT START-->
+    <!-- 
+             initialize the SDK after all desired features are loaded, set useEmulator to false
+             to avoid connecting the SDK to running emulators.
+    -->
+    <script defer src="../__/firebase/init.js?useEmulator=true"></script>
+    <!--<script defer src="./___/init.js?useEmulator=true"></script>-->
+    <!--FIREBASE INIT END-->
+    <!-- Google tag (This part is not my code, Only for backend, not necessary for game engine works) -->
+    <script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
+    <script type="text/javascript">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    </script>
+    <!-- // Google tag (gtag.js) -->
+    <!-- Google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Nanum+Pen+Script&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet"/>
+    <!-- // Google fonts -->
+    <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
+     
+    <link rel="stylesheet" href="../resources/css/googleloginbuttons.css"/>
+    <link rel="stylesheet" href="../resources/fonts/fonts.css"/>
+    <link rel="stylesheet" href="../resources/css/common.css"/>
+    <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>\
+    <script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+    <script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
+  </head>
+  <body>
+    <!--
+    TODO : 커뮤니티 게시판 구현
+        (전제조건) 이 소스는 Firebase Hosting 에 올라갈 예정이며, 상위 디렉토리의 __ 폴더 안에 Firebase 라이브러리가 자동 배치됨. (init.js 안에 Firebase API로 초기화하는 소스도 자동 생성될 예정)
+        (참고자료) Firestore 내 board 컬렉션의 필드 구성
+            boardName  (string) - 게시판의 이름으로, 지금은 그냥 board 라고 하드코딩 (추후 다른 목적의 게시판 만들 때 이 값만 다른 값으로 지정해 사용할 예정)
+            content    (string) - 글 내용, 1000자까지 입력 허용 예정
+            email      (string) - 이메일 (구글 로그인한 계정의 이메일)
+            postserial (string) - 글을 식별할 수 있는 고유값 (랜덤하게 생성하나, 절대 겹쳐서는 안됨)
+            regdate    (int)    - 글 작성일 (Date 의 time 값으로 지정)
+        1. Firebase authentication 으로 로그인 체크, 안되어 있으면 구글 로그인 (shuttingstarsinterface.js 에 일부 구현되어 있음)
+        2. 구글 로그인이 되어있으면 바로 글 목록 화면 출력, 맨 상단 우측에는 글 작성 버튼 배치하고, 아래로 글 목록이 출력되어야 함.
+           글 목록을 최근 순으로 20개까지 출력, 20개 밑까지 내리면 그다음 20개를 불러오는 방식으로 글 목록 출력
+           글은 제목 없이 내용으로만 구성. 개별 글들은 상세페이지 없이, 목록 화면 내에서 글 내용과 수정/삭제 버튼으로 구성.
+        
+    -->
+  </body>
+</html>
