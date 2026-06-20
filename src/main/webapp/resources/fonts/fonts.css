@@ -104,3 +104,7 @@
     font-weight: bold;
     src : url('D2CodingBold.woff2') format('woff2')
 }
+
+html, body, table, td, th, pre, div, p, span, input, select, textarea {
+    font-family: 'D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', monospace, sans-serif;
+}
