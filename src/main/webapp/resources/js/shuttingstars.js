@@ -508,7 +508,7 @@ class ShuttingStarsCore {
 
     /** @type {Object} 기타 페이지 URL */
     otherPages = {
-        board : 'http://wo.to/board/board.php?id=a.5.hujinone11'
+        board : './community/board.html' // 'http://wo.to/board/board.php?id=a.5.hujinone11'
     }
 
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
