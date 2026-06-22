@@ -304,6 +304,8 @@ class ShuttingStarsCore {
 
     /** @type {Object|null} 선택된 난이도 */
     difficulty = null;
+    /** @type {number} 선택된 난이도 (숫자) */
+    difficultyLevel = -1;
     /** @type {HTMLAudioElement|null} 현재 선택된 곡의 오디오 객체 */
     audio = null;
     /** @type {string|null} 현재 선택된 곡의 썸네일 이미지 URL */
@@ -2321,6 +2323,7 @@ class ShuttingStarsCore {
                 this.songTitleTime = this.songTitleBaseTime;
                 this.song = this.missionChoosing;
                 this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
+                this.difficultyLevel = this.difficulty.difficultyLevel;
 
                 if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
 
@@ -2372,6 +2375,7 @@ class ShuttingStarsCore {
                     index--;
                     if(index < 0) index = this.difficultyChoosingList.length - 1;
                     this.difficulty = this.difficultyChoosingList[index];
+                    this.difficultyLevel = this.difficulty.difficultyLevel;
                 } else {
                     this.songChoosingMode = 'mission';
                     if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
@@ -2390,6 +2394,7 @@ class ShuttingStarsCore {
                 if(this.difficultyChoosing) {
                     this.playSE('accept2');
                     if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
+                    this.difficultyLevel = this.difficulty.difficultyLevel;
                     this.songTitleTime = this.songTitleBaseTime;
                     if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
 
@@ -2403,6 +2408,7 @@ class ShuttingStarsCore {
                     this.song = this.songChoosing;
                     this.difficultyChoosingList = this.song.getDifficultyList();
                     this.difficulty = this.difficultyChoosingList[0];
+                    this.difficultyLevel = this.difficulty.difficultyLevel;
                     this.difficultyChoosing = true;
                 }
             }
@@ -3670,7 +3676,7 @@ class ShuttingStarsCore {
 
                         if(this.difficultyChoosingList.length == 0) this.difficultyChoosingList = this.songChoosing.getDifficultyList();
                         let diffIdx = this.difficultyChoosingList.indexOf(this.difficulty);
-                        if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; }
+                        if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; this.difficultyLevel = this.difficulty.difficultyLevel; }
                         
                         cols = 0;
                         this.ctx.textAlign = "center";
