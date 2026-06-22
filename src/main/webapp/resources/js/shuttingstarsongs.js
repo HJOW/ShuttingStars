@@ -22,6 +22,12 @@ limitations under the License.
  
  */
 
+function ssAddSong(song) {
+    const obj = (typeof(ShuttingStars) == 'undefined' ? window.ssmanager : ShuttingStars);
+    obj.addSong(song);
+}
+
+
 let song;
 
 song = {};
@@ -476,7 +482,7 @@ song.difficulties = [
     }
 ]
 
-addShuttingStarSong(song);
+ssAddSong(song);
 
 song = {};
 song.name = '출발은 떨렸지만';
@@ -574,7 +580,7 @@ song.difficulties.push({
     ]
 });
 
-addShuttingStarSong(song);
+ssAddSong(song);
 
 song = {};
 song.name = '복귀해도 될까요';
@@ -1366,7 +1372,7 @@ song.difficulties.push({
 {"locationIndex":0,"time":3994.048}
 ]
 });
-addShuttingStarSong(song);
+ssAddSong(song);
 
 song = {};
 song.name = '큰집 18층으로 떠나는 여행';
@@ -2782,7 +2788,7 @@ song.difficulties.push({
 ]
 });
 
-addShuttingStarSong(song);
+ssAddSong(song);
 
 song = {};
 song.name = 'Racing the horizon line';
@@ -3903,7 +3909,7 @@ song.difficulties.push({
 ]
 });
 
-addShuttingStarSong(song);
+ssAddSong(song);
 
 song = {};
 song.name = 'Morning Sky';
@@ -4043,4 +4049,4 @@ song.difficulties = [
     }
 ];
 
-addShuttingStarSong(song);
+ssAddSong(song);

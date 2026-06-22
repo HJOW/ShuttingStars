@@ -9411,6 +9411,11 @@ class ShuttingStarsManager {
         this.#originalInstances.set3DManager(ss3d);
     }
 
+    /** 빌드 번호 반환 */
+    build() {
+        return this.#originalInstances.build;
+    }
+
     /**
      * 지정한 영역에 ShuttingStars 게임 적용
      * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
@@ -9422,6 +9427,15 @@ class ShuttingStarsManager {
 }
 
 const ShuttingStars = new ShuttingStarsManager(_shuttingstarcore);
+
+/** 
+ * 브라우저 콘솔 로딩, 미지원 브라우저 안내를 위함 
+ * @param {string} msg
+*/
+function ssConsoleLogs(msg) {
+    if(typeof(console) == 'undefined') { window.console.log(msg); }
+    else console.log(msg);
+}
 
 /**
  * 게임의 곡 목록에 곡을 추가
@@ -9449,3 +9463,7 @@ function setShuttingStar3D(obj) {
 function initShuttingStars(mainDiv, urlContext) {
     ShuttingStars.init(mainDiv, urlContext);
 }
+
+ssConsoleLogs('ShuttingStars - BUILD ' + ShuttingStars.build());
+window.ssmanager = ShuttingStars;
+window.ssutil    = ShuttingStarsUtility;

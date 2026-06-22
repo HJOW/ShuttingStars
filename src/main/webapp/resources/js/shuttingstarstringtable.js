@@ -18,7 +18,13 @@ See the License for the specific language governing permissions and
 limitations under the License. 
  
  */
-ShuttingStars.setStringTable({
+
+function ssSetStringTable(strTable) {
+    const obj = (typeof(ShuttingStars) == 'undefined' ? window.ssmanager : ShuttingStars);
+    obj.setStringTable(strTable);
+}
+
+ssSetStringTable({
     'ko' : {
         'PLAY' : '플레이',
         'SETTING' : '설정',
