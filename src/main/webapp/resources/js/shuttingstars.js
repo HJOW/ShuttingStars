@@ -1940,8 +1940,16 @@ class ShuttingStarsCore {
                             const energies = [];
                             let   lastEnergy = 0;
 
+                            let avg64   = 0;
+                            let avg256  = 0;
+                            let avg1024 = 0;
+                            let divides = 0;
+                            let avgLen  = 0;
+                            let avgCnt  = 0;
+
                             const noteCreates = [];
                             let   noteNestedCombo = 0;
+                            let   multipleCombo = 0;
                             let   lastNote = null;
                             
 
@@ -1970,17 +1978,31 @@ class ShuttingStarsCore {
                                 energy = Math.sqrt(energy / windowSize);
 
                                 energies.push(energy); // 변화 추이 기록을 위해 배열에 넣기
-                                if(energies.length >= 32) energies.splice(0, 1); // 전체를 기록할 필요는 없으므로, 적당히 남기고 맨앞 원소 제거
+                                if(energies.length >= 1024) energies.splice(0, 1); // 전체를 기록할 필요는 없으므로, 적당히 남기고 맨앞 원소 제거
 
-                                // 최근 energy 데이터의 평균 구하기
-                                let avg = 0;
-                                for(jdx=0; jdx<energies.length; jdx++) { avg += energies[jdx]; }
-                                avg = avg * 1.0 / energies.length;
+                                // 최근 energy 데이터의 평균 구하기 (최근64개 / 최근256개, 최근1024개)
+                                avg64   = 0;
+                                avg256  = 0;
+                                avg1024 = 0;
+                                divides = 0;
+                                avgCnt  = 0;
+                                avgLen  = energies.length;
                                 
+                                for(jdx=avgLen-1; jdx>=0; jdx--) {
+                                    if(avgCnt <   64) avg64   += energies[jdx]; 
+                                    if(avgCnt <  256) avg256  += energies[jdx]; 
+                                    if(avgCnt < 1024) avg1024 += energies[jdx];
+                                    avgCnt++;
+                                }
 
-                                if(time >= (intervals * 4) && energy > avg && energy > (lastEnergy * 1.2)) {
+                                divides = (avgLen <   64 ? avgLen :   64); avg64   = avg64   * 1.0 / divides;
+                                divides = (avgLen <  256 ? avgLen :  256); avg256  = avg256  * 1.0 / divides;
+                                divides = (avgLen < 1024 ? avgLen : 1024); avg1024 = avg1024 * 1.0 / divides;
+                                
+                                if(timeCycle >= (this.stageRows * (this.timeMultiplier / 8)) && energy > (lastEnergy * 1.2)) {
                                     // 노트 생성여부 결정
                                     let createYn = false;
+                                    let multipleCreate = 1;
 
                                     if(lastNote == null) {
                                         createYn = true; // 이전 노트가 없으면 무조건 생성
@@ -1988,6 +2010,8 @@ class ShuttingStarsCore {
                                         // 난이도에 따라 생성여부 결정
                                         const timeGap = timeCycle - lastNote.originalTiming;
                                         let properGap = 1; // 다음 노트 등장 사이 시간 허용값
+                                        let probability1 = 0.25; // 노트 생성 확률
+                                        let probability2 = 0.01; // 동시노트 적용 확률
                                         if(this.difficultyLevel <= 2) {
                                             properGap = 32;
                                         } else if(this.difficultyLevel <= 4) {
@@ -2023,17 +2047,92 @@ class ShuttingStarsCore {
                                                 }
                                             }
                                         }
+
+                                        // 노트 생성 최소조건 만족 - 이제 확률 적용 차례
+                                        if(createYn) {
+                                            createYn = false;
+
+                                            if(this.difficultyLevel <= 1) {
+                                                if(energy >=   avg64) { probability1 = 0.75;  }
+                                                if(energy >=  avg256) { probability1 = 0.9;  probability2 = 0.02; }
+                                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1; }
+                                            } else if(this.difficultyLevel <= 4) {
+                                                if(energy >=   avg64) { probability1 = 0.77;  }
+                                                if(energy >=  avg256) { probability1 = 0.9;  probability2 = 0.05; }
+                                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.15; }
+                                            } else if(this.difficultyLevel <= 6) {
+                                                if(energy >=   avg64) { probability1 = 0.8;  }
+                                                if(energy >=  avg256) { probability1 = 0.9;  probability2 = 0.1; }
+                                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.3; }
+                                            } else if(this.difficultyLevel <= 8) {
+                                                if(energy >=   avg64) { probability1 = 0.9;  }
+                                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.15; }
+                                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.75; }
+                                            } else {
+                                                if(energy >= avg64) { 
+                                                    probability1 = 0.95; 
+                                                    if(this.difficultyLevel > 9) {
+                                                        probability2 = 0.1 + ( (this.difficultyLevel - 9) * 0.025 );
+                                                        if(probability2 > 0.75) probability2 = 0.75;
+                                                    }
+                                                }
+                                                if(energy >= avg256) { 
+                                                    probability1 = 0.98; 
+                                                    probability2 = 0.25;
+                                                    if(this.difficultyLevel > 9) {
+                                                        probability2 = 0.25 + ( (this.difficultyLevel - 9) * 0.05 );
+                                                        if(probability2 > 0.9) probability2 = 0.9;
+                                                    }
+                                                }
+                                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.99; }
+                                            }
+
+                                            if(ShuttingStarsUtility.random() <= probability1) createYn = true;
+                                            if(ShuttingStarsUtility.random() <= probability2) {
+                                                // 동시키 입력 콤보 계산
+                                                if(multipleCombo == 0) {
+                                                    multipleCreate++;
+                                                } else {
+                                                    for(let mc=0; mc<multipleCombo; mc++) {
+                                                        probability2 = probability2 * 0.5;
+                                                    }
+                                                    if(ShuttingStarsUtility.random() <= probability2) multipleCreate++;
+                                                }
+
+                                                // 추가 동시 키 적용
+                                                if(this.difficultyLevel >= 8) {
+                                                    let multiplyVal = 0.1 + (0.01 * (this.difficultyLevel - 8));
+                                                    if(multiplyVal > 0.75) multiplyVal = 0.75;
+
+                                                    probability2 = probability2 * multiplyVal;
+                                                    if(ShuttingStarsUtility.random() <= probability2) multipleCreate++;
+                                                }
+
+                                                // 적용
+                                                if(multipleCreate >= 2) multipleCombo++;
+                                                else                    multipleCombo = 0;
+                                            }
+                                        }
                                     }
 
                                     if(createYn) { // 노트 생성
-                                        const note = new Note(-1, this);
-                                        note.id = this.lastObjectId; this.lastObjectId++;
-                                        note.patternId = 0;
-                                        if(lastNote != null) note.patternId = lastNote.patternId + 1;
-                                        note.originalTiming = timeCycle;
+                                        const usedIndex = [];
+                                        for(let mdx=0; mdx<multipleCreate; mdx++) {
+                                            let locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                            while(usedIndex.indexOf(locationIndex) >= 0) {
+                                                locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                            }
 
-                                        noteCreates.push(note);
-                                        lastNote = note;
+                                            const note = new Note( locationIndex , this);
+                                            note.id = this.lastObjectId; this.lastObjectId++;
+                                            note.patternId = 0;
+                                            if(lastNote != null) note.patternId = lastNote.patternId + 1;
+                                            note.originalTiming = timeCycle;
+
+                                            noteCreates.push(note);
+                                            lastNote = note;
+                                            usedIndex.push(locationIndex);
+                                        }
                                     }
                                 }
 
@@ -3284,7 +3383,7 @@ class ShuttingStarsCore {
             // 객체 그리기
             for(let idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
-                if(obj.explosing >= obj.explosingMax) continue;
+                if(obj.explosing > 0 && obj.explosing >= obj.explosingMax) continue;
                 if(obj.hidden) continue;
                 if(obj instanceof Note) {
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
