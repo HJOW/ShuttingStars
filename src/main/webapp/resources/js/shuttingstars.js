@@ -135,7 +135,7 @@ class ShuttingStarsCore {
 
     /** @type {AudioContext|null} Audio Context 객체 (미지원 시 null 유지) */
     audioCtx = null;
-    /** @type {AudioContext|null} Audio Context 객체 (노트 생성용, 미지원 시 null 유지) */
+    /** @type {OfflineAudioContext|null} OfflineAudioContext 객체 (노트 생성용, 미지원 시 null 유지) */
     audioCtxPre = null;
     /** @type {string} URL Context Path */
     urlCtx = './';
@@ -1898,6 +1898,36 @@ class ShuttingStarsCore {
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.musicUrl)) {
                     try {
+                        // 기존 Audio Context 닫기
+                        this.closeAudioSources();
+
+                        /*
+                        // 사전에 audio 를 읽어 노트들을 만들 수 없나?
+                        // Audio 객체 생성 (노트 생성을 위함)
+                        let audioPre = null;
+                        if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
+                            audioPre = new Audio(this.convertURL(this.song.musicAlterUrl));
+                        } else {
+                            audioPre = new Audio(this.convertURL(this.song.musicUrl));
+                        }
+
+                        if(audioPre != null) {
+                            this.audioCtxPre = new OfflineAudioContext(2, 44100 * this.song.endTime, 44100);
+                            
+                            const sourceNode = this.audioCtxPre.createMediaElementSource(audioPre); // 이 메소드가 없음
+                            sourceNode.connect(this.audioCtxPre.destination);
+
+                            let offlineAudioTime = 0;
+                            this.audioCtxPre.startRendering().then((buffer) => {
+                                console.log(offlineAudioTime); // TODO
+                                console.log(buffer);
+                                offlineAudioTime++;
+                            }).catch((err) => { console.error(err); });
+                            audioPre.play();
+                        }
+                        */
+
+                        // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
                         if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
                             this.audio = new Audio(this.convertURL(this.song.musicAlterUrl));
                         } else {
@@ -1907,9 +1937,8 @@ class ShuttingStarsCore {
                         this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
                         this.audio.preload = 'auto';
                         
-                        this.closeAudioSources();
                         try {
-                            // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API )
+                            // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API ) 준비 (시각화)
                             if(this.audio != null) {
                                 this.audioCtx       = new (window.AudioContext || window.webkitAudioContext)();
                                 this.audioAnalyser  = this.audioCtx.createAnalyser();
