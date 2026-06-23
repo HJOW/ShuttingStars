@@ -330,17 +330,6 @@ class ShuttingStarsCore {
     /** @type {Uint8Array|null} Audio 시각화에 쓰일 배열 */
     audioBuffer = null;
 
-    /** @type {HTMLAudioElement|null} 현재 선택된 곡의 오디오 객체 (audio 와 소스는 같으나 1타이밍 먼저 재생됨. 노트 자동생성을 위해 사용) */
-    audioPre = null;
-    /** @type {MediaElementAudioSourceNode|null} 노트 자동생성을 위한 변수 중 하나 */
-    audioSourcePre = null;
-    /** @type {AnalyserNode|null} Audio Analyser 객체 (미지원 시 null 유지) */
-    audioAnalyserPre = null;
-    /** @type {number} 노트 자동생성에 쓰일 배열 크기 */
-    audioBufferPreLen = 0;
-    /** @type {Uint8Array|null} 노트 자동생성에 쓰일 배열 */
-    audioBufferPre = null;
-
 
     /** @type {ShuttingStarsSong|null} 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함 */
     songChoosing = null;
@@ -1910,18 +1899,13 @@ class ShuttingStarsCore {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.musicUrl)) {
                     try {
                         if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
-                            this.audio    = new Audio(this.convertURL(this.song.musicAlterUrl));
-                            // this.audioPre = new Audio(this.convertURL(this.song.musicAlterUrl)); // 노트 사전생성용 audio (활성화하면 랜덤하게 재생 안되는 문제가 있어 다시 비활성화)
+                            this.audio = new Audio(this.convertURL(this.song.musicAlterUrl));
                         } else {
-                            this.audio    = new Audio(this.convertURL(this.song.musicUrl));
-                            // this.audioPre = new Audio(this.convertURL(this.song.musicUrl)); // 노트 사전생성용 audio (활성화하면 랜덤하게 재생 안되는 문제가 있어 다시 비활성화)
+                            this.audio = new Audio(this.convertURL(this.song.musicUrl));
                         }
                         
                         this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
-                        if(this.audioPre != null) this.audioPre.volume = 0.001;
-
                         this.audio.preload = 'auto';
-                        if(this.audioPre != null) this.audioPre.preload = 'auto';
                         
                         this.closeAudioSources();
                         try {
@@ -1936,17 +1920,6 @@ class ShuttingStarsCore {
                                 this.audioBufferLen = this.audioAnalyser.frequencyBinCount;
                                 this.audioBuffer    = new Uint8Array(this.audioBufferLen);
                             }
-
-                            if(this.audioPre != null) {
-                                this.audioCtxPre      = new (window.AudioContext || window.webkitAudioContext)();
-                                this.audioAnalyserPre = this.audioCtxPre.createAnalyser();    
-                                this.audioSourcePre   = this.audioCtxPre.createMediaElementSource(this.audioPre);
-                                this.audioSourcePre.connect(this.audioAnalyserPre);
-                                this.audioAnalyserPre.connect(this.audioCtxPre.destination);
-                                this.audioAnalyserPre.fftSize = 256;
-                                this.audioBufferPreLen = this.audioAnalyserPre.frequencyBinCount;
-                                this.audioBufferPre    = new Uint8Array(this.audioBufferPreLen);
-                            }
                         } catch(exInx) {
                             console.log('Failed to prepare audio context.');
                             console.log(exInx);
@@ -1958,13 +1931,11 @@ class ShuttingStarsCore {
                         ShuttingStarsUtility.toast('Loading audio failed !', true);
                         if(this.audio != null) { try { this.audio.remove(); } catch(egnores) {} }
                         this.audio = null;
-                        this.audioPre = null;
                         this.setState('songchoosing');
                         return;
                     }
                 } else {
-                    this.audio    = null;
-                    this.audioPre = null;
+                    this.audio = null;
                     this.closeAudioSources();
                 }
             }
@@ -1984,9 +1955,8 @@ class ShuttingStarsCore {
         } else if(this.state == 'playing') { // 곡이 플레이 상황일 경우 처리
 
             // 진행 시간 - 처리 끝난 후 아래에서 다시 초기화
-            this.elapsedTime = (-1) * ((this.stageRows * 4) + this.songTiming); 
+            this.elapsedTime = (-1) * ((this.stageRows * 2) + this.songTiming); 
             this.elapsedTimeOld = this.elapsedTime;
-            this.elapsedTimePre = this.elapsedTime * 2;
             if(this.song == null) { this.closeAudioSources(); this.audio = null; this.setState('menu'); return; }
 
             // 반복 처리 시작 (곡의 bpm 반영)
@@ -2011,29 +1981,19 @@ class ShuttingStarsCore {
                 const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                 setTimeout(() => {
                     if(selfs.state != 'playing') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
-                    if(selfs.audioPre != null) selfs.audioPre.play(); // 노트 생성용 audio 는 지금 바로 재생
 
-                    // 한 사이클 더 있다가 메인 오디오 재생
-                    setTimeout(() => {
-                        if(selfs.state != 'playing') { // 메인 오디오 재생 전 esc 눌러 나가버린 경우 --> 노트생성용 오디오는 재생 중이므로 중단시켜야 함
-                            selfs.stopAudio();
-                            return;
-                        }
+                    selfs.audio.play();
 
-                        selfs.audio.play();
+                    selfs.elapsedTime    = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
+                    selfs.elapsedTimeOld = selfs.songTiming * (-1);
 
-                        selfs.elapsedTime    = (selfs.audio.currentTime * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
-                        selfs.elapsedTimeOld = selfs.songTiming * (-1);
-
-                        if(selfs.videoBga != null) {
-                            if(selfs.videoBgaUrl != null) selfs.videoBga.play();
-                        }
-                    }, playingGap);
+                    if(selfs.videoBga != null) {
+                        if(selfs.videoBgaUrl != null) selfs.videoBga.play();
+                    }
                 }, playingGap);
             } else {
                 selfs.elapsedTime    = selfs.songTiming * (-1); // 타이밍 지정
                 selfs.elapsedTimeOld = selfs.songTiming * (-1);
-                selfs.elapsedTimePre = selfs.elapsedTime * 2;
             }
             this.playPrepared = true;
 
@@ -2934,7 +2894,6 @@ class ShuttingStarsCore {
      */
     pauseSong() {
         this.paused = true;
-        if(this.audioPre != null) { this.audioPre.pause(); }
         if(this.audio    != null) { this.audio.pause();    }
         if(this.videoBga != null) {
             if(this.videoBgaUrl != null) this.videoBga.pause();
@@ -5286,9 +5245,6 @@ class ShuttingStarsCore {
                 // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
                 this.elapsedTime = this.convertElapsedTime(this.audio, this.song.bpm, this.songTiming);
             }
-            if(this.audioPre != null && (! this.audioPre.paused) && (! this.audioPre.ended)) {
-                this.elapsedTimePre = this.convertElapsedTime(this.audioPre, this.song.bpm, this.songTiming);
-            }
             if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
             // 노트 위치 처리
@@ -5416,8 +5372,7 @@ class ShuttingStarsCore {
                 if(this.songTitleTime > 0) this.songTitleTime--;
                 if(this.songTitleTime <= 0) {
                     // 곡 로딩여부 체크 - 로딩 안됐으면 시간 다시 늘리기
-                    if(this.audio    != null) { if(this.audio.readyState    < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
-                    if(this.audioPre != null) { if(this.audioPre.readyState < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
+                    if(this.audio != null) { if(this.audio.readyState < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
                 }
                 if(this.songTitleTime <= 0) {
                     // 플레이 화면으로 전환
@@ -5501,7 +5456,6 @@ class ShuttingStarsCore {
             if(this.resumingTime >= 1) return;
 
             if(this.resumed) {
-                if(this.audioPre != null) { this.audioPre.play(); }
                 if(this.audio    != null) { this.audio.play();    }
                 if(this.videoBga != null) {
                     if(this.videoBgaUrl != null) { try { this.videoBga.play(); } catch(e) { console.error(e); } }
@@ -5522,10 +5476,6 @@ class ShuttingStarsCore {
                 this.elapsedTime++;
             }
             this.elapsedTimeOld++;
-
-            if(this.audioPre != null && (! this.audioPre.paused) && (! this.audioPre.ended)) {
-                this.elapsedTimePre = this.convertElapsedTime(this.audioPre, this.song.bpm, this.songTiming);
-            }
 
             // 현재 시간에 해당하는 등장 장식이 있는지 확인
             let decos = song.decorations;
@@ -5572,12 +5522,6 @@ class ShuttingStarsCore {
             // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
             if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
                 this.clearTimeHandler();
-
-                if(this.audioPre != null) {
-                    try { this.audioPre.pause();  } catch(ex) { console.error(ex); } // 오디오 끄기
-                    try { this.audioPre.remove(); } catch(ex) { console.error(ex); } 
-                    this.audioPre = null;
-                }
 
                 if(this.audio != null) {
                     try { this.audio.pause();  } catch(ex) { console.error(ex); } // 오디오 끄기
@@ -5793,11 +5737,6 @@ class ShuttingStarsCore {
      * 곡 재생 종료
      */
     stopAudio() {
-        if(this.audioPre != null) {
-            try { this.audioPre.pause();  } catch(e) { console.error(e); }
-            try { this.audioPre.remove(); } catch(e) { console.error(e); }
-            this.audioPre = null;
-        }
         if(this.audio != null) {
             try { this.audio.pause();  } catch(e) { console.error(e); }
             try { this.audio.remove(); } catch(e) { console.error(e); }
@@ -5820,10 +5759,7 @@ class ShuttingStarsCore {
     closeAudioSources() {
         if(this.audioSource      != null) { try { this.audioSource.disconnect();      this.audioSource      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioAnalyser    != null) { try { this.audioAnalyser.disconnect();    this.audioAnalyser    = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        if(this.audioSourcePre   != null) { try { this.audioSourcePre.disconnect();   this.audioSourcePre   = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        if(this.audioAnalyserPre != null) { try { this.audioAnalyserPre.disconnect(); this.audioAnalyserPre = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioCtx         != null) { try { this.audioCtx.close();              this.audioCtx         = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        if(this.audioCtxPre      != null) { try { this.audioCtxPre.close();           this.audioCtxPre      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
     }
 
     /**
