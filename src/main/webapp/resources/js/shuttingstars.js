@@ -135,8 +135,6 @@ class ShuttingStarsCore {
 
     /** @type {AudioContext|null} Audio Context 객체 (미지원 시 null 유지) */
     audioCtx = null;
-    /** @type {OfflineAudioContext|null} OfflineAudioContext 객체 (노트 생성용, 미지원 시 null 유지) */
-    audioCtxPre = null;
     /** @type {string} URL Context Path */
     urlCtx = './';
 
@@ -331,9 +329,6 @@ class ShuttingStarsCore {
     audioBufferLen = 0;
     /** @type {Uint8Array|null} Audio 시각화에 쓰일 배열 */
     audioBuffer = null;
-    /** @type {AudioBufferSourceNode} Note 생성을 위한 OfflineAudioContext 버퍼 소스 */
-    audioBufferSource = null;
-
 
     /** @type {ShuttingStarsSong|null} 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함 */
     songChoosing = null;
@@ -987,6 +982,7 @@ class ShuttingStarsCore {
             this.missions.push(new EasySurvive(this));
             this.missions.push(new NormalSurvive(this));
             this.missions.push(new HardSurvive(this));
+            this.missions.push(new VeryHardSurvive(this));
 
             this.logInit('loading third parties...');
 
@@ -1924,231 +1920,15 @@ class ShuttingStarsCore {
                         }
 
                         if(this.difficultyUsingAutoCreate) {
-                            // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 시작
-                            this.audioCtx    = new (window.AudioContext || window.webkitAudioContext)();
-                            let audioPre     = await fetch(audioUrl);
-                            let audioPreBuff = await audioPre.arrayBuffer();
-                            let audioDecBuff = await this.audioCtx.decodeAudioData(audioPreBuff);
-                            let channelBuff;
-                            audioPre = null; audioPreBuff = null;
-                            this.closeAudioSources();
-
-                            const sampleRate = audioDecBuff.sampleRate;
-                            const duration   = audioDecBuff.duration;
-                            const windowSize = 1024;
-                            const intervals = 60 / (this.song.bpm * this.timeMultiplier);
-                            const energies = [];
-                            let   lastEnergy = 0;
-
-                            let avg64   = 0;
-                            let avg256  = 0;
-                            let avg1024 = 0;
-                            let divides = 0;
-                            let avgLen  = 0;
-                            let avgCnt  = 0;
-
-                            const noteCreates = [];
-                            let   noteNestedCombo = 0;
-                            let   multipleCombo = 0;
-                            let   lastNote = null;
+                            // 노트 생성
+                            const noteCreates = await this.createAutoNotes(audioUrl, this.song.bpm, this.difficultyLevel);
                             
-
-                            //     OfflineAudioContext 준비
-                            this.audioCtxPre = new OfflineAudioContext( audioDecBuff.numberOfChannels, audioDecBuff.length, sampleRate );
-                            this.audioBufferSource = this.audioCtxPre.createBufferSource();
-                            this.audioBufferSource.buffer = audioDecBuff;
-                            this.audioBufferSource.connect(this.audioCtxPre.destination);
-                            this.audioBufferSource.start();
-
-                            audioDecBuff = await this.audioCtxPre.startRendering();
-                            channelBuff  = audioDecBuff.getChannelData(0);
-
-                            //     분석 진행
-                            let timeCycle = 0;
-                            for(let time=0; time<audioDecBuff.duration; time += intervals) {
-                                const center = Math.floor(time * sampleRate);
-                                const starts = Math.max(0, center - Math.floor(windowSize / 2));
-
-                                // 에너지 값 계산
-                                let energy = 0;
-                                for (let i = 0; i < windowSize && starts + i < channelBuff.length; i++) {
-                                    const v = channelBuff[starts + i];
-                                    energy += v * v;
-                                }
-                                energy = Math.sqrt(energy / windowSize);
-
-                                energies.push(energy); // 변화 추이 기록을 위해 배열에 넣기
-                                if(energies.length >= 1024) energies.splice(0, 1); // 전체를 기록할 필요는 없으므로, 적당히 남기고 맨앞 원소 제거
-
-                                // 최근 energy 데이터의 평균 구하기 (최근64개 / 최근256개, 최근1024개)
-                                avg64   = 0;
-                                avg256  = 0;
-                                avg1024 = 0;
-                                divides = 0;
-                                avgCnt  = 0;
-                                avgLen  = energies.length;
-                                
-                                for(jdx=avgLen-1; jdx>=0; jdx--) {
-                                    if(avgCnt <   64) avg64   += energies[jdx]; 
-                                    if(avgCnt <  256) avg256  += energies[jdx]; 
-                                    if(avgCnt < 1024) avg1024 += energies[jdx];
-                                    avgCnt++;
-                                }
-
-                                divides = (avgLen <   64 ? avgLen :   64); avg64   = avg64   * 1.0 / divides;
-                                divides = (avgLen <  256 ? avgLen :  256); avg256  = avg256  * 1.0 / divides;
-                                divides = (avgLen < 1024 ? avgLen : 1024); avg1024 = avg1024 * 1.0 / divides;
-                                
-                                if(timeCycle >= (this.stageRows * (this.timeMultiplier / 8)) && energy > (lastEnergy * 1.2)) {
-                                    // 노트 생성여부 결정
-                                    let createYn = false;
-                                    let multipleCreate = 1;
-
-                                    if(lastNote == null) {
-                                        createYn = true; // 이전 노트가 없으면 무조건 생성
-                                    } else {
-                                        // 난이도에 따라 생성여부 결정
-                                        const timeGap = timeCycle - lastNote.originalTiming;
-                                        let properGap = 1; // 다음 노트 등장 사이 시간 허용값
-                                        let probability1 = 0.25; // 노트 생성 확률
-                                        let probability2 = 0.01; // 동시노트 적용 확률
-                                        if(this.difficultyLevel <= 2) {
-                                            properGap = 32;
-                                        } else if(this.difficultyLevel <= 4) {
-                                            properGap = 16;
-                                        } else if(this.difficultyLevel <= 5) {
-                                            properGap = 8;
-                                        } else if(this.difficultyLevel <= 6) {
-                                            properGap = 4;
-                                        } else if(this.difficultyLevel <= 8) {
-                                            properGap = 2;
-                                        } else if(this.difficultyLevel <= 10) {
-                                            properGap = 1;
-                                        } else if(this.difficultyLevel <= 12) {
-                                            properGap = 0.5;
-                                        } else {
-                                            properGap = 0.25;
-                                        }
-
-                                        if(timeGap >= properGap) {
-                                            if(timeGap > properGap) {
-                                                noteNestedCombo = 0;
-                                                createYn = true;
-                                            } else {
-                                                let properNestedCombo = 99999; // 허용 연타 횟수
-                                                if(this.difficultyLevel ==  3) properNestedCombo = 4;
-                                                if(this.difficultyLevel ==  7) properNestedCombo = 16;
-                                                if(this.difficultyLevel ==  9) properNestedCombo = 32;
-                                                if(this.difficultyLevel == 11) properNestedCombo = 64;
-
-                                                if(noteNestedCombo + 1 <= properNestedCombo) {
-                                                    noteNestedCombo++;
-                                                    createYn = true;
-                                                }
-                                            }
-                                        }
-
-                                        // 노트 생성 최소조건 만족 - 이제 확률 적용 차례
-                                        if(createYn) {
-                                            createYn = false;
-
-                                            if(this.difficultyLevel <= 1) {
-                                                if(energy >=   avg64) { probability1 = 0.75;  }
-                                                if(energy >=  avg256) { probability1 = 0.9;  probability2 = 0.02; }
-                                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1; }
-                                            } else if(this.difficultyLevel <= 4) {
-                                                if(energy >=   avg64) { probability1 = 0.77;  }
-                                                if(energy >=  avg256) { probability1 = 0.9;  probability2 = 0.05; }
-                                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.15; }
-                                            } else if(this.difficultyLevel <= 6) {
-                                                if(energy >=   avg64) { probability1 = 0.8;  }
-                                                if(energy >=  avg256) { probability1 = 0.9;  probability2 = 0.1; }
-                                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.3; }
-                                            } else if(this.difficultyLevel <= 8) {
-                                                if(energy >=   avg64) { probability1 = 0.9;  }
-                                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.15; }
-                                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.75; }
-                                            } else {
-                                                if(energy >= avg64) { 
-                                                    probability1 = 0.95; 
-                                                    if(this.difficultyLevel > 9) {
-                                                        probability2 = 0.1 + ( (this.difficultyLevel - 9) * 0.025 );
-                                                        if(probability2 > 0.75) probability2 = 0.75;
-                                                    }
-                                                }
-                                                if(energy >= avg256) { 
-                                                    probability1 = 0.98; 
-                                                    probability2 = 0.25;
-                                                    if(this.difficultyLevel > 9) {
-                                                        probability2 = 0.25 + ( (this.difficultyLevel - 9) * 0.05 );
-                                                        if(probability2 > 0.9) probability2 = 0.9;
-                                                    }
-                                                }
-                                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.99; }
-                                            }
-
-                                            if(ShuttingStarsUtility.random() <= probability1) createYn = true;
-                                            if(ShuttingStarsUtility.random() <= probability2) {
-                                                // 동시키 입력 콤보 계산
-                                                if(multipleCombo == 0) {
-                                                    multipleCreate++;
-                                                } else {
-                                                    for(let mc=0; mc<multipleCombo; mc++) {
-                                                        probability2 = probability2 * 0.5;
-                                                    }
-                                                    if(ShuttingStarsUtility.random() <= probability2) multipleCreate++;
-                                                }
-
-                                                // 추가 동시 키 적용
-                                                if(this.difficultyLevel >= 8) {
-                                                    let multiplyVal = 0.1 + (0.01 * (this.difficultyLevel - 8));
-                                                    if(multiplyVal > 0.75) multiplyVal = 0.75;
-
-                                                    probability2 = probability2 * multiplyVal;
-                                                    if(ShuttingStarsUtility.random() <= probability2) multipleCreate++;
-                                                }
-
-                                                // 적용
-                                                if(multipleCreate >= 2) multipleCombo++;
-                                                else                    multipleCombo = 0;
-                                            }
-                                        }
-                                    }
-
-                                    if(createYn) { // 노트 생성
-                                        const usedIndex = [];
-                                        for(let mdx=0; mdx<multipleCreate; mdx++) {
-                                            let locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
-                                            while(usedIndex.indexOf(locationIndex) >= 0) {
-                                                locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
-                                            }
-
-                                            const note = new Note( locationIndex , this);
-                                            note.id = this.lastObjectId; this.lastObjectId++;
-                                            note.patternId = 0;
-                                            if(lastNote != null) note.patternId = lastNote.patternId + 1;
-                                            note.originalTiming = timeCycle;
-
-                                            noteCreates.push(note);
-                                            lastNote = note;
-                                            usedIndex.push(locationIndex);
-                                        }
-                                    }
-                                }
-
-                                lastEnergy = energy;
-                                timeCycle++;
-                            }
-
-                            //     생성한 노트들 옮기기
+                            // 생성한 노트들 옮기기
                             for(let n=0; n<noteCreates.length; n++) {
                                 const noteOne = noteCreates[n];
                                 this.objectsPlaying.push(noteOne);
                             }
-                            
-                            //     불필요해진 객체들 정리
-                            audioDecBuff = null;
-                            channelBuff  = null;
+
                             //     Audio Context 닫기
                             this.closeAudioSources();
                         }
@@ -2584,9 +2364,8 @@ class ShuttingStarsCore {
                 if(this.missionChoosing == null) return;
                 this.playSE('accept2');
 
-                this.missionChoosing.prepare(this); // 노트 이 시점에 생성
+                this.missionChoosing.prepare(this); // 미션 객체는 준비작업이 필요
                 
-
                 this.songTitleTime = this.songTitleBaseTime;
                 this.song = this.missionChoosing;
                 this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
@@ -6022,7 +5801,6 @@ class ShuttingStarsCore {
         if(this.audioAnalyser    != null) { try { this.audioAnalyser.disconnect();    this.audioAnalyser    = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioCtx         != null) { try { this.audioCtx.close();              this.audioCtx         = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioCtxPre      != null) { try {                                     this.audioCtxPre      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        // audioBufferSource
     }
 
     /**
@@ -7340,6 +7118,323 @@ class ShuttingStarsCore {
     }
 
     /**
+     * 자동 노트 생성 (Promise)
+     * @param {string} audioUrl 
+     * @param {number} bpm
+     * @param {number} difficultyLevel
+     * @return {Promise<Array<Note>>}
+     */
+    async createAutoNotes(audioUrl, bpm, difficultyLevel) {
+        let exceptionOccured = null;
+        let idx, jdx;
+
+        let audioCtx = null;
+        let audioCtxPre = null;
+        let audioBufferSource = null;
+        const noteCreates = [];
+        try {
+            // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 시작 TODO
+            audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+            let audioPre     = await fetch(audioUrl);
+            let audioPreBuff = await audioPre.arrayBuffer();
+            let audioDecBuff = await audioCtx.decodeAudioData(audioPreBuff);
+            let channelBuff;
+
+            audioPre = null; audioPreBuff = null;
+            audioCtx.close(); audioCtx = null;
+
+            const sampleRate = audioDecBuff.sampleRate;
+            const duration   = audioDecBuff.duration;
+            const windowSize = 1024;
+            const intervals = 60 / (bpm * this.timeMultiplier);
+            const energies = [];
+            let   lastEnergy = 0;
+
+            let avg16   = 0;
+            let avg32   = 0;
+            let avg64   = 0;
+            let avg256  = 0;
+            let avg1024 = 0;
+            let divides = 0;
+            let avgLen  = 0;
+            let avgCnt  = 0;
+
+            let noteNestedCombo = 0;
+            let multipleCombo = 0;
+            let lastNote = null;
+            let lastLocationIndexes = [];
+
+            const minTimeCycle = (this.stageRows * (this.timeMultiplier / 8));
+            
+            //     OfflineAudioContext 준비
+            audioCtxPre = new OfflineAudioContext( audioDecBuff.numberOfChannels, audioDecBuff.length, sampleRate );
+            audioBufferSource = audioCtxPre.createBufferSource();
+            audioBufferSource.buffer = audioDecBuff;
+            audioBufferSource.connect(audioCtxPre.destination);
+            audioBufferSource.start();
+
+            audioDecBuff = await audioCtxPre.startRendering();
+            channelBuff  = audioDecBuff.getChannelData(0);
+
+            //     분석 진행
+            let timeCycle = 0;
+            for(let time=0; time<audioDecBuff.duration; time += intervals) {
+                const center = Math.floor(time * sampleRate);
+                const starts = Math.max(0, center - Math.floor(windowSize / 2));
+
+                // 에너지 값 계산
+                let energy = 0;
+                for (let i = 0; i < windowSize && starts + i < channelBuff.length; i++) {
+                    const v = channelBuff[starts + i];
+                    energy += v * v;
+                }
+                energy = Math.sqrt(energy / windowSize);
+
+                energies.push(energy); // 변화 추이 기록을 위해 배열에 넣기
+                if(energies.length >= 1024) energies.splice(0, 1); // 전체를 기록할 필요는 없으므로, 적당히 남기고 맨앞 원소 제거
+
+                // 최근 energy 데이터의 평균 구하기
+                avg16   = 0;
+                avg32   = 0;
+                avg64   = 0;
+                avg256  = 0;
+                avg1024 = 0;
+                divides = 0;
+                avgCnt  = 0;
+                avgLen  = energies.length;
+                
+                for(jdx=avgLen-1; jdx>=0; jdx--) {
+                    if(avgCnt <   16) avg16   += energies[jdx];
+                    if(avgCnt <   32) avg32   += energies[jdx];
+                    if(avgCnt <   64) avg64   += energies[jdx]; 
+                    if(avgCnt <  256) avg256  += energies[jdx]; 
+                    if(avgCnt < 1024) avg1024 += energies[jdx];
+                    avgCnt++;
+                }
+
+                divides = (avgLen <   16 ? avgLen :   16); avg16   = avg16   * 1.0 / divides;
+                divides = (avgLen <   32 ? avgLen :   32); avg32   = avg32   * 1.0 / divides;
+                divides = (avgLen <   64 ? avgLen :   64); avg64   = avg64   * 1.0 / divides;
+                divides = (avgLen <  256 ? avgLen :  256); avg256  = avg256  * 1.0 / divides;
+                divides = (avgLen < 1024 ? avgLen : 1024); avg1024 = avg1024 * 1.0 / divides;
+                
+                if(timeCycle >= minTimeCycle && energy > (lastEnergy * 1.2)) {
+                    // 노트 생성여부 결정
+                    let createYn = false;
+                    let multipleCreate = 1;
+
+                    if(lastNote == null) {
+                        createYn = true; // 이전 노트가 없으면 무조건 생성
+                    } else {
+                        // 난이도에 따라 생성여부 결정
+                        const timeGap = timeCycle - lastNote.originalTiming;
+                        let properGap = 1; // 다음 노트 등장 사이 시간 허용값
+                        let probability1 = 0.25; // 노트 생성 확률
+                        let probability2 = 0.01; // 동시노트 적용 확률
+
+                        if(difficultyLevel <= 2) {
+                            properGap = 32;
+                        } else if(difficultyLevel <= 4) {
+                            properGap = 16;
+                        } else if(difficultyLevel <= 5) {
+                            properGap = 8;
+                        } else if(difficultyLevel <= 6) {
+                            properGap = 4;
+                        } else if(difficultyLevel <= 8) {
+                            properGap = 2;
+                        } else if(difficultyLevel <= 10) {
+                            properGap = 1;
+                        } else if(difficultyLevel <= 12) {
+                            properGap = 0.5;
+                        } else {
+                            properGap = 0.25;
+                        }
+
+                        // bpm 보정
+                        if(bpm <= 45) {
+                            properGap = properGap * 0.25;
+                        } else if(bpm <= 90) {
+                            properGap = properGap * 0.5;
+                        } else if(bpm <= 180) {
+                            // DO NOTHING
+                        } else if(bpm <= 240) {
+                            properGap = properGap * 2;
+                        } else if(bpm <= 360) {
+                            properGap = properGap * 3;
+                        } else {
+                            properGap = properGap * 4;
+                        }
+
+                        if(timeGap >= properGap) {
+                            if(timeGap > properGap) {
+                                noteNestedCombo = 0;
+                                createYn = true;
+                            } else {
+                                let properNestedCombo = 99999; // 허용 연타 횟수
+                                if(difficultyLevel ==  3) properNestedCombo = 4;
+                                if(difficultyLevel ==  7) properNestedCombo = 16;
+                                if(difficultyLevel ==  9) properNestedCombo = 32;
+                                if(difficultyLevel == 11) properNestedCombo = 64;
+
+                                if(noteNestedCombo + 1 <= properNestedCombo) {
+                                    noteNestedCombo++;
+                                    createYn = true;
+                                }
+                            }
+                        }
+
+                        // 노트 생성 최소조건 만족 - 이제 확률 적용 차례
+                        if(createYn) {
+                            createYn = false;
+
+                            // 난이도별 확률 계산
+                            if(difficultyLevel <= 1) {
+                                if(energy >=   avg16) { probability1 = 0.75;  }
+                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; }
+                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; }
+                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; }
+                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  }
+                            } else if(difficultyLevel <= 4) {
+                                if(energy >=   avg16) { probability1 = 0.77;  }
+                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;   }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;   }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075;  }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;   }
+                            } else if(difficultyLevel <= 6) {
+                                if(energy >=   avg16) { probability1 = 0.8;  }
+                                if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  }
+                            } else if(difficultyLevel <= 8) {
+                                if(energy >=   avg16) { probability1 = 0.9;  }
+                                if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  }
+                                if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; }
+                                if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  }
+                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; }
+                            } else {
+                                if(energy >= avg16) { 
+                                    probability1 = 0.95; 
+                                    if(difficultyLevel > 9) {
+                                        probability2 = 0.1 + ( (difficultyLevel - 9) * 0.025 );
+                                        if(probability2 > 0.75) probability2 = 0.75;
+                                    }
+                                }
+                                if(energy >= avg32) { 
+                                    probability1 = 0.98; 
+                                    probability2 = 0.25;
+                                    if(difficultyLevel > 9) {
+                                        probability2 = 0.25 + ( (difficultyLevel - 9) * 0.05 );
+                                        if(probability2 > 0.9) probability2 = 0.9;
+                                    }
+                                }
+                                if(energy >=  avg256) { probability1 =  0.99;  probability2 =  0.99; }
+                                if(energy >= avg1024) { probability1 = 0.999;  probability2 = 0.999; }
+                            }
+
+                            // 초반 부분은 빈도 낮춤
+                            if(timeCycle < minTimeCycle * 2) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle < minTimeCycle * 3) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+
+                            // bpm 보정
+                            let ratioBpm = 1;
+                            if(bpm <= 90) {
+                                ratioBpm = 3 - (bpm * 2.0 / 90);
+                            } else if(bpm <= 180) {
+                                ratioBpm = 3 - (bpm * 2.0 / 180);
+                            } else if(bpm <= 240) {
+                                ratioBpm = 3 - (bpm * 2.0 / 240);
+                            } else if(bpm <= 360) {
+                                ratioBpm = 3 - (bpm * 2.0 / 360);
+                            }
+                            if(ratioBpm >= 1.25) ratioBpm = 1.25;
+                            if(ratioBpm <  0.85) ratioBpm = 0.85;
+
+                            // probability1, probability2 범위 유효성 검사
+                            if(probability1 < 0) probability1 = 0;
+                            if(probability1 > 1) probability1 = 1;
+                            if(probability2 < 0) probability2 = 0;
+                            if(probability2 > 1) probability2 = 1;
+
+                            // 확률의 곱셈 계산 (예를 들면 0.5 의 2배는 1 이 아닌 0.75 가 되어야 함)
+                            probability1 = 1 - Math.pow(1 - probability1, ratioBpm);
+                            probability2 = 1 - Math.pow(1 - probability2, ratioBpm);
+
+                            // 확률 적용
+                            if(ShuttingStarsUtility.random() <= probability1) createYn = true;
+                            if(ShuttingStarsUtility.random() <= probability2) {
+                                // 동시키 입력 콤보 계산
+                                if(multipleCombo == 0) {
+                                    multipleCreate++;
+                                } else {
+                                    for(let mc=0; mc<multipleCombo; mc++) {
+                                        probability2 = probability2 * 0.5;
+                                    }
+                                    if(ShuttingStarsUtility.random() <= probability2) multipleCreate++;
+                                }
+
+                                // 추가 동시 키 적용
+                                if(difficultyLevel >= 8) {
+                                    let multiplyVal = 0.1 + (0.01 * (difficultyLevel - 8));
+                                    if(multiplyVal > 0.75) multiplyVal = 0.75;
+
+                                    probability2 = probability2 * multiplyVal;
+                                    if(ShuttingStarsUtility.random() <= probability2) multipleCreate++;
+                                }
+
+                                // 적용
+                                if(multipleCreate >= 2) multipleCombo++;
+                                else                    multipleCombo = 0;
+                            }
+                        }
+                    }
+
+                    if(createYn) { // 노트 생성
+                        const usedIndex = [];
+                        for(let mdx=0; mdx<multipleCreate; mdx++) {
+                            let locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+
+                            if(mdx <= 1) {
+                                while(usedIndex.indexOf(locationIndex) >= 0 || lastLocationIndexes.indexOf(locationIndex) >= 0) {
+                                    locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                }
+                            } else {
+                                while(usedIndex.indexOf(locationIndex) >= 0) {
+                                    locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                }
+                            }
+                            
+
+                            const note = new Note( locationIndex , this);
+                            note.id = this.lastObjectId; this.lastObjectId++;
+                            note.patternId = 0;
+                            if(lastNote != null) note.patternId = lastNote.patternId + 1;
+                            note.originalTiming = timeCycle;
+
+                            noteCreates.push(note);
+                            lastNote = note;
+                            usedIndex.push(locationIndex);
+                        }
+                        lastLocationIndexes = usedIndex;
+                    }
+                }
+
+                lastEnergy = energy;
+                timeCycle++;
+            }
+            
+            //     불필요해진 객체들 정리
+            audioDecBuff = null;
+            channelBuff  = null;
+        } catch(e) {
+            exceptionOccured = e;
+        }
+
+        if(exceptionOccured != null) throw exceptionOccured;
+        return noteCreates;
+    }
+
+    /**
      * 플러그인 불러오기
      * @returns {Promise<void>} 플러그인 로드 작업
      */
@@ -7777,13 +7872,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
      * 객체 사전준비
      * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
      */
-    prepare(inst) {}
-    /**
-     * 노트들을 난이도에 맞게 사전생성, Survive 미션 공통 메소드이며, prepare 메소드를 통해 호출되도록 만들 예정
-     * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
-     * @param {number} level 난이도 레벨
-     */
-    prepareNotes(inst, level) {
+    prepare(inst) {
         const allCnt = inst.songDisplays.length;
         const rand   = Math.floor(ShuttingStarsUtility.random() * allCnt);
 
@@ -7791,58 +7880,12 @@ class ShuttingStarsMission extends ShuttingStarsSong {
         this.musicUrl       = choosed.musicUrl;
         this.musicAlterUrl  = choosed.musicAlterUrl;
         this.bpm            = choosed.bpm;
-        this.endTime        = choosed.endTime;
-        this.timeConstant   = choosed.timeConstant;
-        this.timeMultiplier = choosed.timeMultiplier;
+        this.endTime        = Math.ceil(choosed.endTime / choosed.noteMultiplier) + 1;
+        this.timeConstant   = 0;
+        this.timeMultiplier = 1;// choosed.timeMultiplier;
         this.loadingTime    = choosed.loadingTime;
         this.composer       = choosed.composer;
-        this.noteWriter     = '?';
-
-        // 난이도는 하나만 생성
-        this.difficulties = [];
-        let difficulty = {};
-        difficulty.index = 0;
-        difficulty.difficultyLevel = level;
-        if(level <= 4) difficulty.difficultyLabel = 'easy';
-        else if(level <= 6) difficulty.difficultyLabel = 'normal';
-        else if(level <= 10) difficulty.difficultyLabel = 'hard';
-        else difficulty.difficultyLabel = 'ex1';
-
-        difficulty.patterns = [];
-        let idx;
-
-        // 난이도에 맞게 패턴 랜덤생성 확률 결정
-        let bpmRev = (Math.abs(300.0 - this.bpm) / 300.0); // bpm 이 빠르면 더 쉬워져야 하므로 만든 상수
-        let rateMin   = 0.1 + (0.005 * bpmRev);   // 랜덤값 최소값
-        let ratePoint = 0.05;                     // 랜덤값이 이 이하로 나와야 노트 생성
-        let rateAfter = 0.00025 * bpmRev;         // 노트 생성 안한 타이밍 당 노트 생성확률 증가폭
-        
-        for(idx=0; idx<level; idx++) {
-            ratePoint += (0.02    * bpmRev);
-            rateAfter += (0.00025 * bpmRev);
-            rateMin   -= (0.002   * bpmRev);
-        }
-
-        // 결정한 확률대로 노트 생성
-        let noteCreatedAfter = 0;
-        let randValue = 0;
-        for(idx=this.loadingTime * inst.timeMultiplier + 100; idx<this.endTime; idx++) {
-            randValue = ShuttingStarsUtility.random() + rateMin; // rateMin ~ (9.99999 + rateMin)
-            randValue -= (rateAfter * noteCreatedAfter);
-            if(randValue < 0) randValue = 0;
-            if(randValue > 1) randValue = 1;
-
-            if(randValue <= ratePoint) {
-                // console.log(idx + '\t MATCHED \t' + randValue + '\t' + ratePoint + ', ' + (rateAfter * noteCreatedAfter));
-                noteCreatedAfter = 0; // 초기화
-                difficulty.patterns.push({ locationIndex : -1, time : idx }); // 노트 타이밍 생성
-            } else {
-                // console.log(idx + '\t NOT MATCHED \t' + randValue + '\t' + ratePoint + ', ' + (rateAfter * noteCreatedAfter));
-                noteCreatedAfter++; // 다음 번 타이밍에 노트 생성할 확률 증가
-            }
-        }
-        
-        this.difficulties.push(difficulty);
+        this.noteWriter     = '???';
     }
 }
 
@@ -7864,7 +7907,16 @@ class EasySurvive extends ShuttingStarsMission {
      * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
      */
     prepare(inst) {
-        this.prepareNotes(inst, 3);
+        super.prepare(inst);
+        // this.prepareNotes(inst, 3);
+        this.difficulties = [];
+        this.difficulties.push({
+            index : 0,
+            difficultyLabel : 'easy',
+            difficultyLevel : 3,
+            patterns : [],
+            autoCreate : true
+        });
     }
 }
 
@@ -7886,7 +7938,16 @@ class NormalSurvive extends ShuttingStarsMission {
      * @param {ShuttingStarsCore} inst inst 값
      */
     prepare(inst) {
-        this.prepareNotes(inst, 5);
+        super.prepare(inst);
+        // this.prepareNotes(inst, 5);
+        this.difficulties = [];
+        this.difficulties.push({
+            index : 0,
+            difficultyLabel : 'normal',
+            difficultyLevel : 5,
+            patterns : [],
+            autoCreate : true
+        });
     }
 }
 
@@ -7908,7 +7969,78 @@ class HardSurvive extends ShuttingStarsMission {
      * @param {ShuttingStarsCore} inst inst 값
      */
     prepare(inst) {
-        this.prepareNotes(inst, 9);
+        super.prepare(inst);
+        // this.prepareNotes(inst, 9);
+        this.difficulties = [];
+        this.difficulties.push({
+            index : 0,
+            difficultyLabel : 'hard',
+            difficultyLevel : 8,
+            patterns : [],
+            autoCreate : true
+        });
+    }
+}
+
+/** Very HARD 생존 미션 */
+class VeryHardSurvive extends ShuttingStarsMission {
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStarsCore} inst inst 값
+     */
+    constructor(inst) {
+        super(inst);
+        this.name = 'SURVIVE (Very HARD)'
+        let desc = inst.trans('Survive (Very HARD)');
+        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        this.description = desc;
+    }
+    /**
+     * 사전 준비
+     * @param {ShuttingStarsCore} inst inst 값
+     */
+    prepare(inst) {
+        super.prepare(inst);
+        // this.prepareNotes(inst, 9);
+        this.difficulties = [];
+        this.difficulties.push({
+            index : 0,
+            difficultyLabel : 'hard',
+            difficultyLevel : 10,
+            patterns : [],
+            autoCreate : true
+        });
+    }
+}
+
+/** Crazy 생존 미션 */
+class CrazySurvive extends ShuttingStarsMission {
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStarsCore} inst inst 값
+     */
+    constructor(inst) {
+        super(inst);
+        this.name = 'SURVIVE (CRAZY)'
+        let desc = inst.trans('Survive (CRAZY)');
+        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        this.description = desc;
+    }
+    /**
+     * 사전 준비
+     * @param {ShuttingStarsCore} inst inst 값
+     */
+    prepare(inst) {
+        super.prepare(inst);
+        // this.prepareNotes(inst, 9);
+        this.difficulties = [];
+        this.difficulties.push({
+            index : 0,
+            difficultyLabel : 'ex',
+            difficultyLevel : 12,
+            patterns : [],
+            autoCreate : true
+        });
     }
 }
 
@@ -9779,6 +9911,7 @@ function initShuttingStars(mainDiv, urlContext) {
     ShuttingStars.init(mainDiv, urlContext);
 }
 
+for(let scl=0; scl<100; scl++) { ssConsoleLogs(''); }
 ssConsoleLogs('ShuttingStars - BUILD ' + ShuttingStars.build());
 window.ssmanager = ShuttingStars;
 window.ssutil    = ShuttingStarsUtility;

@@ -64,6 +64,8 @@ ssSetStringTable({
         'Survive (EASY)' : '생존 (쉬움)',
         'Survive (NORMAL)' : '생존 (보통)',
         'Survive (HARD)' : '생존 (어려움)',
+        'Survive (Very HARD)' : '생존 (매우어려움)',
+        'Survive (CRAZY)' : '생존 (CRASY)',
         'BACK : ' : '돌아가기 : ',
         '% key to continue...' : '% 키를 눌러 계속...',
         'PLAYING REPORT' : 'PLAYING REPORT',
