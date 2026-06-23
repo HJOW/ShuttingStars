@@ -310,6 +310,8 @@ class ShuttingStarsCore {
     difficulty = null;
     /** @type {number} 선택된 난이도 (숫자) */
     difficultyLevel = -1;
+    /** @type {boolean} 해당 난이도가 노트 자동생성 기능을 사용하는지 여부 */
+    difficultyUsingAutoCreate = false;
     /** @type {HTMLAudioElement|null} 현재 선택된 곡의 오디오 객체 */
     audio = null;
     /** @type {string|null} 현재 선택된 곡의 썸네일 이미지 URL */
@@ -1871,24 +1873,26 @@ class ShuttingStarsCore {
             }
 
             // 노트 미리 생성
-            for(idx=0; idx<patterns.length; idx++) {
-                const pattern = patterns[idx];
+            if(! this.difficultyUsingAutoCreate) {
+                for(idx=0; idx<patterns.length; idx++) {
+                    const pattern = patterns[idx];
 
-                // 패턴 ID 세팅
-                pattern.id = idx;
-                
-                // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
-                if(pattern.locationIndex < 0) {
-                    pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
+                    // 패턴 ID 세팅
+                    pattern.id = idx;
+                    
+                    // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
+                    if(pattern.locationIndex < 0) {
+                        pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
+                    }
+
+                    // 노트 생성
+                    const note = new Note(pattern.locationIndex, this);
+                    note.id = this.lastObjectId; this.lastObjectId++;
+                    note.patternId = pattern.id;
+                    note.originalTiming = pattern.time;
+                    // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
+                    this.objectsPlaying.push(note); // 노트 추가
                 }
-
-                // 노트 생성
-                const note = new Note(pattern.locationIndex, this);
-                note.id = this.lastObjectId; this.lastObjectId++;
-                note.patternId = pattern.id;
-                note.originalTiming = pattern.time;
-                // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
-                this.objectsPlaying.push(note); // 노트 추가
             }
 
             // 썸네일 체크해 이미지 객체 만들기
@@ -1919,55 +1923,134 @@ class ShuttingStarsCore {
                             audioUrl = this.convertURL(this.song.musicUrl);
                         }
 
-                        /*
-                        // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 시작
-                        console.log('Analyze START');
-                        this.audioCtx      = new (window.AudioContext || window.webkitAudioContext)();
-                        let   audioPre     = await fetch(audioUrl);
-                        let   audioPreBuff = await audioPre.arrayBuffer();
-                        let   audioDecBuff = await this.audioCtx.decodeAudioData(audioPreBuff);
-                        let   channelBuff;
-                        audioPre = null; audioPreBuff = null;
-                        this.closeAudioSources();
+                        if(this.difficultyUsingAutoCreate) {
+                            // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 시작
+                            this.audioCtx    = new (window.AudioContext || window.webkitAudioContext)();
+                            let audioPre     = await fetch(audioUrl);
+                            let audioPreBuff = await audioPre.arrayBuffer();
+                            let audioDecBuff = await this.audioCtx.decodeAudioData(audioPreBuff);
+                            let channelBuff;
+                            audioPre = null; audioPreBuff = null;
+                            this.closeAudioSources();
 
-                        const sampleRate = audioDecBuff.sampleRate;
-                        const duration   = audioDecBuff.duration;
-                        const windowSize = 1024;
-                        const intervals = 60 / (this.song.bpm * this.timeMultiplier);
+                            const sampleRate = audioDecBuff.sampleRate;
+                            const duration   = audioDecBuff.duration;
+                            const windowSize = 1024;
+                            const intervals = 60 / (this.song.bpm * this.timeMultiplier);
+                            const energies = [];
+                            let   lastEnergy = 0;
 
-                        //     OfflineAudioContext 준비
-                        this.audioCtxPre = new OfflineAudioContext( audioDecBuff.numberOfChannels, audioDecBuff.length, sampleRate );
-                        this.audioBufferSource = this.audioCtxPre.createBufferSource();
-                        this.audioBufferSource.buffer = audioDecBuff;
-                        this.audioBufferSource.connect(this.audioCtxPre.destination);
-                        this.audioBufferSource.start();
+                            const noteCreates = [];
+                            let   noteNestedCombo = 0;
+                            let   lastNote = null;
+                            
 
-                        audioDecBuff = await this.audioCtxPre.startRendering();
-                        channelBuff  = audioDecBuff.getChannelData(0);
+                            //     OfflineAudioContext 준비
+                            this.audioCtxPre = new OfflineAudioContext( audioDecBuff.numberOfChannels, audioDecBuff.length, sampleRate );
+                            this.audioBufferSource = this.audioCtxPre.createBufferSource();
+                            this.audioBufferSource.buffer = audioDecBuff;
+                            this.audioBufferSource.connect(this.audioCtxPre.destination);
+                            this.audioBufferSource.start();
 
-                        for(let time=0; time<audioDecBuff.duration; time += intervals) {
-                            const center = Math.floor(time * sampleRate);
-                            const starts = Math.max(0, center - Math.floor(windowSize / 2));
+                            audioDecBuff = await this.audioCtxPre.startRendering();
+                            channelBuff  = audioDecBuff.getChannelData(0);
 
-                            let energy = 0;
-                            for (let i = 0; i < windowSize && starts + i < channelBuff.length; i++) {
-                                const v = channelBuff[starts + i];
-                                energy += v * v;
+                            //     분석 진행
+                            for(let time=0; time<audioDecBuff.duration; time += intervals) {
+                                const center = Math.floor(time * sampleRate);
+                                const starts = Math.max(0, center - Math.floor(windowSize / 2));
+
+                                // 에너지 값 계산
+                                let energy = 0;
+                                for (let i = 0; i < windowSize && starts + i < channelBuff.length; i++) {
+                                    const v = channelBuff[starts + i];
+                                    energy += v * v;
+                                }
+                                energy = Math.sqrt(energy / windowSize);
+
+                                energies.push(energy); // 변화 추이 기록을 위해 배열에 넣기
+                                if(energies.length >= 32) energies.splice(0, 1); // 전체를 기록할 필요는 없으므로, 적당히 남기고 맨앞 원소 제거
+
+                                // 최근 energy 데이터의 평균 구하기
+                                let avg = 0;
+                                for(jdx=0; jdx<energies.length; jdx++) { avg += energies[jdx]; }
+                                avg = avg * 1.0 / energies.length;
+                                
+
+                                if(time >= (intervals * 4) && energy > avg && energy > (lastEnergy * 1.2)) {
+                                    // 노트 생성여부 결정
+                                    let createYn = false;
+
+                                    if(lastNote == null) {
+                                        createYn = true; // 이전 노트가 없으면 무조건 생성
+                                    } else {
+                                        // 난이도에 따라 생성여부 결정
+                                        const timeGap = time - lastNote.originalTiming;
+                                        let properGap = 1; // 다음 노트 등장 사이 시간 허용값
+                                        if(this.difficultyLevel <= 2) {
+                                            properGap = 32;
+                                        } else if(this.difficultyLevel <= 4) {
+                                            properGap = 16;
+                                        } else if(this.difficultyLevel <= 5) {
+                                            properGap = 8;
+                                        } else if(this.difficultyLevel <= 6) {
+                                            properGap = 4;
+                                        } else if(this.difficultyLevel <= 8) {
+                                            properGap = 2;
+                                        } else if(this.difficultyLevel <= 10) {
+                                            properGap = 1;
+                                        } else if(this.difficultyLevel <= 12) {
+                                            properGap = 0.5;
+                                        } else {
+                                            properGap = 0.25;
+                                        }
+
+                                        if(timeGap >= properGap) {
+                                            if(timeGap > properGap) {
+                                                noteNestedCombo = 0;
+                                                createYn = true;
+                                            } else {
+                                                let properNestedCombo = 99999; // 허용 연타 횟수
+                                                if(this.difficultyLevel ==  3) properNestedCombo = 4;
+                                                if(this.difficultyLevel ==  7) properNestedCombo = 16;
+                                                if(this.difficultyLevel ==  9) properNestedCombo = 32;
+                                                if(this.difficultyLevel == 11) properNestedCombo = 64;
+
+                                                if(noteNestedCombo + 1 <= properNestedCombo) {
+                                                    noteNestedCombo++;
+                                                    createYn = true;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if(createYn) { // 노트 생성
+                                        const note = new Note(-1, this);
+                                        note.id = this.lastObjectId; this.lastObjectId++;
+                                        note.patternId = 0;
+                                        if(lastNote != null) note.patternId = lastNote.patternId + 1;
+                                        note.originalTiming = time;
+
+                                        noteCreates.push(note);
+                                        lastNote = note;
+                                    }
+                                }
+
+                                lastEnergy = energy;
                             }
-                            energy = Math.sqrt(energy / windowSize);
 
-                            console.log(energy); // TODO
+                            //     생성한 노트들 옮기기
+                            for(let n=0; n<noteCreates.length; n++) {
+                                const noteOne = noteCreates[n];
+                                this.objectsPlaying.push(noteOne);
+                            }
+                            
+                            //     불필요해진 객체들 정리
+                            audioDecBuff = null;
+                            channelBuff  = null;
+                            //     Audio Context 닫기
+                            this.closeAudioSources();
                         }
-                        
-                        //     불필요해진 객체들 정리
-                        audioDecBuff = null;
-                        channelBuff  = null;
-                        //     Audio Context 닫기
-                        this.closeAudioSources();
-
-                        console.log('Analyze END');
-                        // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 종료
-                        */
 
                         // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
                         this.audio = new Audio(audioUrl);
@@ -2407,6 +2490,7 @@ class ShuttingStarsCore {
                 this.song = this.missionChoosing;
                 this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
                 this.difficultyLevel = this.difficulty.difficultyLevel;
+                this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
 
                 if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
 
@@ -2459,6 +2543,7 @@ class ShuttingStarsCore {
                     if(index < 0) index = this.difficultyChoosingList.length - 1;
                     this.difficulty = this.difficultyChoosingList[index];
                     this.difficultyLevel = this.difficulty.difficultyLevel;
+                    this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
                 } else {
                     this.songChoosingMode = 'mission';
                     if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
@@ -2478,6 +2563,7 @@ class ShuttingStarsCore {
                     this.playSE('accept2');
                     if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
                     this.difficultyLevel = this.difficulty.difficultyLevel;
+                    this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
                     this.songTitleTime = this.songTitleBaseTime;
                     if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
 
@@ -2492,6 +2578,7 @@ class ShuttingStarsCore {
                     this.difficultyChoosingList = this.song.getDifficultyList();
                     this.difficulty = this.difficultyChoosingList[0];
                     this.difficultyLevel = this.difficulty.difficultyLevel;
+                    this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
                     this.difficultyChoosing = true;
                 }
             }
@@ -3759,7 +3846,7 @@ class ShuttingStarsCore {
 
                         if(this.difficultyChoosingList.length == 0) this.difficultyChoosingList = this.songChoosing.getDifficultyList();
                         let diffIdx = this.difficultyChoosingList.indexOf(this.difficulty);
-                        if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; this.difficultyLevel = this.difficulty.difficultyLevel; }
+                        if(diffIdx < 0) { diffIdx = 0; this.difficulty = this.difficultyChoosingList[diffIdx]; this.difficultyLevel = this.difficulty.difficultyLevel; this.difficultyUsingAutoCreate = this.difficulty.autoCreate; }
                         
                         cols = 0;
                         this.ctx.textAlign = "center";
@@ -7204,12 +7291,17 @@ class ShuttingStarsCore {
             newObj.difficultyLabel = difficultyOne.difficultyLabel;
             newObj.difficultyLevel = difficultyOne.difficultyLevel;
             newObj.patterns = [];
+            newObj.autoCreate = false;
 
-            for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
-                const noteJsonOne = difficultyOne.patterns[idx2];
-                let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
-                newObj.patterns.push(patternOne);
+            if(difficultyOne.autoCreate) newObj.autoCreate = true;
+            if(difficultyOne.patterns) {
+                for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
+                    const noteJsonOne = difficultyOne.patterns[idx2];
+                    let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
+                    newObj.patterns.push(patternOne);
+                }
             }
+            
             song.difficulties.push(newObj);
         }
 
@@ -7460,9 +7552,10 @@ class ShuttingStarsSong {
     // 난이도 별 패턴
     // 배열로, 각 원소는 JSON객체로 구성
     // 원소의 JSON키
-    //     difficultyLabel : easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
-    //     difficultyLevel : 1, 2, 3, ... (정수로  입력)
-    //     patterns : 배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
+    //     difficultyLabel : (string) easy, normal, hard, 그 뒤부터는 ex1, ex2, ex3, ... 순으로 난이도 이름 뒤에 ; (세미콜론) 뒤에 숫자로 난이도 표기한 문자열이 키로 사용
+    //     difficultyLevel : (number) 1, 2, 3, ... (정수로  입력)
+    //     patterns        : (array)  배열로 그 안에 ShuttingStarsNotePattern 패턴들이 탑재
+    //     autoCreate      : (boolean, 선택사항) 노트 자동생성 기능 사용여부 지정 (true 시 위 patterns 배열은 의미가 없어짐, 기본값은 false)
     /** @type {Array<Object>} 곡에 정의된 난이도 및 패턴 목록입니다. */
     difficulties = [];
 
@@ -7486,11 +7579,14 @@ class ShuttingStarsSong {
         let idx;
         for(idx=0; idx<this.difficulties.length; idx++) {
             const diffOne = this.difficulties[idx];
-            arr.push({
+            let obj = {
                 index : diffOne.index,
                 difficultyLabel : diffOne.difficultyLabel,
-                difficultyLevel : diffOne.difficultyLevel
-            });
+                difficultyLevel : diffOne.difficultyLevel,
+                autoCreate : false
+            };
+            if(diffOne.autoCreate) obj.autoCreate = true;
+            arr.push(obj);
         }
         return arr;
     }
@@ -7549,13 +7645,19 @@ class ShuttingStarsSong {
             diffObj.difficultyLevel = diffOne.difficultyLevel;
             diffObj.patterns = [];
 
-            for(jdx=0; jdx<diffOne.patterns.length; jdx++) {
-                const noteObjOne = diffOne.patterns[jdx];
-                let noteJsonOne = {};
-                noteJsonOne.locationIndex = noteObjOne.locationIndex;
-                noteJsonOne.time = noteObjOne.time;
-                diffObj.patterns.push(noteJsonOne);
+            diffObj.autoCreate = false;
+            if(diffOne.autoCreate) diffObj.autoCreate = true;
+
+            if(diffOne.patterns) {
+                for(jdx=0; jdx<diffOne.patterns.length; jdx++) {
+                    const noteObjOne = diffOne.patterns[jdx];
+                    let noteJsonOne = {};
+                    noteJsonOne.locationIndex = noteObjOne.locationIndex;
+                    noteJsonOne.time = noteObjOne.time;
+                    diffObj.patterns.push(noteJsonOne);
+                }
             }
+            
             obj.difficulties.push(diffObj);
         }
 

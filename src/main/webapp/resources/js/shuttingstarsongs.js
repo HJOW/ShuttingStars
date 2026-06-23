@@ -60,6 +60,7 @@ song.difficulties = [
     {
         difficultyLabel : 'easy',
         difficultyLevel : 4,
+        autoCreate : false, // 노트 자동생성 여부 (true 지정 시 patterns 를 읽지 않음)
         patterns : [
 {"locationIndex":4,"time":254.122},
 {"locationIndex":0,"time":270.998},
@@ -219,6 +220,7 @@ song.difficulties = [
     {
         difficultyLabel : 'normal',
         difficultyLevel : 6,
+        autoCreate : false,
         patterns : [
 {"locationIndex":1,"time":254.122},
 {"locationIndex":3,"time":269.897},
@@ -511,6 +513,7 @@ song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
     difficultyLevel : 1,
+    autoCreate : false,
     patterns : [
 {"locationIndex":2,"time":333.926},
 {"locationIndex":3,"time":379.849},
@@ -609,6 +612,7 @@ song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'hard',
     difficultyLevel : 8,
+    autoCreate : false,
     patterns : [
 {"locationIndex":0,"time":266.94},
 {"locationIndex":1,"time":270.945},
@@ -1401,6 +1405,7 @@ song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
     difficultyLevel : 3,
+    autoCreate : false,
     patterns : [
 {"locationIndex":2,"time":530.343},
 {"locationIndex":5,"time":610.591},
@@ -1536,6 +1541,7 @@ song.difficulties.push({
 song.difficulties.push({
     difficultyLabel : 'hard',
     difficultyLevel : 7, // MIN TOTAL SUM 25 / INC COUNT STD 15, INC SUM STD 75, MIN GAP 4
+    autoCreate : false,
     patterns : [
 {"locationIndex":4,"time":530.343},
 {"locationIndex":3,"time":548.208},
@@ -1883,6 +1889,7 @@ song.difficulties.push({
 song.difficulties.push({
     difficultyLabel : 'ex1',
     difficultyLevel : 11,
+    autoCreate : false,
     patterns : [
 {"locationIndex":4,"time":530.343},
 {"locationIndex":1,"time":548.269},
@@ -2815,6 +2822,7 @@ song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'hard',
     difficultyLevel : 7, // MIN TOTAL SUM 50, INC COUNT STD 15, INC SUM STD 200, MIN GAP 4
+    autoCreate : false,
     patterns : [
 {"locationIndex":1,"time":310.195},
 {"locationIndex":0,"time":315.001},
@@ -3113,6 +3121,7 @@ song.difficulties.push({
 song.difficulties.push({
     difficultyLabel : 'ex1',
     difficultyLevel : 11, // MIN TOTAL SUM 30, INC COUNT STD 10, INC SUM STD 50, MIN GAP 1
+    autoCreate : false,
     patterns : [
 {"locationIndex":4,"time":310.822},
 {"locationIndex":3,"time":314.583},
@@ -3941,6 +3950,7 @@ song.difficulties = [
     {
         difficultyLabel : 'easy',
         difficultyLevel : 1, // MIN TOTAL SUM 150, INC COUNT STD 10, INC SUM STD 750, MIN GAP 32
+        autoCreate : false,
         patterns : [
 {"locationIndex":5,"time":520.795},
 {"locationIndex":2,"time":600.672},
