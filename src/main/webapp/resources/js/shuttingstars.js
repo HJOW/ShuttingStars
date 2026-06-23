@@ -329,6 +329,8 @@ class ShuttingStarsCore {
     audioBufferLen = 0;
     /** @type {Uint8Array|null} Audio 시각화에 쓰일 배열 */
     audioBuffer = null;
+    /** @type {AudioBufferSourceNode} Note 생성을 위한 OfflineAudioContext 버퍼 소스 */
+    audioBufferSource = null;
 
 
     /** @type {ShuttingStarsSong|null} 현재 선택된 곡, ShuttingStarsSong 객체로 songs 목록에 있어야만 함 */
@@ -415,7 +417,9 @@ class ShuttingStarsCore {
 
     /** @type {Object} 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨 */
     keypressing = {};
-    /** @type {boolean} 게임 시작 준비여부 - 게임 중 자동 변경되는 값 */
+    /** @type {boolean} 게임 시작 준비여부 1 - 게임 중 자동 변경되는 값 */
+    songPrepared = false;
+    /** @type {boolean} 게임 시작 준비여부 2 - 게임 중 자동 변경되는 값 */
     playPrepared = false;
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
@@ -1064,10 +1068,11 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 게임 자체의 상태 변경
+     * 게임 자체의 상태 변경 (Promise)
      * @param {string} state state 값
+     * @returns {Promise<*>}
      */
-    setState(state) {
+    async setState(state) {
         const selfs = this;
         let idx;
 
@@ -1113,9 +1118,14 @@ class ShuttingStarsCore {
             if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
         }
 
+        // 곡 준비상태 초기화
+        if(state != 'playing') {
+            this.songPrepared = false;
+        }
+
         // 일부 상태는 스테이지 리셋이 필요
         if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
-            this.resetStage();
+            await this.resetStage();
         }
 
         // 최초 메뉴 진입 시 창 크기 다시 새로고침
@@ -1812,11 +1822,11 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행
+     * 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행 (Promise)
      */
-    resetStage() {
+    async resetStage() {
         const selfs = this;
-        let idx;
+        let idx, jdx;
         this.clearTimeHandler();
         this.hp = 100.0;
         this.point = 0;
@@ -1898,42 +1908,105 @@ class ShuttingStarsCore {
             if(this.audio == null) {
                 if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.musicUrl)) {
                     try {
-                        // 기존 Audio Context 닫기
+                        // 기존 Audio Context 닫기 (문제 예방 차원)
                         this.closeAudioSources();
 
-                        /*
-                        // 사전에 audio 를 읽어 노트들을 만들 수 없나?
-                        // Audio 객체 생성 (노트 생성을 위함)
-                        let audioPre = null;
+                        // Audio URL 결정
+                        let audioUrl ;
                         if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
-                            audioPre = new Audio(this.convertURL(this.song.musicAlterUrl));
+                            audioUrl = this.convertURL(this.song.musicAlterUrl);
                         } else {
-                            audioPre = new Audio(this.convertURL(this.song.musicUrl));
+                            audioUrl = this.convertURL(this.song.musicUrl);
                         }
 
-                        if(audioPre != null) {
-                            this.audioCtxPre = new OfflineAudioContext(2, 44100 * this.song.endTime, 44100);
-                            
-                            const sourceNode = this.audioCtxPre.createMediaElementSource(audioPre); // 이 메소드가 없음
-                            sourceNode.connect(this.audioCtxPre.destination);
+                        /*
+                        // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 시작
+                        console.log('Analyze START');
+                        this.audioCtx      = new (window.AudioContext || window.webkitAudioContext)();
+                        let   audioPre     = await fetch(audioUrl);
+                        let   audioPreBuff = await audioPre.arrayBuffer();
+                        let   audioDecBuff = await this.audioCtx.decodeAudioData(audioPreBuff);
+                        audioPre = null; audioPreBuff = null;
+                        this.closeAudioSources();
 
-                            let offlineAudioTime = 0;
-                            this.audioCtxPre.startRendering().then((buffer) => {
-                                console.log(offlineAudioTime); // TODO
-                                console.log(buffer);
-                                offlineAudioTime++;
-                            }).catch((err) => { console.error(err); });
-                            audioPre.play();
+                        const sampleRate = audioDecBuff.sampleRate;
+                        const duration   = audioDecBuff.duration;
+                        const fftSize    = 256;
+                        this.songBitGap = this.calculateSongBitGap(this.song.bpm);
+
+                        //     OfflineAudioContext 준비
+                        this.audioCtxPre = new OfflineAudioContext( audioDecBuff.numberOfChannels, audioDecBuff.length, sampleRate );
+                        this.audioBufferSource = this.audioCtxPre.createBufferSource();
+                        this.audioBufferSource.buffer = audioDecBuff;
+                        
+                        this.audioAnalyser = this.audioCtxPre.createAnalyser();
+                        this.audioAnalyser.fftSize = fftSize;
+                        // this.audioAnalyser.minDecibels = -100;
+                        // this.audioAnalyser.maxDecibels =  -30;
+                        this.audioAnalyser.smoothingTimeConstant = 0;
+
+                        this.audioBufferSource.connect(this.audioAnalyser);
+                        this.audioAnalyser.connect(this.audioCtxPre.destination);
+
+                        this.audioBufferSource.start();
+
+                        const binCnt = this.audioAnalyser.frequencyBinCount;
+                        const intervals = 60 / (this.song.bpm * this.timeMultiplier);
+
+                        let renderingPromise = null;
+                        let suspendPromise = null;
+                        let exceptionOccured = null;
+
+                        let time = 0;
+                        let cycles = 0;
+
+                        while(time < duration) {
+                            try {
+                                if(suspendPromise != null) await suspendPromise;
+                                if(renderingPromise == null) renderingPromise = this.audioCtxPre.startRendering(); // 주의 ! 여기서 await 주면 안 됨
+                                
+                                const data = new Uint8Array(binCnt);
+                                this.audioAnalyser.getByteFrequencyData(data); // 주파수 정보 획득
+
+                                console.log(cycles + ', ' + time);
+                                console.log(data); // TODO 여기서 악기연주 혹은 발성을 탐지하여 노트 추가여부 결정
+
+                                
+                            } catch(exoff) {
+                                console.error(exoff);
+                                console.log('TIME : ' + time + ' / ' + duration + ', CYCLE : ' + cycles);
+                                exceptionOccured = exoff;
+                            }
+
+                            cycles++;
+                            time = cycles * intervals;
+
+                            try {
+                                if(time < duration) suspendPromise = this.audioCtxPre.suspend(time); // 마찬가지로 await 여기서 주면 안 됨 !
+                                await this.audioCtxPre.resume();
+                            } catch(exoff) {
+                                console.error(exoff);
+                                console.log('TIME : ' + time + ' / ' + duration + ', CYCLE : ' + cycles);
+                                exceptionOccured = exoff;
+                            }
                         }
+
+                        await renderingPromise; // Promise 응답까지 대기
+                        if(exceptionOccured != null) throw exceptionOccured;
+                        //     불필요해진 객체들 정리
+                        audioDecBuff     = null;
+                        renderingPromise = null;
+                        suspendPromise   = null; 
+
+                        console.log('Analyze END');
+                        // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 종료
                         */
 
+                        // 기존 Audio Context 다시 닫기
+                        this.closeAudioSources();
+
                         // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
-                        if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
-                            this.audio = new Audio(this.convertURL(this.song.musicAlterUrl));
-                        } else {
-                            this.audio = new Audio(this.convertURL(this.song.musicUrl));
-                        }
-                        
+                        this.audio = new Audio(audioUrl);
                         this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
                         this.audio.preload = 'auto';
                         
@@ -1954,18 +2027,23 @@ class ShuttingStarsCore {
                             console.log(exInx);
         
                             this.closeAudioSources();
+                            this.audio = null;
                         }
+                        this.songPrepared = true;
                     } catch(exc) {
                         console.error(exc);
                         ShuttingStarsUtility.toast('Loading audio failed !', true);
                         if(this.audio != null) { try { this.audio.remove(); } catch(egnores) {} }
+                        this.songPrepared = false;
                         this.audio = null;
                         this.setState('songchoosing');
                         return;
                     }
                 } else {
-                    this.audio = null;
                     this.closeAudioSources();
+                    this.audio = null;
+                    
+                    this.songPrepared = true;
                 }
             }
             
@@ -5277,7 +5355,7 @@ class ShuttingStarsCore {
             if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
             // 노트 위치 처리
-            if(this.state == 'playing' && this.elapsedTime >= 0 && this.playPrepared && this.song != null) {
+            if(this.state == 'playing' && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];
                     if(obj instanceof Note) {
@@ -5401,7 +5479,8 @@ class ShuttingStarsCore {
                 if(this.songTitleTime > 0) this.songTitleTime--;
                 if(this.songTitleTime <= 0) {
                     // 곡 로딩여부 체크 - 로딩 안됐으면 시간 다시 늘리기
-                    if(this.audio != null) { if(this.audio.readyState < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
+                    if(! this.songPrepared) { this.songTitleTime = 4 * this.timeMultiplier; }
+                    else if(this.audio != null) { if(this.audio.readyState < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
                 }
                 if(this.songTitleTime <= 0) {
                     // 플레이 화면으로 전환
@@ -5716,6 +5795,7 @@ class ShuttingStarsCore {
         this.audio = null;
         this.songThumb = null;
         this.videoBgaUrl = null; // TODO
+        this.songPrepared = false;
         this.playPrepared = false;
 
         // Note 갯수 체크
@@ -5789,6 +5869,8 @@ class ShuttingStarsCore {
         if(this.audioSource      != null) { try { this.audioSource.disconnect();      this.audioSource      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioAnalyser    != null) { try { this.audioAnalyser.disconnect();    this.audioAnalyser    = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
         if(this.audioCtx         != null) { try { this.audioCtx.close();              this.audioCtx         = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+        if(this.audioCtxPre      != null) { try {                                     this.audioCtxPre      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+        // audioBufferSource
     }
 
     /**
