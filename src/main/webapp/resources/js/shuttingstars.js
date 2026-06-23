@@ -173,6 +173,10 @@ class ShuttingStarsCore {
     noteSpeedFixedConst = 0.25;
     /** @type {number} 일시정지 후 재개 전 대기 타임 상수 */
     resumeDelayTime = 16;
+    /** @type {number} pw 최대값 (10000 권장) */
+    pwMax = 10000;
+    /** @type {number} pw 1회 사용값 (100 권장) - 키를 눌러 NotePlacer 동작 시 1회 사용, Note 에 명중시키면 본전만큼 다시 회수됨 (MISS 혹은 헛발질하면 소모됨) */
+    pwUse = 100;
     /** @type {number} 곡 로딩 기본 시간 */
     songTitleBaseTime = 120;
     /** @type {number} 볼륨 상수 */
@@ -262,6 +266,8 @@ class ShuttingStarsCore {
     };
     /** @type {number} 다 깎이면 게임 오버 (gameOverEnabled 를 true 지정 시) 물론 곡 플레이 시작 시 초기화 */
     hp = 100.0;
+    /** @type {number} pwUse 이하로 내려가면 키를 눌러도 노트 처리가 되지 않음. 서서히 회복. 최대 pwMax. */
+    pw = 10000;
 
     /** @type {number} 게임 내 재화 1 (플레이 중 획득) */
     antiMatterCredit = 0;
@@ -442,9 +448,11 @@ class ShuttingStarsCore {
     // 테스트 곡 노출 여부
     /** @type {boolean} 테스트 곡 노출 여부 */
     songDebugMode = false;
-    // 시간 소요 출력 여부
-    /** @type {boolean} 작업 소요 시간 출력 여부 */
+    // 값 출력 여부
+    /** @type {boolean} 곡 bit 진행시간 출력 여부 */
     timeElapseDebugMode = false;
+    /** @type {boolean} 현재 수치 (점수, hp, pw) 출력 여부 */
+    numberDebugMode = false;
 
     // 2D 시각화 객체
     /** @type {Audio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
@@ -547,6 +555,9 @@ class ShuttingStarsCore {
 
             this.readURLParameters();
             this.rebuildBroker();
+
+            for(let scl=0; scl<20; scl++) { let str = ' '; if(scl % 2 == 0) str = str + ' '; if(scl % 3 == 0) str = str + ' '; if(scl % 5 == 0) str = str + ' '; ShuttingStarsUtility.log('\n' + str + '\n'); }
+            ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
 
             this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
             if(this.backend != null) {
@@ -954,7 +965,8 @@ class ShuttingStarsCore {
             };
             fResize(); // 지금 바로 1회 호출
             // 창 크기 변경 이벤트로 등록
-            window.addEventListener('resize', fResize);
+            try { window.addEventListener('resize'  , fResize); } catch(ew) { console.error(ew); }
+            try { window.addEventListener("pageshow", fResize); } catch(ew) { console.error(ew); }
 
             this.logInit('setting configuration screens...');
 
@@ -973,6 +985,7 @@ class ShuttingStarsCore {
                 this.songDebugMode = true;
                 this.gameOverEnabled = false;
                 this.timeElapseDebugMode = true;
+                this.numberDebugMode = true;
             }
 
             // 커맨드 설정
@@ -1178,6 +1191,7 @@ class ShuttingStarsCore {
         this.broker.songDebugMode           = this.songDebugMode           ;
         this.broker.coordinate2dDebugMode   = this.coordinate2dDebugMode   ;
         this.broker.timeElapseDebugMode     = this.timeElapseDebugMode     ;
+        this.broker.numberDebugMode         = this.numberDebugMode         ;
         this.broker.visualizePeakDebugMode  = this.visualizePeakDebugMode  ;
         this.broker.gameOverEnabled         = this.gameOverEnabled         ;
         this.broker.virtualKeyForce         = this.virtualKeyForce         ;
@@ -1209,6 +1223,7 @@ class ShuttingStarsCore {
             if(typeof(obj.songDebugMode          ) != 'undefined') selfs.songDebugMode           = obj.songDebugMode           ;
             if(typeof(obj.coordinate2dDebugMode  ) != 'undefined') selfs.coordinate2dDebugMode   = obj.coordinate2dDebugMode   ;
             if(typeof(obj.timeElapseDebugMode    ) != 'undefined') selfs.timeElapseDebugMode     = obj.timeElapseDebugMode     ;
+            if(typeof(obj.numberDebugMode        ) != 'undefined') selfs.numberDebugMode         = obj.numberDebugMode         ;
             if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
             if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
@@ -1827,6 +1842,7 @@ class ShuttingStarsCore {
         let idx, jdx;
         this.clearTimeHandler();
         this.hp = 100.0;
+        this.pw = this.pwMax;
         this.point = 0;
         this.combo = 0;
         this.maxCombo = 0;
@@ -2756,6 +2772,19 @@ class ShuttingStarsCore {
      * @param {NotePlacer} notePlacer notePlacer 객체
      */
     handleNotePlacerCalled(notePlacer) {
+        if(this.pw < this.pwUse) return;
+
+        this.pw -= this.pwUse;
+        if(this.pw < 0) this.pw = 0;
+
+        this.handleNotePlacerCalledIn(notePlacer, true);
+    }
+
+    /**
+     * NotePlacer 호출 처리 (pw 계산 안함)
+     * @param {NotePlacer} notePlacer notePlacer 객체
+     */
+    handleNotePlacerCalledIn(notePlacer, pwConsumed) {
         let idx = 0;
 
         // NotePlacer 폭발 처리
@@ -2812,12 +2841,22 @@ class ShuttingStarsCore {
 
         // 추가 폭발 객체 추가
         if(resultMark == 'MISS') {
+            // MISS
             minimumNote.missed = true;
             const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
             this.objects.push(newExplosinves);
         } else {
+            // 그외 (MISS가 아님)
             const newExplosinves = new CorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
             this.objects.push(newExplosinves);
+
+            if(pwConsumed) { // pw 다시 회복
+                this.pw += this.pwUse;
+                if(     resultMark ==    'GOOD') this.pw += Math.floor(this.pwUse / 10.0);
+                else if(resultMark ==   'GREAT') this.pw += Math.floor(this.pwUse /  5.0);
+                else if(resultMark == 'PERFECT') this.pw += Math.floor(this.pwUse /  2.0);
+                if(this.pw > this.pwMax) this.pw = this.pwMax;
+            }
         }
     }
 
@@ -3208,7 +3247,7 @@ class ShuttingStarsCore {
             this.ctx.strokeText(ShuttingStarsUtility.replaceString(this.trans('Resume within % !'), '%', String(this.resumingTime)), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + 10));
         }
 
-        // 시간 소요 디버그 출력
+        // 시간 디버그 출력
         if(this.timeElapseDebugMode) {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
@@ -3216,8 +3255,23 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime   )), this.convertX(this.getStageWidth() * 3 / 5), this.convertY(this.getStageHeight() / 10));
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 3 / 5), this.convertY(this.getStageHeight() / 10) + this.metricSize2);
+
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 5));
+            // this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 6));
+        }
+
+        // 수치 디버그 출력
+        if(this.numberDebugMode) {
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.textAlign = "right";
+
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.hp) + ' / 100' + ' LIVES'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 7));
+            this.ctx.fillText(String(this.pw + ' / ' + this.pwMax                    + ' POWER'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 8));
+            this.ctx.fillText(String(this.point                                      + ' POINT'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 9));
         }
 
         // 게임 오버 그리기
@@ -5316,6 +5370,13 @@ class ShuttingStarsCore {
                         obj.y = calculates;
                     }
                 }
+            }
+
+            // pw 조금 회복
+            if(this.state == 'playing') {
+                this.pw++;
+                if(this.pw < 0) this.pw = 0;
+                else if(this.pw > this.pwMax) this.pw = this.pwMax;
             }
 
             // CreateMode 인 경우 이미 폭발한 노트도 다시 살리기 (곡 플레이 진행시간을 조절할 수 있기 때문)
@@ -8122,19 +8183,19 @@ class ShuttingStarsObject {
             ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
                 ctx.fill();
             } else {
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
         } else if(this.shape == 'rect') {
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
                 ctx.fillRect(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
             } else {
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
                 ctx.lineWidth = 1;
                 ctx.strokeRect(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
             }
@@ -8149,19 +8210,19 @@ class ShuttingStarsObject {
                     ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
                         ctx.fill();
                     } else {
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
                 } else if(this.shape == 'rect') {
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
                         ctx.fillRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     } else {
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity() / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.strokeRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     }
@@ -8182,9 +8243,10 @@ class ShuttingStarsObject {
 
     /**
      * 폭발 진행 상태를 반영한 불투명도를 계산
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    modifyExplosiveOpacity() {
+    modifyExplosiveOpacity(coreInst) {
         let opa = this.opacity;
         if(this.explosing >= 1) {
             opa = 1.0 - (this.explosing * 1.0 / this.explosingMax);
@@ -8285,11 +8347,21 @@ class NoteKeyObject extends ShuttingStarsObject {
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환 (내부 글자에만 적용, 원에도 적용하려면 modifyExplosiveOpacity 를 오버라이드해야 함)
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity() {
+    getNowOpacity(coreInst) {
         return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
+    }
+
+    /**
+     * 현재 효과 진행 상태를 반영한 내부 키 글자의 폰트 타입 반환
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {string} font weight 값 (normal / bold)
+     */
+    getNowFontWeight(coreInst) {
+        return 'bold';
     }
     /**
      * draw 대상을 화면에 렌더링
@@ -8301,15 +8373,18 @@ class NoteKeyObject extends ShuttingStarsObject {
         if(this.hidden) return;
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
-        let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
-        ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
+        let fontSize   = coreInst.convertFontSize(Math.round(this.r / 1.1));
+        let fontWeight = this.getNowFontWeight(coreInst);
 
-        // 글자 출력
-        if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
-        else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+        if(fontWeight != null) {
+            ctx.font = fontWeight + ' ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
-        ctx.textAlign = "center";
-        ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
+            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
+
+            ctx.textAlign = "center";
+            ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+        }
     }
     /**
      * 라인 별 컬러
@@ -8401,11 +8476,44 @@ class NotePlacer extends NoteKeyObject {
         this.y = coreInst.getNotePlacerYLocation();
         this.key = coreInst.keyList[locationIndex];
         this.shape = 'circle';
-        this.opacity = 0.2;
+        this.opacity = 0.3;
         this.dark = true;
         this.color = this.getColorOfLocationIndex(locationIndex);
         this.fill = false;
         this.hidden = false;
+    }
+
+    /**
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환 (내부 글자에만 적용, 원에도 적용하려면 modifyExplosiveOpacity 를 오버라이드해야 함)
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    getNowOpacity(coreInst) {
+        const originals = super.getNowOpacity(coreInst);
+        if(coreInst.pw < coreInst.pwUse) return 0.001;
+        if(coreInst.pw < coreInst.pwUse * 8) return 0.1;
+        return originals;
+    }
+    /**
+     * 폭발 진행 상태를 반영한 불투명도를 계산 (원에만 적용)
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    modifyExplosiveOpacity(coreInst) {
+        let superVal = super.modifyExplosiveOpacity(coreInst);
+        if(coreInst.pw < coreInst.pwUse) superVal = superVal * 0.5;
+        if(coreInst.pw < coreInst.pwUse * 8) superVal = superVal * 0.5;
+        return superVal;
+    }
+    /**
+     * 현재 효과 진행 상태를 반영한 내부 키 글자의 폰트 타입 반환
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {string} font weight 값 (null / normal / bold)
+     */
+    getNowFontWeight(coreInst) {
+        if(coreInst.pw < coreInst.pwUse) return null;
+        if(coreInst.pw < coreInst.pwUse * 8) return 'normal';
+        return 'bold';
     }
 }
 
@@ -8457,10 +8565,11 @@ class Note extends NoteKeyObject {
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환합니다.
+     * 현재 효과 진행 상태를 반영한 불투명도를 반환 (내부 글자에만 적용, 원에도 적용하려면 modifyExplosiveOpacity 를 오버라이드해야 함)
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity() {
+    getNowOpacity(coreInst) {
         // 0.9 부터 시작하여 급격히 감소
         if(this.explosing <= 0) {
             return this.opacity;
@@ -8499,7 +8608,7 @@ class Note extends NoteKeyObject {
         // 꼬리 먼저 그리기
         if(this.tail) {
             let tailR   = 0.5;
-            let tailOpa = this.modifyExplosiveOpacity();
+            let tailOpa = this.modifyExplosiveOpacity(coreInst);
             let calculatedR = 0;
             for(let jdx=this.beforeLocations.length-1; jdx>=0; jdx--) {
                 tailR   = tailR   - 0.0625;
@@ -8535,11 +8644,11 @@ class Note extends NoteKeyObject {
             ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r - idx), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
                 ctx.fill();
             } else {
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity() + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
                 ctx.stroke();
             }
 
@@ -8551,8 +8660,8 @@ class Note extends NoteKeyObject {
             let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
             ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
-            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity() + ')');
-            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity() + ')');
+            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
+            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
 
             ctx.textAlign = "center";
             ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
@@ -8597,7 +8706,7 @@ class JudgeMark extends ShuttingStarsObject {
         let fontSize = coreInst.convertFontSize(dynamicFontSize);
         ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getJudgeFontFamily();
 
-        let opa = this.getNowOpacity();
+        let opa = this.getNowOpacity(coreInst);
         ctx.fillStyle = coreInst.convertColor('rgba(' + coreInst.judgeMarkColor(this.judgeResult) + ', ' + opa + ')');
         
         // 노트들 중앙에 출력
@@ -8631,9 +8740,10 @@ class JudgeMark extends ShuttingStarsObject {
 
     /**
      * 현재 효과 진행 상태를 반영한 불투명도 반환
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity() {
+    getNowOpacity(coreInst) {
         let opa = 0.9;
         if(this.explosing >= 3) opa -= 0.2;
         if(this.explosing >= 4) opa -= 0.3;
@@ -8750,7 +8860,7 @@ class ExplosingObject extends DecorationObject {
         ctx.beginPath();
         ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
 
-        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity() + ')');
+        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
         ctx.fill();
     }
 
@@ -8819,9 +8929,10 @@ class ExplosingObject extends DecorationObject {
 
     /**
      * 폭발 진행 상태를 반영한 불투명도를 계산
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    modifyExplosiveOpacity() {
+    modifyExplosiveOpacity(coreInst) {
         let opa = this.opacity;
         let d = 1.0 - opa;
         // this.explosing 값이 0~5 일 때는 밝기가 점진적으로 증가 1.0까지 이후 6~8 에서 0까지 점진적으로 감소
@@ -8933,9 +9044,10 @@ class TextDeco extends DecorationObject {
 
     /**
      * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity() {
+    getNowOpacity(coreInst) {
         let opa = 0.9;
         if(this.explosing >= 3) opa -= 0.2;
         if(this.explosing >= 4) opa -= (0.02 * (this.explosing - 3));
@@ -8951,7 +9063,7 @@ class TextDeco extends DecorationObject {
      */
     draw(ctx, coreInst) {
         this.ctx.textAlign = this.align;
-        this.ctx.fillStyle = this.convertColor('rgba(' + this.color + ', ' + this.getNowOpacity() + ')');
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.color + ', ' + this.getNowOpacity(coreInst) + ')');
         this.ctx.fillText(this.text, this.convertX(this.x), this.convertY(this.y));
     }
 }
@@ -9045,9 +9157,10 @@ class VirtualKey extends DecorationObject {
     }
     /**
      * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity() {
+    getNowOpacity(coreInst) {
         return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
     }
     /**
@@ -9064,9 +9177,9 @@ class VirtualKey extends DecorationObject {
         // 중앙에 가상키 글자를 찍기
         //    먼저 글자 컬러 세팅
         if(coreInst.dark) {
-            ctx.fillStyle = coreInst.convertColor('rgba(0, 0, 0, ' + this.getNowOpacity() + ')');
+            ctx.fillStyle = coreInst.convertColor('rgba(0, 0, 0, ' + this.getNowOpacity(coreInst) + ')');
         } else {
-            ctx.fillStyle = coreInst.convertColor('rgba(255, 255, 255, ' + this.getNowOpacity() + ')');
+            ctx.fillStyle = coreInst.convertColor('rgba(255, 255, 255, ' + this.getNowOpacity(coreInst) + ')');
         }
         //    글자 폰트 세팅
         ctx.font = 'bold ' + this.fontSize + 'px ' + coreInst.getRenderFontFamily();
@@ -9540,6 +9653,14 @@ class ShuttingStarsUtilityClass {
     }
 
     /**
+     * 로그 출력
+     * @param {*} msg 로그
+     */
+    log(msg) {
+        try { if(typeof(console) == 'undefined') { window.console.log(msg); } else console.log(msg); } catch(e) {}
+    }
+
+    /**
      * fnWork 함수를 timeGapMillis 주기로 반복 호출, 오차 방지 포함, 참고 : https://sirius7.tistory.com/156 , 이 반복을 종료하는 함수를 반환함.
      * @param {Function} fnWork fnWork 값
      * @param {number} timeGapMillis timeGapMillis 값
@@ -9880,8 +10001,7 @@ const ShuttingStars = new ShuttingStarsManager(_shuttingstarcore);
  * @param {string} msg
 */
 function ssConsoleLogs(msg) {
-    if(typeof(console) == 'undefined') { window.console.log(msg); }
-    else console.log(msg);
+    ShuttingStarsUtility.log(msg);
 }
 
 /**
@@ -9911,7 +10031,5 @@ function initShuttingStars(mainDiv, urlContext) {
     ShuttingStars.init(mainDiv, urlContext);
 }
 
-for(let scl=0; scl<100; scl++) { ssConsoleLogs(''); }
-ssConsoleLogs('ShuttingStars - BUILD ' + ShuttingStars.build());
 window.ssmanager = ShuttingStars;
 window.ssutil    = ShuttingStarsUtility;
