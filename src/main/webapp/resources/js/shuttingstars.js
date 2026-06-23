@@ -1926,84 +1926,48 @@ class ShuttingStarsCore {
                         let   audioPre     = await fetch(audioUrl);
                         let   audioPreBuff = await audioPre.arrayBuffer();
                         let   audioDecBuff = await this.audioCtx.decodeAudioData(audioPreBuff);
+                        let   channelBuff;
                         audioPre = null; audioPreBuff = null;
                         this.closeAudioSources();
 
                         const sampleRate = audioDecBuff.sampleRate;
                         const duration   = audioDecBuff.duration;
-                        const fftSize    = 256;
-                        this.songBitGap = this.calculateSongBitGap(this.song.bpm);
+                        const windowSize = 1024;
+                        const intervals = 60 / (this.song.bpm * this.timeMultiplier);
 
                         //     OfflineAudioContext 준비
                         this.audioCtxPre = new OfflineAudioContext( audioDecBuff.numberOfChannels, audioDecBuff.length, sampleRate );
                         this.audioBufferSource = this.audioCtxPre.createBufferSource();
                         this.audioBufferSource.buffer = audioDecBuff;
-                        
-                        this.audioAnalyser = this.audioCtxPre.createAnalyser();
-                        this.audioAnalyser.fftSize = fftSize;
-                        // this.audioAnalyser.minDecibels = -100;
-                        // this.audioAnalyser.maxDecibels =  -30;
-                        this.audioAnalyser.smoothingTimeConstant = 0;
-
-                        this.audioBufferSource.connect(this.audioAnalyser);
-                        this.audioAnalyser.connect(this.audioCtxPre.destination);
-
+                        this.audioBufferSource.connect(this.audioCtxPre.destination);
                         this.audioBufferSource.start();
 
-                        const binCnt = this.audioAnalyser.frequencyBinCount;
-                        const intervals = 60 / (this.song.bpm * this.timeMultiplier);
+                        audioDecBuff = await this.audioCtxPre.startRendering();
+                        channelBuff  = audioDecBuff.getChannelData(0);
 
-                        let renderingPromise = null;
-                        let suspendPromise = null;
-                        let exceptionOccured = null;
+                        for(let time=0; time<audioDecBuff.duration; time += intervals) {
+                            const center = Math.floor(time * sampleRate);
+                            const starts = Math.max(0, center - Math.floor(windowSize / 2));
 
-                        let time = 0;
-                        let cycles = 0;
-
-                        while(time < duration) {
-                            try {
-                                if(suspendPromise != null) await suspendPromise;
-                                if(renderingPromise == null) renderingPromise = this.audioCtxPre.startRendering(); // 주의 ! 여기서 await 주면 안 됨
-                                
-                                const data = new Uint8Array(binCnt);
-                                this.audioAnalyser.getByteFrequencyData(data); // 주파수 정보 획득
-
-                                console.log(cycles + ', ' + time);
-                                console.log(data); // TODO 여기서 악기연주 혹은 발성을 탐지하여 노트 추가여부 결정
-
-                                
-                            } catch(exoff) {
-                                console.error(exoff);
-                                console.log('TIME : ' + time + ' / ' + duration + ', CYCLE : ' + cycles);
-                                exceptionOccured = exoff;
+                            let energy = 0;
+                            for (let i = 0; i < windowSize && starts + i < channelBuff.length; i++) {
+                                const v = channelBuff[starts + i];
+                                energy += v * v;
                             }
+                            energy = Math.sqrt(energy / windowSize);
 
-                            cycles++;
-                            time = cycles * intervals;
-
-                            try {
-                                if(time < duration) suspendPromise = this.audioCtxPre.suspend(time); // 마찬가지로 await 여기서 주면 안 됨 !
-                                await this.audioCtxPre.resume();
-                            } catch(exoff) {
-                                console.error(exoff);
-                                console.log('TIME : ' + time + ' / ' + duration + ', CYCLE : ' + cycles);
-                                exceptionOccured = exoff;
-                            }
+                            console.log(energy); // TODO
                         }
-
-                        await renderingPromise; // Promise 응답까지 대기
-                        if(exceptionOccured != null) throw exceptionOccured;
+                        
                         //     불필요해진 객체들 정리
-                        audioDecBuff     = null;
-                        renderingPromise = null;
-                        suspendPromise   = null; 
+                        audioDecBuff = null;
+                        channelBuff  = null;
+                        //     Audio Context 닫기
+                        this.closeAudioSources();
 
                         console.log('Analyze END');
                         // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 종료
                         */
-
-                        // 기존 Audio Context 다시 닫기
-                        this.closeAudioSources();
 
                         // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
                         this.audio = new Audio(audioUrl);
