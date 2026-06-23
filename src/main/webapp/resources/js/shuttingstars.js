@@ -1956,6 +1956,7 @@ class ShuttingStarsCore {
                             channelBuff  = audioDecBuff.getChannelData(0);
 
                             //     분석 진행
+                            let timeCycle = 0;
                             for(let time=0; time<audioDecBuff.duration; time += intervals) {
                                 const center = Math.floor(time * sampleRate);
                                 const starts = Math.max(0, center - Math.floor(windowSize / 2));
@@ -1985,7 +1986,7 @@ class ShuttingStarsCore {
                                         createYn = true; // 이전 노트가 없으면 무조건 생성
                                     } else {
                                         // 난이도에 따라 생성여부 결정
-                                        const timeGap = time - lastNote.originalTiming;
+                                        const timeGap = timeCycle - lastNote.originalTiming;
                                         let properGap = 1; // 다음 노트 등장 사이 시간 허용값
                                         if(this.difficultyLevel <= 2) {
                                             properGap = 32;
@@ -2029,7 +2030,7 @@ class ShuttingStarsCore {
                                         note.id = this.lastObjectId; this.lastObjectId++;
                                         note.patternId = 0;
                                         if(lastNote != null) note.patternId = lastNote.patternId + 1;
-                                        note.originalTiming = time;
+                                        note.originalTiming = timeCycle;
 
                                         noteCreates.push(note);
                                         lastNote = note;
@@ -2037,6 +2038,7 @@ class ShuttingStarsCore {
                                 }
 
                                 lastEnergy = energy;
+                                timeCycle++;
                             }
 
                             //     생성한 노트들 옮기기
