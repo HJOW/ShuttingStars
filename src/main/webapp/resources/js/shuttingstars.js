@@ -7455,6 +7455,7 @@ class ShuttingStarsCore {
                         let properGap = 1; // 다음 노트 등장 사이 시간 허용값
                         let probability1 = 0.25; // 노트 생성 확률
                         let probability2 = 0.01; // 동시노트 적용 확률
+                        let probability3 = 1;    // 동시노트 추가 확률
 
                         if(difficultyLevel <= 2) {
                             properGap = 32;
@@ -7472,7 +7473,15 @@ class ShuttingStarsCore {
                             properGap = 0.5;
                         } else {
                             properGap = 0.25;
+
+                            let leftLevel = Math.floor((difficultyLevel - 13) / 2.0);
+                            if(leftLevel < 0) leftLevel = 0;
+                            for(let llx=0; llx<leftLevel; llx++) {
+                                properGap = properGap * 0.5;
+                            }
                         }
+
+                        if(difficultyLevel % 2 == 0) probability3 = 1.25;
 
                         // bpm 보정
                         if(bpm <= 45) {
@@ -7574,14 +7583,16 @@ class ShuttingStarsCore {
                             if(ratioBpm >= 1.25) ratioBpm = 1.25;
                             if(ratioBpm <  0.85) ratioBpm = 0.85;
 
+                            // probability3 적용
+                            probability2 = 1 - Math.pow(1 - probability2, probability3); // 확률의 곱셈 계산 (예를 들면 0.5 의 2배는 1 이 아닌 0.75 가 되어야 함)
+
                             // probability1, probability2 범위 유효성 검사
                             if(probability1 < 0) probability1 = 0;
                             if(probability1 > 1) probability1 = 1;
                             if(probability2 < 0) probability2 = 0;
                             if(probability2 > 1) probability2 = 1;
 
-                            // 확률의 곱셈 계산 (예를 들면 0.5 의 2배는 1 이 아닌 0.75 가 되어야 함)
-                            probability1 = 1 - Math.pow(1 - probability1, ratioBpm);
+                            probability1 = 1 - Math.pow(1 - probability1, ratioBpm); // 확률의 곱셈 계산 (예를 들면 0.5 의 2배는 1 이 아닌 0.75 가 되어야 함)
                             probability2 = 1 - Math.pow(1 - probability2, ratioBpm);
 
                             // 확률 적용
