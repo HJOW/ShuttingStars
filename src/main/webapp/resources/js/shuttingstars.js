@@ -5580,7 +5580,7 @@ class ShuttingStarsCore {
 
                 if(obj instanceof Starlight) {
                     // Starlight 제거 파츠
-                    if(obj.x < (this.getFullRenderWidth() * (-2)) || obj.y < this.getFullRenderHeight() * (-2) || obj.x > this.getFullRenderWidth() * 1.3 || obj.y > this.getFullRenderHeight() * 1.3) {
+                    if(obj.x < (this.getFullRenderWidth() * (-1.2)) || obj.y < this.getFullRenderHeight() * (-1.2) || obj.x > this.getFullRenderWidth() * 1.2 || obj.y > this.getFullRenderHeight() * 1.2) {
                         this.objects.splice(idx, 1);
                         idx--;
                         continue;
