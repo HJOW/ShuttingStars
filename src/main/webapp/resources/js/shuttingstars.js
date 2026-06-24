@@ -8331,19 +8331,19 @@ class ShuttingStarsObject {
             ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.fill();
             } else {
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
         } else if(this.shape == 'rect') {
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.fillRect(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
             } else {
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.lineWidth = 1;
                 ctx.strokeRect(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
             }
@@ -8358,19 +8358,19 @@ class ShuttingStarsObject {
                     ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.fill();
                     } else {
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
                 } else if(this.shape == 'rect') {
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.fillRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     } else {
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.modifyExplosiveOpacity(coreInst) / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.strokeRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     }
@@ -8400,6 +8400,15 @@ class ShuttingStarsObject {
             opa = 1.0 - (this.explosing * 1.0 / this.explosingMax);
         }
         return opa;
+    }
+
+    /**
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    getNowOpacity(coreInst) {
+        return this.modifyExplosiveOpacity(coreInst);
     }
 
     /**
@@ -8494,13 +8503,14 @@ class NoteKeyObject extends ShuttingStarsObject {
         this.key = coreInst.keyList[locationIndex];
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
+
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환 (내부 글자에만 적용, 원에도 적용하려면 modifyExplosiveOpacity 를 오버라이드해야 함)
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
      * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
     getNowOpacity(coreInst) {
-        return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
+        return this.modifyExplosiveOpacity(coreInst);
     }
 
     /**
@@ -8632,7 +8642,16 @@ class NotePlacer extends NoteKeyObject {
     }
 
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환 (내부 글자에만 적용, 원에도 적용하려면 modifyExplosiveOpacity 를 오버라이드해야 함)
+     * 폭발 진행 상태를 반영한 불투명도를 계산
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    modifyExplosiveOpacity(coreInst) {
+        return super.modifyExplosiveOpacity(coreInst);
+    }
+
+    /**
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
      * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
@@ -8642,17 +8661,7 @@ class NotePlacer extends NoteKeyObject {
         if(coreInst.pw < coreInst.pwUse * 8) return 0.1;
         return originals;
     }
-    /**
-     * 폭발 진행 상태를 반영한 불투명도를 계산 (원에만 적용)
-     * @param {ShuttingStarsCore} coreInst
-     * @returns {number} 현재 불투명도
-     */
-    modifyExplosiveOpacity(coreInst) {
-        let superVal = super.modifyExplosiveOpacity(coreInst);
-        if(coreInst.pw < coreInst.pwUse) superVal = superVal * 0.5;
-        if(coreInst.pw < coreInst.pwUse * 8) superVal = superVal * 0.5;
-        return superVal;
-    }
+    
     /**
      * 현재 효과 진행 상태를 반영한 내부 키 글자의 폰트 타입 반환
      * @param {ShuttingStarsCore} coreInst
@@ -8713,16 +8722,16 @@ class Note extends NoteKeyObject {
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환 (내부 글자에만 적용, 원에도 적용하려면 modifyExplosiveOpacity 를 오버라이드해야 함)
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
      * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
     getNowOpacity(coreInst) {
         // 0.9 부터 시작하여 급격히 감소
         if(this.explosing <= 0) {
-            return this.opacity;
+            return this.modifyExplosiveOpacity(coreInst);
         } else {
-            let opa = this.opacity - (this.explosing * 0.3);
+            let opa = this.modifyExplosiveOpacity(coreInst) - (this.explosing * 0.3);
             if(opa < 0) opa = 0;
             return opa;
         }
@@ -8756,7 +8765,7 @@ class Note extends NoteKeyObject {
         // 꼬리 먼저 그리기
         if(this.tail) {
             let tailR   = 0.5;
-            let tailOpa = this.modifyExplosiveOpacity(coreInst);
+            let tailOpa = this.getNowOpacity(coreInst);
             let calculatedR = 0;
             for(let jdx=this.beforeLocations.length-1; jdx>=0; jdx--) {
                 tailR   = tailR   - 0.0625;
@@ -8792,11 +8801,11 @@ class Note extends NoteKeyObject {
             ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r - idx), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.fill();
             } else {
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.stroke();
             }
 
@@ -8887,17 +8896,27 @@ class JudgeMark extends ShuttingStarsObject {
     }
 
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도 반환
+     * 폭발 진행 상태를 반영한 불투명도를 계산
      * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity(coreInst) {
+    modifyExplosiveOpacity(coreInst) {
         let opa = 0.9;
         if(this.explosing >= 3) opa -= 0.2;
         if(this.explosing >= 4) opa -= 0.3;
         if(this.explosing >= 5) opa -= 0.4;
         if(this.explosing >= 6) opa -= (0.03 * (this.explosing - 5));
         if(opa < 0) opa = 0;
+        return opa;
+    }
+
+    /**
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    getNowOpacity(coreInst) {
+        let opa = this.modifyExplosiveOpacity(coreInst);
         this.opacity = opa;
         return opa;
     }
@@ -9008,7 +9027,7 @@ class ExplosingObject extends DecorationObject {
         ctx.beginPath();
         ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
 
-        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.modifyExplosiveOpacity(coreInst) + ')');
+        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + this.getNowOpacity(coreInst) + ')');
         ctx.fill();
     }
 
@@ -9191,15 +9210,25 @@ class TextDeco extends DecorationObject {
     }
 
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * 폭발 진행 상태를 반영한 불투명도를 계산
      * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
-    getNowOpacity(coreInst) {
+    modifyExplosiveOpacity(coreInst) {
         let opa = 0.9;
         if(this.explosing >= 3) opa -= 0.2;
         if(this.explosing >= 4) opa -= (0.02 * (this.explosing - 3));
         if(opa < 0) opa = 0;
+        return opa;
+    }
+
+    /**
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    getNowOpacity(coreInst) {
+        let opa = this.modifyExplosiveOpacity(coreInst);
         this.opacity = opa;
         return opa;
     }
@@ -9304,12 +9333,20 @@ class VirtualKey extends DecorationObject {
         }
     }
     /**
-     * 현재 효과 진행 상태를 반영한 불투명도를 반환
+     * 폭발 진행 상태를 반영한 불투명도를 계산
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    modifyExplosiveOpacity(coreInst) {
+        return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
+    }
+    /**
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
      * @param {ShuttingStarsCore} coreInst
      * @returns {number} 현재 불투명도
      */
     getNowOpacity(coreInst) {
-        return this.opacity * (1.0 - (this.explosing * 1.0 / this.explosingMax));
+        return this.modifyExplosiveOpacity(coreInst);
     }
     /**
      * draw 대상을 화면에 렌더링
