@@ -8833,7 +8833,7 @@ class JudgeMark extends ShuttingStarsObject {
     /** @type {number} 폭발 효과의 현재 진행 단계 */
     explosing = 1;
     /** @type {number} 폭발 효과의 마지막 진행 단계 */
-    explosingMax = 16;
+    explosingMax = 32;
     /**
      * 인스턴스를 초기화합니다.
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
