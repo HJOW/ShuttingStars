@@ -83,17 +83,19 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 /* 페이지 접속 시 호출 */
 $(function() {
     const root = $('.shuttingstar_root');
-    _shuttingstarcore.fBeforeInit = function(broker) {
+    let coreInst = null;
+    ShuttingStars.setBeforeInitializeHook(function(broker) {
         broker.apply({
             createMode : true,
             fOuterWidth : function() { return  720;  },
             fOuterHeight : function() { return 1280; },
             urlCtx : '../'
         });
-    }
-    initShuttingStars(root[0]);
-    _shuttingstarcore.fAfterInit = function(broker) {
+    });
+    ShuttingStars.setAfterInitializeHook(function(broker, coreInstance) {
+        coreInst = coreInstance;
         let idx;
+        
         const ta = $('.ta_song_json');
         const selSongs = $('.sel_songs');
         const selDiff = $('.sel_diff');
@@ -229,13 +231,13 @@ $(function() {
             broker.setDifficultyIndex(diff);
             broker.prepareCreateModeSong();
             setTimeout(function() {
-                if(_shuttingstarcore.audio != null) {
-                    $('.td_audio_controls').empty().append(_shuttingstarcore.audio);
-                    _shuttingstarcore.audio.controls = true;
-                    // _shuttingstarcore.audio.preload = 'metadata';
-                    _shuttingstarcore.audio.addEventListener('play', fResume);
-                    _shuttingstarcore.audio.addEventListener('pause', fPause);
-                    _shuttingstarcore.audio.addEventListener('ended', fPause);
+                if(coreInst.audio != null) {
+                    $('.td_audio_controls').empty().append(coreInst.audio);
+                    coreInst.audio.controls = true;
+                    // coreInst.audio.preload = 'metadata';
+                    coreInst.audio.addEventListener('play', fResume);
+                    coreInst.audio.addEventListener('pause', fPause);
+                    coreInst.audio.addEventListener('ended', fPause);
                 }
 
                 btnStop.prop('disabled', false); 
@@ -259,7 +261,7 @@ $(function() {
             btnPaus.prop('disabled', true);
             btnRsum.prop('disabled', false);
             inpElps.prop('disabled', false);
-            _shuttingstarcore.pauseSong();
+            coreInst.pauseSong();
         }
 
         const fResume = function() {
@@ -270,24 +272,24 @@ $(function() {
             if(isNaN(valueElps)) valueElps = 0;
             valueElps = parseFloat(valueElps);
 
-            if(_shuttingstarcore.audio) {
-                const newTime = Math.floor((valueElps + _shuttingstarcore.songTiming) / ((_shuttingstarcore.song.bpm / 60.0) * (_shuttingstarcore.timeMultiplier * _shuttingstarcore.elapsedTimeMultiplier)));
-                _shuttingstarcore.audio.currentTime = newTime;
+            if(coreInst.audio) {
+                const newTime = Math.floor((valueElps + coreInst.songTiming) / ((coreInst.song.bpm / 60.0) * (coreInst.timeMultiplier * coreInst.elapsedTimeMultiplier)));
+                coreInst.audio.currentTime = newTime;
             }
-            _shuttingstarcore.elapsedTime = valueElps;
-            _shuttingstarcore.elapsedTimeOld = valueElps;
+            coreInst.elapsedTime = valueElps;
+            coreInst.elapsedTimeOld = valueElps;
 
-            // _shuttingstarcore.resumeSong();
-            _shuttingstarcore.resumingTime = 0;
-            _shuttingstarcore.paused = false;
-            _shuttingstarcore.resumed = false;
+            // coreInst.resumeSong();
+            coreInst.resumingTime = 0;
+            coreInst.paused = false;
+            coreInst.resumed = false;
 
-            if(_shuttingstarcore.audio) {
-                _shuttingstarcore.audio.play();
+            if(coreInst.audio) {
+                coreInst.audio.play();
             }
 
-            if(_shuttingstarcore.videoBga) {
-                if(_shuttingstarcore.videoBgaUrl) _shuttingstarcore.videoBga.play();
+            if(coreInst.videoBga) {
+                if(coreInst.videoBgaUrl) coreInst.videoBga.play();
             }
         }
 
@@ -309,10 +311,12 @@ $(function() {
         fLoadSong();
 
         ShuttingStarsUtility.repeat(() => {
-            if(_shuttingstarcore.paused) return;
-            inpElps.val(_shuttingstarcore.elapsedTime);
+            if(coreInst == null) return;
+            if(coreInst.paused) return;
+            inpElps.val(coreInst.elapsedTime);
         }, 16);
-    }
+    });
+    ShuttingStars.init(root[0]);
 });
 </script>
 </head>

@@ -567,7 +567,7 @@ class ShuttingStarsCore {
     /** @type {function(Object): void} 코어 초기화 직전에 실행할 훅 */
     fBeforeInit  = function(obj) {  }
     /** @type {function(Object): void} 코어 초기화 직후에 실행할 훅 */
-    fAfterInit   = function(obj) {  }
+    fAfterInit   = function(obj, coreInst) {  }
 
     /**
      * 객체 생성 (초기화하려면 init 메소드까지 호출해야 함)
@@ -1099,7 +1099,11 @@ class ShuttingStarsCore {
         }, 4000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
-        try { this.fAfterInit(this.broker); this.logInit('fAfterInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
+        try {
+            if(this.createMode) this.fAfterInit(this.broker, this);
+            else                this.fAfterInit(this.broker, null);
+            this.logInit('fAfterInit end.'); 
+        } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
     }
 
     /**
@@ -1234,7 +1238,13 @@ class ShuttingStarsCore {
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.apply = function(obj) {
-            if(typeof(obj.createMode             ) != 'undefined') selfs.createMode              = obj.createMode              ;
+
+            // createMode 는 한번 true 로 바꾸면 false 로 변경 못해야 함
+            if(typeof(obj.createMode) != 'undefined') {
+                if(obj.createMode) selfs.createMode = true;
+            }
+
+            // 기타 항목 처리
             if(typeof(obj.dark                   ) != 'undefined') selfs.dark                    = obj.dark                    ;
             if(typeof(obj.reverseVertical        ) != 'undefined') selfs.reverseVertical         = obj.reverseVertical         ;
             if(typeof(obj.keyList                ) != 'undefined') selfs.keyList                 = obj.keyList                 ;
