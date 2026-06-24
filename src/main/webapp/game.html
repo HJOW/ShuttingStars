@@ -89,7 +89,7 @@ gtag('js', new Date());
 <script type="text/javascript">
 
 /* 페이지 접속 시 호출 */
-document.addEventListener('DOMContentLoaded', function(){
+window.addEventListener('load', function(){
     const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
     ShuttingStars.init(root[0]);
 
