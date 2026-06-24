@@ -90,7 +90,10 @@
   </head>
   <body>
     <script>
-        document.addEventListener('DOMContentLoaded', () => { ShuttingStars.init(); });
+        document.addEventListener('DOMContentLoaded', () => {
+            if(typeof(ShuttingStars) == 'undefined') { window.ssmanager.init(); return; } // shuttingstars.js 스크립트가 블록으로 둘러쌓여 있을 때를 대비
+            ShuttingStars.init(); 
+        });
         // location.href = 'game.html';
     </script>
   </body>
