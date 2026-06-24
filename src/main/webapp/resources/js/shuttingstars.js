@@ -3669,7 +3669,7 @@ class ShuttingStarsCore {
         gap = Math.floor(this.metricSize2 / 2.0);
 
         // 최초 Y 좌표 계산
-        rows = this.convertY(this.getStageHeight() / 5, false);
+        rows = this.convertY(this.getStageHeight() / 6, false);
 
         // 곡 목록이 비어 있는 경우를 처리
         fontSize = this.convertFontSize(20);
@@ -4510,7 +4510,7 @@ class ShuttingStarsCore {
         if(this.resolution.h <=  720) divideCount = 4; // 한 페이지 내에 출력 가능한 곡/미션 수를 조정하는 값 (현재 선택된 값 위에 이 갯수만큼만 있을 수 있음)
 
         // 최초 Y 좌표 계산
-        rows = this.convertY(this.getStageHeight() / 5, false);
+        rows = this.convertY(this.getStageHeight() / 6, false);
 
         // 기록 목록이 비어 있는 경우를 처리
         fontSize = this.convertFontSize(20);
