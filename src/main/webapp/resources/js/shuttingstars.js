@@ -2563,6 +2563,10 @@ class ShuttingStarsCore {
                 this.playSE('accept1');
                 this.saveSettings();
                 this.setState('menu');
+            } else {
+                if(     this.firstSetMode == 'language') this.firstSetMode = 'quality';
+                else if(this.firstSetMode == 'quality' ) this.firstSetMode = 'confirm';
+                else                                     this.firstSetMode = 'language';
             }
         }
     }
