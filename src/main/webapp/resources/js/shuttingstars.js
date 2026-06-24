@@ -232,6 +232,12 @@ class ShuttingStarsCore {
     elapsedTimePre = 0;
     /** @type {number} 진행 시간 (곡과 관련 없이 동시 처리 횟수) */
     simultaneousTime = 0;
+    /** @type {number} 동시 처리 (simultaneousWork) 시작 시간 (밀리초 단위) */
+    simultaneousStartTime = 0;
+    /** @type {number} 동시 처리 (simultaneousWork) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 밀리초 단위) */
+    simultaneousEndTime = -1;
+    /** @type {number} 동시 처리 (simultaneousWork) 처리에 걸린 시간, 밀리초 단위 */
+    simultaneousCycleGap = 0;
     /** @type {number} 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨) */
     titleDelayTime = 0;
     /** @type {number} 플레이 준비 시 titleDelayTime 값에 들어가는 초기값 */
@@ -371,8 +377,6 @@ class ShuttingStarsCore {
     paused = false;
     /** @type {boolean} 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값 - 당연히 게임 중에 변경됨 */
     resumed = false;
-    /** @type {number} 현재 동시 처리 사이클 번호입니다. */
-    simultaneousWorkCycle = 0;
 
     /** @type {Array<string>} 공식 곡 시리얼 목록 */
     officialSongSerials = [
@@ -781,7 +785,7 @@ class ShuttingStarsCore {
                     // 플랫폼 언어가 준비된 언어 목록 안에 있으면 선택
                     if(allows.indexOf(platformLang) >= 0) this.language = platformLang;
                     else this.language = 'en'; // 없으면 영어
-                } catch(exIn) { console.error(exIn); console.log('Cannot detect platform language. Using English...'); this.language = 'en'; }
+                } catch(exIn) { console.error(exIn); ShuttingStarsUtility.log('Cannot detect platform language. Using English...'); this.language = 'en'; }
             }
 
             this.logInit('preparing canvas...');
@@ -858,11 +862,11 @@ class ShuttingStarsCore {
                 this.workerSimultaneousWork.postMessage({interval : this.frameTime});
                 this.workerSimultaneousWork.onmessage = function(e) {
                     // const {drift, time} = e.data;
-                    selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0;
+                    selfs.simultaneousWork();
                 }
             } else {
                 ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime);
-                ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(selfs.simultaneousWorkCycle); selfs.simultaneousWorkCycle++; if(selfs.simultaneousWorkCycle >= 10000) selfs.simultaneousWorkCycle = 0; }, 20);
+                ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(); }, 20);
             }
 
             this.logInit('setting events...');
@@ -900,9 +904,9 @@ class ShuttingStarsCore {
                 const ry = Math.floor((y * selfs.getFullRenderHeight()) / rect.height);
 
                 if(mouseDown) {
-                    if(selfs.mouseClickDebugMode) console.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
+                    if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
                 } else {
-                    if(selfs.mouseClickDebugMode) console.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
+                    if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
                 }
 
                 // 임시 객체 (충돌여부 판단 위함)
@@ -1533,9 +1537,9 @@ class ShuttingStarsCore {
                         if(this.ressets.h <  720) this.ressets.h =  720;
                         this.setResolution(this.ressets.w, this.ressets.h);
                     } catch(e2) {
-                        console.log('Resolution setting is wrong.');
+                        ShuttingStarsUtility.log('Resolution setting is wrong.');
                         console.error(e2);
-                        console.log('Trying with default resolution...')
+                        ShuttingStarsUtility.log('Trying with default resolution...')
                     }    
                 }
 
@@ -1555,9 +1559,9 @@ class ShuttingStarsCore {
                         if(settingJson.keyList.length != 6) throw 'Wrong key list counts';
                         this.keyList = settingJson.keyList;
                     } catch(e2) {
-                        console.log('Resolution setting is wrong.');
+                        ShuttingStarsUtility.log('Resolution setting is wrong.');
                         console.error(e2);
-                        console.log('Trying with default resolution...');
+                        ShuttingStarsUtility.log('Trying with default resolution...');
                     }  
                 }
 
@@ -1570,9 +1574,9 @@ class ShuttingStarsCore {
 
             this.setResolution(this.ressets.w, this.ressets.h);
         } catch(e) {
-            console.log('Failed to load settings.');
+            ShuttingStarsUtility.log('Failed to load settings.');
             console.error(e);
-            console.log('Continue with default settings.');
+            ShuttingStarsUtility.log('Continue with default settings.');
             this.saveSettings();
         }
     }
@@ -1601,7 +1605,7 @@ class ShuttingStarsCore {
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
-            console.log('Failed to save settings.');
+            ShuttingStarsUtility.log('Failed to save settings.');
             console.error(e);
         }
 
@@ -1636,7 +1640,7 @@ class ShuttingStarsCore {
                 }
             }
         } catch(e) {
-            console.log('Failed to load anti-matter credit.');
+            ShuttingStarsUtility.log('Failed to load anti-matter credit.');
             console.error(e);
             this.antiMatterCredit = 0;
             this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
@@ -1686,7 +1690,7 @@ class ShuttingStarsCore {
                 }
             }
         } catch(e) {
-            console.log('Failed to load anti-matter credit.');
+            ShuttingStarsUtility.log('Failed to load anti-matter credit.');
             console.error(e);
             this.antiMatterCredit = 0;
             this.reportSaved = { PERFECT : 0, GREAT : 0, GOOD : 0, BAD : 0, MISS : 0, maxCombo : 0, playCount : 0, used : 0 };
@@ -1715,7 +1719,7 @@ class ShuttingStarsCore {
             newPackage.hashKey   = hashKey;
             localStorage.setItem('shuttingstar_credit', JSON.stringify(newPackage));
         } catch(e) {
-            console.log('Failed to save anti-matter credit.');
+            ShuttingStarsUtility.log('Failed to save anti-matter credit.');
             console.error(e);
         }
 
@@ -1738,7 +1742,7 @@ class ShuttingStarsCore {
                 });
             }
         } catch(e) {
-            console.log('Failed to save anti-matter credit.');
+            ShuttingStarsUtility.log('Failed to save anti-matter credit.');
             console.error(e);
         }
     }
@@ -1788,7 +1792,7 @@ class ShuttingStarsCore {
                 this.addSong(songJsonOne, true);
             }
         } catch(e) {
-            console.log('Failed to load songs.');
+            ShuttingStarsUtility.log('Failed to load songs.');
             console.error(e);
         }
     }
@@ -1814,7 +1818,7 @@ class ShuttingStarsCore {
         try {
             localStorage.setItem('shuttingstar_songs', JSON.stringify(list));
         } catch(e) {
-            console.log('Failed to save songs.');
+            ShuttingStarsUtility.log('Failed to save songs.');
             console.error(e);
         }
     }
@@ -1967,8 +1971,8 @@ class ShuttingStarsCore {
                                 this.audioBuffer    = new Uint8Array(this.audioBufferLen);
                             }
                         } catch(exInx) {
-                            console.log('Failed to prepare audio context.');
-                            console.log(exInx);
+                            ShuttingStarsUtility.log('Failed to prepare audio context.');
+                            console.error(exInx);
         
                             this.closeAudioSources();
                             this.audio = null;
@@ -2151,7 +2155,7 @@ class ShuttingStarsCore {
         const selfs = this;
 
         if(this.keyEventDisabled && key != this.escKey) return;
-        if(this.keyInputDebugMode) console.log('KEY INPUT : ' + ShuttingStarsUtility.floor2(this.elapsedTime) + ', ' + key);
+        if(this.keyInputDebugMode) ShuttingStarsUtility.log('KEY INPUT : ' + ShuttingStarsUtility.floor2(this.elapsedTime) + ', ' + key);
         key = String(key);
 
         // 키 입력 신호 넣기
@@ -2898,7 +2902,7 @@ class ShuttingStarsCore {
      * @param {string} key 입력 또는 해제된 키
      */
     handleKeyRelease(key) {
-        if(this.keyReleaseDebugMode) console.log('KEY RELEASE : ' + this.elapsedTime + ', ' + key);
+        if(this.keyReleaseDebugMode) ShuttingStarsUtility.log('KEY RELEASE : ' + this.elapsedTime + ', ' + key);
         key = String(key);
 
         const timeDiff = (typeof(this.keypressing[key]) == 'undefined' || this.keypressing[key] == null) ? 0 : new Date().getTime() - this.keypressing[key];
@@ -4761,7 +4765,7 @@ class ShuttingStarsCore {
             let y      = this.getHpBarYLocation() - radius;  // - this.notePlacers[0].y;
 
             if(y + radius >= this.notePlacers[0].y) { // 가끔 HP바 (행성) 가 NotePlacer 위치를 덮어버리는 위치에 출력되는 경우가 있음
-                console.log('HP BAR OVER ' + (y + radius));
+                ShuttingStarsUtility.log('HP BAR OVER ' + (y + radius));
                 y = this.notePlacers[0].y - radius - 10;
             }
             
@@ -5322,16 +5326,40 @@ class ShuttingStarsCore {
 
     /**
      * 공통 동시처리 프로세스 (init 에서 호출)
-     * @param {number} simultaneousWorkCycle simultaneousWorkCycle 값
      */
-    simultaneousWork(simultaneousWorkCycle) {
+    simultaneousWork() {
+        const selfs = this;
+
+        if(this.simultaneousEndTime == 0) {
+            // 아직 이전 사이틀의 simultaneousWorkIn 가 끝나지 않음
+            ShuttingStarsUtility.log('simultaneousWork performance is too slow !');
+            return;
+        }
+
+        this.simultaneousEndTime = 0;
+        this.simultaneousStartTime = new Date().getTime();
+        
+        // simultaneousWorkIn 호출
+        this.simultaneousWorkIn().then(() => {
+            selfs.simultaneousEndTime = new Date().getTime(); // 끝났음을 표시
+            selfs.simultaneousCycleGap = selfs.simultaneousEndTime - this.simultaneousStartTime;
+        }).catch((e) => {
+            console.error(e);
+        });
+    }
+
+    /**
+     * 직접 호출하지 말 것 ! ( simultaneousWork 를 통해 사용 ) Promise
+     * @return {Promise<*>}
+     */
+    async simultaneousWorkIn() {
+        this.simultaneousTime++;
+        if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
+
         try {
             let idx, jdx;
             let notePlacer;
             let calculates, additionals;
-            
-            this.simultaneousTime++;
-            if(this.simultaneousTime >= 99999999) this.simultaneousTime = 0;
 
             if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
                 // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
@@ -5477,63 +5505,56 @@ class ShuttingStarsCore {
                 if(this.songTitleTime <= 0) {
                     // 플레이 화면으로 전환
                     this.setState('playing');
-                    return;
                 }
-            }
-
-            // 게임 오버 출력완료 여부 처리
-            if(this.state == 'gameover') {
+            } else if(this.state == 'gameover') { // 게임 오버 출력완료 여부 처리
                 if(this.gameoverTime > 0) this.gameoverTime--;
                 if(this.gameoverTime <= 0) {
                     this.onSongEnd();
                     return;
                 }
-            }
-
-            // Credit 처리
-            if(this.state == 'credit') {
+            } else if(this.state == 'credit') { // Credit 처리
                 if(this.simultaneousTime % 2 == 0) this.creditIndexIncreases++;
                 if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
                 if(this.creditIndex < 0) this.creditIndex = 0;
                 if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
-            }
+            } else if(this.state == 'playing') { // 플레이 중 처리
+                // 재개 대기 타이밍 처리, NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+                if(! this.paused) {
+                    // 재개 타이밍 처리
+                    if(this.resumingTime >= 1) {
+                        this.resumingTime--;
+                        if(this.resumingTime <= 0) this.resumed = true;
+                        else                       this.resumed = false;
+                        return;
+                    }
 
-            // 재개 대기 타이밍 처리, NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-            if(! this.paused) {
-                // 재개 타이밍 처리
-                if(this.resumingTime >= 1) {
-                    this.resumingTime--;
-                    if(this.resumingTime <= 0) this.resumed = true;
-                    else                       this.resumed = false;
-                    return;
-                }
-
-                // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-                for(idx=0; idx<this.objectsPlaying.length; idx++) {
-                    const obj = this.objectsPlaying[idx];
-                    if(obj instanceof NoteKeyObject) {
-                        if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
-                            if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
-                        }
-                    } else if(obj instanceof JudgeMark) {
-                        if(obj.explosing < obj.explosingMax) {
-                            if(simultaneousWorkCycle % 4 == 0) obj.explosing += obj.explosingSpeed;
+                    // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+                    for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                        const obj = this.objectsPlaying[idx];
+                        if(obj instanceof NoteKeyObject) {
+                            if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
+                                if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
+                            }
+                        } else if(obj instanceof JudgeMark) {
+                            if(obj.explosing < obj.explosingMax) {
+                                if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
+                            }
                         }
                     }
                 }
-            }
 
-            // create 모드
-            if(this.createMode) {
-                if(this.state == 'playing') {
-                    for(idx=0; idx<this.notePlacers.length; idx++) {
-                        let notePlacerOne = this.notePlacers[idx];
-                        for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
-                            let objOne = this.objectsPlaying[jdx];
-                            if(objOne instanceof Note) {
-                                if(objOne.removed) continue;
-                                if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
-                                    this.handleNotePlacerCalled(notePlacerOne);
+                // create 모드 - 자동 노트 처리
+                if(this.createMode) {
+                    if(this.state == 'playing') {
+                        for(idx=0; idx<this.notePlacers.length; idx++) {
+                            let notePlacerOne = this.notePlacers[idx];
+                            for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
+                                let objOne = this.objectsPlaying[jdx];
+                                if(objOne instanceof Note) {
+                                    if(objOne.removed) continue;
+                                    if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
+                                        this.handleNotePlacerCalled(notePlacerOne);
+                                    }
                                 }
                             }
                         }
@@ -5649,21 +5670,6 @@ class ShuttingStarsCore {
                     return;
                 }
             }
-            
-            // 스테이지에 남아있는 노트 이동은 하지 않음 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
-            /*
-            for(idx=0; idx<this.objectsPlaying.length; idx++) {
-                const obj = this.objectsPlaying[idx];
-                if(obj instanceof Note) {
-                    if(obj.removed) continue;
-                    if(obj.explosing >= 1) continue; // 폭발 중인 Note 는 이동하지 않음
-                    obj.y -= obj.speedY;
-                    if(obj.y < 0) obj.y = 0;
-
-                    // if(obj.id == 9) console.log('N9 ' + obj.y + ' S ' + obj.speedY);
-                }
-            }
-            */
         } catch(e) {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
@@ -5858,10 +5864,10 @@ class ShuttingStarsCore {
      * 오디오 관련 리소스 닫기 (예외 발생해도 무시)
      */
     closeAudioSources() {
-        if(this.audioSource      != null) { try { this.audioSource.disconnect();      this.audioSource      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        if(this.audioAnalyser    != null) { try { this.audioAnalyser.disconnect();    this.audioAnalyser    = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        if(this.audioCtx         != null) { try { this.audioCtx.close();              this.audioCtx         = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
-        if(this.audioCtxPre      != null) { try {                                     this.audioCtxPre      = null; } catch(exIn) { console.log('Error on closing audio source. You can ignore them.'); console.log(exIn); } }
+        if(this.audioSource      != null) { try { this.audioSource.disconnect();      this.audioSource      = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
+        if(this.audioAnalyser    != null) { try { this.audioAnalyser.disconnect();    this.audioAnalyser    = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
+        if(this.audioCtx         != null) { try { this.audioCtx.close();              this.audioCtx         = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
+        if(this.audioCtxPre      != null) { try {                                     this.audioCtxPre      = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
     }
 
     /**
@@ -6852,7 +6858,7 @@ class ShuttingStarsCore {
 
         let translated = stringTableChoosed[english];
         if(typeof(translated) == 'undefined') {
-            if(this.stringTableDebugMode) console.log('[NOLANG] ' + english);
+            if(this.stringTableDebugMode) ShuttingStarsUtility.log('[NOLANG] ' + english);
             return english;
         }
 
@@ -7139,7 +7145,7 @@ class ShuttingStarsCore {
                 const json = responses.json();
 
                 if(typeof(json.name) != 'string') continue;
-                console.log('Package ' + json.name + ' applied.');
+                ShuttingStarsUtility.log('Package ' + json.name + ' applied.');
 
                 let songs = json.songs;
                 if(typeof(songs) != 'undefined' && songs != null) {
