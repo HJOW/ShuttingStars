@@ -5579,7 +5579,8 @@ class ShuttingStarsCore {
                 }
 
                 if(obj instanceof Starlight) {
-                    if(obj.x < (this.getFullRenderWidth() * (-3)) || obj.y < this.getFullRenderHeight() * (-3) || obj.x > this.getFullRenderWidth() * 1.1 || obj.y > this.getFullRenderHeight() * 1.1) {
+                    // Starlight 제거 파츠
+                    if(obj.x < (this.getFullRenderWidth() * (-2)) || obj.y < this.getFullRenderHeight() * (-2) || obj.x > this.getFullRenderWidth() * 1.3 || obj.y > this.getFullRenderHeight() * 1.3) {
                         this.objects.splice(idx, 1);
                         idx--;
                         continue;
@@ -7236,10 +7237,34 @@ class ShuttingStarsCore {
 
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
+            // Starlight 생성 파츠
             newOne = new Starlight(this);
-            newOne.y = -2 + (ShuttingStarsUtility.random() * this.convertY(this.getFullRenderHeight() * 2));
-            if(newOne.y >= this.convertY(this.getFullRenderHeight())) newOne.x = Math.floor((this.convertX(this.getFullRenderHeight()) / 2) * Math.random());
-            else newOne.x = -2;
+
+            /*
+            캔버스를 직사각형이라 치고, 좌측 상단의 좌표가 0, 0 으로 두며, 가로 길이는 this.getFullRenderWidth(), 세로 길이는 this.getFullRenderHeight() 로 구할 수 있음
+            직사각형 왼쪽에 붙어있으며 직사각형의 밑변 연장선상에 있는 직각삼각형 (다른 꼭지점 각도가 모두 45도로 구성된) 의 제일 왼쪽 꼭지점의 좌표와
+            직사각형 위쪽에 붙어있으며 직사각형의 윗변과 맞닿아 있는 직각삼각형 (마찬가지로 꼭지점 각도가 각각 45도, 45도, 그리고 맨위 꼭지점이 90도) 의 제일 위쪽 꼭지점 좌표
+            구한 두 좌표를 연결한 선 위 랜덤한 위치에 새 Starlight 가 생성되어야 함
+
+            첫 번째 꼭지점
+            x1 = (-1) * this.getFullRenderHeight()
+            y1 = this.getFullRenderHeight()
+
+            두 번째 꼭지점
+            x2 = this.getFullRenderWidth() / 2
+            y2 = (-1) * (this.getFullRenderWidth() / 2)
+
+            두 점 사이의 직선상의 랜덤한 좌표로 newObj.x, newObj.y 를 설정
+            */
+
+            const startX = (-1) * this.getFullRenderHeight();
+            const startY = this.getFullRenderHeight();
+            const endX = this.getFullRenderWidth() / 2;
+            const endY = (-1) * (this.getFullRenderWidth() / 2);
+            const starlightPositionRate = ShuttingStarsUtility.random();
+            newOne.x = startX + ((endX - startX) * starlightPositionRate);
+            newOne.y = startY + ((endY - startY) * starlightPositionRate);
+
             newOne.speedX = this.backStarlightSpdX;
             newOne.speedY = this.backStarlightSpdY;
             this.objects.push(newOne);
