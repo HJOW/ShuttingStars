@@ -224,24 +224,50 @@ class ShuttingStarsCore {
     /** @type {Array<NotePlacer>} NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관) */
     notePlacers = [];
 
-    /** @type {number} 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당) */
+    /** @type {number} 플레이 중 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당) */
     elapsedTime = 0;
-    /** @type {number} 진행 시간 (예전 방식, 순수 timeElapsed 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함) */
+    /** @type {number} 플레이 중 진행 시간 (예전 방식, 순수 timeElapse 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함) */
     elapsedTimeOld = 0;
-    /** @type {number} 진행 시간 (노트 생성용 audio 의 진행 시간) */
-    elapsedTimePre = 0;
+    /** @type {number} 동시 처리 (timeElapse) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
+    timeElapseWorkStartTime = 0;
+    /** @type {number} 동시 처리 (timeElapse) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 타임스탬프) */
+    timeElapseWorkEndTime = 1;
+    /** @type {number} 동시 처리 (timeElapse) 처리에 걸린 시간, 타임스탬프 */
+    timeElapseWorkCycleGap = 0;
+
     /** @type {number} 진행 시간 (곡과 관련 없이 동시 처리 횟수) */
     simultaneousTime = 0;
-    /** @type {number} 동시 처리 (simultaneousWork) 시작 시간 (밀리초 단위) */
+    /** @type {number} 동시 처리 (simultaneousWork) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
     simultaneousStartTime = 0;
-    /** @type {number} 동시 처리 (simultaneousWork) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 밀리초 단위) */
-    simultaneousEndTime = -1;
-    /** @type {number} 동시 처리 (simultaneousWork) 처리에 걸린 시간, 밀리초 단위 */
+    /** @type {number} 동시 처리 (simultaneousWork) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 타임스탬프) */
+    simultaneousEndTime = 1;
+    /** @type {number} 동시 처리 (simultaneousWork) 처리에 걸린 시간, 타임스탬프 */
     simultaneousCycleGap = 0;
     /** @type {number} 상태가 playing 일 때도 songtitle 화면을 띄우는 시간 (게임 중 변경됨) */
     titleDelayTime = 0;
     /** @type {number} 플레이 준비 시 titleDelayTime 값에 들어가는 초기값 */
     titleDelayTimeMax = 240;
+
+    /** @type {number} 동시 처리 (render) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
+    renderStartTime = 0;
+    /** @type {number} 동시 처리 (render) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 타임스탬프) */
+    renderEndTime = 1;
+    /** @type {number} 동시 처리 (render) 처리에 걸린 시간, 타임스탬프 */
+    renderCycleGap = 0;
+
+    /** @type {number} 동시 처리 (ss3d render) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
+    render3DStartTime = 0;
+    /** @type {number} 동시 처리 (ss3d render) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 타임스탬프) */
+    render3DEndTime = 1;
+    /** @type {number} 동시 처리 (ss3d render) 처리에 걸린 시간, 타임스탬프 */
+    render3DCycleGap = 0;
+
+    /** @type {number} 동시 처리 (ss3d simultaneousWork) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
+    simultaneous3DStartTime = 0;
+    /** @type {number} 동시 처리 (ss3d simultaneousWork) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 타임스탬프) */
+    simultaneous3DEndTime = 1;
+    /** @type {number} 동시 처리 (ss3d simultaneousWork) 처리에 걸린 시간, 타임스탬프 */
+    simultaneous3DCycleGap = 0;
 
     /** @type {boolean} Worker 사용여부 */
     usingWorker = true;
@@ -457,6 +483,8 @@ class ShuttingStarsCore {
     timeElapseDebugMode = false;
     /** @type {boolean} 현재 수치 (점수, hp, pw) 출력 여부 */
     numberDebugMode = false;
+    /** @type {boolean} 성능 지표 (각 동시처리 프로세스의 처리 속도) 출력 여부 */
+    performanceDebugMode = false;
 
     // 2D 시각화 객체
     /** @type {Audio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
@@ -990,6 +1018,7 @@ class ShuttingStarsCore {
                 this.gameOverEnabled = false;
                 this.timeElapseDebugMode = true;
                 this.numberDebugMode = true;
+                this.performanceDebugMode = true;
             }
 
             // 커맨드 설정
@@ -1196,6 +1225,7 @@ class ShuttingStarsCore {
         this.broker.coordinate2dDebugMode   = this.coordinate2dDebugMode   ;
         this.broker.timeElapseDebugMode     = this.timeElapseDebugMode     ;
         this.broker.numberDebugMode         = this.numberDebugMode         ;
+        this.broker.performanceDebugMode    = this.performanceDebugMode     ;
         this.broker.visualizePeakDebugMode  = this.visualizePeakDebugMode  ;
         this.broker.gameOverEnabled         = this.gameOverEnabled         ;
         this.broker.virtualKeyForce         = this.virtualKeyForce         ;
@@ -1228,6 +1258,7 @@ class ShuttingStarsCore {
             if(typeof(obj.coordinate2dDebugMode  ) != 'undefined') selfs.coordinate2dDebugMode   = obj.coordinate2dDebugMode   ;
             if(typeof(obj.timeElapseDebugMode    ) != 'undefined') selfs.timeElapseDebugMode     = obj.timeElapseDebugMode     ;
             if(typeof(obj.numberDebugMode        ) != 'undefined') selfs.numberDebugMode         = obj.numberDebugMode         ;
+            if(typeof(obj.performanceDebugMode   ) != 'undefined') selfs.performanceDebugMode    = obj.performanceDebugMode    ;
             if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
             if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
@@ -1857,7 +1888,6 @@ class ShuttingStarsCore {
         this.songBitGap = 0;
         this.elapsedTime = 0;
         this.elapsedTimeOld = 0;
-        this.elapsedTimePre = 0;
         this.resumed = false;
         this.paused = false;
         this.gameOverDelayed = false;
@@ -3095,10 +3125,69 @@ class ShuttingStarsCore {
         return ((this.stageSize.h * this.sizeFixedConst) / this.stageRows) / 2.0;
     }
 
+    /** 3D 매니저의 render 호출 (3D 매니저 로딩이 되어 있어야 사용 가능) */
+    call3Drender() {
+        if(this.render3DEndTime <= 0) {
+            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+            ShuttingStarsUtility.log('3D render performance is too slow !');
+            return;
+        }
+
+        this.render3DEndTime = 0;
+        this.render3DStartTime = performance.now();
+        
+        // 3D 매니저의 render 호출
+        this.ss3d.render(this.canvas3d, this.object3ds);
+
+        // 끝났음을 표시
+        this.render3DEndTime = performance.now();
+        this.render3DCycleGap = this.render3DEndTime - this.render3DStartTime;
+    }
+
+    /** 3D 매니저의 simultaneousJob 호출 (3D 매니저 로딩이 되어 있어야 사용 가능) */
+    call3DsimultaneousWork() {
+        if(this.simultaneous3DEndTime <= 0) {
+            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+            ShuttingStarsUtility.log('3D simultaneous performance is too slow !');
+            return;
+        }
+
+        this.simultaneous3DEndTime = 0;
+        this.simultaneous3DStartTime = performance.now();
+        
+        // 3D 매니저의 simultaneousJob 호출
+        this.ss3d.simultaneousJob(this);
+
+        // 끝났음을 표시
+        this.simultaneous3DEndTime = performance.now();
+        this.simultaneous3DCycleGap = this.simultaneous3DEndTime - this.simultaneous3DStartTime;
+    }
+
     /**
      * 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨
      */
     render() {
+        if(this.renderEndTime <= 0) {
+            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+            ShuttingStarsUtility.log('render performance is too slow !');
+            return;
+        }
+
+        this.renderEndTime = 0;
+        this.renderStartTime = performance.now();
+        
+        // renderIn 호출
+        this.renderIn();
+
+        // 끝났음을 표시
+        this.renderEndTime = performance.now();
+        this.renderCycleGap = this.renderEndTime - this.renderStartTime;
+    }
+
+    /**
+     * 직접 호출하지 말 것 ! ( render 를 대신 사용 )
+     */
+    renderIn() {
         try {
             // 캔버스 비우기
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -3195,6 +3284,7 @@ class ShuttingStarsCore {
         }
 
         let fontSize;
+        let debugAreaY;
 
         // 시각화 그리기
         if(this.useAudioVisualizer && this.playPrepared) {
@@ -3252,6 +3342,7 @@ class ShuttingStarsCore {
         }
 
         // 시간 디버그 출력
+        debugAreaY = this.convertY(this.getStageHeight() / 10) +  + (this.metricSize2 * 5);
         if(this.timeElapseDebugMode) {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
@@ -3260,8 +3351,8 @@ class ShuttingStarsCore {
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
 
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 5));
-            // this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 6));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            // this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTimeOld)), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
         }
 
         // 수치 디버그 출력
@@ -3273,9 +3364,26 @@ class ShuttingStarsCore {
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "right";
 
-            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.hp) + ' / 100' + ' LIVES'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 7));
-            this.ctx.fillText(String(this.pw + ' / ' + this.pwMax                    + ' POWER'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 8));
-            this.ctx.fillText(String(this.point                                      + ' POINT'), this.convertX(this.getStageWidth() * 4 / 5), this.convertY(this.getStageHeight() / 10) + (this.metricSize2 * 9));
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.hp) + ' / 100' + ' LIVES'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(this.pw + ' / ' + this.pwMax                    + ' POWER'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(this.point                                      + ' POINT'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+        }
+
+        // 성능 디버그 출력
+        if(this.performanceDebugMode) {
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.textAlign = "right";
+
+            debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.simultaneousCycleGap   ) + 'ms P1'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.timeElapseWorkCycleGap ) + 'ms P2'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.renderCycleGap         ) + 'ms P3'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.simultaneous3DCycleGap ) + 'ms P4'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+            this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.render3DCycleGap       ) + 'ms P5'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
         }
 
         // 게임 오버 그리기
@@ -5330,18 +5438,18 @@ class ShuttingStarsCore {
     simultaneousWork() {
         const selfs = this;
 
-        if(this.simultaneousEndTime == 0) {
+        if(this.simultaneousEndTime <= 0) {
             // 아직 이전 사이틀의 simultaneousWorkIn 가 끝나지 않음
             ShuttingStarsUtility.log('simultaneousWork performance is too slow !');
             return;
         }
 
         this.simultaneousEndTime = 0;
-        this.simultaneousStartTime = new Date().getTime();
+        this.simultaneousStartTime = performance.now();
         
         // simultaneousWorkIn 호출
         this.simultaneousWorkIn().then(() => {
-            selfs.simultaneousEndTime = new Date().getTime(); // 끝났음을 표시
+            selfs.simultaneousEndTime = performance.now(); // 끝났음을 표시
             selfs.simultaneousCycleGap = selfs.simultaneousEndTime - this.simultaneousStartTime;
         }).catch((e) => {
             console.error(e);
@@ -5572,6 +5680,30 @@ class ShuttingStarsCore {
      * 곡 동시처리 프로세스 - 시간 진행 (calculateSongBitGap(곡의bpm) 주기마다 1회 호출)
      */
     timeElapse() {
+        const selfs = this;
+
+        if(this.timeElapseWorkEndTime <= 0) {
+            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+            ShuttingStarsUtility.log('timeElapseWork performance is too slow !');
+            return;
+        }
+
+        this.timeElapseWorkEndTime = 0;
+        this.timeElapseWorkStartTime = performance.now();
+        
+        // timeElapseIn 호출
+        this.timeElapseIn().then(() => {
+            selfs.timeElapseWorkEndTime = performance.now(); // 끝났음을 표시
+            selfs.timeElapseWorkCycleGap = selfs.timeElapseWorkEndTime - this.timeElapseWorkStartTime;
+        }).catch((e) => {
+            console.error(e);
+        });
+    }
+
+    /**
+     * 직접 호출하지 말 것 ! ( timeElapse 를 통해 사용 및 관리 )
+     */
+    async timeElapseIn() {
         try {
             if(this.paused) return;
             if(this.resumingTime >= 1) return;
@@ -6042,7 +6174,7 @@ class ShuttingStarsCore {
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime * 2});
                 this.workerRender.onmessage = function(e) {
-                    if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
+                    if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.call3Drender(); }
                 }
 
                 this.workerRender = new Worker( this.convertURL('/resources/js/shuttingstarworker.js') );
@@ -6054,12 +6186,12 @@ class ShuttingStarsCore {
                                 selfs.ss3d.clear();
                                 ss3dworked = false;
                             }
-                        } else { ss3dworked = true; selfs.ss3d.simultaneousJob(selfs); }
+                        } else { ss3dworked = true; selfs.call3DsimultaneousWork(); }
                     }
                 }
             } else {
                 ShuttingStarsUtility.repeat(() => {
-                    if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.ss3d.render(selfs.canvas3d, selfs.object3ds); }
+                    if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.call3Drender(); }
                 }, this.frameTime * 2);
 
                 ShuttingStarsUtility.repeat(() => {
@@ -6069,7 +6201,7 @@ class ShuttingStarsCore {
                                 selfs.ss3d.clear();
                                 ss3dworked = false;
                             }
-                        } else { ss3dworked = true; selfs.ss3d.simultaneousJob(selfs); }
+                        } else { ss3dworked = true; selfs.call3DsimultaneousWork(); }
                     }
                 }, this.frameTime);
             }
