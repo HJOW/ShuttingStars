@@ -3944,7 +3944,7 @@ song.endTime = 0;
 song.timeConstant = 0; // -506.7
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
-song.test = false;
+song.test = true;
 song.serial = 'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g';
 song.difficulties = [
     {
