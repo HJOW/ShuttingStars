@@ -1285,15 +1285,19 @@ class ShuttingStarsCore {
         this.broker.setSongOne = function(song, idx) { selfs.songs[idx] = song; }
         this.broker.setSong    = function(song) { selfs.song = song; }
         this.broker.setDifficultyChoosingList = function(difList) { selfs.difficultyChoosingList = difList; }
-        this.broker.setDifficultyIndex = function(index) { selfs.difficulty = selfs.difficultyChoosingList[parseInt(index)]; }
-        this.broker.prepareCreateModeSong = function() {
+        this.broker.setDifficultyIndex = function(index) {
+            selfs.difficulty                = selfs.difficultyChoosingList[parseInt(index)]; 
+            selfs.difficultyLevel           = selfs.difficulty.difficultyLevel;
+            selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
+        }
+        this.broker.prepareCreateModeSong = async function() {
             selfs.difficultyChoosing = false;
 
             selfs.songTitleTime = selfs.songTitleBaseTime;
             if(! isNaN(selfs.song.loadingTime)) selfs.songTitleTime += selfs.song.loadingTime;
 
             // 곡 플레이 선택함.
-            selfs.setState('songtitle');
+            await selfs.setState('songtitle');
             selfs.difficultyChoosing = false;
             selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
         }
@@ -8160,7 +8164,7 @@ class EasySurvive extends ShuttingStarsMission {
         super(inst);
         this.name = 'SURVIVE (EASY)'
         let desc = inst.trans('Survive (EASY)');
-        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        desc += '\n' + inst.trans('Random song, random notes !');
         this.description = desc;
     }
     /**
@@ -8191,7 +8195,7 @@ class NormalSurvive extends ShuttingStarsMission {
         super(inst);
         this.name = 'SURVIVE (NORMAL)'
         let desc = inst.trans('Survive (NORMAL)');
-        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        desc += '\n' + inst.trans('Random song, random notes !');
         this.description = desc;
     }
     /**
@@ -8222,7 +8226,7 @@ class HardSurvive extends ShuttingStarsMission {
         super(inst);
         this.name = 'SURVIVE (HARD)'
         let desc = inst.trans('Survive (HARD)');
-        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        desc += '\n' + inst.trans('Random song, random notes !');
         this.description = desc;
     }
     /**
@@ -8253,7 +8257,7 @@ class VeryHardSurvive extends ShuttingStarsMission {
         super(inst);
         this.name = 'SURVIVE (Very HARD)'
         let desc = inst.trans('Survive (Very HARD)');
-        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        desc += '\n' + inst.trans('Random song, random notes !');
         this.description = desc;
     }
     /**

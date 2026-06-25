@@ -97,15 +97,17 @@ $(function() {
         let idx;
         
         const ta = $('.ta_song_json');
-        const selSongs = $('.sel_songs');
-        const selDiff = $('.sel_diff');
-        const inpElps = $('.inp_elapsedTime');
-        const btnLoad = $('.btn_load');
-        const btnSave = $('.btn_save');
-        const btnTest = $('.btn_test');
-        const btnStop = $('.btn_stop');
-        const btnPaus = $('.btn_pause');
-        const btnRsum = $('.btn_resume');
+        const selSongs  = $('.sel_songs');
+        const selDiff   = $('.sel_diff');
+        const inpElps   = $('.inp_elapsedTime');
+        const btnLoad   = $('.btn_load');
+        const btnSave   = $('.btn_save');
+        const btnSaveAs = $('.btn_save_as');
+        const btnTest   = $('.btn_test');
+        const btnStop   = $('.btn_stop');
+        const btnPaus   = $('.btn_pause');
+        const btnRsum   = $('.btn_resume');
+        const btnDiffRe = $('.btn_diff_ref');
 
         let songSelected = null;
 
@@ -122,18 +124,50 @@ $(function() {
             }
         }
 
+        const fLoadDiffList = function(loadJson) {
+            if(songSelected == null) return;
+
+            if(loadJson) {
+                let text = ta.val();
+                let songConverted = null;
+                try {
+                    let json = JSON.parse(text);
+                    songConverted = broker.parseSong(json);
+                } catch(e) {
+                    console.error(e);
+                    alert('ERROR : ' + e);
+                    return;
+                }
+
+                if(songConverted.difficulties) {
+                    songSelected.difficulties = songConverted.difficulties;
+                }
+            }
+
+            selDiff.empty();
+            for(idx=0; idx<songSelected.difficulties.length; idx++) {
+                let diffOne = songSelected.difficulties[idx];
+                selDiff.append("<option value='" + idx + "'>" + SSUtil.replaceString(SSUtil.replaceString( diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')' , '<', '&lt;'), '>', '&gt;') + "</option>");
+            }
+            if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); }
+            else { selDiff.prop('disabled', true); btnTest.prop('disabled', true); }
+        }
+
         const fLoadSong = function() {
             selDiff.empty();
             btnTest.prop('disabled', true);
             btnStop.prop('disabled', true);
             btnPaus.prop('disabled', true);
             btnRsum.prop('disabled', true);
+            btnDiffRe.prop('disabled', true);
             inpElps.prop('disabled', true);
 
             let song = null;
             let songSerial = selSongs.val();
+            let newSong = false;
+            if(songSerial == '') newSong = true;
 
-            if(songSerial == '') {
+            if(newSong) {
                 song = new ShuttingStarsSong();
                 song.difficulties.push({
                     index : 0,
@@ -156,16 +190,22 @@ $(function() {
 
             ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
 
-            let diffList = [];
-            for(idx=0; idx<songSelected.difficulties.length; idx++) {
-                let diffOne = songSelected.difficulties[idx];
-                selDiff.append("<option value='" + idx + "'>" + SSUtil.replaceString(SSUtil.replaceString( diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')' , '<', '&lt;'), '>', '&gt;') + "</option>");
+            fLoadDiffList(false);
+
+            if(newSong) {
+                btnSave.prop('disabled', false);
+                btnSaveAs.prop('disabled', true);
+            } else if(coreInst.officialSongSerials.indexOf(songSerial) >= 0) {
+                btnSave.prop('disabled', true);
+                btnSaveAs.prop('disabled', false);
+            } else {
+                btnSave.prop('disabled', false);
+                btnSaveAs.prop('disabled', false);
             }
-            if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); }
-            else { selDiff.prop('disabled', true); btnTest.prop('disabled', true); }
+            btnDiffRe.prop('disabled', false);
         }
 
-        const fSaveSong = function() {
+        const fSaveSong = function(saveAs) {
             let text = ta.val();
             let songConverted = null;
             try {
@@ -175,6 +215,10 @@ $(function() {
                 console.error(e);
                 alert('ERROR : ' + e);
                 return;
+            }
+
+            if(saveAs) {
+                songConverted.serial = ''; // 별도의 곡으로 저장
             }
 
             if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
@@ -207,6 +251,7 @@ $(function() {
             btnSave.prop('disabled', true);
             btnPaus.prop('disabled', false);
             btnRsum.prop('disabled', true);
+            btnDiffRe.prop('disabled', true);
             inpElps.prop('disabled', true);
 
             let text = ta.val();
@@ -222,7 +267,7 @@ $(function() {
             let diff = selDiff.val();
 
             if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
-                fSaveSong();
+                fSaveSong(false);
                 selDiff.val(diff);
             }
 
@@ -294,11 +339,13 @@ $(function() {
         }
 
         btnLoad.on('click', fLoadSong);
-        btnSave.on('click', fSaveSong);
+        btnSave.on('click', function() { fSaveSong(false); });
+        btnSaveAs.on('click', function() { fSaveSong(true); });
         btnTest.on('click', fTest);
         btnStop.on('click', fStop);
         btnPaus.on('click', fPause);
         btnRsum.on('click', fResume);
+        btnDiffRe.on('click', function() { fLoadDiffList(true); });
 
         const fResize = function() {
             $('.heightresizetarget').height((window.outerHeight - 250) + 'px');
@@ -325,8 +372,8 @@ $(function() {
         <table class="full">
             <colgroup>
                 <col/>
-                <col style="width: 240px;"/>
-                <col style="width: 360px;"/>
+                <col style="width: 280px;"/>
+                <col style="width: 320px;"/>
                 <col style="width: 360px;"/>
             </colgroup>
             <tbody>
@@ -335,9 +382,11 @@ $(function() {
                         <select class="sel sel_songs"></select>
                         <button type="button" class="btn btn_load">LOAD</button>
                         <button type="button" class="btn btn_save">SAVE</button>
+                        <button type="button" class="btn btn_save_as" disabled="disabled">SAVE AS...</button>
                     </td>
                     <td>
                         <select class="sel sel_diff" disabled="disabled"></select>
+                        <button type="button" class="btn btn_diff_ref" disabled="disabled">REFRESH</button>
                         <button type="button" class="btn btn_test" disabled="disabled">TEST</button>
                         <button type="button" class="btn btn_stop" disabled="disabled">STOP</button>
                     </td>
