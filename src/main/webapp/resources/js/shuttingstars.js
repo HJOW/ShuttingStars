@@ -4904,29 +4904,30 @@ class ShuttingStarsCore {
             ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertX(radius), r, g, b, 0.8, 7);
             this.ctx.fill();
         }
-        
-        /*
-        // 기존 바형 HP바
-        const hpBarMaxWidth = this.notePlacers[this.notePlacers.length - 1].x + this.notePlacers[this.notePlacers.length - 1].r - this.notePlacers[0].x + this.notePlacers[0].r;
-        const hpBarHeight = this.getHpBarHeight();
-        const hpBarBorderColor = this.convertColor('rgba(200, 200, 200, 0.5)');
-        let   hpBarInsideColor = String(hpBarBorderColor);
 
-        // HP바 (직선형)
-        // 현재 HP (최대 100) 에 따라 HP바 길이 결정
-        let hpBarWidth = 0;
-        if(this.hp > 0) {
-            hpBarWidth = hpBarMaxWidth * (this.hp / 100);
-        }
+        // HP바 (바형) 출력
+        let barFullW = this.getStageHeight() / 5.0;
+        let barRealW = (this.hp / 100.0) * barFullW; 
 
-        //    HP바를 화면 상단에 출력
-        this.ctx.strokeStyle = hpBarBorderColor;
-        this.ctx.strokeRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(this.getHpBarYLocation()), this.convertX(hpBarMaxWidth), this.convertY(hpBarHeight));
+        let barX = (this.getStageWidth() / 2.0) - (barFullW / 2.0);
+        let barY = (this.getStageHeight() * 19.0 / 20.0);
 
-        //    HP바 내부를 채우기
-        this.ctx.fillStyle = hpBarInsideColor;
-        this.ctx.fillRect(this.convertX(this.notePlacers[0].x - this.notePlacers[0].r), this.convertY(this.getHpBarYLocation()), this.convertX(hpBarWidth), this.convertY(hpBarHeight));
-        */
+        this.ctx.fillRect(this.convertX(barX + 5), this.convertY(barY - 5), this.convertX(barRealW), this.convertY(5));
+
+        this.ctx.font = 'normal ' + this.convertFontSize(10) + 'px ' + this.getRenderFontFamily();
+        this.ctx.textAlign = "right";
+        this.ctx.fillText('HP', this.convertX(barX - 5), this.convertY(barY + 2));
+
+        // PW바 출력
+        barRealW = (this.pw / this.pwMax) * barFullW;
+        barY += 20;
+        if(     this.pw < this.pwUse *  1) this.ctx.fillStyle = 'rgba(250,  50,  50, 0.9)';
+        else if(this.pw < this.pwUse * 16) this.ctx.fillStyle = 'rgba(200, 125, 125, 0.9)';
+        else                               this.ctx.fillStyle = 'rgba(100, 100, 250, 0.9)';
+        this.ctx.fillRect(this.convertX(barX + 5), this.convertY(barY - 5), this.convertX(barRealW), this.convertY(5));
+
+        this.ctx.font = 'normal ' + this.convertFontSize(10) + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillText('PW', this.convertX(barX - 5), this.convertY(barY + 2));
     }
 
     /**
