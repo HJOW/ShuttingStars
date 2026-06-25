@@ -4007,7 +4007,7 @@ class ShuttingStarsCore {
                 if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
                 else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
-                rows = Math.floor((this.canvas.height * 2.7 / 4.0) + fontSize) + 5;
+                rows = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5;
                 for(const line of desc) {
                     this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
                     rows += fontSize + gap;
