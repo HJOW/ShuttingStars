@@ -91,7 +91,7 @@ gtag('js', new Date());
 /* 페이지 접속 시 호출 */
 window.addEventListener('load', function(){
     const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
-    ShuttingStars.init(root[0]);
+    ShuttingStars.init(root);
 
     document.getElementById('shuttingstars_init_loading').style.display = 'none';
 });
@@ -101,8 +101,8 @@ window.addEventListener('load', function(){
     <div class='shuttingstar_canvas_root'></div>
 
     <!-- 초기화 전 로딩화면 영역 -->
-    <div id="shuttingstars_init_loading" style="width: 100%; height: 9990px; position: fixed; left: 0; bottom : 0; text-align: center;">
-        <progress style="position: fixed; bottom : 15%;"></progress>
+    <div id="shuttingstars_init_loading" class="shuttingstars_init_loading">
+        <progress></progress>
     </div>
 </body>
 </html>

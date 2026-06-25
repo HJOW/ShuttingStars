@@ -50,8 +50,8 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 79;
-song.endTime = 3600;
-song.timeConstant = 0; // -506.7
+song.endTime = 0; // 선택 사항으로, 이 값을 0으로 설정 시, 곡 길이를 자동으로 사용. 단, 이 값을 넣으면 높은 우선순위로 사용됨.
+song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = false;
@@ -503,7 +503,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 91;
-song.endTime = 3000;
+song.endTime = 0;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
@@ -602,7 +602,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 115;
-song.endTime = 4000;
+song.endTime = 0;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
@@ -1395,7 +1395,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 120;
-song.endTime = 3800;
+song.endTime = 0;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
@@ -2812,7 +2812,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 180;
-song.endTime = 5200;
+song.endTime = 0;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
@@ -3940,7 +3940,7 @@ song.description = `
 `;
 song.loadingTime = 10;
 song.bpm = 96;
-song.endTime = 5090;
+song.endTime = 0;
 song.timeConstant = 0; // -506.7
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;

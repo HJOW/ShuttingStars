@@ -32,6 +32,10 @@ body {
     overflow: hidden;
 }
 
+.invisible {
+    display: none !important;
+}
+
 /* pure css 관련 (본 게임 내에서는 쓰이지 않으며, 일부 웹 페이지 출력에만 사용) */
 
 .pure-menu {
@@ -103,10 +107,10 @@ This styles the menu heading.
     font-size: 1.2rem;
 }
 
-#shuttingstars_init_loading {
-    width: 100%; height: 9990px; position: fixed; left: 0; bottom : 0; text-align: center;
+#shuttingstars_init_loading, .shuttingstars_init_loading {
+    width: 100%; height: 9990px; position: fixed; left: 0; bottom : 0; text-align: center; z-index: 2001; background-color: rgba(5, 5, 5, 0.98); overflow: hidden;
 }
 
-#shuttingstars_init_loading progress {
+#shuttingstars_init_loading progress, .menu-item-divided progress {
     position: fixed; bottom : 15%;
 }

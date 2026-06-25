@@ -622,24 +622,28 @@ class ShuttingStarsCore {
             this.logInit('init started');
             try { this.fBeforeInit(this.broker); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
             
-            // Set HTML
-            if(typeof(rootDiv) == 'undefined') {
-                this.logInit('root div is not exist. creating start.');
+            // 최상위 예약어 클래스
+            let rootClassName = 'shuttingstars_root';
 
-                // 예약어 클래스가 이미 존재하는지 확인
-                let additionalNumber = 0;
-                let rootClassName = 'shuttingstars_root';
-                let remains = document.getElementsByClassName(rootClassName);
-                while(remains != null && remains.length >= 1) { // 예약어가 없는 고유 영역을 확정 (이미 쓰는 경우 숫자를 +1씩 더해서 고유하게 만듦)
-                    additionalNumber++;
-                    rootClassName = 'shuttingstars_root' + additionalNumber;
-                    remains = document.getElementsByClassName(rootClassName);
-                }
-                remains = null;
+            // 최상위 예약어 클래스 중복 체크
+            let mayBeDuplDivs = document.getElementsByClassName(rootClassName);
+            if(mayBeDuplDivs.length >= 2) {
+                this.logInit('duplicated root class names \'' + rootClassName + '\' !');
+                throw new Error('duplicated root class names \'' + rootClassName + '\' !');
+            } else if(mayBeDuplDivs.length == 1 && rootDiv != mayBeDuplDivs[0]) {
+                this.logInit('duplicated root class names \'' + rootClassName + '\' !');
+                throw new Error('duplicated root class names \'' + rootClassName + '\' !');
+            }
+
+            // 최상단 HTML 영역 체크 (없으면 생성)
+            if(typeof(rootDiv) == 'undefined' || rootDiv == null) {
+                this.logInit('root div is not exist. creating start.');
                 
-                rootDiv = document.body;
-                rootDiv.innerHTML = "<div class='" + rootClassName + "'></div>"
-                rootDiv = document.getElementsByClassName(rootClassName)[0];
+                rootDiv = document.createElement('div');
+                rootDiv.classList.add(rootClassName);
+                document.body.appendChild(rootDiv);
+            } else {
+                if(! rootDiv.classList.contains(rootClassName)) rootDiv.classList.add(rootClassName);
             }
 
             this.logInit('root div prepared. ss inside dom creating....');
@@ -681,7 +685,6 @@ class ShuttingStarsCore {
 
             //     글꼴 설정
             let fonts = this.getRenderFontFamily();
-            fonts = fonts.split(' ').join(', ');
             let targets = ['div', 'p', 'span', 'pre', 'input', 'textarea', 'select', 'button', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'label', 'table', 'tr', 'td', 'th', 'canvas', 'video', 'audio'];
             styles += '.shuttingstars_root';
             for(let domElem of targets) {
@@ -5553,6 +5556,7 @@ class ShuttingStarsCore {
                         this.removed = true;
                         this.hidden  = true;
                     }
+                    // 노트는 제거하지 않음
                 } else if(obj instanceof NotePlacer) {
                     if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
                 } else if(obj instanceof JudgeMark) {
@@ -5778,15 +5782,24 @@ class ShuttingStarsCore {
                 }
             }
 
+            let calcRealEndTime;
+
             // 곡의 끝 체크
-            //     곡의 명시된 종료시간과 마지막 패턴의 시간 비교해 더 큰 값 선택
+            //   곡의 명시된 종료시간과 마지막 패턴의 시간, 그리고 audio 가 존재하는 경우 실제 종료시간까지 비교해 더 큰 값 선택
+            //      마지막 패턴의 시간
             let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
             if(this.song != null) lastPatternTime = lastPatternTime * this.song.noteMultiplier + this.song.timeConstant;
-            let calcRealEndTime = song.endTime + this.noteLocationConst;
-            if(this.song != null) calcRealEndTime = calcRealEndTime * this.song.noteMultiplier + this.song.timeConstant;
-            if(calcRealEndTime > lastPatternTime + 4) {
+            //     audio 존재 시 실제 종료 시간 체크
+            if(this.song != null && this.audio != null) {
+                calcRealEndTime = this.calculateSongDuration(this.audio, this.song.bpm) + this.noteLocationConst + this.song.timeConstant + (this.timeMultiplier * 2);
+                if(calcRealEndTime > lastPatternTime) lastPatternTime = calcRealEndTime;
+            }
+            //     명시된 종료 시간 체크 (높은 우선순위)
+            if(this.song != null && this.song.endTime > 0) {
+                calcRealEndTime = (this.song.endTime + this.noteLocationConst) * this.song.noteMultiplier + this.song.timeConstant;
                 lastPatternTime = calcRealEndTime;
             }
+
             // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
             if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
                 this.clearTimeHandler();
@@ -5803,6 +5816,8 @@ class ShuttingStarsCore {
                         this.videoBgaUrl = null;
                     }
                 }
+
+                // TODO 곡의 끝 체크 파츠
 
                 this.onSongEnd(); // 종료
                 return;
@@ -7185,6 +7200,19 @@ class ShuttingStarsCore {
     }
 
     /**
+     * audio 객체의 종료 시점의 elapsedTime 계산 (audio 객체가 로딩 끝나있어야 사용 가능)
+     * 
+     * 
+     * @param {*} audioObject 
+     * @param {*} bpm 
+     * @returns 종료 시간 (게임 내 진행시간 값)
+     */
+    calculateSongDuration(audioObject, bpm) {
+        const durationSecond = audioObject.duration;
+        return (durationSecond * (bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier));
+    }
+
+    /**
      * 타이틀 화면 내 로딩 화면 중 처리 작업
      */
     loadAfter() {
@@ -7458,21 +7486,19 @@ class ShuttingStarsCore {
                         let probability3 = 1;    // 동시노트 추가 확률
 
                         if(difficultyLevel <= 2) {
-                            properGap = 32;
+                            properGap = 64;
                         } else if(difficultyLevel <= 4) {
-                            properGap = 16;
-                        } else if(difficultyLevel <= 5) {
-                            properGap = 8;
+                            properGap = 32;
                         } else if(difficultyLevel <= 6) {
-                            properGap = 4;
+                            properGap = 16;
                         } else if(difficultyLevel <= 8) {
-                            properGap = 2;
+                            properGap = 8;
                         } else if(difficultyLevel <= 10) {
-                            properGap = 1;
+                            properGap = 4;
                         } else if(difficultyLevel <= 12) {
-                            properGap = 0.5;
+                            properGap = 2;
                         } else {
-                            properGap = 0.25;
+                            properGap = 1;
 
                             let leftLevel = Math.floor((difficultyLevel - 13) / 2.0);
                             if(leftLevel < 0) leftLevel = 0;
@@ -7946,8 +7972,8 @@ class ShuttingStarsSong {
     description = '';
     /** @type {number} beat per minute, 곡의 속도 */
     bpm = 120.0;
-    /** @type {number} 곡 종료 시간 */
-    endTime = 560;
+    /** @type {number} 곡 종료 시간 임의 지정 (0으로 설정 시 곡 끝까지 사용됨) */
+    endTime = 0;
 
     /** @type {string} 추가 패키지인 경우 추가 패키지 이름이 들어감 */
     contentname = '';
@@ -8115,12 +8141,12 @@ class ShuttingStarsMission extends ShuttingStarsSong {
         this.musicUrl       = choosed.musicUrl;
         this.musicAlterUrl  = choosed.musicAlterUrl;
         this.bpm            = choosed.bpm;
-        this.endTime        = Math.ceil(choosed.endTime / choosed.noteMultiplier) + 1;
         this.timeConstant   = 0;
         this.timeMultiplier = 1;// choosed.timeMultiplier;
         this.loadingTime    = choosed.loadingTime;
         this.composer       = choosed.composer;
         this.noteWriter     = '???';
+        if(choosed.endTime > 0) this.endTime = Math.ceil(choosed.endTime / choosed.noteMultiplier) + 1;
     }
 }
 
