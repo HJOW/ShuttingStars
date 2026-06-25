@@ -4060,3 +4060,51 @@ song.difficulties = [
 ];
 
 ssAddSong(song);
+
+
+song = {};
+song.name = 'Nastel Bom\'s 507938';
+song.composer = 'Dmitrii Spis';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/pixabay/nastelbom-no-copyright-music-507938.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Nastel Bom's 507938
+|Hi, my name is Dmitrii Spis (NastelBom) 
+|Creating unique background music for your projects!
+|From light and relaxing tracks to inspiring corporate melodies 
+|and epic cinematic compositions. My music is perfect for 
+|videos, advertisements, podcasts, presentations, and creative projects.
+`;
+song.loadingTime = 10;
+song.bpm = 125;
+song.endTime = 0;
+song.timeConstant = 0;
+song.noteMultiplier = 1;
+song.timeMultiplier = 1;
+song.test = false;
+song.serial = 'a25745Hhdhrt634634hgp34qgD39p4g';
+song.difficulties = [
+    {
+        difficultyLabel : 'easy',
+        difficultyLevel : 2,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'normal',
+        difficultyLevel : 5,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'hard',
+        difficultyLevel : 9,
+        autoCreate : true,
+        patterns : []
+    }
+]
+
+ssAddSong(song);
