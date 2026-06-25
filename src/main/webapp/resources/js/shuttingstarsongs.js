@@ -4077,6 +4077,7 @@ song.description = `
 |From light and relaxing tracks to inspiring corporate melodies 
 |and epic cinematic compositions. My music is perfect for 
 |videos, advertisements, podcasts, presentations, and creative projects.
+|This song is released on pixabay.
 `;
 song.loadingTime = 10;
 song.bpm = 125;
@@ -4084,7 +4085,7 @@ song.endTime = 0;
 song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
-song.test = false;
+song.test = true;
 song.serial = 'a25745Hhdhrt634634hgp34qgD39p4g';
 song.difficulties = [
     {
@@ -4102,6 +4103,143 @@ song.difficulties = [
     {
         difficultyLabel : 'hard',
         difficultyLevel : 9,
+        autoCreate : true,
+        patterns : []
+    }
+]
+
+ssAddSong(song);
+
+
+song = {};
+song.name = 'A Reason To Smile';
+song.composer = 'JonasBlakewood';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/pixabay/jonasblakewood-a-reason-to-smile-350631.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|A Reason To Smile
+|Song owner : JonasBlakewood
+|https://buymeacoffee.com/jonasblakewood
+|This song is released on pixabay.
+`;
+song.loadingTime = 10;
+song.bpm = 100;
+song.endTime = 0;
+song.timeConstant = 0;
+song.noteMultiplier = 1;
+song.timeMultiplier = 1;
+song.test = false;
+song.serial = 'sdhsf3fwefwq7346341564qgD39p4g';
+song.difficulties = [
+    {
+        difficultyLabel : 'easy',
+        difficultyLevel : 2,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'normal',
+        difficultyLevel : 5,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'hard',
+        difficultyLevel : 9,
+        autoCreate : true,
+        patterns : []
+    }
+]
+
+ssAddSong(song);
+
+song = {};
+song.name = 'The Spring of the Universe';
+song.composer = 'JonasBlakewood';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/pixabay/jonasblakewood-the-spring-of-the-universe-449695.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|The Spring of the Universe
+|Song owner : JonasBlakewood
+|https://buymeacoffee.com/jonasblakewood
+|This song is released on pixabay.
+`;
+song.loadingTime = 10;
+song.bpm = 97;
+song.endTime = 0;
+song.timeConstant = 0;
+song.noteMultiplier = 1;
+song.timeMultiplier = 1;
+song.test = false;
+song.serial = 'sdh63sdgdner34gdfg64qgD39p4g';
+song.difficulties = [
+    {
+        difficultyLabel : 'easy',
+        difficultyLevel : 4,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'normal',
+        difficultyLevel : 6,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'hard',
+        difficultyLevel : 8,
+        autoCreate : true,
+        patterns : []
+    }
+]
+
+ssAddSong(song);
+
+
+song = {};
+song.name = 'Dirty Tackle';
+song.composer = 'JonasBlakewood';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/pixabay/jonasblakewood-dirty-tackle-335334.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Dirty Tackle
+|Song owner : JonasBlakewood
+|https://buymeacoffee.com/jonasblakewood
+|This song is released on pixabay.
+`;
+song.loadingTime = 10;
+song.bpm = 110;
+song.endTime = 0;
+song.timeConstant = 0;
+song.noteMultiplier = 1;
+song.timeMultiplier = 1;
+song.test = false;
+song.serial = 'DSVJBve8vidSVbUSDYVilb34lifdv';
+song.difficulties = [
+    {
+        difficultyLabel : 'easy',
+        difficultyLevel : 1,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'normal',
+        difficultyLevel : 5,
+        autoCreate : true,
+        patterns : []
+    },
+    {
+        difficultyLabel : 'hard',
+        difficultyLevel : 7,
         autoCreate : true,
         patterns : []
     }
