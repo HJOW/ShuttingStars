@@ -92,6 +92,12 @@ class ShuttingStarsInterface {
             resolve({ success : false });
         });
     }
+    getOuterStorage() {
+        return new Promise((resolve, reject) => { resolve({ success : false, data : {} }); })
+    }
+    storeOuterStorage(jsonObject) {
+        return new Promise((resolve, reject) => { resolve({ success : false });  });
+    }
     getRemoteConfigValues() {
         return new Promise((resolve, reject) => { resolve({ success : false, value : null }); })
     }
@@ -316,7 +322,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 if(! checkRes.loginAvail) { reject('Not logined !'); return; }
                 if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
                 
-                selfs.deleteAllMyDataIn().then((counts) => {
+                selfs.deleteAllMyDataIn(false).then((counts) => {
                     selfs.logout().then((logoutRes) => { resolve(logoutRes); }).catch((exc) => { reject(exc); });
                 }).catch((ex) => { reject(ex); });
             }).catch((e) => {
@@ -326,11 +332,14 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
 
     /** 직접 호출하지 말 것 */
-    async deleteAllMyDataIn() {
+    async deleteAllMyDataIn(recursives) {
         const selfs = this;
-        const collections = ['higscore', 'board', 'additionals', 'user'];
         let counts = 0;
+
+        // Firestore 에서 이 사용자의 데이터 삭제
+        const collections = ['higscore', 'board', 'additionals', 'user'];
         let notEmptyDetected = false;
+
         for(let idx=0; idx<collections.length; idx++) {
             const collName = collections[idx];
             const collOne  = selfs.firestore.collection(collName);
@@ -345,8 +354,18 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
             await batch.commit();
         }
-        if(notEmptyDetected) return counts + await this.deleteAllMyDataIn();
-        else return counts;
+        if(notEmptyDetected) counts += await this.deleteAllMyDataIn(true);
+        if(recursives) return counts;
+
+        // RTDB 에서 이 사용자의 데이터 삭제
+        const ssuuid = localStorage.getItem('SSUUID');
+        if(typeof(ssuuid) != 'undefined' && ssuuid != null && ssuuid.trim() != '') {
+            const rtdbRef = selfs.rtdb.ref('/userdb/ ' + ssuuid);
+            await rtdbRef.remove();
+            counts++;
+        }
+
+        return counts;
     }
 
     registerRankRecord(json) {
@@ -479,6 +498,106 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 });
             } catch(e) {
                 resolve({ success : false, message : e });
+            }
+        });
+    }
+
+    /** 외부 저장소 (일부 설정 동기화에 사용) 불러오기 (Promise) - Firestore 가 아닌 Realtime Database 사용
+     * 
+     * @return {Promise} { success : true/false, data : object }
+    */
+    getOuterStorage() {
+        const selfs = this;
+        return new Promise((resolve, reject) => { 
+            try {
+                // SSUUID 가 준비되지 않은 경우 - 중단
+                let ssuuid = localStorage.getItem('SSUUID');
+                if(typeof(ssuuid) == 'undefined' || ssuuid == null) ssuuid = '';
+                ssuuid = ssuuid.trim();
+                if(ssuuid == '') {
+                    resolve({ success : false, data : {}, message : 'SSUUID is not prepared.' }); // 실패
+                    return;    
+                }
+
+                // SSUUID 로 RTDB 조회
+                selfs.rtdb.ref('/userdb/ ' + ssuuid).get().then((snapshot) => {
+                    if(snapshot.exists()){
+                        resolve({ success : true, data : snapshot.val() });
+                    } else {
+                        resolve({ success : true, data : {} });
+                    }
+                }).catch((error) => {
+                    console.error(error);
+                    resolve({ success : false, data : {}, message : 'ERROR : ' + error });
+                });
+            } catch(e) {
+                console.error(e);
+                resolve({ success : false, message : 'ERROR : ' + e, data : {} });
+            }
+        });
+    }
+
+    /** 
+     * 외부 저장소 (일부 설정 동기화에 사용) 저장 / 삭제 (Promise) - Firestore 가 아닌 Realtime Database 사용
+     * @param {Object|null} jsonObject 저장할 JSON 객체, null 인 경우 삭제
+     * @return {Promise} { success : true/false, message : string }
+     */
+    storeOuterStorage(jsonObject) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                // SSUUID 가 준비되지 않은 경우 - 중단
+                let ssuuid = localStorage.getItem('SSUUID');
+                if(typeof(ssuuid) == 'undefined' || ssuuid == null) ssuuid = '';
+                ssuuid = ssuuid.trim();
+                if(ssuuid == '') {
+                    resolve({ success : false, message : 'SSUUID is not prepared.' }); // 실패
+                    return;    
+                }
+
+                // 계정 로그인되지 않은 경우 - 중단
+                if((! selfs.logined) || (selfs.user == null) || (typeof(selfs.user) == 'undefined') || (typeof(selfs.user.uid) == 'undefined')) {
+                    resolve({ success : false, message : 'Please login first' }); // 실패
+                    return;    
+                }
+
+                selfs.rtdb.ref('/userdb/ ' + ssuuid).get().then((snapshot) => {
+                    if(snapshot.exists()) { // 기존 데이터 존재
+                        if(jsonObject == null) { // 삭제 요청 건
+                            snapshot.ref.remove().then(() => {
+                                resolve({ success : true }); // 삭제 완료    
+                            }).catch((error) => {
+                                console.error(error);
+                                resolve({ success : false, message : 'ERROR : ' + error }); // 삭제 실패
+                            });
+                        } else { // 기존 데이터 수정 요청 건
+                            jsonObject.moddate = new Date().getTime();
+                            jsonObject.uid = selfs.user.uid;
+                            snapshot.ref.set(jsonObject).then(() => {
+                                resolve({ success : true }); // 수정 완료    
+                            }).catch((error) => {
+                                console.error(error);
+                                resolve({ success : false, message : 'ERROR : ' + error }); // 수정 실패
+                            });
+                        }
+                    } else {
+                        if(jsonObject == null) { // 삭제 요청 건
+                            resolve({ success : true }); // 삭제 완료
+                        } else { // 신규 등록 요청 건
+                            jsonObject.regdate = new Date().getTime();
+                            jsonObject.uid = selfs.user.uid;
+                            selfs.rtdb.ref('/userdb/ ' + ssuuid).set(jsonObject).then(() => {
+                                resolve({ success : true }); // 등록 완료    
+                            }).catch((error) => {
+                                console.error(error);
+                                resolve({ success : false, message : 'ERROR : ' + error }); // 등록 실패
+                            });
+                        }
+                    }
+                });
+            } catch(e) {
+                console.error(error);
+                resolve({ success : false, message : 'ERROR : ' + e }); // 처리 실패
             }
         });
     }

@@ -58,6 +58,9 @@ class ShuttingStarsCore {
     /** @type {ShuttingStarsInterface|null} 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨. */
     backend = null;
 
+    /** @type {boolean} 백엔드 서버에 설정 저장기능 사용여부 */
+    useCloudSettings = true;
+
     /*** 대체 모드 (게임 구동이 아닌 다른 형태로 이 js 사용 시 변경) ***/
     /** @type {boolean} 곡 생성 모드, true 시 키보드 컨트롤 불가하며 자동 플레이가 진행됨. 플레이 완주해도 기록이 남지 않음. 기본값은 물론 false. */
     createMode = false;
@@ -1346,7 +1349,8 @@ class ShuttingStarsCore {
                         selfs.rootDiv.classList.remove('ss_backend_guest');
                     }
 
-                    resolve(newList);
+                    // 설정 동기화 시도
+                    selfs.loadCloudSettings().then(() => { resolve(newList); }).catch((exc) => { console.error(exc); resolve(newList); });
                 };
 
                 const fNotLogined = () => {
@@ -1525,9 +1529,9 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 설정 불러오기
+     * 설정 불러오기 (Promise)
      */
-    loadSettings() {
+    async loadSettings() {
         try {
             let settingJsonStr = localStorage.getItem('shuttingstar_settings');
             if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
@@ -1630,30 +1634,30 @@ class ShuttingStarsCore {
             ShuttingStarsUtility.log('Failed to load settings.');
             console.error(e);
             ShuttingStarsUtility.log('Continue with default settings.');
-            this.saveSettings();
+            await this.saveSettings();
         }
     }
 
     /**
-     * 설정 저장
+     * 설정 저장 (Promise)
      */
-    saveSettings() {
+    async saveSettings() {
         try {
             let settingJson = {}
-            settingJson.keyList = this.keyList;
-            settingJson.arrowKeys = this.arrowKeys;
-            settingJson.enterKey = this.enterKey;
-            settingJson.escKey = this.escKey;
-            settingJson.fontFamily = this.fontFamily;
+            settingJson.keyList             = this.keyList;
+            settingJson.arrowKeys           = this.arrowKeys;
+            settingJson.enterKey            = this.enterKey;
+            settingJson.escKey              = this.escKey;
+            settingJson.fontFamily          = this.fontFamily;
             settingJson.noteSpeedMultiplier = this.noteSpeedMultiplier;
-            settingJson.reverseVertical = this.reverseVertical;
-            settingJson.keypressTiming = this.keypressTiming;
-            settingJson.songTiming = this.songTiming;
-            settingJson.resolution = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
-            settingJson.disable3d = this.disable3d;
-            settingJson.disable2d = this.disable2d;
-            settingJson.language = this.language;
-            settingJson.languageDefault = this.languageDefault;
+            settingJson.reverseVertical     = this.reverseVertical;
+            settingJson.keypressTiming      = this.keypressTiming;
+            settingJson.songTiming          = this.songTiming;
+            settingJson.resolution          = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
+            settingJson.disable3d           = this.disable3d;
+            settingJson.disable2d           = this.disable2d;
+            settingJson.language            = this.language;
+            settingJson.languageDefault     = this.languageDefault;
             settingJson.keyList = this.keyList;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
@@ -1662,7 +1666,41 @@ class ShuttingStarsCore {
             console.error(e);
         }
 
-        this.saveCredit();
+        await this.saveCredit();
+
+        if(this.backend != null) {
+            if(this.backend.logined) {
+                if(this.useCloudSettings) {
+                    await this.backend.storeOuterStorage({
+                        keyList             : this.keyList,
+                        fontFamily          : this.fontFamily,
+                        noteSpeedMultiplier : this.noteSpeedMultiplier,
+                        language            : this.language,
+                        languageDefault     : this.languageDefault
+                    });
+                }
+            }
+        }
+    }
+
+    /** 설정 불러오기 (백엔드 DB 사용, Promise) */
+    async loadCloudSettings() {
+        if(this.backend != null) {
+            if(this.backend.logined) {
+                if(this.useCloudSettings) {
+                    const responses = await this.backend.getOuterStorage();
+                    if(responses.success) {
+                        const data = responses.data;
+                        if(typeof(data.keyList            ) != 'undefined') this.keyList             = data.keyList;
+                        if(typeof(data.fontFamily         ) != 'undefined') this.fontFamily          = data.fontFamily;
+                        if(typeof(data.noteSpeedMultiplier) != 'undefined') this.noteSpeedMultiplier = data.noteSpeedMultiplier;
+                        if(typeof(data.language           ) != 'undefined') this.language            = data.language;
+                        if(typeof(data.languageDefault    ) != 'undefined') this.languageDefault     = data.languageDefault;
+                        await this.saveSettings();
+                    }
+                }
+            }
+        }
     }
 
     /** Credit 불러오기 (Promise) */
@@ -2573,8 +2611,9 @@ class ShuttingStarsCore {
         } else if(key == this.enterKey) {
             if(this.firstSetMode == 'confirm') {
                 this.playSE('accept1');
-                this.saveSettings();
-                this.setState('menu');
+                this.saveSettings().then(() => {
+                    selfs.setState('menu');
+                });
             } else {
                 if(     this.firstSetMode == 'language') this.firstSetMode = 'quality';
                 else if(this.firstSetMode == 'quality' ) this.firstSetMode = 'confirm';
@@ -6768,9 +6807,10 @@ class ShuttingStarsCore {
             this.keyList[5] = tempKey;
 
             // 설정 저장
-            selfs.saveSettings();
-            selfs.closeConfigDiv();
-            selfs.setState('menu');
+            selfs.saveSettings().then(() => {
+                selfs.closeConfigDiv();
+                selfs.setState('menu');
+            });
         });
 
         btnTabExit.addEventListener('click', fCancel);
@@ -10171,7 +10211,7 @@ class ShuttingStarsUtilityClass {
         if(typeof(ssuuid) == 'undefined' || ssuuid == null) ssuuid = '';
         ssuuid = ssuuid.trim();
         if(ssuuid == '') {
-            ssuuid = this.randomString(false, 16) + new Date().getTime();
+            ssuuid = 'SS' + this.randomString(false, 16) + new Date().getTime();
             localStorage.setItem('SSUUID', ssuuid);
         }
         return ssuuid;
