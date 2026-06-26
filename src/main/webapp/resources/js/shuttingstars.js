@@ -3797,7 +3797,7 @@ class ShuttingStarsCore {
         if(this.songChoosingMode == 'mission') {
             this.ctx.strokeText(lefts + this.trans('Choose your mission !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         } else if(this.songChoosingMode == 'mysong') {
-            this.ctx.strokeText(lefts + this.trans('Choose the level !') + rights, this.convertX(this.getStageWidth() / 2), rows);
+            this.ctx.strokeText(lefts + this.trans('Play with your own music !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         } else {
             if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
             else this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
@@ -4134,39 +4134,33 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
         
         // 선택 곡 상세 정보 (Description) 출력
+        let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
+        let descW = Math.floor((this.canvas.width * 1.2) / 4.0);
+
+        if(descW < 300) {
+            descX = Math.floor(this.canvas.width / 2.0);
+            descW = Math.floor((this.canvas.width) / 2.0);
+        }
+        let desc = [];
         if(songChoosen != null) {
-            let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
-            let descW = Math.floor((this.canvas.width * 1.2) / 4.0);
+            desc = songChoosen.getDescriptionSplit();
+        } else if(this.songChoosingMode == 'mysong') {
+            desc.push(this.trans('Play with your own music !'));
+            desc.push('(' + this.trans('Scores will not be saved.') + ')');
+        }
+        if(desc != null && desc.length > 0) {
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
-            if(descW < 300) {
-                descX = Math.floor(this.canvas.width / 2.0);
-                descW = Math.floor((this.canvas.width) / 2.0);
+            rows = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5;
+            for(const line of desc) {
+                this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
+                rows += fontSize + gap;
             }
-
-            let desc = songChoosen.getDescriptionSplit();
-            if(desc != null && desc.length > 0) {
-                /*
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
-
-                this.ctx.fillRect(descX, Math.floor(this.canvas.height * 2.7 / 4.0), descW, Math.floor(this.canvas.height * 1.2 / 4.0));
-                */
-
-                fontSize = this.convertFontSize(12);
-                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-                this.ctx.textAlign = "left";
-                // if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
-                // else          this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
-
-                rows = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5;
-                for(const line of desc) {
-                    this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
-                    rows += fontSize + gap;
-                }
-                this.ctx.textAlign = "center";
-            }
+            this.ctx.textAlign = "center";
         }
 
         // 적용된 커맨드 모드 정보 출력
@@ -6698,22 +6692,33 @@ class ShuttingStarsCore {
         });
         this.pops.iframes = popInside;
 
-        // 스트링 테이블 번역 적용
-        this.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
-            itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
-        });
-
         // mysong 팝업
         popInside = popRoot.querySelector('.pop_mysong');
-        // TODO : 디자인(스타일) 작업 필요
         htmls = `
             <div class='div_mysong_menu menu'>
+                <h2 class='target_translate' style='position: absolute;'>Play with your own music !</h2>
                 <button type='button' class='btn btn_exit red target_translate'>X</button>
             </div>
             <div class='div_mysong_file full' style='padding-top : 20px;'>
-                <div><span class='target_translate'>AUDIO</span><input type='file' class='inp inp_file inp_mysong_file' accept='audio/*'/></div>
-                <div><span class='target_translate'>BPM</span><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1'/></div>
-                <div><button type='button' class='btn btn_mysong_accept target_translate'>PLAY</button></div>
+                <table class='layout' style='width: 90%;'>
+                    <colgroup>
+                        <col style='width:120px'/>
+                        <col/>
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <th class='target_translate'>MUSIC</th>
+                            <td><input type='file' class='inp inp_file inp_mysong_file' accept='audio/*'/></td>
+                        </tr>
+                        <tr>
+                            <th class='target_translate'>BPM</th>
+                            <td><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1'/></td>
+                        </tr>
+                        <tr>
+                            <td colspan='2' class='center' style='text-align: center'><button type='button' class='btn btn_mysong_accept target_translate'>PLAY</button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         `;
         popInside.innerHTML = htmls;
@@ -6750,6 +6755,10 @@ class ShuttingStarsCore {
         });
         this.pops.mysong = popInside;
 
+        // 스트링 테이블 번역 적용
+        this.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
+            itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
+        });
     }
 
     /**
