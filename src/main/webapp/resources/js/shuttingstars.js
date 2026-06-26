@@ -110,7 +110,8 @@ class ShuttingStarsCore {
         login : null,     // 로그인 팝업 영역 div
         join : null,      // 회원가입 팝업 영역 div (현재 미사용)
         community : null, // 커뮤니티 팝업 영역 div
-        iframes : null    // 외부 페이지 (iframe) div
+        iframes : null,   // 외부 페이지 (iframe) div
+        mysong : null     // mp3 첨부 div   
     };
     /** @type {HTMLElement|null} 상세 설정 화면 영역 */
     configDiv = null;
@@ -345,8 +346,9 @@ class ShuttingStarsCore {
     songDisplays = [];
     /** @type {Array<ShuttingStarsMission>} 특수한 곡들 (mission 모드일 때 선택) */
     missions = [];
-    /** @type {string} default / mission */
+    /** @type {string} default / mission / mysong */
     songChoosingMode = 'default';
+    
 
     /** @type {Object|null} 선택된 난이도 */
     difficulty = null;
@@ -2257,6 +2259,7 @@ class ShuttingStarsCore {
             this.pops.login.classList.add('invisible');
             this.pops.community.classList.add('invisible');
             this.pops.iframes.classList.add('invisible');
+            this.pops.mysong.classList.add('invisible');
             this.configDiv.classList.add('invisible');
             this.setState('menu');
             this.keyEventDisabled = false;
@@ -2439,8 +2442,19 @@ class ShuttingStarsCore {
             return;
         }
 
-        // 곡이 아무것도 준비 안된 상태로 방향키 혹은 엔터 키를 누름 - 메뉴로 돌아감
-        if((this.songDisplays.length <= 0 && this.songChoosingMode == 'default') || (this.missions.length <= 0 && this.songChoosingMode == 'mission')) { this.setState('menu'); return; }
+        // 곡이 아무것도 준비 안된 상태로 키를 누름
+        if((this.songDisplays.length <= 0 && this.songChoosingMode == 'default') || (this.missions.length <= 0 && this.songChoosingMode == 'mission')) {
+            if(key == this.enterKey || key == this.escKey) {
+                this.setState('menu'); 
+            } else {
+                if(  this.songChoosingMode == 'mission') this.songChoosingMode = 'mysong';
+                else                                     this.songChoosingMode = 'mission';
+                if(this.songChoosingMode == 'mysong' && this.difficultyLevel < 0) this.difficultyLevel = 1;
+            }
+            return;
+        }
+
+        // 현재 곡 선택 모드에 따라 분기
         if(this.songChoosingMode == 'mission') {
             // mission 모드
 
@@ -2468,8 +2482,8 @@ class ShuttingStarsCore {
                 this.songChoosingMode = 'default';
                 if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
             } else if(key == this.arrowKeys[3]) { // RIGHT
-                this.songChoosingMode = 'default';
-                if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+                this.songChoosingMode = 'mysong';
+                if(this.difficultyLevel < 0) this.difficultyLevel = 1;
             } else if(key == this.enterKey) { // ENTER
                 if(this.missionChoosing == null) return;
                 this.playSE('accept2');
@@ -2489,6 +2503,27 @@ class ShuttingStarsCore {
                 this.setState('songtitle');
                 this.difficultyChoosing = false;
                 this.titleDelayTime = this.titleDelayTimeMax;
+            }
+
+        } else if(this.songChoosingMode == 'mysong') {
+            // 자기가 가지고 있는 곡으로 플레이하는 모드 - 위 아래 방향키는 난이도만 선택 가능하며, 좌우 방향키는 모드 변경, 엔터 시 파일 첨부, ESC는 메뉴로 나가기
+            if(key == this.enterKey) {
+                // TODO : mysong - 파일 첨부 창 띄워서 파일 입력받기, 입력받은 후, 받은 mp3 로 Audio 객체 만들고 ShuttingStarsSong 객체를 즉석에서 만들어서 바로 songtitle 로 보내야 됨
+                this.pops.dim.classList.remove('invisible');
+                this.pops.mysong.classList.remove('invisible');
+            } else if(key == this.escKey) {
+                this.setState('menu');
+                return;
+            } else if(key == this.arrowKeys[0]) { // UP
+                this.difficultyLevel--;
+                if(this.difficultyLevel < 1) this.difficultyLevel = 19;
+            } else if(key == this.arrowKeys[1]) { // DOWN
+                this.difficultyLevel++;
+                if(this.difficultyLevel > 19) this.difficultyLevel = 1;
+            } else if(key == this.arrowKeys[2]) { // LEFT
+                this.songChoosingMode = 'mission';
+            } else if(key == this.arrowKeys[3]) { // RIGHT
+                this.songChoosingMode = 'default';
             }
 
         } else {
@@ -2535,8 +2570,8 @@ class ShuttingStarsCore {
                     this.difficultyLevel = this.difficulty.difficultyLevel;
                     this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
                 } else {
-                    this.songChoosingMode = 'mission';
-                    if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+                    this.songChoosingMode = 'mysong';
+                    if(this.difficultyLevel < 0) this.difficultyLevel = 1;
                 }
             } else if(key == this.arrowKeys[3]) { // RIGHT
                 if(this.difficultyChoosing) {
@@ -3738,6 +3773,8 @@ class ShuttingStarsCore {
                 this.ctx.strokeText(this.trans('No missions available !'), this.convertX(this.getStageWidth() / 2), rows);
                 emptyState = true;
             }
+        } else if(this.songChoosingMode == 'mysong') {
+            emptyState = false;
         } else {
             if(this.songDisplays.length <= 0) {
                 this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.getStageWidth() / 2), rows);
@@ -3748,7 +3785,7 @@ class ShuttingStarsCore {
         // 타이틀 출력
         lefts  = '';
         rights = '';
-        if((this.songChoosingMode == 'mission' && this.missions.length >= 1) || (this.songChoosingMode == 'default' && this.songDisplays.length >= 1)) {
+        if((this.songChoosingMode == 'mission' && this.missions.length >= 1) || (this.songChoosingMode == 'default' && this.songDisplays.length >= 1) || (this.songChoosingMode == 'mysong')) {
             lefts  = '◀ ';
             rights = ' ▶';
         }
@@ -3759,6 +3796,8 @@ class ShuttingStarsCore {
         this.ctx.textAlign = "center";
         if(this.songChoosingMode == 'mission') {
             this.ctx.strokeText(lefts + this.trans('Choose your mission !') + rights, this.convertX(this.getStageWidth() / 2), rows);
+        } else if(this.songChoosingMode == 'mysong') {
+            this.ctx.strokeText(lefts + this.trans('Choose the level !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         } else {
             if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
             else this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
@@ -3802,7 +3841,7 @@ class ShuttingStarsCore {
         let opacityOne = 0;
         opacity = 0.99;
 
-        if(this.songChoosingMode == 'mission') {
+        if(this.songChoosingMode == 'mission') { // MISSION
             // mission 모드 - 난이도만 선택
 
             // 미션을 선택하지 않은 상태인 경우 첫 미션을 출력
@@ -3870,7 +3909,77 @@ class ShuttingStarsCore {
                     if(opacity <= 0) opacity = 0.0;
                 }
             }
-        } else {
+        } else if(this.songChoosingMode == 'mysong') { // MYSONG
+            // mysong 모드 - 난이도만 선택하고, 엔터 키를 누르면 파일첨부 창을 띄움
+
+            // 1개 행 높이 사전 계산
+            row1Height = this.metricSize3 + (gap * 3);
+
+            // 난이도 배열 준비 (곡 목록처럼 사용)
+            const numberArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            
+            // 선택 중인 난이도가 몇 번째인지 확인
+            for(idx=0; idx<numberArray.length; idx++) {
+                if(numberArray[idx] == this.difficultyLevel) { currentIndex = idx; break; }
+            }
+
+            // 난이도 목록 출력 (현재 선택된 난이도가 중앙에 표기되도록) - 3번 출력 (레벨 1 선택된 경우, 그 위로 19, 18이 떠야 하므로)
+            for(jdx=0; jdx<3; jdx++) {
+                if(jdx == 0) {
+                    currentRow = centerY - (  (row1Height * (numberArray.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+                    opacityOne = ( 0.5 / (numberArray.length + currentIndex) );
+                    opacity = 0.5 - opacityOne;
+                }
+                for(idx=0; idx<numberArray.length; idx++) {
+                    let diffOne = numberArray[idx];
+
+                    if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
+                        currentRow += row1Height + gap;
+                        continue;
+                    }
+
+                    let choosen = (jdx == 1 && this.difficultyLevel == diffOne);
+                    if(choosen) {
+                        songChoosen = null; // mysong 모드인 경우 일단 null 로 설정 (파일 입력받은 이후에야 곡 객체를 만들 수 있음)
+
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+
+                        this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
+                    }
+
+                    // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
+                    if(! this.screenDirLandscape) {
+                        if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3, false)) {
+                            opacity = opacity / 4;
+                        }
+                    }
+
+                    // 난이도 목록 출력
+                    fontSize = this.convertFontSize(20);
+                    label = 'Level ' + String(diffOne);
+                    this.ctx.textAlign = "center";
+                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                    if(choosen) {
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 2));
+                    } else {
+                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
+                    }
+
+                    currentRow += row1Height;
+                    if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
+                    else opacity -= opacityOne;
+                    if(opacity >= 0.99) opacity = 0.99;
+                    if(opacity <= 0) opacity = 0.0;
+                }
+            }
+
+            
+        } else { // DEFAULT
             // default 모드 - 곡을 선택해야 함
             //     곡을 선택하지 않은 상태인 경우 첫 곡을 출력
             if(this.songChoosing == null) { this.songChoosing = this.songDisplays[0]; }
@@ -5866,8 +5975,6 @@ class ShuttingStarsCore {
                     }
                 }
 
-                // TODO 곡의 끝 체크 파츠
-
                 this.onSongEnd(); // 종료
                 return;
             }
@@ -5995,9 +6102,9 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 곡 플레이 종료 시 호출
+     * 곡 플레이 종료 시 호출 (Promise)
      */
-    onSongEnd() {
+    async onSongEnd() {
         this.setState('result');
         this.paused = false;
         this.stopAudio();
@@ -6007,12 +6114,19 @@ class ShuttingStarsCore {
         this.songPrepared = false;
         this.playPrepared = false;
 
+        let idx;
+
         // Note 갯수 체크
         let diff = this.song.difficulties[ this.difficulty.index ];
         let count = diff.patterns.length;
         let rank = this.judgeResultRank();
 
-        if(! this.createMode) {
+        // 기록 여부 결정
+        let recordYn = true;
+        if(this.createMode) recordYn = false;
+        else if(this.song instanceof CustomMySong) recordYn = false;
+
+        if(recordYn) {
             // Credit 반영
             this.reportSaved.PERFECT  += this.report.PERFECT;
             this.reportSaved.GREAT    += this.report.GREAT;
@@ -6043,6 +6157,27 @@ class ShuttingStarsCore {
                 build : this.build,
                 userAgent : window.navigator.userAgent
             });
+        }
+
+        // MySong 인 곡들을 목록에서 제거
+        try {
+            for(idx=0; idx<this.songs.length; idx++) {
+                const songOne = this.songs[idx];
+                if(songOne instanceof CustomMySong) {
+                    this.songs.splice(idx, 1);
+                    idx--;
+                }
+            }
+
+            for(idx=0; idx<this.songDisplays.length; idx++) {
+                const songOne = this.songDisplays[idx];
+                if(songOne instanceof CustomMySong) {
+                    this.songDisplays.splice(idx, 1);
+                    idx--;
+                }
+            }
+        } catch(e) {
+            console.error(e);
         }
         
         // 3D 매니저 이벤트 호출
@@ -6408,6 +6543,7 @@ class ShuttingStarsCore {
             <div class='shuttingstars_pop_dim invisible'></div>
             <div class='shuttingstars_pop_content shuttingstars_canvas_config invisible'></div>  
             <div class='shuttingstars_pop_content pop_login invisible'></div>
+            <div class='shuttingstars_pop_content pop_mysong invisible'></div>
             <div class='shuttingstars_pop_content pop_community invisible'></div>
             <div class='shuttingstars_pop_content pop_iframe invisible'></div>
 
@@ -6501,6 +6637,7 @@ class ShuttingStarsCore {
 
             selfs.keyEventDisabled = false;
             selfs.pops.login.classList.add('invisible');
+            selfs.pops.mysong.classList.add('invisible');
             selfs.pops.dim.classList.add('invisible');
 
             fAfter2();
@@ -6565,6 +6702,54 @@ class ShuttingStarsCore {
         this.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
             itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
         });
+
+        // mysong 팝업
+        popInside = popRoot.querySelector('.pop_mysong');
+        // TODO : 디자인(스타일) 작업 필요
+        htmls = `
+            <div class='div_mysong_menu menu'>
+                <button type='button' class='btn btn_exit red target_translate'>X</button>
+            </div>
+            <div class='div_mysong_file full' style='padding-top : 20px;'>
+                <div><span class='target_translate'>AUDIO</span><input type='file' class='inp inp_file inp_mysong_file' accept='audio/*'/></div>
+                <div><span class='target_translate'>BPM</span><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1'/></div>
+                <div><button type='button' class='btn btn_mysong_accept target_translate'>PLAY</button></div>
+            </div>
+        `;
+        popInside.innerHTML = htmls;
+
+        const inpMysongFile = popInside.querySelector('.inp_mysong_file');
+        const inpMysongBpm  = popInside.querySelector('.inp_mysong_bpm');
+        let   urlMysong = null;
+        let   nameMySong = null;
+        let   bpmMySong = 100;
+
+        inpMysongFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                urlMysong  = URL.createObjectURL(file);
+                nameMySong = file.name;
+                bpmMySong  = parseInt(inpMysongBpm.value);
+            } else {
+                urlMysong = null;
+            }
+        });
+
+        popInside.querySelector('.btn_exit').addEventListener('click', () => {
+            selfs.pops.mysong.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+            selfs.keyEventDisabled = false;
+        });
+        popInside.querySelector('.btn_mysong_accept').addEventListener('click', () => {
+            if(urlMysong == null) { ShuttingStarsUtility.toast(selfs.trans('Please select your file first !')); return; }
+
+            selfs.pops.mysong.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+
+            selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel);
+        });
+        this.pops.mysong = popInside;
+
     }
 
     /**
@@ -7827,6 +8012,52 @@ class ShuttingStarsCore {
     }
 
     /**
+     * 사용자가 첨부한 오디오 파일로 바로 곡 불러와 플레이하기 (Promise)
+     * 
+     * @param {string} mySongAudioURL 사용자가 첨부한 파일의 Blob URL (URL.createObjectURL() 로 생성한 URL)
+     * @param {string} songName 곡 이름
+     * @param {number} bpm bpm
+     * @param {number} diffLevel 난이도
+     * @returns {Promise<void>}
+     */
+    async loadMySong(mySongAudioURL, songName, bpm, diffLevel) {
+        const song = new CustomMySong();
+        song.name = songName;
+        song.composer = '?';
+        song.noteWriter = '?';
+        song.noteWriter = '?';
+        song.bgaUrl = '';
+        song.musicUrl = mySongAudioURL;
+        song.musicAlterUrl = '';
+        song.thumbnailUrl = '';
+        song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
+        song.loadingTime = 20;
+        song.bpm = bpm;
+        song.endTime = 0;
+        song.timeConstant = 0;
+        song.noteMultiplier = 1;
+        song.timeMultiplier = 1;
+        song.test = false;
+        song.serial = 'CUSTOMSONG_' + ShuttingStarsUtility.randomString(false, 32);
+        song.difficulties = [{
+            index : 0,
+            difficultyLabel : 'easy',
+            difficultyLevel : diffLevel,
+            patterns : [],
+            autoCreate : true
+        }];
+
+        this.addSong(song);
+        this.song = song;
+
+        this.difficulty = song.difficulties[0];
+        this.difficultyLevel = this.difficulty.difficultyLevel;
+        this.difficultyUsingAutoCreate = true;
+
+        this.setState('songtitle');
+    }
+
+    /**
      * 외부에서 곡 추가 시 호출
      * @param {ShuttingStarsSong} song 추가하거나 처리할 곡
      * @param {boolean} noSave 곡 목록 저장을 생략할지 여부
@@ -8170,6 +8401,14 @@ class ShuttingStarsSong {
 
         return obj;
     }
+}
+
+/** MySong 모드 곡 (사용자가 가진 오디오 파일 첨부해서 즉석 플레이하는 곡, 기록을 남기면 안되며, 플레이 후 곡 목록에서 바로 삭제) */
+class CustomMySong extends ShuttingStarsSong {
+    /**
+     * 인스턴스 초기화
+     */
+    constructor() { super(); }
 }
 
 /** 미션 (mission 모드) 기본 구조 */
