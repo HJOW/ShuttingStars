@@ -329,6 +329,9 @@ class ShuttingStarsCore {
     /** @type {string} 이전 상태 */
     beforeState = 'none';
 
+    /** @type {string} 기기/브라우저 특정을 위한 고유값 (독자 생성, init 호출해야 입력됨) */
+    ssuuid = '';
+
     /** @type {string} default / mission */
     mode = 'default';
     /** @type {ShuttingStarsSong|null} 현재 플레이 중인 곡, ShuttingStarsSong 객체 */
@@ -587,6 +590,8 @@ class ShuttingStarsCore {
 
             this.readURLParameters();
             this.rebuildBroker();
+
+            this.ssuuid = ShuttingStarsUtility.assureSSUUID();
 
             for(let scl=0; scl<20; scl++) { let str = ' '; if(scl % 2 == 0) str = str + ' '; if(scl % 3 == 0) str = str + ' '; if(scl % 5 == 0) str = str + ' '; ShuttingStarsUtility.log('\n' + str + '\n'); }
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
@@ -9997,8 +10002,45 @@ class ShuttingStarsUtilityClass {
         return Math.floor(this.random() * 4294967296);
     }
 
+    /** 
+     * 랜덤 글자 반환, 0~9 및 a~Z 까지 나올 수 있음 
+     * @returns {string} 랜덤 글자
+    */
+    randomChar() {
+        let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let idx = Math.floor(this.random() * chars.length);
+        return chars.charAt(idx);
+    }
+
+    /** 랜덤 글자 반환, 0~9 및 A~Z 까지 나올 수 있음 (소문자가 제외됨) 
+     * * @returns {string} 랜덤 글자
+    */
+    randomBigChar() {
+        let chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let idx = Math.floor(this.random() * chars.length);
+        return chars.charAt(idx);
+    }
+
+    /** 랜덤 문자열 반환 (숫자 및 알파벳으로 구성)
+     * 
+     * @param {boolean} allCases true 인 경우 알파벳 소문자도 포함, false 인 경우 알파벳은 대문자만 포함됨
+     * @param {number} length 문자열 길이
+     * @returns {string} 랜덤 문자열
+    */
+    randomString(allCases, length) {
+        let result = '';
+        for(let idx=0; idx<length; idx++) {
+            if(allCases) {
+                result += this.randomChar();
+            } else {
+                result += this.randomBigChar();
+            }
+        }
+        return result;
+    }
+
     /**
-     * 0 ~ 1.0 사이 랜덤 수 반환
+     * 0 ~ 1.0 사이 랜덤 수 반환 (1 은 포함되지 않음)
      * @returns {number} 0 이상 1 미만의 난수
      */
     random() {
@@ -10121,6 +10163,18 @@ class ShuttingStarsUtilityClass {
         if(firebase.apps == null) return false;
         if(firebase.apps.length <= 0) return false;
         return true;
+    }
+
+    /** 브라우저/기기 상에 SSUUID (기기 고유값으로 사용) 값 존재를 최대한 보장 */
+    assureSSUUID() {
+        let ssuuid = localStorage.getItem('SSUUID');
+        if(typeof(ssuuid) == 'undefined' || ssuuid == null) ssuuid = '';
+        ssuuid = ssuuid.trim();
+        if(ssuuid == '') {
+            ssuuid = this.randomString(false, 16) + new Date().getTime();
+            localStorage.setItem('SSUUID', ssuuid);
+        }
+        return ssuuid;
     }
 
     /** 
