@@ -3866,7 +3866,7 @@ class ShuttingStarsCore {
                     let missionOne = this.missions[idx];
 
                     if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                        currentRow += row1Height + gap;
+                        currentRow += row1Height;
                         continue;
                     }
 
@@ -3934,7 +3934,7 @@ class ShuttingStarsCore {
                     let diffOne = numberArray[idx];
 
                     if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                        currentRow += row1Height + gap;
+                        currentRow += row1Height;
                         continue;
                     }
 
@@ -4003,7 +4003,7 @@ class ShuttingStarsCore {
                     let songOne = this.songDisplays[idx];
 
                     if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                        currentRow += row1Height + gap;
+                        currentRow += row1Height;
                         continue;
                     }
 
@@ -7947,7 +7947,8 @@ class ShuttingStarsCore {
         if(typeof(json) == 'string') json = JSON.parse(json);
 
         let idx;
-        let song = new ShuttingStarsSong();
+        let song = null;
+        song = new ShuttingStarsSong();
 
         song.name           = json.name;
         song.composer       = json.composer;
@@ -8401,6 +8402,14 @@ class ShuttingStarsSong {
 
         return obj;
     }
+}
+
+/** 공식 탑재 곡 */
+class OfficialSong extends ShuttingStarsSong {
+    /**
+     * 인스턴스 초기화
+     */
+    constructor() { super(); }
 }
 
 /** MySong 모드 곡 (사용자가 가진 오디오 파일 첨부해서 즉석 플레이하는 곡, 기록을 남기면 안되며, 플레이 후 곡 목록에서 바로 삭제) */
