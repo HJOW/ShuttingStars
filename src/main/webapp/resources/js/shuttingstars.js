@@ -3100,6 +3100,100 @@ class ShuttingStarsCore {
         });
     }
 
+    /** 게임패드 입력 감지 */
+    handleGamePads() {
+        try {
+            const gamepads = window.navigator.getGamepads();
+            for(let idx=0; idx<gamepads.length; idx++) {
+                const gamepadOne = gamepads[idx];
+                if(gamepadOne == null) continue;
+
+                const btns = gamepadOne.buttons;
+                if(btns == null) continue;
+                if(btns.length < 16) continue;
+
+                let btn;
+
+                // 버튼 번호는 XBOX 기준 (https://adamjones.me/blog/gamepad-mapping/) - 다른 패드 사용 시에는 번호가 다를 수가 있음
+
+                // A
+                btn = btns[0];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.enterKey, true);
+                }
+
+                // Menu
+                btn = btns[9];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.escKey, true);
+                }
+
+                // LT
+                btn = btns[6];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.keyList[0], true);
+                }
+
+                // LB
+                btn = btns[4];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.keyList[1], true);
+                }
+
+                // X
+                btn = btns[2];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.keyList[2], true);
+                }
+
+                // Y
+                btn = btns[3];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.keyList[3], true);
+                }
+
+                // RB
+                btn = btns[5];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.keyList[4], true);
+                }
+
+                // RT
+                btn = btns[7];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.keyList[5], true);
+                }
+
+                // ARROW UP
+                btn = btns[12];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.arrowKeys[0], true);
+                }
+
+                // ARROW DOWN
+                btn = btns[13];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.arrowKeys[1], true);
+                }
+
+                // ARROW LEFT
+                btn = btns[14];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.arrowKeys[2], true);
+                }
+
+                // ARROW RIGHT
+                btn = btns[15];
+                if(btn.value > 0 || btn.pressed) {
+                    this.handleKeyInput(this.arrowKeys[3], true);
+                }
+
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
     /**
      * 플레이 일시정지
      */
@@ -5789,7 +5883,6 @@ class ShuttingStarsCore {
                 if(this.gameoverTime > 0) this.gameoverTime--;
                 if(this.gameoverTime <= 0) {
                     this.onSongEnd();
-                    return;
                 }
             } else if(this.state == 'credit') { // Credit 처리
                 if(this.simultaneousTime % 2 == 0) this.creditIndexIncreases++;
@@ -5804,19 +5897,18 @@ class ShuttingStarsCore {
                         this.resumingTime--;
                         if(this.resumingTime <= 0) this.resumed = true;
                         else                       this.resumed = false;
-                        return;
-                    }
-
-                    // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
-                    for(idx=0; idx<this.objectsPlaying.length; idx++) {
-                        const obj = this.objectsPlaying[idx];
-                        if(obj instanceof NoteKeyObject) {
-                            if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
-                                if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
-                            }
-                        } else if(obj instanceof JudgeMark) {
-                            if(obj.explosing < obj.explosingMax) {
-                                if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
+                    } else {
+                        // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+                        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                            const obj = this.objectsPlaying[idx];
+                            if(obj instanceof NoteKeyObject) {
+                                if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
+                                    if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
+                                }
+                            } else if(obj instanceof JudgeMark) {
+                                if(obj.explosing < obj.explosingMax) {
+                                    if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
+                                }
                             }
                         }
                     }
@@ -5840,6 +5932,9 @@ class ShuttingStarsCore {
                     }
                 }
             }
+
+            // 게임패드 상태 확인
+            this.handleGamePads();
         } catch(e) {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
