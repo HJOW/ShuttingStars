@@ -10111,6 +10111,18 @@ class ShuttingStarsUtilityClass {
         });
     }
 
+    /**
+     * Firebase 사용 준비 여부 반환
+     * @returns {boolean}
+     */
+    detectFirebaseInitialized() {
+        if(typeof(firebase) == 'undefined') return false;
+        if(typeof(firebase.apps) == 'undefined') return false;
+        if(firebase.apps == null) return false;
+        if(firebase.apps.length <= 0) return false;
+        return true;
+    }
+
     /** 
      * 해당 문자열을 SHA-256 암호화 (Promise)
      * 

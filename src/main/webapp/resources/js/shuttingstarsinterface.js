@@ -514,7 +514,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 /** 직접 호출하지 말 것 (shuttingstars.js 에서 호출함) */
 function __ssBackEnd() {
     let _ssbackend;
-    if(typeof(firebase) == 'undefined') _ssbackend = null;
-    else                                _ssbackend = new FirebaseHostingImplementation(); // Firebase 사용 가능한 경우 (Firebase 호스팅 환경) 자동 사용
+    if(ShuttingStarsUtility.detectFirebaseInitialized()) _ssbackend = new FirebaseHostingImplementation(); // Firebase 사용 가능한 경우 (Firebase 호스팅 환경) 자동 사용
+    else _ssbackend = null;
     return _ssbackend;
 }
