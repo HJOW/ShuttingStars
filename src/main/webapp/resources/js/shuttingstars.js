@@ -8213,13 +8213,26 @@ class ShuttingStarsCore {
         else if(diffLevel <= 6) diffLabel = 'normal';
         else if(diffLevel <= 10) diffLabel = 'hard';
         else diffLabel = 'ex';
-        song.difficulties = [{
-            index : 0,
-            difficultyLabel : diffLabel,
-            difficultyLevel : diffLevel,
-            patterns : [],
-            autoCreate : true
-        }];
+
+        if(typeof(song.difficulties) == 'undefined' || song.difficulties == null || song.difficulties.length <= 0) {
+            song.difficulties = [{
+                index : 0,
+                difficultyLabel : diffLabel,
+                difficultyLevel : diffLevel,
+                patterns : [],
+                autoCreate : true
+            }];    
+        } else {
+            song.difficulties[0].index = 0;
+            song.difficulties[0].difficultyLevel = diffLevel;
+            song.difficulties[0].difficultyLabel = diffLabel;
+            if(typeof(song.difficulties[0].patterns) == 'undefined') {
+                song.difficulties[0].patterns = [];
+                song.difficulties[0].autoCreate = true;
+            }
+            if(typeof(song.difficulties[0].autoCreate) == 'undefined') song.difficulties[0].autoCreate = true;
+        }
+        
 
         song.name = songName;
         song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
