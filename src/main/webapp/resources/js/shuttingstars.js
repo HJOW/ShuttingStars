@@ -115,8 +115,6 @@ class ShuttingStarsCore {
     };
     /** @type {HTMLElement|null} 상세 설정 화면 영역 */
     configDiv = null;
-    /** @type {HTMLElement|null} 로딩 스크린 영역 */
-    globalLoadingLayer = null;
 
     /*** DOM 영역 변수들 (Canvas 객체들) ***/
     /** @type {HTMLCanvasElement|null} 2D 캔버스 객체 (메인 게임 동작) */
@@ -667,7 +665,6 @@ class ShuttingStarsCore {
                         <canvas class='shuttingstars_canvas'></canvas>   
                         <canvas class='shuttingstars_canvas_3d'></canvas>
                         <div class='shuttingstars_pop_root'></div>
-                        <div class='shuttingstars_global_loading'></div>
                     </div>
                 </div>                                     
             `;
@@ -675,17 +672,6 @@ class ShuttingStarsCore {
             this.rootDiv = rootDiv;
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
             this.videoBga = rootDiv.querySelector('.shuttingstars_bga');
-
-            this.globalLoadingLayer = rootDiv.querySelector('.shuttingstars_global_loading');
-            this.globalLoadingLayer.innerHTML = "<progress class='ss_prog_global_loading'></progress>";
-            this.globalLoadingLayer.style.background = 'transparent';
-            this.globalLoadingLayer.style.width = '100%';
-            this.globalLoadingLayer.style.height = '30px';
-            this.globalLoadingLayer.style.position = 'fixed';
-            this.globalLoadingLayer.style.left = '0px';
-            this.globalLoadingLayer.style.top = '700px';
-            this.globalLoadingLayer.style.textAlign = 'center';
-            this.globalLoadingLayer.style.verticalAlign = 'middle';
 
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
@@ -1112,11 +1098,7 @@ class ShuttingStarsCore {
         setTimeout(() => {
             selfs.handleScreenResized();
             selfs.titleScreenWaiting = true;
-
-            if(selfs.globalLoadingLayer != null) {
-                selfs.globalLoadingLayer.classList.add('invisible');
-            }
-        }, 4000);
+        }, 6000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
         try {
@@ -1170,7 +1152,6 @@ class ShuttingStarsCore {
                 let keyOne = this.keyList[idx];
                 this.addDeclaredKeys(keyOne);
             }
-
         } else {
             // 그외의 경우 - 방향키
 
@@ -1197,7 +1178,7 @@ class ShuttingStarsCore {
         }
 
         // 최초 메뉴 진입 시 창 크기 다시 새로고침
-        if(this.beforeState == 'title' && state == 'menu') {
+        if(this.beforeState == 'title' && state == 'menu' && state == 'songtitle') {
             this.handleScreenResized();
         }
 
@@ -2226,12 +2207,6 @@ class ShuttingStarsCore {
             this.videoBga.style.top  = canvasBounding.top + 'px';
             this.videoBga.style.width  = canvasBounding.width + 'px';
             this.videoBga.style.height = canvasBounding.height + 'px';
-        }
-
-        // 전역 로딩 화면 처리
-        if(this.globalLoadingLayer != null) {
-            this.globalLoadingLayer.style.top = (canvasBounding.height - 20) + 'px';
-            this.globalLoadingLayer.style.zIndex = this.mainZindex + 4;
         }
 
         // 3d 장식용 캔버스 관리
@@ -5155,7 +5130,7 @@ class ShuttingStarsCore {
             this.ctx.beginPath();
             this.ctx.fillStyle = hpBarInsideColor;
             // this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
-            ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertX(radius), r, g, b, 0.8, 7);
+            ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertY(radius), r, g, b, 0.8, 7);
             this.ctx.fill();
         }
 
@@ -7018,7 +6993,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 HTML 및 기타 css 적용
         this.configDiv.innerHTML = html;
-        this.configDiv.style.zIndex = 1002;
+        this.configDiv.style.zIndex = this.mainZindex + 1002;
         this.configDiv.style.position = 'fixed';
         this.configDiv.style.top    = '10px';
         this.configDiv.style.left   = '10px';
