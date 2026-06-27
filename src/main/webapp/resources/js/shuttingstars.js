@@ -29,7 +29,7 @@ limitations under the License.
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
     /** @type {number} 빌드 번호 */
-    build = 3;
+    build = 4;
     
     /*** 화면 크기와 캔버스 렌더링 해상도 관련 ***/
     /** @type {{w: number, h: number}} 렌더링 해상도, 화면 출력 품질을 결정함. */
