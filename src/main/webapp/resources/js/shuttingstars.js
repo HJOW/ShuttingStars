@@ -273,8 +273,10 @@ class ShuttingStarsCore {
     /** @type {number} 동시 처리 (ss3d simultaneousWork) 처리에 걸린 시간, 타임스탬프 */
     simultaneous3DCycleGap = 0;
 
-    /** @type {boolean} Worker 사용여부 */
+    /** @type {boolean} Worker 사용여부 (실제 적용되는 변수로 게임 동작 중 변경) */
     usingWorker = true;
+    /** @type {boolean} Worker 사용여부 (사용자가 변경 가능) */
+    usingWorkerConfig = true;
     /** @type {number|null} 시간 진행 타이머 키가 들어가는 변수 */
     timeProgressKey = null;
     /** @type {boolean} 상태가 title 이면서 로딩은 끝났음을 나타내는 변수 */
@@ -717,7 +719,7 @@ class ShuttingStarsCore {
                 .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.8); color: rgba(244, 66, 66, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_dim2 { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1004; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
-                .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 400px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
+                .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 500px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
                 .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td { padding: 1rem 1rem 1rem 1rem; }
                 .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td, .shuttingstars_root .shuttingstars_pop_content input, .shuttingstars_root .shuttingstars_pop_content button {
                     font-size: 2rem;
@@ -877,9 +879,16 @@ class ShuttingStarsCore {
 
             // 최초 실행 감지
             const firsts = this.checkFirstUsing();
+
+            // worker 사용 가능여부 체크 (초기값) - SSL 적용 시 기본값으로 활성화
+            const rootHref = String(window.location.href);
+            if(rootHref.indexOf('https:') == 0) { this.usingWorkerConfig = true; }
             
             // 설정 불러오기
             this.loadSettings();
+
+            // worker 사용 가능여부 체크 (설정 적용 이후) - SSL 적용 안된 경우 설정값을 무시하고 worker 비활성화
+            if(rootHref.indexOf('https:') != 0 && this.usingWorkerConfig) { this.usingWorkerConfig = false; }
 
             this.logInit('load songs...');
             
@@ -888,10 +897,8 @@ class ShuttingStarsCore {
 
             this.logInit('setting workers...');
 
-            // worker 사용 가능여부 체크
-            if(String(window.location.href).indexOf('http') != 0) this.usingWorker = false;
-
             // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
+            this.usingWorker = this.usingWorkerConfig;
             if(this.usingWorker) {
                 this.workerRender = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime});
@@ -1629,6 +1636,11 @@ class ShuttingStarsCore {
                         this.language = settingJson.language;
                     }
                 }
+
+                if(typeof(settingJson.usingWorkerConfig) != 'undefined') {
+                    this.usingWorkerConfig = false;
+                    if(settingJson.usingWorkerConfig) this.usingWorkerConfig = true;
+                }
             }
 
             this.setResolution(this.ressets.w, this.ressets.h);
@@ -1660,6 +1672,7 @@ class ShuttingStarsCore {
             settingJson.disable2d           = this.disable2d;
             settingJson.language            = this.language;
             settingJson.languageDefault     = this.languageDefault;
+            settingJson.usingWorkerConfig   = this.usingWorkerConfig;
             settingJson.keyList = this.keyList;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
@@ -6653,7 +6666,7 @@ class ShuttingStarsCore {
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td colspan='2' style='text-align: right;'><button type='button' class='target_translate btn btn_login_cancel red' style='font-size: 0.9rem; padding-left: 0.9rem; padding-right: 0.9rem; padding-top: 0.1rem; padding-bottom: 0.1rem;'>X</button></td>
+                        <td colspan='2' style='text-align: right;'><button type='button' class='btn btn_login_cancel red' style='font-size: 0.9rem; padding-left: 0.9rem; padding-right: 0.9rem; padding-top: 0.1rem; padding-bottom: 0.1rem;'>X</button></td>
                     </tr>
                     <tr>
                         <td colspan='2' style='text-align: center; height: 160px; vertical-align: middle;'>
@@ -6758,7 +6771,7 @@ class ShuttingStarsCore {
         htmls = `
             <div class='div_community_menu menu'>
                 <button type='button' class='btn btn_menu btn_community_board target_translate active'>BOARD</button>
-                <button type='button' class='btn btn_exit red target_translate'>X</button>
+                <button type='button' class='btn btn_exit red'>X</button>
             </div>
             <iframe class='ss_iframe_community full'></iframe>
         `;
@@ -6775,7 +6788,7 @@ class ShuttingStarsCore {
         htmls = '';
         htmls = `
             <div class='div_others_menu menu'>
-                <button type='button' class='btn btn_exit red target_translate'>X</button>
+                <button type='button' class='btn btn_exit red'>X</button>
             </div>
             <iframe class='ss_iframe_other full'></iframe>
         `;
@@ -6792,22 +6805,22 @@ class ShuttingStarsCore {
         htmls = `
             <div class='div_mysong_menu menu'>
                 <h2 class='target_translate' style='position: absolute;'>Play with your own music !</h2>
-                <button type='button' class='btn btn_exit red target_translate'>X</button>
+                <button type='button' class='btn btn_exit red'>X</button>
             </div>
-            <div class='div_mysong_file full' style='padding-top : 20px;'>
+            <div class='div_mysong_file full' style='padding-top : 50px;'>
                 <table class='layout' style='width: 90%;'>
                     <colgroup>
-                        <col style='width:120px'/>
+                        <col style='width:10rem;'/>
                         <col/>
                     </colgroup>
                     <tbody>
                         <tr>
                             <th class='target_translate'>MUSIC</th>
-                            <td><input type='file' class='inp inp_file inp_mysong_file' accept='audio/*'/></td>
+                            <td><input type='file' class='inp inp_file inp_mysong_file' accept='audio/*' style='font-size: 1rem;'/></td>
                         </tr>
                         <tr>
                             <th class='target_translate'>BPM</th>
-                            <td><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1'/></td>
+                            <td><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1' style='font-size: 1rem;'/></td>
                         </tr>
                         <tr>
                             <td colspan='2' class='center' style='text-align: center'><button type='button' class='btn btn_mysong_accept target_translate'>PLAY</button></td>
@@ -6851,9 +6864,14 @@ class ShuttingStarsCore {
         this.pops.mysong = popInside;
 
         // 스트링 테이블 번역 적용
-        this.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
-            itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
-        });
+        const fTrans = function() {
+            selfs.pops.root.querySelectorAll('.target_translate').forEach((itemOne) => {
+                if(itemOne.classList.contains('target_translated')) return;
+                itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
+                itemOne.classList.add('target_translated');
+            });
+        };
+        setTimeout(fTrans, 1000);
     }
 
     /**
@@ -6902,6 +6920,15 @@ class ShuttingStarsCore {
                                 <tr>
                                     <th class='target_translate'>Language</th>
                                     <td><select class='sel sel_language full'></select></td>
+                                </tr>
+                                <tr>
+                                    <th class='target_translate'>Worker</th>
+                                    <td>
+                                        <select class='sel sel_worker full'>
+                                            <option value='Y' class='target_translate'>USE</option>
+                                            <option value='N' class='target_translate'>NOT USE</option>
+                                        </select>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <th class='target_translate'>Line Keys</th>
@@ -6988,7 +7015,9 @@ class ShuttingStarsCore {
 
         // 스트링 테이블 번역 적용
         this.configDiv.querySelectorAll('.target_translate').forEach((itemOne) => {
+            if(itemOne.classList.contains('target_translated')) return;
             itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
+            itemOne.classList.add('target_translated');
         });
 
         // 레이어 영역 (안쪽)
@@ -7060,6 +7089,9 @@ class ShuttingStarsCore {
             //     언어
             selfs.language = layer.querySelector('.sel_language').value;
             selfs.languageDefault = false;
+
+            // Worker
+            selfs.usingWorkerConfig = (layer.querySelector('.sel_worker ').value == 'Y');
 
             //     라인 키
             // 라인 키 설정
@@ -7228,6 +7260,17 @@ class ShuttingStarsCore {
         html += "<option value='ko'>한글</option>";
         sel.innerHTML = html;
         sel.value = this.language;
+
+        // Worker
+        sel = this.configDiv.querySelector('.sel_worker ');
+        if(window.location.href.indexOf('https:') != 0) {
+            this.usingWorkerConfig = false;
+            const yOpt = sel.querySelector("option[value='Y']");
+            yOpt.disabled = true;
+            yOpt.innerHTML += ' (Only for HTTPS)'
+        }
+        if(this.usingWorkerConfig) sel.value = 'Y'
+        else sel.value = 'N';
 
         // 라인 키 설정
         inp = this.configDiv.querySelector('.inp_linekey_1');

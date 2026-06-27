@@ -105,6 +105,9 @@ ssSetStringTable({
         "Play with your own music !" : "보유한 음악으로 즐겨 보세요 !",
         "Scores will not be saved." : "기록이 저장되지 않습니다.",
         "BPM" : "BPM",
-        "MUSIC" : "음악"
+        "MUSIC" : "음악",
+        "Worker" : "Worker",
+        "USE" : "사용",
+        "NOT USE" : "사용 안 함"
     }
 });
