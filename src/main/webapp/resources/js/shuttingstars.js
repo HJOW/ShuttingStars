@@ -6823,6 +6823,11 @@ class ShuttingStarsCore {
                             <td><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1' style='font-size: 1rem;'/></td>
                         </tr>
                         <tr>
+                            <td colspan='2' class='center' style='text-align: center'>
+                                <textarea class='full ta_mysong_json'>{}</textarea>
+                            </tr>
+                        </tr>
+                        <tr>
                             <td colspan='2' class='center' style='text-align: center'><button type='button' class='btn btn_mysong_accept target_translate'>PLAY</button></td>
                         </tr>
                     </tbody>
@@ -6833,16 +6838,17 @@ class ShuttingStarsCore {
 
         const inpMysongFile = popInside.querySelector('.inp_mysong_file');
         const inpMysongBpm  = popInside.querySelector('.inp_mysong_bpm');
+        const taMysongJson  = popInside.querySelector('.ta_mysong_json');
         let   urlMysong = null;
         let   nameMySong = null;
         let   bpmMySong = 100;
+        let   jsonMySong = '';
 
         inpMysongFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(file) {
                 urlMysong  = URL.createObjectURL(file);
                 nameMySong = file.name;
-                bpmMySong  = parseInt(inpMysongBpm.value);
             } else {
                 urlMysong = null;
             }
@@ -6859,7 +6865,16 @@ class ShuttingStarsCore {
             selfs.pops.mysong.classList.add('invisible');
             selfs.pops.dim.classList.add('invisible');
 
-            selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel);
+            bpmMySong  = parseInt(inpMysongBpm.value);
+            jsonMySong = taMysongJson.value;
+
+            try {
+                selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel, jsonMySong);
+            } catch(e) {
+                console.error(e);
+                selfs.alert('ERROR : ' + e);
+            }
+            
         });
         this.pops.mysong = popInside;
 
@@ -8166,11 +8181,11 @@ class ShuttingStarsCore {
      * @param {string} songName 곡 이름
      * @param {number} bpm bpm
      * @param {number} diffLevel 난이도
+     * @param {*} json 기타 (선택사항) - 기타 속성 적용
      * @returns {Promise<void>}
      */
-    async loadMySong(mySongAudioURL, songName, bpm, diffLevel) {
+    async loadMySong(mySongAudioURL, songName, bpm, diffLevel, json) {
         const song = new CustomMySong();
-        song.name = songName;
         song.composer = '?';
         song.noteWriter = '?';
         song.noteWriter = '?';
@@ -8180,20 +8195,35 @@ class ShuttingStarsCore {
         song.thumbnailUrl = '';
         song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
         song.loadingTime = 20;
-        song.bpm = bpm;
         song.endTime = 0;
         song.timeConstant = 0;
         song.noteMultiplier = 1;
         song.timeMultiplier = 1;
         song.test = false;
         song.serial = 'CUSTOMSONG_' + ShuttingStarsUtility.randomString(false, 32);
+        if(json) {
+            if(typeof(json) == 'string') json = JSON.parse(json);
+            for(let k in json) {
+                song[k] = json[k];
+            }
+        }
+
+        let diffLabel = 'easy';
+        if(diffLevel <= 3) diffLabel = 'easy';
+        else if(diffLevel <= 6) diffLabel = 'normal';
+        else if(diffLevel <= 10) diffLabel = 'hard';
+        else diffLabel = 'ex';
         song.difficulties = [{
             index : 0,
-            difficultyLabel : 'easy',
+            difficultyLabel : diffLabel,
             difficultyLevel : diffLevel,
             patterns : [],
             autoCreate : true
         }];
+
+        song.name = songName;
+        song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
+        song.bpm = bpm;
 
         this.addSong(song);
         this.song = song;
