@@ -108,6 +108,7 @@ ssSetStringTable({
         "MUSIC" : "음악",
         "Worker" : "Worker",
         "USE" : "사용",
-        "NOT USE" : "사용 안 함"
+        "NOT USE" : "사용 안 함",
+        "Custom settings here (JSON format)" : '커스텀 설정 (JSON 형식으로 입력)'
     }
 });

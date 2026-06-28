@@ -344,6 +344,8 @@ class ShuttingStarsCore {
     songs = [];
     /** @type {Array<ShuttingStarsSong>} 선택 가능한 곡들, ShuttingStarsSong 객체 배열, songs 과 다른 점은 디버그 모드에 따른 노출 여부 */
     songDisplays = [];
+    /** @type {Array<ShuttingStarsSong>} 랜덤 선정 가능한 곡들, ShuttingStarsSong 객체 배열 */
+    songRandoms  = [];
     /** @type {Array<ShuttingStarsMission>} 특수한 곡들 (mission 모드일 때 선택) */
     missions = [];
     /** @type {string} default / mission / mysong */
@@ -768,18 +770,18 @@ class ShuttingStarsCore {
             `;
             if(this.dark) {
                 styles += `
-                .shuttingstars_canvas_config { background: rgba(80, 80, 80, 0.7); }
-                .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
-                .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
+                .shuttingstars_pop_content { background: rgba(80, 80, 80, 0.7); }
+                .shuttingstars_pop_content, .shuttingstar_configlayer { background: rgba(80, 80, 80, 0.7); }
+                .shuttingstars_pop_content input, .shuttingstars_pop_content select, .shuttingstars_pop_content textarea {
                     background: rgba(120, 120, 120, 0.7);
                     color : rgb(250, 250, 250);
                 }
                 `;
             } else {
                 styles += `
-                .shuttingstars_canvas_config { background: rgba(200, 200, 200, 0.7); }
-                .shuttingstars_canvas_config, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
-                .shuttingstars_canvas_config input, .shuttingstars_canvas_config select, .shuttingstars_canvas_config textarea {
+                .shuttingstars_pop_content { background: rgba(200, 200, 200, 0.7); }
+                .shuttingstars_pop_content, .shuttingstar_configlayer { background: rgba(200, 200, 200, 0.7); }
+                .shuttingstars_pop_content input, .shuttingstars_pop_content select, .shuttingstars_pop_content textarea {
                     background: rgba(190, 190, 190, 0.7);
                     color : rgb(70, 70, 70);
                 }
@@ -1834,6 +1836,26 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 곡 목록 중 출력 대상 곡 목록 갱신 */
+    refreshSongDisplayList() {
+        this.songDisplays = [];
+        this.songRandoms  = [];
+        let idx;
+
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(songOne.test && (! this.songDebugMode)) continue;
+            if(songOne.onlyRandom) continue;
+            this.songDisplays.push(songOne);
+        }
+
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(songOne.test && (! this.songDebugMode)) continue;
+            this.songRandoms.push(songOne);
+        }
+    }
+
     /**
      * 곡 목록 불러오기
      */
@@ -1853,17 +1875,8 @@ class ShuttingStarsCore {
         // 백업한 배열로 곡 목록 바꿔치기
         this.songs = officialSongs;
 
-        // songDisplays 도 갱신
-        if(this.songDebugMode) {
-            this.songDisplays = this.songs;
-        } else {
-            this.songDisplays = [];
-            for(idx=0; idx<this.songs.length; idx++) {
-                const songOne = this.songs[idx];
-                if(songOne.test) continue;
-                this.songDisplays.push(songOne);
-            }
-        }
+        // songDisplays, songRandoms 도 갱신
+        this.refreshSongDisplayList();
         
         // 스토리지에서 불러오기
         try {
@@ -3902,7 +3915,7 @@ class ShuttingStarsCore {
             if(this.songChoosingMode == 'mission') {
                 setTimeout(() => {
                     // 곡/미션 목록으로 되돌려야 하는데, 미션/곡 목록도 없으면, 메뉴로 이동
-                    if(selfs.songDisplays.length <= 0) selfs.setState('menu');
+                    if(selfs.songRandoms.length <= 0) selfs.setState('menu');
                     else selfs.songChoosingMode = 'default';    
                 }, 4000);
             } else {
@@ -6253,6 +6266,14 @@ class ShuttingStarsCore {
                     idx--;
                 }
             }
+
+            for(idx=0; idx<this.songRandoms.length; idx++) {
+                const songOne = this.songRandoms[idx];
+                if(songOne instanceof CustomMySong) {
+                    this.songRandoms.splice(idx, 1);
+                    idx--;
+                }
+            }
         } catch(e) {
             console.error(e);
         }
@@ -6555,8 +6576,8 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'Songs', fontSize : 30 });
         this.creditContents.push({ label : '', fontSize : 30 });
 
-        for(let idx=0; idx<this.songDisplays.length; idx++) {
-            const songOne = this.songDisplays[idx];
+        for(let idx=0; idx<this.songRandoms.length; idx++) {
+            const songOne = this.songRandoms[idx];
             
             this.creditContents.push({ label : songOne.name, fontSize : 25 });
             this.creditContents.push({ label : ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2'), '%1', songOne.composer), '%2', songOne.noteWriter), fontSize : 15 });
@@ -6795,11 +6816,14 @@ class ShuttingStarsCore {
                         </tr>
                         <tr>
                             <th class='target_translate'>BPM</th>
-                            <td><input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1' style='font-size: 1rem;'/></td>
+                            <td>
+                                <input type='number' class='inp inp_mysong_bpm' value='100' min='30' max='299' step='1' style='font-size: 1rem;'/>
+                                <progress class='prog prog_mysong_bpm invisible' style='height: 1.2rem; margin-left: 20px;'></progress>
+                            </td>
                         </tr>
                         <tr>
                             <td colspan='2' class='center' style='text-align: center'>
-                                <textarea class='full ta_mysong_json'>{}</textarea>
+                                <textarea class='full ta_mysong_json'></textarea>
                             </tr>
                         </tr>
                         <tr>
@@ -6813,17 +6837,54 @@ class ShuttingStarsCore {
 
         const inpMysongFile = popInside.querySelector('.inp_mysong_file');
         const inpMysongBpm  = popInside.querySelector('.inp_mysong_bpm');
+        const prgMysongBpm  = popInside.querySelector('.prog_mysong_bpm');
         const taMysongJson  = popInside.querySelector('.ta_mysong_json');
+        const btnMysongPly  = popInside.querySelector('.btn_mysong_accept');
         let   urlMysong = null;
         let   nameMySong = null;
         let   bpmMySong = 100;
         let   jsonMySong = '';
+
+        taMysongJson.placeholder = this.trans('Custom settings here (JSON format)');
 
         inpMysongFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(file) {
                 urlMysong  = URL.createObjectURL(file);
                 nameMySong = file.name;
+
+                if(typeof(detectBpm) == 'function') {
+                    prgMysongBpm.classList.remove('invisible');
+                    btnMysongPly.classList.add('invisible');
+                    let responsed = false;
+
+                    try {
+                        detectBpm(urlMysong).then((bpmPredicted) => {
+                            if(responsed) return;
+                            responsed = true;
+
+                            inpMysongBpm.value = bpmPredicted;
+                            prgMysongBpm.classList.add('invisible');
+                            btnMysongPly.classList.remove('invisible');
+                        }).catch((e2) => {
+                            console.log(e2);
+
+                            if(responsed) return;
+                            responsed = true;
+
+                            prgMysongBpm.classList.add('invisible');
+                            btnMysongPly.classList.remove('invisible');
+                        });
+                    } catch(e1) {
+                        console.log(e1);
+
+                        if(responsed) return;
+                        responsed = true;
+
+                        prgMysongBpm.classList.add('invisible');
+                        btnMysongPly.classList.remove('invisible');
+                    }
+                }
             } else {
                 urlMysong = null;
             }
@@ -6834,7 +6895,7 @@ class ShuttingStarsCore {
             selfs.pops.dim.classList.add('invisible');
             selfs.keyEventDisabled = false;
         });
-        popInside.querySelector('.btn_mysong_accept').addEventListener('click', () => {
+        btnMysongPly.addEventListener('click', () => {
             if(urlMysong == null) { ShuttingStarsUtility.toast(selfs.trans('Please select your file first !')); return; }
 
             selfs.pops.mysong.classList.add('invisible');
@@ -8085,7 +8146,14 @@ class ShuttingStarsCore {
 
         let idx;
         let song = null;
-        song = new ShuttingStarsSong();
+
+        if(json.serial != null && json.serial != '') {
+            if(this.officialSongSerials.indexOf(json.serial) >= 0) {
+                song = new OfficialSong();
+            } else {
+                song = new ShuttingStarsSong();        
+            }
+        }
 
         song.name           = json.name;
         song.composer       = json.composer;
@@ -8105,7 +8173,8 @@ class ShuttingStarsCore {
         song.decorations    = [];
 
         song.test = false;
-        if(json.test) song.test = true;
+        if(json.test      ) song.test       = true;
+        if(json.onlyRandom) song.onlyRandom = true;
 
         song.autoStars = true;
         if(typeof(json.autoStars) != 'undefined') {
@@ -8177,7 +8246,11 @@ class ShuttingStarsCore {
         song.test = false;
         song.serial = 'CUSTOMSONG_' + ShuttingStarsUtility.randomString(false, 32);
         if(json) {
-            if(typeof(json) == 'string') json = JSON.parse(json);
+            if(typeof(json) == 'string') {
+                json = json.trim();
+                if(json == '') json = {};
+                else           json = JSON.parse(json);
+            }
             for(let k in json) {
                 song[k] = json[k];
             }
@@ -8274,16 +8347,7 @@ class ShuttingStarsCore {
         this.songs.push(song);
 
         // songDisplays 갱신
-        if(this.songDebugMode) {
-            this.songDisplays = this.songs;
-        } else {
-            this.songDisplays = [];
-            for(idx=0; idx<this.songs.length; idx++) {
-                const songOne = this.songs[idx];
-                if(songOne.test) continue;
-                this.songDisplays.push(songOne);
-            }
-        }
+        this.refreshSongDisplayList();
 
         if(noSave) return returnVal;
         this.saveSongs();
@@ -8447,6 +8511,8 @@ class ShuttingStarsSong {
     autoStars = true;
     /** @type {boolean} true 지정 시 곡 디버그 모드에서만 노출됨 */
     test = false;
+    /** @type {boolean} true 지정 시 곡 목록에 노출되지 않으며 랜덤 (미션 등)으로만 선정됨 */
+    onlyRandom = false;
     /** @type {string} 수정하지 말 것 */
     serial = '';
 
@@ -8535,6 +8601,7 @@ class ShuttingStarsSong {
         obj.timeMultiplier = this.timeMultiplier;
         obj.noteMultiplier = this.noteMultiplier;
         obj.test = this.test;
+        obj.onlyRandom = this.onlyRandom;
         obj.autoStars = this.autoStars;
         obj.serial = this.serial;
         obj.decorations = this.decorations;
@@ -8597,10 +8664,10 @@ class ShuttingStarsMission extends ShuttingStarsSong {
      * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
      */
     prepare(inst) {
-        const allCnt = inst.songDisplays.length;
+        const allCnt = inst.songRandoms.length;
         const rand   = Math.floor(ShuttingStarsUtility.random() * allCnt);
 
-        const choosed = inst.songDisplays[rand];
+        const choosed = inst.songRandoms[rand];
         this.musicUrl       = choosed.musicUrl;
         this.musicAlterUrl  = choosed.musicAlterUrl;
         this.bpm            = choosed.bpm;
