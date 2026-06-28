@@ -3797,9 +3797,9 @@ class ShuttingStarsCore {
         this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
 
         // 로그인된 경우 로그인된 이메일 주소 출력
+        let logined = false;
         if(this.backend != null && this.backend.avail) {
-            let logined = false;
-            let label = '';
+            label = '';
 
             fontSize = this.convertFontSize(12);
             this.ctx.textAlign = 'left';
@@ -3830,6 +3830,15 @@ class ShuttingStarsCore {
             this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 4.5));
         }
 
+        // 재화 출력
+        fontSize = this.convertFontSize(10);
+        this.ctx.textAlign = 'left';
+        label = '';        
+        if(this.antiMatterCredit > 0) label += '    ' + String(this.antiMatterCredit) + ' ATC';
+        if(this.darkMatterCredit > 0) label += '    ' + String(this.darkMatterCredit) + ' DMC';
+        this.ctx.fillText(label.trim(), this.convertX(fontSize * 2.8), this.convertY(fontSize * 2, false));
+
+        // 하단 공지 출력
         this.renderNoticeBottom();
     }
 
