@@ -8486,6 +8486,18 @@ class ShuttingStarsCore {
         try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_records' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+
+        if(this.backend != null) {
+            if(this.backend.logined) {
+                this.backend.storeOuterStorage(null).then(() => {
+                    fAfter();
+                }).catch((e1) => {
+                    console.error(e1);
+                    fAfter();
+                });
+                return;
+            }
+        }
         fAfter();
     }
 }

@@ -337,7 +337,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         let counts = 0;
 
         // Firestore 에서 이 사용자의 데이터 삭제
-        const collections = ['higscore', 'board', 'additionals', 'user'];
+        const collections = ['higscore', 'board', 'additionals', 'user', 'cloudconfigs'];
         let notEmptyDetected = false;
 
         for(let idx=0; idx<collections.length; idx++) {
@@ -510,6 +510,33 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => { 
             try {
+                // 데이터 조회
+                selfs.firestore.collection('cloudconfigs').where('uid', '==', selfs.user.uid).get().then((snapshot) => {
+                    if(snapshot.empty) {
+                        resolve({ success : true, data : {} });
+                        return;
+                    }
+
+                    let responsed = false;
+                    snapshot.docs.forEach((doc) => { 
+                        if(responsed) return;
+                        responsed = true;
+
+                        const cloudData = doc.data();
+                        let record = {};
+                        for(let k in cloudData) {
+                            if(k == 'uid') continue; // uid 는 제외
+                            record[k] = cloudData[k];
+                        }
+
+                        resolve({ success : true, data : record });
+                    });
+                }).catch((ex2) => { 
+                    console.log(ex2);
+                    resolve({ success : false, message : 'ERROR : ' + ex2 });
+                });
+
+                /*
                 // SSUUID 가 준비되지 않은 경우 - 중단
                 let ssuuid = localStorage.getItem('SSUUID');
                 if(typeof(ssuuid) == 'undefined' || ssuuid == null) ssuuid = '';
@@ -530,8 +557,9 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                     console.error(error);
                     resolve({ success : false, data : {}, message : 'ERROR : ' + error });
                 });
+                */
             } catch(e) {
-                console.error(e);
+                console.log(e);
                 resolve({ success : false, message : 'ERROR : ' + e, data : {} });
             }
         });
@@ -546,6 +574,54 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
+                // 계정 로그인되지 않은 경우 - 중단
+                if((! selfs.logined) || (selfs.user == null) || (typeof(selfs.user) == 'undefined') || (typeof(selfs.user.uid) == 'undefined')) {
+                    resolve({ success : false, message : 'Please login first' }); // 실패
+                    return;    
+                }
+
+                // Firestore 에서 데이터가 있는지 먼저 체크
+                selfs.firestore.collection('cloudconfigs').where('uid', '==', selfs.user.uid).get().then((snapshot) => {
+                    let record;
+                    const fRegister = function() {
+                        record = {};
+                        for(let k in jsonObject) {
+                            record[k] = jsonObject[k];
+                        }
+                        record.uid = selfs.user.uid;
+                        selfs.firestore.collection('cloudconfigs').add(record).then((docRef) => {
+                            resolve({ success : true });
+                        }).catch((ex4) => {
+                            console.log(ex4);
+                            resolve({ success : false, message : 'ERROR : ' + ex4 });
+                        });
+                    };
+                    if(snapshot.empty) {
+                        if(jsonObject != null) {
+                            fRegister();
+                        } else {
+                            resolve({ success : true });
+                        }
+                    } else {
+                        // 수정인 경우도 일단 삭제 후 다시 등록
+                        const batch = selfs.firestore.batch();
+                        snapshot.docs.forEach((doc) => { 
+                            batch.delete(doc.ref);
+                        });
+                        batch.commit().then(() => {
+                            if(jsonObject != null) {
+                                fRegister();
+                            } else {
+                                resolve({ success : true });
+                            }
+                        }).catch((ex3) => { 
+                            console.log(ex3);
+                            resolve({ success : false, message : 'ERROR : ' + ex3 });
+                        });
+                    }
+                });
+
+                /*
                 // SSUUID 가 준비되지 않은 경우 - 중단
                 let ssuuid = localStorage.getItem('SSUUID');
                 if(typeof(ssuuid) == 'undefined' || ssuuid == null) ssuuid = '';
@@ -554,13 +630,6 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                     resolve({ success : false, message : 'SSUUID is not prepared.' }); // 실패
                     return;    
                 }
-
-                // 계정 로그인되지 않은 경우 - 중단
-                if((! selfs.logined) || (selfs.user == null) || (typeof(selfs.user) == 'undefined') || (typeof(selfs.user.uid) == 'undefined')) {
-                    resolve({ success : false, message : 'Please login first' }); // 실패
-                    return;    
-                }
-
                 selfs.rtdb.ref('/userdb/ ' + ssuuid).get().then((snapshot) => {
                     if(snapshot.exists()) { // 기존 데이터 존재
                         if(jsonObject == null) { // 삭제 요청 건
@@ -598,6 +667,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                     console.error(e2);
                     resolve({ success : false, message : 'ERROR : ' + e2 }); // 처리 실패    
                 });
+                */
             } catch(e) {
                 console.error(e);
                 resolve({ success : false, message : 'ERROR : ' + e }); // 처리 실패
