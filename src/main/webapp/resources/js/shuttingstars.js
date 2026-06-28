@@ -503,10 +503,6 @@ class ShuttingStarsCore {
     numberDebugMode = false;
     /** @type {boolean} 성능 지표 (각 동시처리 프로세스의 처리 속도) 출력 여부 */
     performanceDebugMode = false;
-
-    // 2D 시각화 객체
-    /** @type {SSAudio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
-    vizualizer2d = null;
     
     // 마우스 이벤트 처리기
     /** @type {Array<Object>} 마우스 입력 판정 영역 목록 */
@@ -560,6 +556,21 @@ class ShuttingStarsCore {
 
     /** @type {Array<string>} 적용 완료된 플러그인 식별자 목록 */
     pluginApplied = [];
+
+    // 2D 시각화 객체
+    /** @type {SSAudio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
+    vizualizer2d = null;
+    /** @type{Array<SSAudio2DVisualizer>} 사용 가능한 2D 오디오 시각화 객체들 */
+    vizualizer2ds = [];
+
+    /** @type{SSNoteTheme} 노트 출력 테마 */
+    themeNote = null;
+    /** @type{Array<SSNoteTheme>} 노트 출력 테마 목록 */
+    themeNotes = [];
+    /** @type{Array<string>} 기본 제공 상품들 */
+    bonusDefaults = ['DEFAULT NOTE THEME', 'CLASSIC VISUALIZER', 'CIRCULAR VISUALIZER'];
+    /** @type{Array<string>} 이 세션에서 사용 가능한 상품들 */
+    bonusAvails = [];
 
     /** @type {string} 마지막으로 성공한 초기화 (init 메소드) 단계 메시지 */
     lastInitSuccessMessage = '';
@@ -801,9 +812,20 @@ class ShuttingStarsCore {
             styleElem.innerHTML = styles;
             document.head.appendChild(styleElem);
 
-            this.logInit('detecting system language...');
+            // Theme 설정
+            this.themeNotes.push(new SSNoteTheme('DEFAULT NOTE THEME'));
+            this.themeNote = this.themeNotes[0];
+
+            // 시각화 설정
+            this.vizualizer2ds.push(new CircleTypeSSAudio2DVisualizer());
+            this.vizualizer2ds.push(new BarTypeSSAudio2DVisualizer());
+            this.vizualizer2d = this.vizualizer2ds[0];
+
+            // 사용 가능한 상품 목록 - 기본값으로 초기화
+            this.bonusAvails = this.bonusDefaults;
 
             // 언어 설정
+            this.logInit('detecting system language...');
             if(this.languageDefault) {
                 try {
                     // 지원 언어 목록
@@ -862,9 +884,6 @@ class ShuttingStarsCore {
             this.setResolution(this.ressets.w, this.ressets.h);
 
             this.logInit('detecting touchscreen...');
-
-            // 시각화 설정
-            this.vizualizer2d = new CircleTypeSSAudio2DVisualizer(); // new BarTypeSSAudio2DVisualizer();
 
             // 가상 키 사용여부 지정
             if(this.virtualKeyNone) this.virtualKey = false;
@@ -1633,6 +1652,15 @@ class ShuttingStarsCore {
                     this.usingWorkerConfig = false;
                     if(settingJson.usingWorkerConfig) this.usingWorkerConfig = true;
                 }
+
+                if(typeof(settingJson.bonusAvails) != 'undefined') {
+                    this.bonusAvails = settingJson.bonusAvails;
+                    // 기본 활성화 상품들 체크 (없으면 추가해야 함)
+                    for(let gdx=0; gdx<this.bonusDefaults.length; gdx++) {
+                        const defaultOne = this.bonusDefaults[gdx];
+                        if(this.bonusAvails.indexOf(defaultOne) < 0) this.bonusAvails.push(defaultOne);
+                    }
+                }
             }
 
             this.setResolution(this.ressets.w, this.ressets.h);
@@ -1665,7 +1693,7 @@ class ShuttingStarsCore {
             settingJson.language            = this.language;
             settingJson.languageDefault     = this.languageDefault;
             settingJson.usingWorkerConfig   = this.usingWorkerConfig;
-            settingJson.keyList = this.keyList;
+            settingJson.bonusAvails         = this.bonusAvails;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
@@ -1684,7 +1712,8 @@ class ShuttingStarsCore {
                             fontFamily          : this.fontFamily,
                             noteSpeedMultiplier : this.noteSpeedMultiplier,
                             language            : this.language,
-                            languageDefault     : this.languageDefault
+                            languageDefault     : this.languageDefault,
+                            bonusAvails         : this.bonusAvails
                         });
                     } catch(ex) {
                         console.error(ex);
@@ -3512,8 +3541,14 @@ class ShuttingStarsCore {
                 if(obj instanceof SSNote) {
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
                     if((! this.disable3d) && this.use3d.notes) continue;
+                    if(this.themeNote != null) {
+                        this.themeNote.draw(this.ctx, this, obj);
+                    } else {
+                        obj.draw(this.ctx, this);
+                    }
+                } else {
+                    if(typeof(obj.draw) == 'function') obj.draw(this.ctx, this);
                 }
-                if(typeof(obj.draw) == 'function') obj.draw(this.ctx, this);
             }
 
             // HP바 그리기
@@ -10005,8 +10040,23 @@ class VirtualKey extends DecorationObject {
     }
 }
 
+/** 재화를 통해 활성화 / 사용 선택 가능한 대상 */
+class SSBonusProduct {
+    /** @type{string} name : 상품의 이름 (전체가 고유해야 함) */
+    name = '';
+
+    /** @type{boolean} availiability : 사용 가능 여부 (게임 동작 중 변경되는 값) */
+    availiability = true;
+
+    /**
+     * 인스턴스를 초기화합니다.
+     * @type{string} name
+     */
+    constructor(name) { if(name) this.name = String(name); }
+}
+
 /** 2D 오디오 시각화 공통 클래스 */
-class SSAudio2DVisualizer {
+class SSAudio2DVisualizer extends SSBonusProduct {
     /** @type {number} 시각화 각 필드 길이 배수 */
     sizeMultiplier = 2.2;
     /** @type {number} 원의 반지름 또는 사각형의 너비 */
@@ -10019,8 +10069,9 @@ class SSAudio2DVisualizer {
     opacity = 0.3;
     /**
      * 인스턴스를 초기화합니다.
+     * @type{string} name
      */
-    constructor() {}
+    constructor(name) { super(name); }
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
@@ -10075,7 +10126,7 @@ class BarTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
     /**
      * 인스턴스 초기화
      */
-    constructor() { super(); }
+    constructor() { super('CLASSIC VISUALIZER'); }
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
@@ -10114,7 +10165,7 @@ class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
     /**
      * 인스턴스 초기화
      */
-    constructor() { super(); }
+    constructor() { super('CIRCULAR VISUALIZER'); }
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
@@ -10150,6 +10201,18 @@ class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
             ctx.stroke();
         }
     }
+}
+
+/** Note 모양 테마 */
+class SSNoteTheme extends SSBonusProduct {
+    constructor(name) { super(name); }
+    /**
+     * Note 그리기
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {ShuttingStarsCore} coreInst 
+     * @param {SSNote} noteObject 
+     */
+    draw(ctx, coreInst, noteObject) {  noteObject.draw(ctx, coreInst);  }
 }
 
 /********************** 기타 Util 성 prototype 세팅 ************************/
