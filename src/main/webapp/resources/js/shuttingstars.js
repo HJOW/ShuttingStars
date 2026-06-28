@@ -505,7 +505,7 @@ class ShuttingStarsCore {
     performanceDebugMode = false;
 
     // 2D 시각화 객체
-    /** @type {Audio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
+    /** @type {SSAudio2DVisualizer|null} 현재 사용하는 2D 오디오 시각화 객체 */
     vizualizer2d = null;
     
     // 마우스 이벤트 처리기
@@ -864,7 +864,7 @@ class ShuttingStarsCore {
             this.logInit('detecting touchscreen...');
 
             // 시각화 설정
-            this.vizualizer2d = new CircleTypeAudio2DVisualizer(); // new BarTypeAudio2DVisualizer();
+            this.vizualizer2d = new CircleTypeSSAudio2DVisualizer(); // new BarTypeSSAudio2DVisualizer();
 
             // 가상 키 사용여부 지정
             if(this.virtualKeyNone) this.virtualKey = false;
@@ -9379,7 +9379,7 @@ class SSNote extends SSNoteKeyObject {
      * @param {ShuttingStarsCore} coreInst
      */
     draw(ctx, coreInst) {
-        super.draw(ctx, coreInst);
+        // super.draw(ctx, coreInst);
         if(this.hidden) return;
 
         // 꼬리 먼저 그리기
@@ -9416,9 +9416,13 @@ class SSNote extends SSNoteKeyObject {
         }
         
         // 본 노트 그리기
-        for(let idx=0; idx<=3; idx++) {
+        let rs = 0;
+        for(let idx=0; idx<=5; idx++) {
+            rs = this.r - (idx * 2);
+            if(rs <= 0) break;
+
             ctx.beginPath();
-            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.r - idx), 0, 2 * Math.PI);
+            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(rs), 0, 2 * Math.PI);
 
             if(this.fill) {
                 ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
@@ -9428,8 +9432,6 @@ class SSNote extends SSNoteKeyObject {
                 ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.stroke();
             }
-
-            if(this.r - idx <= 3) break;
         }
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
@@ -10004,7 +10006,7 @@ class VirtualKey extends DecorationObject {
 }
 
 /** 2D 오디오 시각화 공통 클래스 */
-class Audio2DVisualizer {
+class SSAudio2DVisualizer {
     /** @type {number} 시각화 각 필드 길이 배수 */
     sizeMultiplier = 2.2;
     /** @type {number} 원의 반지름 또는 사각형의 너비 */
@@ -10069,7 +10071,7 @@ class Audio2DVisualizer {
 }
 
 /** 바형 2D 오디오 시각화 클래스 */
-class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
+class BarTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
     /**
      * 인스턴스 초기화
      */
@@ -10106,7 +10108,7 @@ class BarTypeAudio2DVisualizer extends Audio2DVisualizer {
 }
 
 /** 원형 2D 오디오 시각화 클래스 */
-class CircleTypeAudio2DVisualizer extends Audio2DVisualizer {
+class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
     /** @type {number} 원형 시각화의 기준 반지름 */
     radius = 100;
     /**
