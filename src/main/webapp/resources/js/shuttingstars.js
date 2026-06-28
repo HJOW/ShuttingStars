@@ -146,7 +146,7 @@ class ShuttingStarsCore {
     ss3d = null;
     /** @type {boolean} true 지정 시 3D 렌더링하지 않음, 설정 화면에서 그래픽 설정 변경 시 자동 변경되는 항목이므로 손대지 말 것. */
     disable3d = false;
-    /** @type {boolean} true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 NotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것 */
+    /** @type {boolean} true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 SSNotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것 */
     disable2d = false;
 
     /*** 3D 각 구성요소 사용여부 설정 ***/
@@ -223,7 +223,7 @@ class ShuttingStarsCore {
     objectsPlaying = [];
     /** @type {Array<ShuttingStars3DObject>} 항상 렌더링 대상인 3D 객체들 (장식, ShuttingStars3DObject 타입만 원소로 입력해야 함) */
     object3ds = [];
-    /** @type {Array<NotePlacer>} NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관) */
+    /** @type {Array<SSNotePlacer>} NotePlacer 객체들 보관 (objectsPlaying 와 중복 보관) */
     notePlacers = [];
 
     /** @type {number} 플레이 중 진행 시간 (실제 시간과 단위가 다르며, 곡의 BPM 반영으로 곡마다 속도가 다름, 곡의 패턴 배열의 N번째 숫자에 해당) */
@@ -1041,10 +1041,11 @@ class ShuttingStarsCore {
             this.prepareCommands();
 
             // 미션 생성
-            this.missions.push(new EasySurvive(this));
-            this.missions.push(new NormalSurvive(this));
-            this.missions.push(new HardSurvive(this));
-            this.missions.push(new VeryHardSurvive(this));
+            this.missions.push(new EasySurviveSSMission(this));
+            this.missions.push(new NormalSurviveSSMission(this));
+            this.missions.push(new HardSurviveSSMission(this));
+            this.missions.push(new VeryHardSurviveSSMission(this));
+            this.missions.push(new CrazySurviveSSMission(this));
 
             this.logInit('loading third parties...');
 
@@ -1977,7 +1978,7 @@ class ShuttingStarsCore {
             this.notePlacers = [];
 
             for(idx=0; idx<this.keyList.length; idx++) {
-                const notePlacer = new NotePlacer(idx, this);
+                const notePlacer = new SSNotePlacer(idx, this);
                 notePlacer.id = this.lastObjectId++;
                 this.objectsPlaying.push(notePlacer);
                 this.notePlacers.push(notePlacer);
@@ -2009,7 +2010,7 @@ class ShuttingStarsCore {
                     }
 
                     // 노트 생성
-                    const note = new Note(pattern.locationIndex, this);
+                    const note = new SSNote(pattern.locationIndex, this);
                     note.id = this.lastObjectId; this.lastObjectId++;
                     note.patternId = pattern.id;
                     note.originalTiming = pattern.time;
@@ -2170,7 +2171,7 @@ class ShuttingStarsCore {
             this.notePlacers = [];
 
             for(idx=0; idx<this.keyList.length; idx++) {
-                const notePlacer = new NotePlacer(idx, this);
+                const notePlacer = new SSNotePlacer(idx, this);
                 notePlacer.id = this.lastObjectId++;
                 this.objectsPlaying.push(notePlacer);
                 this.notePlacers.push(notePlacer);
@@ -2802,7 +2803,7 @@ class ShuttingStarsCore {
             // 노트 처리
             if(this.keyList.indexOf(key) >= 0) {
                 let idx;
-                let notePlacer = null; // 해당 키에 맞는 NotePlacer 를 찾아야 함
+                let notePlacer = null; // 해당 키에 맞는 SSNotePlacer 를 찾아야 함
                 for(idx=0; idx<this.notePlacers.length; idx++) {
                     if(this.notePlacers[idx].key === key) {
                         notePlacer = this.notePlacers[idx];
@@ -2911,8 +2912,8 @@ class ShuttingStarsCore {
     }
 
     /**
-     * NotePlacer 호출 처리
-     * @param {NotePlacer} notePlacer notePlacer 객체
+     * SSNotePlacer 호출 처리
+     * @param {SSNotePlacer} notePlacer notePlacer 객체
      */
     handleNotePlacerCalled(notePlacer) {
         if(this.pw < this.pwUse) return;
@@ -2924,20 +2925,20 @@ class ShuttingStarsCore {
     }
 
     /**
-     * NotePlacer 호출 처리 (pw 계산 안함)
-     * @param {NotePlacer} notePlacer notePlacer 객체
+     * SSNotePlacer 호출 처리 (pw 계산 안함)
+     * @param {SSNotePlacer} notePlacer notePlacer 객체
      */
     handleNotePlacerCalledIn(notePlacer, pwConsumed) {
         let idx = 0;
 
-        // NotePlacer 폭발 처리
+        // SSNotePlacer 폭발 처리
         notePlacer.explosing = 1;
 
-        // 해당 NotePlacer 과 충돌 중인 노트들 수집
+        // 해당 SSNotePlacer 과 충돌 중인 노트들 수집
         let notes = [];
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if((obj instanceof Note)) {
+            if((obj instanceof SSNote)) {
                 if(obj.locationIndex != notePlacer.locationIndex) continue;
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
@@ -3316,8 +3317,8 @@ class ShuttingStarsCore {
      */
     displayResultMark(resultMark) {
         if(resultMark == null) return;
-        this.accelerateExplosingJudgeMarks();
-        this.objectsPlaying.push(new JudgeMark(this, resultMark));
+        this.accelerateExplosingSSJudgeMarks();
+        this.objectsPlaying.push(new SSJudgeMark(this, resultMark));
     }
 
     /**
@@ -3500,7 +3501,7 @@ class ShuttingStarsCore {
                 const obj = this.objectsPlaying[idx];
                 if(obj.explosing > 0 && obj.explosing >= obj.explosingMax) continue;
                 if(obj.hidden) continue;
-                if(obj instanceof Note) {
+                if(obj instanceof SSNote) {
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
                     if((! this.disable3d) && this.use3d.notes) continue;
                 }
@@ -5143,7 +5144,7 @@ class ShuttingStarsCore {
             let radius = Math.round((this.notePlacers[this.notePlacers.length-1].x - this.notePlacers[0].x) / 2.0) * 8;
             let y      = this.getHpBarYLocation() - radius;  // - this.notePlacers[0].y;
 
-            if(y + radius >= this.notePlacers[0].y) { // 가끔 HP바 (행성) 가 NotePlacer 위치를 덮어버리는 위치에 출력되는 경우가 있음
+            if(y + radius >= this.notePlacers[0].y) { // 가끔 HP바 (행성) 가 SSNotePlacer 위치를 덮어버리는 위치에 출력되는 경우가 있음
                 ShuttingStarsUtility.log('HP BAR OVER ' + (y + radius));
                 y = this.notePlacers[0].y - radius - 10;
             }
@@ -5751,16 +5752,16 @@ class ShuttingStarsCore {
             if(this.state == 'playing' && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];
-                    if(obj instanceof Note) {
+                    if(obj instanceof SSNote) {
                         // 폭발 중이거나 제거 처리된 노트는 제외
                         if(obj.removed || obj.explosing >= 1) continue;
 
-                        // 노트에 해당하는 NotePlacer 찾기
+                        // 노트에 해당하는 SSNotePlacer 찾기
                         notePlacer = this.getNotePlacer(obj.locationIndex);
                         if(notePlacer == null) continue;
 
                         // 노트의 실질 위치 계산
-                        calculates = notePlacer.y; // 일단 NotePlacer 위치부터 시작
+                        calculates = notePlacer.y; // 일단 SSNotePlacer 위치부터 시작
 
                         // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
                         additionals  = ( (obj.originalTiming * this.song.noteMultiplier) - this.elapsedTime );
@@ -5791,7 +5792,7 @@ class ShuttingStarsCore {
             if(this.createMode) {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];    
-                    if(obj instanceof Note) {
+                    if(obj instanceof SSNote) {
                         if(obj.hidden) {
                             if(this.elapsedTime + this.timeMultiplier <= obj.originalTiming) {
                                 obj.explosing = 0;
@@ -5806,15 +5807,15 @@ class ShuttingStarsCore {
             // 폭발 완료 처리
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
-                if(obj instanceof Note) {
+                if(obj instanceof SSNote) {
                     if(obj.explosing >= obj.explosingMax) {
                         this.removed = true;
                         this.hidden  = true;
                     }
                     // 노트는 제거하지 않음
-                } else if(obj instanceof NotePlacer) {
+                } else if(obj instanceof SSNotePlacer) {
                     if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
-                } else if(obj instanceof JudgeMark) {
+                } else if(obj instanceof SSJudgeMark) {
                     if(obj.explosing >= obj.explosingMax) {
                         this.objectsPlaying.splice(idx, 1);
                         idx--;
@@ -5899,7 +5900,7 @@ class ShuttingStarsCore {
                 if(this.creditIndex < 0) this.creditIndex = 0;
                 if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
             } else if(this.state == 'playing') { // 플레이 중 처리
-                // 재개 대기 타이밍 처리, NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+                // 재개 대기 타이밍 처리, SSNoteKeyObject 처리중 애니메이션 재생 진행상황 증가
                 if(! this.paused) {
                     // 재개 타이밍 처리
                     if(this.resumingTime >= 1) {
@@ -5907,14 +5908,14 @@ class ShuttingStarsCore {
                         if(this.resumingTime <= 0) this.resumed = true;
                         else                       this.resumed = false;
                     } else {
-                        // NoteKeyObject 처리중 애니메이션 재생 진행상황 증가
+                        // SSNoteKeyObject 처리중 애니메이션 재생 진행상황 증가
                         for(idx=0; idx<this.objectsPlaying.length; idx++) {
                             const obj = this.objectsPlaying[idx];
-                            if(obj instanceof NoteKeyObject) {
+                            if(obj instanceof SSNoteKeyObject) {
                                 if(obj.explosing >= 1 && obj.explosing < obj.explosingMax) {
                                     if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
                                 }
-                            } else if(obj instanceof JudgeMark) {
+                            } else if(obj instanceof SSJudgeMark) {
                                 if(obj.explosing < obj.explosingMax) {
                                     if(this.simultaneousTime % 4 == 0) obj.explosing += obj.explosingSpeed;
                                 }
@@ -5930,7 +5931,7 @@ class ShuttingStarsCore {
                             let notePlacerOne = this.notePlacers[idx];
                             for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
                                 let objOne = this.objectsPlaying[jdx];
-                                if(objOne instanceof Note) {
+                                if(objOne instanceof SSNote) {
                                     if(objOne.removed) continue;
                                     if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
                                         this.handleNotePlacerCalled(notePlacerOne);
@@ -6019,7 +6020,7 @@ class ShuttingStarsCore {
             // 이미 지나가버린 패턴 체크
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
-                if((obj instanceof Note) && (obj.y <= this.getHpBarYLocation() - 1 )) {
+                if((obj instanceof SSNote) && (obj.y <= this.getHpBarYLocation() - 1 )) {
                     if(obj.explosing == 0) {
                         // 미스 처리
                         let resultMark = 'MISS';
@@ -6150,12 +6151,12 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 폭발 중인 JudgeMark 폭발속도 가속
+     * 폭발 중인 SSJudgeMark 폭발속도 가속
      */
-    accelerateExplosingJudgeMarks() {
+    accelerateExplosingSSJudgeMarks() {
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if(obj instanceof JudgeMark) {
+            if(obj instanceof SSJudgeMark) {
                 if(obj.explosing < obj.explosingMax) {
                     obj.explosing++;
                     obj.explosingSpeed += 2;
@@ -6168,7 +6169,7 @@ class ShuttingStarsCore {
      * 게임 오버 판정 시 호출
      */
     onGameOver() {
-        // 전 노트 및 NotePlacer 폭발 조치
+        // 전 노트 및 SSNotePlacer 폭발 조치
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             let obj = this.objectsPlaying[idx];
             if(obj.hidden) continue;
@@ -6191,7 +6192,7 @@ class ShuttingStarsCore {
 
         // 폭발 가속
         this.accelerateExplosingNotes();
-        this.accelerateExplosingJudgeMarks();
+        this.accelerateExplosingSSJudgeMarks();
 
         // 게임오버 상태로 변경
         this.gameoverTime = 16 * this.timeMultiplier;
@@ -6222,7 +6223,7 @@ class ShuttingStarsCore {
         // 기록 여부 결정
         let recordYn = true;
         if(this.createMode) recordYn = false;
-        else if(this.song instanceof CustomMySong) recordYn = false;
+        else if(this.song instanceof CustomMySSSong) recordYn = false;
 
         if(recordYn) {
             // Credit 반영
@@ -6261,7 +6262,7 @@ class ShuttingStarsCore {
         try {
             for(idx=0; idx<this.songs.length; idx++) {
                 const songOne = this.songs[idx];
-                if(songOne instanceof CustomMySong) {
+                if(songOne instanceof CustomMySSSong) {
                     this.songs.splice(idx, 1);
                     idx--;
                 }
@@ -6269,7 +6270,7 @@ class ShuttingStarsCore {
 
             for(idx=0; idx<this.songDisplays.length; idx++) {
                 const songOne = this.songDisplays[idx];
-                if(songOne instanceof CustomMySong) {
+                if(songOne instanceof CustomMySSSong) {
                     this.songDisplays.splice(idx, 1);
                     idx--;
                 }
@@ -6277,7 +6278,7 @@ class ShuttingStarsCore {
 
             for(idx=0; idx<this.songRandoms.length; idx++) {
                 const songOne = this.songRandoms[idx];
-                if(songOne instanceof CustomMySong) {
+                if(songOne instanceof CustomMySSSong) {
                     this.songRandoms.splice(idx, 1);
                     idx--;
                 }
@@ -6324,13 +6325,13 @@ class ShuttingStarsCore {
 
     /**
      * 현재 로드된 노트들 반환
-     * @returns {Array<Note>} 현재 플레이 객체에 포함된 노트 목록
+     * @returns {Array<SSNote>} 현재 플레이 객체에 포함된 노트 목록
      */
     getNotes() {
         let arr = [];
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if(obj instanceof Note) {
+            if(obj instanceof SSNote) {
                 arr.push(obj);
             }
         }
@@ -6339,13 +6340,13 @@ class ShuttingStarsCore {
 
     /**
      * 현재 등록된 노트 판정 객체 목록을 반환합니다.
-     * @returns {Array<NotePlacer>} 노트 판정 객체 목록
+     * @returns {Array<SSNotePlacer>} 노트 판정 객체 목록
      */
     getNotePlacers() {
         let arr = [];
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if(obj instanceof NotePlacer) {
+            if(obj instanceof SSNotePlacer) {
                 arr.push(obj);
             }
         }
@@ -6355,12 +6356,12 @@ class ShuttingStarsCore {
     /**
      * 지정한 레인의 노트 판정 객체를 반환합니다.
      * @param {number} locationIndex 노트 레인의 인덱스
-     * @returns {NotePlacer|null} 해당 레인의 판정 객체
+     * @returns {SSNotePlacer|null} 해당 레인의 판정 객체
      */
     getNotePlacer(locationIndex) {
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
-            if(obj instanceof NotePlacer) {
+            if(obj instanceof SSNotePlacer) {
                 if(obj.locationIndex === locationIndex) {
                     return obj;
                 }
@@ -7815,7 +7816,7 @@ class ShuttingStarsCore {
      * @param {string} audioUrl 
      * @param {number} bpm
      * @param {number} difficultyLevel
-     * @return {Promise<Array<Note>>}
+     * @return {Promise<Array<SSNote>>}
      */
     async createAutoNotes(audioUrl, bpm, difficultyLevel) {
         let exceptionOccured = null;
@@ -8107,7 +8108,7 @@ class ShuttingStarsCore {
                             }
                             
 
-                            const note = new Note( locationIndex , this);
+                            const note = new SSNote( locationIndex , this);
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = 0;
                             if(lastNote != null) note.patternId = lastNote.patternId + 1;
@@ -8157,7 +8158,7 @@ class ShuttingStarsCore {
 
         if(json.serial != null && json.serial != '') {
             if(this.officialSongSerials.indexOf(json.serial) >= 0) {
-                song = new OfficialSong();
+                song = new OfficialSSSong();
             } else {
                 song = new ShuttingStarsSong();        
             }
@@ -8237,7 +8238,7 @@ class ShuttingStarsCore {
      * @returns {Promise<void>}
      */
     async loadMySong(mySongAudioURL, songName, bpm, diffLevel, json) {
-        const song = new CustomMySong();
+        const song = new CustomMySSSong();
         song.composer = '?';
         song.noteWriter = '?';
         song.noteWriter = '?';
@@ -8645,7 +8646,7 @@ class ShuttingStarsSong {
 }
 
 /** 공식 탑재 곡 */
-class OfficialSong extends ShuttingStarsSong {
+class OfficialSSSong extends ShuttingStarsSong {
     /**
      * 인스턴스 초기화
      */
@@ -8653,7 +8654,7 @@ class OfficialSong extends ShuttingStarsSong {
 }
 
 /** MySong 모드 곡 (사용자가 가진 오디오 파일 첨부해서 즉석 플레이하는 곡, 기록을 남기면 안되며, 플레이 후 곡 목록에서 바로 삭제) */
-class CustomMySong extends ShuttingStarsSong {
+class CustomMySSSong extends ShuttingStarsSong {
     /**
      * 인스턴스 초기화
      */
@@ -8689,7 +8690,7 @@ class ShuttingStarsMission extends ShuttingStarsSong {
 }
 
 /** EASY 생존 미션 */
-class EasySurvive extends ShuttingStarsMission {
+class EasySurviveSSMission extends ShuttingStarsMission {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} inst ShuttingStarsCore 객체
@@ -8720,7 +8721,7 @@ class EasySurvive extends ShuttingStarsMission {
 }
 
 /** NORMAL 생존 미션 */
-class NormalSurvive extends ShuttingStarsMission {
+class NormalSurviveSSMission extends ShuttingStarsMission {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} inst inst 값
@@ -8751,7 +8752,7 @@ class NormalSurvive extends ShuttingStarsMission {
 }
 
 /** HARD 생존 미션 */
-class HardSurvive extends ShuttingStarsMission {
+class HardSurviveSSMission extends ShuttingStarsMission {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} inst inst 값
@@ -8782,7 +8783,7 @@ class HardSurvive extends ShuttingStarsMission {
 }
 
 /** Very HARD 생존 미션 */
-class VeryHardSurvive extends ShuttingStarsMission {
+class VeryHardSurviveSSMission extends ShuttingStarsMission {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} inst inst 값
@@ -8813,7 +8814,7 @@ class VeryHardSurvive extends ShuttingStarsMission {
 }
 
 /** Crazy 생존 미션 */
-class CrazySurvive extends ShuttingStarsMission {
+class CrazySurviveSSMission extends ShuttingStarsMission {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} inst inst 값
@@ -8822,7 +8823,7 @@ class CrazySurvive extends ShuttingStarsMission {
         super(inst);
         this.name = 'SURVIVE (CRAZY)'
         let desc = inst.trans('Survive (CRAZY)');
-        desc += '\n' + inst.trans('Random song, random notes (May not fit tempos)');
+        desc += '\n' + inst.trans('Random song, random notes !');
         this.description = desc;
     }
     /**
@@ -8862,7 +8863,7 @@ class ShuttingStarsNotePattern {
     }
 }
 
-/* 게임 내 Note 및 NotePlacer 의 상위 클래스 */
+/* 게임 내 Note 및 SSNotePlacer 의 상위 클래스 */
 class ShuttingStarsObject {
     /** @type {number} 인스턴스를 식별하는 고유 번호 */
     uniqueSerial = ShuttingStarsUtility.randomInt();
@@ -9009,7 +9010,7 @@ class ShuttingStarsObject {
      */
     isMeetVerticalRangeIn(otherObject, multiplier) {
         if(typeof(multiplier) == 'undefined') multiplier = 1.0;
-        if(((this instanceof NotePlacer) && (otherObject instanceof Note)) || ((this instanceof Note) && (otherObject instanceof NotePlacer))) {
+        if(((this instanceof SSNotePlacer) && (otherObject instanceof SSNote)) || ((this instanceof SSNote) && (otherObject instanceof SSNotePlacer))) {
             const distance = Math.abs(this.y - otherObject.y);
 
             if(distance < (this.r + otherObject.r) * multiplier) return distance;
@@ -9075,7 +9076,7 @@ class ShuttingStarsObject {
 }
 
 /** Note 제거기 혹은 Note 그 자체의 상위 클래스, "키"를 가짐 */
-class NoteKeyObject extends ShuttingStarsObject {
+class SSNoteKeyObject extends ShuttingStarsObject {
     /** @type {string} 입력 키 */
     key = '';
     /** @type {number} 라인 번호 */
@@ -9211,7 +9212,7 @@ class NoteKeyObject extends ShuttingStarsObject {
 }
 
 /** Note 제거기, 화면 내 고정위치에 떠 있으며, 플레이어가 해당 키 입력 시, 해당 위치를 지나는 노트를 제거하며 점수를 획득함. 또한 노트와 위치가 얼마나 동일한지에 따라 점수 계산 */
-class NotePlacer extends NoteKeyObject {
+class SSNotePlacer extends SSNoteKeyObject {
     /**
      * 인스턴스 초기화
      * @param {number} locationIndex 노트 레인의 인덱스
@@ -9265,7 +9266,7 @@ class NotePlacer extends NoteKeyObject {
 }
 
 /** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
-class Note extends NoteKeyObject {
+class SSNote extends SSNoteKeyObject {
     /** @type {boolean} 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함 */
     removed = false;
     /** @type {boolean} 미스로 인해 처리되는 경우를 표시 */
@@ -9296,7 +9297,7 @@ class Note extends NoteKeyObject {
         this.hidden = false;
         this.tail = false; // TODO
         
-        // NotePlacer 찾기
+        // SSNotePlacer 찾기
         let notePlacer = coreInst.getNotePlacer(locationIndex);
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
@@ -9417,7 +9418,7 @@ class Note extends NoteKeyObject {
 }
 
 /** 판정 글씨와 콤보 마크 */
-class JudgeMark extends ShuttingStarsObject {
+class SSJudgeMark extends ShuttingStarsObject {
     /** @type {string|null} PERFECT / GREAT / GOOD / BAD / MISS */
     judgeResult = null;
     /** @type {number} 폭발 효과의 현재 진행 단계 */

@@ -148,7 +148,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                     for(let idx=0; idx<coreInst.objectsPlaying.length; idx++) {
                         const objOne = coreInst.objectsPlaying[idx];
                         if(objOne.shape != 'circle') continue;
-                        if(! (objOne instanceof Note)) continue;
+                        if(! (objOne instanceof SSNote)) continue;
 
                         const newObj = new SphereObject(this);
                         newObj.uniqueSerial = objOne.uniqueSerial;
@@ -168,13 +168,13 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         }
     }
 
-    /** 동기화 - NotePlacer */
+    /** 동기화 - SSNotePlacer */
     synchronizeNotePlacerPart(coreInst) {
         if(coreInst.use3d.notePlacer) {
             for(let idx=0; idx<coreInst.objectsPlaying.length; idx++) {
                 const objOne = coreInst.objectsPlaying[idx];
                 if(objOne.shape != 'circle') continue;
-                if(! (objOne instanceof NotePlacer)) continue;
+                if(! (objOne instanceof SSNotePlacer)) continue;
 
                 const newObj = new SphereObject(this);
                 newObj.uniqueSerial = objOne.uniqueSerial;
