@@ -1668,14 +1668,16 @@ class ShuttingStarsCore {
             ShuttingStarsUtility.log('Failed to load settings.');
             console.error(e);
             ShuttingStarsUtility.log('Continue with default settings.');
-            await this.saveSettings();
+            await this.saveSettings(false);
         }
     }
 
     /**
      * 설정 저장 (Promise)
+     * 
+     * @param {boolean} skipCloudSaves 클라우드 저장 건너뛰기 설정
      */
-    async saveSettings() {
+    async saveSettings(skipCloudSaves) {
         try {
             let settingJson = {}
             settingJson.keyList             = this.keyList;
@@ -1703,6 +1705,7 @@ class ShuttingStarsCore {
 
         await this.saveCredit();
 
+        if(skipCloudSaves) return;
         if(this.backend != null) {
             if(this.backend.logined) {
                 if(this.useCloudSettings) {
@@ -1737,7 +1740,16 @@ class ShuttingStarsCore {
                             if(typeof(data.noteSpeedMultiplier) != 'undefined') this.noteSpeedMultiplier = data.noteSpeedMultiplier;
                             if(typeof(data.language           ) != 'undefined') this.language            = data.language;
                             if(typeof(data.languageDefault    ) != 'undefined') this.languageDefault     = data.languageDefault;
-                            await this.saveSettings();
+
+                            if(typeof(data.bonusAvails) != 'undefined') {
+                                this.bonusAvails = data.bonusAvails;
+                                // 기본 활성화 상품들 체크 (없으면 추가해야 함)
+                                for(let gdx=0; gdx<this.bonusDefaults.length; gdx++) {
+                                    const defaultOne = this.bonusDefaults[gdx];
+                                    if(this.bonusAvails.indexOf(defaultOne) < 0) this.bonusAvails.push(defaultOne);
+                                }
+                            }
+                            await this.saveSettings(true);
                         }
                     } catch(e) {
                         console.error(e);
@@ -2693,7 +2705,7 @@ class ShuttingStarsCore {
         } else if(key == this.enterKey) {
             if(this.firstSetMode == 'confirm') {
                 this.playSE('accept1');
-                this.saveSettings().then(() => {
+                this.saveSettings(false).then(() => {
                     selfs.setState('menu');
                 });
             } else {
@@ -2749,7 +2761,7 @@ class ShuttingStarsCore {
                 }
 
                 // 설정 저장
-                this.saveSettings();
+                this.saveSettings(false);
             } else {
                 this.playSE('accept1');
                 this.settingModifyingMode = true; // 설정 변경 모드 ON
@@ -5500,7 +5512,7 @@ class ShuttingStarsCore {
             act : function() {
                 if(selfs.noteSpeedMultiplier < 1) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier * 2.0);
                 else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier + 1);
-                selfs.saveSettings();
+                selfs.saveSettings(false);
             }
         });
         this.commands.push({
@@ -5508,7 +5520,7 @@ class ShuttingStarsCore {
             act : function() {
                 if(selfs.noteSpeedMultiplier >= 2) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier - 1);
                 else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier / 2.0);
-                selfs.saveSettings();
+                selfs.saveSettings(false);
             }
         });
         this.commands.push({
@@ -7240,7 +7252,7 @@ class ShuttingStarsCore {
             this.keyList[5] = tempKey;
 
             // 설정 저장
-            selfs.saveSettings().then(() => {
+            selfs.saveSettings(false).then(() => {
                 selfs.closeConfigDiv();
                 selfs.setState('menu');
             });
