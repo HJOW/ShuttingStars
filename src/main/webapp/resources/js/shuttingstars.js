@@ -421,9 +421,17 @@ class ShuttingStarsCore {
         'nai4ilagwaifiuIBTUcfasgp34qgD39p4g',
         'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g',
         'nai4ilaHbn7g934634634638zJ93f8gp34qgD39p4g',
-        'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g'
+        'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g',
+        'nai4ilaaogn0iramegioamerpogm3490qmgaemfpoggsdGSDGsnmdk',
+        'nai4ilahgaGARGag00ij0djfhksakgoiapwegmpowaermgpoami',
+        'nai4ilagneagnorienoinm34ongAGRAEG48nfg90g04GGHansklvamslkv',
+        'nai4ilaosng34gGERGI#$G#sGM3g8j0esajgg4GAEFGERRGAErgnaeorgnoaerng2',
+        'nai4ilagoisnomnGARA$IMERGM$#g#4g$%ghsdbfadsbmdfak',
+        'nai4ilaa25745Hhdhrt634634hgp34qgD39p4g',
+        'nai4ilasdhsf3fwefwq7346341564qgD39p4g',
+        'nai4ilasdh63sdgdner34gdfg64qgD39p4g',
+        'nai4ilaDSVJBve8vidSVbUSDYVilb34lifdv'
     ];
-
     
 
     // 초기 설정 화면 관련

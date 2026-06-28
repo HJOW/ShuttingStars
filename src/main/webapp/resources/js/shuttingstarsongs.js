@@ -55,6 +55,7 @@ song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = false;
+song.onlyRandom = false;
 song.serial = 'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g';
 song.difficulties = [
     {
@@ -499,7 +500,6 @@ song.description = `
 |  https://www.woowahan.com/music
 |License: 
 |  https://www.woowahan.com/music/license
-|노트 임시로 AI로 작성함
 `;
 song.loadingTime = 10;
 song.bpm = 91;
@@ -508,7 +508,8 @@ song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilaHfdhsdfhfsdhsfgfnJ93f8gp34qgD39p4g';
-song.test = false; // 테스트 이후 false 로 변경
+song.test = false;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
@@ -598,7 +599,6 @@ song.description = `
 |  https://www.woowahan.com/music
 |License: 
 |  https://www.woowahan.com/music/license
-|노트 임시로 AI로 작성함
 `;
 song.loadingTime = 10;
 song.bpm = 115;
@@ -607,7 +607,8 @@ song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilagwaifiuIBTUcfasgp34qgD39p4g';
-song.test = false; // 테스트 이후 false 로 변경
+song.test = false;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'hard',
@@ -1391,7 +1392,6 @@ song.description = `
 |  https://www.woowahan.com/music
 |License: 
 |  https://www.woowahan.com/music/license
-|노트 임시로 AI로 작성함
 `;
 song.loadingTime = 10;
 song.bpm = 120;
@@ -1400,7 +1400,8 @@ song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilaHbwgwgnoimomwenofnJ93f8gp34qgD39p4g';
-song.test = false; // 테스트 이후 false 로 변경
+song.test = false;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
@@ -2816,7 +2817,8 @@ song.endTime = 0;
 song.timeConstant = 0;
 song.timeMultiplier = 1;
 song.noteMultiplier = 1;
-song.test = false; // 테스트 이후 false 로 변경
+song.test = false;
+song.onlyRandom = false;
 song.serial = 'nai4ilaHbn7g934634634638zJ93f8gp34qgD39p4g';
 song.difficulties = [];
 song.difficulties.push({
@@ -3945,6 +3947,7 @@ song.timeConstant = 0; // -506.7
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = true;
+song.onlyRandom = false;
 song.serial = 'nai4ilaHhdhrtjrthdrthkhthgp34qgD39p4g';
 song.difficulties = [
     {
@@ -4061,6 +4064,172 @@ song.difficulties = [
 
 ssAddSong(song);
 
+/** 이후는 곡 선정은 안되고 랜덤으로만 걸리는 곡들 **/
+
+song = {};
+song.name = '배달은 자신 있어';
+song.composer = '우아한형제들';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track02.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+`;
+song.loadingTime = 10;
+song.bpm = 150;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilaaogn0iramegioamerpogm3490qmgaemfpoggsdGSDGsnmdk';
+song.test = false;
+song.onlyRandom = true;
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 3,
+    autoCreate : true,
+    patterns : []
+});
+
+ssAddSong(song);
+
+song = {};
+song.name = '충전할 땐 클래식을';
+song.composer = '우아한형제들';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track04.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+`;
+song.loadingTime = 10;
+song.bpm = 104;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilahgaGARGag00ij0djfhksakgoiapwegmpowaermgpoami';
+song.test = false;
+song.onlyRandom = true;
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 3,
+    autoCreate : true,
+    patterns : []
+});
+
+ssAddSong(song);
+
+song = {};
+song.name = '미래도시라솔파';
+song.composer = '우아한형제들';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track06.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+`;
+song.loadingTime = 10;
+song.bpm = 60;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilagneagnorienoinm34ongAGRAEG48nfg90g04GGHansklvamslkv';
+song.test = false;
+song.onlyRandom = true;
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 3,
+    autoCreate : true,
+    patterns : []
+});
+
+ssAddSong(song);
+
+song = {};
+song.name = '이 초대장은 2010년 최초로 시작되어...';
+song.composer = '우아한형제들';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track08.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+`;
+song.loadingTime = 10;
+song.bpm = 84;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilaosng34gGERGI#$G#sGM3g8j0esajgg4GAEFGERRGAErgnaeorgnoaerng2';
+song.test = false;
+song.onlyRandom = true;
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 3,
+    autoCreate : true,
+    patterns : []
+});
+
+ssAddSong(song);
+
+song = {};
+song.name = '거의 다 왔어요';
+song.composer = '우아한형제들';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/woowahan/track09.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Music: 우아한형제들
+|  https://www.woowahan.com/music
+|License: 
+|  https://www.woowahan.com/music/license
+`;
+song.loadingTime = 10;
+song.bpm = 130;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilagoisnomnGARA$IMERGM$#g#4g$%ghsdbfadsbmdfak';
+song.test = false;
+song.onlyRandom = true;
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 3,
+    autoCreate : true,
+    patterns : []
+});
+
+ssAddSong(song);
 
 song = {};
 song.name = 'Nastel Bom\'s 507938';
@@ -4086,7 +4255,8 @@ song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = true;
-song.serial = 'a25745Hhdhrt634634hgp34qgD39p4g';
+song.onlyRandom = true;
+song.serial = 'nai4ilaa25745Hhdhrt634634hgp34qgD39p4g';
 song.difficulties = [
     {
         difficultyLabel : 'easy',
@@ -4132,7 +4302,8 @@ song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = false;
-song.serial = 'sdhsf3fwefwq7346341564qgD39p4g';
+song.onlyRandom = true;
+song.serial = 'nai4ilasdhsf3fwefwq7346341564qgD39p4g';
 song.difficulties = [
     {
         difficultyLabel : 'easy',
@@ -4177,7 +4348,8 @@ song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = false;
-song.serial = 'sdh63sdgdner34gdfg64qgD39p4g';
+song.onlyRandom = true;
+song.serial = 'nai4ilasdh63sdgdner34gdfg64qgD39p4g';
 song.difficulties = [
     {
         difficultyLabel : 'easy',
@@ -4223,7 +4395,8 @@ song.timeConstant = 0;
 song.noteMultiplier = 1;
 song.timeMultiplier = 1;
 song.test = false;
-song.serial = 'DSVJBve8vidSVbUSDYVilb34lifdv';
+song.onlyRandom = true;
+song.serial = 'nai4ilaDSVJBve8vidSVbUSDYVilb34lifdv';
 song.difficulties = [
     {
         difficultyLabel : 'easy',
@@ -4246,3 +4419,5 @@ song.difficulties = [
 ]
 
 ssAddSong(song);
+
+song = {};
