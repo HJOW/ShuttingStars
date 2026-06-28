@@ -1678,13 +1678,17 @@ class ShuttingStarsCore {
         if(this.backend != null) {
             if(this.backend.logined) {
                 if(this.useCloudSettings) {
-                    await this.backend.storeOuterStorage({
-                        keyList             : this.keyList,
-                        fontFamily          : this.fontFamily,
-                        noteSpeedMultiplier : this.noteSpeedMultiplier,
-                        language            : this.language,
-                        languageDefault     : this.languageDefault
-                    });
+                    try {
+                        await this.backend.storeOuterStorage({
+                            keyList             : this.keyList,
+                            fontFamily          : this.fontFamily,
+                            noteSpeedMultiplier : this.noteSpeedMultiplier,
+                            language            : this.language,
+                            languageDefault     : this.languageDefault
+                        });
+                    } catch(ex) {
+                        console.error(ex);
+                    }
                 }
             }
         }
@@ -1695,15 +1699,19 @@ class ShuttingStarsCore {
         if(this.backend != null) {
             if(this.backend.logined) {
                 if(this.useCloudSettings) {
-                    const responses = await this.backend.getOuterStorage();
-                    if(responses.success) {
-                        const data = responses.data;
-                        if(typeof(data.keyList            ) != 'undefined') this.keyList             = data.keyList;
-                        if(typeof(data.fontFamily         ) != 'undefined') this.fontFamily          = data.fontFamily;
-                        if(typeof(data.noteSpeedMultiplier) != 'undefined') this.noteSpeedMultiplier = data.noteSpeedMultiplier;
-                        if(typeof(data.language           ) != 'undefined') this.language            = data.language;
-                        if(typeof(data.languageDefault    ) != 'undefined') this.languageDefault     = data.languageDefault;
-                        await this.saveSettings();
+                    try {
+                        const responses = await this.backend.getOuterStorage();
+                        if(responses.success) {
+                            const data = responses.data;
+                            if(typeof(data.keyList            ) != 'undefined') this.keyList             = data.keyList;
+                            if(typeof(data.fontFamily         ) != 'undefined') this.fontFamily          = data.fontFamily;
+                            if(typeof(data.noteSpeedMultiplier) != 'undefined') this.noteSpeedMultiplier = data.noteSpeedMultiplier;
+                            if(typeof(data.language           ) != 'undefined') this.language            = data.language;
+                            if(typeof(data.languageDefault    ) != 'undefined') this.languageDefault     = data.languageDefault;
+                            await this.saveSettings();
+                        }
+                    } catch(e) {
+                        console.error(e);
                     }
                 }
             }

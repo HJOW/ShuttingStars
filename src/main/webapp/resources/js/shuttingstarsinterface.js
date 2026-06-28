@@ -594,9 +594,12 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                             });
                         }
                     }
+                }).catch((e2) => {
+                    console.error(e2);
+                    resolve({ success : false, message : 'ERROR : ' + e2 }); // 처리 실패    
                 });
             } catch(e) {
-                console.error(error);
+                console.error(e);
                 resolve({ success : false, message : 'ERROR : ' + e }); // 처리 실패
             }
         });
