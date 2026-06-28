@@ -4121,18 +4121,6 @@ song.difficulties = [
         difficultyLevel : 2,
         autoCreate : true,
         patterns : []
-    },
-    {
-        difficultyLabel : 'normal',
-        difficultyLevel : 5,
-        autoCreate : true,
-        patterns : []
-    },
-    {
-        difficultyLabel : 'hard',
-        difficultyLevel : 9,
-        autoCreate : true,
-        patterns : []
     }
 ]
 
@@ -4168,18 +4156,6 @@ song.difficulties = [
         difficultyLevel : 2,
         autoCreate : true,
         patterns : []
-    },
-    {
-        difficultyLabel : 'normal',
-        difficultyLevel : 5,
-        autoCreate : true,
-        patterns : []
-    },
-    {
-        difficultyLabel : 'hard',
-        difficultyLevel : 9,
-        autoCreate : true,
-        patterns : []
     }
 ]
 
@@ -4212,18 +4188,6 @@ song.difficulties = [
     {
         difficultyLabel : 'easy',
         difficultyLevel : 4,
-        autoCreate : true,
-        patterns : []
-    },
-    {
-        difficultyLabel : 'normal',
-        difficultyLevel : 6,
-        autoCreate : true,
-        patterns : []
-    },
-    {
-        difficultyLabel : 'hard',
-        difficultyLevel : 8,
         autoCreate : true,
         patterns : []
     }
@@ -4261,21 +4225,41 @@ song.difficulties = [
         difficultyLevel : 1,
         autoCreate : true,
         patterns : []
-    },
-    {
-        difficultyLabel : 'normal',
-        difficultyLevel : 5,
-        autoCreate : true,
-        patterns : []
-    },
-    {
-        difficultyLabel : 'hard',
-        difficultyLevel : 7,
-        autoCreate : true,
-        patterns : []
     }
 ]
 
 ssAddSong(song);
+
+
+song = {};
+song.name = 'Neon Grid Rush';
+song.composer = "AI (OpenAI's ChatGPT)";
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/ai/NeonGridRush.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.description = `
+|Composed by AI (OpenAI's ChatGPT)
+`;
+song.loadingTime = 10;
+song.bpm = 150;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.serial = 'nai4ilaaognerhervbnionvinivweWEewfoggsdGSDGsnmdk';
+song.test = false;
+song.onlyRandom = true;
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'easy',
+    difficultyLevel : 3,
+    autoCreate : true,
+    patterns : []
+});
+
+ssAddSong(song);
+
 
 song = {};
