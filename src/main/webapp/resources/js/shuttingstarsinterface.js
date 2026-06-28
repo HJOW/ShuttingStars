@@ -357,6 +357,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         if(notEmptyDetected) counts += await this.deleteAllMyDataIn(true);
         if(recursives) return counts;
 
+        /*
         // RTDB 에서 이 사용자의 데이터 삭제
         const ssuuid = localStorage.getItem('SSUUID');
         if(typeof(ssuuid) != 'undefined' && ssuuid != null && ssuuid.trim() != '') {
@@ -364,6 +365,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             await rtdbRef.remove();
             counts++;
         }
+        */
 
         return counts;
     }
