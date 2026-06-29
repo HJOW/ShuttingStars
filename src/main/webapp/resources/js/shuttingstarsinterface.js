@@ -337,7 +337,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         let counts = 0;
 
         // Firestore 에서 이 사용자의 데이터 삭제
-        const collections = ['higscore', 'board', 'additionals', 'user', 'cloudconfigs'];
+        const collections = ['highscore', 'board', 'additionals', 'user', 'cloudconfigs'];
         let notEmptyDetected = false;
 
         for(let idx=0; idx<collections.length; idx++) {
