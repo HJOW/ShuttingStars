@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Shutting Stars</title>
+    <link rel="shortcut icon" href="../resources/icons/icon64.ico" type="image/x-icon"/>
+    <link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
+    <link rel="stylesheet" href="../resources/css/pure-min.css"/>
+
+    <!--
+    LICENSE
+
+    Copyright 2026 HJOW (hujinone22@naver.com)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License. 
+    -->
+
+    <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
+    <!-- This part is not my code, Only for backend, not necessary for game engine works -->
+    <!-- Firebase Codes (update the version number as needed) -->
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-database-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-remote-config-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-performance-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js"></script>
+    <!--FIREBASE INIT START-->
+    <!-- 
+             initialize the SDK after all desired features are loaded, set useEmulator to false
+             to avoid connecting the SDK to running emulators.
+    -->
+    <script defer src="../__/firebase/init.js?useEmulator=true"></script>
+    <!--<script defer src="../___/init.js?useEmulator=true"></script>-->
+    <!--FIREBASE INIT END-->
+    <!-- Google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Nanum+Pen+Script&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet"/>
+    <!-- // Google fonts -->
+    <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
+     
+    <link rel="stylesheet" href="../resources/css/googleloginbuttons.css"/>
+    <link rel="stylesheet" href="../resources/fonts/fonts.css"/>
+    <link rel="stylesheet" href="../resources/css/common.css"/>
+    <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
+    <script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+    <script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
+    </head>
+    <body>
+        <!--  
+        TODO
+           Firestore DB 관리용 도구 페이지를 이 곳에 만들 예정
+           1. 구글 로그인 (Firebase auth 사용) 해야 사용 가능하며, 계정 이메일이 hujinone11@gmail.com 이어야 사용 가능 (그외의 경우 자동 로그아웃 후 안내 메시지)
+           2. Firestore 컬렉션 'highscore' (점수기록), 'board' (커뮤니티), 'additionals' (추가컨텐츠), 'user' (사용자), 'cloudconfigs' (클라우드 설정) 들을 화면 상의 메뉴로 띄워야 함
+              그외, 메뉴 상에, 현재 로그인한 사용자 email 주소와 로그아웃 버튼도 있어야 함
+           3. 메뉴에서 컬렉션을 클릭하면, 화면 중앙에 테이블 형태로 출력
+              해당 행, 해당 셀에 출력될 데이터가 배열이거나 객체이면, 그 셀 안에서는 JSON 형식으로 출력
+              각각의 셀은 텍스트필드로, 데이터를 보는 것 뿐만 아니라 값 수정도 가능해야 함 (수정 완료 후 저장은 4번 참고)
+           4. 마지막 행에는 데이터를 수정/삭제할 수 있는 버튼을 배치. 
+              수정 시 해당 행의 데이터의 수정 사항 (3번 참고) 을 반영, 삭제 시 해당 행 데이터 실제 삭제
+              둘 모두 작업 완료 후 목록 데이터를 다시 불러와야 함
+
+           각 컬렉션별 문서 구조 (필드)
+              user
+                  date (number)
+                  email (string)
+                  uid (string)
+                  credits (object)
+                      PERFECT (number)
+                      GREAT (number)
+                      GOOD (number)
+                      BAD (number)
+                      MISS (number)
+                      antiMatter (number)
+                      darkMatter (number)
+                      hashKey (string)
+                      maxCombo (number)
+                      playCount (number)
+                      used (number)
+              cloudconfigs
+                  uid (string)
+                  bonusAvails (array<string>)
+                  fontFamily (string)
+                  keyList (array<string>)
+                  language (string)
+                  languageDefault (boolean)
+                  noteSpeedMultiplier (number)
+              highscore
+                  build (number)
+                  clear (boolean)
+                  combo (number)
+                  date (number)
+                  difficulty (string)
+                  email (string)
+                  gameover (boolean)
+                  hp (number)
+                  level (number)
+                  mode (string)
+                  notehistory (array<object>)
+                      현재 필드 없음
+                  notes (number)
+                  point (number)
+                  rank (string)
+                  report (object)
+                      PERFECT (number)
+                      GREAT (number)
+                      GOOD (number)
+                      BAD (number)
+                      MISS (number)
+                  song (object)
+                      bpm (number)
+                      composer (string)
+                      name (string)
+                      noteWriter (string)
+                      serial (string)
+                  uid (string)
+                  userAgent (string)
+              board
+                  uid (string)
+                  boardName (string)
+                  content (string)
+                  email (string)
+                  notice (boolean)
+                  postserial (string)
+                  regdate (number)
+              additionals
+                  uid (string)
+                  contentname (string)
+                  date (number)
+                  type (string)
+                  uurl (string)
+
+        -->
+    </body>
+</html>
