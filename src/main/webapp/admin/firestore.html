@@ -57,92 +57,541 @@
     <link rel="stylesheet" href="../resources/css/common.css"/>
     <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
     <script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+    <script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
     <script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
     </head>
     <body>
-        <!--  
-        TODO
-           Firestore DB 관리용 도구 페이지를 이 곳에 만들 예정
-           1. 구글 로그인 (Firebase auth 사용) 해야 사용 가능하며, 계정 이메일이 hujinone11@gmail.com 이어야 사용 가능 (그외의 경우 자동 로그아웃 후 안내 메시지)
-           2. Firestore 컬렉션 'highscore' (점수기록), 'board' (커뮤니티), 'additionals' (추가컨텐츠), 'user' (사용자), 'cloudconfigs' (클라우드 설정) 들을 화면 상의 메뉴로 띄워야 함
-              그외, 메뉴 상에, 현재 로그인한 사용자 email 주소와 로그아웃 버튼도 있어야 함
-           3. 메뉴에서 컬렉션을 클릭하면, 화면 중앙에 테이블 형태로 출력
-              해당 행, 해당 셀에 출력될 데이터가 배열이거나 객체이면, 그 셀 안에서는 JSON 형식으로 출력
-              각각의 셀은 텍스트필드로, 데이터를 보는 것 뿐만 아니라 값 수정도 가능해야 함 (수정 완료 후 저장은 4번 참고)
-           4. 마지막 행에는 데이터를 수정/삭제할 수 있는 버튼을 배치. 
-              수정 시 해당 행의 데이터의 수정 사항 (3번 참고) 을 반영, 삭제 시 해당 행 데이터 실제 삭제
-              둘 모두 작업 완료 후 목록 데이터를 다시 불러와야 함
+        <style>
+            body {
+                margin: 0;
+                background: #f6f7fb;
+                color: #222;
+                font-family: "Noto Sans KR", "Nanum Gothic Coding", sans-serif;
+            }
+            .admin-shell {
+                display: grid;
+                grid-template-columns: 260px minmax(0, 1fr);
+                min-height: 100vh;
+            }
+            .admin-menu {
+                background: #20242f;
+                color: #fff;
+                padding: 20px;
+            }
+            .admin-menu h1 {
+                margin: 0 0 18px;
+                font-size: 22px;
+                font-weight: 700;
+            }
+            .admin-user {
+                margin-bottom: 18px;
+                padding-bottom: 18px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+                word-break: break-all;
+            }
+            .admin-user-email {
+                min-height: 22px;
+                margin-bottom: 10px;
+                font-size: 13px;
+                color: #d9dde8;
+            }
+            .collection-menu {
+                display: grid;
+                gap: 8px;
+            }
+            .collection-menu button,
+            .admin-user button,
+            .admin-login button,
+            .row-actions button {
+                border-radius: 6px;
+            }
+            .collection-menu button {
+                width: 100%;
+                text-align: left;
+                color: #f7f8fb;
+                background: #303645;
+            }
+            .collection-menu button.active {
+                background: #0f766e;
+            }
+            .admin-main {
+                min-width: 0;
+                padding: 24px;
+            }
+            .admin-toolbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            .admin-title {
+                margin: 0;
+                font-size: 24px;
+            }
+            .admin-status {
+                min-height: 24px;
+                margin-bottom: 12px;
+                color: #374151;
+            }
+            .admin-status.error {
+                color: #b91c1c;
+            }
+            .admin-login {
+                max-width: 480px;
+                margin: 48px auto;
+                padding: 24px;
+                background: #fff;
+                border: 1px solid #dde1eb;
+                border-radius: 8px;
+                box-shadow: 0 12px 34px rgba(32, 36, 47, 0.08);
+            }
+            .admin-login h2 {
+                margin-top: 0;
+            }
+            .table-wrap {
+                overflow: auto;
+                background: #fff;
+                border: 1px solid #dde1eb;
+                border-radius: 8px;
+            }
+            .admin-table {
+                min-width: 960px;
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+            }
+            .admin-table th,
+            .admin-table td {
+                vertical-align: top;
+                border-bottom: 1px solid #e7eaf1;
+                padding: 8px;
+            }
+            .admin-table th {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+                background: #edf1f7;
+                text-align: left;
+                white-space: nowrap;
+            }
+            .doc-id {
+                max-width: 180px;
+                word-break: break-all;
+                color: #4b5563;
+                font-family: "Nanum Gothic Coding", monospace;
+            }
+            .cell-editor {
+                width: 220px;
+                min-height: 38px;
+                resize: vertical;
+                font-family: "Nanum Gothic Coding", monospace;
+                font-size: 12px;
+                line-height: 1.45;
+            }
+            .cell-editor.json {
+                min-height: 92px;
+            }
+            .row-actions {
+                display: grid;
+                gap: 6px;
+                min-width: 84px;
+            }
+            .empty-state {
+                padding: 28px;
+                background: #fff;
+                border: 1px solid #dde1eb;
+                border-radius: 8px;
+                color: #4b5563;
+            }
+            @media (max-width: 760px) {
+                .admin-shell {
+                    grid-template-columns: 1fr;
+                }
+                .admin-menu {
+                    position: static;
+                }
+                .admin-toolbar {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+            }
+        </style>
+        <div class="admin-shell">
+            <aside class="admin-menu">
+                <h1>Firestore Admin</h1>
+                <div class="admin-user">
+                    <div id="admin-user-email" class="admin-user-email">로그인 확인 중...</div>
+                    <button id="logout-button" class="pure-button" type="button" disabled hidden>로그아웃</button>
+                </div>
+                <nav id="collection-menu" class="collection-menu" aria-label="Firestore collections" hidden></nav>
+            </aside>
+            <main class="admin-main">
+                <section id="login-panel" class="admin-login" hidden>
+                    <h2>관리자 로그인</h2>
+                    <p>Google 계정으로 로그인해야 Firestore 관리 도구를 사용할 수 있습니다.</p>
+                    <button id="login-button" class="login-with-google-btn" type="button">Continue with Google</button>
+                    <div id="login-status" class="admin-status"></div>
+                </section>
+                <section id="admin-panel" hidden>
+                    <div class="admin-toolbar">
+                        <h2 id="collection-title" class="admin-title">컬렉션 선택</h2>
+                        <button id="reload-button" class="pure-button pure-button-primary" type="button">다시 불러오기</button>
+                    </div>
+                    <div id="admin-status" class="admin-status"></div>
+                    <div id="table-root"></div>
+                </section>
+            </main>
+        </div>
+        <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', () => {
+                const ADMIN_EMAIL = 'hujinone11@gmail.com';
+                const COLLECTIONS = [
+                    { name : 'highscore', label : 'highscore (점수기록)' },
+                    { name : 'board', label : 'board (커뮤니티)' },
+                    { name : 'additionals', label : 'additionals (추가컨텐츠)' },
+                    { name : 'user', label : 'user (사용자)' },
+                    { name : 'cloudconfigs', label : 'cloudconfigs (클라우드 설정)' }
+                ];
+                const FIELD_ORDER = {
+                    user : ['date', 'email', 'uid', 'credits'],
+                    cloudconfigs : ['uid', 'bonusAvails', 'fontFamily', 'keyList', 'language', 'languageDefault', 'noteSpeedMultiplier'],
+                    highscore : ['build', 'clear', 'combo', 'date', 'difficulty', 'email', 'gameover', 'hp', 'level', 'mode', 'notehistory', 'notes', 'point', 'rank', 'report', 'song', 'uid', 'userAgent'],
+                    board : ['uid', 'boardName', 'content', 'email', 'notice', 'postserial', 'regdate'],
+                    additionals : ['uid', 'contentname', 'date', 'type', 'url']
+                };
 
-           각 컬렉션별 문서 구조 (필드)
-              user
-                  date  (number) 등록일자 (milliseconds)
-                  email (string) 사용자 계정 이메일 주소
-                  uid   (string) 사용자 UID (Firebase Auth UID)
-                  credits (object) 사용자 게임 데이터
-                      PERFECT (number) 누적 PERFECT 수
-                      GREAT (number)   누적 GREAT 수
-                      GOOD (number)    누적 GOOD 수
-                      BAD (number)     누적 BAD 수
-                      MISS (number)    누적 MISS 수
-                      maxCombo (number) 누적 최대 콤보 수
-                      playCount (number) 누적 플레이 횟수
-                      used (number) 상품 구매 횟수
-                      antiMatter (number) 반물질 (재화) 보유 수
-                      darkMatter (number) 암흑물질 (재화) 보유 수
-                      hashKey (string)  해시값 (유효성 검사에 사용)
-              cloudconfigs
-                  uid (string) 사용자 UID (Firebase Auth UID)
-                  bonusAvails (array<string>) 사용자가 활성화한 보너스 컨텐츠명 목록
-                  fontFamily (string) 글꼴 (사용자가 선택)
-                  keyList (array<string>) 입력키 설정값 (6개)
-                  language (string) 언어 설정
-                  languageDefault (boolean) 언어 설정 브라우저의 기본값 사용여부
-                  noteSpeedMultiplier (number) 노트 속도 배율 (사용자 설정)
-              highscore
-                  build (number) 빌드 (버전 번호)
-                  clear (boolean) 클리어 여부
-                  combo (number) 최대 콤보 수
-                  date (number) 등록일자 (milliseconds)
-                  difficulty (string) 난이도 (명칭)
-                  email (string) 사용자 계정 이메일 주소
-                  gameover (boolean) 게임오버 여부
-                  hp (number) 게임 종료 시점에 남은 HP
-                  level (number) 난이도 (숫자)
-                  mode (string) 모드 (default, mission, mysong, ...)
-                  notehistory (array<object>) 노트 처리 이력 (아직 미사용)
-                      현재 자식 필드 없음
-                  notes (number) 노트 수
-                  point (number) 획득 점수
-                  rank (string) 획득 등급 (S, A, B, C, D, F)
-                  report (object) 결과 (각 획득 판정 수)
-                      PERFECT (number)
-                      GREAT (number)
-                      GOOD (number)
-                      BAD (number)
-                      MISS (number)
-                  song (object) 곡 정보
-                      bpm (number) 곡의 BPM
-                      composer (string) 곡의 작곡가
-                      name (string) 곡 이름 (제목)
-                      noteWriter (string) 곡의 노트 작성자
-                      serial (string) 고유값
-                  uid (string) 사용자 UID (Firebase Auth UID)
-                  userAgent (string) 사용자의 브라우저의 User-Agent 문자열
-              board
-                  uid (string) 사용자 UID (Firebase Auth UID)
-                  boardName (string) 게시판 이름
-                  content (string) 게시글 내용
-                  email (string) 사용자의 이메일 주소
-                  notice (boolean) 공지글 여부
-                  postserial (string) 게시글 고유값
-                  regdate (number) 등록일자 (milliseconds)
-              additionals
-                  uid (string) 사용자 UID (Firebase Auth UID)
-                  contentname (string) 컨텐츠명
-                  date (number) 등록일자 (milliseconds)
-                  type (string) 유형
-                  url (string) 컨텐츠 URL
+                let backend = null;
+                const loginPanel = document.getElementById('login-panel');
+                const adminPanel = document.getElementById('admin-panel');
+                const loginButton = document.getElementById('login-button');
+                const logoutButton = document.getElementById('logout-button');
+                const reloadButton = document.getElementById('reload-button');
+                const userEmail = document.getElementById('admin-user-email');
+                const collectionMenu = document.getElementById('collection-menu');
+                const collectionTitle = document.getElementById('collection-title');
+                const loginStatus = document.getElementById('login-status');
+                const statusBox = document.getElementById('admin-status');
+                const tableRoot = document.getElementById('table-root');
+                let selectedCollection = COLLECTIONS[0].name;
+                let busy = false;
 
-        -->
+                const setBusy = (value) => {
+                    busy = value;
+                    loginButton.disabled = value;
+                    logoutButton.disabled = value || !isAdminUser();
+                    reloadButton.disabled = value || !isAdminUser();
+                    collectionMenu.querySelectorAll('button').forEach((button) => { button.disabled = value || !isAdminUser(); });
+                };
+
+                const setStatus = (message, error) => {
+                    loginStatus.textContent = message || '';
+                    loginStatus.classList.toggle('error', !!error);
+                    statusBox.textContent = message || '';
+                    statusBox.classList.toggle('error', !!error);
+                };
+
+                const isAdminUser = () => {
+                    return !!(backend && backend.user && backend.user.email === ADMIN_EMAIL);
+                };
+
+                const renderSideMenu = (adminAvailable) => {
+                    logoutButton.hidden = !adminAvailable;
+                    collectionMenu.hidden = !adminAvailable;
+                    logoutButton.disabled = busy || !adminAvailable;
+                    collectionMenu.querySelectorAll('button').forEach((button) => {
+                        button.disabled = busy || !adminAvailable;
+                    });
+                };
+
+                const isFirebaseUsable = () => {
+                    return typeof(ShuttingStarsUtility) != 'undefined'
+                        && ShuttingStarsUtility.detectFirebaseInitialized()
+                        && typeof(firebase) != 'undefined'
+                        && typeof(firebase.auth) == 'function'
+                        && typeof(firebase.firestore) == 'function';
+                };
+
+                const refreshBackend = () => {
+                    if(!isFirebaseUsable()) {
+                        backend = null;
+                        return false;
+                    }
+                    try {
+                        backend = __ssBackEnd();
+                    } catch(e) {
+                        console.error(e);
+                        backend = null;
+                    }
+                    return !!(backend && backend.auth != null && backend.firestore != null);
+                };
+
+                const renderLoggedOut = (message, error) => {
+                    loginPanel.hidden = false;
+                    adminPanel.hidden = true;
+                    userEmail.textContent = '로그인 필요';
+                    renderSideMenu(false);
+                    tableRoot.textContent = '';
+                    setStatus(message || '', !!error);
+                    setBusy(false);
+                };
+
+                const stringifyValue = (value) => {
+                    if(value === null) return 'null';
+                    if(typeof(value) == 'undefined') return '';
+                    if(typeof(value) == 'object') return JSON.stringify(value, null, 2);
+                    return String(value);
+                };
+
+                const parseValue = (rawValue, originalValue) => {
+                    const text = rawValue.trim();
+                    if(originalValue === null) {
+                        if(text === '' || text === 'null') return null;
+                        return JSON.parse(text);
+                    }
+                    if(Array.isArray(originalValue) || typeof(originalValue) == 'object') {
+                        return text === '' ? null : JSON.parse(text);
+                    }
+                    if(typeof(originalValue) == 'number') {
+                        if(text === '') return null;
+                        const parsed = Number(text);
+                        if(Number.isNaN(parsed)) throw new Error('숫자 형식이 아닙니다: ' + rawValue);
+                        return parsed;
+                    }
+                    if(typeof(originalValue) == 'boolean') {
+                        if(text === 'true') return true;
+                        if(text === 'false') return false;
+                        throw new Error('boolean 값은 true 또는 false 로 입력해야 합니다.');
+                    }
+                    return rawValue;
+                };
+
+                const createCollectionMenu = () => {
+                    collectionMenu.textContent = '';
+                    COLLECTIONS.forEach((collection) => {
+                        const button = document.createElement('button');
+                        button.className = 'pure-button';
+                        button.type = 'button';
+                        button.textContent = collection.label;
+                        button.dataset.collection = collection.name;
+                        button.addEventListener('click', () => {
+                            selectedCollection = collection.name;
+                            loadCollection();
+                        });
+                        collectionMenu.appendChild(button);
+                    });
+                };
+
+                const renderAuthState = async () => {
+                    if(isAdminUser()) {
+                        loginPanel.hidden = true;
+                        adminPanel.hidden = false;
+                        userEmail.textContent = backend.user.email;
+                        renderSideMenu(true);
+                        await loadCollection();
+                    } else {
+                        renderLoggedOut('', false);
+                        return;
+                    }
+                    setBusy(false);
+                };
+
+                const rejectNonAdmin = async () => {
+                    if(backend && backend.user && backend.user.email && backend.user.email !== ADMIN_EMAIL) {
+                        const email = backend.user.email;
+                        await backend.logout();
+                        alert('관리자 계정만 사용할 수 있습니다. 현재 계정: ' + email);
+                    }
+                };
+
+                const checkLogin = async () => {
+                    setBusy(true);
+                    setStatus('');
+                    try {
+                        if(!refreshBackend()) {
+                            renderLoggedOut('', false);
+                            return;
+                        }
+                        await backend.checkLogined();
+                        await rejectNonAdmin();
+                        await renderAuthState();
+                    } catch(e) {
+                        console.error(e);
+                        setStatus('로그인 상태 확인 실패: ' + e, true);
+                        setBusy(false);
+                    }
+                };
+
+                const collectColumns = (rows) => {
+                    const fields = new Set(FIELD_ORDER[selectedCollection] || []);
+                    rows.forEach((row) => {
+                        Object.keys(row.data).forEach((key) => { fields.add(key); });
+                    });
+                    return Array.from(fields);
+                };
+
+                const renderTable = (snapshot) => {
+                    const rows = snapshot.docs.map((doc) => {
+                        return { id : doc.id, ref : doc.ref, data : doc.data() };
+                    });
+                    if(rows.length <= 0) {
+                        tableRoot.innerHTML = '<div class="empty-state">문서가 없습니다.</div>';
+                        return;
+                    }
+
+                    const columns = collectColumns(rows);
+                    const wrap = document.createElement('div');
+                    const table = document.createElement('table');
+                    const thead = document.createElement('thead');
+                    const tbody = document.createElement('tbody');
+                    const headRow = document.createElement('tr');
+                    wrap.className = 'table-wrap';
+                    table.className = 'admin-table';
+
+                    ['문서 ID'].concat(columns).concat(['작업']).forEach((label) => {
+                        const th = document.createElement('th');
+                        th.textContent = label;
+                        headRow.appendChild(th);
+                    });
+                    thead.appendChild(headRow);
+
+                    rows.forEach((row) => {
+                        const tr = document.createElement('tr');
+                        const idCell = document.createElement('td');
+                        idCell.className = 'doc-id';
+                        idCell.textContent = row.id;
+                        tr.appendChild(idCell);
+
+                        columns.forEach((column) => {
+                            const value = row.data[column];
+                            const td = document.createElement('td');
+                            const textarea = document.createElement('textarea');
+                            textarea.className = 'cell-editor';
+                            textarea.dataset.field = column;
+                            textarea.value = stringifyValue(value);
+                            if(value !== null && typeof(value) == 'object') textarea.classList.add('json');
+                            td.appendChild(textarea);
+                            tr.appendChild(td);
+                        });
+
+                        const actionCell = document.createElement('td');
+                        const actions = document.createElement('div');
+                        const saveButton = document.createElement('button');
+                        const deleteButton = document.createElement('button');
+                        actions.className = 'row-actions';
+                        saveButton.className = 'pure-button pure-button-primary';
+                        saveButton.type = 'button';
+                        saveButton.textContent = '저장';
+                        saveButton.addEventListener('click', () => saveRow(row, columns, tr));
+                        deleteButton.className = 'pure-button';
+                        deleteButton.type = 'button';
+                        deleteButton.textContent = '삭제';
+                        deleteButton.addEventListener('click', () => deleteRow(row));
+                        actions.appendChild(saveButton);
+                        actions.appendChild(deleteButton);
+                        actionCell.appendChild(actions);
+                        tr.appendChild(actionCell);
+                        tbody.appendChild(tr);
+                    });
+
+                    table.appendChild(thead);
+                    table.appendChild(tbody);
+                    wrap.appendChild(table);
+                    tableRoot.textContent = '';
+                    tableRoot.appendChild(wrap);
+                };
+
+                const loadCollection = async () => {
+                    if(!isAdminUser()) return;
+                    setBusy(true);
+                    setStatus('불러오는 중...');
+                    try {
+                        const menuButtons = collectionMenu.querySelectorAll('button');
+                        menuButtons.forEach((button) => {
+                            button.classList.toggle('active', button.dataset.collection === selectedCollection);
+                        });
+                        const selected = COLLECTIONS.find((item) => item.name === selectedCollection);
+                        collectionTitle.textContent = selected ? selected.label : selectedCollection;
+                        const snapshot = await backend.firestore.collection(selectedCollection).get();
+                        renderTable(snapshot);
+                        setStatus(snapshot.size + '개 문서를 불러왔습니다.');
+                    } catch(e) {
+                        console.error(e);
+                        setStatus('컬렉션을 불러오지 못했습니다: ' + e, true);
+                    } finally {
+                        setBusy(false);
+                    }
+                };
+
+                const saveRow = async (row, columns, tr) => {
+                    if(!isAdminUser() || busy) return;
+                    setBusy(true);
+                    setStatus('저장 중...');
+                    try {
+                        const updateData = {};
+                        columns.forEach((column) => {
+                            const editor = tr.querySelector('[data-field="' + column + '"]');
+                            if(typeof(row.data[column]) == 'undefined' && editor.value.trim() === '') return;
+                            updateData[column] = parseValue(editor.value, row.data[column]);
+                        });
+                        await row.ref.update(updateData);
+                        setStatus('저장했습니다. 목록을 다시 불러옵니다.');
+                        await loadCollection();
+                    } catch(e) {
+                        console.error(e);
+                        setStatus('저장 실패: ' + e.message, true);
+                        setBusy(false);
+                    }
+                };
+
+                const deleteRow = async (row) => {
+                    if(!isAdminUser() || busy) return;
+                    if(!confirm('문서 "' + row.id + '" 를 삭제할까요?')) return;
+                    setBusy(true);
+                    setStatus('삭제 중...');
+                    try {
+                        await row.ref.delete();
+                        setStatus('삭제했습니다. 목록을 다시 불러옵니다.');
+                        await loadCollection();
+                    } catch(e) {
+                        console.error(e);
+                        setStatus('삭제 실패: ' + e, true);
+                        setBusy(false);
+                    }
+                };
+
+                loginButton.addEventListener('click', async () => {
+                    setBusy(true);
+                    setStatus('');
+                    try {
+                        if(!refreshBackend()) {
+                            renderLoggedOut('Firebase를 사용할 수 없습니다. 잠시 후 다시 시도하거나 Firebase 호스팅 환경에서 접속해 주세요.', true);
+                            return;
+                        }
+                        await backend.openGoogleLogin();
+                        await rejectNonAdmin();
+                        await renderAuthState();
+                    } catch(e) {
+                        console.error(e);
+                        setStatus('로그인 실패: ' + e, true);
+                        setBusy(false);
+                    }
+                });
+                logoutButton.addEventListener('click', async () => {
+                    setBusy(true);
+                    try {
+                        await backend.logout();
+                        await renderAuthState();
+                    } catch(e) {
+                        console.error(e);
+                        setStatus('로그아웃 실패: ' + e, true);
+                        setBusy(false);
+                    }
+                });
+                reloadButton.addEventListener('click', loadCollection);
+                createCollectionMenu();
+                checkLogin();
+            });
+        </script>
     </body>
 </html>
