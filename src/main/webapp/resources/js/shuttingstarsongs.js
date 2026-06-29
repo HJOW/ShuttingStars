@@ -36,8 +36,10 @@ song.composer = 'Joshua Moses';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/night-ride-by-joshua-moses.mp3';
-song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/night-ride-by-joshua-moses.mp3';
+song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = ''; // tJdcn6cGdC0
 song.description = `
 |Music: Night Ride by Joshua Moses
 |  https://joshuamosesmusic.bandcamp.com
@@ -495,6 +497,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track01.mp3';
 song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/woowahan/track01.mp3';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -594,6 +598,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track03.mp3';
 song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/woowahan/track03.mp3';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -1387,6 +1393,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track07.mp3';
 song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/woowahan/track07.mp3';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -2806,6 +2814,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/ai/aitrack_260528_01.mp3';
 song.musicAlterUrl = '';// 'https://hjow.duckdns.org/shuttingstars/resources/songs/ai/aitrack_260528_01.mp3';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: Google Lyria
 |  https://gemini.google/overview/music-generation/
@@ -3932,6 +3942,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track02.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -3965,6 +3977,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track04.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -3998,6 +4012,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track06.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -4031,6 +4047,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track08.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -4064,6 +4082,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/woowahan/track09.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Music: 우아한형제들
 |  https://www.woowahan.com/music
@@ -4097,6 +4117,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/pixabay/nastelbom-no-copyright-music-507938.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Nastel Bom's 507938
 |Hi, my name is Dmitrii Spis (NastelBom) 
@@ -4135,6 +4157,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/pixabay/jonasblakewood-a-reason-to-smile-350631.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |A Reason To Smile
 |Song owner : JonasBlakewood
@@ -4169,6 +4193,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/pixabay/jonasblakewood-the-spring-of-the-universe-449695.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |The Spring of the Universe
 |Song owner : JonasBlakewood
@@ -4204,6 +4230,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/pixabay/jonasblakewood-dirty-tackle-335334.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Dirty Tackle
 |Song owner : JonasBlakewood
@@ -4239,6 +4267,8 @@ song.bgaUrl = '';
 song.musicUrl = '[CTX]/resources/songs/ai/NeonGridRush.mp3';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
 song.description = `
 |Composed by AI (OpenAI's ChatGPT)
 `;

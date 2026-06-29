@@ -100,6 +100,8 @@ class ShuttingStarsCore {
     rootDiv = null;
     /** @type {HTMLElement|null} 위 rootDiv 를 div로 한번 더 감싼 div */
     contentRoot = null;
+    /** @type {HTMLElement|null} 유튜브 영역 (미사용 시 투명) */
+    youtubeDiv = null;
     /** @type {HTMLVideoElement|null} 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역 */
     videoBga = null;
     /** @type {Object} 팝업 (별도 창이 아닌 인앱 대화상자 형태) */
@@ -148,6 +150,13 @@ class ShuttingStarsCore {
     disable3d = false;
     /** @type {boolean} true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 SSNotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것 */
     disable2d = false;
+
+    /** @type {*} Youtube IFrame API - YT.Player */
+    youtubePlayer = null;
+    /** @type {boolean} Youtube 사용 준비여부 확인 */
+    youtubePlayerReady = false;
+    /** @type {boolean} Youtube 재생 종료여부 확인 */
+    youtubePlayerEnded = false;
 
     /*** 3D 각 구성요소 사용여부 설정 ***/
     /** @type {Object} 게임 요소별 3D 렌더링 사용 여부를 저장합니다. */
@@ -684,6 +693,7 @@ class ShuttingStarsCore {
                 <div class='shuttingstars_canvas_root'>              
                     <div class='shuttingstars_canvas_content_root'>
                         <video class='shuttingstars_bga' preload='metadata'></video>
+                        <div class='shuttingstars_youtubes invisible'></div>
                         <canvas class='shuttingstars_canvas'></canvas>   
                         <canvas class='shuttingstars_canvas_3d'></canvas>
                         <div class='shuttingstars_pop_root'></div>
@@ -693,7 +703,8 @@ class ShuttingStarsCore {
             rootDiv.innerHTML = htmls;
             this.rootDiv = rootDiv;
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
-            this.videoBga = rootDiv.querySelector('.shuttingstars_bga');
+            this.videoBga    = rootDiv.querySelector('.shuttingstars_bga');
+            this.youtubeDiv  = rootDiv.querySelector('.shuttingstars_youtubes');
 
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
@@ -715,7 +726,7 @@ class ShuttingStarsCore {
 
             //     기본 CSS
             styles += `
-                .shuttingstars_root { width: 100%; margin: 0; padding: 0; }
+                .shuttingstars_root { width: 100%; margin: 0; padding: 0; background: transparent; }
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -725,6 +736,8 @@ class ShuttingStarsCore {
                 .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.8); color: rgba(122, 165, 240, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.7); color: rgba(244, 66, 66, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.8); color: rgba(244, 66, 66, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root .shuttingstars_canvas { position: absolute; left: 0px; top: 0px; }
+                .shuttingstars_root .shuttingstars_youtubes { background: transparent; }
                 .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_dim2 { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1004; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 500px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
@@ -867,9 +880,13 @@ class ShuttingStarsCore {
                 canvas3d.style.minWidth  = '540px';
                 canvas3d.style.minHeight = '960px';
             }
-            this.videoBga.style.zIndex = this.mainZindex;
-            canvas.style.zIndex = this.mainZindex+1;
-            canvas3d.style.zIndex = this.mainZindex+2;
+            this.youtubeDiv.style.zIndex = this.mainZindex + 1;
+            this.videoBga.style.zIndex = this.mainZindex + 2;
+            canvas.style.zIndex = this.mainZindex + 3;
+            canvas3d.style.zIndex = this.mainZindex + 4;
+
+            this.youtubeDiv.style.background = 'transparent';
+            this.videoBga.style.background = 'transparent';
             canvas3d.style.background = 'transparent';
 
             this.logInit('preparing 2d context...');
@@ -2083,75 +2100,86 @@ class ShuttingStarsCore {
             if(this.volumeBackgroundSpeed >= 0 && this.volumeBackground > 0) { this.volumeBackgroundSpeed = (-1) * 0.01; }
 
             //     곡 오디오 세팅
-            if(this.audio == null) {
-                if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.musicUrl)) {
-                    try {
-                        // 기존 Audio Context 닫기 (문제 예방 차원)
-                        this.closeAudioSources();
+            if(this.song.useYoutube) {
+                this.youtubeDiv.innerHTML = '';
 
-                        // Audio URL 결정
-                        let audioUrl ;
-                        if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
-                            audioUrl = this.convertURL(this.song.musicAlterUrl);
-                        } else {
-                            audioUrl = this.convertURL(this.song.musicUrl);
-                        }
-
-                        if(this.difficultyUsingAutoCreate) {
-                            // 노트 생성
-                            const noteCreates = await this.createAutoNotes(audioUrl, this.song.bpm, this.difficultyLevel);
-                            
-                            // 생성한 노트들 옮기기
-                            for(let n=0; n<noteCreates.length; n++) {
-                                const noteOne = noteCreates[n];
-                                this.objectsPlaying.push(noteOne);
-                            }
-
-                            //     Audio Context 닫기
-                            this.closeAudioSources();
-                        }
-
-                        // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
-                        this.audio = new Audio(audioUrl);
-                        this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
-                        this.audio.preload = 'auto';
-                        
+                if(this.youtubePlayer != null) { this.youtubePlayer.destroy(); this.youtubePlayer = null; }
+                this.youtubeDiv.classList.remove('invisible');
+                this.setYouTubeIframe(this.song.youtubeVideoId);
+                this.songPrepared = true;
+            } else {
+                this.youtubeDiv.classList.add('invisible');
+                if(this.audio == null) {
+                    if(typeof(this.song.musicUrl) != 'undefined' && this.song.musicUrl != null && this.song.musicUrl != '' && ShuttingStarsUtility.checkAccessibleURL(this.song.musicUrl)) {
                         try {
-                            // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API ) 준비 (시각화)
-                            if(this.audio != null) {
-                                this.audioCtx       = new (window.AudioContext || window.webkitAudioContext)();
-                                this.audioAnalyser  = this.audioCtx.createAnalyser();
-                                this.audioSource    = this.audioCtx.createMediaElementSource(this.audio);
-                                this.audioSource.connect(this.audioAnalyser);
-                                this.audioAnalyser.connect(this.audioCtx.destination);
-                                this.audioAnalyser.fftSize = 256;
-                                this.audioBufferLen = this.audioAnalyser.frequencyBinCount;
-                                this.audioBuffer    = new Uint8Array(this.audioBufferLen);
-                            }
-                        } catch(exInx) {
-                            ShuttingStarsUtility.log('Failed to prepare audio context.');
-                            console.error(exInx);
-        
+                            // 기존 Audio Context 닫기 (문제 예방 차원)
                             this.closeAudioSources();
+
+                            // Audio URL 결정
+                            let audioUrl ;
+                            if(this.song.alterUrlUsing && ( this.song.musicAlterUrl != null && this.song.musicAlterUrl != '' )) {
+                                audioUrl = this.convertURL(this.song.musicAlterUrl);
+                            } else {
+                                audioUrl = this.convertURL(this.song.musicUrl);
+                            }
+
+                            if(this.difficultyUsingAutoCreate) {
+                                // 노트 생성
+                                const noteCreates = await this.createAutoNotes(audioUrl, this.song.bpm, this.difficultyLevel);
+                                
+                                // 생성한 노트들 옮기기
+                                for(let n=0; n<noteCreates.length; n++) {
+                                    const noteOne = noteCreates[n];
+                                    this.objectsPlaying.push(noteOne);
+                                }
+
+                                //     Audio Context 닫기
+                                this.closeAudioSources();
+                            }
+
+                            // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
+                            this.audio = new Audio(audioUrl);
+                            this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
+                            this.audio.preload = 'auto';
+                            
+                            try {
+                                // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API ) 준비 (시각화)
+                                if(this.audio != null) {
+                                    this.audioCtx       = new (window.AudioContext || window.webkitAudioContext)();
+                                    this.audioAnalyser  = this.audioCtx.createAnalyser();
+                                    this.audioSource    = this.audioCtx.createMediaElementSource(this.audio);
+                                    this.audioSource.connect(this.audioAnalyser);
+                                    this.audioAnalyser.connect(this.audioCtx.destination);
+                                    this.audioAnalyser.fftSize = 256;
+                                    this.audioBufferLen = this.audioAnalyser.frequencyBinCount;
+                                    this.audioBuffer    = new Uint8Array(this.audioBufferLen);
+                                }
+                            } catch(exInx) {
+                                ShuttingStarsUtility.log('Failed to prepare audio context.');
+                                console.error(exInx);
+            
+                                this.closeAudioSources();
+                                this.audio = null;
+                            }
+                            this.songPrepared = true;
+                        } catch(exc) {
+                            console.error(exc);
+                            ShuttingStarsUtility.toast('Loading audio failed !', true);
+                            if(this.audio != null) { try { this.audio.remove(); } catch(egnores) {} }
+                            this.songPrepared = false;
                             this.audio = null;
+                            this.setState('songchoosing');
+                            return;
                         }
-                        this.songPrepared = true;
-                    } catch(exc) {
-                        console.error(exc);
-                        ShuttingStarsUtility.toast('Loading audio failed !', true);
-                        if(this.audio != null) { try { this.audio.remove(); } catch(egnores) {} }
-                        this.songPrepared = false;
+                    } else {
+                        this.closeAudioSources();
                         this.audio = null;
-                        this.setState('songchoosing');
-                        return;
+                        
+                        this.songPrepared = true;
                     }
-                } else {
-                    this.closeAudioSources();
-                    this.audio = null;
-                    
-                    this.songPrepared = true;
                 }
             }
+            
             
             // BGA 초기화
             if(this.videoBgaUrl == null) {
@@ -2189,7 +2217,18 @@ class ShuttingStarsCore {
             if(this.audioBackground != null && this.audioBackgroundPlaying) this.volumeBackgroundSpeed = (-1) * 0.01;
 
             // 오디오 재생 시작 + 시간 타이밍 맞추기
-            if(this.audio != null) {
+            if(this.youtubePlayer != null) {
+                // 노트가 올라가는 시간은 주고 재생 시작
+                const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
+                setTimeout(() => {
+                    if(selfs.state != 'playing') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+
+                    selfs.youtubePlayer.playVideo();
+
+                    selfs.elapsedTime    = (selfs.youtubePlayer.getCurrentTime() * (selfs.song.bpm / 60.0) * (selfs.timeMultiplier * selfs.elapsedTimeMultiplier)) - selfs.songTiming; // 타이밍 지정
+                    selfs.elapsedTimeOld = selfs.songTiming * (-1);
+                }, playingGap);
+            } else if(this.audio != null) {
                 // 노트가 올라가는 시간은 주고 재생 시작
                 const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                 setTimeout(() => {
@@ -2280,6 +2319,27 @@ class ShuttingStarsCore {
             this.videoBga.style.width  = canvasBounding.width + 'px';
             this.videoBga.style.height = canvasBounding.height + 'px';
         }
+
+        // 유튜뷰 영역용 div 관리
+        if(this.youtubeDiv != null) {
+            this.youtubeDiv.style.position = 'fixed';
+            this.youtubeDiv.style.left = canvasBounding.left + 'px';
+            this.youtubeDiv.style.top  = canvasBounding.top + 'px';
+            this.youtubeDiv.style.width  = canvasBounding.width + 'px';
+            this.youtubeDiv.style.height = canvasBounding.height + 'px';
+        }
+
+        // 유튜브 플레이어 관리
+        if(this.youtubePlayer != null) {
+            const iframes = this.youtubePlayer.getIframe();
+            if(iframes) {
+                iframes.style.position = 'fixed';
+                iframes.style.left = canvasBounding.left + 'px';
+                iframes.style.top  = canvasBounding.top + 'px';
+                iframes.style.width  = canvasBounding.width + 'px';
+                iframes.style.height = canvasBounding.height + 'px';
+            }
+        } 
 
         // 3d 장식용 캔버스 관리
         if(this.canvas3d != null) {
@@ -3262,6 +3322,9 @@ class ShuttingStarsCore {
         if(this.audio    != null) { this.audio.pause();    }
         if(this.videoBga != null) {
             if(this.videoBgaUrl != null) this.videoBga.pause();
+        }
+        if(this.youtubePlayer != null) {
+            this.youtubePlayer.pauseVideo();
         }
     }
 
@@ -5948,7 +6011,10 @@ class ShuttingStarsCore {
                 if(this.songTitleTime <= 0) {
                     // 곡 로딩여부 체크 - 로딩 안됐으면 시간 다시 늘리기
                     if(! this.songPrepared) { this.songTitleTime = 4 * this.timeMultiplier; }
-                    else if(this.audio != null) { if(this.audio.readyState < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
+                    else {
+                        if(this.youtubePlayer != null) { if(! this.youtubePlayerReady) { this.songTitleTime = 4 * this.timeMultiplier; } }
+                        else if(this.audio    != null) { if(this.audio.readyState < 4) { this.songTitleTime = 4 * this.timeMultiplier; } }
+                    }
                 }
                 if(this.songTitleTime <= 0) {
                     // 플레이 화면으로 전환
@@ -6054,6 +6120,9 @@ class ShuttingStarsCore {
                 if(this.videoBga != null) {
                     if(this.videoBgaUrl != null) { try { this.videoBga.play(); } catch(e) { console.error(e); } }
                 }
+                if(this.youtubePlayer != null) {
+                    this.youtubePlayer.playVideo();
+                }
                 this.resumed = false;
             }
 
@@ -6063,7 +6132,9 @@ class ShuttingStarsCore {
             if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
             if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
-            if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
+            if(this.youtubePlayer != null) {
+                this.elapsedTime = this.convertElapsedTime(this.youtubePlayer, this.song.bpm, this.songTiming);
+            } else if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
                 this.elapsedTime = this.convertElapsedTime(this.audio, this.song.bpm, this.songTiming);
                 // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
             } else {
@@ -6375,6 +6446,13 @@ class ShuttingStarsCore {
                 try { this.videoBga.pause(); } catch(ex) {  console.error(ex); } // BGA 끄기
                 this.videoBgaUrl = null;
             }
+        }
+
+        // Youtube 도 종료
+        if(this.youtubePlayer != null) {
+            this.youtubeDiv.classList.add('invisible');
+            this.youtubePlayer.destroy();
+            this.youtubePlayer = null;
         }
     }
 
@@ -7128,7 +7206,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 HTML 및 기타 css 적용
         this.configDiv.innerHTML = html;
-        this.configDiv.style.zIndex = this.mainZindex + 1002;
+        this.configDiv.style.zIndex = this.mainZindex + 6;
         this.configDiv.style.position = 'fixed';
         this.configDiv.style.top    = '10px';
         this.configDiv.style.left   = '10px';
@@ -7147,7 +7225,7 @@ class ShuttingStarsCore {
 
         // 레이어 영역 (안쪽)
         const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
-        layer.style.zIndex = this.mainZindex + 3;
+        layer.style.zIndex = this.mainZindex + 5;
         layer.style.width  = '90%';
         layer.style.minHeight = Math.floor((this.fOuterHeight() - this.gap.h) / 2.0) + 'px';
 
@@ -7703,7 +7781,10 @@ class ShuttingStarsCore {
      * @returns 현재 진행 시간 값
      */
     convertElapsedTime(audioObject, bpm, songTiming) {
-        return (audioObject.currentTime * (bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
+        let crTime = 0;
+        if(typeof(audioObject.getCurrentTime) == 'function') crTime = audioObject.getCurrentTime();
+        else crTime = audioObject.currentTime;
+        return (crTime * (bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
     }
 
     /**
@@ -7874,6 +7955,65 @@ class ShuttingStarsCore {
             this.se[seKey].currentTime = 0;
             this.se[seKey].play();
         } catch(e) { console.error(e); }
+    }
+
+    /**
+     * 유튜브 플레이어 세팅 (참고 : https://developers.google.com/youtube/iframe_api_reference?hl=ko)
+     * @param {string} videoId 
+     */
+    setYouTubeIframe(videoId) {
+        const selfs = this;
+        if(typeof(YT) == 'undefined') {
+            this.alert(this.trans('YouTube API is not loaded. Please check your network connection.'));
+            this.setState('menu');
+            return;
+        }
+
+        if(this.youtubePlayer != null) {
+            this.youtubePlayer.destroy();
+            this.youtubePlayer = null;
+        }
+
+        const youtubeDivId = 'ss_youtube_div_' + ShuttingStarsUtility.randomString(8);
+        this.youtubeDiv.innerHTML = "<div id='" + youtubeDivId + "'></div>";
+        this.youtubeDiv.style.margin = '0';
+        this.youtubeDiv.style.padding = '0';
+        this.youtubeDiv.style.overflow = 'hidden';
+
+        let canvasBounding = this.canvas.getBoundingClientRect();
+        this.youtubePlayerReady = false;
+        this.youtubePlayerEnded = false;
+        this.youtubePlayer = new YT.Player(youtubeDivId, {
+            videoId : videoId,
+            width   : canvasBounding.width,
+            height  : canvasBounding.height,
+            playerVars : {
+                autoplay : 0,
+                controls : 0
+            },
+            events : {
+                onReady : (e) => {
+                    selfs.youtubePlayerReady = true;
+
+                    const iframes = selfs.youtubePlayer.getIframe();
+                    canvasBounding = selfs.canvas.getBoundingClientRect();
+                    iframes.style.position = 'fixed';
+                    iframes.style.left = canvasBounding.left + 'px';
+                    iframes.style.top  = canvasBounding.top + 'px';
+                    iframes.style.width  = canvasBounding.width + 'px';
+                    iframes.style.height = canvasBounding.height + 'px';
+                    iframes.style.zIndex = selfs.mainZindex + 1;
+                }, onStateChange : (e) => {
+                    if(e.data == YT.PlayerState.ENDED) {
+                        selfs.youtubePlayerEnded = true;
+                    }
+                }, onError : (e) => {
+                    const errCode = e.data;
+                    ShuttingStarsUtility.toast(selfs.trans('Cannot play this youtube video.') + ' Error code : ' + errCode);
+                    this.setState('menu');
+                }
+            }
+        });
     }
 
     /**
@@ -8235,6 +8375,8 @@ class ShuttingStarsCore {
         song.bgaUrl         = json.bgaUrl;
         song.musicUrl       = json.musicUrl;
         song.musicAlterUrl  = json.musicAlterUrl;
+        song.useYoutube     = json.useYoutube;
+        song.youtubeVideoId = json.youtubeVideoId;
         song.thumbnailUrl   = json.thumbnailUrl;
         song.description    = json.description;
         song.loadingTime    = json.loadingTime;
@@ -8580,6 +8722,11 @@ class ShuttingStarsSong {
     /** @type {string} 음원 대체 URL */
     musicAlterUrl = '';
 
+    /** @type {boolean} 유튜브 사용 여부, true 지정 시 youtubeVideoId 도 반드시 지정해야 함. 사용 시 음원, BGM 다 무시되며 유튜브 영상이 배경에 깔림. */
+    useYoutube = false;
+    /** @type {string} 유튜브 영상 ID */
+    youtubeVideoId = '';
+
     /** @type {string} 썸네일 이미지 URL (BASE64 가능) */
     thumbnailUrl = '';
     /** @type {string} 플레이 중 배경 영상 URL 로 쓰려고 했으나, 아직은 미지원 */
@@ -8678,6 +8825,8 @@ class ShuttingStarsSong {
         obj.bgaUrl = this.bgaUrl;
         obj.musicUrl = this.musicUrl;
         obj.musicAlterUrl = this.musicAlterUrl;
+        obj.useYoutube = this.useYoutube;
+        obj.youtubeVideoId = this.youtubeVideoId;
         obj.thumbnailUrl = this.thumbnailUrl;
         obj.description = this.description;
         obj.loadingTime = this.loadingTime;
