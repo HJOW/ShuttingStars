@@ -75,73 +75,73 @@
 
            각 컬렉션별 문서 구조 (필드)
               user
-                  date (number)
-                  email (string)
-                  uid (string)
-                  credits (object)
-                      PERFECT (number)
-                      GREAT (number)
-                      GOOD (number)
-                      BAD (number)
-                      MISS (number)
-                      antiMatter (number)
-                      darkMatter (number)
-                      hashKey (string)
-                      maxCombo (number)
-                      playCount (number)
-                      used (number)
+                  date  (number) 등록일자 (milliseconds)
+                  email (string) 사용자 계정 이메일 주소
+                  uid   (string) 사용자 UID (Firebase Auth UID)
+                  credits (object) 사용자 게임 데이터
+                      PERFECT (number) 누적 PERFECT 수
+                      GREAT (number)   누적 GREAT 수
+                      GOOD (number)    누적 GOOD 수
+                      BAD (number)     누적 BAD 수
+                      MISS (number)    누적 MISS 수
+                      maxCombo (number) 누적 최대 콤보 수
+                      playCount (number) 누적 플레이 횟수
+                      used (number) 상품 구매 횟수
+                      antiMatter (number) 반물질 (재화) 보유 수
+                      darkMatter (number) 암흑물질 (재화) 보유 수
+                      hashKey (string)  해시값 (유효성 검사에 사용)
               cloudconfigs
-                  uid (string)
-                  bonusAvails (array<string>)
-                  fontFamily (string)
-                  keyList (array<string>)
-                  language (string)
-                  languageDefault (boolean)
-                  noteSpeedMultiplier (number)
+                  uid (string) 사용자 UID (Firebase Auth UID)
+                  bonusAvails (array<string>) 사용자가 활성화한 보너스 컨텐츠명 목록
+                  fontFamily (string) 글꼴 (사용자가 선택)
+                  keyList (array<string>) 입력키 설정값 (6개)
+                  language (string) 언어 설정
+                  languageDefault (boolean) 언어 설정 브라우저의 기본값 사용여부
+                  noteSpeedMultiplier (number) 노트 속도 배율 (사용자 설정)
               highscore
-                  build (number)
-                  clear (boolean)
-                  combo (number)
-                  date (number)
-                  difficulty (string)
-                  email (string)
-                  gameover (boolean)
-                  hp (number)
-                  level (number)
-                  mode (string)
-                  notehistory (array<object>)
-                      현재 필드 없음
-                  notes (number)
-                  point (number)
-                  rank (string)
-                  report (object)
+                  build (number) 빌드 (버전 번호)
+                  clear (boolean) 클리어 여부
+                  combo (number) 최대 콤보 수
+                  date (number) 등록일자 (milliseconds)
+                  difficulty (string) 난이도 (명칭)
+                  email (string) 사용자 계정 이메일 주소
+                  gameover (boolean) 게임오버 여부
+                  hp (number) 게임 종료 시점에 남은 HP
+                  level (number) 난이도 (숫자)
+                  mode (string) 모드 (default, mission, mysong, ...)
+                  notehistory (array<object>) 노트 처리 이력 (아직 미사용)
+                      현재 자식 필드 없음
+                  notes (number) 노트 수
+                  point (number) 획득 점수
+                  rank (string) 획득 등급 (S, A, B, C, D, F)
+                  report (object) 결과 (각 획득 판정 수)
                       PERFECT (number)
                       GREAT (number)
                       GOOD (number)
                       BAD (number)
                       MISS (number)
-                  song (object)
-                      bpm (number)
-                      composer (string)
-                      name (string)
-                      noteWriter (string)
-                      serial (string)
-                  uid (string)
-                  userAgent (string)
+                  song (object) 곡 정보
+                      bpm (number) 곡의 BPM
+                      composer (string) 곡의 작곡가
+                      name (string) 곡 이름 (제목)
+                      noteWriter (string) 곡의 노트 작성자
+                      serial (string) 고유값
+                  uid (string) 사용자 UID (Firebase Auth UID)
+                  userAgent (string) 사용자의 브라우저의 User-Agent 문자열
               board
-                  uid (string)
-                  boardName (string)
-                  content (string)
-                  email (string)
-                  notice (boolean)
-                  postserial (string)
-                  regdate (number)
+                  uid (string) 사용자 UID (Firebase Auth UID)
+                  boardName (string) 게시판 이름
+                  content (string) 게시글 내용
+                  email (string) 사용자의 이메일 주소
+                  notice (boolean) 공지글 여부
+                  postserial (string) 게시글 고유값
+                  regdate (number) 등록일자 (milliseconds)
               additionals
-                  uid (string)
-                  contentname (string)
-                  date (number)
-                  type (string)
-                  uurl (string)
+                  uid (string) 사용자 UID (Firebase Auth UID)
+                  contentname (string) 컨텐츠명
+                  date (number) 등록일자 (milliseconds)
+                  type (string) 유형
+                  url (string) 컨텐츠 URL
 
         -->
     </body>
