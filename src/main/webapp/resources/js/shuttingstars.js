@@ -113,6 +113,7 @@ class ShuttingStarsCore {
         join : null,      // 회원가입 팝업 영역 div (현재 미사용)
         community : null, // 커뮤니티 팝업 영역 div
         iframes : null,   // 외부 페이지 (iframe) div
+        youtube : null,   // 유튜브 팝업 div
         mysong : null     // mp3 첨부 div   
     };
     /** @type {HTMLElement|null} 상세 설정 화면 영역 */
@@ -151,12 +152,14 @@ class ShuttingStarsCore {
     /** @type {boolean} true 지정 시 게임 플레이 중 2D 렌더링하지 않음. disable3d 가 false 여야 동작함. 3D 켠다고 해도 SSNotePlacer 는 2D 것을 띄울 예정이므로 항시 false 로 둘 것 */
     disable2d = false;
 
-    /** @type {*} Youtube IFrame API - YT.Player */
+    /** @type {*} Youtube IFrame API - YT.Player - 메인곡 */
     youtubePlayer = null;
     /** @type {boolean} Youtube 사용 준비여부 확인 */
     youtubePlayerReady = false;
     /** @type {boolean} Youtube 재생 종료여부 확인 */
     youtubePlayerEnded = false;
+    /** @type {*} Youtube IFrame API - YT.Player - 팝업 iframe 플레이어 */
+    youtubePopPlayer = null;
 
     /*** 3D 각 구성요소 사용여부 설정 ***/
     /** @type {Object} 게임 요소별 3D 렌더링 사용 여부를 저장합니다. */
@@ -2407,10 +2410,18 @@ class ShuttingStarsCore {
             this.pops.login.classList.add('invisible');
             this.pops.community.classList.add('invisible');
             this.pops.iframes.classList.add('invisible');
+            this.pops.youtube.classList.add('invisible');
             this.pops.mysong.classList.add('invisible');
             this.configDiv.classList.add('invisible');
             this.setState('menu');
             this.keyEventDisabled = false;
+            if(this.audioBackground != null) { 
+                if(this.state != 'playing') this.audioBackground.play(); 
+            }
+            if(this.youtubePopPlayer != null) {
+                this.youtubePopPlayer.destroy();
+                this.youtubePopPlayer = null;
+            }
             return;
         }
 
@@ -2678,6 +2689,14 @@ class ShuttingStarsCore {
             // default 모드
 
             if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+
+            // 유튜브 곡인 경우
+            if(this.songChoosing.useYoutube) {
+                if(key == this.keyList[0]) { // A
+                    this.showYoutubePopup(this.songChoosing.youtubeVideoId);
+                    return;
+                }
+            }
 
             // 곡/난이도 인덱스 구하기
             index = 0;
@@ -4098,6 +4117,7 @@ class ShuttingStarsCore {
         let row1Height = 0;
         let currentIndex = 0;
         let songChoosen = null;
+        let youtubeSongChoosed = null; // Youtube 기반 곡 선택 시 이 곳에 영상ID 탑재
         let opacityOne = 0;
         opacity = 0.99;
 
@@ -4270,6 +4290,8 @@ class ShuttingStarsCore {
                     let choosen = (jdx == 1 && this.songChoosing == songOne);
                     if(choosen) {
                         songChoosen = songOne;
+                        
+                        if(songOne.useYoutube) youtubeSongChoosed = songOne.youtubeVideoId;
 
                         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
                         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
@@ -4387,6 +4409,8 @@ class ShuttingStarsCore {
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey + '      ' + this.trans('BACK : ');
         if(this.escKey == 'ESCAPE') label += 'ESC';
         else                        label += this.escKey;
+        
+        if(youtubeSongChoosed) label += '    ' + this.trans('YouTube : ') + this.keyList[0];
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
@@ -5591,6 +5615,63 @@ class ShuttingStarsCore {
         iframes.src = url;
 
         area.classList.remove('invisible');
+    }
+
+    /** 유튜브 영상 팝업 열기 */
+    showYoutubePopup(videoId) {
+        const selfs = this;
+        if(typeof(YT) == 'undefined') {
+            this.alert(this.trans('YouTube API is not loaded. Please check your network connection.'));
+            return;
+        }
+
+        this.keyEventDisabled = true;
+        this.pops.dim.classList.remove('invisible');
+
+        const area = this.pops.youtube;
+        const canvasBounding = this.canvas.getBoundingClientRect();
+
+        area.style.width  = Math.floor(canvasBounding.width  - 100) + 'px';
+        area.style.height = Math.floor(canvasBounding.height - 100) + 'px';
+        area.style.left   = '20px';
+        area.style.top    = '20px';
+        area.classList.remove('invisible');
+
+        const divRoot = area.querySelector('.div_youtubepop_root');
+        divRoot.style.height = Math.floor(canvasBounding.height - 150) + 'px';
+        divRoot.innerHTML = "<div class='div_youtubepop_in full'></div>";
+
+        const divContent = divRoot.querySelector('.div_youtubepop_in');
+        const randId = 'div_youtubepop_cont_' + ShuttingStarsUtility.randomString(8);
+        divContent.id = randId;
+
+        this.youtubePopPlayer = new YT.Player(randId, {
+            videoId : videoId,
+            width   : Math.floor(canvasBounding.width  * 0.9),
+            height  : Math.floor(canvasBounding.height * 0.9),
+            playerVars : {
+                autoplay : 0,
+                controls : 1
+            },
+            events : {
+                onError : (e) => {
+                    const errCode = e.data;
+                    ShuttingStarsUtility.toast(selfs.trans('Cannot play this youtube video.') + ' Error code : ' + errCode);
+
+                    selfs.keyEventDisabled = false;
+                    selfs.pops.dim.classList.add('invisible');
+                    selfs.pops.youtube.classList.add('invisible');
+                    if(selfs.audioBackground != null) { 
+                        if(selfs.state != 'playing') selfs.audioBackground.play(); 
+                    }
+                    selfs.youtubePopPlayer.destroy();
+                    selfs.youtubePopPlayer = null;
+                }
+            }
+        });
+        
+        area.classList.remove('invisible');
+        if(this.audioBackground != null) { this.audioBackground.pause(); }
     }
 
     /**
@@ -6833,6 +6914,7 @@ class ShuttingStarsCore {
             <div class='shuttingstars_pop_content pop_login invisible'></div>
             <div class='shuttingstars_pop_content pop_mysong invisible'></div>
             <div class='shuttingstars_pop_content pop_community invisible'></div>
+            <div class='shuttingstars_pop_content pop_youtube invisible'></div>
             <div class='shuttingstars_pop_content pop_iframe invisible'></div>
 
             <div class='shuttingstars_pop_dim2 invisible'></div>
@@ -6926,7 +7008,17 @@ class ShuttingStarsCore {
             selfs.keyEventDisabled = false;
             selfs.pops.login.classList.add('invisible');
             selfs.pops.mysong.classList.add('invisible');
+            selfs.pops.iframes.classList.add('invisible');
+            selfs.pops.youtube.classList.add('invisible');
             selfs.pops.dim.classList.add('invisible');
+
+            if(selfs.audioBackground != null) {
+                if(selfs.state != 'playing') selfs.audioBackground.play();
+            }
+            if(selfs.youtubePopPlayer != null) {
+                selfs.youtubePopPlayer.destroy();
+                selfs.youtubePopPlayer = null;
+            }
 
             fAfter2();
             if(selfs.backend.authStateChangedEvents) selfs.backend.authStateChangedEvents.push(fAfter2);
@@ -6971,7 +7063,6 @@ class ShuttingStarsCore {
 
         // iframe 팝업
         popInside = popRoot.querySelector('.pop_iframe');
-        htmls = '';
         htmls = `
             <div class='div_others_menu menu'>
                 <button type='button' class='btn btn_exit red'>X</button>
@@ -6985,6 +7076,29 @@ class ShuttingStarsCore {
             selfs.keyEventDisabled = false;
         });
         this.pops.iframes = popInside;
+
+        // youtube 팝업
+        popInside = popRoot.querySelector('.pop_youtube');
+        htmls = `
+            <div class='div_others_menu menu'>
+                <button type='button' class='btn btn_exit red'>X</button>
+            </div>
+            <div class='div_youtubepop_root full'></div>
+        `;
+        popInside.innerHTML = htmls;
+        popInside.querySelector('.btn_exit').addEventListener('click', () => {
+            selfs.pops.youtube.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+            selfs.keyEventDisabled = false;
+            if(selfs.audioBackground != null) {
+                if(selfs.state != 'playing') selfs.audioBackground.play();
+            }
+            if(selfs.youtubePopPlayer != null) {
+                selfs.youtubePopPlayer.destroy();
+                selfs.youtubePopPlayer = null;
+            }
+        });
+        this.pops.youtube = popInside;
 
         // mysong 팝업
         popInside = popRoot.querySelector('.pop_mysong');
