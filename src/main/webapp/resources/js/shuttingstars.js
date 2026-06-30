@@ -174,6 +174,8 @@ class ShuttingStarsCore {
     timeMultiplier = 16.0;
     /** @type {number} timeMultiplier 값와 같이 움직임. 1.0 으로 둘 것. */
     elapsedTimeMultiplier = 1.0;
+    /** @type {number} 유튜브 사용 플레이 시 timeElapse 호출 주기에 추가 적용되는 보정값 */
+    songBitMoreGapYoutube = 0.1;
     /** @type {number} 스테이지의 세로를 이 숫자만큼 등분하여, 노트의 크기, 초기 생성 위치를 계산함. */
     stageRows = 72;
     /** @type {number} 노트 크기 상수, 이 값이 증가하면 노트 크기가 증가함. 노트 속도에도 비례하게 영향을 끼침. */
@@ -2227,6 +2229,7 @@ class ShuttingStarsCore {
 
             // 반복 처리 시작 (곡의 bpm 반영)
             this.songBitGap = this.calculateSongBitGap(this.song.bpm);
+            if(this.song.useYoutube) this.songBitGap += this.songBitMoreGapYoutube;
             if(this.usingWorker) {
                 this.workerSongPlaying = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
                 this.workerSongPlaying.postMessage({interval : selfs.songBitGap});
@@ -6162,7 +6165,7 @@ class ShuttingStarsCore {
                 if(this.elapsedTimeSynchronized) { // Youtube IFrame API 는 getCurrentTime() 반복호출 시 정확도가 떨어지는 듯 하여, 10초마다 동기화하고 그 시간동안은 bpm을 통해 간접 계산
                     this.elapsedTime++;
 
-                    if((this.elapsedTimeOld < 32 && this.elapsedTimeOld % 32 == 0) || ( this.elapsedTimeOld % 1024 == 0 ) )
+                    if((this.elapsedTimeOld < 32 && this.elapsedTimeOld % 32 == 0) || ( this.elapsedTimeOld % 256 == 0 ) )
                         this.elapsedTimeSynchronized = false; // 64회마다 다시 동기화하도록
                 } else {
                     this.elapsedTime = this.convertElapsedTime(this.youtubePlayer, this.song.bpm, this.songTiming);
@@ -10644,6 +10647,7 @@ class ShuttingStarsUtilityClass {
         area.style.textOverflow = 'ellipsis';
         area.style.overflow = 'hidden';
         area.style.borderRadius = '3px';
+        area.style.zIndex = '1100';
 
         const fResetBottom = () => {
             // 다른 토스트 메시지가 있으면 지금 이 토스트 메시지 위치 변경해야 함
