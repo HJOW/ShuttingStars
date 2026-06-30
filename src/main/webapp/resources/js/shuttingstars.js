@@ -239,6 +239,8 @@ class ShuttingStarsCore {
     elapsedTime = 0;
     /** @type {number} 플레이 중 진행 시간 (예전 방식, 순수 timeElapse 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함) */
     elapsedTimeOld = 0;
+    /** @type {boolean} 실제 Audio / Youtube 와 타이밍 동기화 했는지 여부 */
+    elapsedTimeSynchronized = false;
     /** @type {number} 동시 처리 (timeElapse) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
     timeElapseWorkStartTime = 0;
     /** @type {number} 동시 처리 (timeElapse) 종료 시간 (처리 중에는 0으로 유지되며, 처리가 종료될 때마다 잠깐 값이 세팅됨, 타임스탬프) */
@@ -2106,6 +2108,7 @@ class ShuttingStarsCore {
                 if(this.youtubePlayer != null) { this.youtubePlayer.destroy(); this.youtubePlayer = null; }
                 this.youtubeDiv.classList.remove('invisible');
                 this.setYouTubeIframe(this.song.youtubeVideoId);
+                this.elapsedTimeSynchronized = false;
                 this.songPrepared = true;
             } else {
                 this.youtubeDiv.classList.add('invisible');
@@ -2161,6 +2164,7 @@ class ShuttingStarsCore {
                                 this.closeAudioSources();
                                 this.audio = null;
                             }
+                            this.elapsedTimeSynchronized = false;
                             this.songPrepared = true;
                         } catch(exc) {
                             console.error(exc);
@@ -5870,9 +5874,10 @@ class ShuttingStarsCore {
             let notePlacer;
             let calculates, additionals;
 
-            if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
+            if(this.youtubePlayer == null && this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
                 // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
                 this.elapsedTime = this.convertElapsedTime(this.audio, this.song.bpm, this.songTiming);
+                this.elapsedTimeSynchronized = true;
             }
             if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
@@ -6133,10 +6138,17 @@ class ShuttingStarsCore {
             if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
             if(this.youtubePlayer != null) {
-                this.elapsedTime = this.convertElapsedTime(this.youtubePlayer, this.song.bpm, this.songTiming);
+                if(this.elapsedTimeSynchronized) { // Youtube IFrame API 는 getCurrentTime() 반복호출 시 정확도가 떨어지는 듯 하여, 10초마다 동기화하고 그 시간동안은 bpm을 통해 간접 계산
+                    this.elapsedTime++;
+                    if(this.elapsedTimeOld % 10 == 0) this.elapsedTimeSynchronized = false; // 10회마다 다시 동기화하도록
+                } else {
+                    this.elapsedTime = this.convertElapsedTime(this.youtubePlayer, this.song.bpm, this.songTiming);
+                    this.elapsedTimeSynchronized = true;
+                }
             } else if(this.audio != null && (! this.audio.paused) && (! this.audio.ended)) {
                 this.elapsedTime = this.convertElapsedTime(this.audio, this.song.bpm, this.songTiming);
                 // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
+                this.elapsedTimeSynchronized = true;
             } else {
                 this.elapsedTime++;
             }
