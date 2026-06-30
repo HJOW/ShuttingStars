@@ -1920,16 +1920,37 @@ class ShuttingStarsCore {
         this.songRandoms  = [];
         let idx;
 
+        // 우선순위곡 (일반 음원 사용곡) 정리
         for(idx=0; idx<this.songs.length; idx++) {
             const songOne = this.songs[idx];
+            // 기본 조건
             if(songOne.test && (! this.songDebugMode)) continue;
             if(songOne.onlyRandom) continue;
+
+            // 여기서부턴 후순위 조건
+            if(songOne.useYoutube) continue;
+
             this.songDisplays.push(songOne);
         }
 
+        //  후순위곡 (유튜브 사용곡) 정리
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            // 기본 조건
+            if(songOne.test && (! this.songDebugMode)) continue;
+            if(songOne.onlyRandom) continue;
+
+            // 이미 우선순위로 포함된 곡은 제외
+            if(this.songDisplays.indexOf(songOne) >= 0) continue;
+
+            this.songDisplays.push(songOne);
+        }
+
+        // 생존 - 랜덤 추첨 대상 곡 정리
         for(idx=0; idx<this.songs.length; idx++) {
             const songOne = this.songs[idx];
             if(songOne.test && (! this.songDebugMode)) continue;
+            if(songOne.useYoutube) continue; // 유튜브 곡 미지원 (노트 자동생성이 불가능함)
             this.songRandoms.push(songOne);
         }
     }
@@ -6140,7 +6161,9 @@ class ShuttingStarsCore {
             if(this.youtubePlayer != null) {
                 if(this.elapsedTimeSynchronized) { // Youtube IFrame API 는 getCurrentTime() 반복호출 시 정확도가 떨어지는 듯 하여, 10초마다 동기화하고 그 시간동안은 bpm을 통해 간접 계산
                     this.elapsedTime++;
-                    if(this.elapsedTimeOld % 10 == 0) this.elapsedTimeSynchronized = false; // 10회마다 다시 동기화하도록
+
+                    if((this.elapsedTimeOld < 32 && this.elapsedTimeOld % 32 == 0) || ( this.elapsedTimeOld % 1024 == 0 ) )
+                        this.elapsedTimeSynchronized = false; // 64회마다 다시 동기화하도록
                 } else {
                     this.elapsedTime = this.convertElapsedTime(this.youtubePlayer, this.song.bpm, this.songTiming);
                     this.elapsedTimeSynchronized = true;

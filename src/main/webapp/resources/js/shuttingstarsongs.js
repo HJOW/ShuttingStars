@@ -35,11 +35,11 @@ song.name = 'Night Ride';
 song.composer = 'Joshua Moses';
 song.noteWriter = 'HJOW';
 song.bgaUrl = '';
-song.musicUrl = '[CTX]/resources/songs/night-ride-by-joshua-moses.mp3';
+song.musicUrl = '';
 song.musicAlterUrl = '';
 song.thumbnailUrl = '';
-song.useYoutube = false;
-song.youtubeVideoId = ''; // tJdcn6cGdC0
+song.useYoutube = true;
+song.youtubeVideoId = 'tJdcn6cGdC0';
 song.description = `
 |Music: Night Ride by Joshua Moses
 |  https://joshuamosesmusic.bandcamp.com
