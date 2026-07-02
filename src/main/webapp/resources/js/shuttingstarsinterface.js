@@ -717,3 +717,4 @@ function __ssBackEnd() {
 
 const SSBackend = __ssBackEnd();
 export default SSBackend;
+export { SSBackend };

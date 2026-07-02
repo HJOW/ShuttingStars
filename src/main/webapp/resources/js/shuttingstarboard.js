@@ -19,7 +19,7 @@
     limitations under the License. 
 */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const BOARD_NAME = 'board';
     const PAGE_SIZE = 20;
     const MAX_CONTENT_LENGTH = 1000;
@@ -358,8 +358,8 @@ document.addEventListener('DOMContentLoaded', function() {
     applyTexts();
     closeEditor();
     try {
-        if(typeof(__ssBackEnd) == 'undefined') throw 'Backend is not available.';
-        state.backend = __ssBackEnd();
+        const backendModule = await import('./shuttingstarsinterface.js');
+        state.backend = backendModule.default;
         if(state.backend == null || ! state.backend.avail) throw 'Firebase backend is not available.';
         if(state.backend.firestore == null) throw 'Firestore is not available.';
         state.db = state.backend.firestore;

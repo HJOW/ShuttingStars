@@ -57,8 +57,6 @@
     <link rel="stylesheet" href="../resources/css/common.css"/>
     <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
     <script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
-    <script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
-    <script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
     </head>
     <body>
         <style>
@@ -258,7 +256,9 @@
                 </section>
             </main>
         </div>
-        <script type="text/javascript">
+        <script type="module">
+            import { ShuttingStarsUtility } from '../resources/js/shuttingstars.js';
+
             document.addEventListener('DOMContentLoaded', () => {
                 const ADMIN_EMAIL = 'hujinone11@gmail.com';
                 const COLLECTIONS = [
@@ -320,20 +320,20 @@
                 };
 
                 const isFirebaseUsable = () => {
-                    return typeof(ShuttingStarsUtility) != 'undefined'
-                        && ShuttingStarsUtility.detectFirebaseInitialized()
+                    return ShuttingStarsUtility.detectFirebaseInitialized()
                         && typeof(firebase) != 'undefined'
                         && typeof(firebase.auth) == 'function'
                         && typeof(firebase.firestore) == 'function';
                 };
 
-                const refreshBackend = () => {
+                const refreshBackend = async () => {
                     if(!isFirebaseUsable()) {
                         backend = null;
                         return false;
                     }
                     try {
-                        backend = __ssBackEnd();
+                        const backendModule = await import('../resources/js/shuttingstarsinterface.js');
+                        backend = backendModule.default;
                     } catch(e) {
                         console.error(e);
                         backend = null;
@@ -423,7 +423,7 @@
                     setBusy(true);
                     setStatus('');
                     try {
-                        if(!refreshBackend()) {
+                        if(!await refreshBackend()) {
                             renderLoggedOut('', false);
                             return;
                         }
@@ -579,7 +579,7 @@
                     setBusy(true);
                     setStatus('');
                     try {
-                        if(!refreshBackend()) {
+                        if(!await refreshBackend()) {
                             renderLoggedOut('Firebase를 사용할 수 없습니다. 잠시 후 다시 시도하거나 Firebase 호스팅 환경에서 접속해 주세요.', true);
                             return;
                         }

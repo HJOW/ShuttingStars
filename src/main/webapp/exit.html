@@ -176,13 +176,8 @@
     <link rel="stylesheet" href="./resources/css/googleloginbuttons.css"/>
     <link rel="stylesheet" href="./resources/fonts/fonts.css"/>
     <script type="text/javascript" src='resources/js/crypto-js.min.js'></script>
-    <script type="text/javascript" src='resources/js/detectbpm.js'></script>
-
-    <script type="text/javascript" src='resources/js/shuttingstarsinterface.js'></script>
-    <script type="text/javascript" src='resources/js/shuttingstars.js'></script>
-    <script type="text/javascript" src='resources/js/shuttingstarstringtable.js'></script>
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => { 
+    <script type="module">
+    document.addEventListener('DOMContentLoaded', async () => {
         // 화면 제어에 사용할 주요 DOM 요소들
         const root = document.querySelector('.exit_root');
         const panels = {
@@ -295,8 +290,8 @@
 
         // shuttingstarsinterface.js 에 준비된 Firebase 백엔드 구현체 초기화
         try {
-            if(typeof(__ssBackEnd) == 'undefined') throw 'Backend is not available.';
-            backend = __ssBackEnd();
+            const backendModule = await import('./resources/js/shuttingstarsinterface.js');
+            backend = backendModule.default;
             if(backend == null || ! backend.avail) throw 'Firebase backend is not available.';
 
             // Firebase 인증 상태가 바뀌면 현재 화면을 다시 계산
