@@ -25,11 +25,6 @@ limitations under the License.
  
  */
 
-// import SSStringTable            from './shuttingstarstringtable.js';
-// import SSBundleSongs            from './shuttingstarsongs.js';
-// import SSBackend                from './shuttingstarsinterface.js';
-// import ShuttingStars3DModule    from './shuttingstars3d.js';
-
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
