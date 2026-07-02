@@ -10,12 +10,15 @@ https://hjow.duckdns.org/shuttingstars/
 또는
 https://shuttingstars-3eddf.web.app
 
-## 로컬 서버 실행
+## 로컬 실행
 
 node.js 및 git 설치가 필요합니다.    
 git clone 받으신 후, 클론 받은 디렉토리에서    
-    npm start    
+```
+npm start
+```
 를 실행합니다.    
+이후 웹 브라우저에서 localhost:9690 으로 접속하세요.
 
 ## HTTP 서버 필요성
 
@@ -23,6 +26,21 @@ git clone 받으신 후, 클론 받은 디렉토리에서
 (선택사항으로, Firebase anthentication 로그인 및 클리어 기록 Firestore DB 업로드 기능이 구현되어 있습니다.)
 브라우저 회사들의 CORS 정책으로 인하여, 로컬에서 플레이하더라도 반드시 웹 서버를 통한 구동이 필요합니다.    
 웹 소스 경로 : src/main/webapp
+
+## HTML 에서 사용
+
+Webpack 을 이용하여 JavaScript 파일들을 하나의 파일로 합쳐 사용합니다.    
+shuttingstars.bundle.js 파일 하나를 일반 JavaScript 파일로 탑재하여 사용할 수 있습니다.    
+```
+<script type="text/javascript" src='resources/js/dist/shuttingstars.bundle.js'></script>
+```
+이후 HTML 에서 다음과 같이 게임을 활성화할 수 있습니다.
+```
+window.addEventListener('load', function(){
+    const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
+    ShuttingStars.init(root);
+});
+```
 
 ## 라이센스
 
