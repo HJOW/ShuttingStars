@@ -10718,7 +10718,8 @@ async function initShuttingStars(mainDiv, urlContext) {
     await ShuttingStars.init(mainDiv, urlContext);
 }
 
-window.ssmanager = ShuttingStars;
-window.ssutil    = ShuttingStarsUtility;
+window.ShuttingStars = ShuttingStars;
+window.ssmanager     = ShuttingStars;
+window.ssutil        = ShuttingStarsUtility;
 
 export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };
