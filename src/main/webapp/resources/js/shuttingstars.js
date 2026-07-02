@@ -25,6 +25,11 @@ limitations under the License.
  
  */
 
+// import SSStringTable            from './shuttingstarstringtable.js';
+// import SSBundleSongs            from './shuttingstarsongs.js';
+// import SSBackend                from './shuttingstarsinterface.js';
+// import ShuttingStars3DModule    from './shuttingstars3d.js';
+
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
@@ -621,11 +626,12 @@ class ShuttingStarsCore {
     constructor() {}
     
     /**
-     * 초기화 (게임이 출력될 div 영역 객체를 입력)
+     * 초기화 (게임이 출력될 div 영역 객체를 입력) Promise
      * @param {HTMLElement} rootDiv 게임 UI를 배치할 최상위 요소
      * @param {string} urlContext 리소스 URL의 기준 경로
+     * @returns {Promise<void>}
      */
-    init(rootDiv, urlContext) {
+    async init(rootDiv, urlContext) {
         const selfs = this;
         this.titleScreenWaiting = false;
         try {
@@ -639,27 +645,34 @@ class ShuttingStarsCore {
             for(let scl=0; scl<20; scl++) { let str = ' '; if(scl % 2 == 0) str = str + ' '; if(scl % 3 == 0) str = str + ' '; if(scl % 5 == 0) str = str + ' '; ShuttingStarsUtility.log('\n' + str + '\n'); }
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
 
-            this.backend = (typeof(__ssBackEnd) == 'undefined' || __ssBackEnd == null) ? null : __ssBackEnd();
-            if(this.backend != null) {
-                // 로그인 상태 변경 이벤트 부여
-                if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
-                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
-                });
-                // 원격 설정 가져오기
-                this.backend.getRemoteConfigValues().then((respJson) => {
+            this.backend = null;
+            try {
+                const moduleContent = await import('./shuttingstarsinterface.js');
+                this.backend = (typeof(moduleContent.SSBackend) == 'undefined' || moduleContent.SSBackend == null) ? null : moduleContent.SSBackend;
+
+                if(this.backend != null) {
+                    // 로그인 상태 변경 이벤트 부여
+                    if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
+                        selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
+                    });
+                    // 원격 설정 가져오기
+                    const respJson = await this.backend.getRemoteConfigValues();
                     if(respJson.success) {
                         const valuesRecord = respJson.value;
                         
-                        selfs.frameTime                = valuesRecord.frameTime.asNumber();
-                        selfs.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
-                        selfs.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
-                        selfs.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
-                        selfs.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
-                        selfs.noticeEn                 = valuesRecord.noticeEn.asString();
-                        selfs.noticeKo                 = valuesRecord.noticeKo.asString();
-                        selfs.noticeWhen               = valuesRecord.noticeWhen.asNumber();
+                        this.frameTime                = valuesRecord.frameTime.asNumber();
+                        this.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
+                        this.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
+                        this.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
+                        this.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
+                        this.noticeEn                 = valuesRecord.noticeEn.asString();
+                        this.noticeKo                 = valuesRecord.noticeKo.asString();
+                        this.noticeWhen               = valuesRecord.noticeWhen.asNumber();
                     }
-                });
+                }
+            } catch(e) {
+                ssConsoleLogs(this.trans('Cloud Manager import failed. Cloud features will be disabled.'));
+                console.error(e);
             }
             
         } catch(e) {
@@ -745,8 +758,8 @@ class ShuttingStarsCore {
                 .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.8); color: rgba(244, 66, 66, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
                 .shuttingstars_root .shuttingstars_canvas { position: absolute; left: 0px; top: 0px; }
                 .shuttingstars_root .shuttingstars_youtubes { background: transparent; }
-                .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1001; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
-                .shuttingstars_root .shuttingstars_pop_dim2 { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 1004; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
+                .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 11; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
+                .shuttingstars_root .shuttingstars_pop_dim2 { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 14; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
                 .shuttingstars_root .shuttingstars_pop_content { position: fixed; left: 0px; right: 0px; top : 50px; margin-left: auto; margin-right: auto; padding: 2rem 2rem 2rem 2rem; width: 500px; height: 300px; background-color: rgba(80, 80, 80, 0.9); color: rgba(180, 180, 180, 0.9); z-index: 1002; }
                 .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td { padding: 1rem 1rem 1rem 1rem; }
                 .shuttingstars_root .shuttingstars_pop_content th, .shuttingstars_root .shuttingstars_pop_content td, .shuttingstars_root .shuttingstars_pop_content input, .shuttingstars_root .shuttingstars_pop_content button {
@@ -847,6 +860,15 @@ class ShuttingStarsCore {
 
             // 언어 설정
             this.logInit('detecting system language...');
+
+            try {
+                const moduleStrContent = await import('./shuttingstarstringtable.js');
+                this.stringTable = moduleStrContent.SSStringTable;
+            } catch(ex3d) {
+                ssConsoleLogs(this.trans('StringTable import failed. Language features will be disabled.'));
+                console.error(ex3d);
+            }
+
             if(this.languageDefault) {
                 try {
                     // 지원 언어 목록
@@ -904,6 +926,16 @@ class ShuttingStarsCore {
 
             this.logInit('preparing canvas resolution...');
 
+            // 3D 매니저 설정
+            try {
+                const module3DContent = await import('./shuttingstars3d.js');
+                this.set3DManager(module3DContent.SS3DManager);
+            } catch(ex3d) {
+                ssConsoleLogs(this.trans('3D manager import failed. 3D features will be disabled.'));
+                console.error(ex3d);
+            }
+            
+
             // 그래픽 해상도 설정
             this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
             this.setResolution(this.ressets.w, this.ressets.h);
@@ -931,8 +963,20 @@ class ShuttingStarsCore {
             if(rootHref.indexOf('https:') != 0 && this.usingWorkerConfig) { this.usingWorkerConfig = false; }
 
             this.logInit('load songs...');
+
+            // 공식 곡 불러오기
+            try {
+                const moduleBSContent = await import('./shuttingstarsongs.js');
+                for(let sdx=0; sdx<moduleBSContent.SSBundleSongs.length; sdx++) {
+                    const songJsonOne = moduleBSContent.SSBundleSongs[sdx];
+                    this.addSong(songJsonOne, true);
+                }
+            } catch(ex3d) {
+                ssConsoleLogs(this.trans('3D manager import failed. 3D features will be disabled.'));
+                console.error(ex3d);
+            }
             
-            // 곡 불러오기
+            // 기타 곡 불러오기
             this.loadSongs();
 
             this.logInit('setting workers...');
@@ -1966,13 +2010,14 @@ class ShuttingStarsCore {
     loadSongs() {
         let idx;
 
-        // 공식곡은 지우면 안되니 백업
+        // 공식 곡 따로 관리
         let officialSongs = [];
 
+        // 이미 불러온 곡들 중에서도 공식 곡 따로 관리
         for(idx=0; idx<this.songs.length; idx++) {
             const songOne = this.songs[idx];
             if(this.officialSongSerials.indexOf(songOne.serial) >= 0) {
-                officialSongs.push(songOne);
+                if(officialSongs.indexOf(songOne) < 0) officialSongs.push(songOne);
             }
         }
 
@@ -7358,7 +7403,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 HTML 및 기타 css 적용
         this.configDiv.innerHTML = html;
-        this.configDiv.style.zIndex = this.mainZindex + 6;
+        this.configDiv.style.zIndex = this.mainZindex + 16;
         this.configDiv.style.position = 'fixed';
         this.configDiv.style.top    = '10px';
         this.configDiv.style.left   = '10px';
@@ -7377,7 +7422,7 @@ class ShuttingStarsCore {
 
         // 레이어 영역 (안쪽)
         const layer = this.configDiv.querySelector('.shuttingstar_configlayer');
-        layer.style.zIndex = this.mainZindex + 5;
+        layer.style.zIndex = this.mainZindex + 15;
         layer.style.width  = '90%';
         layer.style.minHeight = Math.floor((this.fOuterHeight() - this.gap.h) / 2.0) + 'px';
 
@@ -8154,7 +8199,7 @@ class ShuttingStarsCore {
                     iframes.style.top  = canvasBounding.top + 'px';
                     iframes.style.width  = canvasBounding.width + 'px';
                     iframes.style.height = canvasBounding.height + 'px';
-                    iframes.style.zIndex = selfs.mainZindex + 1;
+                    iframes.style.zIndex = selfs.mainZindex + 11;
                 }, onStateChange : (e) => {
                     if(e.data == YT.PlayerState.ENDED) {
                         selfs.youtubePlayerEnded = true;
@@ -11234,9 +11279,10 @@ class ShuttingStarsManager {
      * 지정한 영역에 ShuttingStars 게임 적용
      * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
      * @param {string} urlContext 리소스 URL의 기준 경로
+     * @returns {Promise<*>}
      */
-    init(mainDiv, urlContext) {
-        try { return this.#originalInstances.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
+    async init(mainDiv, urlContext) {
+        try { return await this.#originalInstances.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
     }
 }
 
@@ -11268,14 +11314,22 @@ function setShuttingStar3D(obj) {
     return ShuttingStars.set3DManager(obj);
 }
 
+/**  window 객체 내에 ShuttingStars Core 객체 삽입 (비권장) */
+function prepareDebugSSCoreInstances() {
+    window._sscoreinstances = _shuttingstarcore;
+}
+
 /**
- * 지정한 영역에 ShuttingStars 게임 적용
+ * 지정한 영역에 ShuttingStars 게임 적용 (Promise)
  * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
  * @param {string} urlContext 리소스 URL의 기준 경로
+ * @returns {Promise<*>}
  */
-function initShuttingStars(mainDiv, urlContext) {
-    ShuttingStars.init(mainDiv, urlContext);
+async function initShuttingStars(mainDiv, urlContext) {
+    await ShuttingStars.init(mainDiv, urlContext);
 }
 
 window.ssmanager = ShuttingStars;
 window.ssutil    = ShuttingStarsUtility;
+
+export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };

@@ -19,12 +19,7 @@ limitations under the License.
  
  */
 
-function ssSetStringTable(strTable) {
-    const obj = (typeof(ShuttingStars) == 'undefined' ? window.ssmanager : ShuttingStars);
-    obj.setStringTable(strTable);
-}
-
-ssSetStringTable({
+const SSStringTable = {
     'ko' : {
         'PLAY' : '플레이',
         'SETTING' : '설정',
@@ -111,4 +106,6 @@ ssSetStringTable({
         "NOT USE" : "사용 안 함",
         "Custom settings here (JSON format)" : '커스텀 설정 (JSON 형식으로 입력)'
     }
-});
+};
+export { SSStringTable };
+export default SSStringTable;

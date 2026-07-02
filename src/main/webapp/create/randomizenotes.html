@@ -65,11 +65,9 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
 <script type="text/javascript" src='../resources/js/detectbpm.js'></script>
 
-<script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
-<script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
-<script type="text/javascript" src='../resources/js/shuttingstarstringtable.js'></script>
-<script type="text/javascript" src='../resources/js/shuttingstarsongs.js'></script>
-<script type="text/javascript">
+<script type="module" src='../resources/js/shuttingstars.js'></script>
+<script type="module">
+import { ShuttingStarsUtility } from '../resources/js/shuttingstars.js';
 $(function(){
     const root = $('.shuttingstars_randomizenotes_root');
     const taBef = root.find('.ta_before');

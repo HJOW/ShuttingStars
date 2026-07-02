@@ -96,14 +96,11 @@
     <script type="text/javascript" src='resources/js/crypto-js.min.js'></script>
     <script type="text/javascript" src='resources/js/detectbpm.js'></script>
 
-    <script type="text/javascript" src='resources/js/shuttingstarsinterface.js'></script>
-    <script type="text/javascript" src='resources/js/shuttingstars.js'></script>
-    <script type="text/javascript" src='resources/js/shuttingstarstringtable.js'></script>
-    <script type="text/javascript" src='resources/js/shuttingstarsongs.js'></script>
-    <script type="module" src='resources/js/shuttingstars3d.js'></script>
+    <script type="module" src='resources/js/shuttingstars.js'></script>
   </head>
   <body>
-    <script>
+    <script type="module">
+        import { ShuttingStars } from './resources/js/shuttingstars.js';
         window.addEventListener('load', function() {
             if(typeof(ShuttingStars) == 'undefined') { window.ssmanager.init(); return; } // shuttingstars.js 스크립트가 블록으로 둘러쌓여 있을 때를 대비
             ShuttingStars.init(); 

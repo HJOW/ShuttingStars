@@ -31,6 +31,7 @@ import { EffectComposer  } from './threejs/postprocessing/EffectComposer.js';
 import { RenderPass      } from './threejs/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './threejs/postprocessing/UnrealBloomPass.js';
 import { OutputPass      } from './threejs/postprocessing/OutputPass.js';
+import { ShuttingStars3DManager, ShuttingStars3DObject } from './shuttingstars.js';
 
 class ShuttingStars3DModule extends ShuttingStars3DManager {
     scene = null;
@@ -778,4 +779,5 @@ class SampleObject extends SphereObject {
     }
 }
 
-setShuttingStar3D(new ShuttingStars3DModule());
+const SS3DManager = new ShuttingStars3DModule();
+export default SS3DManager;

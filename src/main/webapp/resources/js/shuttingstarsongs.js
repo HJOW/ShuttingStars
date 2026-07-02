@@ -22,12 +22,7 @@ limitations under the License.
  
  */
 
-function ssAddSong(song) {
-    const obj = (typeof(ShuttingStars) == 'undefined' ? window.ssmanager : ShuttingStars);
-    obj.addSong(song);
-}
-
-
+let songs = [];
 let song;
 
 song = {};
@@ -487,7 +482,7 @@ song.difficulties = [
     }
 ]
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '출발은 떨렸지만';
@@ -588,7 +583,7 @@ song.difficulties.push({
     ]
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '복귀해도 될까요';
@@ -1383,7 +1378,7 @@ song.difficulties.push({
 {"locationIndex":0,"time":3994.048}
 ]
 });
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '큰집 18층으로 떠나는 여행';
@@ -2804,7 +2799,7 @@ song.difficulties.push({
 ]
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = 'Racing the horizon line';
@@ -3930,7 +3925,7 @@ song.difficulties.push({
 ]
 });
 
-ssAddSong(song);
+songs.push(song);
 
 /** 이후는 곡 선정은 안되고 랜덤으로만 걸리는 곡들 **/
 
@@ -3967,7 +3962,7 @@ song.difficulties.push({
     patterns : []
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '충전할 땐 클래식을';
@@ -4002,7 +3997,7 @@ song.difficulties.push({
     patterns : []
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '미래도시라솔파';
@@ -4037,7 +4032,7 @@ song.difficulties.push({
     patterns : []
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '이 초대장은 2010년 최초로 시작되어...';
@@ -4072,7 +4067,7 @@ song.difficulties.push({
     patterns : []
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = '거의 다 왔어요';
@@ -4107,7 +4102,7 @@ song.difficulties.push({
     patterns : []
 });
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = 'Nastel Bom\'s 507938';
@@ -4146,7 +4141,7 @@ song.difficulties = [
     }
 ]
 
-ssAddSong(song);
+songs.push(song);
 
 
 song = {};
@@ -4183,7 +4178,7 @@ song.difficulties = [
     }
 ]
 
-ssAddSong(song);
+songs.push(song);
 
 song = {};
 song.name = 'The Spring of the Universe';
@@ -4219,7 +4214,7 @@ song.difficulties = [
     }
 ]
 
-ssAddSong(song);
+songs.push(song);
 
 
 song = {};
@@ -4256,7 +4251,7 @@ song.difficulties = [
     }
 ]
 
-ssAddSong(song);
+songs.push(song);
 
 
 song = {};
@@ -4289,7 +4284,10 @@ song.difficulties.push({
     patterns : []
 });
 
-ssAddSong(song);
-
+songs.push(song);
 
 song = {};
+
+const SSBundleSongs = songs;
+export { SSBundleSongs };
+export default SSBundleSongs;

@@ -68,12 +68,13 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
 <script type="text/javascript" src='../resources/js/detectbpm.js'></script>
 
-<script type="text/javascript" src='../resources/js/shuttingstarsinterface.js'></script>
-<script type="text/javascript" src='../resources/js/shuttingstars.js'></script>
-<script type="text/javascript" src='../resources/js/shuttingstarstringtable.js'></script>
-<script type="text/javascript" src='../resources/js/shuttingstarsongs.js'></script>
-<script type="text/javascript">
+<script type="module" src='../resources/js/shuttingstars.js'></script>
+<script type="module">
+import { prepareDebugSSCoreInstances, ShuttingStarsUtility  } from '../resources/js/shuttingstars.js';
+import { SSStringTable } from '../resources/js/shuttingstarstringtable.js';
+import { SSBundleSongs } from '../resources/js/shuttingstarsongs.js';
 $(function() {
+    prepareDebugSSCoreInstances();
     const root = $('.shuttingstars_timeline_root');
     
     const selSongs     = root.find('.sel_songs');
@@ -111,8 +112,8 @@ $(function() {
     let processingTime = 0;
 
     selSongs.empty();
-    for(idx=0; idx<_shuttingstarcore.songs.length; idx++) {
-        const songOne = _shuttingstarcore.songs[idx];
+    for(idx=0; idx<SSBundleSongs.length; idx++) {
+        const songOne = SSBundleSongs[idx];
         const newOpt = new Option(songOne.name, songOne.serial);
         selSongs.append(newOpt);
     }
@@ -122,8 +123,8 @@ $(function() {
         sels = sels[0];
         
         let song = null;
-        for(idx=0; idx<_shuttingstarcore.songs.length; idx++) {
-            const songOne = _shuttingstarcore.songs[idx];
+        for(idx=0; idx<SSBundleSongs.length; idx++) {
+            const songOne = SSBundleSongs[idx];
             if(songOne.serial == sels) {
                 song = songOne;
                 break;
@@ -160,8 +161,8 @@ $(function() {
             audioAnalyser = audioCtx.createAnalyser();
             audioSource = audioCtx.createMediaElementSource(audio);
 
-            _shuttingstarcore.urlCtx = '../';
-            let url = _shuttingstarcore.convertURL(inpAudioUrl.val());
+            _sscoreinstances.urlCtx = '../';
+            let url = _sscoreinstances.convertURL(inpAudioUrl.val());
             audioObj.attr('src', url);
 
             audioSource.connect(audioAnalyser);
@@ -178,7 +179,7 @@ $(function() {
             lastAppend = 0;
             appendCounts = 0;
 
-            const timeGaps = _shuttingstarcore.calculateSongBitGap(bpmVal);
+            const timeGaps = _sscoreinstances.calculateSongBitGap(bpmVal);
             timer = ShuttingStarsUtility.repeat(function() {
                 audioAnalyser.getByteFrequencyData(audioBuffer);
 
@@ -189,7 +190,7 @@ $(function() {
                 }
 
                 time = audio.currentTime;
-                processingTime =  (audio.currentTime * (bpmVal / 60) * _shuttingstarcore.timeMultiplier) - _shuttingstarcore.songTiming;
+                processingTime =  (audio.currentTime * (bpmVal / 60) * _sscoreinstances.timeMultiplier) - _sscoreinstances.songTiming;
                 increaseCount = 0;
                 increaseSum = 0;
                 totalSums = 0;

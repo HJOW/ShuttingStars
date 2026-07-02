@@ -27,6 +27,8 @@ limitations under the License.
  
  */
 
+import { ShuttingStarsUtility } from './shuttingstars.js';
+
 /** 중간 인터페이스 구현 */
 class ShuttingStarsInterface {
     avail = false; // false 인 경우 사용 불가
@@ -712,3 +714,6 @@ function __ssBackEnd() {
     else _ssbackend = null;
     return _ssbackend;
 }
+
+const SSBackend = __ssBackEnd();
+export default SSBackend;
