@@ -1,8 +1,13 @@
 /**
  * Shutting Stars
+ *     게임 동작 핵심 파일
  * 
- *     핵심 JavaScript Library
- *     주의 (usingWorker 사용 시 shuttingstarworker.js 와 같이 사용해야 함)
+ * 의존성
+ *     (필수) shuttingstarworker.js      - 반드시 같은 경로에 위치해야 함
+ *     (선택) shuttingstarsongs.js       - 공식 번들곡 포함 시 필요, 같은 경로에 위치해야 함.
+ *     (선택) shuttingstarstringtable.js - 영어 외 다른 언어 지원 시 필요, 같은 경로에 위치해야 함.
+ *     (선택) shuttingstarsinterface.js  - 클라우드 기능 사용 시 필요, 같은 경로에 위치해야 함.
+ * 
  */
 
 /*
