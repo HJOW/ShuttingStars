@@ -14,7 +14,9 @@
     },
     "main": "index.js",
     "scripts": {
-        "start": "node nodeserver/nodeserver.js"
+        "start": "node nodeserver/nodeserver.js",
+        "start2": "webpack && node nodeserver/nodeserver.js",
+        "bundle" : "webpack"
     },
     "devDependencies": {
         "firebase-tools": "^15.22.4",
