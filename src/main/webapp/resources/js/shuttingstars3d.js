@@ -31,7 +31,54 @@ import { EffectComposer  } from './threejs/postprocessing/EffectComposer.js';
 import { RenderPass      } from './threejs/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './threejs/postprocessing/UnrealBloomPass.js';
 import { OutputPass      } from './threejs/postprocessing/OutputPass.js';
-import { ShuttingStars3DManager, ShuttingStars3DObject } from './shuttingstars.js';
+import { ShuttingStarsUtility, SSUtil, BrowserDetector  } from './shuttingstarsutils.js'
+
+class ShuttingStars3DManager {
+    /**
+     * 초기화 작업 (scene, renderer 를 여기서 생성)
+     * @param {HTMLCanvasElement} canvas3d 3D 렌더링 대상 캔버스
+     * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
+     */
+    init(canvas3d, coreInst) {}
+    /**
+     * 동시처리 작업이 필요한 경우 여기서 진행
+     * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
+     */
+    simultaneousJob(coreInst) {}
+    /**
+     * 렌더링 시마다 호출해야 함
+     * @param {HTMLCanvasElement} canvas3d 3D 렌더링 대상 캔버스
+     * @param {Array<ShuttingStars3DObject>} objects objects 값
+     */
+    render(canvas3d, objects) {} // object3ds
+    /**
+     * 창 크기 변경 시 호출해야 함
+     * @param {HTMLCanvasElement} canvas3d 3D 렌더링 대상 캔버스
+     * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
+     */
+    onWindowResize(canvas3d, coreInst) {}
+}
+class ShuttingStars3DObject {
+    /** @type {number} 인스턴스를 식별하는 고유 일련번호 */
+    uniqueSerial = -1;
+    /** @type {boolean} 숨김 여부 */
+    hidden = false;
+    /**
+     * 인스턴스 초기화
+     * @param {ShuttingStars3DManager} manager 3D 관리자 인스턴스
+     */
+    constructor(manager) {}
+    /**
+     * 3D 객체가 관리하는 메시 목록을 반환
+     * @param {ShuttingStars3DManager} manager 3D 관리자 인스턴스
+     * @returns {Array<*>} 처리 결과
+     */
+    getMeshes(manager) { return []; }
+    /**
+     * 3D 객체가 점유한 리소스를 해제
+     */
+    dispose() {}
+}
 
 class ShuttingStars3DModule extends ShuttingStars3DManager {
     scene = null;
@@ -781,3 +828,4 @@ class SampleObject extends SphereObject {
 
 const SS3DManager = new ShuttingStars3DModule();
 export default SS3DManager;
+export { SS3DManager, ShuttingStars3DManager, ShuttingStars3DObject, Locational3DObject, SphereObject, LightPoint, AudioVisualizingObject, SampleObject };

@@ -27,7 +27,7 @@ limitations under the License.
  
  */
 
-import { ShuttingStarsUtility } from './shuttingstars.js';
+import { ShuttingStarsUtility, SSUtil, BrowserDetector  } from './shuttingstarsutils.js'
 
 /** 중간 인터페이스 구현 */
 class ShuttingStarsInterface {
