@@ -62,14 +62,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 https://hjow.duckdns.org/shuttingstars/privacy.html
 
-## 써드파티 곡
-
-+ Night Ride
-
-Music: Night Ride by Joshua Moses https://joshuamosesmusic.bandcamp.com    
-License: Creative Commons — Attribution 4.0 International — CC BY 4.0    
-Free Download / Stream: https://links.al/NnW    
-Music promoted by Audio Library: https://links.al/youtube    
+## 메인 써드파티 곡
 
 + 배달의민족 무료음원 - 로봇판타지아
 

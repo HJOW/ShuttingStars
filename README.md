@@ -11,12 +11,36 @@ https://hjow.duckdns.org/shuttingstars/
 OR
 https://shuttingstars-3eddf.web.app
 
+## Simple Run
+
+Install node.js    
+Run following command on project directory.    
+```
+npm start
+```
+Then, open "localhost:9690" with your web browser.
+
 ## HTTP Server needs
 
 As of now, it is configured to operate using only a pure web server and is compatible without dynamic server pages.    
 (Some feature using firebase authentication and firestore to upload clear records. - Not necessary)
 Due to browser companies' CORS policies, it must be run through a web server even when playing locally. 
 WEB Sources : src/main/webapp
+
+## Use in HTML
+
+Webpack is used to bundle the JavaScript files into a single file.    
+You can use it by loading `shuttingstars.bundle.js` as a normal JavaScript file.    
+```
+<script type="text/javascript" src='resources/js/dist/shuttingstars.bundle.js'></script>
+```
+After that, you can activate the game from HTML as follows.
+```
+window.addEventListener('load', function(){
+    const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
+    ShuttingStars.init(root);
+});
+```
 
 ## LICENSE
 
@@ -38,14 +62,7 @@ limitations under the License.
 
 https://hjow.duckdns.org/shuttingstars/privacy.html
 
-## Third Party Songs
-
-+ Night Ride
-
-Music: Night Ride by Joshua Moses https://joshuamosesmusic.bandcamp.com    
-License: Creative Commons — Attribution 4.0 International — CC BY 4.0    
-Free Download / Stream: https://links.al/NnW    
-Music promoted by Audio Library: https://links.al/youtube    
+## Major Third Party Songs
 
 + Woowahan free songs - robot fantasia
 

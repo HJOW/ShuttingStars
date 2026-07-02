@@ -4455,7 +4455,7 @@ class ShuttingStarsCore {
         if(this.escKey == 'ESCAPE') label += 'ESC';
         else                        label += this.escKey;
         
-        if(youtubeSongChoosed) label += '    ' + this.trans('YouTube : ') + this.keyList[0];
+        if(youtubeSongChoosed) label += '    ' + this.trans('Open YouTube : ') + this.keyList[0];
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
