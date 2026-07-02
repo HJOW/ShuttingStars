@@ -10720,6 +10720,7 @@ async function initShuttingStars(mainDiv, urlContext) {
 
 window.ShuttingStars = ShuttingStars;
 window.ssmanager     = ShuttingStars;
+window.SSUtil        = ShuttingStarsUtility;
 window.ssutil        = ShuttingStarsUtility;
 
 export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };

@@ -16,7 +16,9 @@
     "scripts": {
         "start": "webpack && node nodeserver/nodeserver.js",
         "bundle": "webpack",
-        "webpack": "webpack"
+        "webpack": "webpack",
+        "upload:only" : "firebase deploy",
+        "upload" : "webpack && npm run upload:only"
     },
     "devDependencies": {
         "clean-webpack-plugin": "^4.0.0",
