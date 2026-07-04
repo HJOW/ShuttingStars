@@ -8,6 +8,28 @@
 <link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
 <link rel="stylesheet" href="../resources/css/pure-min.css"/>
 
+<!--
+곡 생성 화면
+
+
+LICENSE
+
+Copyright 2026 HJOW (hujinone22@naver.com)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. 
+-->
+
+
 <!-- Google tag (gtag.js) -->
 <script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
 <script type="text/javascript">
@@ -99,6 +121,7 @@ $(function() {
 
         $('.shuttingstars_root .shuttingstars_canvas').css('position', 'relative');
         
+        const dLooad = $('.shuttingstars_create_loadings');
         const ta = $('.ta_song_json');
         const selSongs  = $('.sel_songs');
         const selDiff   = $('.sel_diff');
@@ -111,6 +134,7 @@ $(function() {
         const btnPaus   = $('.btn_pause');
         const btnRsum   = $('.btn_resume');
         const btnDiffRe = $('.btn_diff_ref');
+        const btnAutoNt = $('.btn_autonote');
 
         let songSelected = null;
 
@@ -119,12 +143,15 @@ $(function() {
             selDiff.empty();
             btnTest.prop('disabled', true);
             btnStop.prop('disabled', true);
+            btnAutoNt.prop('disabled', true);
             selSongs.append("<option value=''>- NEW -</option>");
             for(idx=0; idx<broker.songs.length; idx++) {
                 const songOne = broker.songs[idx];
                 if(songOne.serial == '') continue;
                 selSongs.append("<option value='" + SSUtil.replaceString(songOne.serial, "'", "\"") + "'>" + SSUtil.replaceString(SSUtil.replaceString(songOne.name, '<', '&lt;'), '>', '&gt;') + "</option>");
             }
+
+            dLooad.hide();
         }
 
         const fLoadDiffList = function(loadJson) {
@@ -152,8 +179,8 @@ $(function() {
                 let diffOne = songSelected.difficulties[idx];
                 selDiff.append("<option value='" + idx + "'>" + SSUtil.replaceString(SSUtil.replaceString( diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')' , '<', '&lt;'), '>', '&gt;') + "</option>");
             }
-            if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); }
-            else { selDiff.prop('disabled', true); btnTest.prop('disabled', true); }
+            if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); btnAutoNt.prop('disabled', false); }
+            else { selDiff.prop('disabled', true); btnTest.prop('disabled', true); btnAutoNt.prop('disabled', true); }
         }
 
         const fLoadSong = function() {
@@ -163,6 +190,7 @@ $(function() {
             btnPaus.prop('disabled', true);
             btnRsum.prop('disabled', true);
             btnDiffRe.prop('disabled', true);
+            btnAutoNt.prop('disabled', true);
             inpElps.prop('disabled', true);
 
             let song = null;
@@ -255,6 +283,7 @@ $(function() {
             btnPaus.prop('disabled', false);
             btnRsum.prop('disabled', true);
             btnDiffRe.prop('disabled', true);
+            btnAutoNt.prop('disabled', true);
             inpElps.prop('disabled', true);
 
             let text = ta.val();
@@ -300,6 +329,7 @@ $(function() {
             btnSave.prop('disabled', false);
             btnPaus.prop('disabled', true);
             btnRsum.prop('disabled', true);
+            btnAutoNt.prop('disabled', false);
             inpElps.prop('disabled', true);
             broker.stopSong();
             $('.td_audio_controls').empty();
@@ -341,6 +371,40 @@ $(function() {
             }
         }
 
+        const fAutoNote = async function() {
+            const urls  = coreInst.convertURL(songSelected.musicUrl);
+            const diff = selDiff.val();
+
+            broker.setSong(songSelected);
+            broker.setDifficultyChoosingList(songSelected.getDifficultyList());
+            broker.setDifficultyIndex(diff);
+
+            dLooad.show();
+
+            let bpm = 100;
+            try { bpm = await detectBpm(urls); } catch(e) { console.error(e); }
+
+            const notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel);
+            for(let ndx=0; ndx<notes.length; ndx++) {
+                const noteOne = notes[ndx];
+                console.log(noteOne);
+            }
+            
+            let diffObj = {};
+            for(let ddx=0; ddx<songSelected.difficulties.length; ddx++) {
+                const diffOne = songSelected.difficulties[ddx];
+                if(diffOne.index == diff) {
+                    diffObj = diffOne;
+                    break;
+                }
+            }
+            diffOne.patterns = notes;
+            diffOne.autoCreate = false;
+
+            ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
+            dLooad.hide();
+        };
+
         btnLoad.on('click', fLoadSong);
         btnSave.on('click', function() { fSaveSong(false); });
         btnSaveAs.on('click', function() { fSaveSong(true); });
@@ -349,6 +413,7 @@ $(function() {
         btnPaus.on('click', fPause);
         btnRsum.on('click', fResume);
         btnDiffRe.on('click', function() { fLoadDiffList(true); });
+        btnAutoNt.on('click', fAutoNote);
 
         const fResize = function() {
             $('.heightresizetarget').height((window.outerHeight - 250) + 'px');
@@ -389,8 +454,9 @@ $(function() {
                         <button type="button" class="btn btn_save_as" disabled="disabled">SAVE AS...</button>
                     </td>
                     <td>
-                        <select class="sel sel_diff" disabled="disabled"></select>
                         <button type="button" class="btn btn_diff_ref" disabled="disabled">REFRESH</button>
+                        <select class="sel sel_diff" disabled="disabled"></select>
+                        <button type="button" class="btn btn_autonote" disabled="disabled">AUTONOTE</button>
                         <button type="button" class="btn btn_test" disabled="disabled">TEST</button>
                         <button type="button" class="btn btn_stop" disabled="disabled">STOP</button>
                     </td>
@@ -411,6 +477,9 @@ $(function() {
                 </tr>
             </tbody>
         </table>
+    </div>
+    <div class="shuttingstars_create_loadings" style="z-index: 2000; position: fixed; width: 100%; height: 9999px; overflow: hidden; top: 0px; left: 0px; background-color: rgba(100, 100, 100, 0.5); text-align: center;">
+        <progress style="margin-top: 400px;"></progress>
     </div>
 </body>
 </html>
