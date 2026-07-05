@@ -8218,9 +8218,10 @@ class ShuttingStarsCore {
      * @param {string} audioUrl 
      * @param {number} bpm
      * @param {number} difficultyLevel
+     * @param {Function} eventProgress 진행률을 매개변수로 받을 수 있는 콜백 함수 (선택사항, 매개변수 1에 진행률 % 로 입력됨)
      * @return {Promise<Array<SSNote>>}
      */
-    async createAutoNotes(audioUrl, bpm, difficultyLevel) {
+    async createAutoNotes(audioUrl, bpm, difficultyLevel, eventProgress) {
         let exceptionOccured = null;
         let idx, jdx;
 
@@ -8274,7 +8275,8 @@ class ShuttingStarsCore {
 
             //     분석 진행
             let timeCycle = 0;
-            for(let time=0; time<audioDecBuff.duration; time += intervals) {
+            let maxTime = audioDecBuff.duration;
+            for(let time=0; time<maxTime; time += intervals) {
                 const center = Math.floor(time * sampleRate);
                 const starts = Math.max(0, center - Math.floor(windowSize / 2));
 
@@ -8526,6 +8528,10 @@ class ShuttingStarsCore {
 
                 lastEnergy = energy;
                 timeCycle++;
+
+                if(typeof(eventProgress) == 'function' && timeCycle % 8 == 0) {
+                    eventProgress( Math.floor((time * 100 / maxTime)) );
+                }
             }
             
             //     불필요해진 객체들 정리

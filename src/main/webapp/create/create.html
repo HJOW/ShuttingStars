@@ -384,12 +384,6 @@ $(function() {
             let bpm = 100;
             try { bpm = await detectBpm(urls); } catch(e) { console.error(e); }
 
-            const notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel);
-            for(let ndx=0; ndx<notes.length; ndx++) {
-                const noteOne = notes[ndx];
-                console.log(noteOne);
-            }
-            
             let diffObj = {};
             for(let ddx=0; ddx<songSelected.difficulties.length; ddx++) {
                 const diffOne = songSelected.difficulties[ddx];
@@ -398,10 +392,20 @@ $(function() {
                     break;
                 }
             }
-            diffOne.patterns = notes;
-            diffOne.autoCreate = false;
 
-            ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
+            let notes = null;
+            try {
+                notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel);
+
+                diffOne.patterns = notes;
+                diffOne.autoCreate = false;
+
+                ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
+            } catch(e) {
+                console.error(e);
+                alert('ERROR : ' + e);
+            }
+            
             dLooad.hide();
         };
 
