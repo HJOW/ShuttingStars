@@ -4138,6 +4138,41 @@ song.difficulties.push({
 songs.push(song);
 
 song = {};
+song.name = '성운의 심장이 뛰고 있어';
+song.composer = 'Lyria';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/ai/seongun_heart.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
+song.description = `
+|Music: Google Lyria
+|  https://gemini.google/overview/music-generation/
+|License: All license granted by AI Platform.
+`;
+song.loadingTime = 10;
+song.bpm = 120;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.test = false;
+song.onlyRandom = true;
+song.serial = 'nai4ilaHbn7g563hefdkgm23GeGERGgD39p4g';
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 5,
+    autoCreate : true,
+    patterns : []
+});
+
+songs.push(song);
+
+
+song = {};
 
 const SSBundleSongs = songs;
 export { SSBundleSongs };
