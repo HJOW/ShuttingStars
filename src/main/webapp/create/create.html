@@ -384,7 +384,8 @@ $(function() {
             dLoad.show();
 
             let bpm = 100;
-            try { bpm = await detectBpm(urls); } catch(e) { console.error(e); }
+            if(songSelected.bpm) bpm = songSelected.bpm;
+            else { try { bpm = await detectBpm(urls); } catch(e) { console.error(e); } }
 
             let diffObj = {};
             let diffIdx = -1;
@@ -407,8 +408,17 @@ $(function() {
                     console.log( val + ' / ' + max  + ' (' + percent + '%)');
                 });
 
-                diffObj.patterns = notes;
                 diffObj.autoCreate = false;
+                diffObj.patterns = [];
+                for(let ndx=0; ndx<notes.length; ndx++) {
+                    const noteOne = notes[ndx];
+                    diffObj.patterns.push({
+                        index : ndx,
+                        time : noteOne.originalTiming,
+                        locationIndex : noteOne.locationIndex
+                    });
+                }
+
                 songSelected.difficulties[diffIdx] = diffObj;
 
                 pLoad.removeAttr('value');

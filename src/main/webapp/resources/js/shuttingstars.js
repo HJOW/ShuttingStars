@@ -6410,9 +6410,9 @@ class ShuttingStarsCore {
                 }
             }
 
-            let calcRealEndTime;
-
             // 곡의 끝 체크
+            let songEnded = false;
+            let calcRealEndTime;
             //   곡의 명시된 종료시간과 마지막 패턴의 시간, 그리고 audio 가 존재하는 경우 실제 종료시간까지 비교해 더 큰 값 선택
             //      마지막 패턴의 시간
             let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
@@ -6429,7 +6429,20 @@ class ShuttingStarsCore {
             }
 
             // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
-            if(this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed))) {
+            songEnded = this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed));
+            if((! songEnded) && (this.elapsedTime >= 10)) {
+                // 노트들이 남았더라도 곡이 끝났으면 종료 처리
+                if(this.audio != null) {
+                    if(this.audio.ended) songEnded = true;
+                } else if(this.videoBga != null) {
+                    if(this.videoBga.ended) songEnded = true;
+                } else if(this.youtubePlayer != null) {
+                    if(typeof(this.youtubePlayer.getPlayerState) == 'function') {
+                        if(this.youtubePlayer.getPlayerState() == YT.PlayerState.ENDED) songEnded = true;
+                    }
+                }
+            }
+            if(songEnded) {
                 this.clearTimeHandler();
 
                 if(this.audio != null) {
@@ -8571,17 +8584,24 @@ class ShuttingStarsCore {
                         const usedIndex = [];
                         for(let mdx=0; mdx<multipleCreate; mdx++) {
                             let locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
-
+                            let preventInfLoop = 0;
                             if(mdx <= 1) {
                                 while(usedIndex.indexOf(locationIndex) >= 0 || lastLocationIndexes.indexOf(locationIndex) >= 0) {
                                     locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                    preventInfLoop++;
+
+                                    if(preventInfLoop > 100) { locationIndex = -1; lastLocationIndexes = []; break; }
                                 }
                             } else {
                                 while(usedIndex.indexOf(locationIndex) >= 0) {
                                     locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                    preventInfLoop++;
+
+                                    if(preventInfLoop > 100) { locationIndex = -1; lastLocationIndexes = []; break; }
                                 }
                             }
                             
+                            if(locationIndex < 0) continue;
 
                             const note = new SSNote( locationIndex , this);
                             note.id = this.lastObjectId; this.lastObjectId++;

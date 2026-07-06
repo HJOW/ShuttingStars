@@ -81,7 +81,7 @@ gtag('js', new Date());
 <script type="text/javascript" src='resources/js/detectbpm.js'></script>
 
 <script type="module">
-import { ShuttingStars } from './resources/js/shuttingstars.js';
+import { ShuttingStars, prepareDebugSSCoreInstances } from './resources/js/shuttingstars.js';
 
 /* 페이지 접속 시 호출 */
 window.addEventListener('load', function(){
@@ -102,6 +102,7 @@ window.addEventListener('load', function(){
         });
     });
     ShuttingStars.init(root);
+    prepareDebugSSCoreInstances();
 
     document.getElementById('shuttingstars_init_loading').style.display = 'none';
     SSUtil.toast('TEST MODE');

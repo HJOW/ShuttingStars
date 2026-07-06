@@ -3927,6 +3927,657 @@ song.difficulties.push({
 
 songs.push(song);
 
+song = {};
+song.name = '성운의 심장이 뛰고 있어';
+song.composer = 'Lyria';
+song.noteWriter = 'HJOW';
+song.bgaUrl = '';
+song.musicUrl = '[CTX]/resources/songs/ai/seongun_heart.mp3';
+song.musicAlterUrl = '';
+song.thumbnailUrl = '';
+song.useYoutube = false;
+song.youtubeVideoId = '';
+song.description = `
+|Music: Google Lyria
+|  https://gemini.google/overview/music-generation/
+|License: All license granted by AI Platform.
+`;
+song.loadingTime = 10;
+song.bpm = 120;
+song.endTime = 0;
+song.timeConstant = 0;
+song.timeMultiplier = 1;
+song.noteMultiplier = 1;
+song.test = false;
+song.onlyRandom = false;
+song.serial = 'nai4ilaHbn7g563hefdkgm23GeGERGgD39p4g';
+song.difficulties = [];
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 5,
+    autoCreate : true,
+    patterns : [
+        {
+            "locationIndex": 0,
+            "time": 148
+        },
+        {
+            "locationIndex": 0,
+            "time": 248
+        },
+        {
+            "locationIndex": 0,
+            "time": 297
+        },
+        {
+            "locationIndex": 0,
+            "time": 328
+        },
+        {
+            "locationIndex": 0,
+            "time": 361
+        },
+        {
+            "locationIndex": 0,
+            "time": 405
+        },
+        {
+            "locationIndex": 0,
+            "time": 432
+        },
+        {
+            "locationIndex": 0,
+            "time": 457
+        },
+        {
+            "locationIndex": 0,
+            "time": 488
+        },
+        {
+            "locationIndex": 0,
+            "time": 504
+        },
+        {
+            "locationIndex": 0,
+            "time": 536
+        },
+        {
+            "locationIndex": 0,
+            "time": 575
+        },
+        {
+            "locationIndex": 0,
+            "time": 600
+        },
+        {
+            "locationIndex": 0,
+            "time": 629
+        },
+        {
+            "locationIndex": 0,
+            "time": 655
+        },
+        {
+            "locationIndex": 0,
+            "time": 680
+        },
+        {
+            "locationIndex": 0,
+            "time": 696
+        },
+        {
+            "locationIndex": 0,
+            "time": 728
+        },
+        {
+            "locationIndex": 0,
+            "time": 758
+        },
+        {
+            "locationIndex": 0,
+            "time": 792
+        },
+        {
+            "locationIndex": 0,
+            "time": 809
+        },
+        {
+            "locationIndex": 0,
+            "time": 836
+        },
+        {
+            "locationIndex": 0,
+            "time": 856
+        },
+        {
+            "locationIndex": 0,
+            "time": 873
+        },
+        {
+            "locationIndex": 0,
+            "time": 896
+        },
+        {
+            "locationIndex": 0,
+            "time": 920
+        },
+        {
+            "locationIndex": 0,
+            "time": 937
+        },
+        {
+            "locationIndex": 0,
+            "time": 961
+        },
+        {
+            "locationIndex": 0,
+            "time": 1000
+        },
+        {
+            "locationIndex": 0,
+            "time": 1028
+        },
+        {
+            "locationIndex": 0,
+            "time": 1064
+        },
+        {
+            "locationIndex": 0,
+            "time": 1092
+        },
+        {
+            "locationIndex": 0,
+            "time": 1116
+        },
+        {
+            "locationIndex": 0,
+            "time": 1151
+        },
+        {
+            "locationIndex": 0,
+            "time": 1169
+        },
+        {
+            "locationIndex": 0,
+            "time": 1192
+        },
+        {
+            "locationIndex": 0,
+            "time": 1208
+        },
+        {
+            "locationIndex": 0,
+            "time": 1240
+        },
+        {
+            "locationIndex": 0,
+            "time": 1257
+        },
+        {
+            "locationIndex": 0,
+            "time": 1296
+        },
+        {
+            "locationIndex": 0,
+            "time": 1320
+        },
+        {
+            "locationIndex": 0,
+            "time": 1349
+        },
+        {
+            "locationIndex": 0,
+            "time": 1371
+        },
+        {
+            "locationIndex": 0,
+            "time": 1400
+        },
+        {
+            "locationIndex": 0,
+            "time": 1424
+        },
+        {
+            "locationIndex": 0,
+            "time": 1448
+        },
+        {
+            "locationIndex": 0,
+            "time": 1465
+        },
+        {
+            "locationIndex": 0,
+            "time": 1489
+        },
+        {
+            "locationIndex": 0,
+            "time": 1512
+        },
+        {
+            "locationIndex": 0,
+            "time": 1544
+        },
+        {
+            "locationIndex": 0,
+            "time": 1576
+        },
+        {
+            "locationIndex": 0,
+            "time": 1601
+        },
+        {
+            "locationIndex": 0,
+            "time": 1620
+        },
+        {
+            "locationIndex": 0,
+            "time": 1641
+        },
+        {
+            "locationIndex": 0,
+            "time": 1660
+        },
+        {
+            "locationIndex": 0,
+            "time": 1681
+        },
+        {
+            "locationIndex": 0,
+            "time": 1705
+        },
+        {
+            "locationIndex": 0,
+            "time": 1736
+        },
+        {
+            "locationIndex": 0,
+            "time": 1753
+        },
+        {
+            "locationIndex": 0,
+            "time": 1773
+        },
+        {
+            "locationIndex": 0,
+            "time": 1792
+        },
+        {
+            "locationIndex": 0,
+            "time": 1811
+        },
+        {
+            "locationIndex": 0,
+            "time": 1830
+        },
+        {
+            "locationIndex": 0,
+            "time": 1873
+        },
+        {
+            "locationIndex": 0,
+            "time": 1896
+        },
+        {
+            "locationIndex": 0,
+            "time": 1936
+        },
+        {
+            "locationIndex": 0,
+            "time": 1952
+        },
+        {
+            "locationIndex": 0,
+            "time": 1976
+        },
+        {
+            "locationIndex": 0,
+            "time": 1992
+        },
+        {
+            "locationIndex": 0,
+            "time": 2017
+        },
+        {
+            "locationIndex": 0,
+            "time": 2052
+        },
+        {
+            "locationIndex": 0,
+            "time": 2094
+        },
+        {
+            "locationIndex": 0,
+            "time": 2152
+        },
+        {
+            "locationIndex": 0,
+            "time": 2184
+        },
+        {
+            "locationIndex": 0,
+            "time": 2232
+        },
+        {
+            "locationIndex": 0,
+            "time": 2259
+        },
+        {
+            "locationIndex": 0,
+            "time": 2281
+        },
+        {
+            "locationIndex": 0,
+            "time": 2312
+        },
+        {
+            "locationIndex": 0,
+            "time": 2332
+        },
+        {
+            "locationIndex": 0,
+            "time": 2418
+        },
+        {
+            "locationIndex": 0,
+            "time": 2447
+        },
+        {
+            "locationIndex": 0,
+            "time": 2465
+        },
+        {
+            "locationIndex": 0,
+            "time": 2495
+        },
+        {
+            "locationIndex": 0,
+            "time": 2513
+        },
+        {
+            "locationIndex": 0,
+            "time": 2536
+        },
+        {
+            "locationIndex": 0,
+            "time": 2560
+        },
+        {
+            "locationIndex": 0,
+            "time": 2584
+        },
+        {
+            "locationIndex": 0,
+            "time": 2616
+        },
+        {
+            "locationIndex": 0,
+            "time": 2639
+        },
+        {
+            "locationIndex": 0,
+            "time": 2664
+        },
+        {
+            "locationIndex": 0,
+            "time": 2692
+        },
+        {
+            "locationIndex": 0,
+            "time": 2717
+        },
+        {
+            "locationIndex": 0,
+            "time": 2752
+        },
+        {
+            "locationIndex": 0,
+            "time": 2773
+        },
+        {
+            "locationIndex": 0,
+            "time": 2793
+        },
+        {
+            "locationIndex": 0,
+            "time": 2820
+        },
+        {
+            "locationIndex": 0,
+            "time": 2840
+        },
+        {
+            "locationIndex": 0,
+            "time": 2872
+        },
+        {
+            "locationIndex": 0,
+            "time": 2897
+        },
+        {
+            "locationIndex": 0,
+            "time": 2936
+        },
+        {
+            "locationIndex": 0,
+            "time": 2961
+        },
+        {
+            "locationIndex": 0,
+            "time": 2996
+        },
+        {
+            "locationIndex": 0,
+            "time": 3024
+        },
+        {
+            "locationIndex": 0,
+            "time": 3048
+        },
+        {
+            "locationIndex": 0,
+            "time": 3072
+        },
+        {
+            "locationIndex": 0,
+            "time": 3088
+        },
+        {
+            "locationIndex": 0,
+            "time": 3112
+        },
+        {
+            "locationIndex": 0,
+            "time": 3135
+        },
+        {
+            "locationIndex": 0,
+            "time": 3153
+        },
+        {
+            "locationIndex": 0,
+            "time": 3176
+        },
+        {
+            "locationIndex": 0,
+            "time": 3204
+        },
+        {
+            "locationIndex": 0,
+            "time": 3240
+        },
+        {
+            "locationIndex": 0,
+            "time": 3273
+        },
+        {
+            "locationIndex": 0,
+            "time": 3303
+        },
+        {
+            "locationIndex": 0,
+            "time": 3320
+        },
+        {
+            "locationIndex": 0,
+            "time": 3356
+        },
+        {
+            "locationIndex": 0,
+            "time": 3384
+        },
+        {
+            "locationIndex": 0,
+            "time": 3409
+        },
+        {
+            "locationIndex": 0,
+            "time": 3432
+        },
+        {
+            "locationIndex": 0,
+            "time": 3448
+        },
+        {
+            "locationIndex": 0,
+            "time": 3464
+        },
+        {
+            "locationIndex": 0,
+            "time": 3496
+        },
+        {
+            "locationIndex": 0,
+            "time": 3520
+        },
+        {
+            "locationIndex": 0,
+            "time": 3541
+        },
+        {
+            "locationIndex": 0,
+            "time": 3576
+        },
+        {
+            "locationIndex": 0,
+            "time": 3601
+        },
+        {
+            "locationIndex": 0,
+            "time": 3640
+        },
+        {
+            "locationIndex": 0,
+            "time": 3666
+        },
+        {
+            "locationIndex": 0,
+            "time": 3688
+        },
+        {
+            "locationIndex": 0,
+            "time": 3728
+        },
+        {
+            "locationIndex": 0,
+            "time": 3763
+        },
+        {
+            "locationIndex": 0,
+            "time": 3792
+        },
+        {
+            "locationIndex": 0,
+            "time": 3808
+        },
+        {
+            "locationIndex": 0,
+            "time": 3856
+        },
+        {
+            "locationIndex": 0,
+            "time": 3880
+        },
+        {
+            "locationIndex": 0,
+            "time": 3904
+        },
+        {
+            "locationIndex": 0,
+            "time": 3944
+        },
+        {
+            "locationIndex": 0,
+            "time": 4008
+        },
+        {
+            "locationIndex": 0,
+            "time": 4032
+        },
+        {
+            "locationIndex": 0,
+            "time": 4096
+        },
+        {
+            "locationIndex": 0,
+            "time": 4137
+        },
+        {
+            "locationIndex": 0,
+            "time": 4176
+        },
+        {
+            "locationIndex": 0,
+            "time": 4193
+        },
+        {
+            "locationIndex": 0,
+            "time": 4212
+        },
+        {
+            "locationIndex": 0,
+            "time": 4240
+        },
+        {
+            "locationIndex": 0,
+            "time": 4264
+        },
+        {
+            "locationIndex": 0,
+            "time": 4303
+        },
+        {
+            "locationIndex": 0,
+            "time": 4337
+        },
+        {
+            "locationIndex": 0,
+            "time": 4380
+        },
+        {
+            "locationIndex": 0,
+            "time": 4416
+        },
+        {
+            "locationIndex": 0,
+            "time": 4464
+        },
+        {
+            "locationIndex": 0,
+            "time": 4527
+        },
+        {
+            "locationIndex": 0,
+            "time": 4586
+        },
+        {
+            "locationIndex": 0,
+            "time": 4614
+        }
+    ]
+});
+
+songs.push(song);
+
 /** 이후는 곡 선정은 안되고 랜덤으로만 걸리는 곡들 **/
 
 song = {};
@@ -4136,41 +4787,6 @@ song.difficulties.push({
 });
 
 songs.push(song);
-
-song = {};
-song.name = '성운의 심장이 뛰고 있어';
-song.composer = 'Lyria';
-song.noteWriter = 'HJOW';
-song.bgaUrl = '';
-song.musicUrl = '[CTX]/resources/songs/ai/seongun_heart.mp3';
-song.musicAlterUrl = '';
-song.thumbnailUrl = '';
-song.useYoutube = false;
-song.youtubeVideoId = '';
-song.description = `
-|Music: Google Lyria
-|  https://gemini.google/overview/music-generation/
-|License: All license granted by AI Platform.
-`;
-song.loadingTime = 10;
-song.bpm = 120;
-song.endTime = 0;
-song.timeConstant = 0;
-song.timeMultiplier = 1;
-song.noteMultiplier = 1;
-song.test = false;
-song.onlyRandom = true;
-song.serial = 'nai4ilaHbn7g563hefdkgm23GeGERGgD39p4g';
-song.difficulties = [];
-song.difficulties.push({
-    difficultyLabel : 'normal',
-    difficultyLevel : 5,
-    autoCreate : true,
-    patterns : []
-});
-
-songs.push(song);
-
 
 song = {};
 
