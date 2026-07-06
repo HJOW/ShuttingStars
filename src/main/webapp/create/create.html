@@ -121,7 +121,7 @@ $(function() {
 
         $('.shuttingstars_root .shuttingstars_canvas').css('position', 'relative');
         
-        const dLooad = $('.shuttingstars_create_loadings');
+        const dLoad = $('.shuttingstars_create_loadings');
         const pLoad  = dLoad.find('progress');
         const ta = $('.ta_song_json');
         const selSongs  = $('.sel_songs');
@@ -152,7 +152,7 @@ $(function() {
                 selSongs.append("<option value='" + SSUtil.replaceString(songOne.serial, "'", "\"") + "'>" + SSUtil.replaceString(SSUtil.replaceString(songOne.name, '<', '&lt;'), '>', '&gt;') + "</option>");
             }
 
-            dLooad.hide();
+            dLoad.hide();
         }
 
         const fLoadDiffList = function(loadJson) {
@@ -381,7 +381,7 @@ $(function() {
             broker.setDifficultyChoosingList(songSelected.getDifficultyList());
             broker.setDifficultyIndex(diff);
 
-            dLooad.show();
+            dLoad.show();
 
             let bpm = 100;
             try { bpm = await detectBpm(urls); } catch(e) { console.error(e); }
@@ -401,8 +401,10 @@ $(function() {
             try {
 
                 pLoad.attr('value', String(0));
-                notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel, function(percent) {
-                    pLoad.attr('value', String(percent));
+                notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel, function(percent, val, max) {
+                    pLoad.attr('max'  , String(max));
+                    pLoad.attr('value', String(val));
+                    console.log( val + ' / ' + max  + ' (' + percent + '%)');
                 });
 
                 diffObj.patterns = notes;
@@ -416,7 +418,7 @@ $(function() {
                 alert('ERROR : ' + e);
             }
             
-            dLooad.hide();
+            dLoad.hide();
         };
 
         btnLoad.on('click', fLoadSong);

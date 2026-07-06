@@ -8530,7 +8530,7 @@ class ShuttingStarsCore {
                 timeCycle++;
 
                 if(typeof(eventProgress) == 'function' && timeCycle % 8 == 0) {
-                    eventProgress( Math.floor((time * 100 / maxTime)) );
+                    eventProgress( Math.floor((time * 100.0 / maxTime)), time, maxTime );
                 }
             }
             
