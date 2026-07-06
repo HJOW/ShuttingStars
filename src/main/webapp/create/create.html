@@ -122,6 +122,7 @@ $(function() {
         $('.shuttingstars_root .shuttingstars_canvas').css('position', 'relative');
         
         const dLooad = $('.shuttingstars_create_loadings');
+        const pLoad  = dLoad.find('progress');
         const ta = $('.ta_song_json');
         const selSongs  = $('.sel_songs');
         const selDiff   = $('.sel_diff');
@@ -177,6 +178,7 @@ $(function() {
             selDiff.empty();
             for(idx=0; idx<songSelected.difficulties.length; idx++) {
                 let diffOne = songSelected.difficulties[idx];
+                diffOne.index = idx;
                 selDiff.append("<option value='" + idx + "'>" + SSUtil.replaceString(SSUtil.replaceString( diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')' , '<', '&lt;'), '>', '&gt;') + "</option>");
             }
             if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); btnAutoNt.prop('disabled', false); }
@@ -385,21 +387,29 @@ $(function() {
             try { bpm = await detectBpm(urls); } catch(e) { console.error(e); }
 
             let diffObj = {};
+            let diffIdx = -1;
             for(let ddx=0; ddx<songSelected.difficulties.length; ddx++) {
                 const diffOne = songSelected.difficulties[ddx];
-                if(diffOne.index == diff) {
+                if(diffOne.index == parseInt(diff)) {
                     diffObj = diffOne;
+                    diffIdx = ddx;
                     break;
                 }
             }
 
             let notes = null;
             try {
-                notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel);
 
-                diffOne.patterns = notes;
-                diffOne.autoCreate = false;
+                pLoad.attr('value', String(0));
+                notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel, function(percent) {
+                    pLoad.attr('value', String(percent));
+                });
 
+                diffObj.patterns = notes;
+                diffObj.autoCreate = false;
+                songSelected.difficulties[diffIdx] = diffObj;
+
+                pLoad.removeAttr('value');
                 ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
             } catch(e) {
                 console.error(e);
@@ -483,7 +493,7 @@ $(function() {
         </table>
     </div>
     <div class="shuttingstars_create_loadings" style="z-index: 2000; position: fixed; width: 100%; height: 9999px; overflow: hidden; top: 0px; left: 0px; background-color: rgba(100, 100, 100, 0.5); text-align: center;">
-        <progress style="margin-top: 400px;"></progress>
+        <progress style="margin-top: 400px;" max="100"></progress>
     </div>
 </body>
 </html>
