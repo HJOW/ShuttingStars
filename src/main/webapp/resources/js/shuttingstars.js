@@ -8313,6 +8313,17 @@ class ShuttingStarsCore {
         let audioCtxPre = null;
         let audioBufferSource = null;
         const noteCreates = [];
+        
+        let notePlacerPlaced = true; // NotePlacer 배치해야 아래 로직이 동작함. 배치 안되어 있으면 임시 배치
+        if(this.notePlacers.length <= 0) {
+            notePlacerPlaced = false;
+            for(idx=0; idx<this.keyList.length; idx++) {
+                const notePlacer = new SSNotePlacer(idx, this);
+                notePlacer.id = this.lastObjectId++;
+                this.notePlacers.push(notePlacer);
+            }
+        }
+
         try {
             // 사전에 사운드를 먼저 읽어 주파수를 분석하여 노트들을 생성 - 시작 TODO
             audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
@@ -8630,6 +8641,9 @@ class ShuttingStarsCore {
             channelBuff  = null;
         } catch(e) {
             exceptionOccured = e;
+        }
+        if(! notePlacerPlaced) {
+            this.notePlacers = [];
         }
 
         if(exceptionOccured != null) throw exceptionOccured;
