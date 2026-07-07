@@ -3233,11 +3233,17 @@ class ShuttingStarsCore {
             }
         }
 
+        /*
+        거리를 통한 판정
         // 거리를 백분율로 환산 - 이후 노트 속도 반영해야 함
         const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4) ) );
         
         // 거리에 따른 판정, 점수 계산
-        let resultMark = this.createResultMark(distance);
+        let resultMark = this.createResultMarkUsingDistance(distance);
+        */
+        
+        // 실제 타이밍을 통한 판정
+        let resultMark = this.createResultMarkUsingTiming(minimumNote, notePlacer);
 
         // 판정에 따른 효과 처리
         this.processResultMark(resultMark);
@@ -3515,11 +3521,12 @@ class ShuttingStarsCore {
     }
     
     /**
-     * 거리에 따른 판정 산출
+     * 거리에 따른 판정 산출 (Deprecated 예정)
+     * 
      * @param {number} distance distance 값
-     * @returns {string} 처리 결과
+     * @returns {string} 처리 결과 (판정)
      */
-    createResultMark(distance) {
+    createResultMarkUsingDistance(distance) {
         if(this.hardcoreMode) {
             if(distance < 5.0) {
                 return 'PERFECT';
@@ -3541,6 +3548,45 @@ class ShuttingStarsCore {
             return 'BAD';
         }
         return 'MISS';
+    }
+
+    /**
+     * 노트의 원 타이밍과 실제 시간을 비교하여 판정 산출
+     * 
+     * @param {SSNote} note 
+     * @param {SSNotePlacer} notePlacer
+     * @returns {string} 처리 결과 (판정)
+     */
+    createResultMarkUsingTiming(note, notePlacer) {
+        const noteTimeValue = note.originalTiming;
+        let   calculated    = noteTimeValue;
+        if(this.song != null) calculated = calculated * this.song.noteMultiplier + this.song.timeConstant;
+
+        const diff = Math.abs(calculated - this.elapsedTime); // 주의 ! 밀리초 단위가 아님 ! 곡의 BPM이 반영된 계산값임에 유의 !
+        let resultMark = 'MISS';
+        if(this.hardcoreMode) {
+            if(diff <= 1) {
+                resultMark = 'PERFECT';
+            } else if(diff <= 2) {
+                resultMark = 'GREAT';
+            } else if(diff <= 4) {
+                resultMark = 'GOOD';
+            } else if(diff <= 8) {
+                resultMark = 'BAD';
+            }
+        } else {
+            if(diff <= 2) {
+                resultMark = 'PERFECT';
+            } else if(diff <= 4) {
+                resultMark = 'GREAT';
+            } else if(diff <= 8) {
+                resultMark = 'GOOD';
+            } else if(diff <= 16) {
+                resultMark = 'BAD';
+            }
+        }
+        console.log(calculated + ' / ' + this.elapsedTime + ' : ' + diff + ' : ' + resultMark);
+        return resultMark;
     }
     
     /**
@@ -6152,8 +6198,7 @@ class ShuttingStarsCore {
                         calculates = notePlacer.y; // 일단 SSNotePlacer 위치부터 시작
 
                         // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
-                        additionals  = ( (obj.originalTiming * this.song.noteMultiplier) - this.elapsedTime );
-                        additionals += (this.noteLocationConst + this.song.timeConstant);
+                        additionals  = ( (obj.originalTiming * this.song.noteMultiplier) + this.song.timeConstant - this.elapsedTime ) + this.noteLocationConst;
                         additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * this.song.timeMultiplier;
                         calculates  += additionals;
 
@@ -8657,7 +8702,7 @@ class ShuttingStarsCore {
                             
                             if(locationIndex < 0) continue;
 
-                            const note = new SSNote( locationIndex , this);
+                            const note = new SSNote( locationIndex , this );
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = 0;
                             if(lastNote != null) note.patternId = lastNote.patternId + 1;
