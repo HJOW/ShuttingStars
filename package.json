@@ -17,10 +17,12 @@
         "start": "webpack && node nodeserver/nodeserver.js",
         "bundle": "webpack",
         "webpack": "webpack",
-        "upload:only" : "firebase deploy",
-        "upload" : "webpack && npm run upload:only"
+        "upload:only": "firebase deploy",
+        "upload": "webpack && npm run upload:only"
     },
     "devDependencies": {
+        "@babel/core": "^7.29.7",
+        "babel-loader": "^10.1.1",
         "clean-webpack-plugin": "^4.0.0",
         "firebase-tools": "^15.22.4",
         "terser-webpack-plugin": "^5.6.1",
