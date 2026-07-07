@@ -32,7 +32,7 @@ limitations under the License.
  
  */
 
-import { ShuttingStarsUtility, SSUtil, BrowserDetector  } from './shuttingstarsutils.js'
+import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
 import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
 import { SSBackend     } from './shuttingstarsinterface.js'
@@ -7286,37 +7286,35 @@ class ShuttingStarsCore {
                 urlMysong  = URL.createObjectURL(file);
                 nameMySong = file.name;
 
-                if(typeof(detectBpm) == 'function') {
-                    prgMysongBpm.classList.remove('invisible');
-                    btnMysongPly.classList.add('invisible');
-                    let responsed = false;
+                prgMysongBpm.classList.remove('invisible');
+                btnMysongPly.classList.add('invisible');
+                let responsed = false;
 
-                    try {
-                        detectBpm(urlMysong).then((bpmPredicted) => {
-                            if(responsed) return;
-                            responsed = true;
+                try {
+                    BpmDetector.detect(urlMysong).then((bpmPredicted) => {
+                        if(responsed) return;
+                        responsed = true;
 
-                            inpMysongBpm.value = bpmPredicted;
-                            prgMysongBpm.classList.add('invisible');
-                            btnMysongPly.classList.remove('invisible');
-                        }).catch((e2) => {
-                            console.log(e2);
-
-                            if(responsed) return;
-                            responsed = true;
-
-                            prgMysongBpm.classList.add('invisible');
-                            btnMysongPly.classList.remove('invisible');
-                        });
-                    } catch(e1) {
-                        console.log(e1);
+                        inpMysongBpm.value = bpmPredicted;
+                        prgMysongBpm.classList.add('invisible');
+                        btnMysongPly.classList.remove('invisible');
+                    }).catch((e2) => {
+                        ShuttingStarsUtility.log(e2);
 
                         if(responsed) return;
                         responsed = true;
 
                         prgMysongBpm.classList.add('invisible');
                         btnMysongPly.classList.remove('invisible');
-                    }
+                    });
+                } catch(e1) {
+                    ShuttingStarsUtility.log(e1);
+
+                    if(responsed) return;
+                    responsed = true;
+
+                    prgMysongBpm.classList.add('invisible');
+                    btnMysongPly.classList.remove('invisible');
                 }
             } else {
                 urlMysong = null;
@@ -7691,13 +7689,13 @@ class ShuttingStarsCore {
 
             const selMethod = areaDetectBpm.querySelector('.sel_detect_bpm_method');
             if(selMethod.value == '1') {
-                detectBpm(inpUrl.value).then((bpm) => {
+                BpmDetector.detect(inpUrl.value).then((bpm) => {
                     inpResult.value = bpm;
-                });
+                }).catch((e) => { ShuttingStarsUtility.toast("Error : " + e); });
             } else {
-                detectBpm2(inpUrl.value).then((bpm) => {
+                BpmDetector.detect2(inpUrl.value).then((bpm) => {
                     inpResult.value = bpm;
-                });
+                }).catch((e) => { ShuttingStarsUtility.toast("Error : " + e); });
             }
         });
     }

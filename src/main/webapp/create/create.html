@@ -100,7 +100,7 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 <script type="text/javascript" src='../resources/js/detectbpm.js'></script>
 
 <script type="module">
-import { ShuttingStarsUtility, SSUtil, BrowserDetector  } from '../resources/js/shuttingstarsutils.js'
+import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from '../resources/js/shuttingstarsutils.js'
 import { ShuttingStars, ShuttingStarsSong } from '../resources/js/shuttingstars.js';
 
 /* 페이지 접속 시 호출 */
@@ -385,7 +385,7 @@ $(function() {
 
             let bpm = 100;
             if(songSelected.bpm) bpm = songSelected.bpm;
-            else { try { bpm = await detectBpm(urls); } catch(e) { console.error(e); } }
+            else { try { bpm = await BpmDetector.detect(urls); } catch(e) { console.error(e); } }
 
             let diffObj = {};
             let diffIdx = -1;
