@@ -499,6 +499,8 @@ class ShuttingStarsCore {
     keypressTiming = 0;
     /** @type {number} 음원 재생 딜레이 보정값 (설정에서 변경 가능) */
     songTiming = 0;
+    /** @type {number} 판정 위치 보정값, 화면에 출력되는 NotePlacer 는 그대로지만, 노트와의 거리 계산 시 반영 */
+    judgeTiming = 0;
 
     /** @type {Object} 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨 */
     keypressing = {};
@@ -1673,6 +1675,11 @@ class ShuttingStarsCore {
                     if(typeof(this.songTiming) == 'string') this.songTiming = parseInt(this.songTiming);
                 }
 
+                if(typeof(settingJson.judgeTiming) != 'undefined') {
+                    this.judgeTiming = settingJson.judgeTiming;
+                    if(typeof(this.judgeTiming) == 'string') this.judgeTiming = parseInt(this.judgeTiming);
+                }
+
                 if(typeof(settingJson.resolution) != 'undefined') {
                     try {
                         let res = settingJson.resolution.split(',');
@@ -1766,6 +1773,7 @@ class ShuttingStarsCore {
             settingJson.reverseVertical     = this.reverseVertical;
             settingJson.keypressTiming      = this.keypressTiming;
             settingJson.songTiming          = this.songTiming;
+            settingJson.judgeTiming         = this.judgeTiming;
             settingJson.resolution          = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
             settingJson.disable3d           = this.disable3d;
             settingJson.disable2d           = this.disable2d;
@@ -3200,8 +3208,10 @@ class ShuttingStarsCore {
         // SSNotePlacer 폭발 처리
         notePlacer.explosing = 1;
 
-        // 해당 SSNotePlacer 과 충돌 중인 노트들 수집
+        // 해당 SSNotePlacer 에 범위 안에 들어온 노트들 수집
         let notes = [];
+        let noteY, justY, rangeSize, dist;
+        const rangeMultiplier = this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4);
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if((obj instanceof SSNote)) {
@@ -3209,37 +3219,47 @@ class ShuttingStarsCore {
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
 
-                const dist = notePlacer.isMeetVerticalRangeIn(obj, this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4) );
-                if(dist < 0) continue;
+                // 사정범위 안에 들어왔는지 여부 판별
+                noteY = obj.y;
+                justY = notePlacer.y + this.judgeTiming;
 
-                notes.push({
-                    idx : idx,
-                    note : obj,
-                    y : obj.y,
-                    dist : dist
-                });
+                dist = Math.abs(justY - noteY);
+                rangeSize = (obj.r + notePlacer.r) * rangeMultiplier;
+
+                if(dist < rangeSize) {
+                    // 처리 대상 목록에 포함 (아직 결정된 것은 아님 !)
+                    notes.push({
+                        idx   : idx,
+                        note  : obj,
+                        y     : noteY,
+                        dist  : dist,
+                        range : rangeSize
+                    });
+                }
             }
         }
 
         if(notes.length <= 0) return; // 충돌한 노트가 없으면 중단
 
-        // 가장 y값이 낮은 노트 찾기
+        // 처리 대상 중 가장 y값이 낮은 노트 찾기
         let minimumY = 99999;
-        let minimumIdx  = notes[0].idx;
-        let minimumNote = notes[0].note;
-        let mimimumDist = notes[0].dist;
+        let minimumIdx   = notes[0].idx;
+        let minimumNote  = notes[0].note;
+        let mimimumDist  = notes[0].dist;
+        let minimumRange = notes[0].range;
         for(idx=0; idx<notes.length; idx++) {
             let noteOne = notes[idx];
             if(noteOne.y < minimumY) {
                 minimumY = noteOne.y;
-                minimumIdx  = noteOne.idx;
-                minimumNote = noteOne.note;
-                mimimumDist = noteOne.dist;
+                minimumIdx   = noteOne.idx;
+                minimumNote  = noteOne.note;
+                mimimumDist  = noteOne.dist;
+                minimumRange = noteOne.range;
             }
         }
 
-        // 거리를 통한 판정 - 거리 계산
-        const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4) ) );
+        // 거리를 통한 판정 - 거리의 비율 계산 (%)
+        const distance = Math.abs((mimimumDist * 100.0) / minimumRange );
         
         // 거리에 따른 판정 - 점수 계산
         let resultMark = this.createResultMarkUsingDistance(distance);

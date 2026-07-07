@@ -38,5 +38,10 @@ module.exports = {
             "cleanAfterEveryBuildPatterns" : ['**/*.LICENSE.txt'],
             "protectWebpackAssets" : false
         })
-    ]
+    ],
+    "performance" : {
+        "hints" : "warning",
+        "maxAssetSize" : 2097152,
+        "maxEntrypointSize" : 2097152
+    }
 }
