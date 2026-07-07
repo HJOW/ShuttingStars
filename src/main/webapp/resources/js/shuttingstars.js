@@ -3233,17 +3233,14 @@ class ShuttingStarsCore {
             }
         }
 
-        /*
-        거리를 통한 판정
-        // 거리를 백분율로 환산 - 이후 노트 속도 반영해야 함
+        // 거리를 통한 판정 - 거리 계산
         const distance = Math.abs((mimimumDist * 100.0) / ( (minimumNote.r + notePlacer.r) * this.noteSpeedMultiplier * (this.noteSpeedFixedConst * 4) ) );
         
-        // 거리에 따른 판정, 점수 계산
+        // 거리에 따른 판정 - 점수 계산
         let resultMark = this.createResultMarkUsingDistance(distance);
-        */
         
-        // 실제 타이밍을 통한 판정
-        let resultMark = this.createResultMarkUsingTiming(minimumNote, notePlacer);
+        // 타이밍을 통한 판정
+        // let resultMark = this.createResultMarkUsingTiming(minimumNote, notePlacer);
 
         // 판정에 따른 효과 처리
         this.processResultMark(resultMark);
@@ -3521,7 +3518,7 @@ class ShuttingStarsCore {
     }
     
     /**
-     * 거리에 따른 판정 산출 (Deprecated 예정)
+     * 거리에 따른 판정 산출
      * 
      * @param {number} distance distance 값
      * @returns {string} 처리 결과 (판정)
@@ -3551,7 +3548,7 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 노트의 원 타이밍과 실제 시간을 비교하여 판정 산출
+     * 노트의 원 타이밍과 실제 시간을 비교하여 판정 산출 (사용 결과 좋은 방법은 아닌 것으로...)
      * 
      * @param {SSNote} note 
      * @param {SSNotePlacer} notePlacer
