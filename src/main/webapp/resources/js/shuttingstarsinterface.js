@@ -715,6 +715,6 @@ function __ssBackEnd() {
     return _ssbackend;
 }
 
-const SSBackend = __ssBackEnd();
+const SSBackend = __ssBackEnd;
 export default SSBackend;
-export { SSBackend };
+export { SSBackend, ShuttingStarsInterface };

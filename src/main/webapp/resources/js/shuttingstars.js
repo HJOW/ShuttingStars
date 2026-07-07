@@ -35,7 +35,7 @@ limitations under the License.
 import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
 import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
-import { SSBackend     } from './shuttingstarsinterface.js'
+import { SSBackend, ShuttingStarsInterface } from './shuttingstarsinterface.js'
 import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './shuttingstars3d.js'
 
 /* 게임 기동 근간을 이루는 전역 객체 */
@@ -664,31 +664,30 @@ class ShuttingStarsCore {
 
             this.backend = null;
             try {
-                this.backend = (typeof(SSBackend) == 'undefined' || SSBackend == null) ? null : SSBackend;
+                this.backend = SSBackend();
 
-                if(this.backend != null) {
-                    // 로그인 상태 변경 이벤트 부여
-                    if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
-                        selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; });
-                    });
-                    // 원격 설정 가져오기
-                    const respJson = await this.backend.getRemoteConfigValues();
-                    if(respJson.success) {
-                        const valuesRecord = respJson.value;
-                        
-                        this.frameTime                = valuesRecord.frameTime.asNumber();
-                        this.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
-                        this.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
-                        this.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
-                        this.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
-                        this.noticeEn                 = valuesRecord.noticeEn.asString();
-                        this.noticeKo                 = valuesRecord.noticeKo.asString();
-                        this.noticeWhen               = valuesRecord.noticeWhen.asNumber();
-                    }
+                // 로그인 상태 변경 이벤트 부여
+                if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
+                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; }).catch((e) => { console.error(e); selfs.backend = null; });
+                });
+                // 원격 설정 가져오기
+                const respJson = await this.backend.getRemoteConfigValues();
+                if(respJson.success) {
+                    const valuesRecord = respJson.value;
+                    
+                    this.frameTime                = valuesRecord.frameTime.asNumber();
+                    this.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
+                    this.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
+                    this.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
+                    this.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
+                    this.noticeEn                 = valuesRecord.noticeEn.asString();
+                    this.noticeKo                 = valuesRecord.noticeKo.asString();
+                    this.noticeWhen               = valuesRecord.noticeWhen.asNumber();
                 }
             } catch(e) {
                 ssConsoleLogs(this.trans('Cloud Manager import failed. Cloud features will be disabled.'));
                 console.error(e);
+                this.backend = null;
             }
             
         } catch(e) {
