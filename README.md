@@ -76,7 +76,8 @@ Web pages, advertisements, films, games, and other video materials using Subject
 
 ## Third Party SFX
 
-http://www.kurage-kosho.info/
+Sonniss GDC GameAudio Bundle
+https://sonniss.com/gdc-bundle-license/
 
 ## Third Party Fonts
 

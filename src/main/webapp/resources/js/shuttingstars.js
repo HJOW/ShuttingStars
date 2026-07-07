@@ -1158,10 +1158,10 @@ class ShuttingStarsCore {
 
                 try {
                     selfs.se.tick     = new Audio(this.convertURL('[CTX]/resources/se/tick.ogg'));
-                    selfs.se.accept1  = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button25.mp3'));
-                    selfs.se.accept2  = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button36.mp3'));
-                    selfs.se.cancel   = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button82.mp3'));
-                    selfs.se.special1 = new Audio(this.convertURL('[CTX]/resources/se/kurage-kosho/button83.mp3'));
+                    selfs.se.accept1  = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/accept01.mp3'));
+                    selfs.se.accept2  = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/accept02.mp3'));
+                    selfs.se.cancel   = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/cancel02.mp3'));
+                    selfs.se.special1 = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/special02.mp3'));
                 } catch(exAudio) {
                     console.error(exAudio);
                 }
@@ -7159,6 +7159,13 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'SIL Open Font License, Version 1.1.', fontSize : 15 });
         this.creditContents.push({ label : 'https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko', fontSize : 15 });
         this.creditContents.push({ label : '', fontSize : 25 });
+
+        this.creditContents.push({ label : 'Sonniss GDC GameAudio Bundle', fontSize : 25 });
+        this.creditContents.push({ label : 'Unlimited User License', fontSize : 15 });
+        this.creditContents.push({ label : 'https://sonniss.com/gdc-bundle-license/', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
+        // https://sonniss.com/gdc-bundle-license/
 
         for(let idx=0; idx<3; idx++) {
             this.creditContents.push({ label : '', fontSize : 30 });

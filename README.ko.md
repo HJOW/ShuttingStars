@@ -84,7 +84,8 @@ https://hjow.duckdns.org/shuttingstars/privacy.html
 
 ## 써드파티 효과음
 
-http://www.kurage-kosho.info/
+Sonniss GDC GameAudio Bundle
+https://sonniss.com/gdc-bundle-license/
 
 ## 써드파티 글꼴
 
