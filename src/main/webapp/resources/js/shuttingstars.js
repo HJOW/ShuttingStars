@@ -257,6 +257,10 @@ class ShuttingStarsCore {
     elapsedTime = 0;
     /** @type {number} 플레이 중 진행 시간 (예전 방식, 순수 timeElapse 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함) */
     elapsedTimeOld = 0;
+    /** @type {number} 사이클 처리 직전 elapsedTime 값으로, 음원 로딩이 끊겼는지 판단하기 위해 사용 (게임 중 변경됨) */
+    elapsedTimeLast = 0;
+    /** @type {number} 버퍼 로딩 부족으로 elapsedTime 가 증가하지 않은 횟수 */
+    elapsedTimeNotIncreased = 0;
     /** @type {boolean} 실제 Audio / Youtube 와 타이밍 동기화 했는지 여부 */
     elapsedTimeSynchronized = false;
     /** @type {number} 동시 처리 (timeElapse) 시작 시간 (타임스탬프로 performance.now() 관련 문서 참고) */
@@ -6454,29 +6458,49 @@ class ShuttingStarsCore {
             }
 
             const song = this.song;
-            let idx;
+            let idx, calcRealEndTime;
+            let songEnded = false;
+
             if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
             if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
             if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
+            // Audio 가 끝나지는 않았으나 로딩된 버퍼가 다 됐는지 체크하기 위하여 직전 elapsedTime 백업
+            this.elapsedTimeLast = this.elapsedTime;
+
+            // elapsedTime 갱신
             if(this.youtubePlayer != null) {
                 this.elapsedTime = this.convertElapsedTime(this.youtubePlayer, this.song.bpm, this.songTiming);
                 this.elapsedTimeSynchronized = true;
             } else if(this.audio != null) {
-                if((! this.audio.paused) && (! this.audio.ended)) {
+                songEnded = this.audio.ended;
+                if((! this.audio.paused) && (! songEnded)) {
                     this.elapsedTime = this.convertElapsedTime(this.audio, this.song.bpm, this.songTiming);
                     // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
                     this.elapsedTimeSynchronized = true;
                 }
             } else if(this.videoBga != null) {
-                if((! this.videoBga.paused) && (! this.videoBga.ended)) {
+                songEnded = this.videoBga.ended;
+                if((! this.videoBga.paused) && (! songEnded)) {
                     this.elapsedTime = this.convertElapsedTime(this.videoBga, this.song.bpm, this.songTiming);
                     this.elapsedTimeSynchronized = true;
                 }
             } else {
-                this.elapsedTime++;
+                this.elapsedTime += 1;
             }
             this.elapsedTimeOld++;
+
+            // Audio 버퍼 초과 탐지
+            if(this.elapsedTime >= 100 && (! songEnded) && Math.abs(this.elapsedTime - this.elapsedTimeLast) < 0.1) { // 1 이 증가되어야 하는데 10분의 1도 증가하지 못했다 - 버퍼 다쓴 것
+                this.elapsedTimeNotIncreased++;
+            } else {
+                this.elapsedTimeNotIncreased = 0;
+            }
+            if(this.elapsedTimeNotIncreased >= 10) {
+                this.elapsedTimeNotIncreased = 0;
+                this.pauseSong(); // 일시정지 처리
+                ShuttingStarsUtility.toast(this.trans('Content buffer is empty. Please check your network connection.'));
+            }
 
             // 현재 시간에 해당하는 등장 장식이 있는지 확인
             let decos = song.decorations;
@@ -6512,8 +6536,7 @@ class ShuttingStarsCore {
             }
 
             // 곡의 끝 체크
-            let songEnded = false;
-            let calcRealEndTime;
+            songEnded = false;
             //   곡의 명시된 종료시간과 마지막 패턴의 시간, 그리고 audio 가 존재하는 경우 실제 종료시간까지 비교해 더 큰 값 선택
             //      마지막 패턴의 시간
             let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
