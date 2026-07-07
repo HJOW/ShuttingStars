@@ -37,7 +37,7 @@ shuttingstars.bundle.js 파일 하나를 일반 JavaScript 파일로 탑재하�
 이후 HTML 에서 다음과 같이 게임을 활성화할 수 있습니다.
 ```
 window.addEventListener('load', function(){
-    const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
+    const root = document.getElementById('shuttingstar_canvas_root');
     ShuttingStars.init(root);
 });
 ```
