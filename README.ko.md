@@ -15,6 +15,7 @@ https://shuttingstars-3eddf.web.app
 node.js 및 git 설치가 필요합니다.    
 git clone 받으신 후, 클론 받은 디렉토리에서    
 ```
+npm install
 npm start
 ```
 를 실행합니다.    

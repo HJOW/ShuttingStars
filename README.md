@@ -16,6 +16,7 @@ https://shuttingstars-3eddf.web.app
 Install node.js    
 Run following command on project directory.    
 ```
+npm install
 npm start
 ```
 Then, open "localhost:9690" with your web browser.
