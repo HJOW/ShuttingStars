@@ -37,6 +37,12 @@ shuttingstars.bundle.js 파일 하나를 일반 JavaScript 파일로 탑재하�
 이후 HTML 에서 다음과 같이 게임을 활성화할 수 있습니다.
 ```
 window.addEventListener('load', function(){
+    ShuttingStars.init();
+});
+```
+특정 위치에 배치하려는 경우, 해당 위치에 div 태그를 배치하고 id 를 shuttingstar_canvas_root 로 부여하신 후 다음과 같이 활성화하세요.
+```
+window.addEventListener('load', function(){
     const root = document.getElementById('shuttingstar_canvas_root');
     ShuttingStars.init(root);
 });

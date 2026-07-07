@@ -37,8 +37,7 @@ You can use it by loading `shuttingstars.bundle.js` as a normal JavaScript file.
 After that, you can activate the game from HTML as follows.
 ```
 window.addEventListener('load', function(){
-    const root = document.getElementById('shuttingstar_canvas_root');
-    ShuttingStars.init(root);
+    ShuttingStars.init();
 });
 ```
 
