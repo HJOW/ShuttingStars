@@ -357,6 +357,9 @@ class ShuttingStarsCore {
     /** @type {boolean} hp 가 한번이라도 0 이하로 내려간 경우 true */
     gameOverDelayed = false;
 
+    /** @type {boolean} 하드코어 모드 (커맨드로 설정) - 판정도 빡빡해지고, PW 소모량도 대폭 증가 */
+    hardcoreMode = false;
+
     /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / setting / credit */
     state = 'title';
     /** @type {string} 이전 상태 */
@@ -3174,9 +3177,9 @@ class ShuttingStarsCore {
      * @param {SSNotePlacer} notePlacer notePlacer 객체
      */
     handleNotePlacerCalled(notePlacer) {
-        if(this.pw < this.pwUse) return;
+        if(this.pw < this.getPWUsingCost()) return;
 
-        this.pw -= this.pwUse;
+        this.pw -= this.getPWUsingCost();
         if(this.pw < 0) this.pw = 0;
 
         this.handleNotePlacerCalledIn(notePlacer, true);
@@ -3235,7 +3238,11 @@ class ShuttingStarsCore {
         
         // 거리에 따른 판정, 점수 계산
         let resultMark = this.createResultMark(distance);
+
+        // 판정에 따른 효과 처리
         this.processResultMark(resultMark);
+
+        // 판정 출력
         this.displayResultMark(resultMark);
 
         minimumNote.explosing = 1;  // 노트의 폭발 시작
@@ -3253,10 +3260,9 @@ class ShuttingStarsCore {
             this.objects.push(newExplosinves);
 
             if(pwConsumed) { // pw 다시 회복
-                this.pw += this.pwUse;
-                if(     resultMark ==    'GOOD') this.pw += Math.floor(this.pwUse / 10.0);
-                else if(resultMark ==   'GREAT') this.pw += Math.floor(this.pwUse /  5.0);
-                else if(resultMark == 'PERFECT') this.pw += Math.floor(this.pwUse /  2.0);
+                this.pw += this.getPWUsingCost();
+                if(     resultMark ==   'GREAT') this.pw += Math.floor(this.getPWUsingCost() / 10.0);
+                else if(resultMark == 'PERFECT') this.pw += Math.floor(this.getPWUsingCost() /  5.0);
                 if(this.pw > this.pwMax) this.pw = this.pwMax;
             }
         }
@@ -3514,14 +3520,27 @@ class ShuttingStarsCore {
      * @returns {string} 처리 결과
      */
     createResultMark(distance) {
-        if(distance < 10.0) {
-            return 'PERFECT';
-        } else if(distance < 30.0) {
-            return 'GREAT';
-        } else if(distance < 50.0) {
-            return 'GOOD';
+        if(this.hardcoreMode) {
+            if(distance < 5.0) {
+                return 'PERFECT';
+            } else if(distance < 15.0) {
+                return 'GREAT';
+            } else if(distance < 25.0) {
+                return 'GOOD';
+            } else if(distance < 50.0) {
+                return 'BAD';
+            }
+        } else {
+            if(distance < 10.0) {
+                return 'PERFECT';
+            } else if(distance < 30.0) {
+                return 'GREAT';
+            } else if(distance < 50.0) {
+                return 'GOOD';
+            }
+            return 'BAD';
         }
-        return 'BAD';
+        return 'MISS';
     }
     
     /**
@@ -4582,6 +4601,15 @@ class ShuttingStarsCore {
             cols += (this.metricSize2 * label.length) + gap;
         }
 
+        //    하드코어 모드
+        if(this.hardcoreMode) {
+            label = '[HARDCORE]';
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
+            cols += (this.metricSize2 * label.length) + gap;
+        }
+
         //    커맨드 입력 진행 중 표시
         const numCommandInput = this.isCommandInputProgressing();
         if(numCommandInput >= 0) {
@@ -5453,8 +5481,8 @@ class ShuttingStarsCore {
         // PW바 출력
         barRealW = (this.pw / this.pwMax) * barFullW;
         barY += 20;
-        if(     this.pw < this.pwUse *  1) this.ctx.fillStyle = 'rgba(250,  50,  50, 0.9)';
-        else if(this.pw < this.pwUse * 16) this.ctx.fillStyle = 'rgba(200, 125, 125, 0.9)';
+        if(     this.pw < this.getPWUsingCost() *  1) this.ctx.fillStyle = 'rgba(250,  50,  50, 0.9)';
+        else if(this.pw < this.getPWUsingCost() * 16) this.ctx.fillStyle = 'rgba(200, 125, 125, 0.9)';
         else                               this.ctx.fillStyle = 'rgba(100, 100, 250, 0.9)';
         this.ctx.fillRect(this.convertX(barX + 5), this.convertY(barY - 5), this.convertX(barRealW), this.convertY(5));
 
@@ -5801,6 +5829,12 @@ class ShuttingStarsCore {
             command : [0, 1, 0, 1, 0, 1],
             act : function() {
                 selfs.gameOverEnabled = (! selfs.gameOverEnabled);
+            }
+        });
+        this.commands.push({
+            command : [4, 4, 4, 4, 4, 4],
+            act : function() {
+                selfs.hardcoreMode = (! selfs.hardcoreMode);
             }
         });
     }
@@ -6712,6 +6746,17 @@ class ShuttingStarsCore {
         if(this.audioAnalyser    != null) { try { this.audioAnalyser.disconnect();    this.audioAnalyser    = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
         if(this.audioCtx         != null) { try { this.audioCtx.close();              this.audioCtx         = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
         if(this.audioCtxPre      != null) { try {                                     this.audioCtxPre      = null; } catch(exIn) { ShuttingStarsUtility.log('Error on closing audio source. You can ignore them.'); console.error(exIn); } }
+    }
+
+    /** 
+     * 소모되는 PW 비용 반환 
+     * 
+     * @returns {number} 소모되는 PW 비용 
+    */
+    getPWUsingCost() {
+        let values = this.pwUse;
+        if(this.hardcoreMode) values = values * 4;
+        return values;
     }
 
     /**
@@ -9780,8 +9825,8 @@ class SSNotePlacer extends SSNoteKeyObject {
      */
     getNowOpacity(coreInst) {
         const originals = super.getNowOpacity(coreInst);
-        if(coreInst.pw < coreInst.pwUse) return 0.001;
-        if(coreInst.pw < coreInst.pwUse * 8) return 0.1;
+        if(coreInst.pw < coreInst.getPWUsingCost()) return 0.001;
+        if(coreInst.pw < coreInst.getPWUsingCost() * 8) return 0.1;
         return originals;
     }
     
@@ -9791,8 +9836,8 @@ class SSNotePlacer extends SSNoteKeyObject {
      * @returns {string} font weight 값 (null / normal / bold)
      */
     getNowFontWeight(coreInst) {
-        if(coreInst.pw < coreInst.pwUse) return null;
-        if(coreInst.pw < coreInst.pwUse * 8) return 'normal';
+        if(coreInst.pw < coreInst.getPWUsingCost()) return null;
+        if(coreInst.pw < coreInst.getPWUsingCost() * 8) return 'normal';
         return 'bold';
     }
 }
