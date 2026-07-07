@@ -6479,11 +6479,19 @@ class ShuttingStarsCore {
                     // this.elapsedTime = (this.audio.currentTime * (this.song.bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier)) - this.songTiming;
                     this.elapsedTimeSynchronized = true;
                 }
+
+                if(this.elapsedTime >= 100 && this.audio.paused) {
+                    this.pauseSong(); // 일시정지 처리
+                }
             } else if(this.videoBga != null) {
                 songEnded = this.videoBga.ended;
                 if((! this.videoBga.paused) && (! songEnded)) {
                     this.elapsedTime = this.convertElapsedTime(this.videoBga, this.song.bpm, this.songTiming);
                     this.elapsedTimeSynchronized = true;
+                }
+
+                if(this.elapsedTime >= 100 && this.videoBga.paused) {
+                    this.pauseSong(); // 일시정지 처리
                 }
             } else {
                 this.elapsedTime += 1;
