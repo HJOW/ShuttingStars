@@ -1702,6 +1702,11 @@ class ShuttingStarsCore {
                     if(typeof(this.disable2d) == 'string') this.disable2d = ( (this.disable2d == 'Y' || this.disable2d == 'true') ? true : false );
                 }
 
+                if(typeof(settingJson.hardcoreMode) != 'undefined') {
+                    this.hardcoreMode = settingJson.hardcoreMode;
+                    if(typeof(this.hardcoreMode) == 'string') this.hardcoreMode = ( (this.hardcoreMode == 'Y' || this.hardcoreMode == 'true') ? true : false );
+                }
+
                 if(typeof(settingJson.keyList) != 'undefined') {
                     try {
                         if(typeof(settingJson.keyList) == 'string') settingJson.keyList = JSON.parse(settingJson.keyList);
@@ -1764,6 +1769,7 @@ class ShuttingStarsCore {
             settingJson.resolution          = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
             settingJson.disable3d           = this.disable3d;
             settingJson.disable2d           = this.disable2d;
+            settingJson.hardcoreMode        = this.hardcoreMode;
             settingJson.language            = this.language;
             settingJson.languageDefault     = this.languageDefault;
             settingJson.usingWorkerConfig   = this.usingWorkerConfig;
