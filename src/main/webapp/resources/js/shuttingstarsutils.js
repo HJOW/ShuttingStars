@@ -2,9 +2,9 @@
  * 
  * 유틸리티 (필수)
 */
-/*
 
-LICENSE
+try { if(console) { console.log(`
+ShuttingStars - LICENSE
 
 Copyright 2026 HJOW (hujinone22@naver.com)
 
@@ -19,8 +19,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. 
- 
- */
+
+    Visit https://github.com/HJOW/ShuttingStars/blob/main/LICENSE
+`); console.log(`
+Using third-party libraries are included.
+Three.js
+    MIT License
+    Visit https://github.com/mrdoob/three.js/blob/dev/LICENSE
+`); }} catch(nothings) {}
 
 class ShuttingStarsUtilityClass {
     /** @type {number} 토스트 메시지에 부여할 고유 순번의 현재 최대값 */

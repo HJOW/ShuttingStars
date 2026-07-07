@@ -654,7 +654,6 @@ class ShuttingStarsCore {
 
             this.ssuuid = ShuttingStarsUtility.assureSSUUID();
 
-            for(let scl=0; scl<20; scl++) { let str = ' '; if(scl % 2 == 0) str = str + ' '; if(scl % 3 == 0) str = str + ' '; if(scl % 5 == 0) str = str + ' '; ShuttingStarsUtility.log('\n' + str + '\n'); }
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
 
             this.backend = null;
