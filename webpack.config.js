@@ -26,7 +26,11 @@ module.exports = {
         "rules" : [
             {
                 "test" : /\.(ts|js)$/,
-                "exclude" : /node_modules/,
+                "exclude" : [
+                    '/node_modules/',
+                    '/src/main/webapp/resources/js/dist/',
+                    '/src/main/webapp/resources/js/wc-monaco/'
+                ],
                 "use" : {
                     "loader" : "babel-loader"
                 }

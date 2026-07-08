@@ -134,3 +134,7 @@ https://github.com/brix/crypto-js/blob/develop/LICENSE
 BSD License
 Copyright 2013 Yahoo! Inc.
 https://github.com/pure-css/pure/blob/main/LICENSE
+
++ vanillawc/wc-monaco-editor (곡 생성 페이지 /create/create.html 에서만 사용)
+Copyright (c) 2020 VanillaWC
+https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE

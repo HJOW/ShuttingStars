@@ -126,3 +126,7 @@ https://github.com/brix/crypto-js/blob/develop/LICENSE
 BSD License
 Copyright 2013 Yahoo! Inc.
 https://github.com/pure-css/pure/blob/main/LICENSE
+
++ vanillawc/wc-monaco-editor (Only using on /create/create.html)
+Copyright (c) 2020 VanillaWC
+https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE
