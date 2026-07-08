@@ -41,6 +41,7 @@ const SSStringTable = {
         'Custom Songs' : '사용자 정의 곡',
         'Key Press Delay' : '키 입력 딜레이',
         'Sound Delay' : '음원 재생 딜레이',
+        'Judge Timing' : '판정 타이밍 보정값',
         'Note Speed Rate' : '노트 속도 배수',
         'Graphic Quality' : '그래픽 품질',
         'Reset All' : '전체 초기화',

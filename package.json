@@ -14,9 +14,9 @@
     },
     "main": "index.js",
     "scripts": {
-        "start": "webpack && node nodeserver/nodeserver.js",
-        "bundle": "webpack",
+        "start": "npm run webpack && node nodeserver/nodeserver.js",
         "webpack": "webpack",
+        "build": "npm run webpack",
         "upload:only": "firebase deploy",
         "upload": "webpack && npm run upload:only"
     },

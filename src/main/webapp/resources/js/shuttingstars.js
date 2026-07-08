@@ -489,7 +489,7 @@ class ShuttingStarsCore {
 
     // 설정 화면 관련
     /** @type {Array<string>} 설정 가능한 옵션 목록 */
-    settingList = ['fixKeypressTiming', 'fixSongTiming', 'setNoteSpeedMultiplier', 'setGraphicQuality', 'resetAll'];
+    settingList = ['setNoteSpeedMultiplier', 'fixKeypressTiming', 'fixSongTiming', 'judgeTiming', 'setGraphicQuality', 'resetAll'];
     /** @type {string|null} 설정 화면에서 현재 선택 중인 설정 항목 */
     settingChoosing = null;
     /** @type {boolean} 설정값을 수정 모드 (변경할 설정 항목을 선택한 상황을 의미) */
@@ -668,24 +668,25 @@ class ShuttingStarsCore {
             this.backend = null;
             try {
                 this.backend = SSBackend();
-
-                // 로그인 상태 변경 이벤트 부여
-                if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
-                    selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; }).catch((e) => { console.error(e); selfs.backend = null; });
-                });
-                // 원격 설정 가져오기
-                const respJson = await this.backend.getRemoteConfigValues();
-                if(respJson.success) {
-                    const valuesRecord = respJson.value;
-                    
-                    this.frameTime                = valuesRecord.frameTime.asNumber();
-                    this.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
-                    this.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
-                    this.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
-                    this.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
-                    this.noticeEn                 = valuesRecord.noticeEn.asString();
-                    this.noticeKo                 = valuesRecord.noticeKo.asString();
-                    this.noticeWhen               = valuesRecord.noticeWhen.asNumber();
+                if(this.backend != null) {
+                    // 로그인 상태 변경 이벤트 부여
+                    if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
+                        selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; }).catch((e) => { console.error(e); selfs.backend = null; });
+                    });
+                    // 원격 설정 가져오기
+                    const respJson = await this.backend.getRemoteConfigValues();
+                    if(respJson.success) {
+                        const valuesRecord = respJson.value;
+                        
+                        this.frameTime                = valuesRecord.frameTime.asNumber();
+                        this.resumeDelayTime          = valuesRecord.resumeDelayTime.asNumber();
+                        this.songTitleBaseTime        = valuesRecord.songTitleBaseTime.asNumber();
+                        this.visualizeBarMultiplier   = valuesRecord.visualizeBarMultiplier.asNumber();
+                        this.backStarlightCount       = valuesRecord.backStarlightCount.asNumber();
+                        this.noticeEn                 = valuesRecord.noticeEn.asString();
+                        this.noticeKo                 = valuesRecord.noticeKo.asString();
+                        this.noticeWhen               = valuesRecord.noticeWhen.asNumber();
+                    }
                 }
             } catch(e) {
                 ssConsoleLogs(this.trans('Cloud Manager import failed. Cloud features will be disabled.'));
@@ -3015,6 +3016,9 @@ class ShuttingStarsCore {
                 } else if(this.settingChoosing == 'fixSongTiming') {
                     this.songTiming--;
                     if(this.songTiming < 0) this.songTiming = 0;
+                } else if(this.settingChoosing == 'judgeTiming') {
+                    this.judgeTiming--;
+                    if(this.judgeTiming < -200) this.judgeTiming = -200;
                 } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
                     this.noteSpeedMultiplier--;
                     if(this.noteSpeedMultiplier < 0.1) this.noteSpeedMultiplier = 0.1;
@@ -3031,6 +3035,9 @@ class ShuttingStarsCore {
                 } else if(this.settingChoosing == 'fixSongTiming') {
                     this.songTiming++;
                     if(this.songTiming >= 1000) this.songTiming = 1000;
+                } else if(this.settingChoosing == 'judgeTiming') {
+                    this.judgeTiming++;
+                    if(this.judgeTiming >= 200) this.judgeTiming = 200;
                 } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
                     this.noteSpeedMultiplier++;
                     if(this.noteSpeedMultiplier >= 8.0) this.noteSpeedMultiplier = 8.0;
@@ -4871,6 +4878,7 @@ class ShuttingStarsCore {
 
             if(settingOne == 'fixKeypressTiming'     ) label = this.trans('Key Press Delay') + ' - ' + leftSide + this.keypressTiming + rightSide;
             if(settingOne == 'fixSongTiming'         ) label = this.trans('Sound Delay'    ) + ' - ' + leftSide + this.songTiming + rightSide;
+            if(settingOne == 'judgeTiming'           ) label = this.trans('Judge Timing'   ) + ' - ' + leftSide + this.judgeTiming + rightSide;
             if(settingOne == 'setNoteSpeedMultiplier') label = this.trans('Note Speed Rate') + ' - ' + leftSide + this.noteSpeedMultiplier + rightSide;
             if(settingOne == 'setGraphicQuality'     ) label = this.trans('Graphic Quality') + ' - ' + leftSide + this.settingGraphicQualityChoosing + rightSide;
             if(settingOne == 'resetAll') {
@@ -7536,6 +7544,10 @@ class ShuttingStarsCore {
                             </colgroup>
                             <tbody>
                                 <tr>
+                                    <th class='target_translate'>Note Speed Rate</th>
+                                    <td><input type='number' class='inp inp_notespeedrate full' step='0.1' min='1.0' max='8.0'/></td>
+                                </tr>
+                                <tr>
                                     <th class='target_translate'>Key Press Delay</th>
                                     <td><input type='number' class='inp inp_keypressdelay full' step='1' min='0' max='9999'/></td>
                                 </tr>
@@ -7544,8 +7556,8 @@ class ShuttingStarsCore {
                                     <td><input type='number' class='inp inp_sounddelay full' step='1' min='0' max='9999'/></td>
                                 </tr>
                                 <tr>
-                                    <th class='target_translate'>Note Speed Rate</th>
-                                    <td><input type='number' class='inp inp_notespeedrate full' step='0.1' min='1.0' max='8.0'/></td>
+                                    <th class='target_translate'>Judge Timing</th>
+                                    <td><input type='number' class='inp inp_judgetiming full' step='1' min='-200' max='200'/></td>
                                 </tr>
                                 <tr>
                                     <th class='target_translate'>Graphic Quality</th>
@@ -7699,6 +7711,7 @@ class ShuttingStarsCore {
             selfs.keypressTiming      = parseInt(String( layer.querySelector('.inp_keypressdelay').value ).trim());
             selfs.songTiming          = parseInt(String( layer.querySelector('.inp_sounddelay').value ).trim());
             selfs.noteSpeedMultiplier = parseInt(String( layer.querySelector('.inp_notespeedrate').value ).trim());
+            selfs.judgeTiming         = parseInt(String( layer.querySelector('.inp_judgetiming').value ).trim());
 
             //     그래픽 품질
             selfs.settingGraphicQualityChoosing = layer.querySelector('.sel_graphicquality').value;
@@ -7867,6 +7880,9 @@ class ShuttingStarsCore {
 
         inp = this.configDiv.querySelector('.inp_notespeedrate');
         inp.value = (this.noteSpeedMultiplier);
+
+        inp = this.configDiv.querySelector('.inp_judgetiming');
+        inp.value = (this.judgeTiming);
 
         if(this.resolution.w <= 1280) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
         else {
@@ -8198,6 +8214,7 @@ class ShuttingStarsCore {
         if(url.indexOf('.') == 0) return url;
 
         if(this.urlCtx.indexOf('/') != this.urlCtx.length - 1) this.urlCtx += '/';
+        if(url.indexOf('//') == 0) url = url.substring(1);
         if(url.indexOf('/') == 0) return this.urlCtx + url.substring(1);
 
         return url;
@@ -8856,6 +8873,11 @@ class ShuttingStarsCore {
             else               song.autoStars = false;
         }
 
+        if(typeof(json.canListen) != 'undefined') {
+            if(json.canListen) song.canListen = true;
+            else               song.canListen = false;
+        }
+
         for(idx=0; idx<json.difficulties.length; idx++) {
             const difficultyOne = json.difficulties[idx];
             let newObj = {};
@@ -8911,6 +8933,7 @@ class ShuttingStarsCore {
         song.musicUrl = mySongAudioURL;
         song.musicAlterUrl = '';
         song.thumbnailUrl = '';
+        song.canListen = false;
         song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
         song.loadingTime = 20;
         song.endTime = 0;
@@ -9209,6 +9232,9 @@ class ShuttingStarsSong {
 
     /** @type {boolean} 게임 동작 중 수정됨, ALTER URL 사용여부 */
     alterUrlUsing = false;
+
+    /** @type {boolean} 게임 플레이가 아닌, 곡 감상 기능 이용 가능 여부 */
+    canListen = true;
     
     // 난이도 별 패턴
     // 배열로, 각 원소는 JSON객체로 구성
