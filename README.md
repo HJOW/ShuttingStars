@@ -103,18 +103,13 @@ https://developers.google.com/fonts/docs/material_symbols?hl=ko
 
 ## Third Party Libraries
 
-+ jQuery (Only for Create Mode)
-
-Projects referencing this document are released under the terms of the MIT license.
-https://jquery.com/license/
-
-+ Three.js
++ Three.js (Necessary, bundled on shuttingstars.bundle.js)
 
 The MIT License
 Copyright © 2010-2026 three.js authors
 https://github.com/mrdoob/three.js/blob/dev/LICENSE
 
-+ Crypto-JS
++ Crypto-JS (Only for crypto API not supported browsers)
 
 The MIT License
 Copyright (c) 2009-2013 Jeff Mott  
@@ -127,6 +122,12 @@ BSD License
 Copyright 2013 Yahoo! Inc.
 https://github.com/pure-css/pure/blob/main/LICENSE
 
-+ vanillawc/wc-monaco-editor (Only using on /create/create.html)
++ jQuery (Only for Create Mode)
+
+Projects referencing this document are released under the terms of the MIT license.
+https://jquery.com/license/
+
++ vanillawc/wc-monaco-editor (Only for Create Mode)
+
 Copyright (c) 2020 VanillaWC
 https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE

@@ -111,18 +111,13 @@ https://developers.google.com/fonts/docs/material_symbols?hl=ko
 
 ## 써드파티 Library
 
-+ jQuery (Create Mode 에서만 사용)
-
-Projects referencing this document are released under the terms of the MIT license.
-https://jquery.com/license/
-
-+ Three.js (선택사항, 없어도 3D 객체 없이 구동됨)
++ Three.js (필수, 번들 shuttingstars.bundle.js 에 포함됨)
 
 The MIT License
 Copyright © 2010-2026 three.js authors
 https://github.com/mrdoob/three.js/blob/dev/LICENSE
 
-+ Crypto-JS (선택사항, 백엔드 붙일 때만 필요)
++ Crypto-JS (선택사항, crypto 표준 API 미지원 시 필요)
 
 The MIT License
 Copyright (c) 2009-2013 Jeff Mott  
@@ -135,6 +130,12 @@ BSD License
 Copyright 2013 Yahoo! Inc.
 https://github.com/pure-css/pure/blob/main/LICENSE
 
-+ vanillawc/wc-monaco-editor (곡 생성 페이지 /create/create.html 에서만 사용)
++ vanillawc/wc-monaco-editor (Create Mode 에서만 사용)
+
 Copyright (c) 2020 VanillaWC
 https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE
+
++ jQuery (Create Mode 에서만 사용)
+
+Projects referencing this document are released under the terms of the MIT license.
+https://jquery.com/license/
