@@ -105,6 +105,62 @@
     src : url('D2CodingBold.woff2') format('woff2')
 }
 
+@font-face {
+    font-family : "OCR-A";
+    src : url("./ocr/ocra.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "ocra";
+    src : url("./ocr/ocra.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "OCR-A-I";
+    src : url("./ocr/ocraI.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "ocraI";
+    src : url("./ocr/ocraI.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "OCR-A-III";
+    src : url("./ocr/ocraIII.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "ocraIII";
+    src : url("./ocr/ocraIII.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "OCR-A-IV";
+    src : url("./ocr/ocraIV.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family : "ocraIV";
+    src : url("./ocr/ocraIV.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 html, body, table, td, th, pre, div, p, span, input, select, textarea {
     font-family: 'D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', monospace, sans-serif;
 }
