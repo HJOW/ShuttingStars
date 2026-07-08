@@ -363,6 +363,8 @@ class ShuttingStarsCore {
 
     /** @type {boolean} 하드코어 모드 (커맨드로 설정) - 판정도 빡빡해지고, PW 소모량도 대폭 증가 */
     hardcoreMode = false;
+    /** @type {boolean} 노트 숨김 모드 (커맨드로 설정) */
+    invisibleNoteMode = false;
 
     /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / listenchoosing / listentitle / listenplaying / setting / credit */
     state = 'title';
@@ -1730,6 +1732,11 @@ class ShuttingStarsCore {
                     if(typeof(this.hardcoreMode) == 'string') this.hardcoreMode = ( (this.hardcoreMode == 'Y' || this.hardcoreMode == 'true') ? true : false );
                 }
 
+                if(typeof(settingJson.invisibleNoteMode) != 'undefined') {
+                    this.invisibleNoteMode = settingJson.invisibleNoteMode;
+                    if(typeof(this.invisibleNoteMode) == 'string') this.invisibleNoteMode = ( (this.invisibleNoteMode == 'Y' || this.invisibleNoteMode == 'true') ? true : false );
+                }
+
                 if(typeof(settingJson.keyList) != 'undefined') {
                     try {
                         if(typeof(settingJson.keyList) == 'string') settingJson.keyList = JSON.parse(settingJson.keyList);
@@ -1794,6 +1801,7 @@ class ShuttingStarsCore {
             settingJson.disable3d           = this.disable3d;
             settingJson.disable2d           = this.disable2d;
             settingJson.hardcoreMode        = this.hardcoreMode;
+            settingJson.invisibleNoteMode   = this.invisibleNoteMode;
             settingJson.language            = this.language;
             settingJson.languageDefault     = this.languageDefault;
             settingJson.usingWorkerConfig   = this.usingWorkerConfig;
@@ -4004,6 +4012,7 @@ class ShuttingStarsCore {
                 if(obj.explosing > 0 && obj.explosing >= obj.explosingMax) continue;
                 if(obj.hidden) continue;
                 if(obj instanceof SSNote) {
+                    if(this.invisibleNoteMode) continue;
                     if(obj.y < -300 || obj.y >= this.getStageHeight() + 300) continue;
                     if((! this.disable3d) && this.use3d.notes) continue;
                     if(this.themeNote != null) {
@@ -4839,6 +4848,15 @@ class ShuttingStarsCore {
         //    하드코어 모드
         if(this.hardcoreMode) {
             label = '[HARDCORE]';
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
+            cols += (this.metricSize2 * label.length) + gap;
+        }
+
+        //    노트 숨김 모드
+        if(this.invisibleNoteMode) {
+            label = '[INVN]';
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.textAlign = "left";
             this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
@@ -6306,6 +6324,13 @@ class ShuttingStarsCore {
             command : [4, 4, 4, 4, 4, 4],
             act : function() {
                 selfs.hardcoreMode = (! selfs.hardcoreMode);
+            }
+        });
+
+        this.commands.push({
+            command : [0, 2, 1, 3, 2, 4],
+            act : function() {
+                selfs.invisibleNoteMode = (! selfs.invisibleNoteMode);
             }
         });
     }
