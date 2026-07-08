@@ -508,6 +508,19 @@ class ShuttingStarsUtilityClass {
         return ssuuid;
     }
 
+    /** 배열을 받아 내부의 원소를 랜덤하게 섞은 새 배열을 반환 */
+    randomizeArrayElements(array) {
+        if(!Array.isArray(array)) return array;
+        let res = array.slice();
+        for(let idx=res.length - 1; idx>0; idx--) {
+            let randIdx = Math.floor(this.random() * (idx + 0.999));
+            let temp = res[idx];
+            res[idx] = res[randIdx];
+            res[randIdx] = temp;
+        }
+        return res;
+    }
+
     /** 
      * 해당 문자열을 SHA-256 암호화 (Promise)
      * 

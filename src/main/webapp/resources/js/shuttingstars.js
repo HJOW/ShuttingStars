@@ -3008,7 +3008,10 @@ class ShuttingStarsCore {
                 }
             }
 
-            // TODO : listeningSongList 순서 섞어야
+            this.playSE('accept2');
+
+            // 순서 섞기
+            this.listeningSongList = ShuttingStarsUtility.randomizeArrayElements(this.listeningSongList);
 
             this.song = this.listeningSongList[0];
             this.difficultyChoosingList = this.song.getDifficultyList();
@@ -7136,7 +7139,8 @@ class ShuttingStarsCore {
                 // 반복
                 if(listenIdx + 1 >= this.listeningSongList.length) {
                     listenIdx = 0;
-                    // TODO : 순서 섞어야?
+                    // 순서 다시 섞기
+                    this.listeningSongList = ShuttingStarsUtility.randomizeArrayElements(this.listeningSongList);
                 }
             }
 
