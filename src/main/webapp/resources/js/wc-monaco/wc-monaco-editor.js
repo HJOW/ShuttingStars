@@ -56769,7 +56769,7 @@ ${Object(zn.b)(wi)}
   };
 }, function(e, t, n) {
   "use strict";
-  n.r(t), t.default = n.p + "resources/fonts/NanumGothicCoding.ttf";
+  n.r(t), t.default = n.p + "resources/fonts/codicon.ttf";
 }, function(e, t, n) {
   var i = n(32), r = n(256);
   typeof (r = r.__esModule ? r.default : r) == "string" && (r = [[e.i, r, ""]]);
