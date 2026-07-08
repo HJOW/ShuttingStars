@@ -364,7 +364,7 @@ class ShuttingStarsCore {
     /** @type {boolean} 하드코어 모드 (커맨드로 설정) - 판정도 빡빡해지고, PW 소모량도 대폭 증가 */
     hardcoreMode = false;
 
-    /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / setting / credit */
+    /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / listenchoosing / listentitle / listenplaying / setting / credit */
     state = 'title';
     /** @type {string} 이전 상태 */
     beforeState = 'none';
@@ -382,6 +382,8 @@ class ShuttingStarsCore {
     songDisplays = [];
     /** @type {Array<ShuttingStarsSong>} 랜덤 선정 가능한 곡들, ShuttingStarsSong 객체 배열 */
     songRandoms  = [];
+    /** @type {Array<ShuttingStarsSong>} 감상 모드에서 사용 가능한 곡들, ShuttingStarsSong 객체 배열 */
+    songCanListen = [];
     /** @type {Array<ShuttingStarsMission>} 특수한 곡들 (mission 모드일 때 선택) */
     missions = [];
     /** @type {string} default / mission / mysong */
@@ -481,7 +483,7 @@ class ShuttingStarsCore {
 
     // 메뉴 화면 관련
     /** @type {Array<string>} 메뉴들 */
-    menuList = ['play', 'records', 'community', 'setting', 'credit'];
+    menuList = ['play', 'records', 'listen', 'community', 'setting', 'credit'];
     /** @type {Array<string>} 위 menuList 에 데이터가 추가됨 */
     menuListDynamic = [];
     /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
@@ -614,6 +616,13 @@ class ShuttingStarsCore {
     bonusDefaults = ['DEFAULT NOTE THEME', 'CLASSIC VISUALIZER', 'CIRCULAR VISUALIZER'];
     /** @type{Array<string>} 이 세션에서 사용 가능한 상품들 */
     bonusAvails = [];
+
+
+    /** @type{Array<ShuttingStarsSong>} 곡 감상 모드 - 재생 목록 리스트 */
+    listeningSongList = [];
+    /** @type{boolean} 곡 감상 모드 - 반복 재생 여부 */
+    listeningLoop     = true;
+
 
     /** @type {string} 마지막으로 성공한 초기화 (init 메소드) 단계 메시지 */
     lastInitSuccessMessage = '';
@@ -1257,7 +1266,7 @@ class ShuttingStarsCore {
         this.addDeclaredKeys(this.escKey);
 
         // 상태 별 가상 키 및 마우스 이벤트 부여
-        if(state == 'playing') {
+        if(state == 'playing' || state == 'listenplaying') {
             // 플레이 중 - 설정된 키 모두 출력
             for(idx=0; idx<this.keyList.length; idx++) {
                 let keyOne = this.keyList[idx];
@@ -1279,17 +1288,17 @@ class ShuttingStarsCore {
         }
 
         // 곡 준비상태 초기화
-        if(state != 'playing') {
+        if(state != 'playing' && state != 'listenplaying') {
             this.songPrepared = false;
         }
 
         // 일부 상태는 스테이지 리셋이 필요
-        if(state == 'menu' || state == 'playing' || state == 'songchoosing' || state == 'songtitle') {
+        if(state == 'menu' || state == 'playing' || state == 'listenplaying' || state == 'songchoosing' || state == 'songtitle' || state == 'listenchoosing' || state == 'listentitle') {
             await this.resetStage();
         }
 
         // 최초 메뉴 진입 시 창 크기 다시 새로고침
-        if(this.beforeState == 'title' && state == 'menu' && state == 'songtitle') {
+        if(this.beforeState == 'title' && (state == 'menu' || state == 'songtitle' || state == 'listentitle')) {
             this.handleScreenResized();
         }
 
@@ -1989,8 +1998,9 @@ class ShuttingStarsCore {
 
     /** 곡 목록 중 출력 대상 곡 목록 갱신 */
     refreshSongDisplayList() {
-        this.songDisplays = [];
-        this.songRandoms  = [];
+        this.songDisplays  = [];
+        this.songRandoms   = [];
+        this.songCanListen = [];
         let idx;
 
         // 우선순위곡 (일반 음원 사용곡) 정리
@@ -2025,6 +2035,14 @@ class ShuttingStarsCore {
             if(songOne.test && (! this.songDebugMode)) continue;
             if(songOne.useYoutube) continue; // 유튜브 곡 미지원 (노트 자동생성이 불가능함)
             this.songRandoms.push(songOne);
+        }
+
+        // 감상 모드 - 사용 가능한 대상 곡 정리
+        for(idx=0; idx<this.songs.length; idx++) {
+            const songOne = this.songs[idx];
+            if(songOne.test && (! this.songDebugMode)) continue;
+            if(! songOne.canListen) continue;
+            this.songCanListen.push(songOne);
         }
     }
 
@@ -2136,7 +2154,7 @@ class ShuttingStarsCore {
         this.resumingTime = 0;
 
         // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
-        if(this.state == 'songtitle') {
+        if(this.state == 'songtitle' || this.state == 'listentitle') {
             this.lastObjectId = 0;
             this.objectsPlaying = [];
             this.notePlacers = [];
@@ -2331,7 +2349,7 @@ class ShuttingStarsCore {
             if(this.ss3d != null && (! this.disable3d)) {
                 this.ss3d.onSongPlayPreparing(this);
             }
-        } else if(this.state == 'playing') { // 곡이 플레이 상황일 경우 처리
+        } else if(this.state == 'playing' || this.state == 'listenplaying') { // 곡이 플레이 상황일 경우 처리
 
             // 진행 시간 - 처리 끝난 후 아래에서 다시 초기화
             this.elapsedTime = (-1) * ((this.stageRows * 2) + this.songTiming); 
@@ -2361,7 +2379,7 @@ class ShuttingStarsCore {
                 // 노트가 올라가는 시간은 주고 재생 시작
                 const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                 setTimeout(() => {
-                    if(selfs.state != 'playing') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+                    if(selfs.state != 'playing' && selfs.state != 'listenplaying') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
 
                     selfs.youtubePlayer.playVideo();
 
@@ -2372,7 +2390,7 @@ class ShuttingStarsCore {
                 // 노트가 올라가는 시간은 주고 재생 시작
                 const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                 setTimeout(() => {
-                    if(selfs.state != 'playing') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+                    if(selfs.state != 'playing' && selfs.state != 'listenplaying') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
 
                     selfs.audio.play();
 
@@ -2390,7 +2408,7 @@ class ShuttingStarsCore {
                 // audio 와 동일하나 BGA 를 대신 사용
                 const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                 setTimeout(() => {
-                    if(selfs.state != 'playing') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+                    if(selfs.state != 'playing' && selfs.state != 'listenplaying') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
 
                     selfs.videoBga.play();
                     selfs.videoBga.volume = 0.8;
@@ -2540,7 +2558,7 @@ class ShuttingStarsCore {
             this.setState('menu');
             this.keyEventDisabled = false;
             if(this.audioBackground != null) { 
-                if(this.state != 'playing') this.audioBackground.play(); 
+                if(this.state != 'playing' && this.state != 'listenplaying') this.audioBackground.play(); 
             }
             if(this.youtubePopPlayer != null) {
                 this.youtubePopPlayer.destroy();
@@ -2572,9 +2590,11 @@ class ShuttingStarsCore {
             this.handleKeyInputMenu(key, vkeyExplosion);
         } else if(this.state == 'songchoosing') {
             this.handleKeyInputSongChoosing(key, vkeyExplosion);
+        } else if(this.state == 'listenchoosing') {
+            this.handleKeyInputListenChoosing(key, vkeyExplosion);
         } else if(this.state == 'setting') {
             this.handleKeyInputSetting(key, vkeyExplosion);
-        } else if(this.state == 'playing') {
+        } else if(this.state == 'playing' || this.state == 'listenplaying') {
             this.handleKeyInputPlaying(key, vkeyExplosion);
         } else if(this.state == 'recordlist') {
             this.handleKeyInputRecordList(key, vkeyExplosion);
@@ -2671,6 +2691,9 @@ class ShuttingStarsCore {
                 this.seeingRecord = null;
                 if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
                 this.setState('recordlist');
+            } else if(this.menuChoosing == 'listen') {
+                this.playSE('accept1');
+                this.setState('listenchoosing');
             } else if(this.menuChoosing == 'community') {
                 this.playSE('accept1');
                 this.showCommunityPopup();
@@ -2791,7 +2814,7 @@ class ShuttingStarsCore {
         } else if(this.songChoosingMode == 'mysong') {
             // 자기가 가지고 있는 곡으로 플레이하는 모드 - 위 아래 방향키는 난이도만 선택 가능하며, 좌우 방향키는 모드 변경, 엔터 시 파일 첨부, ESC는 메뉴로 나가기
             if(key == this.enterKey) {
-                // TODO : mysong - 파일 첨부 창 띄워서 파일 입력받기, 입력받은 후, 받은 mp3 로 Audio 객체 만들고 ShuttingStarsSong 객체를 즉석에서 만들어서 바로 songtitle 로 보내야 됨
+                
                 this.pops.dim.classList.remove('invisible');
                 this.pops.mysong.classList.remove('invisible');
             } else if(key == this.escKey) {
@@ -2898,6 +2921,106 @@ class ShuttingStarsCore {
                     this.difficultyChoosing = true;
                 }
             }
+        }
+    }
+
+    /**
+     * 감상 곡 목록 선택 화면 키 입력 핸들링
+     * @param {string} key 입력 또는 해제된 키
+     * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
+     */
+    handleKeyInputListenChoosing(key, vkeyExplosion) {
+        const selfs = this;
+        let index = 0;
+
+        // ESC 처리
+        if(key == this.escKey) {
+            this.playSE('cancel');
+            this.setState('menu');
+            return;
+        }
+
+        // 곡이 아무것도 준비 안된 상태로 키를 누른 경우
+        if(this.songCanListen.length <= 0) {
+            this.setState('menu'); 
+            return;
+        }
+
+        if(this.songChoosing == null) this.songChoosing = this.songCanListen[0];
+
+        // 유튜브 곡인 경우
+        if(this.songChoosing.useYoutube) {
+            if(key == this.keyList[0]) { // A
+                this.showYoutubePopup(this.songChoosing.youtubeVideoId);
+                return;
+            }
+        }
+
+        // 곡 인덱스 구하기
+        index = 0;
+        for(let idx=0; idx<this.songCanListen.length; idx++) {
+            if(this.songCanListen[idx] == this.songChoosing) {
+                index = idx;
+                break;
+            }
+        }
+        
+        // 키 적용
+        if(key == this.arrowKeys[0]) { // UP
+            index--;
+            if(index < 0) index = this.songCanListen.length - 1;
+            this.songChoosing = this.songCanListen[index];
+        } else if(key == this.arrowKeys[1]) { // DOWN
+            index++;
+            if(index >= this.songCanListen.length) index = 0;
+            this.songChoosing = this.songCanListen[index];
+        } else if(key == this.keyList[1]) { // D
+            if(this.songChoosing == null) return;
+
+            const listenIdx = this.listeningSongList.indexOf(this.songChoosing);
+            if(this.songCanListen.indexOf(this.songChoosing) < 0) { // 현재 선택된 곡이 감상 가능한 곡이 아닌 경우 - 취소 처리 및 재생 목록에서도 제거
+                this.playSE('cancel');
+                this.songChoosing = this.songCanListen[0];
+                if(listenIdx >= 0) this.listeningSongList.splice(listenIdx, 1);
+            } else {
+                if(listenIdx >= 0) {
+                    this.playSE('cancel');
+                    this.song = null;
+                    this.listeningSongList.splice(listenIdx, 1);
+                } else {
+                    this.playSE('accept1');
+                    this.listeningSongList.push(this.songChoosing);
+                }
+            }
+        } else if(key == this.enterKey) {
+            if(this.listeningSongList.length <= 0) {
+                if(this.songChoosing == null) {
+                    ShuttingStarsUtility.toast(this.trans('Please select at least one song to listen.'));
+                    return;
+                } else {
+                    // 현재 선택된 곡을 바로 재생 목록에 넣고 이어서 진행
+                    const cdx = this.songCanListen.indexOf(this.songChoosing);
+                    if(cdx < 0) {
+                        ShuttingStarsUtility.toast(this.trans('Please select at least one song to listen.'));
+                        return;
+                    }
+                    this.listeningSongList.push(this.songChoosing);
+                }
+            }
+
+            // TODO : listeningSongList 순서 섞어야
+
+            this.song = this.listeningSongList[0];
+            this.difficultyChoosingList = this.song.getDifficultyList();
+            this.difficulty = this.difficultyChoosingList[0];
+            this.difficultyLevel = this.difficulty.difficultyLevel;
+            this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+
+            this.songTitleTime = this.songTitleBaseTime;
+            if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+            this.titleDelayTime = this.titleDelayTimeMax;
+
+            this.setState('listentitle');
         }
     }
 
@@ -3080,8 +3203,21 @@ class ShuttingStarsCore {
         } else if(key == this.escKey) {
             // 플레이 중이며 ESC키
             if(this.paused) {
-                // 이미 일시정지 중일 때 또 ESC 누름 --> 포기 처리
-                this.onGameOver();
+                // 이미 일시정지 중일 때 또 ESC 누름
+                if(this.state == 'listenplaying') {
+                    // 감상 모드인 경우는 재생 중지
+                    // 재생 중단
+                    this.paused = false;
+                    this.stopAudio();
+                    this.audio = null;
+                    this.songThumb = null;
+                    this.videoBgaUrl = null; // TODO
+                    this.songPrepared = false;
+                    this.playPrepared = false;
+                    // 메뉴
+                    this.setState('menu');
+                }
+                else this.onGameOver(); // 게임 중인 경우는 포기 처리
             } else {
                 // 일시정지 중이 아닐 때 --> 일시정지 시작
                 this.pauseSong();
@@ -3763,7 +3899,7 @@ class ShuttingStarsCore {
             }
 
             // 곡 타이틀 (플레이 전 로딩시간)
-            if(this.state == 'songtitle') {
+            if(this.state == 'songtitle' || this.state == 'listentitle') {
                 // 한 타이밍, 게임 렌더링 시도를 하여 이미지 등 리소스 캐싱 유도
                 if(this.songTitleTime == this.songTitleBaseTime - 1) {
                     this.renderPlaying();
@@ -3795,7 +3931,7 @@ class ShuttingStarsCore {
             }
 
             // 현재 게임 상태별 렌더링
-            if(this.state == 'playing' || this.state == 'gameover') {
+            if(this.state == 'playing' || this.state == 'gameover' || this.state == 'listenplaying') {
                 this.renderPlaying();
             } else if(this.state == 'firstset') {
                 this.renderFirstSet();
@@ -3805,8 +3941,10 @@ class ShuttingStarsCore {
                 this.renderMenu();
             } else if(this.state == 'songchoosing') {
                 this.renderSongChoosing();
-            } else if(this.state == 'songtitle') {
+            } else if(this.state == 'songtitle' || this.state == 'listentitle') {
                 this.renderSongTitle();
+            } else if(this.state == 'listenchoosing') {
+                this.renderListenChoosing();
             } else if(this.state == 'result') {
                 this.renderResult();
             } else if(this.state == 'recordlist') {
@@ -3898,7 +4036,10 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
             this.ctx.textAlign = "center";
-            this.ctx.strokeText(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('%1 key to resume, %2 key to give up !'), '%1', this.enterKey), '%2', escKeyLabel), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + ((fontSize * 2) + 10) , false));
+
+            let message = '%1 key to resume, %2 key to give up !';
+            if(this.state == 'listenplaying') message = '%1 key to resume, %2 key to stop !';
+            this.ctx.strokeText(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans(message), '%1', this.enterKey), '%2', escKeyLabel), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + ((fontSize * 2) + 10) , false));
         }
 
         // 일시정지 해제 대기시간 그리기
@@ -3955,6 +4096,15 @@ class ShuttingStarsCore {
             this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.renderCycleGap         ) + 'ms P3'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
             this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.simultaneous3DCycleGap ) + 'ms P4'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
             this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.render3DCycleGap       ) + 'ms P5'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
+        }
+
+        // Create Mode / Listen Mode (자동 플레이 여부) 출력
+        if(this.createMode || this.state == 'listenplaying') {
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(this.trans('AUTO PLAYING'), this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 3));
         }
 
         // 게임 오버 그리기
@@ -4095,6 +4245,7 @@ class ShuttingStarsCore {
 
             if(menuOne == 'play'     ) label = this.trans('PLAY');
             if(menuOne == 'setting'  ) label = this.trans('SETTING');
+            if(menuOne == 'listen'   ) label = this.trans('LISTEN');
             if(menuOne == 'credit'   ) label = this.trans('CREDIT');
             if(menuOne == 'community') label = this.trans('COMMUNITY');
             if(menuOne == 'records'  ) label = this.trans('RECORDS');
@@ -4205,7 +4356,7 @@ class ShuttingStarsCore {
      * 공통 공지사항 (타이틀, 메뉴 화면에서 사용) 출력
      */
     renderNoticeBottom() {
-        if(this.state == 'playing') return;
+        if(this.state == 'playing' || this.state == 'listenplaying') return;
 
         let label = (this.language == 'ko' ? this.noticeKo : this.noticeEn);
         if(label == null) return;
@@ -4705,6 +4856,241 @@ class ShuttingStarsCore {
             this.ctx.textAlign = "left";
             this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
             cols += (this.metricSize2 * label.length) + gap;
+        }
+    }
+
+    /**
+     * 화면 출력 - 곡 선정 화면 (감상 모드)
+     */
+    renderListenChoosing() {
+        const selfs = this;
+        let idx, ddx, jdx;
+        let rows = 0;
+        let cols = 0;
+        let fontSize = this.convertFontSize(20);
+        let opacity = 0.9;
+        let gap = Math.floor(fontSize / 2.0);
+        let label = '';
+        let lefts, rights;
+
+        this.calculateFontMetric();
+        gap = Math.floor(this.metricSize2 / 2.0);
+
+        // 최초 Y 좌표 계산
+        rows = this.convertY(this.getStageHeight() / 6, false);
+
+        // 곡 목록이 비어 있는 경우를 처리
+        fontSize = this.convertFontSize(20);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        let emptyState = false;
+
+        this.songChoosingMode = 'default'; // 감상 모드에서는 곡 목록만 선택
+        if(this.songCanListen.length <= 0) {
+            this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.getStageWidth() / 2), rows);
+            emptyState = true;
+        }
+        
+        // 타이틀 출력
+        lefts  = '';
+        rights = '';
+        if((this.songChoosingMode == 'mission' && this.missions.length >= 1) || (this.songChoosingMode == 'default' && this.songDisplays.length >= 1) || (this.songChoosingMode == 'mysong')) {
+            lefts  = '◀ ';
+            rights = ' ▶';
+        }
+        fontSize = this.convertFontSize(30);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+        if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
+        else this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
+        rows += (this.metricSize3 * 2) + (gap);
+
+        // 곡 목록이 빈 경우 처리
+        if(emptyState) {
+            rows += this.metricSize1 + gap;
+
+            // ESC 표기
+            let escKeyLabel = this.escKey;
+            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+            fontSize = this.convertFontSize(30);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(this.trans('EMPTY !'), this.convertX(this.getStageWidth() / 2), rows);
+
+            setTimeout(() => {
+                selfs.setState('menu');
+            }, 4000);
+            return;
+        }
+
+        let centerY = this.convertY(this.getStageHeight() / 2, false);
+        let currentRow = centerY; // 기존 rows 값을 보존해야 하기 때문에 따로 선언
+        let row1Height = 0;
+        let currentIndex = 0;
+        let songChoosen = null;
+        let youtubeSongChoosed = null; // Youtube 기반 곡 선택 시 이 곳에 영상ID 탑재
+        let seeListenSelectedSong = false;
+        let opacityOne = 0;
+        opacity = 0.99;
+
+        //     곡을 선택하지 않은 상태인 경우 첫 곡을 출력
+        if(this.songChoosing == null) { this.songChoosing = this.songCanListen[0]; }
+
+        // 1개 행 높이 사전 계산
+        row1Height = this.metricSize3 + this.metricSize1 + this.metricSize2 + (gap * 5);
+
+        // 선택 중인 미션이 몇 번째인지 확인
+        for(idx=0; idx<this.songCanListen.length; idx++) {
+            if(this.songCanListen[idx] == this.songChoosing) { currentIndex = idx; break; }
+        }
+
+        // 곡 목록 3번 출력
+        for(jdx=0; jdx<3; jdx++) {
+            if(jdx == 0) {
+                currentRow = centerY - (  (row1Height * (this.songCanListen.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+                opacityOne = ( 0.5 / (this.songCanListen.length + currentIndex) );
+                opacity = 0.5 - opacityOne;
+            }
+            for(idx=0; idx<this.songCanListen.length; idx++) {
+                let songOne = this.songCanListen[idx];
+
+                // 재생 목록에 이미 포함됐는지 여부
+                const listenSelected = (this.listeningSongList.indexOf(songOne) >= 0);
+
+
+                if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
+                    currentRow += row1Height;
+                    continue;
+                }
+
+                let choosen = (jdx == 1 && this.songChoosing == songOne);
+                if(choosen) {
+                    songChoosen = songOne;
+                    
+                    if(songOne.useYoutube) youtubeSongChoosed = songOne.youtubeVideoId;
+
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+
+                    if(this.difficultyChoosing) {
+                        this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height + this.metricSize2 + (gap * 2)));
+                    } else {
+                        this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height));
+                    }
+                }
+
+                // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
+                if(! this.screenDirLandscape) {
+                    if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3)) {
+                        opacity = opacity / 4;
+                    }
+                }
+
+                // 곡 이름 출력
+                fontSize = this.convertFontSize(20);
+                label = songOne.name;
+                if(listenSelected) label = '✓ ' + label;
+                this.ctx.textAlign = "center";
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                if(choosen) {
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3));
+                } else {
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
+                }
+
+                // 작곡가, 노트작성자, bpm 출력
+                label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
+                fontSize = this.convertFontSize(15);
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+                this.ctx.textAlign = "center";
+                if(choosen) {
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height * 2 / 3));
+                } else {
+                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height * 2 / 3));
+                }
+
+                currentRow += row1Height;
+                if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
+                else opacity -= opacityOne;
+                if(opacity >= 0.99) opacity = 0.99;
+                if(opacity <= 0) opacity = 0.0;
+            }
+        }
+
+        // 현재 중앙에 보고 있는 곡이 재생 목록에 포함됐는지 여부 체크
+        seeListenSelectedSong = (this.listeningSongList.indexOf(songChoosen) >= 0);
+
+        // 기타 안내 출력
+        fontSize = this.convertFontSize(12);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        opacity = 0.9;
+        label = this.trans('MOVE : ');
+        for(idx=0; idx<this.arrowKeys.length; idx++) {
+            let arrowKeyOne = this.arrowKeys[idx];
+            let arrowKeyLabel = String(arrowKeyOne);
+            if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
+            else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
+            else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
+            else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
+            else arrowKeyLabel = String(arrowKeyOne);
+
+            label += arrowKeyLabel;
+        }
+        if(seeListenSelectedSong) label += '    ' + this.trans('UNSELECT : ') + this.keyList[1]; // D
+        else                      label += '    ' + this.trans('SELECT : '  ) + this.keyList[1];
+        label += '      ' + this.trans('PLAY : ') + this.enterKey;
+        label += '      ' + this.trans('BACK : ');
+        if(this.escKey == 'ESCAPE') label += 'ESC';
+        else                        label += this.escKey;
+        
+        if(youtubeSongChoosed) label += '    ' + this.trans('Open YouTube : ') + this.keyList[0];
+
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
+        
+        // 선택 곡 상세 정보 (Description) 출력
+        let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
+        let descW = Math.floor((this.canvas.width * 1.2) / 4.0);
+
+        if(descW < 300) {
+            descX = Math.floor(this.canvas.width / 2.0);
+            descW = Math.floor((this.canvas.width) / 2.0);
+        }
+        let desc = [];
+        if(songChoosen != null) {
+            desc = songChoosen.getDescriptionSplit();
+        } else if(this.songChoosingMode == 'mysong') {
+            desc.push(this.trans('Play with your own music !'));
+            desc.push('(' + this.trans('Scores will not be saved.') + ')');
+        }
+        if(desc != null && desc.length > 0) {
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "left";
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
+
+            rows = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5;
+            for(const line of desc) {
+                this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
+                rows += fontSize + gap;
+            }
+            this.ctx.textAlign = "center";
         }
     }
 
@@ -5873,7 +6259,7 @@ class ShuttingStarsCore {
                     selfs.pops.dim.classList.add('invisible');
                     selfs.pops.youtube.classList.add('invisible');
                     if(selfs.audioBackground != null) { 
-                        if(selfs.state != 'playing') selfs.audioBackground.play(); 
+                        if(selfs.state != 'playing' && selfs.state != 'listenplaying') selfs.audioBackground.play(); 
                     }
                     selfs.youtubePopPlayer.destroy();
                     selfs.youtubePopPlayer = null;
@@ -6219,7 +6605,7 @@ class ShuttingStarsCore {
             if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
             // 노트 위치 처리
-            if(this.state == 'playing' && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
+            if((this.state == 'playing' || this.state == 'listenplaying') && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];
                     if(obj instanceof SSNote) {
@@ -6251,14 +6637,14 @@ class ShuttingStarsCore {
             }
 
             // pw 조금 회복
-            if(this.state == 'playing') {
+            if(this.state == 'playing' || this.state == 'listenplaying') {
                 this.pw++;
                 if(this.pw < 0) this.pw = 0;
                 else if(this.pw > this.pwMax) this.pw = this.pwMax;
             }
 
             // CreateMode 인 경우 이미 폭발한 노트도 다시 살리기 (곡 플레이 진행시간을 조절할 수 있기 때문)
-            if(this.createMode) {
+            if(this.createMode || this.state == 'listenplaying') {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];    
                     if(obj instanceof SSNote) {
@@ -6347,7 +6733,7 @@ class ShuttingStarsCore {
             }
 
             // 곡 준비 중 남은 시간 처리
-            if(this.state == 'songtitle') {
+            if(this.state == 'songtitle' || this.state == 'listentitle') {
                 if(this.songTitleTime > 0) this.songTitleTime--;
                 if(this.songTitleTime <= 0) {
                     // 곡 로딩여부 체크 - 로딩 안됐으면 시간 다시 늘리기
@@ -6359,7 +6745,8 @@ class ShuttingStarsCore {
                 }
                 if(this.songTitleTime <= 0) {
                     // 플레이 화면으로 전환
-                    this.setState('playing');
+                    if(this.state == 'listentitle') this.setState('listenplaying');
+                    else                            this.setState('playing');
                 }
             } else if(this.state == 'gameover') { // 게임 오버 출력완료 여부 처리
                 if(this.gameoverTime > 0) this.gameoverTime--;
@@ -6371,7 +6758,7 @@ class ShuttingStarsCore {
                 if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
                 if(this.creditIndex < 0) this.creditIndex = 0;
                 if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
-            } else if(this.state == 'playing') { // 플레이 중 처리
+            } else if(this.state == 'playing' || this.state == 'listenplaying') { // 플레이 중 처리
                 // 재개 대기 타이밍 처리, SSNoteKeyObject 처리중 애니메이션 재생 진행상황 증가
                 if(! this.paused) {
                     // 재개 타이밍 처리
@@ -6397,17 +6784,15 @@ class ShuttingStarsCore {
                 }
 
                 // create 모드 - 자동 노트 처리
-                if(this.createMode) {
-                    if(this.state == 'playing') {
-                        for(idx=0; idx<this.notePlacers.length; idx++) {
-                            let notePlacerOne = this.notePlacers[idx];
-                            for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
-                                let objOne = this.objectsPlaying[jdx];
-                                if(objOne instanceof SSNote) {
-                                    if(objOne.removed) continue;
-                                    if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
-                                        this.handleNotePlacerCalled(notePlacerOne);
-                                    }
+                if(this.createMode || this.state == 'listenplaying') {
+                    for(idx=0; idx<this.notePlacers.length; idx++) {
+                        let notePlacerOne = this.notePlacers[idx];
+                        for(jdx=0; jdx<this.objectsPlaying.length; jdx++) {
+                            let objOne = this.objectsPlaying[jdx];
+                            if(objOne instanceof SSNote) {
+                                if(objOne.removed) continue;
+                                if(notePlacerOne.y + 5 >= objOne.y && notePlacerOne.y - 5 <= objOne.y && notePlacerOne.isConflicted(objOne)) {
+                                    this.handleNotePlacerCalled(notePlacerOne);
                                 }
                             }
                         }
@@ -6421,6 +6806,7 @@ class ShuttingStarsCore {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
             if(this.state == 'playing') this.onGameOver();
+            else if(this.state == 'listenplaying') this.onSongEnd();
         }
     }
 
@@ -6473,7 +6859,7 @@ class ShuttingStarsCore {
 
             if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
             if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
-            if(this.state != 'playing') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
+            if(this.state != 'playing' && this.state != 'listenplaying') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
             // Audio 가 끝나지는 않았으나 로딩된 버퍼가 다 됐는지 체크하기 위하여 직전 elapsedTime 백업
             this.elapsedTimeLast = this.elapsedTime;
@@ -6514,7 +6900,7 @@ class ShuttingStarsCore {
             } else {
                 this.elapsedTimeNotIncreased = 0;
             }
-            if(this.elapsedTimeNotIncreased >= 10) {
+            if(this.elapsedTimeNotIncreased >= 100) {
                 this.elapsedTimeNotIncreased = 0;
                 this.pauseSong(); // 일시정지 처리
                 ShuttingStarsUtility.toast(this.trans('Content buffer is empty. Please check your network connection.'));
@@ -6617,6 +7003,7 @@ class ShuttingStarsCore {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
             if(this.state == 'playing') this.onGameOver();
+            else if(this.state == 'listenplaying') this.onSongEnd();
         }
     }
 
@@ -6730,92 +7117,143 @@ class ShuttingStarsCore {
      * 곡 플레이 종료 시 호출 (Promise)
      */
     async onSongEnd() {
-        this.setState('result');
-        this.paused = false;
-        this.stopAudio();
-        this.audio = null;
-        this.songThumb = null;
-        this.videoBgaUrl = null; // TODO
-        this.songPrepared = false;
-        this.playPrepared = false;
-
+        const selfs = this;
         let idx;
+        if(this.state == 'listenplaying') { // 감상 모드 재생곡 끝남 - 다음 리스트 확인
+            // 재생 중단
+            this.paused = false;
+            this.stopAudio();
+            this.audio = null;
+            this.songThumb = null;
+            this.videoBgaUrl = null; // TODO
+            this.songPrepared = false;
+            this.playPrepared = false;
 
-        // Note 갯수 체크
-        let diff = this.song.difficulties[ this.difficulty.index ];
-        let count = diff.patterns.length;
-        let rank = this.judgeResultRank();
-
-        // 기록 여부 결정
-        let recordYn = true;
-        if(this.createMode) recordYn = false;
-        else if(this.song instanceof CustomMySSSong) recordYn = false;
-
-        if(recordYn) {
-            // Credit 반영
-            this.reportSaved.PERFECT  += this.report.PERFECT;
-            this.reportSaved.GREAT    += this.report.GREAT;
-            this.reportSaved.GOOD     += this.report.GOOD;
-            this.reportSaved.BAD      += this.report.BAD;
-            this.reportSaved.MISS     += this.report.MISS;
-            this.reportSaved.maxCombo += this.maxCombo;
-            this.reportSaved.playCount++;
-            this.antiMatterCredit += ( this.reportSaved.maxCombo ) * Math.floor(((this.hp >= 1 ? 4 : 1) * (3 + diff.difficultyLevel)) / 4.0);
-            this.saveCredit();
-
-            // 기록 남기기
-            this.addRecords({
-                date : new Date().getTime(),
-                mode : this.mode,
-                song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter, bpm : this.song.bpm },
-                difficulty : this.difficulty.difficultyLabel,
-                level : this.difficulty.difficultyLevel,
-                point : this.point,
-                report : this.report,
-                notes : count,
-                combo : this.maxCombo,
-                rank : rank,
-                hp : this.hp,
-                gameover : this.gameOverDelayed,
-                clear : (this.hp >= 1 && (! this.gameOverDelayed)),
-                notehistory : [],
-                build : this.build,
-                userAgent : window.navigator.userAgent
-            });
-        }
-
-        // MySong 인 곡들을 목록에서 제거
-        try {
-            for(idx=0; idx<this.songs.length; idx++) {
-                const songOne = this.songs[idx];
-                if(songOne instanceof CustomMySSSong) {
-                    this.songs.splice(idx, 1);
-                    idx--;
+            // 곡 재생 목록 확인
+            let listenIdx = this.listeningSongList.indexOf(this.song);
+            if(listenIdx < 0) listenIdx = 0;
+            if(this.listeningLoop) {
+                // 반복
+                if(listenIdx + 1 >= this.listeningSongList.length) {
+                    listenIdx = 0;
+                    // TODO : 순서 섞어야?
                 }
             }
 
-            for(idx=0; idx<this.songDisplays.length; idx++) {
-                const songOne = this.songDisplays[idx];
-                if(songOne instanceof CustomMySSSong) {
-                    this.songDisplays.splice(idx, 1);
-                    idx--;
+            if(listenIdx + 1 < this.listeningSongList.length) { // 다음 곡이 존재
+                // 다음 곡 재생
+                this.song = this.listeningSongList[listenIdx + 1];
+
+                this.difficultyChoosingList = this.song.getDifficultyList();
+                this.difficulty = this.difficultyChoosingList[0];
+                this.difficultyLevel = this.difficulty.difficultyLevel;
+                this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+
+                this.songTitleTime = this.songTitleBaseTime;
+                if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+                this.titleDelayTime = this.titleDelayTimeMax;
+
+                this.setState('listentitle'); // 다음 곡 타이틀로 이동
+
+                // 3D 매니저 이벤트 호출
+                if(this.ss3d != null) {
+                    this.ss3d.onSongEnd(this);
                 }
+
+                return;
+            } else {
+                // 곡 재생이 불가능 - 감상 곡 목록 화면으로 이동
+                this.setState('listenchoosing');
+            }
+        } else {
+            // 결과 화면 띄우기
+            this.setState('result');
+
+            // 재생 중단
+            this.paused = false;
+            this.stopAudio();
+            this.audio = null;
+            this.songThumb = null;
+            this.videoBgaUrl = null; // TODO
+            this.songPrepared = false;
+            this.playPrepared = false;
+
+            // Note 갯수 체크
+            let diff = this.song.difficulties[ this.difficulty.index ];
+            let count = diff.patterns.length;
+            let rank = this.judgeResultRank();
+
+            // 기록 여부 결정
+            let recordYn = true;
+            if(this.createMode) recordYn = false;
+            else if(this.song instanceof CustomMySSSong) recordYn = false;
+
+            if(recordYn) {
+                // Credit 반영
+                this.reportSaved.PERFECT  += this.report.PERFECT;
+                this.reportSaved.GREAT    += this.report.GREAT;
+                this.reportSaved.GOOD     += this.report.GOOD;
+                this.reportSaved.BAD      += this.report.BAD;
+                this.reportSaved.MISS     += this.report.MISS;
+                this.reportSaved.maxCombo += this.maxCombo;
+                this.reportSaved.playCount++;
+                this.antiMatterCredit += ( this.reportSaved.maxCombo ) * Math.floor(((this.hp >= 1 ? 4 : 1) * (3 + diff.difficultyLevel)) / 4.0);
+                this.saveCredit();
+
+                // 기록 남기기
+                this.addRecords({
+                    date : new Date().getTime(),
+                    mode : this.mode,
+                    song : { serial : this.song.serial, name : this.song.name, composer : this.song.composer, noteWriter : this.song.noteWriter, bpm : this.song.bpm },
+                    difficulty : this.difficulty.difficultyLabel,
+                    level : this.difficulty.difficultyLevel,
+                    point : this.point,
+                    report : this.report,
+                    notes : count,
+                    combo : this.maxCombo,
+                    rank : rank,
+                    hp : this.hp,
+                    gameover : this.gameOverDelayed,
+                    clear : (this.hp >= 1 && (! this.gameOverDelayed)),
+                    notehistory : [],
+                    build : this.build,
+                    userAgent : window.navigator.userAgent
+                });
             }
 
-            for(idx=0; idx<this.songRandoms.length; idx++) {
-                const songOne = this.songRandoms[idx];
-                if(songOne instanceof CustomMySSSong) {
-                    this.songRandoms.splice(idx, 1);
-                    idx--;
+            // MySong 인 곡들을 목록에서 제거
+            try {
+                for(idx=0; idx<this.songs.length; idx++) {
+                    const songOne = this.songs[idx];
+                    if(songOne instanceof CustomMySSSong) {
+                        this.songs.splice(idx, 1);
+                        idx--;
+                    }
                 }
+
+                for(idx=0; idx<this.songDisplays.length; idx++) {
+                    const songOne = this.songDisplays[idx];
+                    if(songOne instanceof CustomMySSSong) {
+                        this.songDisplays.splice(idx, 1);
+                        idx--;
+                    }
+                }
+
+                for(idx=0; idx<this.songRandoms.length; idx++) {
+                    const songOne = this.songRandoms[idx];
+                    if(songOne instanceof CustomMySSSong) {
+                        this.songRandoms.splice(idx, 1);
+                        idx--;
+                    }
+                }
+            } catch(e) {
+                console.error(e);
             }
-        } catch(e) {
-            console.error(e);
-        }
-        
-        // 3D 매니저 이벤트 호출
-        if(this.ss3d != null) {
-            this.ss3d.onSongEnd(this);
+
+            // 3D 매니저 이벤트 호출
+            if(this.ss3d != null) {
+                this.ss3d.onSongEnd(this);
+            }
         }
     }
 
@@ -7302,7 +7740,7 @@ class ShuttingStarsCore {
             selfs.pops.dim.classList.add('invisible');
 
             if(selfs.audioBackground != null) {
-                if(selfs.state != 'playing') selfs.audioBackground.play();
+                if(selfs.state != 'playing' && selfs.state != 'listenplaying') selfs.audioBackground.play();
             }
             if(selfs.youtubePopPlayer != null) {
                 selfs.youtubePopPlayer.destroy();
@@ -7380,7 +7818,7 @@ class ShuttingStarsCore {
             selfs.pops.dim.classList.add('invisible');
             selfs.keyEventDisabled = false;
             if(selfs.audioBackground != null) {
-                if(selfs.state != 'playing') selfs.audioBackground.play();
+                if(selfs.state != 'playing' && selfs.state != 'listenplaying') selfs.audioBackground.play();
             }
             if(selfs.youtubePopPlayer != null) {
                 selfs.youtubePopPlayer.destroy();
@@ -8211,6 +8649,7 @@ class ShuttingStarsCore {
         url = String(url).trim();
         if(url.indexOf('http://') == 0 || url.indexOf('https://') == 0) return url;
         if(url.indexOf('[CTX]') == 0) url = ShuttingStarsUtility.replaceString(url, '[CTX]', this.urlCtx);
+        if(url.indexOf('.//') == 0) url = './' + url.substring(3);
         if(url.indexOf('.') == 0) return url;
 
         if(this.urlCtx.indexOf('/') != this.urlCtx.length - 1) this.urlCtx += '/';
@@ -9234,7 +9673,7 @@ class ShuttingStarsSong {
     alterUrlUsing = false;
 
     /** @type {boolean} 게임 플레이가 아닌, 곡 감상 기능 이용 가능 여부 */
-    canListen = true;
+    canListen = false;
     
     // 난이도 별 패턴
     // 배열로, 각 원소는 JSON객체로 구성

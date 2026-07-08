@@ -25,12 +25,15 @@ const SSStringTable = {
         'SETTING' : '설정',
         'CREDIT' : 'CREDIT',
         'RECORDS' : '기록',
+        'LISTEN' : '감상',
         'MOVE : ' : '이동 : ',
         'ACCEPT : ' : '확인 : ',
         'ACCEPT' : '확인',
         'Accept' : '확인',
         'CANCEL' : '취소',
         'Cancel' : '취소',
+        'SELECT : ' : '선택 : ',
+        'UNSELECT : ' : '선택 해제 : ',
         'START' : '시작',
         'Save' : '저장',
         'Tools' : '도구',
@@ -55,6 +58,7 @@ const SSStringTable = {
         'Choose the level !' : '난이도를 선택하세요 !',
         'No songs available !' : '현재 선택 가능한 곡이 없습니다 !',
         'No records !' : '기록이 없습니다. !',
+        'Please select at least one song to listen.' : '감상할 곡을 최소 한 곡 이상 선택하세요.',
         'Composed by %1, Notes written by %2, %3 BPM' : '작곡 : %1, 노트 작성 : %2, %3 BPM',
         'Composed by %1, Notes written by %2' : '작곡 : %1, 노트 작성 : %2',
         'Random song, random notes !' : '랜덤 곡, 랜덤 노트',
@@ -63,6 +67,7 @@ const SSStringTable = {
         'Survive (HARD)' : '생존 (어려움)',
         'Survive (Very HARD)' : '생존 (매우어려움)',
         'Survive (CRAZY)' : '생존 (CRASY)',
+        "PLAY : " : "플레이 : ",
         'BACK : ' : '돌아가기 : ',
         '% key to continue...' : '% 키를 눌러 계속...',
         'PLAYING REPORT' : 'PLAYING REPORT',
@@ -72,6 +77,7 @@ const SSStringTable = {
         'PAUSED' : '일시정지',
         'Resume within % !' : '재개 대기 % !',
         '%1 key to resume, %2 key to give up !' : '재개하려면 %1, 포기하려면 %2',
+        '%1 key to resume, %2 key to stop !' : '재개하려면 %1, 중지하려면 %2',
         '% key to reset all now !' : '% 키를 다시 누르면 전체 초기화 !',
         '% key to start' : '% 키를 눌러 시작',
         'Touch here to start' : '이 곳을 터치하여 시작',
@@ -107,7 +113,8 @@ const SSStringTable = {
         "NOT USE" : "사용 안 함",
         "Custom settings here (JSON format)" : '커스텀 설정 (JSON 형식으로 입력)',
         "Open YouTube : " : "유튜브 열기 : ",
-        "Content buffer is empty. Please check your network connection." : "콘텐츠 버퍼가 비어있습니다. 네트워크 연결을 확인하세요."
+        "Content buffer is empty. Please check your network connection." : "콘텐츠 버퍼가 비어있습니다. 네트워크 연결을 확인하세요.",
+        "AUTO PLAYING" : "자동 플레이 중"
     }
 };
 export { SSStringTable };
