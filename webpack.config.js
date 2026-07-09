@@ -41,6 +41,15 @@ module.exports = {
         new CleanWebpackPlugin({
             "cleanAfterEveryBuildPatterns" : ['**/*.LICENSE.txt'],
             "protectWebpackAssets" : false
+        }),
+        new webpack.BannerPlugin({
+            "banner" : `/**
+ * @author HJOW <hujinone22@naver.com>
+ * @license Apache-2.0 
+ */`,
+            "footer" : false,
+            "raw" : true,
+            "stage" : webpack.Compilation.PROCESS_ASSETS_STAGE_REPORT
         })
     ],
     "performance" : {
