@@ -3031,7 +3031,9 @@ class ShuttingStarsCore {
 
             this.song = this.listeningSongList[0];
             this.difficultyChoosingList = this.song.getDifficultyList();
-            this.difficulty = this.difficultyChoosingList[0];
+
+            const randomNo = Math.floor(ShuttingStarsUtility.random() * (this.difficultyChoosingList.length - 0.0001));
+            this.difficulty = this.difficultyChoosingList[randomNo];
             this.difficultyLevel = this.difficulty.difficultyLevel;
             this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
 
@@ -11317,7 +11319,7 @@ class SSBonusProduct {
 /** 2D 오디오 시각화 공통 클래스 */
 class SSAudio2DVisualizer extends SSBonusProduct {
     /** @type {number} 시각화 각 필드 길이 배수 */
-    sizeMultiplier = 2.2;
+    sizeMultiplier = 4;
     /** @type {number} 원의 반지름 또는 사각형의 너비 */
     r = 0;
     /** @type {number} 컬러 GREEN */
@@ -11420,7 +11422,7 @@ class BarTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
 /** 원형 2D 오디오 시각화 클래스 */
 class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
     /** @type {number} 원형 시각화의 기준 반지름 */
-    radius = 100;
+    radius = 50;
     /**
      * 인스턴스 초기화
      */
@@ -11441,16 +11443,17 @@ class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
         // 중앙 위치
         const centerX = canvasWidth  / 2;
         const centerY = canvasHeight / 2;
+        const starts  = Math.floor(elapsedTime / 10.0);
 
-        for(let i=0; i<realtimeAudioBufferLength; i++) {
+        for(let i=0; i<realtimeAudioBufferLength - 32; i++) {
             // 방향
-            const angle = (i / realtimeAudioBufferLength) * Math.PI * 2; 
+            const angle = ((i + starts) / (realtimeAudioBufferLength - 32)) * Math.PI * 2; 
 
             // 막대의 시작점과 끝점
             const x1 = Math.floor(centerX + Math.cos(angle) * this.radius);
             const y1 = Math.floor(centerY + Math.sin(angle) * this.radius);
-            const x2 = Math.floor(centerX + Math.cos(angle) * (this.radius + (Math.random() * 50) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
-            const y2 = Math.floor(centerY + Math.sin(angle) * (this.radius + (Math.random() * 50) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
+            const x2 = Math.floor(centerX + Math.cos(angle) * (this.radius + (Math.random() * 50 + 100) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
+            const y2 = Math.floor(centerY + Math.sin(angle) * (this.radius + (Math.random() * 50 + 100) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
 
             ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', ' + this.opacity + ')';
             ctx.lineWidth = 3;

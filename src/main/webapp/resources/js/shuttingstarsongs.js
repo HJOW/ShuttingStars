@@ -27214,6 +27214,24 @@ song.difficulties.push({
     autoCreate : true,
     patterns : []
 });
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 6,
+    autoCreate : true,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'hard',
+    difficultyLevel : 9,
+    autoCreate : true,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'ex1',
+    difficultyLevel : 14,
+    autoCreate : true,
+    patterns : []
+});
 
 songs.push(song);
 
@@ -27247,6 +27265,12 @@ song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'hard',
     difficultyLevel : 7,
+    autoCreate : true,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'ex1',
+    difficultyLevel : 12,
     autoCreate : true,
     patterns : []
 });
