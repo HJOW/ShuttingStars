@@ -8976,6 +8976,8 @@ class ShuttingStarsCore {
             const energies = [];
             let   lastEnergy = 0;
 
+            let avg4    = 0;
+            let avg8    = 0;
             let avg16   = 0;
             let avg32   = 0;
             let avg64   = 0;
@@ -9021,6 +9023,8 @@ class ShuttingStarsCore {
                 if(energies.length >= 1024) energies.splice(0, 1); // 전체를 기록할 필요는 없으므로, 적당히 남기고 맨앞 원소 제거
 
                 // 최근 energy 데이터의 평균 구하기
+                avg4    = 0;
+                avg8    = 0;
                 avg16   = 0;
                 avg32   = 0;
                 avg64   = 0;
@@ -9031,6 +9035,8 @@ class ShuttingStarsCore {
                 avgLen  = energies.length;
                 
                 for(jdx=avgLen-1; jdx>=0; jdx--) {
+                    if(avgCnt <    4) avg4    += energies[jdx];
+                    if(avgCnt <    8) avg8    += energies[jdx];
                     if(avgCnt <   16) avg16   += energies[jdx];
                     if(avgCnt <   32) avg32   += energies[jdx];
                     if(avgCnt <   64) avg64   += energies[jdx]; 
@@ -9039,6 +9045,8 @@ class ShuttingStarsCore {
                     avgCnt++;
                 }
 
+                divides = (avgLen <    4 ? avgLen :    8); avg4    = avg4    * 1.0 / divides;
+                divides = (avgLen <    8 ? avgLen :    8); avg8    = avg8    * 1.0 / divides;
                 divides = (avgLen <   16 ? avgLen :   16); avg16   = avg16   * 1.0 / divides;
                 divides = (avgLen <   32 ? avgLen :   32); avg32   = avg32   * 1.0 / divides;
                 divides = (avgLen <   64 ? avgLen :   64); avg64   = avg64   * 1.0 / divides;
@@ -9123,30 +9131,52 @@ class ShuttingStarsCore {
 
                             // 난이도별 확률 계산
                             if(difficultyLevel <= 1) {
+                                if(energy >=    avg4) { probability1 = 0.001; }
+                                if(energy >=    avg8) { probability1 = 0.01;  }
                                 if(energy >=   avg16) { probability1 = 0.75;  }
                                 if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; }
                                 if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; }
                                 if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; }
                                 if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  }
                             } else if(difficultyLevel <= 4) {
+                                if(energy >=    avg4) { probability1 = 0.01;  }
+                                if(energy >=    avg8) { probability1 = 0.05;  }
                                 if(energy >=   avg16) { probability1 = 0.77;  }
                                 if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;   }
                                 if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;   }
                                 if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075;  }
                                 if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;   }
                             } else if(difficultyLevel <= 6) {
+                                if(energy >=    avg4) { probability1 = 0.05; }
+                                if(energy >=    avg8) { probability1 = 0.25; }
                                 if(energy >=   avg16) { probability1 = 0.8;  }
                                 if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; }
                                 if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  }
                                 if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  }
                                 if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  }
                             } else if(difficultyLevel <= 8) {
+                                if(energy >=    avg4) { probability1 = 0.1;  }
+                                if(energy >=    avg8) { probability1 = 0.5;  }
                                 if(energy >=   avg16) { probability1 = 0.9;  }
                                 if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  }
                                 if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; }
                                 if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  }
                                 if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; }
                             } else {
+                                if(energy >=  avg4) { 
+                                    probability1 = 0.1;
+                                    if(difficultyLevel > 9) {
+                                        probability2 = 0.1 + ( (difficultyLevel - 9) * 0.001 );
+                                        if(probability2 > 0.25) probability2 = 0.25;
+                                    }
+                                }
+                                if(energy >= avg8) {
+                                    probability1 = 0.75;
+                                    if(difficultyLevel > 9) {
+                                        probability2 = 0.1 + ( (difficultyLevel - 9) * 0.005 );
+                                        if(probability2 > 0.5) probability2 = 0.5;
+                                    }
+                                }
                                 if(energy >= avg16) { 
                                     probability1 = 0.95; 
                                     if(difficultyLevel > 9) {
