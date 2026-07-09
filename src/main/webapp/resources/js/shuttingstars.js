@@ -8705,6 +8705,8 @@ class ShuttingStarsCore {
     loadAfter() {
         const selfs = this;
         return new Promise((resolve, reject) => {
+            if(selfs.refreshOnFirstSession()) { resolve(false); return; }
+
             selfs.setStarlights();
             selfs.loadPlugins().then(() => {
                 selfs.loadPackages().then(() => {
@@ -8714,6 +8716,20 @@ class ShuttingStarsCore {
                 }).catch((e1) => { reject(e2) });
             }).catch((e2) => { reject(e2); });
         });
+    }
+
+    /**
+     * 첫 세션 (이제 막 브라우저 띄웠는지) 여부 체크하여, 첫 세션이 맞으면 화면 새로고침 호출 후 true 반환
+     * @returns {boolean} 첫 세션이면 true (반환되고, 화면 새로고침 호출됨), 그외 false
+     */
+    refreshOnFirstSession() {
+        const mark = sessionStorage.getItem('ss_firsts');
+        if(mark == null || typeof(mark) == 'undefined' || mark == '') {
+            sessionStorage.setItem('ss_firsts', 'Y');
+            setTimeout(() => { location.reload(); }, 2000);
+            return true;
+        }
+        return false;
     }
 
     /**
