@@ -10482,8 +10482,8 @@ class SSNotePlacer extends SSNoteKeyObject {
     }
 }
 
-/** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
-class SSNote extends SSNoteKeyObject {
+/** 노트 (공통 사항을 묶은 상위 클래스) */
+class SSNoteCommon extends SSNoteKeyObject {
     /** @type {boolean} 노트 처리 여부를 지정, true 여도 아직 삭제된 것이 아니므로 (충돌효과 중) 렌더링은 해야 함 */
     removed = false;
     /** @type {boolean} 미스로 인해 처리되는 경우를 표시 */
@@ -10499,7 +10499,167 @@ class SSNote extends SSNoteKeyObject {
     /** @type {boolean} 디버그 강조 대상 여부 */
     debugTarget = false;
 
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {ShuttingStarsCore} coreInst
+     */
+    constructor(locationIndex, coreInst) {
+        super(locationIndex, coreInst);
+    }
+}
+
+/** 노트, 곡 패턴에 따라 화면 최하단에 생성되며 위로 올라감. */
+class SSNote extends SSNoteCommon {
     // 생성자
+    /**
+     * 인스턴스 초기화
+     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {ShuttingStarsCore} coreInst
+     */
+    constructor(locationIndex, coreInst) {
+        super(locationIndex, coreInst);
+        this.r = coreInst.getNoteRadius();
+        this.speedY = 0;
+        this.removed = false;
+        this.explosing = 0;
+        this.hidden = false;
+        this.tail = false; // TODO
+        
+        // SSNotePlacer 찾기
+        let notePlacer = coreInst.getNotePlacer(locationIndex);
+        if(notePlacer == null) { this.explosing = this.explosingMax; return; }
+
+        this.x = notePlacer.x;
+
+        // 노트 속도 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
+        // NOTE SPEED 관련
+        this.y = coreInst.getNoteCreationYLocation() * 2;
+
+        this.key = coreInst.keyList[locationIndex];
+        this.shape = 'circle';
+        this.opacity = 0.9;
+        this.color = this.getColorOfLocationIndex(locationIndex);
+    }
+    /**
+     * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
+     * @param {ShuttingStarsCore} coreInst
+     * @returns {number} 현재 불투명도
+     */
+    getNowOpacity(coreInst) {
+        // 0.9 부터 시작하여 급격히 감소
+        if(this.explosing <= 0) {
+            return this.modifyExplosiveOpacity(coreInst);
+        } else {
+            let opa = this.modifyExplosiveOpacity(coreInst) - (this.explosing * 0.3);
+            if(opa < 0) opa = 0;
+            return opa;
+        }
+    }
+
+    /**
+     * modifyExplosiveColor 관련 상태를 갱신합니다.
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} 처리 결과
+     */
+    modifyExplosiveColor(gradientIndex) {
+        if(this.explosing >= 3) {
+            if(this.missed) {
+                return '255, 0, 0';
+            } else {
+                return '255, 255, 255';   
+            }
+        }
+        return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
+    }
+
+    /**
+     * draw 대상을 화면에 렌더링합니다.
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
+     */
+    draw(ctx, coreInst) {
+        // super.draw(ctx, coreInst);
+        if(this.hidden) return;
+
+        // 꼬리 먼저 그리기
+        if(this.tail) {
+            let tailR   = 0.5;
+            let tailOpa = this.getNowOpacity(coreInst);
+            let calculatedR = 0;
+            for(let jdx=this.beforeLocations.length-1; jdx>=0; jdx--) {
+                tailR   = tailR   - 0.0625;
+                tailOpa = tailOpa * 0.5;
+
+                if(jdx % 4 == 0) continue;
+                if(tailR <= 0) continue;
+                if(tailOpa <= 0) continue;
+
+                const beforeLoc = this.beforeLocations[jdx];
+                for(let idx=0; idx<=3; idx++) {
+                    calculatedR = Math.floor(coreInst.convertX(this.r - idx) * tailR);
+                    if(calculatedR <= 0) break;
+
+                    ctx.beginPath();
+                    ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), calculatedR, 0, 2 * Math.PI);
+
+                    if(this.fill) {
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.fill();
+                    } else {
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        // 본 노트 그리기
+        let rs = 0;
+        for(let idx=0; idx<=5; idx++) {
+            rs = this.r - (idx * 2);
+            if(rs <= 0) break;
+
+            ctx.beginPath();
+            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(rs), 0, 2 * Math.PI);
+
+            if(this.fill) {
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.fill();
+            } else {
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.stroke();
+            }
+        }
+
+        // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
+        if(this.explosing < 2) {
+            let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
+            ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
+
+            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
+            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
+
+            ctx.textAlign = "center";
+            ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
+        }
+    }
+}
+
+/** 누르고 있어야 하는 롱노트 */
+class SSLongNote extends SSNoteCommon {
+    /** @type {boolean} 누르고 있는지 여부 */
+    handling = false;
+
+    /** @type {number} 이 롱노트가 끝나는 타이밍 */
+    originalEndTiming = 0;
+
+    /** @type {number} y 종료 좌표 */
+    yEnd = 0;
+    // TODO 아래 메소드들 다시 구현해야 함 (현재 메소드들은 위 SSNote 에서 복사해 넣어놓은 것)
+
     /**
      * 인스턴스 초기화
      * @param {number} locationIndex 노트 레인의 인덱스
