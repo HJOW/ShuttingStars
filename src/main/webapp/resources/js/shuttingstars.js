@@ -1255,7 +1255,7 @@ class ShuttingStarsCore {
         this.addDeclaredKeys(this.escKey);
 
         // 상태 별 가상 키 및 마우스 이벤트 부여
-        if(state == 'playing' || state == 'listenplaying') {
+        if(state == 'playing') {
             // 플레이 중 - 설정된 키 모두 출력
             for(idx=0; idx<this.keyList.length; idx++) {
                 let keyOne = this.keyList[idx];
@@ -1267,6 +1267,16 @@ class ShuttingStarsCore {
             // 방향키
             for(idx=0; idx<this.arrowKeys.length; idx++) {
                 this.addDeclaredKeys(this.arrowKeys[idx]);
+            }
+
+            // 곡 선택 화면 - 유튜브 기반 곡의 경우 S 키로 유튜브 접속 가능해야 함
+            if(state == 'songchoosing' || state == 'listenchoosing') {
+                this.addDeclaredKeys(this.keyList[0]);
+            }
+
+            // 감상 모드 - D키로 곡 선택해야 함
+            if(state == 'listenchoosing') {
+                this.addDeclaredKeys(this.keyList[1]);
             }
         }
         // 상태 별 가상 키 및 마우스 이벤트 부여 // 종료
