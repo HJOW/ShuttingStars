@@ -4903,10 +4903,6 @@ class ShuttingStarsCore {
         // 타이틀 출력
         lefts  = '';
         rights = '';
-        if((this.songChoosingMode == 'mission' && this.missions.length >= 1) || (this.songChoosingMode == 'default' && this.songDisplays.length >= 1) || (this.songChoosingMode == 'mysong')) {
-            lefts  = '◀ ';
-            rights = ' ▶';
-        }
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
