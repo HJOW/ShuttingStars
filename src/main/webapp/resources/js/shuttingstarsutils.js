@@ -1,7 +1,8 @@
 /** 
- * 
- * 유틸리티 (필수)
+ * @author HJOW <hujinone22@naver.com>
+ * @license Apache-2.0 
 */
+/* 유틸리티 (필수) */
 
 try { if(console) { console.log(`
 ShuttingStars - LICENSE
