@@ -2196,11 +2196,22 @@ class ShuttingStarsCore {
                         pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
                     }
 
-                    // 노트 생성
-                    const note = new SSNote(pattern.locationIndex, this);
-                    note.id = this.lastObjectId; this.lastObjectId++;
-                    note.patternId = pattern.id;
-                    note.originalTiming = pattern.time;
+                    if(typeof(pattern.type) == 'undefined' || pattern.type == null || pattern.type == '') pattern.type = 'normal';
+
+                    let note;
+                    if(pattern.type == 'long') {
+                        note = new SSLongNote(pattern.locationIndex, this);
+                        note.id = this.lastObjectId; this.lastObjectId++;
+                        note.patternId = pattern.id;
+                        note.originalTiming = pattern.time;
+                        note.originalEndTiming = pattern.ends;
+                    } else {
+                        note = new SSNote(pattern.locationIndex, this);
+                        note.id = this.lastObjectId; this.lastObjectId++;
+                        note.patternId = pattern.id;
+                        note.originalTiming = pattern.time;
+                    }
+
                     // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
                     this.objectsPlaying.push(note); // 노트 추가
                 }
@@ -8466,6 +8477,8 @@ class ShuttingStarsCore {
 #                    element : (object)
 #                        locationIndex : (integer) line (0~5, If you using -1 then random)
 #                        time          : (number) occuring time ( Not seconds ! Need to test. ) float also OK
+#                        type          : (string) note type (normal / long, default : normal)
+#                        ends          : (number) long note's end time ( Only for long type )
 #    example
 #      [
 #          {
@@ -9399,7 +9412,14 @@ class ShuttingStarsCore {
             if(difficultyOne.patterns) {
                 for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
                     const noteJsonOne = difficultyOne.patterns[idx2];
-                    let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time);
+
+                    let types = 'normal';
+                    let ends = noteJsonOne.time;
+
+                    if(noteJsonOne.type) types = noteJsonOne.type;
+                    if(noteJsonOne.ends) ends  = noteJsonOne.ends;
+
+                    let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time, types, ends);
                     newObj.patterns.push(patternOne);
                 }
             }
@@ -9850,7 +9870,9 @@ class ShuttingStarsSong {
                     const noteObjOne = diffOne.patterns[jdx];
                     let noteJsonOne = {};
                     noteJsonOne.locationIndex = noteObjOne.locationIndex;
-                    noteJsonOne.time = noteObjOne.time;
+                    noteJsonOne.time          = noteObjOne.time;
+                    if(noteObjOne.type) noteJsonOne.type = noteObjOne.type;
+                    if(noteObjOne.ends) noteJsonOne.ends = noteObjOne.ends;
                     diffObj.patterns.push(noteJsonOne);
                 }
             }
@@ -10069,14 +10091,24 @@ class ShuttingStarsNotePattern {
     locationIndex = 0;
     /** @type {number} 노트 패턴이 판정선에 위치할 타이밍 */
     time = 0.0;
+
+    /** @type {string} 노트 타입 (기본값 : normal) */
+    type = 'normal' // normal / long
+    /** @type {number} 롱 노트인 경우, 종료 타이밍 */
+    ends = 0.0;
+
     /**
      * 인스턴스 초기화
      * @param {number} locationIndex 노트 라인의 번호
      * @param {number} time 노트 패턴이 판정선에 위치할 타이밍
+     * @param {string} type 노트 타입 (normal / long, 기본값 : normal)
+     * @param {number} ends 롱 노트인 경우, 종료 타이밍
      */
-    constructor(locationIndex, time) {
+    constructor(locationIndex, time, types, ends) {
         this.locationIndex = locationIndex;
         this.time = time;
+        if(types) this.type = String(types);
+        if(ends ) this.ends = parseFloat(ends);
     }
 }
 
@@ -10700,39 +10732,13 @@ class SSLongNote extends SSNoteCommon {
         if(this.hidden) return;
 
         // 본 노트 그리기 (롱 노트는 꼬리가 없을 예정)
-        
-
-        /*
-        let rs = 0;
-        for(let idx=0; idx<=5; idx++) {
-            rs = this.r - (idx * 2);
-            if(rs <= 0) break;
-
-            ctx.beginPath();
-            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(rs), 0, 2 * Math.PI);
-
-            if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
-                ctx.fill();
-            } else {
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
-                ctx.stroke();
-            }
+        if(this.fill) {
+            ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+            ctx.fillRect(coreInst.convertX(this.x + (this.r / 2)), coreInst.convertY(this.y), coreInst.convertX(this.r), coreInst.convertY(this.yEnd - this.y));
+        } else {
+            ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+            ctx.strokeRect(coreInst.convertX(this.x + (this.r / 2)), coreInst.convertY(this.y), coreInst.convertX(this.r), coreInst.convertY(this.yEnd - this.y));
         }
-
-        // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
-        if(this.explosing < 2) {
-            let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
-            ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
-
-            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
-            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
-
-            ctx.textAlign = "center";
-            ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
-        }
-        */
     }
 }
 
