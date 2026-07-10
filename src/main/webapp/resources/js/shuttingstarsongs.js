@@ -42,7 +42,7 @@ song.difficulties.push({
     difficultyLevel : 1,
     autoCreate : false,
     patterns : [
-{"locationIndex":2,"time":333.926},
+{"locationIndex":2,"time":333.926}, // {"locationIndex":2,"time":333.926, "type":"long", "ends" : 410}
 {"locationIndex":3,"time":379.849},
 {"locationIndex":0,"time":415.489},
 {"locationIndex":1,"time":548.045},

@@ -26,7 +26,7 @@ import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './sh
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
     /** @type {number} 빌드 번호 */
-    build = 4;
+    build = 5;
     
     /*** 화면 크기와 캔버스 렌더링 해상도 관련 ***/
     /** @type {{w: number, h: number}} 렌더링 해상도, 화면 출력 품질을 결정함. */
@@ -3826,7 +3826,7 @@ class ShuttingStarsCore {
                 resultMark = 'BAD';
             }
         }
-        console.log(calculated + ' / ' + this.elapsedTime + ' : ' + diff + ' : ' + resultMark);
+        // console.log(calculated + ' / ' + this.elapsedTime + ' : ' + diff + ' : ' + resultMark);
         return resultMark;
     }
     
@@ -6711,6 +6711,9 @@ class ShuttingStarsCore {
                     } else if(obj instanceof SSLongNote) {
                         obj.y    = this.calculateNoteY(obj.handlingEndTiming, notePlacer.y, this.song);
                         obj.yEnd = this.calculateNoteY(obj.originalEndTiming, notePlacer.y, this.song);
+                        if(obj.handling) {
+                            obj.y = notePlacer.y;
+                        }
                     }
                 }
             }
@@ -7018,13 +7021,13 @@ class ShuttingStarsCore {
                 }
                 if((obj instanceof SSLongNote) && (obj.y <= this.getHpBarYLocation() - 1 )) { // y 값이 바뀜
                     if(obj.explosing == 0) {
-                        let resultMark = 'MISS';
-                        if(! obj.handling) {
+                        if((! obj.handling) || obj.missed) {
                             // 미스 처리
+                            const resultMark = 'MISS';
                             this.processResultMark(resultMark);
                             this.displayResultMark(resultMark);
 
-                            if(obj.yEnd <= this.getHpBarYLocation() - 1) {
+                            if(obj.yEnd <= this.getHpBarYLocation() - 1) { // 종료 지점까지 HP바에 도달
                                 // 폭발 시작
                                 obj.explosing = 1;
                                 obj.removed = true;
@@ -7034,25 +7037,32 @@ class ShuttingStarsCore {
                                 const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                                 this.objects.push(newExplosinves);
                             }
-                        } else {
-                            // PERFECT 처리
-                            resultMark = 'PERFECT';
-                            this.processResultMark(resultMark);
-                            this.displayResultMark(resultMark);
-
-                            if(obj.yEnd <= this.getHpBarYLocation() - 1) {
-                                // 폭발 시작
-                                obj.explosing = 1;
-                                obj.removed = true;
-                                obj.missed  = false;
-                            }
-
-                            // 추가 폭발 객체 추가
-                            const newExplosinves = new CorrectNoteExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
-                            this.objects.push(newExplosinves);
                         }
                     }
-                    
+                }
+            }
+
+            // 롱노트 - 아직 누르고 있는 경우 계속 처리 중 집행
+            for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj instanceof SSLongNote) {
+                    if((! obj.missed) && (! obj.removed) && obj.explosing == 0 && obj.handling) {
+                        const resultMark = 'PERFECT';
+                        this.processResultMark(resultMark);
+                        this.displayResultMark(resultMark);
+
+                        obj.handlingEndTiming = this.elapsedTime;
+                        if(obj.yEnd <= this.getHpBarYLocation() - 1) {
+                            // 폭발 시작
+                            obj.explosing = 1;
+                            obj.removed = true;
+                            obj.missed  = false;
+                        }
+
+                        // 추가 폭발 객체 추가
+                        const newExplosinves = new CorrectNoteExplosing(this, obj.locationIndex, obj.y, obj.color, '255, 255, 255');
+                        this.objects.push(newExplosinves);
+                    }
                 }
             }
 
@@ -10854,16 +10864,16 @@ class SSLongNote extends SSNoteCommon {
     draw(ctx, coreInst) {
         // super.draw(ctx, coreInst);
         if(this.hidden) return;
-        if(this.y < this.getHpBarYLocation() - 1) this.y = this.getHpBarYLocation() - 1; // HP바 아래로 내려가지 않도록 제한
+        if(this.y < coreInst.getHpBarYLocation() - 1) this.y = coreInst.getHpBarYLocation() - 1; // HP바 아래로 내려가지 않도록 제한
         if(this.yEnd < this.y) return;
 
         // 본 노트 그리기 (롱 노트는 꼬리가 없을 예정)
         if(this.fill) {
-            ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
-            ctx.fillRect(coreInst.convertX(this.x + (this.r / 2)), coreInst.convertY(this.y), coreInst.convertX(this.r), coreInst.convertY(this.yEnd - this.y));
+            ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(0) + ', ' + this.getNowOpacity(coreInst) + ')');
+            ctx.fillRect(coreInst.convertX(this.x - this.r), coreInst.convertY(this.y - this.r), coreInst.convertX(this.r * 2), coreInst.convertY(this.yEnd - this.y));
         } else {
-            ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
-            ctx.strokeRect(coreInst.convertX(this.x + (this.r / 2)), coreInst.convertY(this.y), coreInst.convertX(this.r), coreInst.convertY(this.yEnd - this.y));
+            ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(0) + ', ' + this.getNowOpacity(coreInst) + ')');
+            ctx.strokeRect(coreInst.convertX(this.x - this.r), coreInst.convertY(this.y - this.r), coreInst.convertX(this.r * 2), coreInst.convertY(this.yEnd - this.y));
         }
     }
 }
