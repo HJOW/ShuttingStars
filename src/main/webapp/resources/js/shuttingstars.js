@@ -2205,6 +2205,8 @@ class ShuttingStarsCore {
                         note.patternId = pattern.id;
                         note.originalTiming = pattern.time;
                         note.originalEndTiming = pattern.ends;
+                        note.handling = false;
+                        note.handlingEndTiming = note.originalTiming; // 처음에는 최대 길이를 그대로 표현하기 위해 (일부 처리 시 길이가 짧아질 예정)
                     } else {
                         note = new SSNote(pattern.locationIndex, this);
                         note.id = this.lastObjectId; this.lastObjectId++;
@@ -3403,7 +3405,32 @@ class ShuttingStarsCore {
                         note  : obj,
                         y     : noteY,
                         dist  : dist,
-                        range : rangeSize
+                        range : rangeSize,
+                        type  : 'normal'
+                    });
+                }
+            } else if(obj instanceof SSLongNote) {
+                if(obj.locationIndex != notePlacer.locationIndex) continue;
+                if(obj.removed) continue;
+                if(obj.explosing >= 1) continue;
+                if(obj.handling) continue;
+
+                // 사정범위 안에 들어왔는지 여부 판별
+                noteY = obj.y;
+                justY = notePlacer.y + this.judgeTiming;
+
+                dist = Math.abs(justY - noteY);
+                rangeSize = (obj.r + notePlacer.r) * rangeMultiplier;
+
+                if(dist < rangeSize) {
+                    // 처리 대상 목록에 포함 (아직 결정된 것은 아님 !)
+                    notes.push({
+                        idx   : idx,
+                        note  : obj,
+                        y     : noteY,
+                        dist  : dist,
+                        range : rangeSize,
+                        type  : 'long'
                     });
                 }
             }
@@ -3443,8 +3470,16 @@ class ShuttingStarsCore {
         // 판정 출력
         this.displayResultMark(resultMark);
 
-        minimumNote.explosing = 1;  // 노트의 폭발 시작
-        minimumNote.removed = true; // 처리했음을 표시
+        if(minimumNote instanceof SSLongNote) {
+            if(resultMark != 'MISS') {
+                minimumNote.handling = true; // 롱노트 처리 중임을 표시
+                minimumNote.handlingStartTiming = this.elapsedTime; // 시작 시간 표시
+                minimumNote.handlingEndTiming   = this.elapsedTime; // 종료 시간도 표시 (이것으로 실제 길이가 줄어듦) - SimultaneousWork 에서도 처리해야 함
+            }
+        } else {
+            minimumNote.explosing = 1;  // 노트의 폭발 시작
+            minimumNote.removed = true; // 처리했음을 표시
+        }
 
         // 추가 폭발 객체 추가
         if(resultMark == 'MISS') {
@@ -3510,7 +3545,21 @@ class ShuttingStarsCore {
         const timeDiff = (typeof(this.keypressing[key]) == 'undefined' || this.keypressing[key] == null) ? 0 : new Date().getTime() - this.keypressing[key];
         this.keypressing[key] = null;
 
-        // TODO 롱노트 구현 시 꼭 수정되어야 하는 파트
+        let keyIndex = -1; // 플레이 키 (keyList) 인 경우, 몇 번째인지 기록
+        if(this.keyList.indexOf(key) >= 0) keyIndex = this.keyList.indexOf(key);
+
+        if(keyIndex >= 0) {
+            for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj instanceof SSLongNote) {
+                    if(obj.handling && obj.locationIndex == keyIndex) {
+                        obj.handling = false; // 롱노트 처리 중임을 해제
+                        obj.handlingEndTiming = this.elapsedTime; // 종료 시간 표시
+                    }
+                }
+            }
+        }
+        
     }
 
     /**
@@ -6614,7 +6663,6 @@ class ShuttingStarsCore {
         try {
             let idx, jdx;
             let notePlacer;
-            let calculates, additionals;
 
             if(this.youtubePlayer == null) {
                 if(this.audio != null) {
@@ -6642,7 +6690,7 @@ class ShuttingStarsCore {
             if((this.state == 'playing' || this.state == 'listenplaying') && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];
-                    if(obj instanceof SSNote) {
+                    if((obj instanceof SSNote) || (obj instanceof SSLongNote)) {
                         // 폭발 중이거나 제거 처리된 노트는 제외
                         if(obj.removed || obj.explosing >= 1) continue;
 
@@ -6650,22 +6698,19 @@ class ShuttingStarsCore {
                         notePlacer = this.getNotePlacer(obj.locationIndex);
                         if(notePlacer == null) continue;
 
-                        // 노트의 실질 위치 계산
-                        calculates = notePlacer.y; // 일단 SSNotePlacer 위치부터 시작
-
-                        // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
-                        additionals  = ( (obj.originalTiming * this.song.noteMultiplier) + this.song.timeConstant - this.elapsedTime ) + this.noteLocationConst;
-                        additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * this.song.timeMultiplier;
-                        calculates  += additionals;
-
                         // 이전 위치 기록
                         if(obj.tail) {
                             obj.beforeLocations.push({x : obj.x, y : obj.y});
                             if(obj.beforeLocations.length > obj.beforeLocationCountMax) obj.beforeLocations.splice(0, 1);
                         }
+                    }
 
-                        // 위치 적용
-                        obj.y = calculates;
+                    // 위치 적용
+                    if(obj instanceof SSNote) {
+                        obj.y = this.calculateNoteCurrentLocation(obj, notePlacer.y, this.song);
+                    } else if(obj instanceof SSLongNote) {
+                        obj.y    = this.calculateNoteY(obj.handlingEndTiming, notePlacer.y, this.song);
+                        obj.yEnd = this.calculateNoteY(obj.originalEndTiming, notePlacer.y, this.song);
                     }
                 }
             }
@@ -6696,10 +6741,10 @@ class ShuttingStarsCore {
             // 폭발 완료 처리
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
-                if(obj instanceof SSNote) {
+                if((obj instanceof SSNote) || (obj instanceof SSLongNote)) {
                     if(obj.explosing >= obj.explosingMax) {
-                        this.removed = true;
-                        this.hidden  = true;
+                        obj.removed = true;
+                        obj.hidden  = true;
                     }
                     // 노트는 제거하지 않음
                 } else if(obj instanceof SSNotePlacer) {
@@ -6969,6 +7014,25 @@ class ShuttingStarsCore {
                         // 추가 폭발 객체 추가
                         const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                         this.objects.push(newExplosinves);
+                    }
+                }
+                if((obj instanceof SSLongNote) && (obj.y <= this.getHpBarYLocation() - 1 )) { // y 값이 바뀜
+                    if(obj.explosing == 0) {
+                        // 미스 처리
+                        let resultMark = 'MISS';
+                        this.processResultMark(resultMark);
+                        this.displayResultMark(resultMark);
+                        obj.removed = true;
+                        obj.missed = true;
+
+                        if(obj.yEnd <= this.getHpBarYLocation() - 1) {
+                            // 폭발 시작
+                            obj.explosing = 1;
+
+                            // 추가 폭발 객체 추가
+                            const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                            this.objects.push(newExplosinves);
+                        }
                     }
                 }
             }
@@ -8722,6 +8786,40 @@ class ShuttingStarsCore {
     calculateSongDuration(audioObject, bpm) {
         const durationSecond = audioObject.duration;
         return (durationSecond * (bpm / 60.0) * (this.timeMultiplier * this.elapsedTimeMultiplier));
+    }
+
+    /**
+     * 노트 관련 위치값 계산
+     * 
+     * @param {number} noteTiming 
+     * @param {number} notePlacerYLoc 
+     * @param {ShuttingStarsSong} song 
+     * @returns {number} 계산 결과
+     */
+    calculateNoteY(noteTiming, notePlacerYLoc, song) {
+        // 노트의 실질 위치 계산
+        let calculates = notePlacerYLoc; // 일단 SSNotePlacer 위치부터 시작
+        let additionals;
+
+        // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
+        additionals  = ( (noteTiming * song.noteMultiplier) + song.timeConstant - this.elapsedTime ) + this.noteLocationConst;
+        additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * song.timeMultiplier;
+        calculates  += additionals;
+
+        return calculates;
+    }
+
+    /**
+     * 노트 현재 위치 계산
+     * 
+     * @param {SSNote} note 
+     * @param {number} notePlacerYLoc 
+     * @param {ShuttingStarsSong} song 
+     * @returns {number} 노트의 현재 Y 좌표
+     */
+    calculateNoteCurrentLocation(note, notePlacerYLoc, song) {
+        if(! (note instanceof SSNote)) throw 'Cannot calculate note location. Not SSNote instance.';
+        return this.calculateNoteY(note.originalTiming, notePlacerYLoc, song);
     }
 
     /**
@@ -10687,12 +10785,17 @@ class SSLongNote extends SSNoteCommon {
     /** @type {boolean} 누르고 있는지 여부 */
     handling = false;
 
+    /** @type {number} 이 롱노트 처리 시작 타이밍 */
+    handlingStartTiming = 0;
+
+    /** @type {number} 이 롱노트 처리 종료 타이밍 */
+    handlingEndTiming = 0;
+
     /** @type {number} 이 롱노트가 끝나는 타이밍 */
     originalEndTiming = 0;
 
     /** @type {number} y 종료 좌표 */
     yEnd = 0;
-    // TODO 아래 메소드들 다시 구현해야 함 (현재 메소드들 상당수는 위 SSNote 에서 복사해 넣어놓은 것)
 
     /**
      * 인스턴스 초기화
@@ -10732,6 +10835,8 @@ class SSLongNote extends SSNoteCommon {
     draw(ctx, coreInst) {
         // super.draw(ctx, coreInst);
         if(this.hidden) return;
+        if(this.y < this.getHpBarYLocation() - 1) this.y = this.getHpBarYLocation() - 1; // HP바 아래로 내려가지 않도록 제한
+        if(this.yEnd < this.y) return;
 
         // 본 노트 그리기 (롱 노트는 꼬리가 없을 예정)
         if(this.fill) {
