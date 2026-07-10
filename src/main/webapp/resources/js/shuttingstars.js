@@ -7017,23 +7017,42 @@ class ShuttingStarsCore {
                     }
                 }
                 if((obj instanceof SSLongNote) && (obj.y <= this.getHpBarYLocation() - 1 )) { // y 값이 바뀜
-                    if(obj.explosing == 0 && (! obj.handling)) {
-                        // 미스 처리
+                    if(obj.explosing == 0) {
                         let resultMark = 'MISS';
-                        this.processResultMark(resultMark);
-                        this.displayResultMark(resultMark);
-                        obj.removed = true;
-                        obj.missed = true;
+                        if(! obj.handling) {
+                            // 미스 처리
+                            this.processResultMark(resultMark);
+                            this.displayResultMark(resultMark);
 
-                        if(obj.yEnd <= this.getHpBarYLocation() - 1) {
-                            // 폭발 시작
-                            obj.explosing = 1;
+                            if(obj.yEnd <= this.getHpBarYLocation() - 1) {
+                                // 폭발 시작
+                                obj.explosing = 1;
+                                obj.removed = true;
+                                obj.missed  = true;
+
+                                // 추가 폭발 객체 추가
+                                const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                                this.objects.push(newExplosinves);
+                            }
+                        } else {
+                            // PERFECT 처리
+                            resultMark = 'PERFECT';
+                            this.processResultMark(resultMark);
+                            this.displayResultMark(resultMark);
+
+                            if(obj.yEnd <= this.getHpBarYLocation() - 1) {
+                                // 폭발 시작
+                                obj.explosing = 1;
+                                obj.removed = true;
+                                obj.missed  = false;
+                            }
 
                             // 추가 폭발 객체 추가
-                            const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                            const newExplosinves = new CorrectNoteExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                             this.objects.push(newExplosinves);
                         }
                     }
+                    
                 }
             }
 
