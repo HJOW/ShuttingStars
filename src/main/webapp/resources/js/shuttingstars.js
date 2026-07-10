@@ -9310,34 +9310,34 @@ class ShuttingStarsCore {
                                 if(energy >=    avg4) { probability1 = 0.001; }
                                 if(energy >=    avg8) { probability1 = 0.01;  }
                                 if(energy >=   avg16) { probability1 = 0.75;  }
-                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; probability4 = 0.001;  }
-                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; probability4 = 0.0025; }
-                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; probability4 = 0.005;  }
-                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.025;  }
+                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; probability4 = 0.0001;  }
+                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; probability4 = 0.00025; }
+                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; probability4 = 0.005;   }
+                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.025;   }
                             } else if(difficultyLevel <= 4) {
                                 if(energy >=    avg4) { probability1 = 0.01;  }
                                 if(energy >=    avg8) { probability1 = 0.05;  }
                                 if(energy >=   avg16) { probability1 = 0.77;  probability2 = 0.001; }
-                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;  probability4 = 0.0015;  }
-                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;  probability4 = 0.0035;  }
-                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075; probability4 = 0.0075;  }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.05;    }
+                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;  probability4 = 0.00015;  }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;  probability4 = 0.00035;  }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075; probability4 = 0.0075;   }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.05;     }
                             } else if(difficultyLevel <= 6) {
                                 if(energy >=    avg4) { probability1 = 0.05; }
                                 if(energy >=    avg8) { probability1 = 0.25; }
                                 if(energy >=   avg16) { probability1 = 0.8;   probability2 = 0.002; }
-                                if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; probability4 = 0.002; }
-                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  probability4 = 0.004; }
-                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  probability4 = 0.009; }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.1;  }
+                                if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; probability4 = 0.0002; }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  probability4 = 0.0004; }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  probability4 = 0.009;  }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.1;    }
                             } else if(difficultyLevel <= 8) {
                                 if(energy >=    avg4) { probability1 = 0.1;  }
                                 if(energy >=    avg8) { probability1 = 0.5;    probability2 = 0.001;  }
                                 if(energy >=   avg16) { probability1 = 0.9;    probability2 = 0.005;  }
-                                if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  probability4 = 0.003; }
-                                if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; probability4 = 0.005; }
-                                if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  probability4 = 0.015; }
-                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; probability4 = 0.2;   }
+                                if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  probability4 = 0.0003; }
+                                if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; probability4 = 0.0005; }
+                                if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  probability4 = 0.015;  }
+                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; probability4 = 0.2;    }
                             } else {
                                 if(energy >=  avg4) { 
                                     probability1 = 0.1;
@@ -9435,8 +9435,8 @@ class ShuttingStarsCore {
                             }
 
                             // 동시노트가 많으면 롱노트 확률 낮춤
-                            if(multipleCreate >= 2) probability4 = probability4 * 0.5;
-                            if(multipleCreate >= 3) probability4 = probability4 * 0.5;
+                            if(multipleCreate >= 2) probability4 = probability4 * 0.25;
+                            if(multipleCreate >= 3) probability4 = probability4 * 0.25;
                             if(multipleCreate >= 4) probability4 = probability4 * 0.5;
                             if(multipleCreate >= 5) probability4 = probability4 * 0.5;
                             if(multipleCreate >= 6) probability4 = probability4 * 0.5;
