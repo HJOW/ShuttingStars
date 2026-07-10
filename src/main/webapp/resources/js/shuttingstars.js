@@ -7017,7 +7017,7 @@ class ShuttingStarsCore {
                     }
                 }
                 if((obj instanceof SSLongNote) && (obj.y <= this.getHpBarYLocation() - 1 )) { // y 값이 바뀜
-                    if(obj.explosing == 0) {
+                    if(obj.explosing == 0 && (! obj.handling)) {
                         // 미스 처리
                         let resultMark = 'MISS';
                         this.processResultMark(resultMark);
