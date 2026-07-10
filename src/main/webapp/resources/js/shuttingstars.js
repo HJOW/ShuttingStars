@@ -10868,12 +10868,27 @@ class SSLongNote extends SSNoteCommon {
         if(this.yEnd < this.y) return;
 
         // 본 노트 그리기 (롱 노트는 꼬리가 없을 예정)
-        if(this.fill) {
-            ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(0) + ', ' + this.getNowOpacity(coreInst) + ')');
-            ctx.fillRect(coreInst.convertX(this.x - this.r), coreInst.convertY(this.y - this.r), coreInst.convertX(this.r * 2), coreInst.convertY(this.yEnd - this.y));
-        } else {
-            ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(0) + ', ' + this.getNowOpacity(coreInst) + ')');
-            ctx.strokeRect(coreInst.convertX(this.x - this.r), coreInst.convertY(this.y - this.r), coreInst.convertX(this.r * 2), coreInst.convertY(this.yEnd - this.y));
+        for(let idx=0; idx<=5; idx++) {
+            ctx.beginPath();
+            if(this.fill) {
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.fillRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2)));
+            } else {
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.strokeRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2)));
+            }
+        }
+
+        // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
+        if(this.explosing < 2) {
+            let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
+            ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
+
+            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
+            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
+
+            ctx.textAlign = "center";
+            ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
         }
     }
 }
