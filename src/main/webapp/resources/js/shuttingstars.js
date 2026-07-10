@@ -7015,6 +7015,22 @@ class ShuttingStarsCore {
                 }
             }
 
+            // Create Mode 혹은 감상 모드인 경우의 롱노트 자동 처리
+            if(this.createMode || this.state == 'listenplaying') {
+                // 롱노트가 notePlacer 위치에 있는 경우
+                for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                    const obj = this.objectsPlaying[idx];
+                    if(obj instanceof SSLongNote) {
+                        const notePlacer = this.getNotePlacer(obj.locationIndex);
+                        if(notePlacer == null) continue;
+
+                        if(obj.y <= notePlacer.y) {
+                            obj.handling = true; // 누른 것으로 처리
+                        }
+                    }
+                }    
+            }
+
             // 이미 지나가버린 패턴 체크
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
@@ -9175,6 +9191,7 @@ class ShuttingStarsCore {
             //     분석 및 노트 생성 진행
             let timeCycle = 0;
             let maxTime = audioDecBuff.duration;
+            let maxTimeCycle = maxTime * (bpm / 60.0) * this.timeMultiplier;
             for(let time=0; time<maxTime; time += intervals) {
                 const center = Math.floor(time * sampleRate);
                 const starts = Math.max(0, center - Math.floor(windowSize / 2));
@@ -9378,8 +9395,8 @@ class ShuttingStarsCore {
                             // 초반, 후반 부분은 빈도 낮춤
                             if(timeCycle < minTimeCycle * 2) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
                             if(timeCycle < minTimeCycle * 3) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
-                            if(timeCycle > maxTime - (minTimeCycle * 2)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
-                            if(timeCycle > maxTime - (minTimeCycle * 3)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle > maxTimeCycle - (minTimeCycle    )) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle > maxTimeCycle - (minTimeCycle * 2)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
 
                             // bpm 보정
                             let ratioBpm = 1;
@@ -9453,7 +9470,7 @@ class ShuttingStarsCore {
                         for(let odx=0; odx<noteCreates.length; odx++) {
                             const noteOne = noteCreates[odx];
                             if(noteOne instanceof SSLongNote) {
-                                if(noteOne.originalTiming <= timeCycle && noteOne.endTiming + 1 >= timeCycle) {
+                                if(noteOne.originalTiming <= timeCycle && timeCycle <= noteOne.endTiming + 3) {
                                     usedIndex.push(noteOne.locationIndex);
                                 }
                             }
