@@ -3414,6 +3414,7 @@ class ShuttingStarsCore {
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
                 if(obj.handling) continue;
+                if(obj.missed) continue;
 
                 // 사정범위 안에 들어왔는지 여부 판별
                 noteY = obj.y;
@@ -3436,67 +3437,82 @@ class ShuttingStarsCore {
             }
         }
 
-        if(notes.length <= 0) return; // 충돌한 노트가 없으면 중단
+        // 범위 내 노트 선정 및 처리
+        if(notes.length >= 1) {
+            // 처리 대상 중 가장 y값이 낮은 노트 찾기
+            let minimumY = 99999;
+            let minimumIdx   = notes[0].idx;
+            let minimumNote  = notes[0].note;
+            let mimimumDist  = notes[0].dist;
+            let minimumRange = notes[0].range;
+            for(idx=0; idx<notes.length; idx++) {
+                let noteOne = notes[idx];
+                if(noteOne.y < minimumY) {
+                    minimumY = noteOne.y;
+                    minimumIdx   = noteOne.idx;
+                    minimumNote  = noteOne.note;
+                    mimimumDist  = noteOne.dist;
+                    minimumRange = noteOne.range;
+                }
+            }
 
-        // 처리 대상 중 가장 y값이 낮은 노트 찾기
-        let minimumY = 99999;
-        let minimumIdx   = notes[0].idx;
-        let minimumNote  = notes[0].note;
-        let mimimumDist  = notes[0].dist;
-        let minimumRange = notes[0].range;
-        for(idx=0; idx<notes.length; idx++) {
-            let noteOne = notes[idx];
-            if(noteOne.y < minimumY) {
-                minimumY = noteOne.y;
-                minimumIdx   = noteOne.idx;
-                minimumNote  = noteOne.note;
-                mimimumDist  = noteOne.dist;
-                minimumRange = noteOne.range;
+            // 거리를 통한 판정 - 거리의 비율 계산 (%)
+            const distance = Math.abs((mimimumDist * 100.0) / minimumRange );
+            
+            // 거리에 따른 판정 - 점수 계산
+            let resultMark = this.createResultMarkUsingDistance(distance);
+            
+            // 타이밍을 통한 판정
+            // let resultMark = this.createResultMarkUsingTiming(minimumNote, notePlacer);
+
+            // 판정에 따른 효과 처리
+            this.processResultMark(resultMark);
+
+            // 판정 출력
+            this.displayResultMark(resultMark);
+
+            if(minimumNote instanceof SSLongNote) {
+                if(resultMark != 'MISS') {
+                    minimumNote.handling = true; // 롱노트 처리 중임을 표시
+                    minimumNote.handlingStartTiming = this.elapsedTime; // 시작 시간 표시
+                    minimumNote.handlingEndTiming   = this.elapsedTime; // 종료 시간도 표시 (이것으로 실제 길이가 줄어듦) - SimultaneousWork 에서도 처리해야 함
+                }
+            } else {
+                minimumNote.explosing = 1;  // 노트의 폭발 시작
+                minimumNote.removed = true; // 처리했음을 표시
+            }
+
+            // 추가 폭발 객체 추가
+            if(resultMark == 'MISS') {
+                // MISS
+                minimumNote.missed = true;
+                const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                this.objects.push(newExplosinves);
+            } else {
+                // 그외 (MISS가 아님)
+                const newExplosinves = new CorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+                this.objects.push(newExplosinves);
+
+                if(pwConsumed) { // PW 다시 회복
+                    this.pw += this.getPWUsingCost();
+                    if(     resultMark ==   'GREAT') this.pw += Math.floor(this.getPWUsingCost() / 10.0);
+                    else if(resultMark == 'PERFECT') this.pw += Math.floor(this.getPWUsingCost() /  5.0);
+                    if(this.pw > this.pwMax) this.pw = this.pwMax;
+                }
             }
         }
 
-        // 거리를 통한 판정 - 거리의 비율 계산 (%)
-        const distance = Math.abs((mimimumDist * 100.0) / minimumRange );
-        
-        // 거리에 따른 판정 - 점수 계산
-        let resultMark = this.createResultMarkUsingDistance(distance);
-        
-        // 타이밍을 통한 판정
-        // let resultMark = this.createResultMarkUsingTiming(minimumNote, notePlacer);
-
-        // 판정에 따른 효과 처리
-        this.processResultMark(resultMark);
-
-        // 판정 출력
-        this.displayResultMark(resultMark);
-
-        if(minimumNote instanceof SSLongNote) {
-            if(resultMark != 'MISS') {
-                minimumNote.handling = true; // 롱노트 처리 중임을 표시
-                minimumNote.handlingStartTiming = this.elapsedTime; // 시작 시간 표시
-                minimumNote.handlingEndTiming   = this.elapsedTime; // 종료 시간도 표시 (이것으로 실제 길이가 줄어듦) - SimultaneousWork 에서도 처리해야 함
-            }
-        } else {
-            minimumNote.explosing = 1;  // 노트의 폭발 시작
-            minimumNote.removed = true; // 처리했음을 표시
-        }
-
-        // 추가 폭발 객체 추가
-        if(resultMark == 'MISS') {
-            // MISS
-            minimumNote.missed = true;
-            const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
-            this.objects.push(newExplosinves);
-        } else {
-            // 그외 (MISS가 아님)
-            const newExplosinves = new CorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
-            this.objects.push(newExplosinves);
-
-            if(pwConsumed) { // pw 다시 회복
-                this.pw += this.getPWUsingCost();
-                if(     resultMark ==   'GREAT') this.pw += Math.floor(this.getPWUsingCost() / 10.0);
-                else if(resultMark == 'PERFECT') this.pw += Math.floor(this.getPWUsingCost() /  5.0);
-                if(this.pw > this.pwMax) this.pw = this.pwMax;
+        // 처리 중인 롱노트에 대한 PW 회복 처리
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+            const obj = this.objectsPlaying[idx];
+            if(obj instanceof SSLongNote) {
+                if(obj.handling && (! obj.removed) && (! obj.missed) && (obj.explosing <= 0)) {
+                    if(pwConsumed) { // pw 다시 회복
+                        this.pw += this.getPWUsingCost();
+                        this.pw += Math.floor(this.getPWUsingCost() /  5.0); // PERFECT 로 취급
+                        if(this.pw > this.pwMax) this.pw = this.pwMax;
+                    }
+                }
             }
         }
     }
@@ -7003,7 +7019,7 @@ class ShuttingStarsCore {
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if((obj instanceof SSNote) && (obj.y <= this.getHpBarYLocation() - 1 )) {
-                    if(obj.explosing == 0) {
+                    if(obj.explosing <= 0) {
                         // 미스 처리
                         let resultMark = 'MISS';
                         this.processResultMark(resultMark);
@@ -7020,7 +7036,7 @@ class ShuttingStarsCore {
                     }
                 }
                 if((obj instanceof SSLongNote) && (obj.y <= this.getHpBarYLocation() - 1 )) { // y 값이 바뀜
-                    if(obj.explosing == 0) {
+                    if(obj.explosing <= 0) {
                         if((! obj.handling) || obj.missed) {
                             // 미스 처리
                             const resultMark = 'MISS';
@@ -7046,7 +7062,7 @@ class ShuttingStarsCore {
             for(idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if(obj instanceof SSLongNote) {
-                    if((! obj.missed) && (! obj.removed) && obj.explosing == 0 && obj.handling) {
+                    if((! obj.missed) && (! obj.removed) && obj.explosing <= 0 && obj.handling) {
                         const resultMark = 'PERFECT';
                         this.processResultMark(resultMark);
                         this.displayResultMark(resultMark);
@@ -9089,7 +9105,7 @@ class ShuttingStarsCore {
      * @param {number} bpm
      * @param {number} difficultyLevel
      * @param {Function} eventProgress 진행률을 매개변수로 받을 수 있는 콜백 함수 (선택사항, 매개변수 1에 진행률 % 로 입력됨)
-     * @return {Promise<Array<SSNote>>}
+     * @return {Promise<Array<SSNoteCommon>>}
      */
     async createAutoNotes(audioUrl, bpm, difficultyLevel, eventProgress) {
         let exceptionOccured = null;
@@ -9156,7 +9172,7 @@ class ShuttingStarsCore {
             audioDecBuff = await audioCtxPre.startRendering();
             channelBuff  = audioDecBuff.getChannelData(0);
 
-            //     분석 진행
+            //     분석 및 노트 생성 진행
             let timeCycle = 0;
             let maxTime = audioDecBuff.duration;
             for(let time=0; time<maxTime; time += intervals) {
@@ -9208,6 +9224,7 @@ class ShuttingStarsCore {
                 if(timeCycle >= minTimeCycle && energy > (lastEnergy * 1.2)) {
                     // 노트 생성여부 결정
                     let createYn = false;
+                    let longNote = false;
                     let multipleCreate = 1;
 
                     if(lastNote == null) {
@@ -9216,9 +9233,10 @@ class ShuttingStarsCore {
                         // 난이도에 따라 생성여부 결정
                         const timeGap = timeCycle - lastNote.originalTiming;
                         let properGap = 1; // 다음 노트 등장 사이 시간 허용값
-                        let probability1 = 0.25; // 노트 생성 확률
-                        let probability2 = 0.01; // 동시노트 적용 확률
-                        let probability3 = 1;    // 동시노트 추가 확률
+                        let probability1 = 0.25;  // 노트 생성 확률
+                        let probability2 = 0.01;  // 동시노트 적용 확률
+                        let probability3 = 1;     // 동시노트 추가 확률
+                        let probability4 = 0.001; // 롱노트 출연 확률
 
                         if(difficultyLevel <= 2) {
                             properGap = 64;
@@ -9280,40 +9298,46 @@ class ShuttingStarsCore {
                         // 노트 생성 최소조건 만족 - 이제 확률 적용 차례
                         if(createYn) {
                             createYn = false;
+                            longNote = false;
+                            probability1 = 0.25;
+                            probability2 = 0.01;
+                            probability3 = 1;   
+                            probability4 = 0.001;
+                            multipleCreate = 1;
 
                             // 난이도별 확률 계산
                             if(difficultyLevel <= 1) {
                                 if(energy >=    avg4) { probability1 = 0.001; }
                                 if(energy >=    avg8) { probability1 = 0.01;  }
                                 if(energy >=   avg16) { probability1 = 0.75;  }
-                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; }
-                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; }
-                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; }
-                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  }
+                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; probability4 = 0.001;  }
+                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; probability4 = 0.0025; }
+                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; probability4 = 0.005;  }
+                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.025;  }
                             } else if(difficultyLevel <= 4) {
                                 if(energy >=    avg4) { probability1 = 0.01;  }
                                 if(energy >=    avg8) { probability1 = 0.05;  }
-                                if(energy >=   avg16) { probability1 = 0.77;  }
-                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;   }
-                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;   }
-                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075;  }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;   }
+                                if(energy >=   avg16) { probability1 = 0.77;  probability2 = 0.001; }
+                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;  probability4 = 0.0015;  }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;  probability4 = 0.0035;  }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075; probability4 = 0.0075;  }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.05;    }
                             } else if(difficultyLevel <= 6) {
                                 if(energy >=    avg4) { probability1 = 0.05; }
                                 if(energy >=    avg8) { probability1 = 0.25; }
-                                if(energy >=   avg16) { probability1 = 0.8;  }
-                                if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; }
-                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  }
-                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  }
+                                if(energy >=   avg16) { probability1 = 0.8;   probability2 = 0.002; }
+                                if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; probability4 = 0.002; }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  probability4 = 0.004; }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  probability4 = 0.009; }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.1;  }
                             } else if(difficultyLevel <= 8) {
                                 if(energy >=    avg4) { probability1 = 0.1;  }
-                                if(energy >=    avg8) { probability1 = 0.5;  }
-                                if(energy >=   avg16) { probability1 = 0.9;  }
-                                if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  }
-                                if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; }
-                                if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  }
-                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; }
+                                if(energy >=    avg8) { probability1 = 0.5;    probability2 = 0.001;  }
+                                if(energy >=   avg16) { probability1 = 0.9;    probability2 = 0.005;  }
+                                if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  probability4 = 0.003; }
+                                if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; probability4 = 0.005; }
+                                if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  probability4 = 0.015; }
+                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; probability4 = 0.2;   }
                             } else {
                                 if(energy >=  avg4) { 
                                     probability1 = 0.1;
@@ -9324,6 +9348,7 @@ class ShuttingStarsCore {
                                 }
                                 if(energy >= avg8) {
                                     probability1 = 0.75;
+                                    probability2 = 0.002;
                                     if(difficultyLevel > 9) {
                                         probability2 = 0.1 + ( (difficultyLevel - 9) * 0.005 );
                                         if(probability2 > 0.5) probability2 = 0.5;
@@ -9331,6 +9356,7 @@ class ShuttingStarsCore {
                                 }
                                 if(energy >= avg16) { 
                                     probability1 = 0.95; 
+                                    probability2 = 0.025;
                                     if(difficultyLevel > 9) {
                                         probability2 = 0.1 + ( (difficultyLevel - 9) * 0.025 );
                                         if(probability2 > 0.75) probability2 = 0.75;
@@ -9339,18 +9365,21 @@ class ShuttingStarsCore {
                                 if(energy >= avg32) { 
                                     probability1 = 0.98; 
                                     probability2 = 0.25;
+                                    probability4 = 0.005;
                                     if(difficultyLevel > 9) {
                                         probability2 = 0.25 + ( (difficultyLevel - 9) * 0.05 );
                                         if(probability2 > 0.9) probability2 = 0.9;
                                     }
                                 }
-                                if(energy >=  avg256) { probability1 =  0.99;  probability2 =  0.99; }
-                                if(energy >= avg1024) { probability1 = 0.999;  probability2 = 0.999; }
+                                if(energy >=  avg256) { probability1 =  0.99;  probability2 =  0.99; probability4 = 0.02; }
+                                if(energy >= avg1024) { probability1 = 0.999;  probability2 = 0.999; probability4 = 0.5;  }
                             }
 
-                            // 초반 부분은 빈도 낮춤
+                            // 초반, 후반 부분은 빈도 낮춤
                             if(timeCycle < minTimeCycle * 2) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
                             if(timeCycle < minTimeCycle * 3) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle > maxTime - (minTimeCycle * 2)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle > maxTime - (minTimeCycle * 3)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
 
                             // bpm 보정
                             let ratioBpm = 1;
@@ -9404,12 +9433,36 @@ class ShuttingStarsCore {
                                 if(multipleCreate >= 2) multipleCombo++;
                                 else                    multipleCombo = 0;
                             }
+
+                            // 동시노트가 많으면 롱노트 확률 낮춤
+                            if(multipleCreate >= 2) probability4 = probability4 * 0.5;
+                            if(multipleCreate >= 3) probability4 = probability4 * 0.5;
+                            if(multipleCreate >= 4) probability4 = probability4 * 0.5;
+                            if(multipleCreate >= 5) probability4 = probability4 * 0.5;
+                            if(multipleCreate >= 6) probability4 = probability4 * 0.5;
+
+                            // 롱노트 확률 적용
+                            longNote = ( ShuttingStarsUtility.random() <= probability4 );
                         }
                     }
 
                     if(createYn) { // 노트 생성
-                        const usedIndex = [];
+                        const usedIndex = []; // 이 시간대에 이미 점유 중인 라인 번호 탑재
+
+                        // 롱노트 중 아직 유효한 것을 찾아 usedIndex 에 등록 (그 라인에 노트 생성하지 않게)
+                        for(let odx=0; odx<noteCreates.length; odx++) {
+                            const noteOne = noteCreates[odx];
+                            if(noteOne instanceof SSLongNote) {
+                                if(noteOne.originalTiming <= timeCycle && noteOne.endTiming + 1 >= timeCycle) {
+                                    usedIndex.push(noteOne.locationIndex);
+                                }
+                            }
+                        }
+
+                        // 동시 생성 갯수에 따라 반복
                         for(let mdx=0; mdx<multipleCreate; mdx++) {
+
+                            // 노트 생성 라인 번호 선정
                             let locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                             let preventInfLoop = 0;
                             if(mdx <= 1) {
@@ -9430,13 +9483,28 @@ class ShuttingStarsCore {
                             
                             if(locationIndex < 0) continue;
 
-                            const note = new SSNote( locationIndex , this );
+                            // 노트 생성
+                            let note;
+
+                            if(longNote) {
+                                note = new SSLongNote( locationIndex , this );
+                                note.handling = false;
+                            } else {
+                                note = new SSNote( locationIndex , this );
+                            }
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = 0;
                             if(lastNote != null) note.patternId = lastNote.patternId + 1;
                             note.originalTiming = timeCycle;
 
-                            noteCreates.push(note);
+                            if(longNote) {
+                                note.originalEndTiming = timeCycle + 15; // TODO : 롱노트 길이는 어떻게 선정할 건지 정해야...
+                                note.handlingEndTiming = note.originalTiming;
+                            }
+
+                            noteCreates.push(note); // 노트 등록
+
+                            // 마지막 노트 표시
                             lastNote = note;
                             usedIndex.push(locationIndex);
                         }
