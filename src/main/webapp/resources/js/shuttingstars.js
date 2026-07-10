@@ -1951,7 +1951,7 @@ class ShuttingStarsCore {
         }
     }
 
-    /** Credit 저장 (Promise) */
+    /** Credit 저장 (Promise) - backend 있는 경우 applyUserInfo 포함 */
     async saveCredit() {
         const selfs = this;
         
@@ -3608,11 +3608,9 @@ class ShuttingStarsCore {
     handleLogout() {
         const selfs = this;
         return new Promise((resolve, reject) => {
-            if(selfs.backend == null) { resolve(true); return; }
+            if(selfs.backend == null) { selfs.saveCredit().then(() => { resolve(true); }).catch((e) => { reject(e); }); return; }
             // 로그아웃 전 사용자 정보 동기화 해야 함
-            selfs.backend.applyUserInfo({
-
-            }).then(() => {
+            selfs.saveCredit().then(() => {
                 // 백엔드 로그아웃
                 selfs.backend.logout().then(() => {
                     // 로컬 스토리지에서 세션 비우기
