@@ -9673,6 +9673,8 @@ class ShuttingStarsCore {
         if(typeof(json.canListen) != 'undefined') {
             if(json.canListen) song.canListen = true;
             else               song.canListen = false;
+        } else {
+            song.canListen = true;
         }
 
         for(idx=0; idx<json.difficulties.length; idx++) {
