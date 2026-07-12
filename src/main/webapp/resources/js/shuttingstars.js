@@ -9366,26 +9366,26 @@ class ShuttingStarsCore {
                                 if(energy >=    avg4) { probability1 = 0.001; }
                                 if(energy >=    avg8) { probability1 = 0.01;  }
                                 if(energy >=   avg16) { probability1 = 0.75;  }
-                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; probability4 = 0.0001;  }
-                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; probability4 = 0.00025; }
-                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; probability4 = 0.005;   }
-                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.01;   }
+                                if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; probability4 = 0.00005;  }
+                                if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; probability4 = 0.0001; }
+                                if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; probability4 = 0.0002;   }
+                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.0005;   }
                             } else if(difficultyLevel <= 4) {
                                 if(energy >=    avg4) { probability1 = 0.01;  }
                                 if(energy >=    avg8) { probability1 = 0.05;  }
                                 if(energy >=   avg16) { probability1 = 0.77;  probability2 = 0.001; }
-                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;  probability4 = 0.00015;  }
-                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;  probability4 = 0.00035;  }
-                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075; probability4 = 0.0075;   }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.02;     }
+                                if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;  probability4 = 0.0001;  }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;  probability4 = 0.00025;  }
+                                if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075; probability4 = 0.0005;   }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.001;     }
                             } else if(difficultyLevel <= 6) {
                                 if(energy >=    avg4) { probability1 = 0.05; }
                                 if(energy >=    avg8) { probability1 = 0.25; }
                                 if(energy >=   avg16) { probability1 = 0.8;   probability2 = 0.002; }
                                 if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; probability4 = 0.0002; }
-                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  probability4 = 0.0004; }
+                                if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  probability4 = 0.0005; }
                                 if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  probability4 = 0.009;  }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.05;    }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.05;   }
                             } else if(difficultyLevel <= 8) {
                                 if(energy >=    avg4) { probability1 = 0.1;  }
                                 if(energy >=    avg8) { probability1 = 0.5;    probability2 = 0.001;  }
@@ -9432,11 +9432,15 @@ class ShuttingStarsCore {
                             }
 
                             // 초반, 후반 부분은 빈도 낮춤
+                            if(timeCycle < minTimeCycle / 2) { probability1 = 0; probability2 = 0; }
+                            if(timeCycle < minTimeCycle * 1) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
                             if(timeCycle < minTimeCycle * 2) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
                             if(timeCycle < minTimeCycle * 3) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
-                            if(timeCycle > maxTimeCycle - (minTimeCycle    )) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle > maxTimeCycle - (minTimeCycle * 3)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
                             if(timeCycle > maxTimeCycle - (minTimeCycle * 2)) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
-
+                            if(timeCycle > maxTimeCycle - (minTimeCycle    )) { probability1 = probability1 * 0.5; probability2 = probability2 * 0.5; }
+                            if(timeCycle > maxTimeCycle - (minTimeCycle / 2)) { probability1 = 0; probability2 = 0; }
+                            
                             // bpm 보정
                             let ratioBpm = 1;
                             if(bpm <= 90) {
@@ -10999,6 +11003,18 @@ class SSLongNote extends SSNoteCommon {
         this.opacity = 0.9;
         this.color = this.getColorOfLocationIndex(locationIndex);
     }
+
+    /**
+     * modifyExplosiveColor 관련 상태를 갱신합니다.
+     * @param {number} gradientIndex gradientIndex 값
+     * @returns {string} 처리 결과
+     */
+    modifyExplosiveColor(gradientIndex) {
+        if(this.missed) {
+            return '90, 90, 90';
+        }
+        return super.modifyExplosiveColor(gradientIndex);
+    }
     
     /**
      * draw 대상을 화면에 렌더링
@@ -11024,7 +11040,7 @@ class SSLongNote extends SSNoteCommon {
         }
 
         // 키 표시 (중앙에 출력하며, 크기는 내부에 들어오도록 폰트 크기 계산해야 함)
-        if(this.explosing < 2) {
+        if(this.explosing < 2 && (! this.missed)) {
             let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
             ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
