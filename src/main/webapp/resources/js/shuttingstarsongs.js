@@ -178,12 +178,24 @@ song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilaaogn0iramegioamerpogm3490qmgaemfpoggsdGSDGsnmdk';
 song.test = false;
-song.onlyRandom = true;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
     difficultyLevel : 3,
-    autoCreate : true,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 5,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'hard',
+    difficultyLevel : 9,
+    autoCreate : false,
     patterns : []
 });
 
@@ -214,12 +226,18 @@ song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilahgaGARGag00ij0djfhksakgoiapwegmpowaermgpoami';
 song.test = false;
-song.onlyRandom = true;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
-    difficultyLevel : 3,
-    autoCreate : true,
+    difficultyLevel : 2,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 5,
+    autoCreate : false,
     patterns : []
 });
 
@@ -250,12 +268,18 @@ song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilagneagnorienoinm34ongAGRAEG48nfg90g04GGHansklvamslkv';
 song.test = false;
-song.onlyRandom = true;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
-    difficultyLevel : 3,
-    autoCreate : true,
+    difficultyLevel : 1,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 4,
+    autoCreate : false,
     patterns : []
 });
 
@@ -286,12 +310,18 @@ song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilaosng34gGERGI#$G#sGM3g8j0esajgg4GAEFGERRGAErgnaeorgnoaerng2';
 song.test = false;
-song.onlyRandom = true;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
     difficultyLevel : 3,
-    autoCreate : true,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 5,
+    autoCreate : false,
     patterns : []
 });
 
@@ -322,12 +352,24 @@ song.timeMultiplier = 1;
 song.noteMultiplier = 1;
 song.serial = 'nai4ilagoisnomnGARA$IMERGM$#g#4g$%ghsdbfadsbmdfak';
 song.test = false;
-song.onlyRandom = true;
+song.onlyRandom = false;
 song.difficulties = [];
 song.difficulties.push({
     difficultyLabel : 'easy',
     difficultyLevel : 3,
-    autoCreate : true,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'normal',
+    difficultyLevel : 6,
+    autoCreate : false,
+    patterns : []
+});
+song.difficulties.push({
+    difficultyLabel : 'hard',
+    difficultyLevel : 10,
+    autoCreate : false,
     patterns : []
 });
 

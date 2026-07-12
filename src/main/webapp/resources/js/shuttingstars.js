@@ -9514,7 +9514,14 @@ class ShuttingStarsCore {
                         for(let odx=0; odx<noteCreates.length; odx++) {
                             const noteOne = noteCreates[odx];
                             if(noteOne instanceof SSLongNote) {
-                                if(noteOne.originalTiming <= timeCycle && timeCycle <= noteOne.endTiming + (noteOne.endTiming - noteOne.originalTiming)) {
+                                let diffTime = Math.abs(noteOne.originalEndTiming - noteOne.originalTiming);
+                                let diffTimeMultiplier = 64;
+                                for(let pdx=0; pdx<difficultyLevel; pdx += 2) {
+                                    diffTimeMultiplier = diffTimeMultiplier / 2.0;
+                                }
+                                if(diffTime <= 16) diffTime = 16;
+                                if(diffTimeMultiplier <= 2) diffTimeMultiplier = 2;
+                                if(noteOne.originalTiming - 4 <= timeCycle && timeCycle <= noteOne.originalTiming + (diffTime * diffTimeMultiplier)) {
                                     usedIndex.push(noteOne.locationIndex);
                                 }
                             }
