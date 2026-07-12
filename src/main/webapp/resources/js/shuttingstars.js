@@ -2139,7 +2139,7 @@ class ShuttingStarsCore {
             if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
 
             // MySong (파일 불러와서 즉석 생성곡은 저장해도 어짜피 다음번 접속 시 파일 액세스가 안되서 플레이가 안됨 - 제외)
-            if(soneOne instanceof CustomMySSSong) continue;
+            if(songOne instanceof CustomMySSSong) continue;
 
             // 시리얼 없는 경우 임의 시리얼 부여
             if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(ShuttingStarsUtility.random() * 999999999) + '' + Math.floor(ShuttingStarsUtility.random() * 999999999);
@@ -6074,7 +6074,7 @@ class ShuttingStarsCore {
 
         this.ctx.fillRect(this.convertX(barX + 5), this.convertY(barY - 5), this.convertX(barRealW), this.convertY(5));
 
-        this.ctx.font = 'normal ' + this.convertFontSize(10) + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + this.convertFontSize(10) + 'px ' + this.getOcrFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText('HP', this.convertX(barX - 5), this.convertY(barY + 2));
 
@@ -6086,7 +6086,7 @@ class ShuttingStarsCore {
         else                               this.ctx.fillStyle = 'rgba(100, 100, 250, 0.9)';
         this.ctx.fillRect(this.convertX(barX + 5), this.convertY(barY - 5), this.convertX(barRealW), this.convertY(5));
 
-        this.ctx.font = 'normal ' + this.convertFontSize(10) + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + this.convertFontSize(10) + 'px ' + this.getOcrFontFamily();
         this.ctx.fillText('PW', this.convertX(barX - 5), this.convertY(barY + 2));
     }
 
@@ -8569,7 +8569,7 @@ class ShuttingStarsCore {
         this.keyEventDisabled = true;
         this.pops.dim.classList.remove('invisible');
         this.configDiv.classList.remove('invisible');
-        this.configDiv.querySelector('.inp_keypressdelay').focus();
+        this.configDiv.querySelector('.inp_notespeedrate').focus();
     }
 
     /**
@@ -9665,6 +9665,10 @@ class ShuttingStarsCore {
             } else {
                 song = new CustomSSSong();        
             }
+        } else if(json.serial == '') {
+            json.serial = 'CUSTOMSONG_' + (ShuttingStarsUtility.random() * 99999999) + '' + (ShuttingStarsUtility.random() * 99999999);
+            song = new CustomSSSong();
+            song.serial = json.serial;
         } else {
             throw 'This is not a valid song JSON.';
         }
@@ -9878,7 +9882,7 @@ class ShuttingStarsCore {
                 exists = true;
                 break;
             }
-            if(songOne.name == song.name && songOne.composer == song.composer && songOne.noteWriter == song.noteWriter) {
+            if(songOne.name == song.name && songOne.composer == song.composer && songOne.noteWriter == song.noteWriter && songOne.bpm == song.bpm && songOne.description == song.description) {
                 exists = true;
                 break;
             }

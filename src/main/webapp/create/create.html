@@ -241,8 +241,13 @@ $(function() {
         const fSaveSong = function(saveAs) {
             let text = ta.val();
             let songConverted = null;
+            let newSongYn = false;
             try {
                 let json = JSON.parse(text);
+
+                newSongYn = (json.serial == '');
+                if(saveAs) { json.serial = ''; json.description += '\nCOPIED !'; newSongYn = true; }
+
                 songConverted = broker.parseSong(json);
             } catch(e) {
                 console.error(e);
@@ -250,11 +255,7 @@ $(function() {
                 return;
             }
 
-            if(saveAs) {
-                songConverted.serial = ''; // 별도의 곡으로 저장
-            }
-
-            if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
+            if(newSongYn) { // 신규 작성 곡인 경우
                 songConverted = broker.addSong(songConverted); 
                 let newSerial = songConverted.serial;
                 fLoadSongList();
