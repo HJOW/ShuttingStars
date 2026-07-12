@@ -89,8 +89,10 @@ class ShuttingStarsCore {
     pointFont  = 'Nanum Pen Script';
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
     judgeFont  = 'D2 coding';
+    /** @type {string} 빌드번호 등 출력에 사용할 OCR 스타일 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
+    ocrFont    = 'OCR-A';
     /** @type {string} 대체 폰트들 */
-    alterFonts = ['D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script', 'monospace'];
+    alterFonts = ['D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script', 'ocra', 'monospace'];
 
     /*** DOM 영역 변수들 (게임 초기화 중 할당됨) ***/
     /** @type {HTMLElement|null} ShuttingStars 게임이 돌아가는 DOM 의 최상위 DIV */
@@ -4284,7 +4286,7 @@ class ShuttingStarsCore {
 
         rows = this.convertY(this.getStageHeight() / 3, false);
         fontSize = this.convertFontSize(30);
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -4307,12 +4309,13 @@ class ShuttingStarsCore {
 
         // Copyright, 빌드 번호 출력
         fontSize = this.convertFontSize(12);
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('Copyright 2026 HJOW', this.convertX(this.getStageWidth() * 9 / 10), rows);
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getOcrFontFamily();
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillText('Copyright 2026 HJOW', this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         if(this.backend != null && this.backend.avail) {
@@ -4350,7 +4353,7 @@ class ShuttingStarsCore {
 
         fontSize = this.convertFontSize(30);
         rows = this.convertY(this.getStageHeight() / 5, false);
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -4424,8 +4427,10 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'right';
-        this.ctx.fillText('Copyright 2026 HJOW', this.convertX(this.getStageWidth() * 9 / 10), rows);
-        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getOcrFontFamily();
+        this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.fillText('Copyright 2026 HJOW', this.convertX(this.getStageWidth() * 9 / 10), rows + this.metricSize2);
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         let logined = false;
@@ -4467,6 +4472,7 @@ class ShuttingStarsCore {
         label = '';        
         if(this.antiMatterCredit > 0) label += '    ' + String(this.antiMatterCredit) + ' ATC';
         if(this.darkMatterCredit > 0) label += '    ' + String(this.darkMatterCredit) + ' DMC';
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getOcrFontFamily();
         this.ctx.fillText(label.trim(), this.convertX(fontSize * 2.8), this.convertY(fontSize * 2, false));
 
         // 하단 공지 출력
@@ -5238,7 +5244,7 @@ class ShuttingStarsCore {
 
         fontSize = this.convertFontSize(30);
         rows = this.convertY(this.getStageHeight() / 5, false);
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
@@ -8710,6 +8716,26 @@ class ShuttingStarsCore {
             added = true;
         }
         return "'" + this.judgeFont + "'" + (alters == '' ? '' : ', ' + alters);
+    }
+
+    /**
+     * 버전 정보 등 출력에 쓰일 OCR 스타일 글꼴 파트 반환
+     * @returns {string} 처리 결과
+     */
+    getOcrFontFamily() {
+        let alters = '';
+        let added = false;
+        for(let idx=0; idx<this.alterFonts.length; idx++) {
+            const fontOne = this.alterFonts[idx].trim();
+
+            if(added) alters += ', ';
+
+            if(fontOne == 'monospace' || fontOne == 'sans-serif' || fontOne == 'serif') alters += fontOne; // CSS 기본 폰트 그룹 - 따옴표 미사용
+            else alters += "'" + fontOne + "'";
+
+            added = true;
+        }
+        return "'" + this.ocrFont + "'" + (alters == '' ? '' : ', ' + alters);
     }
     
     /**
