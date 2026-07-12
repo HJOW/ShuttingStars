@@ -379,15 +379,33 @@ class ShuttingStarsUtilityClass {
      * @returns {number} 0 이상 1 미만의 난수
      */
     random() {
+        let randStep1, randStep2;
         // crypto 사용 가능한 경우 더 확실한 random 반환
         if(window.crypto) {
             try {
                 const buff = new Uint32Array(1);
                 window.crypto.getRandomValues(buff);
-                return buff[0] / 4294967296.0;
-            } catch(ignores) {}
+                
+                randStep1 = buff[0] / 4294967296.0;
+            } catch(failed) { randStep1 = Math.random(); }
+        } else {
+            randStep1 = Math.random();
         }
-        return Math.random();
+        
+        // 좀더 뒤섞기
+        //     값을 역 전환 (1에서 뺄셈)
+        //     0.0 ~ 0.2 인 경우 0.4 ~ 0.6 범위로 변경
+        //     0.2 ~ 0.4 인 경우 0.6 ~ 0.8 범위로 변경
+        //     0.4 ~ 0.6 인 경우 0.8 ~ 1.0 범위로 변경
+        //     0.6 ~ 0.8 인 경우 0.0 ~ 0.2 범위로 변경
+        //     0.8 ~ 1.0 인 경우 0.2 ~ 0.4 범위로 변경
+        randStep2 = 1.0 - randStep1;
+        if(randStep2 < 0.2) randStep2 += 0.4;
+        else if(randStep2 < 0.4) randStep2 += 0.4;
+        else if(randStep2 < 0.6) randStep2 += 0.4;
+        else if(randStep2 < 0.8) randStep2 -= 0.6;
+        else randStep2 -= 0.6;
+        return randStep2;
     }
 
     /**
