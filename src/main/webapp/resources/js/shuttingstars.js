@@ -97,6 +97,8 @@ class ShuttingStarsCore {
     rootDiv = null;
     /** @type {HTMLElement|null} 위 rootDiv 를 div로 한번 더 감싼 div */
     contentRoot = null;
+    /** @type {HTMLElement|null} jsonp를 위한 script 태그가 들어갈 div 영역 */
+    divJsonp = null;
     /** @type {HTMLElement|null} 유튜브 영역 (미사용 시 투명) */
     youtubeDiv = null;
     /** @type {HTMLVideoElement|null} 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역 */
@@ -612,7 +614,6 @@ class ShuttingStarsCore {
     /** @type{boolean} 곡 감상 모드 - 반복 재생 여부 */
     listeningLoop     = true;
 
-
     /** @type {string} 마지막으로 성공한 초기화 (init 메소드) 단계 메시지 */
     lastInitSuccessMessage = '';
 
@@ -735,6 +736,7 @@ class ShuttingStarsCore {
                         <canvas class='shuttingstars_canvas_3d'></canvas>
                         <div class='shuttingstars_pop_root'></div>
                     </div>
+                    <div type='text/javascript' class='shuttingstars_jsonp_script_root invisible'></div>
                 </div>                                     
             `;
             rootDiv.innerHTML = htmls;
@@ -742,6 +744,7 @@ class ShuttingStarsCore {
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
             this.videoBga    = rootDiv.querySelector('.shuttingstars_bga');
             this.youtubeDiv  = rootDiv.querySelector('.shuttingstars_youtubes');
+            this.divJsonp    = rootDiv.querySelector('.shuttingstars_jsonp_script_root');
 
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
@@ -9011,7 +9014,18 @@ class ShuttingStarsCore {
             if(lineOne == '') continue;
 
             try {
-                const responses = await fetch(lineOne);
+                let responses = null;
+                if(lineOne.indexOf('[CTX]') == 0) {
+                    responses = await fetch(lineOne);
+                } else {
+                    // CORS 문제 방지를 위해 JSONP로 호출 (JSONP 콜백함수명은 URL 매개변수 callback 에 탑재됨)
+                    const respJson = await ShuttingStarsUtility.jsonp(lineOne, 16000);
+                    responses = respJson.response;
+                }
+
+                responses = await fetch(lineOne);
+                if(responses == null) continue;
+
                 const json = responses.json();
 
                 if(typeof(json.name) != 'string') continue;
@@ -9568,13 +9582,25 @@ class ShuttingStarsCore {
         let idx;
         let song = null;
 
-        if(json.serial != null && json.serial != '') {
+        if(json.serial != null && typeof(json.serial) != 'undefined' && json.serial != '') {
             if(this.officialSongSerials.indexOf(json.serial) >= 0) {
                 song = new OfficialSSSong();
             } else {
-                song = new ShuttingStarsSong();        
+                song = new CustomSSSong();        
             }
+        } else {
+            throw 'This is not a valid song JSON.';
         }
+
+        if(typeof(json.name          ) == 'undefined') throw 'This is not a valid song JSON.';
+        if(typeof(json.composer      ) == 'undefined') throw 'This is not a valid song JSON.';
+        if(typeof(json.noteWriter    ) == 'undefined') throw 'This is not a valid song JSON.';
+        if(typeof(json.description   ) == 'undefined') throw 'This is not a valid song JSON.';
+        if(typeof(json.bpm           ) == 'undefined') json.bpm
+        if(typeof(json.loadingTime   ) == 'undefined') json.loadingTime      = 0;
+        if(typeof(json.noteMultiplier) == 'undefined') json.noteMultiplier   = 1;
+        if(typeof(json.timeConstant  ) == 'undefined') json.timeConstant     = 0;
+        if(typeof(json.timeMultiplier) == 'undefined') json.timeMultiplier   = 1;
 
         song.name           = json.name;
         song.composer       = json.composer;
@@ -10104,8 +10130,16 @@ class OfficialSSSong extends ShuttingStarsSong {
     constructor() { super(); }
 }
 
+/** 비공식 곡 */
+class CustomSSSong extends ShuttingStarsSong {
+    /**
+     * 인스턴스 초기화
+     */
+    constructor() { super(); }
+}
+
 /** MySong 모드 곡 (사용자가 가진 오디오 파일 첨부해서 즉석 플레이하는 곡, 기록을 남기면 안되며, 플레이 후 곡 목록에서 바로 삭제) */
-class CustomMySSSong extends ShuttingStarsSong {
+class CustomMySSSong extends CustomSSSong {
     /**
      * 인스턴스 초기화
      */

@@ -33,6 +33,9 @@ class ShuttingStarsUtilityClass {
     /** @type {number} 토스트 메시지에 부여할 고유 순번의 현재 최대값 */
     toastIndex = 0;
 
+    /** @type {Array<object>} jsonp 요청 */
+    jsonpRequests = [];
+
     /**
      * 문자열 치환
      * @param {string} originalStr originalStr 값
@@ -576,6 +579,115 @@ class ShuttingStarsUtilityClass {
             if(typeof(CryptoJS) != 'undefined') {
                 resolve(CryptoJS.SHA3( String(str) ).toString());
             } else reject('No CryptoJS detected.');
+        });
+    }
+
+    /**
+     * 해당 URL로 JSONP 요청 (Promise)
+     *     JSONP callback 함수명은 GET 방식 매개변수 callback 에 탑재됨
+     *     
+     * 
+     * @param {string} url JSONP 요청 URL
+     * @param {number} timeout 타임아웃 (밀리초, 선택사항)
+     * @returns {Promise<object>} 처리 결과 (요청 정보와 응답 데이터가 포함된 객체로 반환)
+     */
+    jsonp(url, timeout) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            let uniqNos = 0;
+            for(let idx=0; idx<selfs.jsonpRequests.length; idx++) {
+                const reqObj = selfs.jsonpRequests[idx];
+                const thisUniqNo = reqObj.seq;
+
+                if(uniqNos < thisUniqNo) uniqNos = thisUniqNo;
+            }
+            uniqNos++;
+
+            let callbackName = 'ssjsonp_' + uniqNos;
+            let responsed = false;
+            let scriptObj = null;
+            if(typeof(timeout) == 'undefined' || isNaN(timeout)) timeout = 16000;
+
+            // URL에 콜백함수 이름을 전달해야 함
+            //    URL 에 [CALLBACK] 문자열이 없으면
+            let appenderCallbackName = 'ssjsonpc.' + callbackName;
+            if(url.indexOf('[CALLBACK]') < 0) {
+                if(url.indexOf('?callback') < 0) {
+                    // URL 에 ?callback= 이 없으면 아예 ?callback= 를 추가해서 뒤에 콜백함수 이름 전달
+                    url += '?callback=' + encodeURIComponent(appenderCallbackName);
+                } else {
+                    // URL 에 ?callback= 이 있으면 callback 매개변수 값을 변경해야 함
+                    let urlx = new URL(url);
+                    let params = urlx.searchParams;
+                    params.set('callback', appenderCallbackName);
+                    urlx.search = params.toString();
+                    url = urlx.toString();
+                }
+            } else {
+                // URL 에 [CALLBACK] 문자열이 있으면 해당 문자열을 콜백함수 이름으로 치환
+                url = this.replaceString(url, '[CALLBACK]', encodeURIComponent(appenderCallbackName));
+            }
+
+            // 작업 완료 후 처리할 함수 미리 정의
+            const fCleanAfter = () => {
+                if(typeof(window.ssjsonpc) != 'undefined') {
+                    if(typeof(window.ssjsonpc[callbackName]) != 'undefined') {
+                        delete window.ssjsonpc[callbackName];
+                    }
+                }
+
+                for(let idx=0; idx<selfs.jsonpRequests.length; idx++) {
+                    const reqObj = selfs.jsonpRequests[idx];
+                    if(reqObj.seq == uniqNos) {
+                        selfs.jsonpRequests.splice(idx, 1);
+                        break;
+                    }
+                }
+
+                if(scriptObj != null) {
+                    scriptObj.remove();
+                    scriptObj = null;
+                }
+            };
+
+            // 요청 객체 생성
+            const requests = {};
+            requests.seq = uniqNos;
+            requests.url = url;
+            requests.callbackName = callbackName;
+            requests.response = null;
+            requests.callback = function(obj) {
+                if(responsed) return;
+                responsed = true;
+
+                requests.response = obj;
+                requests.callback = null;
+
+                setTimeout(fCleanAfter, 500);
+                resolve(requests);
+            }
+
+            // 타임아웃 부여
+            setTimeout(() => {
+                if(responsed) return;
+                responsed = true;
+                requests.response = null;
+                requests.callback = null;
+                setTimeout(fCleanAfter, 500);
+                reject('Timeout');
+            });
+            
+            // window 에 콜백함수 탑재
+            if(typeof(window.ssjsonpc) == 'undefined') window.ssjsonpc = {};
+            window.ssjsonpc[callbackName] = requests.callback;
+            selfs.jsonpRequests.push(requests);
+
+            // script 태그 생성
+            scriptObj = document.createElement('script');
+            scriptObj.src = url;
+            
+            // script 태그 부착
+            document.body.appendChild(scriptObj);
         });
     }
 }
