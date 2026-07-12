@@ -3414,6 +3414,8 @@ class ShuttingStarsCore {
         // SSNotePlacer 폭발 처리
         notePlacer.explosing = 1;
 
+        // 전 노트들 위치 다시 계산하고 처리하는 게 좋을까?
+
         // 해당 SSNotePlacer 에 범위 안에 들어온 노트들 수집
         let notes = [];
         let noteY, justY, rangeSize, dist;
@@ -6710,7 +6712,6 @@ class ShuttingStarsCore {
 
         try {
             let idx, jdx;
-            let notePlacer;
 
             if(this.youtubePlayer == null) {
                 if(this.audio != null) {
@@ -6735,36 +6736,7 @@ class ShuttingStarsCore {
             if(this.titleDelayTime >= 1) this.titleDelayTime--;
 
             // 노트 위치 처리
-            if((this.state == 'playing' || this.state == 'listenplaying') && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
-                for(idx=0; idx<this.objectsPlaying.length; idx++) {
-                    const obj = this.objectsPlaying[idx];
-                    if((obj instanceof SSNote) || (obj instanceof SSLongNote)) {
-                        // 폭발 중이거나 제거 처리된 노트는 제외
-                        if(obj.removed || obj.explosing >= 1) continue;
-
-                        // 노트에 해당하는 SSNotePlacer 찾기
-                        notePlacer = this.getNotePlacer(obj.locationIndex);
-                        if(notePlacer == null) continue;
-
-                        // 이전 위치 기록
-                        if(obj.tail) {
-                            obj.beforeLocations.push({x : obj.x, y : obj.y});
-                            if(obj.beforeLocations.length > obj.beforeLocationCountMax) obj.beforeLocations.splice(0, 1);
-                        }
-                    }
-
-                    // 위치 적용
-                    if(obj instanceof SSNote) {
-                        obj.y = this.calculateNoteCurrentLocation(obj, notePlacer.y, this.song);
-                    } else if(obj instanceof SSLongNote) {
-                        obj.y    = this.calculateNoteY(obj.handlingEndTiming, notePlacer.y, this.song);
-                        obj.yEnd = this.calculateNoteY(obj.originalEndTiming, notePlacer.y, this.song);
-                        if(obj.handling) {
-                            obj.y = notePlacer.y;
-                        }
-                    }
-                }
-            }
+            this.refreshNoteYLocations();
 
             // pw 조금 회복
             if(this.state == 'playing' || this.state == 'listenplaying') {
@@ -8946,6 +8918,43 @@ class ShuttingStarsCore {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 노트들의 Y 좌표를 갱신
+     */
+    refreshNoteYLocations() {
+        let notePlacer;
+        if((this.state == 'playing' || this.state == 'listenplaying') && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
+            for(let idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if((obj instanceof SSNote) || (obj instanceof SSLongNote)) {
+                    // 폭발 중이거나 제거 처리된 노트는 제외
+                    if(obj.removed || obj.explosing >= 1) continue;
+
+                    // 노트에 해당하는 SSNotePlacer 찾기
+                    notePlacer = this.getNotePlacer(obj.locationIndex);
+                    if(notePlacer == null) continue;
+
+                    // 이전 위치 기록
+                    if(obj.tail) {
+                        obj.beforeLocations.push({x : obj.x, y : obj.y});
+                        if(obj.beforeLocations.length > obj.beforeLocationCountMax) obj.beforeLocations.splice(0, 1);
+                    }
+                }
+
+                // 위치 적용
+                if(obj instanceof SSNote) {
+                    obj.y = this.calculateNoteCurrentLocation(obj, notePlacer.y, this.song);
+                } else if(obj instanceof SSLongNote) {
+                    obj.y    = this.calculateNoteY(obj.handlingEndTiming, notePlacer.y, this.song);
+                    obj.yEnd = this.calculateNoteY(obj.originalEndTiming, notePlacer.y, this.song);
+                    if(obj.handling) {
+                        obj.y = notePlacer.y;
+                    }
+                }
+            }
+        }
     }
 
     /**
