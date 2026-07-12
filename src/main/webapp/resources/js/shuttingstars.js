@@ -11935,4 +11935,4 @@ window.ssmanager     = ShuttingStars;
 window.SSUtil        = ShuttingStarsUtility;
 window.ssutil        = ShuttingStarsUtility;
 
-export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };
+export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, SSNoteCommon, SSNote, SSLongNote, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };
