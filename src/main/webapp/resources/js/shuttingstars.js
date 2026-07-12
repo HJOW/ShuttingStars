@@ -1213,6 +1213,7 @@ class ShuttingStarsCore {
         }, 6000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
+        this.rebuildBroker();
         try {
             if(this.createMode) this.fAfterInit(this.broker, this);
             else                this.fAfterInit(this.broker, null);
@@ -11835,6 +11836,7 @@ class ShuttingStarsManager {
      * @param {Function} funcObj 게임 코어 초기화 전 호출할 함수, 함수의 매개변수로 설정값 변경을 위한 브로커 객체가 입력됨.
      */
     setBeforeInitializeHook(funcObj) {
+        this.#originalInstances.rebuildBroker();
         this.#originalInstances.fBeforeInit = funcObj;
     }
 
@@ -11844,6 +11846,7 @@ class ShuttingStarsManager {
      * @param {Function} funcObj 게임 코어 초기화 후 호출할 함수, 함수의 매개변수로 설정값 변경을 위한 브로커 객체가 입력됨.
      */
     setAfterInitializeHook(funcObj) {
+        this.#originalInstances.rebuildBroker();
         this.#originalInstances.fAfterInit = funcObj;
     }
 
@@ -11935,4 +11938,4 @@ window.ssmanager     = ShuttingStars;
 window.SSUtil        = ShuttingStarsUtility;
 window.ssutil        = ShuttingStarsUtility;
 
-export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, SSNoteCommon, SSNote, SSLongNote, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };
+export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, CustomSSSong, SSNoteCommon, SSNote, SSLongNote, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };

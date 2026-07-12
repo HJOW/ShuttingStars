@@ -101,7 +101,7 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 
 <script type="module">
 import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from '../resources/js/shuttingstarsutils.js'
-import { ShuttingStars, ShuttingStarsSong, SSNote, SSLongNote } from '../resources/js/shuttingstars.js';
+import { ShuttingStars, ShuttingStarsSong, CustomSSSong, SSNote, SSLongNote } from '../resources/js/shuttingstars.js';
 
 /* 페이지 접속 시 호출 */
 $(function() {
@@ -201,7 +201,7 @@ $(function() {
             if(songSerial == '') newSong = true;
 
             if(newSong) {
-                song = new ShuttingStarsSong();
+                song = new CustomSSSong();
                 song.difficulties.push({
                     index : 0,
                     difficultyLabel : 'easy',
