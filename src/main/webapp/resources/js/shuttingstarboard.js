@@ -346,8 +346,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     closeEditor();
     try {
         const backendModule = await import('./shuttingstarsinterface.js');
-        state.backend = backendModule.default;
-        if(state.backend == null || ! state.backend.avail) throw 'Firebase backend is not available.';
+        state.backend = backendModule.SSBackend;
+        if(state.backend == null || typeof(state.backend) == 'undefined') throw 'Firebase backend is not available.';
+        if(typeof(state.backend) == 'function') state.backend = state.backend();
+        if(state.backend == null || (! state.backend.avail)) throw 'Firebase backend is not available.';
         if(state.backend.firestore == null) throw 'Firestore is not available.';
         state.db = state.backend.firestore;
         if(state.backend.authStateChangedEvents) {

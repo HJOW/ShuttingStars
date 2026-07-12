@@ -474,7 +474,7 @@ class ShuttingStarsCore {
 
     // 메뉴 화면 관련
     /** @type {Array<string>} 메뉴들 */
-    menuList = ['play', 'records', 'listen', 'community', 'setting', 'credit'];
+    menuList = ['play', 'records', 'listen', 'setting', 'credit'];
     /** @type {Array<string>} 위 menuList 에 데이터가 추가됨 */
     menuListDynamic = [];
     /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
@@ -1444,13 +1444,15 @@ class ShuttingStarsCore {
                     let newList = [];
                     let classicList = selfs.menuList;
 
-                    // 기존 메뉴 그대로 유지
+                    // 기존 메뉴 대부분 그대로 유지
                     for(let idx=0; idx<classicList.length; idx++) {
                         const menuOne = classicList[idx];
+
+                        if(idx == 3) newList.push('community'); // 4번째 위치에 커뮤니티 추가
                         newList.push(menuOne);
                     }
 
-                    // 로그인된 경우, 로그아웃 메뉴 추가
+                    // 로그아웃 메뉴 추가
                     newList.push('logout');
 
                     // 푸시 권한 획득
@@ -3344,7 +3346,7 @@ class ShuttingStarsCore {
             else { this.selectedRecordList = this.getRecords(); }
         } else if(key == this.arrowKeys[3]) { // RIGHT
             this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
-            if(this.backend == null) this.selectRecordType == 'local';
+            if(this.backend == null) { this.selectRecordType == 'local'; this.selectedRecordList = this.getRecords(); return; }
             if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
             else { this.selectedRecordList = this.getRecords(); }
         } else if(key == this.enterKey) { // ENTER
