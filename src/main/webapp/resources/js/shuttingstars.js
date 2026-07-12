@@ -990,7 +990,7 @@ class ShuttingStarsCore {
             }
             
             // 기타 곡 불러오기
-            this.loadSongs();
+            await this.loadSongs();
 
             this.logInit('setting workers...');
 
@@ -2057,8 +2057,10 @@ class ShuttingStarsCore {
     /**
      * 곡 목록 불러오기
      */
-    loadSongs() {
+    async loadSongs() {
         let idx;
+        let lastURL = null;
+        let songAdded = false;
 
         // 공식 곡 따로 관리
         let officialSongs = [];
@@ -2071,28 +2073,50 @@ class ShuttingStarsCore {
             }
         }
 
-        // 백업한 배열로 곡 목록 바꿔치기
+        // 백업한 배열로 곡 목록 바꿔치기 (공식 곡만 들어있는 배열이 됨)
         this.songs = officialSongs;
+        officialSongs = null;
 
-        // songDisplays, songRandoms 도 갱신
-        this.refreshSongDisplayList();
+        // json 의 songs.json 도 불러오기
+        try {
+            lastURL = this.convertURL('[CTX]/resources/json/songs.json');
+            const fetchResponse = await fetch(lastURL);
+            const songsJson     = await fetchResponse.json();
+            for(idx=0; idx<songsJson.length; idx++) {
+                const songJsonOne = songsJson[idx];
+                this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
+                songAdded = true;
+            }
+        } catch(e) {
+            ShuttingStarsUtility.log('Failed to load songs from ' + lastURL);
+            console.error(e);
+        }
         
+
         // 스토리지에서 불러오기
         try {
             let songsArr = localStorage.getItem('shuttingstar_songs');
             if(typeof(songsArr) == 'undefined' || songsArr == null) return;
             if(songsArr == '') return;
+
+            lastURL = '[STORAGE]' + songsArr + '[/STORAGE]';
             if(typeof(songsArr) == 'string') {
                 songsArr = JSON.parse(songsArr);
             }
             
             for(idx=0; idx<songsArr.length; idx++) {
                 const songJsonOne = songsArr[idx];
-                this.addSong(songJsonOne, true);
+                lastURL = '[STORAGEONE]' + songJsonOne + '[/STORAGEONE]';
+                this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
+                songAdded = true;
             }
         } catch(e) {
-            ShuttingStarsUtility.log('Failed to load songs.');
+            ShuttingStarsUtility.log('Failed to load songs from ' + lastURL);
             console.error(e);
+        }
+        if(! songAdded) {
+            // songDisplays, songRandoms 도 갱신
+            this.refreshSongDisplayList();
         }
     }
 
@@ -2101,12 +2125,15 @@ class ShuttingStarsCore {
      */
     saveSongs() {
         let idx;
-
-        // 공식곡 제외하고 담기
         let list = [];
         for(idx=0; idx<this.songs.length; idx++) {
             const songOne = this.songs[idx];
+
+            // 공식곡 제외하고 담기
             if(this.officialSongSerials.indexOf(songOne.serial) >= 0) continue;
+
+            // MySong (파일 불러와서 즉석 생성곡은 저장해도 어짜피 다음번 접속 시 파일 액세스가 안되서 플레이가 안됨 - 제외)
+            if(soneOne instanceof CustomMySSSong) continue;
 
             // 시리얼 없는 경우 임의 시리얼 부여
             if(songOne.serial == '' || songOne.serial == null) songOne.serial = 'nonofficial_' + Math.floor(ShuttingStarsUtility.random() * 999999999) + '' + Math.floor(ShuttingStarsUtility.random() * 999999999);
@@ -9342,7 +9369,7 @@ class ShuttingStarsCore {
                                 if(energy >=   avg32) { probability1 = 0.8;  probability2 = 0.01; probability4 = 0.0001;  }
                                 if(energy >=   avg64) { probability1 = 0.9;  probability2 = 0.02; probability4 = 0.00025; }
                                 if(energy >=  avg256) { probability1 = 0.95; probability2 = 0.05; probability4 = 0.005;   }
-                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.025;   }
+                                if(energy >= avg1024) { probability1 = 0.99; probability2 = 0.1;  probability4 = 0.01;   }
                             } else if(difficultyLevel <= 4) {
                                 if(energy >=    avg4) { probability1 = 0.01;  }
                                 if(energy >=    avg8) { probability1 = 0.05;  }
@@ -9350,7 +9377,7 @@ class ShuttingStarsCore {
                                 if(energy >=   avg32) { probability1 = 0.82;  probability2 = 0.02;  probability4 = 0.00015;  }
                                 if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.05;  probability4 = 0.00035;  }
                                 if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.075; probability4 = 0.0075;   }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.05;     }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.15;  probability4 = 0.02;     }
                             } else if(difficultyLevel <= 6) {
                                 if(energy >=    avg4) { probability1 = 0.05; }
                                 if(energy >=    avg8) { probability1 = 0.25; }
@@ -9358,7 +9385,7 @@ class ShuttingStarsCore {
                                 if(energy >=   avg32) { probability1 = 0.85;  probability2 = 0.05; probability4 = 0.0002; }
                                 if(energy >=   avg64) { probability1 = 0.9;   probability2 = 0.1;  probability4 = 0.0004; }
                                 if(energy >=  avg256) { probability1 = 0.95;  probability2 = 0.2;  probability4 = 0.009;  }
-                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.1;    }
+                                if(energy >= avg1024) { probability1 = 0.99;  probability2 = 0.3;  probability4 = 0.05;    }
                             } else if(difficultyLevel <= 8) {
                                 if(energy >=    avg4) { probability1 = 0.1;  }
                                 if(energy >=    avg8) { probability1 = 0.5;    probability2 = 0.001;  }
@@ -9366,7 +9393,7 @@ class ShuttingStarsCore {
                                 if(energy >=   avg32) { probability1 = 0.925;  probability2 = 0.1;  probability4 = 0.0003; }
                                 if(energy >=   avg64) { probability1 = 0.95;   probability2 = 0.15; probability4 = 0.0005; }
                                 if(energy >=  avg256) { probability1 = 0.975;  probability2 = 0.3;  probability4 = 0.015;  }
-                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; probability4 = 0.2;    }
+                                if(energy >= avg1024) { probability1 = 0.99;   probability2 = 0.75; probability4 = 0.1;    }
                             } else {
                                 if(energy >=  avg4) { 
                                     probability1 = 0.1;
@@ -9400,8 +9427,8 @@ class ShuttingStarsCore {
                                         if(probability2 > 0.9) probability2 = 0.9;
                                     }
                                 }
-                                if(energy >=  avg256) { probability1 =  0.99;  probability2 =  0.99; probability4 = 0.02; }
-                                if(energy >= avg1024) { probability1 = 0.999;  probability2 = 0.999; probability4 = 0.5;  }
+                                if(energy >=  avg256) { probability1 =  0.99;  probability2 =  0.99; probability4 = 0.01; }
+                                if(energy >= avg1024) { probability1 = 0.999;  probability2 = 0.999; probability4 = 0.15;  }
                             }
 
                             // 초반, 후반 부분은 빈도 낮춤
