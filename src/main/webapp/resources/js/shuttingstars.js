@@ -8210,6 +8210,7 @@ class ShuttingStarsCore {
                     <textarea class='full ta_json_song'></textarea>
                     <div class='shuttingstar_songcontrols'>
                         <button type='button' class='btn btn_song_accept target_translate'>Save</button>
+                        <a href='./create/create.html' target='_blank' style='margin-left: 20px; text-decoration: none;'>Song Creation Mode (TEST)</a>
                     </div>
                 </div>
                 <div class='shuttingstar_packagessections tabarea'>
@@ -8587,6 +8588,65 @@ class ShuttingStarsCore {
      * @returns {string} 처리 결과
      */
     defaultCustomSongComments() {
+        if(this.language == 'ko') return String(`
+# 주의 ! '#'로 시작하는 줄은 무시됩니다.
+#
+# 커스텀 곡 추가 방법
+#    JSON 객체 하나로 곡 하나를 정의합니다.
+#        name           : (string) 곡의 이름
+#      , composer       : (string) 곡 작곡가 이름
+#      , noteWriter     : (string) 노트 채보 작성자 이름
+#      , bgaUrl         : (string) 비워 두세요 (BGA 동영상 URL로 아직 미지원)
+#      , musicUrl       : (string) 음악 파일 URL
+#      , thumbnailUrl   : (string) 썸네일 이미지 URL (아직 미사용)
+#      , description    : (string) 설명 (곡 선택 화면 우측 하단에 표시됨)
+#      , loadingTime    : (integer) 추가 로딩 시간 (곡 선택 시 제목 화면에서 추가로 보내는 시간)
+#      , bpm            : (integer) BPM (Bit per minutes)
+#      , endTime        : (integer) 0을 지정 (미사용)
+#      , timeMultiplier : (integer) 게임 속도 상수 (곱셈으로 적용, 어려운 경우 1 지정 권장)
+#      , timeConstant   : (integer) 노트 타이밍 상수 (덧셈 적용, 어려운 경우 0 지정 권장)
+#      , noteMultiplier : (integer) 노트 타이밍 상수 (곱셈 적용, 어려운 경우 1 지정 권장)
+#      , serial         : (string) 빈 문자열 입력 (곡마다 고유한 값이어야 하며, 빈 문자열 입력 시 랜덤하게 변경됨)
+#      , difficulties   : (array) 난이도 목록
+#            element : (object)
+#                difficultyLabel : (string) 난이도 키워드 (예: easy, normal, hard, ex1, ex2, ex3, ...)
+#                difficultyLevel : (integer) 난이도 레벨 (숫자)
+#                patterns : (array)
+#                    element : (object)
+#                        locationIndex : (integer) 라인 번호 (0~5 범위 지정, -1 지정 시 게임 내에서 랜덤 지정됨)
+#                        time          : (number) 판정선 도달 시점 ( 초 단위가 아니며 곡의 16분의 N비트 값으로 지정, 소수 사용 가능 )
+#                        type          : (string) 노트 유형 (normal / long 중에 선택, 기본 : normal)
+#                        ends          : (number) long 타입 지정 시 필수값으로, 종료 시점 지정 ( time 과 같은 단위, time 값보다 커야 함 )
+#    예시
+#      [
+#          {
+#              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
+#            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
+#            , "difficulties" : [
+#                  {
+#                       "difficultyLabel" : "easy"
+#                       "difficultyLevel" : 1
+#                       "patterns" : [
+#                            {"locationIndex" : 1, time : 3}
+#                          , {"locationIndex" : 0, time : 6}
+#                          , {"locationIndex" : 4, time : 9}
+#                          ...
+#                       ]
+#                  },
+#                  {
+#                       "difficultyLabel" : "normal"
+#                       "difficultyLevel" : 4
+#                       "patterns" : [
+#                            {"locationIndex" : 2, time : 2}
+#                          , {"locationIndex" : 1, time : 4}
+#                          , {"locationIndex" : 4, time : 6}
+#                          ...
+#                       ]
+#                  }
+#              ]
+#          }
+#      ]
+        `);
         return String(`
 # Caution ! Lines start with '#' will be ignored.
 #
@@ -8601,7 +8661,7 @@ class ShuttingStarsCore {
 #      , description    : (string) Description.
 #      , loadingTime    : (integer) Additional loading time
 #      , bpm            : (integer) BPM (Bit per minutes)
-#      , endTime        : (integer) This song's length ( Not seconds ! Need to test. )
+#      , endTime        : (integer) Just set to 0 (Now this value is not used.)
 #      , timeMultiplier : (integer) Game total speed multiplier (Just set 1)
 #      , timeConstant   : (integer) Note timing correction value (+)
 #      , noteMultiplier : (integer) Note timing correction value (×)
