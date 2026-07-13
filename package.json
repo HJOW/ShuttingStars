@@ -14,11 +14,11 @@
     },
     "main": "src/main/webapp/resources/js/shuttingstars.js",
     "scripts": {
-        "start": "npm run webpack && node backend/nodeserver.js",
+        "start": "npm run build && node backend/nodeserver.js",
         "webpack": "webpack",
         "build": "npm run webpack",
         "upload:only": "firebase deploy",
-        "upload": "webpack && npm run upload:only"
+        "upload": "npm run build && npm run upload:only"
     },
     "devDependencies": {
         "@babel/core": "^7.29.7",
