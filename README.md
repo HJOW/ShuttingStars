@@ -122,7 +122,7 @@ BSD License
 Copyright 2013 Yahoo! Inc.
 https://github.com/pure-css/pure/blob/main/LICENSE
 
-+ jQuery (Only for Create Mode)
++ jQuery (Only for few side features)
 
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/

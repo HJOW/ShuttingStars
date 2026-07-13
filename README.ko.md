@@ -135,7 +135,7 @@ https://github.com/pure-css/pure/blob/main/LICENSE
 Copyright (c) 2020 VanillaWC
 https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE
 
-+ jQuery (Create Mode 에서만 사용)
++ jQuery (일부 사이드 기능에서만 사용)
 
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/

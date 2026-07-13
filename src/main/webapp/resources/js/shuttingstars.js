@@ -7752,7 +7752,7 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'Third Parties', fontSize : 30 });
         this.creditContents.push({ label : '', fontSize : 30 });
 
-        this.creditContents.push({ label : 'jQuery (Only for Create Mode)', fontSize : 25 });
+        this.creditContents.push({ label : 'jQuery (Only for few features)', fontSize : 25 });
         this.creditContents.push({ label : 'Projects referencing this document are released under the terms of the MIT license.', fontSize : 15 });
         this.creditContents.push({ label : 'https://jquery.com/license/', fontSize : 15 });
         this.creditContents.push({ label : '', fontSize : 25 });

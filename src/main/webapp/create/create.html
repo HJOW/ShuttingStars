@@ -95,7 +95,6 @@ html, body, div, p, span, input, textarea, select, button, a, h1, h2, h3, h4, h5
 <!-- YOUTUBE -->
 <script type="text/javascript" src="https://www.youtube.com/iframe_api"></script>
 
-<script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
 <script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
 <script type="module" src="../resources/js/wc-monaco/wc-monaco-editor.js"></script>
 
@@ -104,8 +103,8 @@ import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from '../
 import { ShuttingStars, ShuttingStarsSong, CustomSSSong, SSNote, SSLongNote } from '../resources/js/shuttingstars.js';
 
 /* 페이지 접속 시 호출 */
-$(function() {
-    const root = $('.shuttingstar_root');
+window.addEventListener('DOMContentLoaded', function() {
+    const root = document.querySelector('.shuttingstar_root');
     let coreInst = null;
     ShuttingStars.setBeforeInitializeHook(function(broker) {
         broker.apply({
@@ -119,47 +118,55 @@ $(function() {
         coreInst = coreInstance;
         let idx;
 
-        $('.shuttingstars_root .shuttingstars_canvas').css('position', 'relative');
+        document.querySelector('.shuttingstars_root .shuttingstars_canvas').style.position = 'relative';
         
-        const dLoad = $('.shuttingstars_create_loadings');
-        const pLoad  = dLoad.find('progress');
-        const ta = $('.ta_song_json');
-        const selSongs  = $('.sel_songs');
-        const selDiff   = $('.sel_diff');
-        const inpElps   = $('.inp_elapsedTime');
-        const btnLoad   = $('.btn_load');
-        const btnSave   = $('.btn_save');
-        const btnSaveAs = $('.btn_save_as');
-        const btnTest   = $('.btn_test');
-        const btnStop   = $('.btn_stop');
-        const btnPaus   = $('.btn_pause');
-        const btnRsum   = $('.btn_resume');
-        const btnDiffRe = $('.btn_diff_ref');
-        const btnAutoNt = $('.btn_autonote');
+        const dLoad = document.querySelector('.shuttingstars_create_loadings');
+        const pLoad     = dLoad.querySelector('progress');
+        const ta        = document.querySelector('.ta_song_json');
+        const selSongs  = document.querySelector('.sel_songs');
+        const selDiff   = document.querySelector('.sel_diff');
+        const inpElps   = document.querySelector('.inp_elapsedTime');
+        const btnLoad   = document.querySelector('.btn_load');
+        const btnSave   = document.querySelector('.btn_save');
+        const btnSaveAs = document.querySelector('.btn_save_as');
+        const btnTest   = document.querySelector('.btn_test');
+        const btnStop   = document.querySelector('.btn_stop');
+        const btnPaus   = document.querySelector('.btn_pause');
+        const btnRsum   = document.querySelector('.btn_resume');
+        const btnDiffRe = document.querySelector('.btn_diff_ref');
+        const btnAutoNt = document.querySelector('.btn_autonote');
+        const audioControls = document.querySelector('.td_audio_controls');
+
+        const appendOption = function(select, value, label) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            select.append(option);
+        };
 
         let songSelected = null;
 
         const fLoadSongList = function() {
-            selSongs.empty();
-            selDiff.empty();
-            btnTest.prop('disabled', true);
-            btnStop.prop('disabled', true);
-            btnAutoNt.prop('disabled', true);
-            selSongs.append("<option value=''>- NEW -</option>");
+            selSongs.replaceChildren();
+            selDiff.replaceChildren();
+            btnTest.disabled = true;
+            btnStop.disabled = true;
+            btnAutoNt.disabled = true;
+            appendOption(selSongs, '', '- NEW -');
             for(idx=0; idx<broker.songs.length; idx++) {
                 const songOne = broker.songs[idx];
                 if(songOne.serial == '') continue;
-                selSongs.append("<option value='" + SSUtil.replaceString(songOne.serial, "'", "\"") + "'>" + SSUtil.replaceString(SSUtil.replaceString(songOne.name, '<', '&lt;'), '>', '&gt;') + "</option>");
+                appendOption(selSongs, songOne.serial, songOne.name);
             }
 
-            dLoad.hide();
+            dLoad.hidden = true;
         }
 
         const fLoadDiffList = function(loadJson) {
             if(songSelected == null) return;
 
             if(loadJson) {
-                let text = ta.val();
+                let text = ta.value;
                 let songConverted = null;
                 try {
                     let json = JSON.parse(text);
@@ -175,28 +182,28 @@ $(function() {
                 }
             }
 
-            selDiff.empty();
+            selDiff.replaceChildren();
             for(idx=0; idx<songSelected.difficulties.length; idx++) {
                 let diffOne = songSelected.difficulties[idx];
                 diffOne.index = idx;
-                selDiff.append("<option value='" + idx + "'>" + SSUtil.replaceString(SSUtil.replaceString( diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')' , '<', '&lt;'), '>', '&gt;') + "</option>");
+                appendOption(selDiff, idx, diffOne.difficultyLabel + ' (' + diffOne.difficultyLevel + ')');
             }
-            if(songSelected.difficulties.length >= 1) { selDiff.prop('disabled', false); btnTest.prop('disabled', false); btnAutoNt.prop('disabled', false); }
-            else { selDiff.prop('disabled', true); btnTest.prop('disabled', true); btnAutoNt.prop('disabled', true); }
+            if(songSelected.difficulties.length >= 1) { selDiff.disabled = false; btnTest.disabled = false; btnAutoNt.disabled = false; }
+            else { selDiff.disabled = true; btnTest.disabled = true; btnAutoNt.disabled = true; }
         }
 
         const fLoadSong = function() {
-            selDiff.empty();
-            btnTest.prop('disabled', true);
-            btnStop.prop('disabled', true);
-            btnPaus.prop('disabled', true);
-            btnRsum.prop('disabled', true);
-            btnDiffRe.prop('disabled', true);
-            btnAutoNt.prop('disabled', true);
-            inpElps.prop('disabled', true);
+            selDiff.replaceChildren();
+            btnTest.disabled = true;
+            btnStop.disabled = true;
+            btnPaus.disabled = true;
+            btnRsum.disabled = true;
+            btnDiffRe.disabled = true;
+            btnAutoNt.disabled = true;
+            inpElps.disabled = true;
 
             let song = null;
-            let songSerial = selSongs.val();
+            let songSerial = selSongs.value;
             let newSong = false;
             if(songSerial == '') newSong = true;
 
@@ -221,25 +228,25 @@ $(function() {
             if(song == null) { alert('Failed to load this song !'); fLoadSongList(); return; }
             songSelected = song;
 
-            ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
+            ta.value = JSON.stringify(songSelected.toJSONObject(), null, 4);
 
             fLoadDiffList(false);
 
             if(newSong) {
-                btnSave.prop('disabled', false);
-                btnSaveAs.prop('disabled', true);
+                btnSave.disabled = false;
+                btnSaveAs.disabled = true;
             } else if(coreInst.officialSongSerials.indexOf(songSerial) >= 0) {
-                btnSave.prop('disabled', true);
-                btnSaveAs.prop('disabled', false);
+                btnSave.disabled = true;
+                btnSaveAs.disabled = false;
             } else {
-                btnSave.prop('disabled', false);
-                btnSaveAs.prop('disabled', false);
+                btnSave.disabled = false;
+                btnSaveAs.disabled = false;
             }
-            btnDiffRe.prop('disabled', false);
+            btnDiffRe.disabled = false;
         }
 
         const fSaveSong = function(saveAs) {
-            let text = ta.val();
+            let text = ta.value;
             let songConverted = null;
             let newSongYn = false;
             try {
@@ -259,7 +266,7 @@ $(function() {
                 songConverted = broker.addSong(songConverted); 
                 let newSerial = songConverted.serial;
                 fLoadSongList();
-                selSongs.val(newSerial);
+                selSongs.value = newSerial;
             } else { // 기존 곡인 경우
                 if(broker.officialSongSerials.indexOf(songConverted.serial) >= 0) { alert('Cannot modify official songs !'); return; }
                 let beforeSongIdx = null;
@@ -274,22 +281,22 @@ $(function() {
 
                 broker.setSongOne(songConverted, beforeSongIdx);
                 fLoadSongList();
-                selSongs.val(songConverted.serial);
+                selSongs.value = songConverted.serial;
             }
             fLoadSong();
         }
 
         const fTest = function() {
-            btnTest.prop('disabled', true);
-            btnLoad.prop('disabled', true);
-            btnSave.prop('disabled', true);
-            btnPaus.prop('disabled', false);
-            btnRsum.prop('disabled', true);
-            btnDiffRe.prop('disabled', true);
-            btnAutoNt.prop('disabled', true);
-            inpElps.prop('disabled', true);
+            btnTest.disabled = true;
+            btnLoad.disabled = true;
+            btnSave.disabled = true;
+            btnPaus.disabled = false;
+            btnRsum.disabled = true;
+            btnDiffRe.disabled = true;
+            btnAutoNt.disabled = true;
+            inpElps.disabled = true;
 
-            let text = ta.val();
+            let text = ta.value;
             let songConverted = null;
             try {
                 songConverted = broker.parseSong(text);
@@ -299,11 +306,11 @@ $(function() {
                 return;
             }
 
-            let diff = selDiff.val();
+            let diff = selDiff.value;
 
             if(songConverted.serial == '') { // 신규 작성 곡인 경우 - 곡 등록해서 시리얼 발급해야 함
                 fSaveSong(false);
-                selDiff.val(diff);
+                selDiff.value = diff;
             }
 
             broker.setSong(songConverted);
@@ -312,7 +319,7 @@ $(function() {
             broker.prepareCreateModeSong();
             setTimeout(function() {
                 if(coreInst.audio != null) {
-                    $('.td_audio_controls').empty().append(coreInst.audio);
+                    audioControls.replaceChildren(coreInst.audio);
                     coreInst.audio.controls = true;
                     // coreInst.audio.preload = 'metadata';
                     coreInst.audio.addEventListener('play', fResume);
@@ -320,36 +327,37 @@ $(function() {
                     coreInst.audio.addEventListener('ended', fPause);
                 }
 
-                btnStop.prop('disabled', false); 
+                btnStop.disabled = false;
             }, 2000);
         }
 
 
         const fStop = function() {
-            btnStop.prop('disabled', true);
-            btnTest.prop('disabled', false);
-            btnLoad.prop('disabled', false);
-            btnSave.prop('disabled', false);
-            btnPaus.prop('disabled', true);
-            btnRsum.prop('disabled', true);
-            btnAutoNt.prop('disabled', false);
-            inpElps.prop('disabled', true);
+            btnStop.disabled = true;
+            btnTest.disabled = false;
+            btnLoad.disabled = false;
+            btnSave.disabled = false;
+            btnPaus.disabled = true;
+            btnRsum.disabled = true;
+            btnAutoNt.disabled = false;
+            btnDiffRe.disabled = false;
+            inpElps.disabled = true;
             broker.stopSong();
-            $('.td_audio_controls').empty();
+            audioControls.replaceChildren();
         }
 
         const fPause = function() {
-            btnPaus.prop('disabled', true);
-            btnRsum.prop('disabled', false);
-            inpElps.prop('disabled', false);
+            btnPaus.disabled = true;
+            btnRsum.disabled = false;
+            inpElps.disabled = false;
             coreInst.pauseSong();
         }
 
         const fResume = function() {
-            let valueElps = inpElps.val();
-            btnPaus.prop('disabled', false);
-            btnRsum.prop('disabled', true);
-            inpElps.prop('disabled', true);
+            let valueElps = inpElps.value;
+            btnPaus.disabled = false;
+            btnRsum.disabled = true;
+            inpElps.disabled = true;
             if(isNaN(valueElps)) valueElps = 0;
             valueElps = parseFloat(valueElps);
 
@@ -376,13 +384,13 @@ $(function() {
 
         const fAutoNote = async function() {
             const urls  = coreInst.convertURL(songSelected.musicUrl);
-            const diff = selDiff.val();
+            const diff = selDiff.value;
 
             broker.setSong(songSelected);
             broker.setDifficultyChoosingList(songSelected.getDifficultyList());
             broker.setDifficultyIndex(diff);
 
-            dLoad.show();
+            dLoad.hidden = false;
 
             let bpm = 100;
             if(songSelected.bpm) bpm = songSelected.bpm;
@@ -402,10 +410,10 @@ $(function() {
             let notes = null;
             try {
 
-                pLoad.attr('value', String(0));
+                pLoad.value = 0;
                 notes = await coreInst.createAutoNotes(urls, bpm, coreInst.difficultyLevel, function(percent, val, max) {
-                    pLoad.attr('max'  , String(max));
-                    pLoad.attr('value', String(val));
+                    pLoad.max = max;
+                    pLoad.value = val;
                     console.log( val + ' / ' + max  + ' (' + percent + '%)');
                 });
 
@@ -427,31 +435,31 @@ $(function() {
 
                 songSelected.difficulties[diffIdx] = diffObj;
 
-                pLoad.removeAttr('value');
-                ta.val(JSON.stringify(songSelected.toJSONObject(), null, 4));
+                pLoad.removeAttribute('value');
+                ta.value = JSON.stringify(songSelected.toJSONObject(), null, 4);
             } catch(e) {
                 console.error(e);
                 alert('ERROR : ' + e);
             }
             
-            dLoad.hide();
+            dLoad.hidden = true;
         };
 
-        btnLoad.on('click', fLoadSong);
-        btnSave.on('click', function() { fSaveSong(false); });
-        btnSaveAs.on('click', function() { fSaveSong(true); });
-        btnTest.on('click', fTest);
-        btnStop.on('click', fStop);
-        btnPaus.on('click', fPause);
-        btnRsum.on('click', fResume);
-        btnDiffRe.on('click', function() { fLoadDiffList(true); });
-        btnAutoNt.on('click', fAutoNote);
+        btnLoad.addEventListener('click', fLoadSong);
+        btnSave.addEventListener('click', function() { fSaveSong(false); });
+        btnSaveAs.addEventListener('click', function() { fSaveSong(true); });
+        btnTest.addEventListener('click', fTest);
+        btnStop.addEventListener('click', fStop);
+        btnPaus.addEventListener('click', fPause);
+        btnRsum.addEventListener('click', fResume);
+        btnDiffRe.addEventListener('click', function() { fLoadDiffList(true); });
+        btnAutoNt.addEventListener('click', fAutoNote);
 
         const fResize = function() {
-            $('.heightresizetarget').height((window.outerHeight - 250) + 'px');
+            document.querySelector('.heightresizetarget').style.height = (window.outerHeight - 250) + 'px';
         }
 
-        $(window).on('resize', fResize);
+        window.addEventListener('resize', fResize);
         fResize();
         
         fLoadSongList();
@@ -460,10 +468,10 @@ $(function() {
         ShuttingStarsUtility.repeat(() => {
             if(coreInst == null) return;
             if(coreInst.paused) return;
-            inpElps.val(coreInst.elapsedTime);
+            inpElps.value = coreInst.elapsedTime;
         }, 16);
     });
-    ShuttingStars.init(root[0]);
+    ShuttingStars.init(root);
 });
 </script>
 </head>
