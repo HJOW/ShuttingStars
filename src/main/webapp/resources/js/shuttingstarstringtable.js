@@ -99,7 +99,10 @@ const SSStringTable = {
         "Custom settings here (JSON format)" : '커스텀 설정 (JSON 형식으로 입력)',
         "Open YouTube : " : "유튜브 열기 : ",
         "Content buffer is empty. Please check your network connection." : "콘텐츠 버퍼가 비어있습니다. 네트워크 연결을 확인하세요.",
-        "AUTO PLAYING" : "자동 플레이 중"
+        "AUTO PLAYING" : "자동 플레이 중",
+        "MUSIC SOURCE" : "음원 소스",
+        "File" : "파일",
+        "URL" : "URL"
     }
 };
 export { SSStringTable };

@@ -8007,13 +8007,25 @@ class ShuttingStarsCore {
             <div class='div_mysong_file full' style='padding-top : 50px;'>
                 <table class='layout' style='width: 90%;'>
                     <colgroup>
-                        <col style='width:10rem;'/>
+                        <col style='width:12rem;'/>
                         <col/>
                     </colgroup>
                     <tbody>
                         <tr>
+                            <th class='target_translate'>MUSIC SOURCE</th>
+                            <td>
+                                <select class='sel sel_mysong_sourcetype' style='width:90%'>
+                                    <option value='file' class='target_translate'>File</option>
+                                    <option value='url'  class='target_translate'>URL</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
                             <th class='target_translate'>MUSIC</th>
-                            <td><input type='file' class='inp inp_file inp_mysong_file' accept='audio/*' style='font-size: 1rem;'/></td>
+                            <td>
+                                <input type='file' class='inp inp_file inp_mysong_file' accept='audio/*' style='font-size: 1rem;'/>
+                                <input type='url' class='inp inp_url inp_mysong_url invisible' style='font-size: 1rem; width: 90%;'/>
+                            </td>
                         </tr>
                         <tr>
                             <th class='target_translate'>BPM</th>
@@ -8035,8 +8047,11 @@ class ShuttingStarsCore {
             </div>
         `;
         popInside.innerHTML = htmls;
+        popInside.style.height = '400px';
 
+        const selMysongSrc  = popInside.querySelector('.sel_mysong_sourcetype');
         const inpMysongFile = popInside.querySelector('.inp_mysong_file');
+        const inpMysongUrl  = popInside.querySelector('.inp_mysong_url');
         const inpMysongBpm  = popInside.querySelector('.inp_mysong_bpm');
         const prgMysongBpm  = popInside.querySelector('.prog_mysong_bpm');
         const taMysongJson  = popInside.querySelector('.ta_mysong_json');
@@ -8047,6 +8062,17 @@ class ShuttingStarsCore {
         let   jsonMySong = '';
 
         taMysongJson.placeholder = this.trans('Custom settings here (JSON format)');
+
+        selMysongSrc.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if(val == 'file') {
+                inpMysongFile.classList.remove('invisible');
+                inpMysongUrl.classList.add('invisible');
+            } else {
+                inpMysongFile.classList.add('invisible');
+                inpMysongUrl.classList.remove('invisible');
+            }
+        });
 
         inpMysongFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -8094,7 +8120,19 @@ class ShuttingStarsCore {
             selfs.pops.dim.classList.add('invisible');
             selfs.keyEventDisabled = false;
         });
-        btnMysongPly.addEventListener('click', () => {
+        btnMysongPly.addEventListener('click', async () => {
+            const sourceType = selMysongSrc.value;
+            if(sourceType == 'url') {
+                const mayBeUrl = inpMysongUrl.value;
+                const availYn = await ShuttingStarsUtility.checkAccessibleURL(mayBeUrl);
+                if(! availYn) {
+                    ShuttingStarsUtility.toast(selfs.trans('This URL is not available !'));
+                    return;
+                }
+
+                urlMysong  = mayBeUrl;
+            }
+
             if(urlMysong == null) { ShuttingStarsUtility.toast(selfs.trans('Please select your file first !')); return; }
 
             selfs.pops.mysong.classList.add('invisible');
@@ -8104,7 +8142,7 @@ class ShuttingStarsCore {
             jsonMySong = taMysongJson.value;
 
             try {
-                selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel, jsonMySong);
+                await selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel, jsonMySong);
             } catch(e) {
                 console.error(e);
                 selfs.alert('ERROR : ' + e);
@@ -9825,7 +9863,7 @@ class ShuttingStarsCore {
     /**
      * 사용자가 첨부한 오디오 파일로 바로 곡 불러와 플레이하기 (Promise)
      * 
-     * @param {string} mySongAudioURL 사용자가 첨부한 파일의 Blob URL (URL.createObjectURL() 로 생성한 URL)
+     * @param {string} mySongAudioURL 웹상에 업로드된 음악 파일 URL, 또는 사용자가 첨부한 음악 파일의 Blob URL (URL.createObjectURL() 로 생성한 URL)
      * @param {string} songName 곡 이름
      * @param {number} bpm bpm
      * @param {number} diffLevel 난이도
