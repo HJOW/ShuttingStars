@@ -6,8 +6,14 @@
         ],
         "exclude" : ["node_modules"]
     },
+    "plugins" : [
+        "plugins/markdown",
+        "plugins/summarize"
+    ],
+    "sourceType" : "module",
     "opts" : {
         "destination" : "docs",
-        "recurse" : true
+        "recurse" : true,
+        "encoding" : "utf8"
     }
 }
