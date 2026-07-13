@@ -27,6 +27,9 @@ class ShuttingStarsCore {
     /*** 게임 버전 ***/
     /** @type {number} 빌드 번호 */
     build = 5;
+
+    /** @type {string} 홈페이지 */
+    homepageUrl = 'https://github.com/HJOW/shuttingstars';
     
     /*** 화면 크기와 캔버스 렌더링 해상도 관련 ***/
     /** @type {{w: number, h: number}} 렌더링 해상도, 화면 출력 품질을 결정함. */
@@ -3389,8 +3392,12 @@ class ShuttingStarsCore {
      * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
      */
     handleKeyInputCredit(key, vkeyExplosion) {
-        this.playSE('special1');
-        this.setState('menu');
+        if(key == this.enterKey) {
+            window.open(this.homepageUrl, '_blank');
+        } else {
+            this.playSE('special1');
+            this.setState('menu');
+        }
     }
 
     /**
@@ -6227,6 +6234,24 @@ class ShuttingStarsCore {
             
             displays++;
         }
+
+        // 기타 안내 출력
+        fontSize = this.convertFontSize(12);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        opacity = 0.9;
+
+        label = this.trans('BACK : ');
+        if(this.escKey == 'ESCAPE') label += 'ESC';
+        else                        label += this.escKey;
+
+        label += '   ' + this.trans('GitHub : ');
+        if(this.enterKey == 'ENTER') label += 'ENTER';
+        else                         label += this.enterKey;
+        
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
     }
 
     /**

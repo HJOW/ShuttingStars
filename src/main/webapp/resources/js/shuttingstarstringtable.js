@@ -102,7 +102,8 @@ const SSStringTable = {
         "AUTO PLAYING" : "자동 플레이 중",
         "MUSIC SOURCE" : "음원 소스",
         "File" : "파일",
-        "URL" : "URL"
+        "URL" : "URL",
+        "GitHub : " : "GitHub : "
     }
 };
 export { SSStringTable };
