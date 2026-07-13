@@ -1,0 +1,13 @@
+{
+    "source" : {
+        "include" : [
+            "src/main/webapp/resources/js/shuttingstars.js",
+            "src/main/webapp/resources/js/shuttingstarsutils.js"
+        ],
+        "exclude" : ["node_modules"]
+    },
+    "opts" : {
+        "destination" : "docs",
+        "recurse" : true
+    }
+}
