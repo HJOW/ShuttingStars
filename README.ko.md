@@ -127,6 +127,12 @@ The MIT License
 Copyright © 2010-2026 three.js authors
 https://github.com/mrdoob/three.js/blob/dev/LICENSE
 
++ JSON5 (필수, 번들 shuttingstars.bundle.js 에 포함됨)
+
+MIT License
+Copyright (c) 2012-2018 Aseem Kishore, and others.
+https://github.com/json5/json5/blob/main/LICENSE.md
+
 + Crypto-JS (선택사항, crypto 표준 API 미지원 시 필요)
 
 The MIT License

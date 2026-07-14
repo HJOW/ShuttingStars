@@ -119,6 +119,12 @@ The MIT License
 Copyright © 2010-2026 three.js authors
 https://github.com/mrdoob/three.js/blob/dev/LICENSE
 
++ JSON5 (Necessary, bundled on shuttingstars.bundle.js)
+
+MIT License
+Copyright (c) 2012-2018 Aseem Kishore, and others.
+https://github.com/json5/json5/blob/main/LICENSE.md
+
 + Crypto-JS (Only for crypto API not supported browsers)
 
 The MIT License

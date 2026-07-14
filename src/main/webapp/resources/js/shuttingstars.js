@@ -7777,9 +7777,9 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'Third Parties', fontSize : 30 });
         this.creditContents.push({ label : '', fontSize : 30 });
 
-        this.creditContents.push({ label : 'jQuery (Only for few features)', fontSize : 25 });
-        this.creditContents.push({ label : 'Projects referencing this document are released under the terms of the MIT license.', fontSize : 15 });
-        this.creditContents.push({ label : 'https://jquery.com/license/', fontSize : 15 });
+        this.creditContents.push({ label : 'JSON5', fontSize : 25 });
+        this.creditContents.push({ label : 'The MIT License - Copyright (c) 2012-2018 Aseem Kishore, and others.', fontSize : 15 });
+        this.creditContents.push({ label : 'https://github.com/json5/json5/blob/main/LICENSE.md', fontSize : 15 });
         this.creditContents.push({ label : '', fontSize : 25 });
 
         this.creditContents.push({ label : 'Three.js', fontSize : 25 });
@@ -7792,6 +7792,11 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'Copyright (c) 2009-2013 Jeff Mott', fontSize : 15 });
         this.creditContents.push({ label : 'Copyright (c) 2013-2016 Evan Vosberg', fontSize : 15 });
         this.creditContents.push({ label : 'https://github.com/brix/crypto-js/blob/develop/LICENSE', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
+        this.creditContents.push({ label : 'jQuery (Only for few features)', fontSize : 25 });
+        this.creditContents.push({ label : 'Projects referencing this document are released under the terms of the MIT license.', fontSize : 15 });
+        this.creditContents.push({ label : 'https://jquery.com/license/', fontSize : 15 });
         this.creditContents.push({ label : '', fontSize : 25 });
 
         this.creditContents.push({ label : 'Pure CSS', fontSize : 25 });

@@ -29,6 +29,8 @@ Three.js
     Visit https://github.com/mrdoob/three.js/blob/dev/LICENSE
 `); }} catch(nothings) {}
 
+import JSON5 from './json5.min.mjs';
+
 class ShuttingStarsUtilityClass {
     /** @type {number} 토스트 메시지에 부여할 고유 순번의 현재 최대값 */
     toastIndex = 0;
@@ -707,6 +709,16 @@ class ShuttingStarsUtilityClass {
             // script 태그 부착
             document.body.appendChild(scriptObj);
         });
+    }
+
+    /**
+     * JSON 문자열 파싱 (JSON5 지원 - 참고 : https://github.com/json5/json5 )
+     * 
+     * @param {string} str JSON5 문자열
+     * @returns {object} 처리 결과
+     */
+    parseJSON(str) {
+        return JSON5.parse(str);
     }
 }
 

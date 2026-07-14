@@ -25,7 +25,7 @@ module.exports = {
     "module" : {
         "rules" : [
             {
-                "test" : /\.(ts|js)$/,
+                "test" : /\.(ts|js|mjs)$/,
                 "exclude" : [
                     '/node_modules/',
                     '/src/main/webapp/resources/js/dist/',
