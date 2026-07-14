@@ -7716,6 +7716,15 @@ class ShuttingStarsCore {
         if(obj instanceof SSVirtualKey) return true;
         if(obj instanceof SSMouseEventArea) return true;
         if(obj instanceof SSMouseClickHighlighter) return true;
+        return false;
+    }
+
+    /**
+     * 해당 장식 객체가 2D 별빛 장식인지 확인
+     * @param {SSDecorationObject} obj
+     * @return {boolean} 
+     */
+    isStarlight(obj) {
         if(obj instanceof SSStarlight) return true;
         return false;
     }
@@ -11220,15 +11229,17 @@ class SSLongNote extends SSNoteCommon {
         if(this.y < coreInst.getHpBarYLocation() - 1) this.y = coreInst.getHpBarYLocation() - 1; // HP바 아래로 내려가지 않도록 제한
         if(this.yEnd < this.y) return;
 
+        const additionalY = coreInst.noteSpeedMultiplier; // 롱노트가 체감상 더 빨리 끊김 보정
+
         // 본 노트 그리기 (롱 노트는 꼬리가 없을 예정)
         for(let idx=0; idx<=5; idx++) {
             ctx.beginPath();
             if(this.fill) {
                 ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
-                ctx.fillRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2)));
+                ctx.fillRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2) + additionalY));
             } else {
                 ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
-                ctx.strokeRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2)));
+                ctx.strokeRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2) + additionalY));
             }
         }
 

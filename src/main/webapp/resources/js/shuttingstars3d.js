@@ -306,6 +306,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
             const objOne = coreInst.objects[idx];
             if(objOne.shape != 'circle') continue;
             if(coreInst.isUIDecorationObject(objOne)) continue;
+            if(coreInst.isStarlight(objOne)) continue;
 
             let lightRadius = 1.5;
             if(objOne.explosing <= 3) lightRadius += (0.1 * objOne.explosing);
@@ -338,6 +339,7 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                         const objOne = coreInst.objects[jdx];
                         if(objOne.shape != 'circle') continue;
                         if(coreInst.isUIDecorationObject(objOne)) continue;
+                        if(coreInst.isStarlight(objOne)) continue;
                         if(objOne.uniqueSerial == newObj.uniqueSerial) { existsNow = true; break; }
                     }
                     if(! existsNow) {
