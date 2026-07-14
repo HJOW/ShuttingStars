@@ -11,17 +11,27 @@ https://hjow.duckdns.org/shuttingstars/
 OR
 https://shuttingstars-3eddf.web.app
 
-## Simple Run
+## Simply run this game on local PC (using node)
 
-Install node.js    
-Run following command on project directory.    
+Install node (https://nodejs.org)       
+Then, run following command on project directory.    
 ```
 npm install
 npm start
 ```
 Then, open "localhost:9690" with your web browser.
 
-## HTTP Server needs
+## Simply run this game on local PC (using deno)
+
+Install deno (https://deno.com/)    
+Then, run following command on project directory.    
+```
+deno install
+deno task start
+```
+Then, open "localhost:9690" with your web browser.
+
+## Why HTTP Server needs ?
 
 As of now, it is configured to operate using only a pure web server and is compatible without dynamic server pages.    
 (Some feature using firebase authentication and firestore to upload clear records. - Not necessary)

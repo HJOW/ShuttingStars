@@ -10,27 +10,37 @@ https://hjow.duckdns.org/shuttingstars/
 또는
 https://shuttingstars-3eddf.web.app
 
-## 로컬 실행
+## 로컬에서 서버 구동 (node 사용)
 
-node.js 및 git 설치가 필요합니다.    
-git clone 받으신 후, 클론 받은 디렉토리에서    
+node 설치가 필요합니다. (https://nodejs.org/ko)   
+다음 명령어를 프로젝트 최상단 디렉토리에서 실행합니다.
 ```
 npm install
 npm start
 ```
-를 실행합니다.    
 이후 웹 브라우저에서 localhost:9690 으로 접속하세요.
 
-## HTTP 서버 필요성
+## 로컬에서 서버 구동 (deno 사용)
+
+deno 설치가 필요합니다. (https://deno.com/)    
+다음 명령어를 프로젝트 최상단 디렉토리에서 실행합니다.
+```
+deno install
+deno task start
+```
+이후 웹 브라우저에서 localhost:9690 으로 접속하세요.
+
+## 왜 HTTP 서버를 통해 구동해야 하나요?
 
 현재 기준, 대부분의 기능이 순수 웹 서버만으로도 동작하도록 구성되어 있으며, 동적 서버 페이지 기술 없이 호환됩니다.    
 (선택사항으로, Firebase anthentication 로그인 및 클리어 기록 Firestore DB 업로드 기능이 구현되어 있습니다.)
 브라우저 회사들의 CORS 정책으로 인하여, 로컬에서 플레이하더라도 반드시 웹 서버를 통한 구동이 필요합니다.    
 웹 소스 경로 : src/main/webapp
 
-## HTML 에서 사용
+## HTML 에서 사용 (원하는 페이지에 미니게임처럼 넣고 싶을 때)
 
 Webpack 을 이용하여 JavaScript 파일들을 하나의 파일로 합쳐 사용합니다.    
+(node 또는 deno 서버를 구동할 때마다 webpack 이 한번씩 동작하여 파일을 재생성합니다.)
 shuttingstars.bundle.js 파일 하나를 일반 JavaScript 파일로 탑재하여 사용할 수 있습니다.    
 ```
 <script type="text/javascript" src='resources/js/dist/shuttingstars.bundle.js'></script>
