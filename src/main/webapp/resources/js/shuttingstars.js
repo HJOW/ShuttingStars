@@ -1061,7 +1061,7 @@ class ShuttingStarsCore {
                 }
 
                 // 임시 객체 (충돌여부 판단 위함)
-                const mouseCursorObject = new MouseClickHighlighter(selfs);
+                const mouseCursorObject = new SSMouseClickHighlighter(selfs);
                 mouseCursorObject.type = 'circle';
                 mouseCursorObject.x    = rx;
                 mouseCursorObject.y    = ry;
@@ -1254,7 +1254,7 @@ class ShuttingStarsCore {
         // 가상 키 모두 제거
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            if(obj instanceof VirtualKey) {
+            if(obj instanceof SSVirtualKey) {
                 this.objects.splice(idx, 1);
                 idx--;
             }
@@ -1525,7 +1525,7 @@ class ShuttingStarsCore {
     addDeclaredKeys(realkey) {
         const selfs = this;
         const rkey = realkey;
-        const vkey = new VirtualKey(this, rkey);
+        const vkey = new SSVirtualKey(this, rkey);
         selfs.objects.push(vkey);
         
         vkey.click = function() {
@@ -3306,7 +3306,7 @@ class ShuttingStarsCore {
             // 해당 가상 키 찾기
             for(let idx=0; idx<this.objects.length; idx++) {
                 const objOne = this.objects[idx];
-                if(objOne instanceof VirtualKey) {
+                if(objOne instanceof SSVirtualKey) {
                     if(key == objOne.key) {
                         objOne.explosing = 1;
                         break;
@@ -3531,11 +3531,11 @@ class ShuttingStarsCore {
             if(resultMark == 'MISS') {
                 // MISS
                 minimumNote.missed = true;
-                const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                const newExplosinves = new SSFailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                 this.objects.push(newExplosinves);
             } else {
                 // 그외 (MISS가 아님)
-                const newExplosinves = new CorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+                const newExplosinves = new SSCorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
                 this.objects.push(newExplosinves);
 
                 if(pwConsumed) { // PW 다시 회복
@@ -3581,7 +3581,7 @@ class ShuttingStarsCore {
         for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
             const evOne = selfs.mouseEvents[mdx];
             // 임시 객체 (충돌여부 판단 위함)
-            const tempObject = new MouseEventArea();
+            const tempObject = new SSMouseEventArea();
             tempObject.type = evOne.type;
             tempObject.x    = evOne.x;
             tempObject.y    = evOne.y;
@@ -6817,7 +6817,7 @@ class ShuttingStarsCore {
                 if(typeof(obj.explosing) == 'number') {
                     if(typeof(obj.explosingMax) == 'number') {
                         if(obj.explosing >= obj.explosingMax) {
-                            if(obj instanceof VirtualKey) {
+                            if(obj instanceof SSVirtualKey) {
                                 obj.explosing = 0;
                             } else {
                                 this.objects.splice(idx, 1);
@@ -6830,7 +6830,7 @@ class ShuttingStarsCore {
                     if(obj.explosing >= 1) obj.explosing++;
                 }
 
-                if(obj instanceof Starlight) {
+                if(obj instanceof SSStarlight) {
                     // Starlight 제거 파츠
                     if(obj.x < (this.getFullRenderWidth() * (-1.2)) || obj.y < this.getFullRenderHeight() * (-1.2) || obj.x > this.getFullRenderWidth() * 1.2 || obj.y > this.getFullRenderHeight() * 1.2) {
                         this.objects.splice(idx, 1);
@@ -7082,7 +7082,7 @@ class ShuttingStarsCore {
                         obj.explosing = 1;
 
                         // 추가 폭발 객체 추가
-                        const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                        const newExplosinves = new SSFailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                         this.objects.push(newExplosinves);
                     }
                 }
@@ -7101,7 +7101,7 @@ class ShuttingStarsCore {
                                 obj.missed  = true;
 
                                 // 추가 폭발 객체 추가
-                                const newExplosinves = new FailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                                const newExplosinves = new SSFailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
                                 this.objects.push(newExplosinves);
                             }
                         }
@@ -7127,7 +7127,7 @@ class ShuttingStarsCore {
                         }
 
                         // 추가 폭발 객체 추가
-                        const newExplosinves = new CorrectNoteExplosing(this, obj.locationIndex, obj.y, obj.color, '255, 255, 255');
+                        const newExplosinves = new SSCorrectNoteExplosing(this, obj.locationIndex, obj.y, obj.color, '255, 255, 255');
                         this.objects.push(newExplosinves);
                     }
                 }
@@ -7290,7 +7290,7 @@ class ShuttingStarsCore {
         this.gameOverDelayed = true;
 
         // 거대 폭발 객체 생성
-        const bigExp = new PlanetExplosing(this, 0, 0, '180, 0, 0', '250, 80, 80');
+        const bigExp = new SSPlanetExplosing(this, 0, 0, '180, 0, 0', '250, 80, 80');
         bigExp.x = Math.round((this.notePlacers[0].x + this.notePlacers[this.notePlacers.length-1].x) / 2.0);
         bigExp.y = this.getHpBarYLocation();
         bigExp.r = 64;
@@ -7708,6 +7708,19 @@ class ShuttingStarsCore {
     }
 
     /**
+     * 해당 장식 객체가 UI 관련 장식인지 확인
+     * @param {SSDecorationObject} obj
+     * @return {boolean} UI 관련 장식인지 여부
+     */
+    isUIDecorationObject(obj) {
+        if(obj instanceof SSVirtualKey) return true;
+        if(obj instanceof SSMouseEventArea) return true;
+        if(obj instanceof SSMouseClickHighlighter) return true;
+        if(obj instanceof SSStarlight) return true;
+        return false;
+    }
+
+    /**
      * 곡에 포함되어 있던 장식 추가문구 해석해 집행
      * @param {Object} decoJson decoJson 값
      */
@@ -7716,20 +7729,20 @@ class ShuttingStarsCore {
         let type = String(decoJson.type).toLowerCase();
 
         if(type == 'explosion') {
-            obj = new ExplosingObject(this, 0, 0, '255, 255, 255', '255, 255, 255');
+            obj = new SSExplosingObject(this, 0, 0, '255, 255, 255', '255, 255, 255');
             obj.x = decoJson.x;
             obj.y = decoJson.y;
             obj.r = decoJson.r;
             obj.explosing = 1;
         } else if(type == 'star' || type == 'starlight') {
-            obj = new Starlight(this);
+            obj = new SSStarlight(this);
             obj.x = decoJson.x;
             obj.y = decoJson.y;
             obj.r = decoJson.r;
             obj.speedX = 1;
             obj.speedY = 0;
         } else if(type == 'text') {
-            obj = new TextDeco(this, decoJson.text, decoJson.x, decoJson.y, decoJson.fontSize, decoJson.align, decoJson.color);
+            obj = new SSTextDeco(this, decoJson.text, decoJson.x, decoJson.y, decoJson.fontSize, decoJson.align, decoJson.color);
             if(decoJson.explosingMax) obj.explosingMax = decoJson.explosingMax;
         }
         if(obj != null) this.objects.push(obj);
@@ -8481,7 +8494,7 @@ class ShuttingStarsCore {
         btnSave.addEventListener('click', () => {
             let json = String(ta.value).trim();
             try {
-                json = ShuttingStarsUtility.removeLinesStartKey(json, '#');
+                // json = ShuttingStarsUtility.removeLinesStartKey(json, '#');
                 json = ShuttingStarsUtility.parseJSON(json);
                 localStorage.setItem('shuttingstar_songs', JSON.stringify(json));
                 this.loadSongs();
@@ -8657,122 +8670,122 @@ class ShuttingStarsCore {
      */
     defaultCustomSongComments() {
         if(this.language == 'ko') return String(`
-# 주의 ! '#'로 시작하는 줄은 무시됩니다.
-#
-# 커스텀 곡 추가 방법
-#    JSON 객체 하나로 곡 하나를 정의합니다.
-#        name           : (string) 곡의 이름
-#      , composer       : (string) 곡 작곡가 이름
-#      , noteWriter     : (string) 노트 채보 작성자 이름
-#      , bgaUrl         : (string) 비워 두세요 (BGA 동영상 URL로 아직 미지원)
-#      , musicUrl       : (string) 음악 파일 URL
-#      , thumbnailUrl   : (string) 썸네일 이미지 URL (아직 미사용)
-#      , description    : (string) 설명 (곡 선택 화면 우측 하단에 표시됨)
-#      , loadingTime    : (integer) 추가 로딩 시간 (곡 선택 시 제목 화면에서 추가로 보내는 시간)
-#      , bpm            : (integer) BPM (Bit per minutes)
-#      , endTime        : (integer) 0을 지정 (미사용)
-#      , timeMultiplier : (integer) 게임 속도 상수 (곱셈으로 적용, 어려운 경우 1 지정 권장)
-#      , timeConstant   : (integer) 노트 타이밍 상수 (덧셈 적용, 어려운 경우 0 지정 권장)
-#      , noteMultiplier : (integer) 노트 타이밍 상수 (곱셈 적용, 어려운 경우 1 지정 권장)
-#      , serial         : (string) 빈 문자열 입력 (곡마다 고유한 값이어야 하며, 빈 문자열 입력 시 랜덤하게 변경됨)
-#      , difficulties   : (array) 난이도 목록
-#            element : (object)
-#                difficultyLabel : (string) 난이도 키워드 (예: easy, normal, hard, ex1, ex2, ex3, ...)
-#                difficultyLevel : (integer) 난이도 레벨 (숫자)
-#                patterns : (array)
-#                    element : (object)
-#                        locationIndex : (integer) 라인 번호 (0~5 범위 지정, -1 지정 시 게임 내에서 랜덤 지정됨)
-#                        time          : (number) 판정선 도달 시점 ( 초 단위가 아니며 곡의 16분의 N비트 값으로 지정, 소수 사용 가능 )
-#                        type          : (string) 노트 유형 (normal / long 중에 선택, 기본 : normal)
-#                        ends          : (number) long 타입 지정 시 필수값으로, 종료 시점 지정 ( time 과 같은 단위, time 값보다 커야 함 )
-#    예시
-#      [
-#          {
-#              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
-#            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
-#            , "difficulties" : [
-#                  {
-#                       "difficultyLabel" : "easy"
-#                       "difficultyLevel" : 1
-#                       "patterns" : [
-#                            {"locationIndex" : 1, time : 3}
-#                          , {"locationIndex" : 0, time : 6}
-#                          , {"locationIndex" : 4, time : 9}
-#                          ...
-#                       ]
-#                  },
-#                  {
-#                       "difficultyLabel" : "normal"
-#                       "difficultyLevel" : 4
-#                       "patterns" : [
-#                            {"locationIndex" : 2, time : 2}
-#                          , {"locationIndex" : 1, time : 4}
-#                          , {"locationIndex" : 4, time : 6}
-#                          ...
-#                       ]
-#                  }
-#              ]
-#          }
-#      ]
+// 주의 ! '//'로 시작하는 줄은 무시됩니다.
+//
+// 커스텀 곡 추가 방법
+//    JSON 객체 하나로 곡 하나를 정의합니다.
+//        name           : (string) 곡의 이름
+//      , composer       : (string) 곡 작곡가 이름
+//      , noteWriter     : (string) 노트 채보 작성자 이름
+//      , bgaUrl         : (string) 비워 두세요 (BGA 동영상 URL로 아직 미지원)
+//      , musicUrl       : (string) 음악 파일 URL
+//      , thumbnailUrl   : (string) 썸네일 이미지 URL (아직 미사용)
+//      , description    : (string) 설명 (곡 선택 화면 우측 하단에 표시됨)
+//      , loadingTime    : (integer) 추가 로딩 시간 (곡 선택 시 제목 화면에서 추가로 보내는 시간)
+//      , bpm            : (integer) BPM (Bit per minutes)
+//      , endTime        : (integer) 0을 지정 (미사용)
+//      , timeMultiplier : (integer) 게임 속도 상수 (곱셈으로 적용, 어려운 경우 1 지정 권장)
+//      , timeConstant   : (integer) 노트 타이밍 상수 (덧셈 적용, 어려운 경우 0 지정 권장)
+//      , noteMultiplier : (integer) 노트 타이밍 상수 (곱셈 적용, 어려운 경우 1 지정 권장)
+//      , serial         : (string) 빈 문자열 입력 (곡마다 고유한 값이어야 하며, 빈 문자열 입력 시 랜덤하게 변경됨)
+//      , difficulties   : (array) 난이도 목록
+//            element : (object)
+//                difficultyLabel : (string) 난이도 키워드 (예: easy, normal, hard, ex1, ex2, ex3, ...)
+//                difficultyLevel : (integer) 난이도 레벨 (숫자)
+//                patterns : (array)
+//                    element : (object)
+//                        locationIndex : (integer) 라인 번호 (0~5 범위 지정, -1 지정 시 게임 내에서 랜덤 지정됨)
+//                        time          : (number) 판정선 도달 시점 ( 초 단위가 아니며 곡의 16분의 N비트 값으로 지정, 소수 사용 가능 )
+//                        type          : (string) 노트 유형 (normal / long 중에 선택, 기본 : normal)
+//                        ends          : (number) long 타입 지정 시 필수값으로, 종료 시점 지정 ( time 과 같은 단위, time 값보다 커야 함 )
+//    예시
+//      [
+//          {
+//              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
+//            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
+//            , "difficulties" : [
+//                  {
+//                       "difficultyLabel" : "easy"
+//                       "difficultyLevel" : 1
+//                       "patterns" : [
+//                            {"locationIndex" : 1, time : 3}
+//                          , {"locationIndex" : 0, time : 6}
+//                          , {"locationIndex" : 4, time : 9}
+//                          ...
+//                       ]
+//                  },
+//                  {
+//                       "difficultyLabel" : "normal"
+//                       "difficultyLevel" : 4
+//                       "patterns" : [
+//                            {"locationIndex" : 2, time : 2}
+//                          , {"locationIndex" : 1, time : 4}
+//                          , {"locationIndex" : 4, time : 6}
+//                          ...
+//                       ]
+//                  }
+//              ]
+//          }
+//      ]
         `);
         return String(`
-# Caution ! Lines start with '#' will be ignored.
-#
-# How to add your own custom songs
-#    One song - one JSON object.
-#        name           : (string) Song's name
-#      , composer       : (string) Composer's name
-#      , noteWriter     : (string) Note writer's name
-#      , bgaUrl         : (string) Just input empty text (BGA feature is not supported yet)
-#      , musicUrl       : (string) Music file URL
-#      , thumbnailUrl   : (string) Thumbnail image file URL (just input empty text when not exist)
-#      , description    : (string) Description.
-#      , loadingTime    : (integer) Additional loading time
-#      , bpm            : (integer) BPM (Bit per minutes)
-#      , endTime        : (integer) Just set to 0 (Now this value is not used.)
-#      , timeMultiplier : (integer) Game total speed multiplier (Just set 1)
-#      , timeConstant   : (integer) Note timing correction value (+)
-#      , noteMultiplier : (integer) Note timing correction value (×)
-#      , serial         : (string) Just input empty text (Need only for official songs)
-#      , difficulties   : (array)
-#            element : (object)
-#                difficultyLabel : (string) Difficulty Name (ex: easy, normal, hard, ex1, ex2, ex3, ...)
-#                difficultyLevel : (integer) Difficulty Number
-#                patterns : (array)
-#                    element : (object)
-#                        locationIndex : (integer) line (0~5, If you using -1 then random)
-#                        time          : (number) occuring time ( Not seconds ! Need to test. ) float also OK
-#                        type          : (string) note type (normal / long, default : normal)
-#                        ends          : (number) long note's end time ( Only for long type )
-#    example
-#      [
-#          {
-#              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
-#            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
-#            , "difficulties" : [
-#                  {
-#                       "difficultyLabel" : "easy"
-#                       "difficultyLevel" : 1
-#                       "patterns" : [
-#                            {"locationIndex" : 1, time : 3}
-#                          , {"locationIndex" : 0, time : 6}
-#                          , {"locationIndex" : 4, time : 9}
-#                          ...
-#                       ]
-#                  },
-#                  {
-#                       "difficultyLabel" : "normal"
-#                       "difficultyLevel" : 4
-#                       "patterns" : [
-#                            {"locationIndex" : 2, time : 2}
-#                          , {"locationIndex" : 1, time : 4}
-#                          , {"locationIndex" : 4, time : 6}
-#                          ...
-#                       ]
-#                  }
-#              ]
-#          }
-#      ]
+// Caution ! Lines start with '//' will be ignored.
+//
+// How to add your own custom songs
+//    One song - one JSON object.
+//        name           : (string) Song's name
+//      , composer       : (string) Composer's name
+//      , noteWriter     : (string) Note writer's name
+//      , bgaUrl         : (string) Just input empty text (BGA feature is not supported yet)
+//      , musicUrl       : (string) Music file URL
+//      , thumbnailUrl   : (string) Thumbnail image file URL (just input empty text when not exist)
+//      , description    : (string) Description.
+//      , loadingTime    : (integer) Additional loading time
+//      , bpm            : (integer) BPM (Bit per minutes)
+//      , endTime        : (integer) Just set to 0 (Now this value is not used.)
+//      , timeMultiplier : (integer) Game total speed multiplier (Just set 1)
+//      , timeConstant   : (integer) Note timing correction value (+)
+//      , noteMultiplier : (integer) Note timing correction value (×)
+//      , serial         : (string) Just input empty text (Need only for official songs)
+//      , difficulties   : (array)
+//            element : (object)
+//                difficultyLabel : (string) Difficulty Name (ex: easy, normal, hard, ex1, ex2, ex3, ...)
+//                difficultyLevel : (integer) Difficulty Number
+//                patterns : (array)
+//                    element : (object)
+//                        locationIndex : (integer) line (0~5, If you using -1 then random)
+//                        time          : (number) occuring time ( Not seconds ! Need to test. ) float also OK
+//                        type          : (string) note type (normal / long, default : normal)
+//                        ends          : (number) long note's end time ( Only for long type )
+//    example
+//      [
+//          {
+//              "name" : "TEST SONG", "composer" : "HJOW", "noteWriter" : "HJOW", "bgaUrl" : "", "musicUrl" : "", thumbnailUrl : "", description : "", "bpm" : 120, "endTime" : 3700
+//            , "timeConstant" : -100, "timeMultiplier" : 1, "serial" : ""
+//            , "difficulties" : [
+//                  {
+//                       "difficultyLabel" : "easy"
+//                       "difficultyLevel" : 1
+//                       "patterns" : [
+//                            {"locationIndex" : 1, time : 3}
+//                          , {"locationIndex" : 0, time : 6}
+//                          , {"locationIndex" : 4, time : 9}
+//                          ...
+//                       ]
+//                  },
+//                  {
+//                       "difficultyLabel" : "normal"
+//                       "difficultyLevel" : 4
+//                       "patterns" : [
+//                            {"locationIndex" : 2, time : 2}
+//                          , {"locationIndex" : 1, time : 4}
+//                          , {"locationIndex" : 4, time : 6}
+//                          ...
+//                       ]
+//                  }
+//              ]
+//          }
+//      ]
         `).trim();
     }
 
@@ -9119,14 +9132,14 @@ class ShuttingStarsCore {
         // 기존 별빛 제거
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            if(obj instanceof Starlight) { this.objects.splice(idx, 1); idx--;}
+            if(obj instanceof SSStarlight) { this.objects.splice(idx, 1); idx--;}
         }
 
         // 별빛 추가
         this.backStarlightSpdX = 1;
         this.backStarlightSpdY = ShuttingStarsUtility.random();
         for(idx=0; idx<this.backStarlightCount; idx++) {
-            const obj = new Starlight(this);
+            const obj = new SSStarlight(this);
             obj.speedX = this.backStarlightSpdX;
             obj.speedY = this.backStarlightSpdY;
             this.objects.push(obj);
@@ -9142,7 +9155,7 @@ class ShuttingStarsCore {
         // 기존 별빛 수 세기
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            if(obj instanceof Starlight) { count++; }
+            if(obj instanceof SSStarlight) { count++; }
         }
 
         if(this.song != null) { // 곡이 선택된 상태로
@@ -9152,7 +9165,7 @@ class ShuttingStarsCore {
         // 갯수 맞춰 생성
         while(count < this.backStarlightCount) {
             // Starlight 생성 파츠
-            newOne = new Starlight(this);
+            newOne = new SSStarlight(this);
 
             const renderWidth = this.getFullRenderWidth();
             const renderHeight = this.getFullRenderHeight();
@@ -9183,7 +9196,7 @@ class ShuttingStarsCore {
         this.backStarlightSpdY = ySpeed;
         for(idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
-            if(obj instanceof Starlight) {
+            if(obj instanceof SSStarlight) {
                 obj.speedX = xSpeed;
                 obj.speedY = ySpeed;
             }
@@ -11348,14 +11361,14 @@ class SSJudgeMark extends ShuttingStarsObject {
 }
 
 /** 마우스 클릭 지점 확인을 위한 객체 (충돌여부 판단을 통해 해당 객체를 클릭했음을 인식) */
-class MouseEventArea extends ShuttingStarsObject {
+class SSMouseEventArea extends ShuttingStarsObject {
     constructor(coreInst) {
         super(coreInst);
     }
 }
 
 /** 장식용 상위 객체 */
-class DecorationObject extends ShuttingStarsObject {
+class SSDecorationObject extends ShuttingStarsObject {
     /** @type {string} 폭발 효과가 정점일 때 사용할 색상 */
     peakColor = '255, 255, 255';
     /** @type {string} 장식 객체의 렌더링 우선순위 */
@@ -11370,7 +11383,7 @@ class DecorationObject extends ShuttingStarsObject {
 }
 
 /** 장식용 별빛 객체 */
-class Starlight extends DecorationObject {
+class SSStarlight extends SSDecorationObject {
     /**
      * 인스턴스 초기화
      * 
@@ -11393,8 +11406,18 @@ class Starlight extends DecorationObject {
     }
 }
 
+/** 클래스 이름 변경을 위한 임시 클래스 */
+class Starlight extends SSStarlight {
+    /**
+     * 인스턴스 초기화
+     * 
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
+     */
+    constructor(coreInst) { super(coreInst); }
+}
+
 /** 장식용 폭발 객체 */
-class ExplosingObject extends DecorationObject {
+class SSExplosingObject extends SSDecorationObject {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
@@ -11521,7 +11544,7 @@ class ExplosingObject extends DecorationObject {
 }
 
 /** 노트 명중 효과 */
-class CorrectNoteExplosing extends ExplosingObject {
+class SSCorrectNoteExplosing extends SSExplosingObject {
     /**
      * 인스턴스를 초기화합니다.
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
@@ -11537,7 +11560,7 @@ class CorrectNoteExplosing extends ExplosingObject {
 }
 
 /** 노트 미스 폭발 효과 */
-class FailExplosing extends ExplosingObject {
+class SSFailExplosing extends SSExplosingObject {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
@@ -11553,7 +11576,7 @@ class FailExplosing extends ExplosingObject {
 }
 
 /** 게임오버 최종 폭발 효과 */
-class PlanetExplosing extends ExplosingObject {
+class SSPlanetExplosing extends SSExplosingObject {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
@@ -11568,7 +11591,7 @@ class PlanetExplosing extends ExplosingObject {
 }
 
 /** 마우스 클릭 표시 */
-class MouseClickHighlighter extends ExplosingObject {
+class SSMouseClickHighlighter extends SSExplosingObject {
     /**
      * 인스턴스를 초기화합니다.
      */
@@ -11578,7 +11601,7 @@ class MouseClickHighlighter extends ExplosingObject {
 }
 
 /** 텍스트 출력 장식 */
-class TextDeco extends DecorationObject {
+class SSTextDeco extends SSDecorationObject {
     /** @type {string} 화면에 출력할 텍스트 */
     text = '';
     /** @type {number} 텍스트 렌더링에 사용할 글꼴 크기 */
@@ -11653,7 +11676,7 @@ class TextDeco extends DecorationObject {
 }
 
 /** 가상 키 객체 */
-class VirtualKey extends DecorationObject {
+class SSVirtualKey extends SSDecorationObject {
     /** @type {string} 객체에 연결된 입력 키 */
     key = 'S';
     /** @type {number} 텍스트 렌더링에 사용할 글꼴 크기 */
@@ -12117,4 +12140,4 @@ window.ssmanager     = ShuttingStars;
 window.SSUtil        = ShuttingStarsUtility;
 window.ssutil        = ShuttingStarsUtility;
 
-export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStarsCore, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, CustomSSSong, SSNoteCommon, SSNote, SSLongNote, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };
+export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStarsCore, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, CustomSSSong, SSNoteCommon, SSNote, SSLongNote, SSVirtualKey, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };

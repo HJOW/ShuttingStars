@@ -17,6 +17,9 @@ module.exports = {
                 "terserOptions" : {
                     "format" : {
                         "comments" : false
+                    },
+                    "mangle" : {
+                        "keep_classnames" : true
                     }
                 }
             })

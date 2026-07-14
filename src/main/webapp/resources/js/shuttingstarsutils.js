@@ -718,7 +718,9 @@ class ShuttingStarsUtilityClass {
      * @returns {object} 처리 결과
      */
     parseJSON(str) {
-        return JSON5.parse(str);
+        if(str == null) return null;
+        if(typeof(str) == 'object' || typeof(str) == 'undefined' || typeof(str) == 'number' || typeof(str) == 'boolean' || typeof(str) == 'function') return str;
+        return JSON5.parse(String(str).trim());
     }
 }
 
