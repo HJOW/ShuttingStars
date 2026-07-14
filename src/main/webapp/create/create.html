@@ -169,7 +169,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 let text = ta.value;
                 let songConverted = null;
                 try {
-                    let json = JSON.parse(text);
+                    let json = ShuttingStarsUtility.parseJSON(text);
                     songConverted = broker.parseSong(json);
                 } catch(e) {
                     console.error(e);
@@ -250,7 +250,7 @@ window.addEventListener('DOMContentLoaded', function() {
             let songConverted = null;
             let newSongYn = false;
             try {
-                let json = JSON.parse(text);
+                let json = ShuttingStarsUtility.parseJSON(text);
 
                 newSongYn = (json.serial == '');
                 if(saveAs) { json.serial = ''; json.description += '\nCOPIED !'; newSongYn = true; }

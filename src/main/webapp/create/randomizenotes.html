@@ -77,7 +77,7 @@ $(function(){
             taAft.val('[');
 
             let text = taBef.val();
-            let json = JSON.parse(text);
+            let json = ShuttingStarsUtility.parseJSON(text);
             let lastTime = 0;
             let lastIndex = 0;
             let createdIndex = 0;

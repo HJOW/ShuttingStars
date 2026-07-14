@@ -362,10 +362,10 @@
                     const text = rawValue.trim();
                     if(originalValue === null) {
                         if(text === '' || text === 'null') return null;
-                        return JSON.parse(text);
+                        return ShuttingStarsUtility.parseJSON(text);
                     }
                     if(Array.isArray(originalValue) || typeof(originalValue) == 'object') {
-                        return text === '' ? null : JSON.parse(text);
+                        return text === '' ? null : ShuttingStarsUtility.parseJSON(text);
                     }
                     if(typeof(originalValue) == 'number') {
                         if(text === '') return null;

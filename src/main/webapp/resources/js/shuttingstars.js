@@ -1636,7 +1636,7 @@ class ShuttingStarsCore {
         const settingJsonStr = localStorage.getItem('shuttingstar_settings');
         try {
             if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
-                JSON.parse(settingJsonStr);
+                ShuttingStarsUtility.parseJSON(settingJsonStr); 
                 return false;
             }
         } catch(e) {
@@ -1656,7 +1656,7 @@ class ShuttingStarsCore {
         try {
             let settingJsonStr = localStorage.getItem('shuttingstar_settings');
             if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
-                let settingJson = JSON.parse(settingJsonStr);
+                let settingJson = ShuttingStarsUtility.parseJSON(settingJsonStr);
                 
                 if(typeof(settingJson.keyList) != 'undefined') {
                     if(settingJson.keyList.length == this.keyList.length) {
@@ -1748,7 +1748,7 @@ class ShuttingStarsCore {
 
                 if(typeof(settingJson.keyList) != 'undefined') {
                     try {
-                        if(typeof(settingJson.keyList) == 'string') settingJson.keyList = JSON.parse(settingJson.keyList);
+                        if(typeof(settingJson.keyList) == 'string') settingJson.keyList = ShuttingStarsUtility.parseJSON(settingJson.keyList);
                         if(settingJson.keyList.length != 6) throw 'Wrong key list counts';
                         this.keyList = settingJson.keyList;
                     } catch(e2) {
@@ -1884,7 +1884,7 @@ class ShuttingStarsCore {
         try {
             const step1 = localStorage.getItem('shuttingstar_credit');
             if(step1 != null && typeof(step1) != 'undefined' && step1 != '') {
-                const step2 = JSON.parse(step1);
+                const step2 = ShuttingStarsUtility.parseJSON(step1);
                 
                 const hashKey1 = step2.hashKey;
                 const hashKey2 = await this.hashCredit(step2);
@@ -2110,7 +2110,7 @@ class ShuttingStarsCore {
 
             lastURL = '[STORAGE]' + songsArr + '[/STORAGE]';
             if(typeof(songsArr) == 'string') {
-                songsArr = JSON.parse(songsArr);
+                songsArr = ShuttingStarsUtility.parseJSON(songsArr);
             }
             
             for(idx=0; idx<songsArr.length; idx++) {
@@ -8482,7 +8482,7 @@ class ShuttingStarsCore {
             let json = String(ta.value).trim();
             try {
                 json = ShuttingStarsUtility.removeLinesStartKey(json, '#');
-                json = JSON.parse(json);
+                json = ShuttingStarsUtility.parseJSON(json);
                 localStorage.setItem('shuttingstar_songs', JSON.stringify(json));
                 this.loadSongs();
             } catch(ejson) {
@@ -9782,7 +9782,7 @@ class ShuttingStarsCore {
      * @returns {ShuttingStarsSong} 변환된 곡 객체
      */
     parseSong(json) {
-        if(typeof(json) == 'string') json = JSON.parse(json);
+        if(typeof(json) == 'string') json = ShuttingStarsUtility.parseJSON(json);
 
         let idx;
         let song = null;
@@ -9883,7 +9883,7 @@ class ShuttingStarsCore {
         }
 
         if(json.decorations) {
-            if(typeof(json.decorations) == 'string') json.decorations = JSON.parse(json.decorations);
+            if(typeof(json.decorations) == 'string') json.decorations = ShuttingStarsUtility.parseJSON(json.decorations);
             song.decorations = json.decorations;
         }
 
@@ -9922,7 +9922,7 @@ class ShuttingStarsCore {
             if(typeof(json) == 'string') {
                 json = json.trim();
                 if(json == '') json = {};
-                else           json = JSON.parse(json);
+                else           json = ShuttingStarsUtility.parseJSON(json);
             }
             for(let k in json) {
                 song[k] = json[k];
@@ -9980,7 +9980,7 @@ class ShuttingStarsCore {
         let idx;
         if(! (song instanceof ShuttingStarsSong)) {
             let json = song;
-            if(typeof(json) == 'string') json = JSON.parse(json);
+            if(typeof(json) == 'string') json = ShuttingStarsUtility.parseJSON(json);
 
             song = this.parseSong(json);
             returnVal = song;
@@ -10044,7 +10044,7 @@ class ShuttingStarsCore {
     getRecords() {
         let storageStrings = localStorage.getItem('shuttingstar_records');
         if(typeof(storageStrings) == 'undefined' || storageStrings == '' || storageStrings == null) return [];
-        let storageJson = JSON.parse(storageStrings);
+        let storageJson = ShuttingStarsUtility.parseJSON(storageStrings);
         if(storageJson == null) storageJson = [];
         return storageJson;
     }
@@ -10081,7 +10081,7 @@ class ShuttingStarsCore {
         if(typeof(recordOne) == 'undefined') return;
         if(recordOne == null) return;
         if(recordOne == '') return;
-        if(typeof(recordOne) == 'string') recordOne = JSON.parse(recordOne);
+        if(typeof(recordOne) == 'string') recordOne = ShuttingStarsUtility.parseJSON(recordOne);
 
         let recordArray = this.getRecords();
         if(recordArray == null) recordArray = [];
