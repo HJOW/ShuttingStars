@@ -4441,12 +4441,10 @@ class ShuttingStarsCore {
 
         // 로그인된 경우 로그인된 이메일 주소 출력
         let logined = false;
+        label = '';
+        fontSize = this.convertFontSize(12);
+        this.ctx.textAlign = 'left';
         if(this.backend != null && this.backend.avail) {
-            label = '';
-
-            fontSize = this.convertFontSize(12);
-            this.ctx.textAlign = 'left';
-            
             if(this.menuChoosing == 'login' || this.menuChoosing == 'logout') {
                 this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.99;
@@ -4470,6 +4468,13 @@ class ShuttingStarsCore {
             } else {
                 label = this.trans('GUEST') + ' (' + this.trans('LOGIN') + ")";;
             }
+            this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 4.5));
+        } else {
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            opacity = 0.99;
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            label = this.trans('OFFLINE');
             this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 4.5));
         }
 
@@ -5621,6 +5626,17 @@ class ShuttingStarsCore {
         label = this.judgeResultRank();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', 0.9)');
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 7), rowCenter + (this.metricSize3 * 3 / 2));
+
+        /*
+        // 코드 출력 (OCR 장식용)
+        fontSize = this.convertFontSize(10);
+        label = 'PERFECT:' + this.report.PERFECT + ',GREAT:' + this.report.GREAT + ',GOOD:' + this.report.GOOD + ',BAD:' + this.report.BAD + ',MISS:' + this.report.MISS + ',TOTAL:' + ShuttingStarsUtility.fitDigit(this.point, 10, '0') + ',RANK:' + label;
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getOcrFontFamily();
+        this.ctx.textAlign = "center";
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        */
 
         // 곡 이름 출력
         label = this.song.name;
