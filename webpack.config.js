@@ -32,7 +32,9 @@ module.exports = {
                 "exclude" : [
                     '/node_modules/',
                     '/src/main/webapp/resources/js/dist/',
-                    '/src/main/webapp/resources/js/wc-monaco/'
+                    '/src/main/webapp/resources/js/wc-monaco/',
+                    '/src/main/webapp/resources/js/jquery-1.12.4.min.js',
+                    '/src/main/webapp/resources/js/crypto-js.min.js'
                 ],
                 "use" : {
                     "loader" : "babel-loader"

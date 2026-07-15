@@ -5,28 +5,20 @@
 /* 유틸리티 (필수) */
 
 try { if(console) { console.log(`
-ShuttingStars - LICENSE
-
-Copyright 2026 HJOW (hujinone22@naver.com)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License. 
-
+ShuttingStars
+    Apache License 2.0
+    Copyright 2026 HJOW (hujinone22@naver.com)
     Visit https://github.com/HJOW/ShuttingStars/blob/main/LICENSE
 `); console.log(`
 Using third-party libraries are included.
 Three.js
     MIT License
+    Copyright © 2010-2026 three.js authors
     Visit https://github.com/mrdoob/three.js/blob/dev/LICENSE
+JSON5
+    MIT License
+    Copyright (c) 2012-2018 Aseem Kishore, and others.
+    Visit https://github.com/json5/json5/blob/main/LICENSE.md
 `); }} catch(nothings) {}
 
 import JSON5 from './json5.min.mjs';

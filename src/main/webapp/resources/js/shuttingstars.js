@@ -480,7 +480,7 @@ class ShuttingStarsCore {
 
     // 메뉴 화면 관련
     /** @type {Array<string>} 메뉴들 */
-    menuList = ['play', 'records', 'listen', 'setting', 'credit'];
+    menuList = ['play', 'listen', 'records', 'setting', 'credit'];
     /** @type {Array<string>} 위 menuList 에 데이터가 추가됨 */
     menuListDynamic = [];
     /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
