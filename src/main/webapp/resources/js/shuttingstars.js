@@ -26,7 +26,7 @@ import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './sh
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
     /** @type {number} 빌드 번호 */
-    build = 5;
+    build = 6;
 
     /** @type {string} 홈페이지 */
     homepageUrl = 'https://github.com/HJOW/shuttingstars';
@@ -499,6 +499,8 @@ class ShuttingStarsCore {
     settingGraphicQualityChoosing = null;
     /** @type {boolean} 전체 초기화 선택 시 다시 묻고 있는지 여부. */
     settingResetReask = false;
+    /** @type {string} 설정 화면 진입 직전의 state 값 */
+    beforeSettingState = 'menu';
 
     // 타이밍 보정값
     /** @type {number} 키 입력 추가 딜레이 보정값 (설정에서 변경 가능) */
@@ -645,6 +647,8 @@ class ShuttingStarsCore {
     fBeforeInit  = function(obj) {  }
     /** @type {function(Object): void} 코어 초기화 직후에 실행할 훅 */
     fAfterInit   = function(obj, coreInst) {  }
+    /** @type {null|function(): void} null 입력 시 게임 종료 기능 비활성화 (기본값), 게임 종료 기능 지원 시 이 곳에 함수를 넣으면 메뉴에 게임 종료가 추가되고, 해당 메뉴 선택 시 함수가 호출됨 */
+    fOnShutdownCalled = null;
 
     /**
      * 객체 생성 (초기화하려면 init 메소드까지 호출해야 함)
@@ -1311,6 +1315,17 @@ class ShuttingStarsCore {
             this.handleScreenResized();
         }
 
+        // 설정 화면
+        if(state == 'setting') {
+            // 설정 화면 진입 시, 직전 state 백업
+            this.beforeSettingState = this.beforeState;
+
+            if(this.configDiv != null) {
+                // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
+                this.openConfigDiv();
+            }
+        }
+
         // 상태 변경 로깅
         if(this.backend != null) {
             try { this.backend.logEvent('STATE ' + state); } catch(ignores) {}
@@ -1367,6 +1382,7 @@ class ShuttingStarsCore {
         this.broker.songs                   = this.songs                   ;
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
+        this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
         this.broker.apply = function(obj) {
 
             // createMode 는 한번 true 로 바꾸면 false 로 변경 못해야 함
@@ -1405,6 +1421,7 @@ class ShuttingStarsCore {
             if(typeof(obj.urlCtx                 ) != 'undefined') selfs.urlCtx                  = obj.urlCtx                  ;
             if(typeof(obj.fOuterWidth            ) != 'undefined') selfs.fOuterWidth             = obj.fOuterWidth             ;
             if(typeof(obj.fOuterHeight           ) != 'undefined') selfs.fOuterHeight            = obj.fOuterHeight            ;
+            if(typeof(obj.fOnShutdownCalled      ) != 'undefined') selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ;
             if(typeof(obj.songs                  ) != 'undefined') selfs.songs                   = obj.songs                   ;
         }
         this.broker.parseSong  = function(json) { return selfs.parseSong(json); }
@@ -1440,65 +1457,76 @@ class ShuttingStarsCore {
     getMenuList() {
         const selfs = this;
         return new Promise((resolve, reject) => {
+            const fResolve = (newList) => {
+                // newList 에 exit 존재여부 확인
+                let exitExists = (newList.indexOf('exit') >= 0);
+                // exit 존재 시 일단 제거
+                if(exitExists) { newList.splice(newList.indexOf('exit'), 1); }
+                // 게임 종료 함수가 지정된 경우, exit 다시 추가 (맨 뒤에)
+                if(typeof(selfs.fOnShutdownCalled) == 'function') {
+                    newList.push('exit');
+                }
+                resolve(newList);
+            };
+
             if(selfs.backend == null) {
-                resolve( selfs.menuList );
+                fResolve( selfs.menuList );
                 return;
             }
 
+            const fLogined = () => {
+                let newList = [];
+                let classicList = selfs.menuList;
+
+                // 기존 메뉴 대부분 그대로 유지
+                for(let idx=0; idx<classicList.length; idx++) {
+                    const menuOne = classicList[idx];
+
+                    if(idx == 3) newList.push('community'); // 4번째 위치에 커뮤니티 추가
+                    newList.push(menuOne);
+                }
+
+                // 로그아웃 메뉴 추가
+                newList.push('logout');
+
+                // 푸시 권한 획득
+                // selfs.backend.requestPushPermission();
+
+                // rootDiv 에 표시
+                if(selfs.rootDiv != null) {
+                    selfs.rootDiv.classList.add('ss_backend_logined');
+                    selfs.rootDiv.classList.remove('ss_backend_guest');
+                }
+
+                // 설정 동기화 시도
+                selfs.loadCloudSettings().then(() => { fResolve(newList); }).catch((exc) => { console.error(exc); fResolve(newList); });
+            };
+
+            const fNotLogined = () => {
+                selfs.backend.logined = false;
+                selfs.backend.user = null;
+
+                let newList = [];
+                let classicList = selfs.menuList;
+
+                // 기존 메뉴 그대로 유지
+                for(let idx=0; idx<classicList.length; idx++) {
+                    const menuOne = classicList[idx];
+                    newList.push(menuOne);
+                }
+
+                // 로그인 안된 경우, 로그인 메뉴 추가
+                newList.push('login');
+
+                // rootDiv 에 표시
+                if(selfs.rootDiv != null) {
+                    selfs.rootDiv.classList.remove('ss_backend_logined');
+                    selfs.rootDiv.classList.add('ss_backend_guest');
+                }
+
+                fResolve(newList);
+            };
             try {
-                const fLogined = () => {
-                    let newList = [];
-                    let classicList = selfs.menuList;
-
-                    // 기존 메뉴 대부분 그대로 유지
-                    for(let idx=0; idx<classicList.length; idx++) {
-                        const menuOne = classicList[idx];
-
-                        if(idx == 3) newList.push('community'); // 4번째 위치에 커뮤니티 추가
-                        newList.push(menuOne);
-                    }
-
-                    // 로그아웃 메뉴 추가
-                    newList.push('logout');
-
-                    // 푸시 권한 획득
-                    // selfs.backend.requestPushPermission();
-
-                    // rootDiv 에 표시
-                    if(selfs.rootDiv != null) {
-                        selfs.rootDiv.classList.add('ss_backend_logined');
-                        selfs.rootDiv.classList.remove('ss_backend_guest');
-                    }
-
-                    // 설정 동기화 시도
-                    selfs.loadCloudSettings().then(() => { resolve(newList); }).catch((exc) => { console.error(exc); resolve(newList); });
-                };
-
-                const fNotLogined = () => {
-                    selfs.backend.logined = false;
-                    selfs.backend.user = null;
-
-                    let newList = [];
-                    let classicList = selfs.menuList;
-
-                    // 기존 메뉴 그대로 유지
-                    for(let idx=0; idx<classicList.length; idx++) {
-                        const menuOne = classicList[idx];
-                        newList.push(menuOne);
-                    }
-
-                    // 로그인 안된 경우, 로그인 메뉴 추가
-                    newList.push('login');
-
-                    // rootDiv 에 표시
-                    if(selfs.rootDiv != null) {
-                        selfs.rootDiv.classList.remove('ss_backend_logined');
-                        selfs.rootDiv.classList.add('ss_backend_guest');
-                    }
-
-                    resolve(newList);
-                };
-
                 selfs.backend.checkLogined().then((checkRes) => {
                     if(checkRes.loginAvail) {
                         // 로그인 성공
@@ -1513,7 +1541,7 @@ class ShuttingStarsCore {
                 });
             } catch(e) {
                 console.error(e);
-                resolve( selfs.menuList );
+                fResolve( selfs.menuList );
             }
         });
     }
@@ -2603,27 +2631,6 @@ class ShuttingStarsCore {
         // 키 입력 신호 넣기
         this.keypressing[key] = new Date().getTime();
 
-        // ESC - DOM 팝업 떠있으면 닫기
-        if(key == this.escKey && (! this.pops.dim.classList.contains('invisible'))) {
-            this.pops.dim.classList.add('invisible');
-            this.pops.login.classList.add('invisible');
-            this.pops.community.classList.add('invisible');
-            this.pops.iframes.classList.add('invisible');
-            this.pops.youtube.classList.add('invisible');
-            this.pops.mysong.classList.add('invisible');
-            this.configDiv.classList.add('invisible');
-            this.setState('menu');
-            this.keyEventDisabled = false;
-            if(this.audioBackground != null) { 
-                if(this.state != 'playing' && this.state != 'listenplaying') this.audioBackground.play(); 
-            }
-            if(this.youtubePopPlayer != null) {
-                this.youtubePopPlayer.destroy();
-                this.youtubePopPlayer = null;
-            }
-            return;
-        }
-
         // CONFIRM 묻고 있는 상황이면 CONFIRM 최우선 처리
         if(this.confirmAsking) {
             if(key == this.arrowKeys[2]) { // LEFT
@@ -2636,6 +2643,38 @@ class ShuttingStarsCore {
                 this.confirmAsking = false;
             }
             return;
+        }
+
+        // ESC - DOM 팝업 떠있으면 닫기
+        if(key == this.escKey && (! this.pops.dim.classList.contains('invisible'))) {
+            this.pops.dim.classList.add('invisible');
+            this.pops.login.classList.add('invisible');
+            this.pops.community.classList.add('invisible');
+            this.pops.iframes.classList.add('invisible');
+            this.pops.youtube.classList.add('invisible');
+            this.pops.mysong.classList.add('invisible');
+            this.configDiv.classList.add('invisible');
+
+            if(this.state == 'setting') this.setState(this.beforeSettingState);
+            else                        this.setState('menu');
+
+            this.keyEventDisabled = false;
+            if(this.audioBackground != null) { 
+                if(this.state != 'playing' && this.state != 'listenplaying') this.audioBackground.play(); 
+            }
+            if(this.youtubePopPlayer != null) {
+                this.youtubePopPlayer.destroy();
+                this.youtubePopPlayer = null;
+            }
+            return;
+        }
+
+        // 탭 키 (메뉴가 아닌 다른 곳에서 설정 창 열기)
+        if(this.state == 'menu' || this.state == 'songchoosing' || this.state == 'listenchoosing' || this.state == 'recordlist') {
+            if(key == 'TAB') {
+                this.setState('setting');
+                return;
+            }
         }
 
         // 타이틀 화면 키 핸들링
@@ -2733,10 +2772,6 @@ class ShuttingStarsCore {
 
                 this.playSE('accept1');
                 this.setState('setting');
-                if(selfs.configDiv != null) {
-                    // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
-                    this.openConfigDiv();
-                }
             } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
                 this.playSE('special1');
                 this.prepareCreditList();
@@ -2768,6 +2803,9 @@ class ShuttingStarsCore {
                         }
                     });
                 }
+            } else if(this.menuChoosing == 'exit') { // 메뉴 - 종료
+                this.playSE('special1');
+                this.fOnShutdownCalled();
             }
         }
     }
@@ -4382,6 +4420,7 @@ class ShuttingStarsCore {
             if(menuOne == 'records'  ) label = this.trans('RECORDS');
             if(menuOne == 'login'    ) label = this.trans('LOGIN');
             if(menuOne == 'logout'   ) label = this.trans('LOGOUT');
+            if(menuOne == 'exit'     ) label = this.trans('EXIT');
 
             fontSize = this.convertFontSize(20);
 
@@ -8411,7 +8450,7 @@ class ShuttingStarsCore {
         const fCancel = function() {
             selfs.loadSettings();
             selfs.closeConfigDiv();
-            selfs.setState('menu');
+            selfs.setState(selfs.beforeSettingState);
         };
         
         btnAccept.addEventListener('click', () => {

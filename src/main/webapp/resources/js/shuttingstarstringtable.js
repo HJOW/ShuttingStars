@@ -103,7 +103,9 @@ const SSStringTable = {
         "MUSIC SOURCE" : "음원 소스",
         "File" : "파일",
         "URL" : "URL",
-        "GitHub : " : "GitHub : "
+        "GitHub : " : "GitHub : ",
+        "EXIT" : "종료",
+        "OFFLINE" : "OFFLINE"
     }
 };
 export { SSStringTable };
