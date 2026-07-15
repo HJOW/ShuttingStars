@@ -5671,7 +5671,7 @@ class ShuttingStarsCore {
      */
     renderRecordList() {
         const selfs = this;
-        let idx, ddx;
+        let idx, jdx, ddx;
         let rows = 0;
         let cols = 0;
         let fontSize = this.convertFontSize(20);
@@ -5699,43 +5699,7 @@ class ShuttingStarsCore {
 
         if(this.selectedRecordList == null) this.selectedRecordList = [];
         if(this.selectedRecordList.length <= 0) {
-            this.ctx.strokeText(this.trans('No records !'), this.convertX(this.getStageWidth() / 2), rows);
             emptyState = true;
-        }
-
-        if(emptyState) {
-            rows += this.metricSize1 + gap;
-
-            // ESC 표기
-            let escKeyLabel = this.escKey;
-            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
-
-            fontSize = this.convertFontSize(15);
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.textAlign = "right";
-            this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth()) - (fontSize * 2), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 2));
-
-            if(this.selectRecordType == 'internet') {
-                setTimeout(() => {
-                    // 로컬 목록으로 되돌려야 하는데, 로컬 목록도 없으면, 메뉴로 이동
-                    let lst = selfs.getRecords();
-                    if(lst == null || lst.length <= 0) {
-                        selfs.setState('menu');
-                    } else {
-                        selfs.selectRecordType = 'local';
-                    }
-                }, 4000);
-            } else {
-                setTimeout(() => {
-                    // 인터넷 목록으로 바꿔야 하는데, 인터넷 목록도 비어 있으면 메뉴로 이동
-                    selfs.getInternetRecords().then((list) => {
-                        selfs.selectedRecordList = list;
-                        if(list == null) selfs.setState('menu');
-                        else selfs.selectRecordType = 'internet';
-                    });
-                }, 4000);
-            }
-            return;
         }
 
         // 타이틀 출력
@@ -5761,117 +5725,133 @@ class ShuttingStarsCore {
         // 기록을 선택하지 않은 상태인 경우 첫 기록을 출력
         if(this.seeingRecord == null) { this.seeingRecord = this.selectedRecordList[0]; }
 
-        // 기록 목록을 다 출력할 수는 없으니, 현재 선택된 기록 앞뒤 2개만 출력
-        //    현재 선택된 기록을 중앙에 두고, 앞 2개, 뒤 2개를 찾아야 함 (가능한 만큼만)
-        let frontRecords = [];
-        let backRecords = [];
+        // 곡 목록과 마찬가지 방식으로 3번 출력하여 무한 스크롤 효과 구현
+        let centerY = this.convertY(this.getStageHeight() / 2, false);
+        let currentRow = centerY; // 기존 rows 값을 보존해야 하기 때문에 따로 선언
+        let row1Height = 0;
+        let currentIndex = 0;
         let recordChoosen = null;
-        let current = false;
-        for(idx=0; idx<this.selectedRecordList.length; idx++) {
-            let songOne = this.selectedRecordList[idx];
-            if(songOne == this.seeingRecord) {
-                current = true; // 현재 선택된 곡, backRecords 에 넣기 (frontRecords 에 넣어도 문제는 없음)
-                backRecords.push(songOne);
-                continue;
-            }
-            if(! current) { // 아직 현재 선택된 곡을 만나기 이전 - 일단 frontRecords 에 넣고, 원소가 2개를 초과하면 먼저 넣은 것을 제거한다.
-                frontRecords.push(songOne);
-                if(frontRecords.length > 2) frontRecords.splice(0, 1);
-            } else { // 현재 선택된 곡을 지남 - backRecords 에 넣고, 원소가 3개 (현재 선택된 곡이 포함되어 있으므로) 가 되면 반복문을 중지한다.
-                backRecords.push(songOne);
-                if(backRecords.length >= 3) break;
-            }
-        }
+        let youtubeSongChoosed = null; // Youtube 기반 곡 선택 시 이 곳에 영상ID 탑재
+        let opacityOne = 0;
+        opacity = 0.99;
 
-        // 하나의 배열로 병합
-        let displayRecords = [];
-        for(idx=0; idx<frontRecords.length; idx++) { displayRecords.push(frontRecords[idx]); }
-        for(idx=0; idx<backRecords.length; idx++) { displayRecords.push(backRecords[idx]); }
-        frontRecords = null;
-        backRecords = null;
+        // 1개 행 높이 사전 계산
+        row1Height = (this.metricSize1 * 2) + this.metricSize2 + (gap * 4);
 
-        let displayedSongs = 0;
-
-        // 출력
-        for(idx=0; idx<displayRecords.length; idx++) {
-            let recordOne = displayRecords[idx];
-            let choosen = (this.seeingRecord == recordOne);
-            let upperY = 0;
-
-            // 선택된 곡 배경색 출력
-            if(choosen) {
-                recordChoosen = recordOne;
-
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-
-                this.ctx.fillRect(0, rows - (this.metricSize1 + gap), this.canvas.width - (this.getLeftMarginStage() * 2), this.metricSize1 + (this.metricSize2 * 2) + gap*5);
-            }
-
-            // 곡 이름 출력
-            opacity = 0.99;
-            // if(choosen) opacity = 0.99;
-            // else opacity = 0.3;
-
-            fontSize = this.convertFontSize(20);
-            label = recordOne.song.name;
-            this.ctx.textAlign = "center";
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            if(choosen) {
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
-            } else {
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), rows);
-            }
-            upperY = rows - gap;
+        // 기록 목록이 빈 경우를 처리
+        if(emptyState) {
             rows += this.metricSize1 + gap;
 
-            // 작곡가, 노트작성자, bpm 출력
-            label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', recordOne.song.composer), '%2', recordOne.song.noteWriter), '%3', String(recordOne.song.bpm));
-            fontSize = this.convertFontSize(15);
+            // ESC 표기
+            let escKeyLabel = this.escKey;
+            if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
+
+            fontSize = this.convertFontSize(30);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-
-            // if(this.songChoosing == recordOne) opacity = 0.99;
-            // else opacity = 0.3;
-
             this.ctx.textAlign = "center";
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            if(choosen) {
-                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
-            } else {
-                if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), rows);
-            }
-            rows += this.metricSize2 + gap;
-
-            // 점수 출력
-            fontSize = this.convertFontSize(20);
-            this.ctx.textAlign = "left";
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            label = String(recordOne.point);
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
-
-            // 랭크 출력
-            fontSize = this.convertFontSize(80);
-            this.ctx.textAlign = "center";
-            this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-            label = recordOne.rank;
-            this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', ' + opacity + ')');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY + this.metricSize3 + (gap * 2));
-
-            rows += this.metricSize2 + (gap*2);
-            displayedSongs++;
+            this.ctx.fillText(this.trans('EMPTY !'), this.convertX(this.getStageWidth() / 2), rows);
+            return;
         }
 
-        // 빈 공간 띄우기
-        while(displayedSongs < 5) {
-            rows += this.metricSize3 + gap*2;
-            displayedSongs++;
+        // 선택 중인 기록이 몇 번째인지 확인
+        for(idx=0; idx<this.selectedRecordList.length; idx++) {
+            if(this.selectedRecordList[idx] == this.seeingRecord) { currentIndex = idx; break; }
+        }
+
+        // 3회 출력
+        for(jdx=0; jdx<3; jdx++) {
+            if(jdx == 0) {
+                currentRow = ( centerY - (row1Height / 2) + (this.metricSize1 / 2) ) - (  (row1Height * (this.selectedRecordList.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+                opacityOne = ( 0.5 / (this.selectedRecordList.length + currentIndex) );
+                opacity = 0.5 - opacityOne;
+            }
+
+            for(idx=0; idx<this.selectedRecordList.length; idx++) {
+                const recordOne = this.selectedRecordList[idx];
+
+                if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
+                    currentRow += row1Height;
+                    continue;
+                }
+
+                let upperY = 0;
+                const choosen = (jdx == 1 && this.seeingRecord == recordOne);
+
+                // 현재 선택된 기록이 보일 구역에 배경 출력
+                if(choosen) {
+                    recordChoosen = recordOne;
+
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+
+                    this.ctx.fillRect(this.getLeftMarginPage(), centerY - (row1Height / 2), this.convertX(this.getStageWidth()), row1Height);
+                }
+
+                opacity = 0.99;
+                // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
+                if(! this.screenDirLandscape) {
+                    if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3, false)) {
+                        opacity = opacity / 4;
+                    }
+                }
+
+                if(choosen) { currentRow = centerY - (this.metricSize1 / 2); }
+
+                // 기록 이름 출력
+                fontSize = this.convertFontSize(20);
+                label = recordOne.song.name;
+                this.ctx.textAlign = "center";
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                if(choosen) {
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
+                } else {
+                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
+                }
+                upperY = currentRow + (row1Height / 3); // 우측 랭크 출력 위치 미리 계산
+                currentRow += this.metricSize1;
+                
+                // 작곡가, 노트작성자, bpm 출력
+                label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', recordOne.song.composer), '%2', recordOne.song.noteWriter), '%3', String(recordOne.song.bpm));
+                fontSize = this.convertFontSize(15);
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+                this.ctx.textAlign = "center";
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                if(choosen) {
+                    this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
+                } else {
+                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow);
+                }
+                currentRow += this.metricSize2 + gap;
+
+                // 점수 출력
+                fontSize = this.convertFontSize(20);
+                this.ctx.textAlign = "left";
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                label = String(recordOne.point);
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
+                currentRow += this.metricSize1 + (gap * 3);
+
+                // 랭크 출력
+                fontSize = this.convertFontSize(80);
+                this.ctx.textAlign = "center";
+                this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+                label = recordOne.rank;
+                this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', ' + opacity + ')');
+                this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY);
+
+                if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
+                else opacity -= opacityOne;
+                if(opacity >= 0.99) opacity = 0.99;
+                if(opacity <= 0) opacity = 0.0;
+            }
         }
 
         // 기타 안내 출력
