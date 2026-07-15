@@ -4532,18 +4532,24 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         let emptyState = false;
+        let onlyOneState = false;
 
         if(this.songChoosingMode == 'mission') {
             if(this.missions.length <= 0) {
                 this.ctx.strokeText(this.trans('No missions available !'), this.convertX(this.getStageWidth() / 2), rows);
                 emptyState = true;
+            } else if(this.missions.length == 1) {
+                onlyOneState = true;
             }
         } else if(this.songChoosingMode == 'mysong') {
             emptyState = false;
+            onlyOneState = false;
         } else {
             if(this.songDisplays.length <= 0) {
                 this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.getStageWidth() / 2), rows);
                 emptyState = true;
+            } else if(this.songDisplays.length == 1) {
+                onlyOneState = true;
             }
         }
         
@@ -4621,13 +4627,12 @@ class ShuttingStarsCore {
                 if(this.missions[idx] == this.missionChoosing) { currentIndex = idx; break; }
             }
 
+            currentRow = centerY - (  (row1Height * (this.missions.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+            opacityOne = ( 0.5 / (this.missions.length + currentIndex) );
+            opacity = 0.5 - opacityOne;
+
             // 미션 목록 3번 출력
             for(jdx=0; jdx<3; jdx++) {
-                if(jdx == 0) {
-                    currentRow = centerY - (  (row1Height * (this.missions.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-                    opacityOne = ( 0.5 / (this.missions.length + currentIndex) );
-                    opacity = 0.5 - opacityOne;
-                }
                 for(idx=0; idx<this.missions.length; idx++) {
                     let missionOne = this.missions[idx];
 
@@ -4689,13 +4694,12 @@ class ShuttingStarsCore {
                 if(numberArray[idx] == this.difficultyLevel) { currentIndex = idx; break; }
             }
 
+            currentRow = centerY - (  (row1Height * (numberArray.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+            opacityOne = ( 0.5 / (numberArray.length + currentIndex) );
+            opacity = 0.5 - opacityOne;
+
             // 난이도 목록 출력 (현재 선택된 난이도가 중앙에 표기되도록) - 3번 출력 (레벨 1 선택된 경우, 그 위로 19, 18이 떠야 하므로)
             for(jdx=0; jdx<3; jdx++) {
-                if(jdx == 0) {
-                    currentRow = centerY - (  (row1Height * (numberArray.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-                    opacityOne = ( 0.5 / (numberArray.length + currentIndex) );
-                    opacity = 0.5 - opacityOne;
-                }
                 for(idx=0; idx<numberArray.length; idx++) {
                     let diffOne = numberArray[idx];
 
@@ -4758,13 +4762,12 @@ class ShuttingStarsCore {
                 if(this.songDisplays[idx] == this.songChoosing) { currentIndex = idx; break; }
             }
 
+            currentRow = centerY - (  (row1Height * (this.songDisplays.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+            opacityOne = ( 0.5 / (this.songDisplays.length + currentIndex) );
+            opacity = 0.5 - opacityOne;
+
             // 곡 목록 3번 출력
             for(jdx=0; jdx<3; jdx++) {
-                if(jdx == 0) {
-                    currentRow = centerY - (  (row1Height * (this.songDisplays.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-                    opacityOne = ( 0.5 / (this.songDisplays.length + currentIndex) );
-                    opacity = 0.5 - opacityOne;
-                }
                 for(idx=0; idx<this.songDisplays.length; idx++) {
                     let songOne = this.songDisplays[idx];
 
@@ -5696,10 +5699,14 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         let emptyState = false;
+        let onlyOneState = false;
 
         if(this.selectedRecordList == null) this.selectedRecordList = [];
         if(this.selectedRecordList.length <= 0) {
             emptyState = true;
+        }
+        if(this.selectedRecordList.length == 1) {
+            onlyOneState = true;
         }
 
         // 타이틀 출력
@@ -5758,14 +5765,13 @@ class ShuttingStarsCore {
             if(this.selectedRecordList[idx] == this.seeingRecord) { currentIndex = idx; break; }
         }
 
+        currentRow = ( centerY - (row1Height / 2) + (this.metricSize1 / 2) ) - (  (row1Height * (this.selectedRecordList.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+        opacityOne = ( 0.5 / (this.selectedRecordList.length + currentIndex) );
+        opacity = 0.5 - opacityOne;
+
         // 3회 출력
         for(jdx=0; jdx<3; jdx++) {
-            if(jdx == 0) {
-                currentRow = ( centerY - (row1Height / 2) + (this.metricSize1 / 2) ) - (  (row1Height * (this.selectedRecordList.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-                opacityOne = ( 0.5 / (this.selectedRecordList.length + currentIndex) );
-                opacity = 0.5 - opacityOne;
-            }
-
+            if(onlyOneState) jdx = 1;
             for(idx=0; idx<this.selectedRecordList.length; idx++) {
                 const recordOne = this.selectedRecordList[idx];
 
@@ -5831,11 +5837,15 @@ class ShuttingStarsCore {
                 }
                 currentRow += this.metricSize2 + gap;
 
-                // 점수 출력
+                // 점수 및 날짜 출력
                 fontSize = this.convertFontSize(20);
-                this.ctx.textAlign = "left";
+                this.ctx.textAlign = "center";
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-                label = String(recordOne.point);
+
+                const playDate = new Date();
+                playDate.setTime(recordOne.date);
+                label = ShuttingStarsUtility.fitDigit(recordOne.point, 8, '0') + ' / ' + ShuttingStarsUtility.formatDate(playDate, 'yyyy-MM-dd HH:mm');
+                
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
                 currentRow += this.metricSize1 + (gap * 3);
 
@@ -5852,6 +5862,7 @@ class ShuttingStarsCore {
                 if(opacity >= 0.99) opacity = 0.99;
                 if(opacity <= 0) opacity = 0.0;
             }
+            if(onlyOneState) break;
         }
 
         // 기타 안내 출력
@@ -5891,6 +5902,8 @@ class ShuttingStarsCore {
         let gap = Math.floor(fontSize / 2.0);
         let label = '';
         let defColor = null;
+        let report = this.seeingRecord.report;
+        if(typeof(report) == 'undefined') report = {};
 
         this.calculateFontMetric();
         gap = Math.floor(this.metricSize2 / 2.0);
@@ -5916,7 +5929,7 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.PERFECT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( report.PERFECT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         rows += this.metricSize1 + (gap/4);
 
         label = 'GREAT';
@@ -5926,7 +5939,7 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.GREAT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( report.GREAT , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         rows += this.metricSize1 + (gap/4);
 
         label = 'GOOD';
@@ -5936,7 +5949,7 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.GOOD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( report.GOOD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         rowCenter = rows; // 수직 중앙 위치 기록해두기 (랭크 출력할 때 사용)
         rows += this.metricSize1 + (gap/4);
 
@@ -5947,7 +5960,7 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.BAD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( report.BAD , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         rows += this.metricSize1 + (gap/4);
 
         label = 'MISS';
@@ -5957,11 +5970,11 @@ class ShuttingStarsCore {
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.fillStyle = defColor;
         this.ctx.textAlign = "right";
-        this.ctx.fillText(ShuttingStarsUtility.fitDigit( this.report.MISS , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
+        this.ctx.fillText(ShuttingStarsUtility.fitDigit( report.MISS , 5), this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         rows += this.metricSize1 + (gap/2);
 
         // 점수 출력
-        label = ShuttingStarsUtility.fitDigit(this.point, 10);
+        label = ShuttingStarsUtility.fitDigit(this.seeingRecord.point, 10);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');

@@ -85,14 +85,78 @@ class ShuttingStarsUtilityClass {
      * 자연수 (양의 정수)와 자리수(역시 양의 정수) 입력 받아, 해당 자리수에 맞는 문자열로 변환, 숫자를 표현하고 남은 자리수는 빈 문자열(공백) 로 앞부분을 채움
      * @param {number} naturalValue naturalValue 값
      * @param {number} digit digit 값
+     * @param {string} alternativeEmptySpaceFiller 빈 공간 대체할 문자열, 선택사항으로, 입력 안하거나 null 사용 시 공백 문자 사용
      * @returns {string} 지정한 자릿수에 맞춘 문자열
      */
-    fitDigit(naturalValue, digit) {
+    fitDigit(naturalValue, digit, alternativeEmptySpaceFiller) {
         let res = String(naturalValue);
+        if(typeof(alternativeEmptySpaceFiller) == 'undefined' || alternativeEmptySpaceFiller == null) alternativeEmptySpaceFiller = ' ';
         while(res.length < digit) {
-            res = ' ' + res;
+            res = alternativeEmptySpaceFiller + res;
         }
         return res;
+    }
+
+    /**
+     * 
+     * Date 객체를 받아, formatString 에 입력된 패턴 맞춰 문자열로 변환
+     *     yyyy : 연도 (4자리)
+     *     MM   : 월 (2자리)
+     *     dd   : 일 (2자리)
+     *     HH   : 시 (2자리, 24시간제)
+     *     mm   : 분 (2자리)
+     *     ss   : 초 (2자리)
+     * 
+     * @param {Date} dateObject 
+     * @param {string} formatString 
+     */
+    formatDate(dateObject, formatString) {
+        if(!(dateObject instanceof Date)) return '';
+        const yyyy = dateObject.getFullYear();
+        const MM = ShuttingStarsUtility.fitDigit(dateObject.getMonth() + 1, 2, '0');
+        const dd = ShuttingStarsUtility.fitDigit(dateObject.getDate(), 2, '0');
+        const HH = ShuttingStarsUtility.fitDigit(dateObject.getHours(), 2, '0');
+        const mm = ShuttingStarsUtility.fitDigit(dateObject.getMinutes(), 2, '0');
+        const ss = ShuttingStarsUtility.fitDigit(dateObject.getSeconds(), 2, '0');
+
+        let res = formatString;
+        res = this.replaceString(res, 'yyyy', yyyy);
+        res = this.replaceString(res, 'MM', MM);
+        res = this.replaceString(res, 'dd', dd);
+        res = this.replaceString(res, 'HH', HH);
+        res = this.replaceString(res, 'mm', mm);
+        res = this.replaceString(res, 'ss', ss);
+        return res;
+    }
+
+    /**
+     * 날짜 형식의 문자열과, 날짜 패턴을 입력받아, Date 객체로 변환
+     *     yyyy : 연도 (4자리)
+     *     MM   : 월 (2자리)
+     *     dd   : 일 (2자리)
+     *     HH   : 시 (2자리, 24시간제)
+     *     mm   : 분 (2자리)
+     *     ss   : 초 (2자리)
+     * 
+     * @param {string} formattedString
+     * @param {string} formatString
+     * @returns {Date} Date 객체
+     */
+    parseDate(formattedString, formatString) {
+        let yearIndex = formatString.indexOf('yyyy');
+        let monthIndex = formatString.indexOf('MM');
+        let dayIndex = formatString.indexOf('dd');
+        let hourIndex = formatString.indexOf('HH');
+        let minuteIndex = formatString.indexOf('mm');
+        let secondIndex = formatString.indexOf('ss');
+        let yyyy = yearIndex >= 0 ? parseInt(formattedString.substr(yearIndex, 4)) : 1970;
+        let MM = monthIndex >= 0 ? parseInt(formattedString.substr(monthIndex, 2)) - 1 : 0;
+        let dd = dayIndex >= 0 ? parseInt(formattedString.substr(dayIndex, 2)) : 1;
+        let HH = hourIndex >= 0 ? parseInt(formattedString.substr(hourIndex, 2)) : 0;
+        let mm = minuteIndex >= 0 ? parseInt(formattedString.substr(minuteIndex, 2)) : 0;
+        let ss = secondIndex >= 0 ? parseInt(formattedString.substr(secondIndex, 2)) : 0;
+
+        return new Date(yyyy, MM, dd, HH, mm, ss);
     }
 
     /**
