@@ -3481,15 +3481,33 @@ class ShuttingStarsCore {
             if(index >= this.selectedRecordList.length) index = 0;
             this.seeingRecord = this.selectedRecordList[index];
         } else if(key == this.arrowKeys[2]) { // LEFT
-            this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
-            if(this.backend == null) this.selectRecordType == 'local';
-            if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
-            else { this.selectedRecordList = this.getRecords(); }
+            if(this.backend != null && this.backend.avail && this.backend.logined) {
+                this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
+                if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
+                else { this.selectedRecordList = this.getRecords(); }
+                if(this.selectedRecordList.length <= 0) this.seeingRecord = null;
+                else this.seeingRecord = this.selectedRecordList[0];
+            } else {
+                if(this.selectRecordType != 'local') {
+                    this.selectedRecordList = this.getRecords();
+                    this.seeingRecord = this.selectedRecordList[0];
+                }
+                this.selectRecordType = 'local';
+            }
         } else if(key == this.arrowKeys[3]) { // RIGHT
-            this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
-            if(this.backend == null) { this.selectRecordType == 'local'; this.selectedRecordList = this.getRecords(); return; }
-            if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
-            else { this.selectedRecordList = this.getRecords(); }
+            if(this.backend != null && this.backend.avail && this.backend.logined) {
+                this.selectRecordType = (this.selectRecordType == 'local' ? 'internet' : 'local');
+                if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
+                else { this.selectedRecordList = this.getRecords(); }
+                if(this.selectedRecordList.length <= 0) this.seeingRecord = null;
+                else this.seeingRecord = this.selectedRecordList[0];
+            } else {
+                if(this.selectRecordType != 'local') {
+                    this.selectedRecordList = this.getRecords();
+                    this.seeingRecord = this.selectedRecordList[0];
+                }
+                this.selectRecordType = 'local';
+            }
         } else if(key == this.enterKey) { // ENTER
             if(this.seeingRecord == null) return;
             this.playSE('accept1');
