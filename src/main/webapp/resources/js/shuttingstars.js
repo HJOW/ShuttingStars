@@ -4757,7 +4757,6 @@ class ShuttingStarsCore {
         let currentIndex = 0;
         let songChoosen = null;
         let youtubeSongChoosed = null; // Youtube 기반 곡 선택 시 이 곳에 영상ID 탑재
-        let opacityOne = 0;
         opacity = 0.99;
 
         if(this.songChoosingMode == 'mission') { // MISSION
@@ -4775,18 +4774,11 @@ class ShuttingStarsCore {
             }
 
             currentRow = centerY - (  (row1Height * (this.missions.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-            opacityOne = ( 0.5 / (this.missions.length + currentIndex) );
-            opacity = 0.5 - opacityOne;
 
             // 미션 목록 3번 출력
             for(jdx=0; jdx<3; jdx++) {
                 for(idx=0; idx<this.missions.length; idx++) {
                     let missionOne = this.missions[idx];
-
-                    if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                        currentRow += row1Height;
-                        continue;
-                    }
 
                     let choosen = (jdx == 1 && this.missionChoosing == missionOne);
                     if(choosen) {
@@ -4798,11 +4790,20 @@ class ShuttingStarsCore {
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
                     }
 
+                    // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
+                    const distanceFromCenter = Math.abs(Math.floor( jdx == 0 ? ( (idx - ( currentIndex + this.missions.length )) ) : (jdx == 1 ? (idx - currentIndex) : ( (( this.missions.length ) - (currentIndex - idx)) )) ));
+                    opacity = (distanceFromCenter <= 0.1 ? 0.99 : (distanceFromCenter <= 1.1 ? 0.49 : ( distanceFromCenter <= 2.1 ? 0.245 : ( distanceFromCenter <= 3.1 ? 0.1245 : 0.051225 ) )));
+
                     // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
                     if(! this.screenDirLandscape) {
                         if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3, false)) {
                             opacity = opacity / 4;
                         }
+                    }
+
+                    // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 더 흐리게
+                    if(currentRow + row1Height < rows) {
+                        opacity = opacity / 2.0;
                     }
 
                     // 미션 이름 출력
@@ -4821,8 +4822,6 @@ class ShuttingStarsCore {
                     }
 
                     currentRow += row1Height;
-                    if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
-                    else opacity -= opacityOne;
                     if(opacity >= 0.99) opacity = 0.99;
                     if(opacity <= 0) opacity = 0.0;
                 }
@@ -4842,18 +4841,11 @@ class ShuttingStarsCore {
             }
 
             currentRow = centerY - (  (row1Height * (numberArray.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-            opacityOne = ( 0.5 / (numberArray.length + currentIndex) );
-            opacity = 0.5 - opacityOne;
 
             // 난이도 목록 출력 (현재 선택된 난이도가 중앙에 표기되도록) - 3번 출력 (레벨 1 선택된 경우, 그 위로 19, 18이 떠야 하므로)
             for(jdx=0; jdx<3; jdx++) {
                 for(idx=0; idx<numberArray.length; idx++) {
                     let diffOne = numberArray[idx];
-
-                    if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                        currentRow += row1Height;
-                        continue;
-                    }
 
                     let choosen = (jdx == 1 && this.difficultyLevel == diffOne);
                     if(choosen) {
@@ -4865,11 +4857,20 @@ class ShuttingStarsCore {
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
                     }
 
+                    // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
+                    const distanceFromCenter = Math.abs(Math.floor( jdx == 0 ? ( (idx - ( currentIndex + numberArray.length )) ) : (jdx == 1 ? (idx - currentIndex) : ( (( numberArray.length ) - (currentIndex - idx)) )) ));
+                    opacity = (distanceFromCenter <= 0.1 ? 0.99 : (distanceFromCenter <= 1.1 ? 0.49 : ( distanceFromCenter <= 2.1 ? 0.245 : ( distanceFromCenter <= 3.1 ? 0.1245 : 0.051225 ) )));
+
                     // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
                     if(! this.screenDirLandscape) {
                         if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3, false)) {
                             opacity = opacity / 4;
                         }
+                    }
+
+                    // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 더 흐리게
+                    if(currentRow + row1Height < rows) {
+                        opacity = opacity / 2.0;
                     }
 
                     // 난이도 목록 출력
@@ -4888,8 +4889,6 @@ class ShuttingStarsCore {
                     }
 
                     currentRow += row1Height;
-                    if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
-                    else opacity -= opacityOne;
                     if(opacity >= 0.99) opacity = 0.99;
                     if(opacity <= 0) opacity = 0.0;
                 }
@@ -4910,18 +4909,11 @@ class ShuttingStarsCore {
             }
 
             currentRow = centerY - (  (row1Height * (this.songDisplays.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-            opacityOne = ( 0.5 / (this.songDisplays.length + currentIndex) );
-            opacity = 0.5 - opacityOne;
 
             // 곡 목록 3번 출력
             for(jdx=0; jdx<3; jdx++) {
                 for(idx=0; idx<this.songDisplays.length; idx++) {
                     let songOne = this.songDisplays[idx];
-
-                    if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                        currentRow += row1Height;
-                        continue;
-                    }
 
                     let choosen = (jdx == 1 && this.songChoosing == songOne);
                     if(choosen) {
@@ -4939,11 +4931,20 @@ class ShuttingStarsCore {
                         }
                     }
 
+                    // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
+                    const distanceFromCenter = Math.abs(Math.floor( jdx == 0 ? ( (idx - ( currentIndex + this.songDisplays.length )) ) : (jdx == 1 ? (idx - currentIndex) : ( (( this.songDisplays.length ) - (currentIndex - idx)) )) ));
+                    opacity = (distanceFromCenter <= 0.1 ? 0.99 : (distanceFromCenter <= 1.1 ? 0.49 : ( distanceFromCenter <= 2.1 ? 0.245 : ( distanceFromCenter <= 3.1 ? 0.1245 : 0.051225 ) )));
+
                     // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
                     if(! this.screenDirLandscape) {
                         if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3)) {
                             opacity = opacity / 4;
                         }
+                    }
+
+                    // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 더 흐리게
+                    if(currentRow + row1Height < rows) {
+                        opacity = opacity / 2.0;
                     }
 
                     // 곡 이름 출력
@@ -5018,8 +5019,6 @@ class ShuttingStarsCore {
                     }
 
                     currentRow += row1Height;
-                    if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
-                    else opacity -= opacityOne;
                     if(opacity >= 0.99) opacity = 0.99;
                     if(opacity <= 0) opacity = 0.0;
                 }
@@ -5194,7 +5193,7 @@ class ShuttingStarsCore {
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
-        else this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
+        else this.ctx.strokeText(lefts + this.trans('Choose your song to listen !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         rows += (this.metricSize3 * 2) + (gap);
 
         // 곡 목록이 빈 경우 처리
@@ -5223,7 +5222,6 @@ class ShuttingStarsCore {
         let songChoosen = null;
         let youtubeSongChoosed = null; // Youtube 기반 곡 선택 시 이 곳에 영상ID 탑재
         let seeListenSelectedSong = false;
-        let opacityOne = 0;
         opacity = 0.99;
 
         //     곡을 선택하지 않은 상태인 경우 첫 곡을 출력
@@ -5237,24 +5235,15 @@ class ShuttingStarsCore {
             if(this.songCanListen[idx] == this.songChoosing) { currentIndex = idx; break; }
         }
 
+        currentRow = centerY - (  (row1Height * (this.songCanListen.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+
         // 곡 목록 3번 출력
         for(jdx=0; jdx<3; jdx++) {
-            if(jdx == 0) {
-                currentRow = centerY - (  (row1Height * (this.songCanListen.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-                opacityOne = ( 0.5 / (this.songCanListen.length + currentIndex) );
-                opacity = 0.5 - opacityOne;
-            }
             for(idx=0; idx<this.songCanListen.length; idx++) {
                 let songOne = this.songCanListen[idx];
 
                 // 재생 목록에 이미 포함됐는지 여부
                 const listenSelected = (this.listeningSongList.indexOf(songOne) >= 0);
-
-
-                if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                    currentRow += row1Height;
-                    continue;
-                }
 
                 let choosen = (jdx == 1 && this.songChoosing == songOne);
                 if(choosen) {
@@ -5272,11 +5261,20 @@ class ShuttingStarsCore {
                     }
                 }
 
+                // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
+                const distanceFromCenter = Math.abs(Math.floor( jdx == 0 ? ( (idx - ( currentIndex + this.songCanListen.length )) ) : (jdx == 1 ? (idx - currentIndex) : ( (( this.songCanListen.length ) - (currentIndex - idx)) )) ));
+                opacity = (distanceFromCenter <= 0.1 ? 0.99 : (distanceFromCenter <= 1.1 ? 0.49 : ( distanceFromCenter <= 2.1 ? 0.245 : ( distanceFromCenter <= 3.1 ? 0.1245 : 0.051225 ) )));
+
                 // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
                 if(! this.screenDirLandscape) {
                     if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3)) {
-                        opacity = opacity / 4;
+                        opacity = opacity / 4.0;
                     }
+                }
+
+                // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 더 흐리게
+                if(currentRow + row1Height < rows) {
+                    opacity = opacity / 2.0;
                 }
 
                 // 곡 이름 출력
@@ -5312,8 +5310,6 @@ class ShuttingStarsCore {
                 }
 
                 currentRow += row1Height;
-                if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
-                else opacity -= opacityOne;
                 if(opacity >= 0.99) opacity = 0.99;
                 if(opacity <= 0) opacity = 0.0;
             }
@@ -5897,7 +5893,6 @@ class ShuttingStarsCore {
         let currentIndex = 0;
         let recordChoosen = null;
         let youtubeSongChoosed = null; // Youtube 기반 곡 선택 시 이 곳에 영상ID 탑재
-        let opacityOne = 0;
         opacity = 0.99;
 
         // 1개 행 높이 사전 계산
@@ -5923,9 +5918,8 @@ class ShuttingStarsCore {
             if(this.selectedRecordList[idx] == this.seeingRecord) { currentIndex = idx; break; }
         }
 
-        currentRow = ( centerY - (row1Height / 2) + (this.metricSize1 / 2) ) - (  (row1Height * (this.selectedRecordList.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-        opacityOne = ( 0.5 / (this.selectedRecordList.length + currentIndex) );
-        opacity = 0.5 - opacityOne;
+        // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
+        currentRow = ( centerY - (row1Height / 2) + (this.metricSize1 / 2) ) - (  (row1Height * (this.selectedRecordList.length + currentIndex)));
 
         // 3회 출력
         for(jdx=0; jdx<3; jdx++) {
@@ -5933,14 +5927,9 @@ class ShuttingStarsCore {
             for(idx=0; idx<this.selectedRecordList.length; idx++) {
                 const recordOne = this.selectedRecordList[idx];
 
-                if(currentRow + row1Height < rows) { // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 출력하지 않음
-                    currentRow += row1Height;
-                    continue;
-                }
-
                 let upperY = 0;
                 const choosen = (jdx == 1 && this.seeingRecord == recordOne);
-
+                
                 // 현재 선택된 기록이 보일 구역에 배경 출력
                 if(choosen) {
                     recordChoosen = recordOne;
@@ -5951,12 +5940,20 @@ class ShuttingStarsCore {
                     this.ctx.fillRect(this.getLeftMarginPage(), centerY - (row1Height / 2), this.convertX(this.getStageWidth()), row1Height);
                 }
 
-                opacity = 0.99;
+                // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
+                const distanceFromCenter = Math.abs(Math.floor( jdx == 0 ? ( (idx - ( currentIndex + this.selectedRecordList.length )) ) : (jdx == 1 ? (idx - currentIndex) : ( (( this.selectedRecordList.length ) - (currentIndex - idx)) )) ));
+                opacity = (distanceFromCenter <= 0.1 ? 0.99 : (distanceFromCenter <= 1.1 ? 0.49 : ( distanceFromCenter <= 2.1 ? 0.245 : ( distanceFromCenter <= 3.1 ? 0.1245 : 0.051225 ) )));
+
                 // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
                 if(! this.screenDirLandscape) {
                     if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3, false)) {
-                        opacity = opacity / 4;
+                        opacity = opacity / 4.0;
                     }
+                }
+
+                // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 더 흐리게
+                if(currentRow + row1Height < rows) {
+                    opacity = opacity / 2.0;
                 }
 
                 if(choosen) { currentRow = centerY - (this.metricSize1 / 2); }
@@ -6012,11 +6009,16 @@ class ShuttingStarsCore {
                 this.ctx.textAlign = "center";
                 this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
                 label = recordOne.rank;
-                this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', ' + opacity + ')');
+                let colorRank = this.judgeResultRankColor(recordOne.rank);
+                this.ctx.fillStyle = this.convertColor('rgba(' + colorRank + ', ' + opacity + ')');
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY);
+                if(choosen && recordOne.rank == 'A') { // A color is silver which can be invisible in selected (white background)
+                    if(this.dark) colorRank = '80, 80, 80';
+                    else          colorRank = '200, 200, 200';
+                    this.ctx.strokeStyle = this.convertColor('rgba(' + colorRank + ', ' + opacity + ')');
+                    this.ctx.strokeText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY);
+                }
 
-                if(jdx == 0 || (jdx == 1 && idx < currentIndex)) opacity += opacityOne;
-                else opacity -= opacityOne;
                 if(opacity >= 0.99) opacity = 0.99;
                 if(opacity <= 0) opacity = 0.0;
             }
