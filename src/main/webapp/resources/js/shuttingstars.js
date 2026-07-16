@@ -4570,7 +4570,7 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = 'left';
         rows = this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3);
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), rows);
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), rows);
 
         // Copyright, 빌드 번호 출력
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
@@ -5050,7 +5050,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
         
         // 선택 곡 상세 정보 (Description) 출력
         let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
@@ -5346,7 +5346,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
         
         // 선택 곡 상세 정보 (Description) 출력
         let descX = Math.floor(this.canvas.width * 2.7 / 4.0);
@@ -6048,7 +6048,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight() - (this.metricSize2 * 1.5), false));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
     }
 
     /**
@@ -6404,7 +6404,7 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
         this.ctx.textAlign = "left";
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 10), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
     }
 
     /**
