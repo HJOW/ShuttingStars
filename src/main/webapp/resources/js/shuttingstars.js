@@ -2773,6 +2773,8 @@ class ShuttingStarsCore {
             index--;
             if(index < 0) index = this.menuListDynamic.length - 1;
             this.menuChoosing = this.menuListDynamic[index];
+
+            this.accessililityLog('Menu cursor moved to ' + (index+1) + ' (' + this.menuChoosing + ')');
         } else if(key == this.arrowKeys[1]) { // DOWN
             index++;
             if(index >= this.menuListDynamic.length) index = 0;
@@ -2785,6 +2787,7 @@ class ShuttingStarsCore {
                 }
             }
             
+            this.accessililityLog('Menu cursor moved to ' + (index+1) + ' (' + this.menuChoosing + ')');
         } else if(key == this.enterKey) { // ENTER
             if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
                 this.audio = null;
@@ -2867,10 +2870,13 @@ class ShuttingStarsCore {
             if(this.isCommandInputProgressing() >= 0) {
                 this.commandInputs = []; // 커맨드 입력 내용 지우기
                 return;
-            }
+            } // this.accessililityLog('Select difficulty for ' + this.song.name);
 
             // 그외의 경우
-            if(this.difficultyChoosing) { this.difficultyChoosing = false; } // 난이도 선택 중인 경우 - 난이도 선택 해제 (다시 곡 선택 모드로)
+            if(this.difficultyChoosing) { // 난이도 선택 중인 경우 - 난이도 선택 해제 (다시 곡 선택 모드로)
+                this.difficultyChoosing = false; 
+                this.accessililityLog('Back to song choosing...');
+            }
             else { this.setState('menu'); } // 그외의 경우 - 이전 화면인 메뉴로 이동
             return;
         }
@@ -2878,11 +2884,13 @@ class ShuttingStarsCore {
         // 곡이 아무것도 준비 안된 상태로 키를 누름
         if((this.songDisplays.length <= 0 && this.songChoosingMode == 'default') || (this.missions.length <= 0 && this.songChoosingMode == 'mission')) {
             if(key == this.enterKey || key == this.escKey) {
+                this.accessililityLog('No song available. Returning to menu.');
                 this.setState('menu'); 
             } else {
                 if(  this.songChoosingMode == 'mission') this.songChoosingMode = 'mysong';
                 else                                     this.songChoosingMode = 'mission';
                 if(this.songChoosingMode == 'mysong' && this.difficultyLevel < 0) this.difficultyLevel = 1;
+                this.accessililityLog('Not enough content available. Switching to ' + this.songChoosingMode + ' mode.');
             }
             return;
         }
@@ -2907,16 +2915,20 @@ class ShuttingStarsCore {
                 index--;
                 if(index < 0) index = this.missions.length - 1;
                 this.missionChoosing = this.missions[index];
+                this.accessililityLog('Mission cursor moved to ' + (index+1) + ' (' + this.missionChoosing.name + ')');
             } else if(key == this.arrowKeys[1]) { // DOWN
                 index++;
                 if(index >= this.missions.length) index = 0;
                 this.missionChoosing = this.missions[index];
+                this.accessililityLog('Mission cursor moved to ' + (index+1) + ' (' + this.missionChoosing.name + ')');
             } else if(key == this.arrowKeys[2]) { // LEFT
                 this.songChoosingMode = 'default';
                 if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+                this.accessililityLog('Default Stage Mode');
             } else if(key == this.arrowKeys[3]) { // RIGHT
                 this.songChoosingMode = 'mysong';
                 if(this.difficultyLevel < 0) this.difficultyLevel = 1;
+                this.accessililityLog('My Song Mode');
             } else if(key == this.enterKey) { // ENTER
                 if(this.missionChoosing == null) return;
                 this.playSE('accept2');
@@ -2950,13 +2962,17 @@ class ShuttingStarsCore {
             } else if(key == this.arrowKeys[0]) { // UP
                 this.difficultyLevel--;
                 if(this.difficultyLevel < 1) this.difficultyLevel = 19;
+                this.accessililityLog('My Song Mode difficulty level changed to ' + this.difficultyLevel);
             } else if(key == this.arrowKeys[1]) { // DOWN
                 this.difficultyLevel++;
                 if(this.difficultyLevel > 19) this.difficultyLevel = 1;
+                this.accessililityLog('My Song Mode difficulty level changed to ' + this.difficultyLevel);
             } else if(key == this.arrowKeys[2]) { // LEFT
                 this.songChoosingMode = 'mission';
+                this.accessililityLog('Mission Mode');
             } else if(key == this.arrowKeys[3]) { // RIGHT
                 this.songChoosingMode = 'default';
+                this.accessililityLog('Default Stage Mode');
             }
 
         } else {
@@ -2996,12 +3012,14 @@ class ShuttingStarsCore {
                     index--;
                     if(index < 0) index = this.songDisplays.length - 1;
                     this.songChoosing = this.songDisplays[index];
+                    this.accessililityLog('Song cursor moved to ' + (index+1) + ' (' + this.songChoosing.name + ')');
                 }
             } else if(key == this.arrowKeys[1]) { // DOWN
                 if(! this.difficultyChoosing) {
                     index++;
                     if(index >= this.songDisplays.length) index = 0;
                     this.songChoosing = this.songDisplays[index];
+                    this.accessililityLog('Song cursor moved to ' + (index+1) + ' (' + this.songChoosing.name + ')');
                 }
             } else if(key == this.arrowKeys[2]) { // LEFT
                 if(this.difficultyChoosing) {
@@ -3010,18 +3028,24 @@ class ShuttingStarsCore {
                     this.difficulty = this.difficultyChoosingList[index];
                     this.difficultyLevel = this.difficulty.difficultyLevel;
                     this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+                    this.accessililityLog('Difficulty cursor moved to ' + this.difficulty.difficultyLabel + ' (' + this.difficulty.difficultyLevel + ')');
                 } else {
                     this.songChoosingMode = 'mysong';
                     if(this.difficultyLevel < 0) this.difficultyLevel = 1;
+                    this.accessililityLog('My Song Mode');
                 }
             } else if(key == this.arrowKeys[3]) { // RIGHT
                 if(this.difficultyChoosing) {
                     index++;
                     if(index >= this.difficultyChoosingList.length) index = 0;
                     this.difficulty = this.difficultyChoosingList[index];    
+                    this.difficultyLevel = this.difficulty.difficultyLevel;
+                    this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+                    this.accessililityLog('Difficulty cursor moved to ' + this.difficulty.difficultyLabel + ' (' + this.difficulty.difficultyLevel + ')');
                 } else {
                     this.songChoosingMode = 'mission';
                     if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+                    this.accessililityLog('Mission Mode');
                 }
             } else if(key == this.enterKey) {
                 if(this.songChoosing == null) return;
@@ -3046,6 +3070,8 @@ class ShuttingStarsCore {
                     this.difficultyLevel = this.difficulty.difficultyLevel;
                     this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
                     this.difficultyChoosing = true;
+                    this.accessililityLog('Select difficulty for ' + this.song.name);
+                    this.accessililityLog('Difficulty cursor is now ' + this.difficulty.difficultyLabel + ' (' + this.difficulty.difficultyLevel + ')');
                 }
             }
         }
@@ -3091,20 +3117,23 @@ class ShuttingStarsCore {
                 break;
             }
         }
+
+        const listenIdx = this.listeningSongList.indexOf(this.songChoosing);
         
         // 키 적용
         if(key == this.arrowKeys[0]) { // UP
             index--;
             if(index < 0) index = this.songCanListen.length - 1;
             this.songChoosing = this.songCanListen[index];
+            this.accessililityLog('Song cursor moved to ' + (index+1) + ' (' + this.songChoosing.name + ')' + (listenIdx >= 0 ? ' (Already in listening list)' : ''));
         } else if(key == this.arrowKeys[1]) { // DOWN
             index++;
             if(index >= this.songCanListen.length) index = 0;
             this.songChoosing = this.songCanListen[index];
+            this.accessililityLog('Song cursor moved to ' + (index+1) + ' (' + this.songChoosing.name + ')' + (listenIdx >= 0 ? ' (Already in listening list)' : ''));
         } else if(key == this.keyList[1]) { // D
             if(this.songChoosing == null) return;
 
-            const listenIdx = this.listeningSongList.indexOf(this.songChoosing);
             if(this.songCanListen.indexOf(this.songChoosing) < 0) { // 현재 선택된 곡이 감상 가능한 곡이 아닌 경우 - 취소 처리 및 재생 목록에서도 제거
                 this.playSE('cancel');
                 this.songChoosing = this.songCanListen[0];
@@ -3112,11 +3141,13 @@ class ShuttingStarsCore {
             } else {
                 if(listenIdx >= 0) {
                     this.playSE('cancel');
-                    this.song = null;
+                    this.songChoosing = null;
                     this.listeningSongList.splice(listenIdx, 1);
+                    this.accessililityLog('Song removed from listening list');
                 } else {
                     this.playSE('accept1');
                     this.listeningSongList.push(this.songChoosing);
+                    this.accessililityLog('Song added to listening list');
                 }
             }
         } else if(key == this.enterKey) {
@@ -10288,8 +10319,8 @@ class ShuttingStarsCore {
             this.accessililityLog('ShuttingStars - Screen for first setting. Press ENTER key three times, then you can get into the menu screen.');
         } else if(this.state == 'menu') {
             this.accessililityLog('ShuttingStars - Menu screen.');
-            for(let idx=0; idx<this.menuList.length; idx++) {
-                const menuKeyword = this.menuList[idx];
+            for(let idx=0; idx<this.menuListDynamic.length; idx++) {
+                const menuKeyword = this.menuListDynamic[idx];
 
                 if(menuKeyword == 'play') {
                     this.accessililityLog('    Menu ' + (idx + 1) + ": Play." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
@@ -10329,6 +10360,7 @@ class ShuttingStarsCore {
             this.accessililityLog('    Song : ' + this.song.name);
             this.accessililityLog('    Composer : ' + this.song.composer);
             this.accessililityLog('    Note Writer : ' + this.song.noteWriter);
+            this.accessililityLog('    BPM : ' + this.song.bpm);
             this.accessililityLog('    Difficulty : ' + this.difficultyLevel);
         } else if(this.state == 'playing') {
             this.accessililityLog('ShuttingStars - Game is started.');
@@ -10354,6 +10386,10 @@ class ShuttingStarsCore {
             this.accessililityLog('Arrow keys to move up and down, ENTER key to select. ESC key to go back.');
         } else if(this.state == 'listentitle') {
             this.accessililityLog('ShuttingStars - Song title screen. The song will be start soon.');
+            this.accessililityLog('    Song : ' + this.song.name);
+            this.accessililityLog('    Composer : ' + this.song.composer);
+            this.accessililityLog('    Note Writer : ' + this.song.noteWriter);
+            this.accessililityLog('    BPM : ' + this.song.bpm);
         } else if(this.state == 'setting') {
             this.accessililityLog('ShuttingStars - Setting screen.');
         } else if(this.state == 'credit') {
