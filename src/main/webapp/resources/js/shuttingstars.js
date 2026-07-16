@@ -102,8 +102,6 @@ class ShuttingStarsCore {
     rootDiv = null;
     /** @type {HTMLElement|null} 위 rootDiv 를 div로 한번 더 감싼 div */
     contentRoot = null;
-    /** @type {HTMLElement|null} jsonp를 위한 script 태그가 들어갈 div 영역 */
-    divJsonp = null;
     /** @type {HTMLElement|null} 유튜브 영역 (미사용 시 투명) */
     youtubeDiv = null;
     /** @type {HTMLVideoElement|null} 2D 캔버스 아래에 위치한 video 태그로, 곡 플레이 시 해당 곡의 BGA가 재생되는 영역 */
@@ -122,6 +120,8 @@ class ShuttingStarsCore {
     };
     /** @type {HTMLElement|null} 상세 설정 화면 영역 */
     configDiv = null;
+    /** @type {HTMLElement|null} 웹 접근성을 위한 영역 */
+    accessibilityLayer = null;
 
     /*** DOM 영역 변수들 (Canvas 객체들) ***/
     /** @type {HTMLCanvasElement|null} 2D 캔버스 객체 (메인 게임 동작) */
@@ -299,7 +299,7 @@ class ShuttingStarsCore {
     usingWorker = true;
     /** @type {boolean} Worker 사용여부 (사용자가 변경 가능) */
     usingWorkerConfig = true;
-    /** @type {number|null} 시간 진행 타이머 키가 들어가는 변수 */
+    /** @type {Function|null} 반복 진행 종료 함수가 들어가는 변수 */
     timeProgressKey = null;
     /** @type {boolean} 상태가 title 이면서 로딩은 끝났음을 나타내는 변수 */
     titleScreenWaiting = false;
@@ -638,6 +638,9 @@ class ShuttingStarsCore {
         board : './community/board.html' // 'http://wo.to/board/board.php?id=a.5.hujinone11'
     }
 
+    /** @type {Array<function(): void>} destroy 호출 시 호출해야 할 함수 리스트 */
+    onDestroyTasks = [];
+
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
     /** @type {function(): number} 플랫폼별 브라우저 외부 너비를 반환하는 함수 */
     fOuterWidth  = function() { return window.outerWidth;  }
@@ -738,15 +741,15 @@ class ShuttingStarsCore {
             this.logInit('root div prepared. ss inside dom creating....');
 
             let htmls = `
-                <div class='shuttingstars_canvas_root'>              
-                    <div class='shuttingstars_canvas_content_root'>
+                <div class='shuttingstars_canvas_root'>           
+                    <div class='shuttingstars_webaccessibility_layer sr_only only_for_screenreader'></div>   
+                    <div class='shuttingstars_canvas_content_root' aria-hidden='true'>
                         <video class='shuttingstars_bga' preload='metadata'></video>
                         <div class='shuttingstars_youtubes invisible'></div>
                         <canvas class='shuttingstars_canvas'></canvas>   
                         <canvas class='shuttingstars_canvas_3d'></canvas>
-                        <div class='shuttingstars_pop_root'></div>
                     </div>
-                    <div type='text/javascript' class='shuttingstars_jsonp_script_root invisible'></div>
+                    <div class='shuttingstars_pop_root'></div>
                 </div>                                     
             `;
             rootDiv.innerHTML = htmls;
@@ -754,7 +757,7 @@ class ShuttingStarsCore {
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
             this.videoBga    = rootDiv.querySelector('.shuttingstars_bga');
             this.youtubeDiv  = rootDiv.querySelector('.shuttingstars_youtubes');
-            this.divJsonp    = rootDiv.querySelector('.shuttingstars_jsonp_script_root');
+            this.accessibilityLayer = rootDiv.querySelector('.shuttingstars_webaccessibility_layer');
 
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
@@ -779,6 +782,7 @@ class ShuttingStarsCore {
                 .shuttingstars_root { width: 100%; margin: 0; padding: 0; background: transparent; }
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
+                .shuttingstars_root .only_for_screenreader { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: polygon(0 0, 0 0, 0 0); white-space: nowrap; left: -19999px; top: -19999px; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .shuttingstars_root.ss_backend_guest   .ss_only_for_login_user { display: none !important; }
                 .shuttingstars_root.ss_backend_logined .ss_only_for_guest      { display: none !important; }
@@ -1020,31 +1024,35 @@ class ShuttingStarsCore {
                     selfs.simultaneousWork();
                 }
             } else {
-                ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime);
-                ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(); }, 20);
+                this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime));
+                this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(); }, 20));
             }
 
             this.logInit('setting events...');
 
-            // 키보드 키 누르기 시작하는 이벤트 부여
-            document.addEventListener('keydown', (event) => {
+            // 키보드 키 누르기 / 떼기 이벤트 부여
+            const fKeyDown = (event) => {
                 if(selfs.createMode) return;
                 if(selfs.keypressTiming <= 0) {
                     selfs.handleKeyInput(event.key.toUpperCase(), true);
                 } else {
                     setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase(), true); }, selfs.keypressTiming);
                 }
-            });
-
-            // 키보드 키에서 손가락 떼는 이벤트 부여
-            document.addEventListener('keyup', (event) => {
+            };
+            const fKeyUp = (event) => {
                 if(selfs.createMode) return;
                 if(selfs.keypressTiming <= 0) {
                     selfs.handleKeyRelease(event.key.toUpperCase(), true);
                 } else {
-                    setTimeout(() => { selfs.handleKeyInput(event.key.toUpperCase(), true); }, selfs.keypressTiming);
+                    setTimeout(() => { selfs.handleKeyRelease(event.key.toUpperCase(), true); }, selfs.keypressTiming);
                 }
-            });
+            };
+
+            document.addEventListener('keydown', fKeyDown);
+            document.addEventListener('keyup', fKeyUp);
+
+            this.onDestroyTasks.push(() => { document.removeEventListener('keydown', fKeyDown); });
+            this.onDestroyTasks.push(() => { document.removeEventListener('keyup'  , fKeyUp); });
 
             // 마우스 이벤트 공통사항
             const fMouseClickConversion = function(event, mouseDown) {
@@ -1220,6 +1228,7 @@ class ShuttingStarsCore {
         setTimeout(() => {
             selfs.handleScreenResized();
             selfs.titleScreenWaiting = true;
+            selfs.accessililityLog('Press ENTER key to continue.');
         }, 6000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
@@ -1330,6 +1339,9 @@ class ShuttingStarsCore {
         if(this.backend != null) {
             try { this.backend.logEvent('STATE ' + state); } catch(ignores) {}
         }
+
+        // 웹 접근성 관련 처리
+        this.processWebAccessibility(state);
     }
 
     /**
@@ -1446,7 +1458,11 @@ class ShuttingStarsCore {
             selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
         }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
-        this.broker.officialSongSerials = this.officialSongSerials;
+        this.broker.destroy = function() { selfs.destroy(); };
+        this.broker.officialSongSerials = [];
+        for(let idx=0; idx<this.officialSongSerials.length; idx++) {
+            this.broker.officialSongSerials.push(this.officialSongSerials[idx]);
+        }
         return this.broker;
     }
 
@@ -10216,6 +10232,145 @@ class ShuttingStarsCore {
             }
         }
         fAfter();
+    }
+
+    /**
+     * 웹 접근성 영역에 스크린 리더기용 메시지 추가 (+ 10건 넘어가면 오래된 것부터 삭제)
+     * 
+     * @param {string} message 
+     */
+    accessililityLog(message) {
+        if(typeof(message) != 'string') message = '' + message;
+        const leftsCount = 30; // 남길 갯수
+        
+        // 오래된 메시지 먼저 삭제
+        const areas = this.accessibilityLayer.querySelectorAll('.div_accessibility_log');
+        if(areas.length >= leftsCount) {
+            for(let idx=0; idx<areas.length-leftsCount+1; idx++) {
+                const areaOne = areas[idx];
+                if(areaOne.parentNode != null) areaOne.parentNode.removeChild(areaOne);
+            }
+        }
+
+        // 메시지 추가
+        const div = document.createElement('div');
+        div.classList.add('div_accessibility_log');
+        div.classList.add('sr_only');
+        div.classList.add('only_for_screenreader');
+        div.innerText = message;
+        div.setAttribute('aria-live', 'polite');
+        this.accessibilityLayer.appendChild(div);
+    }
+
+    /**
+     * state (화면) 변경 시마다 호출되며, 현재 화면에 대해 웹 접근성 영역에 메시지로 설명을 출력 (accessililityLog 사용)
+     */
+    processWebAccessibility() {
+        if(this.state == 'title') {
+            this.accessililityLog('ShuttingStars - Game title screen. The game is loading...');
+        } else if(this.state == 'firstset') {    
+            this.accessililityLog('ShuttingStars - Screen for first setting. Press ENTER key three times, then you can get into the menu screen.');
+        } else if(this.state == 'menu') {
+            this.accessililityLog('ShuttingStars - Menu screen.');
+            for(let idx=0; idx<this.menuList.length; idx++) {
+                const menuKeyword = this.menuList[idx];
+
+                if(menuKeyword == 'play') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Play." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                } else if(menuKeyword == 'setting') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Setting." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'listen') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Listen." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'credit') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Credit." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'community') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Community." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'records') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Records." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'login') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Login." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'logout') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Logout." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }  else if(menuKeyword == 'exit') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Exit." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                } else {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Not available yet." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                }
+                this.accessililityLog('Arrow keys to move up and down, ENTER key to select.');
+            }
+        } else if(this.state == 'songchoosing') {
+            this.accessililityLog('ShuttingStars - Song choosing screen for play.');
+            this.accessililityLog('Arrow keys to move up and down, ENTER key to select. ESC key to go back.');
+            if(this.songChoosingMode == 'default') {
+                this.accessililityLog('    Default mode is selected. You can select a song and its difficulty to play.');
+            } else if(this.songChoosingMode == 'mission') {
+                this.accessililityLog('    Mission mode is selected. You can select a mission to play.');
+            } else {
+                this.accessililityLog('    MY-SONG mode is selected. First, you can select a difficulty. Then, you can select your own mp3 file, and input this song\'s BPM, then you can play this song.');
+            }
+        } else if(this.state == 'songtitle') {
+            this.accessililityLog('ShuttingStars - Song title screen. The game will be start soon. Please ready.');
+            this.accessililityLog('    Song : ' + this.song.name);
+            this.accessililityLog('    Composer : ' + this.song.composer);
+            this.accessililityLog('    Note Writer : ' + this.song.noteWriter);
+            this.accessililityLog('    Difficulty : ' + this.difficultyLevel);
+        } else if(this.state == 'playing') {
+            this.accessililityLog('ShuttingStars - Game is started.');
+        } else if(this.state == 'gameover') {
+            this.accessililityLog('Game Over');
+        } else if(this.state == 'result') {
+            this.accessililityLog('ShuttingStars - Result');
+            this.accessililityLog('    Song : ' + this.song.name);
+            this.accessililityLog('    Composer : ' + this.song.composer);
+            this.accessililityLog('    Note Writer : ' + this.song.noteWriter);
+            this.accessililityLog('    Difficulty : ' + this.difficultyLevel);
+            this.accessililityLog('    PERFECT : ' + this.report.PERFECT);
+            this.accessililityLog('    GREAT : ' + this.report.GREAT);
+            this.accessililityLog('    GOOD : ' + this.report.GOOD);
+            this.accessililityLog('    BAD : ' + this.report.BAD);
+            this.accessililityLog('    MISS : ' + this.report.MISS);
+            this.accessililityLog('    SCORE : ' + ShuttingStarsUtility.fitDigit(this.point, 10)); // TODO
+            this.accessililityLog('    RANK : ' + this.judgeResultRank());
+
+            this.accessililityLog('ESC key to go back to menu.');
+        } else if(this.state == 'listenchoosing') {
+            this.accessililityLog('ShuttingStars - Song choosing screen for just listen.');
+            this.accessililityLog('Arrow keys to move up and down, ENTER key to select. ESC key to go back.');
+        } else if(this.state == 'listentitle') {
+            this.accessililityLog('ShuttingStars - Song title screen. The song will be start soon.');
+        } else if(this.state == 'setting') {
+            this.accessililityLog('ShuttingStars - Setting screen.');
+        } else if(this.state == 'credit') {
+            this.accessililityLog('ShuttingStars - Credit screen.');
+            this.accessililityLog('ESC key to go back.');
+            for(let idx=0; idx<this.creditContents.length; idx++) {
+                const creditOne = this.creditContents[idx];
+                this.accessililityLog(creditOne.label);
+            }
+        }
+    }
+
+    /** 
+     * init 의 역행. 게임을 종료시키고 화면에서 게임 제거.
+     *     게임 동작 과정에서 등록된 이벤트 모두 해제
+     */
+    destroy() {
+        try { this.clearTimeHandler();  } catch(e) {}
+        try { this.closeAudioSources(); } catch(e) {}
+
+        for(let idx=0; idx<this.onDestroyTasks.length; idx++) {
+            const taskOne = this.onDestroyTasks[idx];
+            try { taskOne(); } catch(e) { console.error(e); }
+        }
+        this.onDestroyTasks = [];
+
+        this.songs = [];
+        this.songDisplays = [];
+        this.songCanListen = [];
+        this.songRandoms = [];
+
+        this.rootDiv.innerHTML = '';
+        this.rootDiv = null;
     }
 }
 

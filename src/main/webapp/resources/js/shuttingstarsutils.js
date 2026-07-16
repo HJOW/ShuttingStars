@@ -252,6 +252,7 @@ class ShuttingStarsUtilityClass {
         };
         fResetBottom();
 
+        area.setAttribute('aria-live', 'assertive');
         document.body.appendChild(area);
         
         let times = 10000;
