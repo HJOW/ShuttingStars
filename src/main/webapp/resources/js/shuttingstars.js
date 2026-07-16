@@ -652,6 +652,8 @@ class ShuttingStarsCore {
     fAfterInit   = function(obj, coreInst) {  }
     /** @type {null|function(): void} null 입력 시 게임 종료 기능 비활성화 (기본값), 게임 종료 기능 지원 시 이 곳에 함수를 넣으면 메뉴에 게임 종료가 추가되고, 해당 메뉴 선택 시 함수가 호출됨 */
     fOnShutdownCalled = null;
+    /** @type {function(Object): void} 게임 동작 세부 사항마다 호출됨 */
+    fGameEvent = function(e) {}
 
     /**
      * 객체 생성 (초기화하려면 init 메소드까지 호출해야 함)
@@ -1245,6 +1247,7 @@ class ShuttingStarsCore {
             selfs.handleScreenResized();
             selfs.titleScreenWaiting = true;
             selfs.accessililityLog('Press ENTER key to continue.');
+            selfs.fGameEvent({ "event" : 'afterinit', "broker" : selfs.broker });
         }, 6000);
         // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
 
@@ -1358,6 +1361,9 @@ class ShuttingStarsCore {
 
         // 웹 접근성 관련 처리
         this.processWebAccessibility(state);
+
+        // 이벤트
+        this.fGameEvent({ "event" : 'statechanged', "broker" : this.broker, "state" : state, "before" : this.beforeState });
     }
 
     /**
@@ -1411,6 +1417,7 @@ class ShuttingStarsCore {
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
+        this.broker.fGameEvent              = this.fGameEvent              ;
         this.broker.apply = function(obj) {
 
             // createMode 는 한번 true 로 바꾸면 false 로 변경 못해야 함
@@ -1447,9 +1454,10 @@ class ShuttingStarsCore {
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
             if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
             if(typeof(obj.urlCtx                 ) != 'undefined') selfs.urlCtx                  = obj.urlCtx                  ;
-            if(typeof(obj.fOuterWidth            ) != 'undefined') selfs.fOuterWidth             = obj.fOuterWidth             ;
-            if(typeof(obj.fOuterHeight           ) != 'undefined') selfs.fOuterHeight            = obj.fOuterHeight            ;
-            if(typeof(obj.fOnShutdownCalled      ) != 'undefined') selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ;
+            if(typeof(obj.fOuterWidth            ) == 'function' ) selfs.fOuterWidth             = obj.fOuterWidth             ;
+            if(typeof(obj.fOuterHeight           ) == 'function' ) selfs.fOuterHeight            = obj.fOuterHeight            ;
+            if(typeof(obj.fOnShutdownCalled      ) == 'function' ) selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ;
+            if(typeof(obj.fGameEvent             ) == 'function' ) selfs.fGameEvent              = obj.fOnShutdownCalled       ;
             if(typeof(obj.songs                  ) != 'undefined') selfs.songs                   = obj.songs                   ;
         }
         this.broker.parseSong  = function(json) { return selfs.parseSong(json); }
@@ -1699,6 +1707,8 @@ class ShuttingStarsCore {
             if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
             else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
         }
+
+        this.fGameEvent({ "event" : 'resolutionchanged', "broker" : this.broker, "width" : w, "height" : h, "landscape" : this.screenDirLandscape });
     }
 
     /**
@@ -1960,7 +1970,7 @@ class ShuttingStarsCore {
         }
     }
 
-    /** Credit 불러오기 (Promise) */
+    /** 게임 내 재화 불러오기 (Promise) - 메뉴의 Credit 과 의미가 다름 ! */
     async loadCredit() {
         // antiMatterCredit 로컬에서 불러오기
         try {
@@ -2249,7 +2259,7 @@ class ShuttingStarsCore {
         return Math.round((60000 / bpm) / this.timeMultiplier);
     }
 
-    /** Credit 해시 검증값 계산 (Promise) */
+    /** 재화 해시 검증값 계산 (Promise) */
     async hashCredit(hashJson) {
         let hashPackage = String(hashJson['PERFECT']) + ':' + String(hashJson['GREAT']) + ':' + String(hashJson['GOOD']) + ':' + String(hashJson['BAD']) + ':' + String(hashJson['MISS']) + ':' + String(hashJson['maxCombo']) + ':' + String(hashJson['playCount']) + ":" + String(hashJson['used']);
         return await ShuttingStarsUtility.sha384str( hashPackage );
@@ -2278,6 +2288,8 @@ class ShuttingStarsCore {
         this.paused = false;
         this.gameOverDelayed = false;
         this.resumingTime = 0;
+
+        this.fGameEvent({ "event" : 'resetstage', "broker" : this.broker });
 
         // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
         if(this.state == 'songtitle' || this.state == 'listentitle') {
@@ -3909,6 +3921,8 @@ class ShuttingStarsCore {
         if(this.youtubePlayer != null) {
             this.youtubePlayer.pauseVideo();
         }
+
+        this.fGameEvent({ "event" : 'paused', "broker" : this.broker });
     }
 
     /**
@@ -3919,6 +3933,8 @@ class ShuttingStarsCore {
             this.resumingTime = this.resumeDelayTime * this.timeMultiplier;
             this.paused = false;
         }
+
+        this.fGameEvent({ "event" : 'resumewait', "broker" : this.broker, "timeAfter" : this.resumingTime });
     }
 
     /**
@@ -3935,11 +3951,13 @@ class ShuttingStarsCore {
      * @param {string} msg msg 값
      */
     confirm(msg) {
+        const selfs = this;
         return new Promise((resolve, reject) => {
-            this.afterConfirmCallback = function(yn) { resolve(yn); }
-            this.confirmMessage = String(msg);
-            this.confirmAsking = true;
-            this.confirmChoosingYes = false;
+            selfs.afterConfirmCallback = function(yn) { resolve(yn); }
+            selfs.confirmMessage = String(msg);
+            selfs.confirmAsking = true;
+            selfs.confirmChoosingYes = false;
+            selfs.accessililityLog(msg);
         });
     }
     
@@ -6431,6 +6449,7 @@ class ShuttingStarsCore {
         this.keyEventDisabled = true;
         this.pops.dim.classList.remove('invisible');
         this.pops.login.classList.remove('invisible');
+        this.fGameEvent({ "event" : 'loginpopupopen', "broker" : this.broker });
     }
 
     /** 커뮤니티 팝업 열기 */
@@ -6481,6 +6500,8 @@ class ShuttingStarsCore {
 
         // 영역 보이기
         area.classList.remove('invisible');
+
+        this.fGameEvent({ "event" : 'communitypopupopen', "broker" : this.broker });
     }
 
     /** iframe 팝업 열기 */
@@ -6502,6 +6523,8 @@ class ShuttingStarsCore {
         iframes.src = url;
 
         area.classList.remove('invisible');
+
+        this.fGameEvent({ "event" : 'iframepopupopen', "broker" : this.broker, "url" : url });
     }
 
     /** 유튜브 영상 팝업 열기 */
@@ -6559,6 +6582,8 @@ class ShuttingStarsCore {
         
         area.classList.remove('invisible');
         if(this.audioBackground != null) { this.audioBackground.pause(); }
+
+        this.fGameEvent({ "event" : 'youtubepopupopen', "broker" : this.broker, "videoId" : videoId });
     }
 
     /**
@@ -7487,8 +7512,6 @@ class ShuttingStarsCore {
                 if(this.ss3d != null) {
                     this.ss3d.onSongEnd(this);
                 }
-
-                return;
             } else {
                 // 곡 재생이 불가능 - 감상 곡 목록 화면으로 이동
                 this.setState('listenchoosing');
@@ -7583,6 +7606,8 @@ class ShuttingStarsCore {
                 this.ss3d.onSongEnd(this);
             }
         }
+
+        this.fGameEvent({ "event" : 'songend', "broker" : this.broker });
     }
 
     /**
@@ -7836,6 +7861,8 @@ class ShuttingStarsCore {
                     }
                 }, this.frameTime);
             }
+
+            this.fGameEvent({ "event" : '3dmanagerready', "broker" : this.broker });
         }
         else throw 'Only for ShuttingStars3DManager type !';
     }
@@ -10283,6 +10310,7 @@ class ShuttingStarsCore {
             if(typeof(callbackAfter) == 'function') callbackAfter();
             else location.reload();
         }
+        try { this.fGameEvent({ "event" : 'reset', "broker" : this.broker }); } catch(e) {}
         try { localStorage.setItem('shuttingstar_settings', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
         try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
