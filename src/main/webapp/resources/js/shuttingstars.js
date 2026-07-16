@@ -723,8 +723,14 @@ class ShuttingStarsCore {
                 this.logInit('duplicated root class names \'' + rootClassName + '\' !');
                 throw new Error('duplicated root class names \'' + rootClassName + '\' !');
             } else if(mayBeDuplDivs.length == 1 && rootDiv != mayBeDuplDivs[0]) {
-                this.logInit('duplicated root class names \'' + rootClassName + '\' !');
-                throw new Error('duplicated root class names \'' + rootClassName + '\' !');
+                if(rootDiv == null || typeof(rootDiv) == 'undefined') {
+                    rootDiv = mayBeDuplDivs[0];
+                } else if(rootDiv == mayBeDuplDivs[0]) {
+                    rootDiv = mayBeDuplDivs[0];
+                } else {
+                    this.logInit('duplicated root class names \'' + rootClassName + '\' !');
+                    throw new Error('duplicated root class names \'' + rootClassName + '\' !');
+                }
             }
 
             // 최상단 HTML 영역 체크 (없으면 생성)
@@ -1089,32 +1095,40 @@ class ShuttingStarsCore {
             };
 
             // 마우스 클릭 시작 이벤트 부여
-            this.canvas.addEventListener('mousedown', (event) => {
+            const fMouseDown = (event) => {
                 if(selfs.createMode) return;
                 const obj = fMouseClickConversion(event, true);
                 selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
-            });
+            };
+            this.canvas.addEventListener('mousedown', fMouseDown);
+            this.onDestroyTasks.push(() => { selfs.canvas.removeEventListener('mousedown', fMouseDown); });
 
             // 마우스 클릭 종료 이벤트 부여
-            this.canvas.addEventListener('mouseup', (event) => {
+            const fMouseUp = (event) => {
                 if(selfs.createMode) return;
                 const obj = fMouseClickConversion(event, false);
                 selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
-            });
+            };
+            this.canvas.addEventListener('mouseup', fMouseUp);
+            this.onDestroyTasks.push(() => { selfs.canvas.removeEventListener('mouseup', fMouseUp); });
 
             // 주 캔버스 위에 겹쳐져 있는 3D 장식용 캔버스에도 마우스 이벤트 동일하게 부여
             if(this.canvas3d != null) {
-                this.canvas3d.addEventListener('mousedown', (event) => {
+                const f3DMouseDown = (event) => {
                     if(selfs.createMode) return;
                     const obj = fMouseClickConversion(event, true);
                     selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
-                });
+                };
+                this.canvas3d.addEventListener('mousedown', f3DMouseDown);
+                this.onDestroyTasks.push(() => { selfs.canvas3d.removeEventListener('mousedown', f3DMouseDown); });
 
-                this.canvas3d.addEventListener('mouseup', (event) => {
+                const f3DMouseUp = (event) => {
                     if(selfs.createMode) return;
                     const obj = fMouseClickConversion(event, false);
                     selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
-                });
+                };
+                this.canvas3d.addEventListener('mouseup', f3DMouseUp);
+                this.onDestroyTasks.push(() => { selfs.canvas3d.removeEventListener('mouseup', f3DMouseUp); });
             }
 
             // 화면 크기 계산 - 화면 크기변경 이벤트 부여를 위해
@@ -1134,6 +1148,8 @@ class ShuttingStarsCore {
             // 창 크기 변경 이벤트로 등록
             try { window.addEventListener('resize'  , fResize); } catch(ew) { console.error(ew); }
             try { window.addEventListener("pageshow", fResize); } catch(ew) { console.error(ew); }
+            this.onDestroyTasks.push(() => { try { window.removeEventListener('resize'  , fResize); } catch(ew) { console.error(ew); } });
+            this.onDestroyTasks.push(() => { try { window.removeEventListener('pageshow', fResize); } catch(ew) { console.error(ew); } });
 
             this.logInit('setting configuration screens...');
 
@@ -10368,9 +10384,14 @@ class ShuttingStarsCore {
         this.songDisplays = [];
         this.songCanListen = [];
         this.songRandoms = [];
+        this.ss3d = null;
+        this.backend = null;
+        this.state = 'title';
+        this.titleScreenWaiting = false;
 
         this.rootDiv.innerHTML = '';
         this.rootDiv = null;
+        ShuttingStarsUtility.log('ShuttingStars - The game core has been destroyed.');
     }
 }
 
@@ -12293,6 +12314,13 @@ class ShuttingStarsManager {
     /** 빌드 번호 반환 */
     build() {
         return this.#originalInstances.build;
+    }
+
+    /**
+     * 게임 사용 중단, 초기화 이전으로 되돌림
+     */
+    destroy() {
+        this.#originalInstances.destroy();
     }
 
     /**
