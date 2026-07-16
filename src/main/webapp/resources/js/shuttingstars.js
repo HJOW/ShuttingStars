@@ -1468,10 +1468,32 @@ class ShuttingStarsCore {
             selfs.songTitleTime = selfs.songTitleBaseTime;
             if(! isNaN(selfs.song.loadingTime)) selfs.songTitleTime += selfs.song.loadingTime;
 
-            // 곡 플레이 선택함.
-            await selfs.setState('songtitle');
             selfs.difficultyChoosing = false;
             selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
+
+            // 곡 플레이 선택함.
+            await selfs.setState('songtitle');
+        }
+        this.broker.playSong = async function(song, difficultyLevel) {
+            if(selfs.songs.indexOf(song) < 0) { throw new Error('Cannot find song ' + song.name + ' in songs list'); }
+            selfs.song = song;
+
+            let diffIdx = -1;
+            for(let ddx=0; ddx<song.difficulties.length; ddx++) {
+                if(song.difficulties[ddx].difficultyLevel == difficultyLevel) {
+                    diffIdx = ddx;
+                    break;
+                }
+            }
+
+            if(diffIdx < 0) { throw new Error('Cannot find difficulty level ' + difficultyLevel + ' in song ' + song.name); }
+
+            selfs.difficulty = song.difficulties[diffIdx];
+            selfs.difficultyLevel = selfs.difficulty.difficultyLevel;
+            selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
+            selfs.difficultyChoosing = false;
+            selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
+            await selfs.setState('songtitle');
         }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
         this.broker.destroy = function() { selfs.destroy(); };
