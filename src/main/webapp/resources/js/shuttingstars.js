@@ -470,7 +470,8 @@ class ShuttingStarsCore {
         'nai4ilaHbAgsdgGKE35gSGSERGIEAGMERGgD39p4g',
         'nai4ilsgjklnHDH4634DHDFHIEAGMERGgD39p4g',
         'nai4ilsgjklnHDHDFHRHR643yJFGJFGJIMEAGMERGgD39p4g',
-        'nai4ilaahDFHDFGHmkfmwif35gmSGESGSDGsnmdk'
+        'nai4ilaahDFHDFGHmkfmwif35gmSGESGSDGsnmdk',
+        'nai4ilahDFSHShirgnn546346HSHMERHMEmSGESGSDGsnmdk'
     ];
     
 
@@ -650,6 +651,8 @@ class ShuttingStarsCore {
     fBeforeInit  = function(obj) {  }
     /** @type {function(Object): void} 코어 초기화 직후에 실행할 훅 */
     fAfterInit   = function(obj, coreInst) {  }
+    /** @type {function(Object): void} 화면 새로고침이 필요한 경우 호출 */
+    fRefresh     = function() { location.reload(); }
     /** @type {null|function(): void} null 입력 시 게임 종료 기능 비활성화 (기본값), 게임 종료 기능 지원 시 이 곳에 함수를 넣으면 메뉴에 게임 종료가 추가되고, 해당 메뉴 선택 시 함수가 호출됨 */
     fOnShutdownCalled = null;
     /** @type {function(Object): void} 게임 동작 세부 사항마다 호출됨 */
@@ -1735,7 +1738,7 @@ class ShuttingStarsCore {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
             this.resetAll(() => {
-                setTimeout(() => { location.reload(); }, 4000);
+                setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); selfs.fRefresh(); }, 4000);
             });
         }
         return true;
@@ -9267,10 +9270,11 @@ class ShuttingStarsCore {
      * @returns {boolean} 첫 세션이면 true (반환되고, 화면 새로고침 호출됨), 그외 false
      */
     refreshOnFirstSession() {
+        const selfs = this;
         const mark = sessionStorage.getItem('ss_firsts');
         if(mark == null || typeof(mark) == 'undefined' || mark == '') {
             sessionStorage.setItem('ss_firsts', 'Y');
-            setTimeout(() => { location.reload(); }, 2000);
+            setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); selfs.fRefresh(); }, 2000);
             return true;
         }
         return false;
@@ -10326,9 +10330,10 @@ class ShuttingStarsCore {
      * @param {Function} callbackAfter 작업 완료 후 호출할 콜백 (넣지 않으면, 설정 전체 초기화 후 화면을 새로고침함)
      */
     resetAll(callbackAfter) {
+        const selfs = this;
         const fAfter = function() {
-            if(typeof(callbackAfter) == 'function') callbackAfter();
-            else location.reload();
+            if(typeof(callbackAfter) == 'function') { callbackAfter(); }
+            else { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); selfs.fRefresh(); }
         }
         try { this.fGameEvent({ "event" : 'reset', "broker" : this.broker }); } catch(e) {}
         try { localStorage.setItem('shuttingstar_settings', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
