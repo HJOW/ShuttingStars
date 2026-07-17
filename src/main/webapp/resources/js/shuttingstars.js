@@ -665,11 +665,12 @@ class ShuttingStarsCore {
     
     /**
      * 초기화 (게임이 출력될 div 영역 객체를 입력) Promise
-     * @param {HTMLElement} rootDiv 게임 UI를 배치할 최상위 요소
-     * @param {string} urlContext 리소스 URL의 기준 경로
+     * @param {HTMLElement|null} rootDiv 게임 UI를 배치할 최상위 요소
+     * @param {string|null} urlContext 리소스 URL의 기준 경로
+     * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능
      * @returns {Promise<void>}
      */
-    async init(rootDiv, urlContext) {
+    async init(rootDiv, urlContext, fCustom) {
         const selfs = this;
         this.titleScreenWaiting = false;
         try {
@@ -681,6 +682,7 @@ class ShuttingStarsCore {
             this.ssuuid = ShuttingStarsUtility.assureSSUUID();
 
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
+            if(typeof(fCustom) == 'function') fCustom(this.broker);
 
             this.backend = null;
             try {
@@ -1738,7 +1740,7 @@ class ShuttingStarsCore {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
             this.resetAll(() => {
-                setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); selfs.fRefresh(); }, 4000);
+                setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }, 4000);
             });
         }
         return true;
@@ -9274,7 +9276,7 @@ class ShuttingStarsCore {
         const mark = sessionStorage.getItem('ss_firsts');
         if(mark == null || typeof(mark) == 'undefined' || mark == '') {
             sessionStorage.setItem('ss_firsts', 'Y');
-            setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); selfs.fRefresh(); }, 2000);
+            setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }, 2000);
             return true;
         }
         return false;
@@ -10333,7 +10335,7 @@ class ShuttingStarsCore {
         const selfs = this;
         const fAfter = function() {
             if(typeof(callbackAfter) == 'function') { callbackAfter(); }
-            else { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); selfs.fRefresh(); }
+            else { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }
         }
         try { this.fGameEvent({ "event" : 'reset', "broker" : this.broker }); } catch(e) {}
         try { localStorage.setItem('shuttingstar_settings', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
