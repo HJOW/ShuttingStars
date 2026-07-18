@@ -12585,12 +12585,13 @@ class ShuttingStarsManager {
 
     /**
      * 지정한 영역에 ShuttingStars 게임 적용
-     * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
-     * @param {string} urlContext 리소스 URL의 기준 경로
+     * @param {HTMLElement|null} mainDiv 게임 캔버스를 배치할 DOM 요소
+     * @param {string|null} urlContext 리소스 URL의 기준 경로
+     * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능
      * @returns {Promise<*>}
      */
-    async init(mainDiv, urlContext) {
-        try { return await this.#originalInstances.init(mainDiv, urlContext); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
+    async init(mainDiv, urlContext, fCustom) {
+        try { return await this.#originalInstances.init(mainDiv, urlContext, fCustom); } catch(e) { ShuttingStarsUtility.toast('ERROR : ' + e, true); console.error(e); }
     }
 }
 
@@ -12629,12 +12630,13 @@ function prepareDebugSSCoreInstances() {
 
 /**
  * 지정한 영역에 ShuttingStars 게임 적용 (Promise)
- * @param {HTMLElement} mainDiv 게임 캔버스를 배치할 DOM 요소
- * @param {string} urlContext 리소스 URL의 기준 경로
+ * @param {HTMLElement|null} mainDiv 게임 캔버스를 배치할 DOM 요소
+ * @param {string|null} urlContext 리소스 URL의 기준 경로
+ * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능
  * @returns {Promise<*>}
  */
-async function initShuttingStars(mainDiv, urlContext) {
-    await ShuttingStars.init(mainDiv, urlContext);
+async function initShuttingStars(mainDiv, urlContext, fCustom) {
+    await ShuttingStars.init(mainDiv, urlContext, fCustom);
 }
 
 window.ShuttingStars = ShuttingStars;
