@@ -5175,13 +5175,26 @@ class ShuttingStarsCore {
         }
 
         // 적용된 커맨드 모드 정보 출력
-        this.renderCommands();
+        this.renderCommandsNow();
+    }
+
+    /**
+     * 현재 적용된 커맨드 정보 출력
+     */
+    renderCommandsNow() {
+        // 적용된 커맨드 출력
+        const commandsApplied = this.getCommandsApplied();
+        this.renderCommands(commandsApplied);
     }
 
     /**
      * 적용된 커맨드 정보 출력
+     * @param {Array<string>} commandArr - 출력할 커맨드 배열
      */
-    renderCommands() {
+    renderCommands(commandArr) {
+        if(commandArr == null) return;
+        if(commandArr.length <= 0) return;
+
         let label, idx, fontSize, rows, cols, gap;
 
         fontSize = this.convertFontSize(15);
@@ -5191,42 +5204,16 @@ class ShuttingStarsCore {
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, 0.6)');
         else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, 0.6)');
 
-        if(! ShuttingStarsUtility.checkEqualFloats(this.noteSpeedMultiplier, 1.0)) {
-            label = '[X' + ShuttingStarsUtility.floor2(this.noteSpeedMultiplier) + ']';
+        // 적용된 커맨드 출력
+        for(idx=0; idx<commandArr.length; idx++) {
+            label = commandArr[idx];
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.textAlign = "left";
             this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
             cols += (this.metricSize2 * label.length) + gap;
         }
 
-        //    게임오버 활성화
-        if(! this.gameOverEnabled) {
-            label = '[UNDEAD]';
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.textAlign = "left";
-            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
-            cols += (this.metricSize2 * label.length) + gap;
-        }
-
-        //    하드코어 모드
-        if(this.hardcoreMode) {
-            label = '[HARDCORE]';
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.textAlign = "left";
-            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
-            cols += (this.metricSize2 * label.length) + gap;
-        }
-
-        //    노트 숨김 모드
-        if(this.invisibleNoteMode) {
-            label = '[INVN]';
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.textAlign = "left";
-            this.ctx.fillText(label, this.convertX(cols), this.convertY(rows, false));
-            cols += (this.metricSize2 * label.length) + gap;
-        }
-
-        //    커맨드 입력 진행 중 표시
+        // 커맨드 입력 진행 중 표시
         const numCommandInput = this.isCommandInputProgressing();
         if(numCommandInput >= 0) {
             label = '[';
@@ -5912,7 +5899,7 @@ class ShuttingStarsCore {
         this.ctx.fillText(ShuttingStarsUtility.replaceString(this.trans("% key to continue..."), '%', escKeyLabel), this.convertX(this.getStageWidth() - (fontSize * 2)), rows + (this.metricSize2 + gap * 2));
 
         // 적용된 커맨드 모드 정보 출력
-        this.renderCommands();
+        this.renderCommandsNow();
     }
 
     /**
@@ -6276,6 +6263,9 @@ class ShuttingStarsCore {
 
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+
+        // 적용된 커맨드 표기
+        this.renderCommands(this.seeingRecord.commands);
 
         // ESC 표기
         let escKeyLabel = this.escKey;
@@ -6783,6 +6773,52 @@ class ShuttingStarsCore {
         }
 
         return -1;
+    }
+
+    /** 
+     * 적용된 커맨드 목록을 문자열로 반환
+     * 
+     * @returns {Array<string>}
+     */
+    getCommandsApplied() {
+        let commands = [];
+        let label;
+
+        // 배수 옵션
+        if(! ShuttingStarsUtility.checkEqualFloats(this.noteSpeedMultiplier, 1.0)) {
+            label = '[X' + ShuttingStarsUtility.floor2(this.noteSpeedMultiplier) + ']';
+            commands.push(label);
+        }
+
+        //  게임오버 활성화 여부
+        if(! this.gameOverEnabled) {
+            label = '[UNDEAD]';
+            commands.push(label);
+        }
+
+        //    하드코어 모드
+        if(this.hardcoreMode) {
+            label = '[HARDCORE]';
+            commands.push(label);
+        }
+
+        //    노트 숨김 모드
+        if(this.invisibleNoteMode) {
+            label = '[INVN]';
+            commands.push(label);
+        }
+
+        //    곡 생성 모드
+        if(this.createMode) {
+            label = '[CREATE]';
+        }
+
+        //    감상 모드
+        if(this.state == 'listenplaying') {
+            label = '[LISTEN]';
+        }
+
+        return commands;
     }
 
     /**
@@ -7661,6 +7697,7 @@ class ShuttingStarsCore {
                     gameover : this.gameOverDelayed,
                     clear : (this.hp >= 1 && (! this.gameOverDelayed)),
                     notehistory : [],
+                    commands : selfs.getCommandsApplied(),
                     build : this.build,
                     userAgent : window.navigator.userAgent
                 });

@@ -106,7 +106,8 @@ const SSStringTable = {
         "URL" : "URL",
         "GitHub : " : "GitHub : ",
         "EXIT" : "종료",
-        "OFFLINE" : "OFFLINE"
+        "OFFLINE" : "OFFLINE",
+        "EMPTY !" : "비어 있음 !"
     }
 };
 export { SSStringTable };
