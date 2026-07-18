@@ -4,10 +4,13 @@
     , "songTitleBaseTime"      : 120
     , "visualizeBarMultiplier" : 1.0
     , "backStarlightCount"     : 30
+    , "songBitMoreGapYoutube"  : 0.1
     , "noticeEn" : ""
     , "noticeKo" : ""
     , "noticeWhen" : 0
     , "mainFont" : "D2 coding"
-    , "keyList" : ["S", "D", "F", "H", "J", "K"]
+    , "playKeys" : ["S", "D", "F", "H", "J", "K"]
     , "arrowKeys" : ["ARROWUP", "ARROWDOWN", "ARROWLEFT", "ARROWRIGHT"]
+    , "enterKey" : "ENTER"
+    , "escKey" : "ESCAPE"
 }

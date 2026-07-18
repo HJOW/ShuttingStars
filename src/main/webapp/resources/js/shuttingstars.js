@@ -129,10 +129,10 @@ class ShuttingStarsCore {
     /** @type {HTMLCanvasElement|null} 3D 장식 출력용 캔버스 객체 (2D 바로 윗층에 위치) */
     canvas3d = null;
     
-    /*** 입력키 설정 ***/
-    /** @type {Array<string>} 곡 플레이 시 입력 키 (6자리) - config.json 에 정의된 경우 config.json 값으로 대체됨 */
+    /*** 입력키 설정  - config.json 에 정의된 경우 config.json 값으로 대체되며, 이후 설정에 저장됨 ***/
+    /** @type {Array<string>} 곡 플레이 시 입력 키 (6자리) */
     keyList = ['S', 'D', 'F', 'H', 'J', 'K'];
-    /** @type {Array<string>} 방향키 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
+    /** @type {Array<string>} 방향키 */
     arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'];
     /** @type {string} 확인 키 */
     enterKey = 'ENTER';
@@ -181,7 +181,7 @@ class ShuttingStarsCore {
     timeMultiplier = 16.0;
     /** @type {number} timeMultiplier 값와 같이 움직임. 1.0 으로 둘 것. */
     elapsedTimeMultiplier = 1.0;
-    /** @type {number} 유튜브 사용 플레이 시 timeElapse 호출 주기에 추가 적용되는 보정값 */
+    /** @type {number} 유튜브 사용 플레이 시 timeElapse 호출 주기에 추가 적용되는 보정값 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     songBitMoreGapYoutube = 0.1;
     /** @type {number} 스테이지의 세로를 이 숫자만큼 등분하여, 노트의 크기, 초기 생성 위치를 계산함. */
     stageRows = 72;
@@ -712,7 +712,10 @@ class ShuttingStarsCore {
                     try { if(typeof(jsonConfig.noticeKo              ) == 'string') this.noticeKo               = jsonConfig.noticeKo;                                                       } catch(ecf) {}
                     try { if(typeof(jsonConfig.noticeWhen            ) == 'number') this.noticeWhen             = jsonConfig.noticeWhen;                                                     } catch(ecf) {}
                     try { if(typeof(jsonConfig.mainFont              ) == 'string') this.fontFamily             = jsonConfig.mainFont;                                                       } catch(ecf) {}
-                    try { if(typeof(jsonConfig.keyList  ) != 'undefined' && jsonConfig.keyList   != null) { if(jsonConfig.keyList.length   == 6) { this.keyList   = jsonConfig.keyList;   }} } catch(ecf) {}
+                    try { if(typeof(jsonConfig.songBitMoreGapYoutube ) == 'number') this.songBitMoreGapYoutube  = jsonConfig.songBitMoreGapYoutube;                                          } catch(ecf) {}
+                    try { if(typeof(jsonConfig.enterKey              ) == 'string') this.enterKey               = jsonConfig.enterKey;                                                       } catch(ecf) {}
+                    try { if(typeof(jsonConfig.escKey                ) == 'string') this.escKey                 = jsonConfig.escKey;                                                         } catch(ecf) {}
+                    try { if(typeof(jsonConfig.playKeys ) != 'undefined' && jsonConfig.playKeys  != null) { if(jsonConfig.playKeys.length  == 6) { this.keyList   = jsonConfig.playKeys;  }} } catch(ecf) {}
                     try { if(typeof(jsonConfig.arrowKeys) != 'undefined' && jsonConfig.arrowKeys != null) { if(jsonConfig.arrowKeys.length == 4) { this.arrowKeys = jsonConfig.arrowKeys; }} } catch(ecf) {} 
 
                     /*
@@ -3447,8 +3450,10 @@ class ShuttingStarsCore {
                 }
                 else this.onGameOver(); // 게임 중인 경우는 포기 처리
             } else {
-                // 일시정지 중이 아닐 때 --> 일시정지 시작
-                this.pauseSong();
+                if(this.elapsedTime >= 10) {
+                    // 일시정지 중이 아닐 때 --> 일시정지 시작
+                    this.pauseSong();
+                }
             }
         } else {
             // 노트 처리
@@ -4307,6 +4312,9 @@ class ShuttingStarsCore {
 
         let fontSize;
         let debugAreaY;
+        let rows;
+        let label;
+        let opacity = 0.9;
 
         // 시각화 그리기
         if(this.useAudioVisualizer && this.playPrepared) {
@@ -4360,6 +4368,40 @@ class ShuttingStarsCore {
             let message = '%1 key to resume, %2 key to give up !';
             if(this.state == 'listenplaying') message = '%1 key to resume, %2 key to stop !';
             this.ctx.strokeText(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans(message), '%1', this.enterKey), '%2', escKeyLabel), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + ((fontSize * 2) + 10) , false));
+
+            // 일시정지 화면 내 곡 정보 출력
+            const songOne = this.song;
+            rows = this.convertY(this.getStageHeight() * 3.0 / 4.0, false);
+
+            // 곡 이름 출력
+            label = songOne.name;
+            fontSize = this.convertFontSize(30);
+            this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), Math.floor(rows));
+            rows += this.metricSize2 + (this.metricSize2 / 2);
+
+            // 작곡가, 노트작성자, bpm 출력
+            rows = this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 2);
+            fontSize = this.convertFontSize(20);
+            label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            this.ctx.textAlign = "left";
+            this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
+
+            // 난이도 표기
+            label = String(this.difficulty.difficultyLevel);
+            fontSize = this.convertFontSize(40);
+            rows -= this.metricSize2 / 2;
+            this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "right";
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
         }
 
         // 일시정지 해제 대기시간 그리기
