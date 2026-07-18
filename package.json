@@ -26,6 +26,7 @@
         "@babel/preset-env": "^7.29.7",
         "@babel/preset-typescript": "^7.29.7",
         "babel-loader": "^10.1.1",
+        "basic-ftp": "^6.0.1",
         "clean-webpack-plugin": "^4.0.0",
         "copyfiles": "^2.4.1",
         "firebase-tools": "^15.24.0",

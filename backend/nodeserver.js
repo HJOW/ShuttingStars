@@ -41,6 +41,17 @@ const http = require('http')
 const fs   = require('fs');
 const path = require('path');
 
+try {
+    const ssNodeCustom = require('./nodecustom.js').default;
+    if(typeof(ssNodeCustom) == 'function') {
+        console.log('SSCustom Work Started.'); 
+        ssNodeCustom(); 
+        console.log('SSCustom Work Complete.'); 
+    }
+} catch(e) {
+    console.error(e);
+}
+
 // 포트
 let PORT = 9690;
 // 웹 경로
