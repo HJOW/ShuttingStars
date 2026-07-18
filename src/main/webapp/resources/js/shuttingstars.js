@@ -2219,9 +2219,23 @@ class ShuttingStarsCore {
             const songsText     = await fetchResponse.text();
             const songsJson     = ShuttingStarsUtility.parseJSON(songsText);
             for(idx=0; idx<songsJson.length; idx++) {
-                const songJsonOne = songsJson[idx];
-                this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
-                songAdded = true;
+                let songJsonOne = songsJson[idx];
+                try {
+                    if(typeof(songJsonOne) == 'string') {
+                        if(songJsonOne.indexOf('[CTX]') == 0 || songJsonOne.indexOf('http://') == 0 || songJsonOne.indexOf('https://') == 0) {
+                            const fetchChild = await fetch(this.convertURL(songJsonOne));
+                            const childText  = await fetchChild.text();
+                            songJsonOne = ShuttingStarsUtility.parseJSON(childText);
+                        } else {
+                            songJsonOne = ShuttingStarsUtility.parseJSON(songJsonOne);
+                        }
+                    }
+                    this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
+                    songAdded = true;
+                } catch(e2) {
+                    ShuttingStarsUtility.log('Failed to read song info from...\n' + songJsonOne);
+                    console.error(e2);
+                }
             }
         } catch(e) {
             ShuttingStarsUtility.log('Failed to load songs from ' + lastURL);
