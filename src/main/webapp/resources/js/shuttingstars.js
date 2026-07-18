@@ -1279,20 +1279,19 @@ class ShuttingStarsCore {
     afterInitialized() {
         const selfs = this;
         this.menuChoosing = this.menuListDynamic[0];
+        this.rebuildBroker();
         setTimeout(() => {
+            try {
+                if(selfs.createMode) selfs.fAfterInit(selfs.broker, selfs);
+                else                 selfs.fAfterInit(selfs.broker, null);
+                selfs.logInit('fAfterInit end.'); 
+            } catch(exSelf) { console.error(exSelf); selfs.logInit('fAfterInit failed. ' + exSelf); }
+
             selfs.handleScreenResized();
             selfs.titleScreenWaiting = true;
             selfs.accessililityLog('Press ENTER key to continue.');
             selfs.fGameEvent({ "event" : 'afterinit', "broker" : selfs.broker });
-        }, 6000);
-        // this.setState('menu'); // 바로 넘기지 않고, 엔터 키를 눌렀을 때 넘길 예정
-
-        this.rebuildBroker();
-        try {
-            if(this.createMode) this.fAfterInit(this.broker, this);
-            else                this.fAfterInit(this.broker, null);
-            this.logInit('fAfterInit end.'); 
-        } catch(exSelf) { console.error(exSelf); this.logInit('fAfterInit failed. ' + exSelf); }
+        }, 4000);
     }
 
     /**
@@ -1529,25 +1528,10 @@ class ShuttingStarsCore {
             await selfs.setState('songtitle');
         }
         this.broker.playSong = async function(song, difficultyLevel) {
-            if(selfs.songs.indexOf(song) < 0) { throw new Error('Cannot find song ' + song.name + ' in songs list'); }
-            selfs.song = song;
-
-            let diffIdx = -1;
-            for(let ddx=0; ddx<song.difficulties.length; ddx++) {
-                if(song.difficulties[ddx].difficultyLevel == difficultyLevel) {
-                    diffIdx = ddx;
-                    break;
-                }
-            }
-
-            if(diffIdx < 0) { throw new Error('Cannot find difficulty level ' + difficultyLevel + ' in song ' + song.name); }
-
-            selfs.difficulty = song.difficulties[diffIdx];
-            selfs.difficultyLevel = selfs.difficulty.difficultyLevel;
-            selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
-            selfs.difficultyChoosing = false;
-            selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
-            await selfs.setState('songtitle');
+            await selfs.playSong(song, difficultyLevel);
+        }
+        this.broker.directSelectSong = async function(song) {
+            await selfs.directSelectSong(song);
         }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
         this.broker.destroy = function() { selfs.destroy(); };
@@ -10383,6 +10367,83 @@ class ShuttingStarsCore {
     }
 
     /**
+     * 
+     * 특정곡 바로 플레이
+     * 
+     * @param {*} song 플레이할 곡 (ShuttingStarsSong 객체, 또는 곡의 serial 값)
+     * @param {number|null} difficultyLevel 난이도 (선택사항, 사용 시 1~15 사이 자연수로 입력해야 함)
+     */
+    async playSong(song, difficultyLevel) {
+        const selfs = this;
+
+        try { this.stopAudio();            } catch(e) {}
+        try { this.closeAudioSources();    } catch(e) {}
+        try { this.clearTimeHandler();     } catch(e) {}
+
+        if(typeof(song) == 'string') {
+            // serial 로 쳐서, 기존 songs 목록에서 찾기
+            for(let sdx=0; sdx<this.songs.length; sdx++) {
+                if(this.songs[sdx].serial == song) {
+                    song = this.songs[sdx];
+                    break;
+                }
+            }
+        }
+
+        if(typeof(song) == 'string') { throw new Error('Cannot find song ' + song + ' in songs list'); }
+        if(selfs.songs.indexOf(song) < 0) { throw new Error('Cannot find song ' + song.name + ' in songs list'); }
+        selfs.song = song;
+
+        let diffIdx = 0;
+        if(typeof(difficultyLevel) == 'number') {
+            for(let ddx=0; ddx<song.difficulties.length; ddx++) {
+                if(song.difficulties[ddx].difficultyLevel == difficultyLevel) {
+                    diffIdx = ddx;
+                    break;
+                }
+            }
+        }
+
+        selfs.difficulty = song.difficulties[diffIdx];
+        selfs.difficultyLevel = selfs.difficulty.difficultyLevel;
+        selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
+        selfs.difficultyChoosing = false;
+        selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
+        await selfs.setState('songtitle');
+    }
+
+    /**
+     * 해당 곡을 선택된 상태로 만들기
+     * 
+     * @param {*} song 대상 곡 (ShuttingStarsSong 객체, 또는 곡의 serial 값)
+     */
+    async directSelectSong(song) {
+        const selfs = this;
+
+        try { this.stopAudio();            } catch(e) {}
+        try { this.closeAudioSources();    } catch(e) {}
+        try { this.clearTimeHandler();     } catch(e) {}
+
+        if(typeof(song) == 'string') {
+            // serial 로 쳐서, 기존 songs 목록에서 찾기
+            for(let sdx=0; sdx<this.songs.length; sdx++) {
+                if(this.songs[sdx].serial == song) {
+                    song = this.songs[sdx];
+                    break;
+                }
+            }
+        }
+
+        if(typeof(song) == 'string') { throw new Error('Cannot find song ' + song + ' in songs list'); }
+        if(this.songs.indexOf(song) < 0) { throw new Error('Cannot find song ' + song.name + ' in songs list'); }
+
+        await this.setState('songchoosing');
+        this.song = song;
+        this.songChoosingMode = 'default';
+        this.songChoosing = song;
+    }
+
+    /**
      * 부동소수 동일여부 확인 (노트 생성 타이밍에 사용, ShuttingStarsUtility 에 있는 동일 메소드와 오차범위를 다르게 지정하게 될 수 있어 분리함)
      * @param {number} a a 값
      * @param {number} b b 값
@@ -12569,6 +12630,15 @@ class ShuttingStarsManager {
     async set3DManager(ss3d) {
         await ShuttingStarsUtility.waitTime(1000);
         this.#originalInstances.set3DManager(ss3d);
+    }
+
+    /**
+     * 
+     * @param {*} song 선택할 곡 serial (string) 혹은 곡 자체 (ShuttingStarsSong 타입)
+     * @returns {Promise<*>}
+     */
+    async directSelectSong(song) {
+        await this.#originalInstances.directSelectSong(song);
     }
 
     /** 빌드 번호 반환 */
