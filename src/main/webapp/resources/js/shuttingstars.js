@@ -2609,7 +2609,8 @@ class ShuttingStarsCore {
             this.playPrepared = true;
 
             if(this.backend != null) {
-                try { this.backend.logEvent('PLAY : ' + thos.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {}
+                if(this.state == 'playing') { try { this.backend.logEvent('PLAY : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                else                        { try { this.backend.logEvent('LISTEN : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
             }
         } else {
             this.playPrepared = false;
@@ -7600,8 +7601,10 @@ class ShuttingStarsCore {
      */
     async onSongEnd() {
         const selfs = this;
+        const beforeState = this.state;
         let idx;
-        if(this.state == 'listenplaying') { // 감상 모드 재생곡 끝남 - 다음 리스트 확인
+
+        if(beforeState == 'listenplaying') { // 감상 모드 재생곡 끝남 - 다음 리스트 확인
             // 재생 중단
             this.paused = false;
             this.stopAudio();
@@ -7737,6 +7740,9 @@ class ShuttingStarsCore {
                 this.ss3d.onSongEnd(this);
             }
         }
+
+        if(beforeState == 'playing') { try { this.backend.logEvent('PLAY END : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+        else                         { try { this.backend.logEvent('LISTEN END : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
 
         this.fGameEvent({ "event" : 'songend', "broker" : this.broker });
     }

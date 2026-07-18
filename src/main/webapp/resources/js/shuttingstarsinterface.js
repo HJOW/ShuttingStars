@@ -688,7 +688,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
 
     logEvent(eventMsg) {
-        this.analytics.logEvent(eventMsg);
+        try { this.analytics.logEvent(eventMsg); } catch(e) { console.error(e); }
     }
 }
 
