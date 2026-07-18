@@ -2,9 +2,12 @@
       "frameTime"              : 10
     , "resumeDelayTime"        : 16
     , "songTitleBaseTime"      : 120
-    , "visualizeBarMultiplier" : 2.2
-    , "backStarlightCount"     : 20
+    , "visualizeBarMultiplier" : 1.0
+    , "backStarlightCount"     : 30
     , "noticeEn" : ""
     , "noticeKo" : ""
     , "noticeWhen" : 0
+    , "mainFont" : "D2 coding"
+    , "keyList" : ["S", "D", "F", "H", "J", "K"]
+    , "arrowKeys" : ["ARROWUP", "ARROWDOWN", "ARROWLEFT", "ARROWRIGHT"]
 }

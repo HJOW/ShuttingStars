@@ -86,7 +86,7 @@ class ShuttingStarsCore {
     colorManualAlpha = false;
 
     /*** 글꼴 관련 ***/
-    /** @type {string} 메인 폰트, alterFonts 가 뒤에 붙음 */
+    /** @type {string} 메인 폰트, alterFonts 가 뒤에 붙음, config.json 에 정의된 경우 config.json 값으로 대체됨 */
     fontFamily = 'D2 coding';
     /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
     pointFont  = 'Nanum Pen Script';
@@ -130,9 +130,9 @@ class ShuttingStarsCore {
     canvas3d = null;
     
     /*** 입력키 설정 ***/
-    /** @type {Array<string>} 곡 플레이 시 입력 키 (6자리) */
+    /** @type {Array<string>} 곡 플레이 시 입력 키 (6자리) - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     keyList = ['S', 'D', 'F', 'H', 'J', 'K'];
-    /** @type {Array<string>} 방향키 */
+    /** @type {Array<string>} 방향키 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     arrowKeys = ['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'];
     /** @type {string} 확인 키 */
     enterKey = 'ENTER';
@@ -175,7 +175,7 @@ class ShuttingStarsCore {
     };
 
     /*** 게임 밸런스 관련 설정값 중 상수에 해당하는 값들 (저장되는 설정이 아님) ***/
-    /** @type {number} render 호출 주기 (변경 불가) - 밀리초 단위로, 이 시간 주기마다 render 메소드가 호출되며, 낮을수록 화면이 부드럽게 변함. */
+    /** @type {number} render 호출 주기 (변경 불가) - 밀리초 단위로, 이 시간 주기마다 render 메소드가 호출되며, 낮을수록 화면이 부드럽게 변함. - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     frameTime = 10;
     /** @type {number} 최소 시간 단위에 영향. 이 게임 내 소요시간 (elapsedTime) 최소단위는 해당곡의 1비트 시간을 이 값으로 나눈 값. */
     timeMultiplier = 16.0;
@@ -191,24 +191,26 @@ class ShuttingStarsCore {
     noteLocationConst = 0;
     /** @type {number} 노트 이동 속도 배수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음) */
     noteSpeedFixedConst = 0.25;
-    /** @type {number} 일시정지 후 재개 전 대기 타임 상수 */
+    /** @type {number} 일시정지 후 재개 전 대기 타임 상수 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     resumeDelayTime = 16;
     /** @type {number} pw 최대값 (10000 권장) */
     pwMax = 10000;
     /** @type {number} pw 1회 사용값 (100 권장) - 키를 눌러 NotePlacer 동작 시 1회 사용, Note 에 명중시키면 본전만큼 다시 회수됨 (MISS 혹은 헛발질하면 소모됨) */
     pwUse = 100;
-    /** @type {number} 곡 로딩 기본 시간 */
+    /** @type {number} 곡 로딩 기본 시간 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     songTitleBaseTime = 120;
     /** @type {number} 볼륨 상수 */
     volumeMultiplier = 1.0;
-    /** @type {number} 배경 별빛 장식 최대 갯수 */
+    /** @type {number} 배경 별빛 장식 최대 갯수 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
     backStarlightCount = 30;
     /** @type {number} 배경 별빛 장식 X 속도 (게임 중 변경됨) */
     backStarlightSpdX = 1;
     /** @type {number} 배경 별빛 장식 Y 속도 (게임 중 변경됨) */
     backStarlightSpdY = 0;
+    /** @type {number} 시각화 크기 배율 - config.json 에 정의된 경우 config.json 값으로 대체됨 */
+    visualizeBarMultiplier = 1.0;
 
-    /*** 공지사항 메시지 (타이틀 및 메뉴 화면 하단에 출력됨) ***/
+    /*** 공지사항 메시지 (타이틀 및 메뉴 화면 하단에 출력됨) - config.json 에 정의된 경우 config.json 값으로 대체됨 ***/
     /** @type {string} 공지사항 (영문) */
     noticeEn   = '';
     /** @type {string} 공지사항 (한글) */
@@ -216,7 +218,7 @@ class ShuttingStarsCore {
     /** @type {number} 마지막 공지사항 게시일시 (백엔드 필요) */
     noticeWhen = 0;
     
-
+    /*** 오디오 관련 ***/
     /** @type {number} 마스터 볼륨 (0 ~ 1) */
     volume = 1.0;
     /** @type {number} 배경 음악 기본 볼륨 */
@@ -701,14 +703,17 @@ class ShuttingStarsCore {
                     const jsonConfigStr  = await jsonConfigResp.text();
                     const jsonConfig     = ShuttingStarsUtility.parseJSON(jsonConfigStr);
 
-                    if(typeof(jsonConfig.frameTime             ) == 'number') this.frameTime              = jsonConfig.frameTime;
-                    if(typeof(jsonConfig.resumeDelayTime       ) == 'number') this.resumeDelayTime        = jsonConfig.resumeDelayTime;
-                    if(typeof(jsonConfig.songTitleBaseTime     ) == 'number') this.songTitleBaseTime      = jsonConfig.songTitleBaseTime;
-                    if(typeof(jsonConfig.visualizeBarMultiplier) == 'number') this.visualizeBarMultiplier = jsonConfig.visualizeBarMultiplier;
-                    if(typeof(jsonConfig.backStarlightCount    ) == 'number') this.backStarlightCount     = jsonConfig.backStarlightCount;
-                    if(typeof(jsonConfig.noticeEn              ) == 'string') this.noticeEn               = jsonConfig.noticeEn;
-                    if(typeof(jsonConfig.noticeKo              ) == 'string') this.noticeKo               = jsonConfig.noticeKo;
-                    if(typeof(jsonConfig.noticeWhen            ) == 'number') this.noticeWhen             = jsonConfig.noticeWhen;
+                    try { if(typeof(jsonConfig.frameTime             ) == 'number') this.frameTime              = jsonConfig.frameTime;                                                      } catch(ecf) {}
+                    try { if(typeof(jsonConfig.resumeDelayTime       ) == 'number') this.resumeDelayTime        = jsonConfig.resumeDelayTime;                                                } catch(ecf) {}
+                    try { if(typeof(jsonConfig.songTitleBaseTime     ) == 'number') this.songTitleBaseTime      = jsonConfig.songTitleBaseTime;                                              } catch(ecf) {}
+                    try { if(typeof(jsonConfig.visualizeBarMultiplier) == 'number') this.visualizeBarMultiplier = jsonConfig.visualizeBarMultiplier;                                         } catch(ecf) {}
+                    try { if(typeof(jsonConfig.backStarlightCount    ) == 'number') this.backStarlightCount     = jsonConfig.backStarlightCount;                                             } catch(ecf) {}
+                    try { if(typeof(jsonConfig.noticeEn              ) == 'string') this.noticeEn               = jsonConfig.noticeEn;                                                       } catch(ecf) {}
+                    try { if(typeof(jsonConfig.noticeKo              ) == 'string') this.noticeKo               = jsonConfig.noticeKo;                                                       } catch(ecf) {}
+                    try { if(typeof(jsonConfig.noticeWhen            ) == 'number') this.noticeWhen             = jsonConfig.noticeWhen;                                                     } catch(ecf) {}
+                    try { if(typeof(jsonConfig.mainFont              ) == 'string') this.fontFamily             = jsonConfig.mainFont;                                                       } catch(ecf) {}
+                    try { if(typeof(jsonConfig.keyList  ) != 'undefined' && jsonConfig.keyList   != null) { if(jsonConfig.keyList.length   == 6) { this.keyList   = jsonConfig.keyList;   }} } catch(ecf) {}
+                    try { if(typeof(jsonConfig.arrowKeys) != 'undefined' && jsonConfig.arrowKeys != null) { if(jsonConfig.arrowKeys.length == 4) { this.arrowKeys = jsonConfig.arrowKeys; }} } catch(ecf) {} 
 
                     /*
                     // Remote Config 비활성화 - json 으로 대체
@@ -12285,7 +12290,7 @@ class BarTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
         let x = 0;
 
         // 막대그래프형
-        const barWidth = Math.round(canvasWidth * 1.0 / realtimeAudioBufferLength) * this.sizeMultiplier;
+        const barWidth = Math.round(canvasWidth * 1.0 / realtimeAudioBufferLength) * this.sizeMultiplier * coreInst.visualizeBarMultiplier;
         let barHeight;
         for(let i=0; i<realtimeAudioBufferLength; i++) {
             barHeight = realtimeAudioBuffer[i]; // 0 ~ 255
@@ -12333,8 +12338,8 @@ class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
             // 막대의 시작점과 끝점
             const x1 = Math.floor(centerX + Math.cos(angle) * this.radius);
             const y1 = Math.floor(centerY + Math.sin(angle) * this.radius);
-            const x2 = Math.floor(centerX + Math.cos(angle) * (this.radius + (Math.random() * 50 + 100) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
-            const y2 = Math.floor(centerY + Math.sin(angle) * (this.radius + (Math.random() * 50 + 100) + (realtimeAudioBuffer[i] * this.sizeMultiplier) / 3));
+            const x2 = Math.floor(centerX + Math.cos(angle) * (this.radius + (Math.random() * 50 + 100) + (realtimeAudioBuffer[i] * this.sizeMultiplier * coreInst.visualizeBarMultiplier) / 3));
+            const y2 = Math.floor(centerY + Math.sin(angle) * (this.radius + (Math.random() * 50 + 100) + (realtimeAudioBuffer[i] * this.sizeMultiplier * coreInst.visualizeBarMultiplier) / 3));
 
             ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', ' + this.opacity + ')';
             ctx.lineWidth = 3;
