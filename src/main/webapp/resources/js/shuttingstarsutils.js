@@ -777,7 +777,11 @@ class ShuttingStarsUtilityClass {
     parseJSON(str) {
         if(str == null) return null;
         if(typeof(str) == 'object' || typeof(str) == 'undefined' || typeof(str) == 'number' || typeof(str) == 'boolean' || typeof(str) == 'function') return str;
-        return JSON5.parse(String(str).trim());
+        try { return JSON5.parse(String(str).trim()); } catch(e) {
+            console.error(e);
+            console.error(str);
+            throw e;
+        }
     }
 }
 

@@ -699,7 +699,7 @@ class ShuttingStarsCore {
                     this.menuListDynamic = await this.getMenuList();
                     
                     // config.json 불러오기
-                    const jsonConfigResp = await fetch(this.convertURL('[CTX]/resources/json/config.json'));
+                    const jsonConfigResp = await fetch(this.convertURL('[RSSC]json/config.json'));
                     const jsonConfigStr  = await jsonConfigResp.text();
                     const jsonConfig     = ShuttingStarsUtility.parseJSON(jsonConfigStr);
 
@@ -1053,13 +1053,13 @@ class ShuttingStarsCore {
             // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
             this.usingWorker = this.usingWorkerConfig;
             if(this.usingWorker) {
-                this.workerRender = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
+                this.workerRender = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime});
                 this.workerRender.onmessage = function(e) {
                     selfs.render();
                 }
 
-                this.workerSimultaneousWork = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
+                this.workerSimultaneousWork = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
                 this.workerSimultaneousWork.postMessage({interval : this.frameTime});
                 this.workerSimultaneousWork.onmessage = function(e) {
                     // const {drift, time} = e.data;
@@ -1223,7 +1223,7 @@ class ShuttingStarsCore {
             this.loadAfter().then(() => {
                 selfs.logInit('preparing background audio...');
                 try {
-                    selfs.audioBackground = new Audio(this.convertURL('[CTX]/resources/songs/woowahan/track09.mp3'));
+                    selfs.audioBackground = new Audio(this.convertURL('[RSSC]songs/woowahan/track09.mp3'));
                     selfs.audioBackground.loop = true;
                     // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
                 } catch(exAudio) {
@@ -1232,11 +1232,11 @@ class ShuttingStarsCore {
                 }
 
                 try {
-                    selfs.se.tick     = new Audio(this.convertURL('[CTX]/resources/se/tick.ogg'));
-                    selfs.se.accept1  = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/accept01.mp3'));
-                    selfs.se.accept2  = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/accept02.mp3'));
-                    selfs.se.cancel   = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/cancel02.mp3'));
-                    selfs.se.special1 = new Audio(this.convertURL('[CTX]/resources/se/sonniss-gdc/special02.mp3'));
+                    selfs.se.tick     = new Audio(this.convertURL('[RSSC]se/tick.ogg'));
+                    selfs.se.accept1  = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/accept01.mp3'));
+                    selfs.se.accept2  = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/accept02.mp3'));
+                    selfs.se.cancel   = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/cancel02.mp3'));
+                    selfs.se.special1 = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/special02.mp3'));
                 } catch(exAudio) {
                     console.error(exAudio);
                 }
@@ -2214,7 +2214,7 @@ class ShuttingStarsCore {
 
         // json 의 songs.json 도 불러오기
         try {
-            lastURL = this.convertURL('[CTX]/resources/json/songs.json');
+            lastURL = this.convertURL('[RSSC]json/songs.json');
             const fetchResponse = await fetch(lastURL);
             const songsText     = await fetchResponse.text();
             const songsJson     = ShuttingStarsUtility.parseJSON(songsText);
@@ -2222,7 +2222,7 @@ class ShuttingStarsCore {
                 let songJsonOne = songsJson[idx];
                 try {
                     if(typeof(songJsonOne) == 'string') {
-                        if(songJsonOne.indexOf('[CTX]') == 0 || songJsonOne.indexOf('http://') == 0 || songJsonOne.indexOf('https://') == 0) {
+                        if(songJsonOne.indexOf('[RSSC]') == 0 || songJsonOne.indexOf('[CTX]') == 0 || songJsonOne.indexOf('http://') == 0 || songJsonOne.indexOf('https://') == 0) {
                             const fetchChild = await fetch(this.convertURL(songJsonOne));
                             const childText  = await fetchChild.text();
                             songJsonOne = ShuttingStarsUtility.parseJSON(childText);
@@ -2561,7 +2561,7 @@ class ShuttingStarsCore {
             this.songBitGap = this.calculateSongBitGap(this.song.bpm);
             if(this.song.useYoutube) this.songBitGap += this.songBitMoreGapYoutube;
             if(this.usingWorker) {
-                this.workerSongPlaying = new Worker( this.convertURL('[CTX]/resources/js/shuttingstarworker.js') );
+                this.workerSongPlaying = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
                 this.workerSongPlaying.postMessage({interval : selfs.songBitGap});
                 this.workerSongPlaying.onmessage = function(e) {
                     // const {drift, time} = e.data;
@@ -9297,12 +9297,16 @@ class ShuttingStarsCore {
 
     /**
      * URL 변환
+     *    예약어 [CTX], [RSSC] 지원
+     *    [CTX] : URL 컨텍스트 경로
+     *    [RSSC] : URL 컨텍스트 경로 내 리소스 경로
      * @param {string} url url 값
      * @returns {string} URL 컨텍스트가 적용된 URL
      */
     convertURL(url) {
         url = String(url).trim();
         if(url.indexOf('http://') == 0 || url.indexOf('https://') == 0) return url;
+        if(url.indexOf('[RSSC]') == 0) url = ShuttingStarsUtility.replaceString(url, '[RSSC]', '[CTX]resources/');
         if(url.indexOf('[CTX]') == 0) url = ShuttingStarsUtility.replaceString(url, '[CTX]', this.urlCtx);
         if(url.indexOf('.//') == 0) url = './' + url.substring(3);
         if(url.indexOf('.') == 0) return url;
@@ -9545,7 +9549,7 @@ class ShuttingStarsCore {
 
             try {
                 let responses = null;
-                if(lineOne.indexOf('[CTX]') == 0) {
+                if(lineOne.indexOf('[CTX]') == 0 || lineOne.indexOf('[RSSC]') == 0) {
                     responses = await fetch(lineOne);
                     responses = await responses.text();
                 } else {
