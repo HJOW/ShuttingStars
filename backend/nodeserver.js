@@ -123,6 +123,7 @@ const server = http.createServer((req, res) => {
         case '.mjs': contentType = 'text/javascript'; break;
         case '.css': contentType = 'text/css'; break;
         case '.json': contentType = 'application/json'; break;
+        case '.json5': contentType = 'application/json5'; break;
         case '.xml': contentType = 'application/xml'; break;
         case '.png': contentType = 'image/png'; break;
         case '.jpg': contentType = 'image/jpeg'; break;

@@ -2216,7 +2216,8 @@ class ShuttingStarsCore {
         try {
             lastURL = this.convertURL('[CTX]/resources/json/songs.json');
             const fetchResponse = await fetch(lastURL);
-            const songsJson     = await fetchResponse.json();
+            const songsText     = await fetchResponse.text();
+            const songsJson     = ShuttingStarsUtility.parseJSON(songsText);
             for(idx=0; idx<songsJson.length; idx++) {
                 const songJsonOne = songsJson[idx];
                 this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
@@ -8173,9 +8174,11 @@ class ShuttingStarsCore {
         const fLoadAddiContent = async function(rowOne) {
             if(rowOne.uid != selfs.user.uid) return;
             if(rowOne.type == 'song') {
-                let resp = await fetch(rowOne.url);
-                resp.contentname = rowOne.contentname;
-                selfs.addSong(resp);
+                const resp = await fetch(rowOne.url);
+                const text = await resp.text();
+                const respSong = ShuttingStarsUtility.parseJSON(text);
+                respSong.contentname = rowOne.contentname;
+                selfs.addSong(respSong);
             }
         }
 
@@ -9487,16 +9490,19 @@ class ShuttingStarsCore {
                 let responses = null;
                 if(lineOne.indexOf('[CTX]') == 0) {
                     responses = await fetch(lineOne);
+                    responses = await responses.text();
                 } else {
                     // CORS 문제 방지를 위해 JSONP로 호출 (JSONP 콜백함수명은 URL 매개변수 callback 에 탑재됨)
                     const respJson = await ShuttingStarsUtility.jsonp(lineOne, 16000);
                     responses = respJson.response;
                 }
 
-                responses = await fetch(lineOne);
                 if(responses == null) continue;
 
-                const json = responses.json();
+                let json = null;
+                if(typeof(responses) == 'string') json = ShuttingStarsUtility.parseJSON(responses);
+                else if(typeof(responses) == 'object') json = responses;
+                if(json == null) continue;
 
                 if(typeof(json.name) != 'string') continue;
                 ShuttingStarsUtility.log('Package ' + json.name + ' applied.');
