@@ -146,6 +146,8 @@ class ShuttingStarsCore {
     audioCtx = null;
     /** @type {string} URL Context Path */
     urlCtx = './';
+    /** @type {string} URL resource directory name */
+    rsscDirName = 'resources';
 
     /** @type {CanvasRenderingContext2D|null} 2D Context 객체 */
     ctx = null;
@@ -1447,11 +1449,16 @@ class ShuttingStarsCore {
         this.broker.gameOverEnabled         = this.gameOverEnabled         ;
         this.broker.virtualKeyForce         = this.virtualKeyForce         ;
         this.broker.urlCtx                  = this.urlCtx                  ;
-        this.broker.songs                   = this.songs                   ;
+        this.broker.rsscDirName             = this.rsscDirName             ;
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
         this.broker.fGameEvent              = this.fGameEvent              ;
+        this.broker.songs                   = [];
+        for(let sdx=0; sdx<this.songs.length; sdx++) {
+            this.broker.songs.push(this.songs[sdx]);
+        }
+
         this.broker.apply = function(obj) {
 
             // createMode 는 한번 true 로 바꾸면 false 로 변경 못해야 함
@@ -1488,11 +1495,16 @@ class ShuttingStarsCore {
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
             if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
             if(typeof(obj.urlCtx                 ) != 'undefined') selfs.urlCtx                  = obj.urlCtx                  ;
+            if(typeof(obj.rsscDirName            ) != 'undefined') selfs.rsscDirName             = obj.rsscDirName             ;
             if(typeof(obj.fOuterWidth            ) == 'function' ) selfs.fOuterWidth             = obj.fOuterWidth             ;
             if(typeof(obj.fOuterHeight           ) == 'function' ) selfs.fOuterHeight            = obj.fOuterHeight            ;
             if(typeof(obj.fOnShutdownCalled      ) == 'function' ) selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ;
             if(typeof(obj.fGameEvent             ) == 'function' ) selfs.fGameEvent              = obj.fOnShutdownCalled       ;
-            if(typeof(obj.songs                  ) != 'undefined') selfs.songs                   = obj.songs                   ;
+            if(typeof(obj.songs                  ) != 'undefined') {
+                for(let ssdx=0; ssdx<obj.songs.length; ssdx++) {
+                    selfs.addSong(obj.songs[ssdx]);
+                }
+            }
         }
         this.broker.parseSong  = function(json) { return selfs.parseSong(json); }
         this.broker.addSong    = function(song) { return selfs.addSong(song);   }
@@ -9306,7 +9318,7 @@ class ShuttingStarsCore {
     convertURL(url) {
         url = String(url).trim();
         if(url.indexOf('http://') == 0 || url.indexOf('https://') == 0) return url;
-        if(url.indexOf('[RSSC]') == 0) url = ShuttingStarsUtility.replaceString(url, '[RSSC]', '[CTX]resources/');
+        if(url.indexOf('[RSSC]') == 0) url = ShuttingStarsUtility.replaceString(url, '[RSSC]', '[CTX]' + this.rsscDirName + '/');
         if(url.indexOf('[CTX]') == 0) url = ShuttingStarsUtility.replaceString(url, '[CTX]', this.urlCtx);
         if(url.indexOf('.//') == 0) url = './' + url.substring(3);
         if(url.indexOf('.') == 0) return url;
