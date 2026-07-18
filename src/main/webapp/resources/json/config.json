@@ -1,0 +1,10 @@
+{
+      "frameTime"              : 10
+    , "resumeDelayTime"        : 16
+    , "songTitleBaseTime"      : 120
+    , "visualizeBarMultiplier" : 2.2
+    , "backStarlightCount"     : 20
+    , "noticeEn" : ""
+    , "noticeKo" : ""
+    , "noticeWhen" : 0
+}

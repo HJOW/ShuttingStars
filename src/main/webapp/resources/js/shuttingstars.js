@@ -690,9 +690,29 @@ class ShuttingStarsCore {
                 if(this.backend != null) {
                     // 로그인 상태 변경 이벤트 부여
                     if(this.backend.authStateChangedEvents) this.backend.authStateChangedEvents.push(() => {
+                        // 메뉴 목록 다시 갱신
                         selfs.getMenuList().then((menuList) => { selfs.menuListDynamic = menuList; }).catch((e) => { console.error(e); selfs.backend = null; });
                     });
-                    // 원격 설정 가져오기
+                    // 지금도 메뉴 갱신
+                    this.menuListDynamic = await this.getMenuList();
+                    
+                    // config.json 불러오기
+                    const jsonConfigResp = await fetch(this.convertURL('[CTX]/resources/json/config.json'));
+                    const jsonConfigStr  = await jsonConfigResp.text();
+                    const jsonConfig     = ShuttingStarsUtility.parseJSON(jsonConfigStr);
+
+                    if(typeof(jsonConfig.frameTime             ) == 'number') this.frameTime              = jsonConfig.frameTime;
+                    if(typeof(jsonConfig.resumeDelayTime       ) == 'number') this.resumeDelayTime        = jsonConfig.resumeDelayTime;
+                    if(typeof(jsonConfig.songTitleBaseTime     ) == 'number') this.songTitleBaseTime      = jsonConfig.songTitleBaseTime;
+                    if(typeof(jsonConfig.visualizeBarMultiplier) == 'number') this.visualizeBarMultiplier = jsonConfig.visualizeBarMultiplier;
+                    if(typeof(jsonConfig.backStarlightCount    ) == 'number') this.backStarlightCount     = jsonConfig.backStarlightCount;
+                    if(typeof(jsonConfig.noticeEn              ) == 'string') this.noticeEn               = jsonConfig.noticeEn;
+                    if(typeof(jsonConfig.noticeKo              ) == 'string') this.noticeKo               = jsonConfig.noticeKo;
+                    if(typeof(jsonConfig.noticeWhen            ) == 'number') this.noticeWhen             = jsonConfig.noticeWhen;
+
+                    /*
+                    // Remote Config 비활성화 - json 으로 대체
+                    //     Remote Config 원격 설정 가져오기
                     const respJson = await this.backend.getRemoteConfigValues();
                     if(respJson.success) {
                         const valuesRecord = respJson.value;
@@ -706,6 +726,7 @@ class ShuttingStarsCore {
                         this.noticeKo                 = valuesRecord.noticeKo.asString();
                         this.noticeWhen               = valuesRecord.noticeWhen.asNumber();
                     }
+                    */
                 }
             } catch(e) {
                 ssConsoleLogs(this.trans('Cloud Manager import failed. Cloud features will be disabled.'));
