@@ -360,6 +360,8 @@ class ShuttingStarsCore {
     hardcoreMode = false;
     /** @type {boolean} 노트 숨김 모드 (커맨드로 설정) */
     invisibleNoteMode = false;
+    /** @type {boolean} 롱노트 거부 (커맨드로 설정) */
+    noLongNote = false;
 
     /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / listenchoosing / listentitle / listenplaying / setting / credit */
     state = 'title';
@@ -1861,6 +1863,11 @@ class ShuttingStarsCore {
                     if(typeof(this.invisibleNoteMode) == 'string') this.invisibleNoteMode = ( (this.invisibleNoteMode == 'Y' || this.invisibleNoteMode == 'true') ? true : false );
                 }
 
+                if(typeof(settingJson.noLongNote) != 'undefined') {
+                    this.noLongNote = settingJson.noLongNote;
+                    if(typeof(this.noLongNote) == 'string') this.noLongNote = ( (this.noLongNote == 'Y' || this.noLongNote == 'true') ? true : false );
+                }
+
                 if(typeof(settingJson.keyList) != 'undefined') {
                     try {
                         if(typeof(settingJson.keyList) == 'string') settingJson.keyList = ShuttingStarsUtility.parseJSON(settingJson.keyList);
@@ -1926,6 +1933,7 @@ class ShuttingStarsCore {
             settingJson.disable2d           = this.disable2d;
             settingJson.hardcoreMode        = this.hardcoreMode;
             settingJson.invisibleNoteMode   = this.invisibleNoteMode;
+            settingJson.noLongNote          = this.noLongNote;
             settingJson.language            = this.language;
             settingJson.languageDefault     = this.languageDefault;
             settingJson.usingWorkerConfig   = this.usingWorkerConfig;
@@ -2370,7 +2378,7 @@ class ShuttingStarsCore {
                     if(typeof(pattern.type) == 'undefined' || pattern.type == null || pattern.type == '') pattern.type = 'normal';
 
                     let note;
-                    if(pattern.type == 'long') {
+                    if(pattern.type == 'long' && (! this.noLongNote)) {
                         note = new SSLongNote(pattern.locationIndex, this);
                         note.id = this.lastObjectId; this.lastObjectId++;
                         note.patternId = pattern.id;
@@ -2927,14 +2935,6 @@ class ShuttingStarsCore {
         const selfs = this;
         let index = 0;
 
-        // 커맨드 입력 여부 판단
-        for(let idx=0; idx<this.keyList.length; idx++) {
-            if(key == this.keyList[idx]) {
-                this.handleCommand(key);
-                break;
-            }
-        }
-
         // ESC 처리
         if(key == this.escKey) {
             this.playSE('cancel');
@@ -2966,6 +2966,14 @@ class ShuttingStarsCore {
                 this.accessililityLog('Not enough content available. Switching to ' + this.songChoosingMode + ' mode.');
             }
             return;
+        }
+
+        // 커맨드 입력 여부 판단
+        for(let idx=0; idx<this.keyList.length; idx++) {
+            if(key == this.keyList[idx]) {
+                this.handleCommand(key);
+                break;
+            }
         }
 
         // 현재 곡 선택 모드에 따라 분기
@@ -3170,6 +3178,14 @@ class ShuttingStarsCore {
         if(this.songCanListen.length <= 0) {
             this.setState('menu'); 
             return;
+        }
+
+        // 커맨드 입력 여부 판단
+        for(let idx=0; idx<this.keyList.length; idx++) {
+            if(key == this.keyList[idx]) {
+                this.handleCommand(key);
+                break;
+            }
         }
 
         if(this.songChoosing == null) this.songChoosing = this.songCanListen[0];
@@ -5460,6 +5476,9 @@ class ShuttingStarsCore {
             }
             this.ctx.textAlign = "center";
         }
+
+        // 적용된 커맨드 모드 정보 출력
+        this.renderCommandsNow();
     }
 
     /**
@@ -6710,6 +6729,13 @@ class ShuttingStarsCore {
         });
 
         this.commands.push({
+            command : [3, 3, 3, 3, 3, 3],
+            act : function() {
+                selfs.noLongNote = (! selfs.noLongNote);
+            }
+        });
+
+        this.commands.push({
             command : [0, 2, 1, 3, 2, 4],
             act : function() {
                 selfs.invisibleNoteMode = (! selfs.invisibleNoteMode);
@@ -6809,6 +6835,12 @@ class ShuttingStarsCore {
         //    노트 숨김 모드
         if(this.invisibleNoteMode) {
             label = '[INVN]';
+            commands.push(label);
+        }
+
+        //    롱노트 없음 모드
+        if(this.noLongNote) {
+            label = '[NOLONGN]';
             commands.push(label);
         }
 
@@ -10001,7 +10033,8 @@ class ShuttingStarsCore {
                             if(multipleCreate >= 6) probability4 = probability4 * 0.5;
 
                             // 롱노트 확률 적용
-                            longNote = ( ShuttingStarsUtility.random() <= probability4 );
+                            if(this.noLongNote) longNote = false;
+                            else                longNote = ( ShuttingStarsUtility.random() <= probability4 );
                         }
                     }
 
