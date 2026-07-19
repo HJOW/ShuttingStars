@@ -5760,6 +5760,9 @@ class ShuttingStarsCore {
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
+
+        // 적용된 커맨드 모드 정보 출력
+        this.renderCommandsNow();
     }
 
     /**
