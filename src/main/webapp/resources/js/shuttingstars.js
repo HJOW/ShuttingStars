@@ -1221,55 +1221,44 @@ class ShuttingStarsCore {
             this.missions.push(new CrazySurviveSSMission(this));
 
             this.logInit('loading third parties...');
+            await this.loadAfter();
 
-            this.loadAfter().then(() => {
-                selfs.logInit('preparing background audio...');
-                try {
-                    selfs.audioBackground = new Audio(this.convertURL('[RSSC]songs/woowahan/track09.mp3'));
-                    selfs.audioBackground.loop = true;
-                    // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
-                } catch(exAudio) {
-                    console.error(exAudio);
-                    ShuttingStarsUtility.toast('Loading audio failed !', true);
-                }
+            this.logInit('preparing background audio...');
+            try {
+                this.audioBackground = new Audio(this.convertURL('[RSSC]songs/woowahan/track09.mp3'));
+                this.audioBackground.loop = true;
+                // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
+            } catch(exAudio) {
+                console.error(exAudio);
+                ShuttingStarsUtility.toast('Loading audio failed !', true);
+            }
 
-                try {
-                    selfs.se.tick     = new Audio(this.convertURL('[RSSC]se/tick.ogg'));
-                    selfs.se.accept1  = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/accept01.mp3'));
-                    selfs.se.accept2  = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/accept02.mp3'));
-                    selfs.se.cancel   = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/cancel02.mp3'));
-                    selfs.se.special1 = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/special02.mp3'));
-                } catch(exAudio) {
-                    console.error(exAudio);
-                }
+            try {
+                this.se.tick     = new Audio(this.convertURL('[RSSC]se/tick.ogg'));
+                this.se.accept1  = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/accept01.mp3'));
+                this.se.accept2  = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/accept02.mp3'));
+                this.se.cancel   = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/cancel02.mp3'));
+                this.se.special1 = new Audio(this.convertURL('[RSSC]se/sonniss-gdc/special02.mp3'));
+            } catch(exAudio) {
+                console.error(exAudio);
+            }
 
-                selfs.menuListDynamic = selfs.menuList;
-                selfs.getMenuList().then((menuList) => {
-                    selfs.menuListDynamic = menuList;
-                    selfs.logInit('starting game...');
+            this.menuListDynamic = selfs.menuList;
+            const mnList = await this.getMenuList();
+            this.menuListDynamic = mnList;
+            this.menuChoosing = this.menuListDynamic[0];
+            this.logInit('starting game...');
 
-                    selfs.loadCredit().then(() => {
-                        // 최초 실행인 경우 최초 설정 화면 띄우기
-                        if(firsts) selfs.setState('firstset');
-                        selfs.afterInitialized();
-                    }).catch((excredit) => {
-                        ShuttingStarsUtility.toast('ERROR : ' + excredit, true);
-                        console.error(excredit);    
-                    });
-                }).catch((exmenu) => {
-                    ShuttingStarsUtility.toast('ERROR : ' + exmenu, true);
-                    console.error(exmenu);
-                });
-            }).catch((e) => {
-                ShuttingStarsUtility.toast('ERROR : ' + e, true);
-                console.error(e);
-                ShuttingStarsUtility.toast('Last Success : ' + selfs.lastInitSuccessMessage);
-                selfs.afterInitialized();
-            });
+            await this.loadCredit();
+            await this.afterInitialized();
+
+            if(firsts) await this.setState('firstset');
         } catch(eGlobal) {
             ShuttingStarsUtility.toast('ERROR : ' + eGlobal, true);
             console.error(eGlobal);
             ShuttingStarsUtility.toast('Last Success : ' + this.lastInitSuccessMessage);
+            this.destroy();
+            throw eGlobal;
         }
     }
 
@@ -1278,20 +1267,22 @@ class ShuttingStarsCore {
      */
     afterInitialized() {
         const selfs = this;
-        this.menuChoosing = this.menuListDynamic[0];
-        this.rebuildBroker();
-        setTimeout(() => {
-            try {
-                if(selfs.createMode) selfs.fAfterInit(selfs.broker, selfs);
-                else                 selfs.fAfterInit(selfs.broker, null);
-                selfs.logInit('fAfterInit end.'); 
-            } catch(exSelf) { console.error(exSelf); selfs.logInit('fAfterInit failed. ' + exSelf); }
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                try {
+                    selfs.rebuildBroker();
+                    if(selfs.createMode) selfs.fAfterInit(selfs.broker, selfs);
+                    else                 selfs.fAfterInit(selfs.broker, null);
+                    selfs.logInit('fAfterInit end.'); 
+                } catch(exSelf) { console.error(exSelf); selfs.logInit('fAfterInit failed. ' + exSelf); }
 
-            selfs.handleScreenResized();
-            selfs.titleScreenWaiting = true;
-            selfs.accessililityLog('Press ENTER key to continue.');
-            selfs.fGameEvent({ "event" : 'afterinit', "broker" : selfs.broker });
-        }, 4000);
+                selfs.handleScreenResized();
+                selfs.titleScreenWaiting = true;
+                selfs.accessililityLog('Press ENTER key to continue.');
+                selfs.fGameEvent({ "event" : 'afterinit', "broker" : selfs.broker });
+                resolve(true);
+            }, 4000);
+        });
     }
 
     /**
@@ -12654,7 +12645,7 @@ class ShuttingStarsManager {
     }
 
     /**
-     * 지정한 영역에 ShuttingStars 게임 적용
+     * 지정한 영역에 ShuttingStars 게임 적용 (Promise)
      * @param {HTMLElement|null} mainDiv 게임 캔버스를 배치할 DOM 요소
      * @param {string|null} urlContext 리소스 URL의 기준 경로
      * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Shutting Stars</title>
+    <!--
+    샘플 화면
+    
+    LICENSE
+    
+    Copyright 2026 HJOW (hujinone22@naver.com)
+    
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+    
+        http://www.apache.org/licenses/LICENSE-2.0
+    
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License. 
+    -->
+    <!-- Pure CSS -->
+    <link rel="stylesheet" href="./resources/css/pure-min.css"/>
+    <!-- Google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Nanum+Pen+Script&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet"/>
+    <!-- Google Login Buttons -->
+    <link rel="stylesheet" href="./resources/css/googleloginbuttons.css"/>
+    
+    <!--
+    Firebase 기반 스코어 랭킹 기능 등을 사용할 때 활성화, 활성화 안해도 게임 동작에는 문제 없음
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-database-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-remote-config-compat.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-performance-compat.js"></script>
+    <script type="text/javascript">
+    // Firebase 사용 시 이 곳에 API 키 정보 등을 입력
+    firebase.initializeApp({
+        "apiKey": "",
+        "appId": "",
+        "authDomain": "",
+        "databaseURL": "",
+        "measurementId": "",
+        "messagingSenderId": "",
+        "projectId": "",
+        "storageBucket": ""
+    });
+    </script>
+    -->
+
+    <!-- YOUTUBE API -->
+    <script type="text/javascript" src="https://www.youtube.com/iframe_api"></script>
+    <!-- Crypto-JS (Web Crypto API 지원하는 최신 브라우저에서는 필요 없음) -->
+    <script type="text/javascript" src='resources/js/crypto-js.min.js'></script>
+    <!-- Shutting Stars 핵심 스크립트 (번들 통합본) -->
+    <script type="text/javascript" src='resources/js/dist/shuttingstars.bundle.js'></script>
+    <!-- Shutting Stars 관련 CSS -->
+    <link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
+    <link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
+    <link rel="stylesheet" href="./resources/fonts/fonts.css"/>
+    <link rel="stylesheet" href="./resources/css/common.css"/>
+  </head>
+  <body>
+    <!-- Game 메인 영역 -->
+    <div id='shuttingstar_canvas_root'></div>
+  
+    <!-- 초기화 전 로딩화면 영역 -->
+    <div id="shuttingstars_init_loading">
+        <progress></progress>
+    </div>
+
+    <!-- 스크립트로 게임 구동 -->
+    <script type="module">
+    window.addEventListener('load', function(){
+        // shuttingstar_canvas_root 영역에 게임 화면 배치
+        const root = document.getElementById('shuttingstar_canvas_root');
+        // 게임 초기화 및 동작 시작
+        ShuttingStars.init(root, './', function(broker) {});
+    
+        // 로딩화면 숨기기
+        document.getElementById('shuttingstars_init_loading').style.display = 'none';
+    });
+    </script>
+  </body>
+</html>

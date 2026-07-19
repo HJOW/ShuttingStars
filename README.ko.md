@@ -12,7 +12,7 @@ https://shuttingstars-3eddf.web.app
 
 ## 로컬에서 서버 구동 (node 사용)
 
-node 설치가 필요합니다. (https://nodejs.org/ko)   
+node 설치가 필요합니다. [Node.JS (https://nodejs.org/ko)](https://nodejs.org/ko)   
 다음 명령어를 프로젝트 최상단 디렉토리에서 실행합니다.
 ```
 npm install
@@ -22,7 +22,7 @@ npm start
 
 ## 로컬에서 서버 구동 (deno 사용)
 
-deno 설치가 필요합니다. (https://deno.com/)    
+deno 설치가 필요합니다. [Deno (https://deno.com/)](https://deno.com/)    
 다음 명령어를 프로젝트 최상단 디렉토리에서 실행합니다.
 ```
 deno install
@@ -39,6 +39,8 @@ deno task start
 
 ## HTML 에서 사용 (원하는 페이지에 미니게임처럼 넣고 싶을 때)
 
+[샘플 참고 (sample.html)](./src/main/webapp/sample.html)    
+    
 Webpack 을 이용하여 JavaScript 파일들을 하나의 파일로 합쳐 사용합니다.    
 (node 또는 deno 서버를 구동할 때마다 webpack 이 한번씩 동작하여 파일을 재생성합니다.)
 shuttingstars.bundle.js 파일 하나를 일반 JavaScript 파일로 탑재하여 사용할 수 있습니다.    
@@ -77,7 +79,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 ## 개인정보처리방침
 
-https://hjow.duckdns.org/shuttingstars/privacy.html
+[개인정보처리방침 (https://hjow.duckdns.org/shuttingstars/privacy.html)](https://hjow.duckdns.org/shuttingstars/privacy.html)
 
 ## 메인 써드파티 곡
 

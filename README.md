@@ -13,7 +13,7 @@ https://shuttingstars-3eddf.web.app
 
 ## Simply run this game on local PC (using node)
 
-Install node (https://nodejs.org)       
+Install node [Node.JS (https://nodejs.org/ko)](https://nodejs.org/ko)       
 Then, run following command on project directory.    
 ```
 npm install
@@ -23,7 +23,7 @@ Then, open "localhost:9690" with your web browser.
 
 ## Simply run this game on local PC (using deno)
 
-Install deno (https://deno.com/)    
+Install deno [Deno (https://deno.com/)](https://deno.com/)    
 Then, run following command on project directory.    
 ```
 deno install
@@ -40,6 +40,8 @@ WEB Sources : src/main/webapp
 
 ## Use in HTML
 
+[Sample Page (sample.html)](./src/main/webapp/sample.html)    
+    
 Webpack is used to bundle the JavaScript files into a single file.    
 You can use it by loading `shuttingstars.bundle.js` as a normal JavaScript file.    
 ```
