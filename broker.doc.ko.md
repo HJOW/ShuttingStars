@@ -187,7 +187,7 @@ ShuttingStars.init(root, './', function(broker) {
 - 설명    
     + 객체 리터럴 형태의 데이터를, 실제 게임 내에서 사용되는 ShuttingStarsSong 타입의 객체로 변환하는 메소드입니다.
     + 변경 불가 (이 apply 메소드를 이용해 apply 메소드를 교체하는 것이 불가능)
-    + songs.json 을 참고하여, 객체 리터럴의 형태를 확인해 보세요.
+    + [songs.json](./src/main/webapp/resources/json/songs.json) 을 참고하여, 객체 리터럴의 형태를 확인해 보세요.
 
 ### addSong
 

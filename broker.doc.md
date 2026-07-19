@@ -186,7 +186,7 @@ ShuttingStars.init(root, './', function(broker) {
 - Description
     + Converts object-literal data into a `ShuttingStarsSong` object used by the actual game.
     + Cannot be changed. It is not possible to replace this method by using the `apply` method.
-    + Refer to `songs.json` to see the object literal format.
+    + Refer to [songs.json](./src/main/webapp/resources/json/songs.json) to see the object literal format.
 
 ### addSong
 
