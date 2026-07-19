@@ -53,7 +53,10 @@ window.addEventListener('load', function(){
     ShuttingStars.init();
 });
 ```
-
+    
+If you want to customize something, see following document.    
+[Shutting Stars - Broker API](broker.doc.md)
+    
 ## LICENSE
 
 Copyright 2026 HJOW (hujinone22@naver.com)
