@@ -62,7 +62,7 @@ window.addEventListener('load', function(){
 ```
     
 일부 설정을 변경하려는 경우 다음 페이지를 참고해 주세요.    
-[Shutting Stars - Broker API](broker.doc.ko.md)
+[Shutting Stars - Broker API](./docs/broker.doc.ko.md)
     
 ## 라이센스
 

@@ -55,7 +55,7 @@ window.addEventListener('load', function(){
 ```
     
 If you want to customize something, see following document.    
-[Shutting Stars - Broker API](broker.doc.md)
+[Shutting Stars - Broker API](./docs/broker.doc.md)
     
 ## LICENSE
 
