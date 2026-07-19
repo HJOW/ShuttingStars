@@ -41,6 +41,9 @@ class ShuttingStars3DManager {
      * @param {ShuttingStarsCore} coreInst 게임 코어 인스턴스
      */
     onWindowResize(canvas3d, coreInst) {}
+
+    /** 객체 사용 종료 */
+    destroy(coreInst) {}
 }
 class ShuttingStars3DObject {
     /** @type {number} 인스턴스를 식별하는 고유 일련번호 */
@@ -418,6 +421,21 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
         return this.resolution.h - Math.round((y * this.resolution.h / this.fullStages.h));
     }
 
+    /** 
+     * 객체 사용 종료 
+    */
+    destroy(coreInst) {
+        super.destroy(coreInst);
+        if(this.audioVisualizer != null) { try { this.audioVisualizer.dispose(); } catch(e) {} this.audioVisualizer = null; }
+        if(coreInst) {
+            if(coreInst.object3ds) {
+                for(let idx=0; idx<coreInst.object3ds.length; idx++) {
+                    try { coreInst.object3ds[idx].dispose(); } catch(e) {}
+                }
+            }
+            coreInst.object3ds = [];
+        }
+    }
 }
 
 // 표준 3D 객체

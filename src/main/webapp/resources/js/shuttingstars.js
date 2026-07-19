@@ -358,12 +358,14 @@ class ShuttingStarsCore {
 
     /** @type {boolean} 하드코어 모드 (커맨드로 설정) - 판정도 빡빡해지고, PW 소모량도 대폭 증가 */
     hardcoreMode = false;
+    /** @type {boolean} 결벽증 모드 (커맨드로 설정) - BAD, MISS 하나라도 발생하면 바로 게임 오버 */
+    mysophobiaMode = false;
     /** @type {boolean} 노트 숨김 모드 (커맨드로 설정) */
     invisibleNoteMode = false;
     /** @type {boolean} 롱노트 거부 (커맨드로 설정) */
     noLongNote = false;
 
-    /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / listenchoosing / listentitle / listenplaying / setting / credit */
+    /** @type {string} 현재 상태, title / firstset / menu / songchoosing / songtitle / playing / gameover / result / listenchoosing / listentitle / listenplaying / setting / credit / empty */
     state = 'title';
     /** @type {string} 이전 상태 */
     beforeState = 'none';
@@ -1322,65 +1324,69 @@ class ShuttingStarsCore {
             }
         }
 
-        // 공용 가상 키 및 마우스 이벤트 부여
-        this.addDeclaredKeys(this.enterKey);
-        this.addDeclaredKeys(this.escKey);
-
-        // 상태 별 가상 키 및 마우스 이벤트 부여
-        if(state == 'playing') {
-            // 플레이 중 - 설정된 키 모두 출력
-            for(idx=0; idx<this.keyList.length; idx++) {
-                let keyOne = this.keyList[idx];
-                this.addDeclaredKeys(keyOne);
-            }
-        } else {
-            // 그외의 경우 - 방향키
-
-            // 방향키
-            for(idx=0; idx<this.arrowKeys.length; idx++) {
-                this.addDeclaredKeys(this.arrowKeys[idx]);
-            }
-
-            // 곡 선택 화면 - 유튜브 기반 곡의 경우 S 키로 유튜브 접속 가능해야 함
-            if(state == 'songchoosing' || state == 'listenchoosing') {
-                this.addDeclaredKeys(this.keyList[0]);
-            }
-
-            // 감상 모드 - D키로 곡 선택해야 함
-            if(state == 'listenchoosing') {
-                this.addDeclaredKeys(this.keyList[1]);
-            }
-        }
-        // 상태 별 가상 키 및 마우스 이벤트 부여 // 종료
-
-        // 상태별 데이터 조회 요청
-        if(state == 'recordlist') {
-            if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
-        }
-
-        // 곡 준비상태 초기화
-        if(state != 'playing' && state != 'listenplaying') {
-            this.songPrepared = false;
-        }
-
-        // 일부 상태는 스테이지 리셋이 필요
-        if(state == 'menu' || state == 'playing' || state == 'listenplaying' || state == 'songchoosing' || state == 'songtitle' || state == 'listenchoosing' || state == 'listentitle') {
+        if(this.state == 'empty') { // 빈 화면
             await this.resetStage();
-        }
+        } else {
+            // 공용 가상 키 및 마우스 이벤트 부여
+            this.addDeclaredKeys(this.enterKey);
+            this.addDeclaredKeys(this.escKey);
 
-        // 최초 메뉴 진입 시 창 크기 다시 새로고침
-        if(this.beforeState == 'title' && (state == 'menu' || state == 'songtitle' || state == 'listentitle')) {
-            this.handleScreenResized();
-        }
+            // 상태 별 가상 키 및 마우스 이벤트 부여
+            if(state == 'playing') {
+                // 플레이 중 - 설정된 키 모두 출력
+                for(idx=0; idx<this.keyList.length; idx++) {
+                    let keyOne = this.keyList[idx];
+                    this.addDeclaredKeys(keyOne);
+                }
+            } else {
+                // 그외의 경우 - 방향키
 
-        // 설정 화면
-        if(state == 'setting') {
-            // 설정 화면 진입 시, 직전 state 백업
-            this.beforeSettingState = this.beforeState;
+                // 방향키
+                for(idx=0; idx<this.arrowKeys.length; idx++) {
+                    this.addDeclaredKeys(this.arrowKeys[idx]);
+                }
 
-            if(this.configDiv != null) {
-                // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
-                this.openConfigDiv();
+                // 곡 선택 화면 - 유튜브 기반 곡의 경우 S 키로 유튜브 접속 가능해야 함
+                if(state == 'songchoosing' || state == 'listenchoosing') {
+                    this.addDeclaredKeys(this.keyList[0]);
+                }
+
+                // 감상 모드 - D키로 곡 선택해야 함
+                if(state == 'listenchoosing') {
+                    this.addDeclaredKeys(this.keyList[1]);
+                }
+            }
+            // 상태 별 가상 키 및 마우스 이벤트 부여 // 종료
+
+            // 상태별 데이터 조회 요청
+            if(state == 'recordlist') {
+                if(this.selectRecordType == 'internet') { this.getInternetRecords().then((list) => { selfs.selectedRecordList = list; if(list != null && list.length >= 1) selfs.seeingRecord = selfs.selectedRecordList[0]; }); }
+            }
+
+            // 곡 준비상태 초기화
+            if(state != 'playing' && state != 'listenplaying') {
+                this.songPrepared = false;
+            }
+
+            // 일부 상태는 스테이지 리셋이 필요
+            if(state == 'menu' || state == 'playing' || state == 'listenplaying' || state == 'songchoosing' || state == 'songtitle' || state == 'listenchoosing' || state == 'listentitle') {
+                await this.resetStage();
+            }
+
+            // 최초 메뉴 진입 시 창 크기 다시 새로고침
+            if(this.beforeState == 'title' && (state == 'menu' || state == 'songtitle' || state == 'listentitle')) {
+                this.handleScreenResized();
+            }
+
+            // 설정 화면
+            if(state == 'setting') {
+                // 설정 화면 진입 시, 직전 state 백업
+                this.beforeSettingState = this.beforeState;
+
+                if(this.configDiv != null) {
+                    // 캔버스 내 자체 설정화면 대신, 상세설정 div 레이어를 띄움
+                    this.openConfigDiv();
+                }
             }
         }
 
@@ -1438,9 +1444,11 @@ class ShuttingStarsCore {
         this.broker.coordinate2dDebugMode   = this.coordinate2dDebugMode   ;
         this.broker.timeElapseDebugMode     = this.timeElapseDebugMode     ;
         this.broker.numberDebugMode         = this.numberDebugMode         ;
-        this.broker.performanceDebugMode    = this.performanceDebugMode     ;
+        this.broker.performanceDebugMode    = this.performanceDebugMode    ;
         this.broker.visualizePeakDebugMode  = this.visualizePeakDebugMode  ;
         this.broker.gameOverEnabled         = this.gameOverEnabled         ;
+        this.broker.hardcoreMode            = this.hardcoreMode            ;
+        this.broker.mysophobiaMode          = this.mysophobiaMode          ;
         this.broker.virtualKeyForce         = this.virtualKeyForce         ;
         this.broker.urlCtx                  = this.urlCtx                  ;
         this.broker.rsscDirName             = this.rsscDirName             ;
@@ -1487,6 +1495,8 @@ class ShuttingStarsCore {
             if(typeof(obj.performanceDebugMode   ) != 'undefined') selfs.performanceDebugMode    = obj.performanceDebugMode    ;
             if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
             if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
+            if(typeof(obj.hardcoreMode           ) != 'undefined') selfs.hardcoreMode            = obj.hardcoreMode            ;
+            if(typeof(obj.mysophobiaMode         ) != 'undefined') selfs.mysophobiaMode          = obj.mysophobiaMode          ;
             if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
             if(typeof(obj.urlCtx                 ) != 'undefined') selfs.urlCtx                  = obj.urlCtx                  ;
             if(typeof(obj.rsscDirName            ) != 'undefined') selfs.rsscDirName             = obj.rsscDirName             ;
@@ -1858,6 +1868,11 @@ class ShuttingStarsCore {
                     if(typeof(this.hardcoreMode) == 'string') this.hardcoreMode = ( (this.hardcoreMode == 'Y' || this.hardcoreMode == 'true') ? true : false );
                 }
 
+                if(typeof(settingJson.mysophobiaMode) != 'undefined') {
+                    this.mysophobiaMode = settingJson.mysophobiaMode;
+                    if(typeof(this.mysophobiaMode) == 'string') this.mysophobiaMode = ( (this.mysophobiaMode == 'Y' || this.mysophobiaMode == 'true') ? true : false );
+                }
+
                 if(typeof(settingJson.invisibleNoteMode) != 'undefined') {
                     this.invisibleNoteMode = settingJson.invisibleNoteMode;
                     if(typeof(this.invisibleNoteMode) == 'string') this.invisibleNoteMode = ( (this.invisibleNoteMode == 'Y' || this.invisibleNoteMode == 'true') ? true : false );
@@ -1932,6 +1947,7 @@ class ShuttingStarsCore {
             settingJson.disable3d           = this.disable3d;
             settingJson.disable2d           = this.disable2d;
             settingJson.hardcoreMode        = this.hardcoreMode;
+            settingJson.mysophobiaMode      = this.mysophobiaMode;
             settingJson.invisibleNoteMode   = this.invisibleNoteMode;
             settingJson.noLongNote          = this.noLongNote;
             settingJson.language            = this.language;
@@ -4142,13 +4158,15 @@ class ShuttingStarsCore {
             this.combo = 0;
             this.missCombo = 0;
             this.report.BAD++;
-            this.hp -= 1.0;
+            if(this.mysophobiaMode) this.hp = 0;
+            else this.hp -= 1.0;
             if(this.hp < 0) this.hp = 0;
         } else {
             this.combo = 0;
             this.missCombo++;
             this.report.MISS++;
-            this.hp -= (4.0 + (this.missCombo >= 1 ? (  this.missCombo >= 10 ? 2 : 1 ) : 0));
+            if(this.mysophobiaMode) this.hp = 0;
+            else this.hp -= (4.0 + (this.missCombo >= 1 ? (  this.missCombo >= 10 ? 2 : 1 ) : 0));
             if(this.hp < 0) this.hp = 0;
         }
     }
@@ -6710,6 +6728,7 @@ class ShuttingStarsCore {
                 selfs.saveSettings(false);
             }
         });
+
         this.commands.push({
             command : [5, 4, 3, 2, 1, 0],
             act : function() {
@@ -6718,16 +6737,25 @@ class ShuttingStarsCore {
                 selfs.saveSettings(false);
             }
         });
+
         this.commands.push({
             command : [0, 1, 0, 1, 0, 1],
             act : function() {
                 selfs.gameOverEnabled = (! selfs.gameOverEnabled);
             }
         });
+
         this.commands.push({
             command : [4, 4, 4, 4, 4, 4],
             act : function() {
                 selfs.hardcoreMode = (! selfs.hardcoreMode);
+            }
+        });
+
+        this.commands.push({
+            command : [3, 3, 4, 4, 5, 5],
+            act : function() {
+                selfs.mysophobiaMode = (! selfs.mysophobiaMode);
             }
         });
 
@@ -6832,6 +6860,12 @@ class ShuttingStarsCore {
         //    하드코어 모드
         if(this.hardcoreMode) {
             label = '[HARDCORE]';
+            commands.push(label);
+        }
+
+        //    결벽증 모드
+        if(this.mysophobiaMode) {
+            label = '[MYSOPHOBIA]';
             commands.push(label);
         }
 
@@ -10729,11 +10763,16 @@ class ShuttingStarsCore {
         try { this.clearTimeHandler();  } catch(e) {}
         try { this.closeAudioSources(); } catch(e) {}
 
+        if(this.youtubePopPlayer != null) { try { this.youtubePopPlayer.destroy(); } catch(e) {} }
+        if(this.youtubePlayer    != null) { try { this.youtubePlayer.destroy();    } catch(e) {} }
+
         for(let idx=0; idx<this.onDestroyTasks.length; idx++) {
             const taskOne = this.onDestroyTasks[idx];
             try { taskOne(); } catch(e) { console.error(e); }
         }
         this.onDestroyTasks = [];
+
+        if(this.ss3d != null) { try { this.ss3d.destroy(this); } catch(e) {}; this.ss3d = null; }
 
         this.songs = [];
         this.songDisplays = [];

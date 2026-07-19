@@ -102,48 +102,50 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         super();
         const selfs = this;
 
-        this.usingGoogleLogin = true;
+        if(! this.avail) {
+            this.usingGoogleLogin = true;
 
-        // Firebase 활성화
-        try { this.auth         = firebase.auth();         } catch(e) { console.error(e); }
-        try { this.firestore    = firebase.firestore();    } catch(e) { console.error(e); }
-        try { this.messaging    = firebase.messaging();    } catch(e) { console.error(e); }
-        try { this.remoteConfig = firebase.remoteConfig(); } catch(e) { console.error(e); }
-        try { this.rtdb         = firebase.database();     } catch(e) { console.error(e); }
-        try { this.perf         = firebase.performance();  } catch(e) { console.error(e); }
-        try { this.analytics    = firebase.analytics();    } catch(e) { console.error(e); }
+            // Firebase 활성화
+            try { this.auth         = firebase.auth();         } catch(e) { console.error(e); }
+            try { this.firestore    = firebase.firestore();    } catch(e) { console.error(e); }
+            try { this.messaging    = firebase.messaging();    } catch(e) { console.error(e); }
+            try { this.remoteConfig = firebase.remoteConfig(); } catch(e) { console.error(e); }
+            try { this.rtdb         = firebase.database();     } catch(e) { console.error(e); }
+            try { this.perf         = firebase.performance();  } catch(e) { console.error(e); }
+            try { this.analytics    = firebase.analytics();    } catch(e) { console.error(e); }
 
-        // 인증 유지력 지정
-        this.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            // 인증 유지력 지정
+            this.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-        // 인증 상태 이벤트 부여
-        this.auth.onAuthStateChanged((user) => {
-            if(user) {
-                selfs.user = user;
-                selfs.logined = true;
-            } else {
-                selfs.logined = false;
-                if(selfs.analytics != null) { selfs.analytics.setUserId(''); }
-            }
+            // 인증 상태 이벤트 부여
+            this.auth.onAuthStateChanged((user) => {
+                if(user) {
+                    selfs.user = user;
+                    selfs.logined = true;
+                } else {
+                    selfs.logined = false;
+                    if(selfs.analytics != null) { selfs.analytics.setUserId(''); }
+                }
 
-            for(let idx=0; idx<selfs.authStateChangedEvents.length; idx++) {
-                const fAuthStateHandler = selfs.authStateChangedEvents[idx];
-                if(typeof(fAuthStateHandler) == 'function') fAuthStateHandler(selfs);
-            }
-        });
+                for(let idx=0; idx<selfs.authStateChangedEvents.length; idx++) {
+                    const fAuthStateHandler = selfs.authStateChangedEvents[idx];
+                    if(typeof(fAuthStateHandler) == 'function') fAuthStateHandler(selfs);
+                }
+            });
 
-        // Remote Config
-        this.remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
-        this.remoteConfig.defaultConfig = {
-            frameTime              : 10
-          , resumeDelayTime        : 16
-          , songTitleBaseTime      : 120
-          , visualizeBarMultiplier : 2.2
-          , backStarlightCount     : 20
-          , noticeEn : ''
-          , noticeKo : ''
-          , noticeWhen : 0
-        };
+            // Remote Config
+            this.remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
+            this.remoteConfig.defaultConfig = {
+                frameTime              : 10
+            , resumeDelayTime        : 16
+            , songTitleBaseTime      : 120
+            , visualizeBarMultiplier : 2.2
+            , backStarlightCount     : 20
+            , noticeEn : ''
+            , noticeKo : ''
+            , noticeWhen : 0
+            };
+        }
         
         this.avail = true;
     }
