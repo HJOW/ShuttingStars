@@ -1462,48 +1462,49 @@ class ShuttingStarsCore {
         }
 
         this.broker.apply = function(obj) {
+            const brokerSelf = this;
 
             // createMode 는 한번 true 로 바꾸면 false 로 변경 못해야 함
             if(typeof(obj.createMode) != 'undefined') {
                 if(obj.createMode) selfs.createMode = true;
             }
-
+            
             // 기타 항목 처리
-            if(typeof(obj.dark                   ) != 'undefined') selfs.dark                    = obj.dark                    ;
-            if(typeof(obj.reverseVertical        ) != 'undefined') selfs.reverseVertical         = obj.reverseVertical         ;
-            if(typeof(obj.keyList                ) != 'undefined') selfs.keyList                 = obj.keyList                 ;
-            if(typeof(obj.arrowKeys              ) != 'undefined') selfs.arrowKeys               = obj.arrowKeys               ;
-            if(typeof(obj.enterKey               ) != 'undefined') selfs.enterKey                = obj.enterKey                ;
-            if(typeof(obj.escKey                 ) != 'undefined') selfs.escKey                  = obj.escKey                  ;
-            if(typeof(obj.fontFamily             ) != 'undefined') selfs.fontFamily              = obj.fontFamily              ;
-            if(typeof(obj.pointFont              ) != 'undefined') selfs.pointFont               = obj.pointFont               ;
-            if(typeof(obj.alterFonts             ) != 'undefined') selfs.alterFonts              = obj.alterFonts              ;
-            if(typeof(obj.volume                 ) != 'undefined') selfs.volume                  = obj.volume                  ;
-            if(typeof(obj.volumeBackgroundDefault) != 'undefined') selfs.volumeBackgroundDefault = obj.volumeBackgroundDefault ;
-            if(typeof(obj.noteSpeedMultiplier    ) != 'undefined') selfs.noteSpeedMultiplier     = obj.noteSpeedMultiplier     ;
-            if(typeof(obj.useAudioVisualizer     ) != 'undefined') selfs.useAudioVisualizer      = obj.useAudioVisualizer      ;
-            if(typeof(obj.renderDebugMode        ) != 'undefined') selfs.renderDebugMode         = obj.renderDebugMode         ;
-            if(typeof(obj.stringTableDebugMode   ) != 'undefined') selfs.stringTableDebugMode    = obj.stringTableDebugMode    ;
-            if(typeof(obj.keyInputDebugMode      ) != 'undefined') selfs.keyInputDebugMode       = obj.keyInputDebugMode       ;
-            if(typeof(obj.keyReleaseDebugMode    ) != 'undefined') selfs.keyReleaseDebugMode     = obj.keyReleaseDebugMode     ;
-            if(typeof(obj.mouseClickDebugMode    ) != 'undefined') selfs.mouseClickDebugMode     = obj.mouseClickDebugMode     ;
-            if(typeof(obj.initDebugMode          ) != 'undefined') selfs.initDebugMode           = obj.initDebugMode           ;
-            if(typeof(obj.songDebugMode          ) != 'undefined') selfs.songDebugMode           = obj.songDebugMode           ;
-            if(typeof(obj.coordinate2dDebugMode  ) != 'undefined') selfs.coordinate2dDebugMode   = obj.coordinate2dDebugMode   ;
-            if(typeof(obj.timeElapseDebugMode    ) != 'undefined') selfs.timeElapseDebugMode     = obj.timeElapseDebugMode     ;
-            if(typeof(obj.numberDebugMode        ) != 'undefined') selfs.numberDebugMode         = obj.numberDebugMode         ;
-            if(typeof(obj.performanceDebugMode   ) != 'undefined') selfs.performanceDebugMode    = obj.performanceDebugMode    ;
-            if(typeof(obj.visualizePeakDebugMode ) != 'undefined') selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ;
-            if(typeof(obj.gameOverEnabled        ) != 'undefined') selfs.gameOverEnabled         = obj.gameOverEnabled         ;
-            if(typeof(obj.hardcoreMode           ) != 'undefined') selfs.hardcoreMode            = obj.hardcoreMode            ;
-            if(typeof(obj.mysophobiaMode         ) != 'undefined') selfs.mysophobiaMode          = obj.mysophobiaMode          ;
-            if(typeof(obj.virtualKeyForce        ) != 'undefined') selfs.virtualKeyForce         = obj.virtualKeyForce         ;
-            if(typeof(obj.urlCtx                 ) != 'undefined') selfs.urlCtx                  = obj.urlCtx                  ;
-            if(typeof(obj.rsscDirName            ) != 'undefined') selfs.rsscDirName             = obj.rsscDirName             ;
-            if(typeof(obj.fOuterWidth            ) == 'function' ) selfs.fOuterWidth             = obj.fOuterWidth             ;
-            if(typeof(obj.fOuterHeight           ) == 'function' ) selfs.fOuterHeight            = obj.fOuterHeight            ;
-            if(typeof(obj.fOnShutdownCalled      ) == 'function' ) selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ;
-            if(typeof(obj.fGameEvent             ) == 'function' ) selfs.fGameEvent              = obj.fOnShutdownCalled       ;
+            if(typeof(obj.dark                   ) != 'undefined') { selfs.dark                    = obj.dark                    ; brokerSelf.dark                    = obj.dark                    }
+            if(typeof(obj.reverseVertical        ) != 'undefined') { selfs.reverseVertical         = obj.reverseVertical         ; brokerSelf.reverseVertical         = obj.reverseVertical         }
+            if(typeof(obj.keyList                ) != 'undefined') { selfs.keyList                 = obj.keyList                 ; brokerSelf.keyList                 = obj.keyList                 }
+            if(typeof(obj.arrowKeys              ) != 'undefined') { selfs.arrowKeys               = obj.arrowKeys               ; brokerSelf.arrowKeys               = obj.arrowKeys               }
+            if(typeof(obj.enterKey               ) != 'undefined') { selfs.enterKey                = obj.enterKey                ; brokerSelf.enterKey                = obj.enterKey                }
+            if(typeof(obj.escKey                 ) != 'undefined') { selfs.escKey                  = obj.escKey                  ; brokerSelf.escKey                  = obj.escKey                  }
+            if(typeof(obj.fontFamily             ) != 'undefined') { selfs.fontFamily              = obj.fontFamily              ; brokerSelf.fontFamily              = obj.fontFamily              }
+            if(typeof(obj.pointFont              ) != 'undefined') { selfs.pointFont               = obj.pointFont               ; brokerSelf.pointFont               = obj.pointFont               }
+            if(typeof(obj.alterFonts             ) != 'undefined') { selfs.alterFonts              = obj.alterFonts              ; brokerSelf.alterFonts              = obj.alterFonts              }
+            if(typeof(obj.volume                 ) != 'undefined') { selfs.volume                  = obj.volume                  ; brokerSelf.volume                  = obj.volume                  }
+            if(typeof(obj.volumeBackgroundDefault) != 'undefined') { selfs.volumeBackgroundDefault = obj.volumeBackgroundDefault ; brokerSelf.volumeBackgroundDefault = obj.volumeBackgroundDefault }
+            if(typeof(obj.noteSpeedMultiplier    ) != 'undefined') { selfs.noteSpeedMultiplier     = obj.noteSpeedMultiplier     ; brokerSelf.noteSpeedMultiplier     = obj.noteSpeedMultiplier     }
+            if(typeof(obj.useAudioVisualizer     ) != 'undefined') { selfs.useAudioVisualizer      = obj.useAudioVisualizer      ; brokerSelf.useAudioVisualizer      = obj.useAudioVisualizer      }
+            if(typeof(obj.renderDebugMode        ) != 'undefined') { selfs.renderDebugMode         = obj.renderDebugMode         ; brokerSelf.renderDebugMode         = obj.renderDebugMode         }
+            if(typeof(obj.stringTableDebugMode   ) != 'undefined') { selfs.stringTableDebugMode    = obj.stringTableDebugMode    ; brokerSelf.stringTableDebugMode    = obj.stringTableDebugMode    }
+            if(typeof(obj.keyInputDebugMode      ) != 'undefined') { selfs.keyInputDebugMode       = obj.keyInputDebugMode       ; brokerSelf.keyInputDebugMode       = obj.keyInputDebugMode       }
+            if(typeof(obj.keyReleaseDebugMode    ) != 'undefined') { selfs.keyReleaseDebugMode     = obj.keyReleaseDebugMode     ; brokerSelf.keyReleaseDebugMode     = obj.keyReleaseDebugMode     }
+            if(typeof(obj.mouseClickDebugMode    ) != 'undefined') { selfs.mouseClickDebugMode     = obj.mouseClickDebugMode     ; brokerSelf.mouseClickDebugMode     = obj.mouseClickDebugMode     }
+            if(typeof(obj.initDebugMode          ) != 'undefined') { selfs.initDebugMode           = obj.initDebugMode           ; brokerSelf.initDebugMode           = obj.initDebugMode           }
+            if(typeof(obj.songDebugMode          ) != 'undefined') { selfs.songDebugMode           = obj.songDebugMode           ; brokerSelf.songDebugMode           = obj.songDebugMode           }
+            if(typeof(obj.coordinate2dDebugMode  ) != 'undefined') { selfs.coordinate2dDebugMode   = obj.coordinate2dDebugMode   ; brokerSelf.coordinate2dDebugMode   = obj.coordinate2dDebugMode   }
+            if(typeof(obj.timeElapseDebugMode    ) != 'undefined') { selfs.timeElapseDebugMode     = obj.timeElapseDebugMode     ; brokerSelf.timeElapseDebugMode     = obj.timeElapseDebugMode     }
+            if(typeof(obj.numberDebugMode        ) != 'undefined') { selfs.numberDebugMode         = obj.numberDebugMode         ; brokerSelf.numberDebugMode         = obj.numberDebugMode         }
+            if(typeof(obj.performanceDebugMode   ) != 'undefined') { selfs.performanceDebugMode    = obj.performanceDebugMode    ; brokerSelf.performanceDebugMode    = obj.performanceDebugMode    }
+            if(typeof(obj.visualizePeakDebugMode ) != 'undefined') { selfs.visualizePeakDebugMode  = obj.visualizePeakDebugMode  ; brokerSelf.visualizePeakDebugMode  = obj.visualizePeakDebugMode  }
+            if(typeof(obj.gameOverEnabled        ) != 'undefined') { selfs.gameOverEnabled         = obj.gameOverEnabled         ; brokerSelf.gameOverEnabled         = obj.gameOverEnabled         }
+            if(typeof(obj.hardcoreMode           ) != 'undefined') { selfs.hardcoreMode            = obj.hardcoreMode            ; brokerSelf.hardcoreMode            = obj.hardcoreMode            }
+            if(typeof(obj.mysophobiaMode         ) != 'undefined') { selfs.mysophobiaMode          = obj.mysophobiaMode          ; brokerSelf.mysophobiaMode          = obj.mysophobiaMode          }
+            if(typeof(obj.virtualKeyForce        ) != 'undefined') { selfs.virtualKeyForce         = obj.virtualKeyForce         ; brokerSelf.virtualKeyForce         = obj.virtualKeyForce         }
+            if(typeof(obj.urlCtx                 ) != 'undefined') { selfs.urlCtx                  = obj.urlCtx                  ; brokerSelf.urlCtx                  = obj.urlCtx                  }
+            if(typeof(obj.rsscDirName            ) != 'undefined') { selfs.rsscDirName             = obj.rsscDirName             ; brokerSelf.rsscDirName             = obj.rsscDirName             }
+            if(typeof(obj.fOuterWidth            ) == 'function' ) { selfs.fOuterWidth             = obj.fOuterWidth             ; brokerSelf.fOuterWidth             = obj.fOuterWidth             }
+            if(typeof(obj.fOuterHeight           ) == 'function' ) { selfs.fOuterHeight            = obj.fOuterHeight            ; brokerSelf.fOuterHeight            = obj.fOuterHeight            }
+            if(typeof(obj.fOnShutdownCalled      ) == 'function' ) { selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ; brokerSelf.fOnShutdownCalled       = obj.fOnShutdownCalled       }
+            if(typeof(obj.fGameEvent             ) == 'function' ) { selfs.fGameEvent              = obj.fGameEvent              ; brokerSelf.fGameEvent              = obj.fGameEvent              }
             if(typeof(obj.songs                  ) != 'undefined') {
                 for(let ssdx=0; ssdx<obj.songs.length; ssdx++) {
                     selfs.addSong(obj.songs[ssdx]);
