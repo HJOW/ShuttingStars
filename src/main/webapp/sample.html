@@ -84,10 +84,10 @@
         // shuttingstar_canvas_root 영역에 게임 화면 배치
         const root = document.getElementById('shuttingstar_canvas_root');
         // 게임 초기화 및 동작 시작
-        ShuttingStars.init(root, './', function(broker) {});
-    
-        // 로딩화면 숨기기
-        document.getElementById('shuttingstars_init_loading').style.display = 'none';
+        ShuttingStars.init(root, './', function(broker) {
+          // 로딩화면 숨기기
+          document.getElementById('shuttingstars_init_loading').style.display = 'none';
+        });
     });
     </script>
   </body>

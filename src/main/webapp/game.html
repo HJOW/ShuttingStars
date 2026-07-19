@@ -116,9 +116,9 @@
     <script type="module">
     window.addEventListener('load', function(){
         const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
-        ShuttingStars.init(root, './', function(broker) {});
-    
-        document.getElementById('shuttingstars_init_loading').style.display = 'none';
+        ShuttingStars.init(root, './', function(broker) {
+          document.getElementById('shuttingstars_init_loading').style.display = 'none';
+        });
     });
     </script>
   </body>

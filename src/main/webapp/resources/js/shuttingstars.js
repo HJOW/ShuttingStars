@@ -671,7 +671,7 @@ class ShuttingStarsCore {
      * 초기화 (게임이 출력될 div 영역 객체를 입력) Promise
      * @param {HTMLElement|null} rootDiv 게임 UI를 배치할 최상위 요소
      * @param {string|null} urlContext 리소스 URL의 기준 경로
-     * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능
+     * @param {null|function(object):void} fCustom 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며,첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능.이 함수는 fBeforeInit 과 fAfterInit 사이에 호출됨
      * @returns {Promise<void>}
      */
     async init(rootDiv, urlContext, fCustom) {
@@ -681,12 +681,8 @@ class ShuttingStarsCore {
             if(urlContext) this.urlCtx = urlContext;
 
             this.readURLParameters();
-            this.rebuildBroker();
-
             this.ssuuid = ShuttingStarsUtility.assureSSUUID();
-
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
-            if(typeof(fCustom) == 'function') fCustom(this.broker);
 
             this.backend = null;
             try {
@@ -750,6 +746,7 @@ class ShuttingStarsCore {
         }
         try {
             this.logInit('init started');
+            this.rebuildBroker();
             try { this.fBeforeInit(this.broker); this.logInit('fBeforeInit end.'); } catch(exSelf) { console.error(exSelf); this.logInit('fBeforeInit failed. ' + exSelf); }
             
             // 최상위 예약어 클래스
@@ -1220,6 +1217,9 @@ class ShuttingStarsCore {
             this.missions.push(new VeryHardSurviveSSMission(this));
             this.missions.push(new CrazySurviveSSMission(this));
 
+            // fCustom 호출
+            if(typeof(fCustom) == 'function') { this.rebuildBroker(); fCustom(this.broker); }
+
             this.logInit('loading third parties...');
             await this.loadAfter();
 
@@ -1247,12 +1247,14 @@ class ShuttingStarsCore {
             const mnList = await this.getMenuList();
             this.menuListDynamic = mnList;
             this.menuChoosing = this.menuListDynamic[0];
-            this.logInit('starting game...');
 
             await this.loadCredit();
             await this.afterInitialized();
-
             if(firsts) await this.setState('firstset');
+            this.logInit('starting game...');
+
+            this.rebuildBroker();
+            return this.broker;
         } catch(eGlobal) {
             ShuttingStarsUtility.toast('ERROR : ' + eGlobal, true);
             console.error(eGlobal);
@@ -1518,8 +1520,8 @@ class ShuttingStarsCore {
             // 곡 플레이 선택함.
             await selfs.setState('songtitle');
         }
-        this.broker.playSong = async function(song, difficultyLevel) {
-            await selfs.playSong(song, difficultyLevel);
+        this.broker.playSong = async function(song, difficultyLevel, listen) {
+            await selfs.playSong(song, difficultyLevel, listen);
         }
         this.broker.directSelectSong = async function(song) {
             await selfs.directSelectSong(song);
@@ -10363,9 +10365,11 @@ class ShuttingStarsCore {
      * 
      * @param {*} song 플레이할 곡 (ShuttingStarsSong 객체, 또는 곡의 serial 값)
      * @param {number|null} difficultyLevel 난이도 (선택사항, 사용 시 1~15 사이 자연수로 입력해야 함)
+     * @param {boolean|null} listen 듣기 여부 (선택사항)
      */
-    async playSong(song, difficultyLevel) {
+    async playSong(song, difficultyLevel, listen) {
         const selfs = this;
+        if(this.state == 'playing') throw new Error('Cannot use this while playing');
 
         try { this.stopAudio();            } catch(e) {}
         try { this.closeAudioSources();    } catch(e) {}
@@ -10400,7 +10404,9 @@ class ShuttingStarsCore {
         selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
         selfs.difficultyChoosing = false;
         selfs.titleDelayTime = Math.floor(20 * (selfs.noteSpeedMultiplier - 1));
-        await selfs.setState('songtitle');
+
+        if(listen) await selfs.setState('listentitle');
+        else       await selfs.setState('songtitle');
     }
 
     /**
@@ -10410,6 +10416,7 @@ class ShuttingStarsCore {
      */
     async directSelectSong(song) {
         const selfs = this;
+        if(this.state == 'playing') throw new Error('Cannot use this while playing');
 
         try { this.stopAudio();            } catch(e) {}
         try { this.closeAudioSources();    } catch(e) {}
@@ -12624,6 +12631,17 @@ class ShuttingStarsManager {
     }
 
     /**
+     * 곡 바로 플레이 / 감상
+     * 
+     * @param {*} song 해당 곡 (객체 자체, 혹은 곡의 serial 코드)
+     * @param {number} difficultyLevel 난이도 (1~15 사이 정수)
+     * @param {boolean} listen 감상 여부
+     */
+    async playSong(song, difficultyLevel, listen) {
+        await this.#originalInstances.playSong(song, difficultyLevel, listen);
+    }
+
+    /**
      * 
      * @param {*} song 선택할 곡 serial (string) 혹은 곡 자체 (ShuttingStarsSong 타입)
      * @returns {Promise<*>}
@@ -12648,7 +12666,7 @@ class ShuttingStarsManager {
      * 지정한 영역에 ShuttingStars 게임 적용 (Promise)
      * @param {HTMLElement|null} mainDiv 게임 캔버스를 배치할 DOM 요소
      * @param {string|null} urlContext 리소스 URL의 기준 경로
-     * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능
+     * @param {null|function(object):void} fCustom fCustom 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며,첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능.이 함수는 fBeforeInit 과 fAfterInit 사이에 호출됨
      * @returns {Promise<*>}
      */
     async init(mainDiv, urlContext, fCustom) {
@@ -12693,7 +12711,7 @@ function prepareDebugSSCoreInstances() {
  * 지정한 영역에 ShuttingStars 게임 적용 (Promise)
  * @param {HTMLElement|null} mainDiv 게임 캔버스를 배치할 DOM 요소
  * @param {string|null} urlContext 리소스 URL의 기준 경로
- * @param {null|function(object):void} fCustom 초기화 시작 전 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며, 초기화 전 함수가 호출되며 첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능
+ * @param {null|function(object):void} fCustom fCustom 일부 속성을 커스텀하고 싶을 때 사용, 선택사항으로, 사용하려면 함수를 넣어야 하며,첫 번째 매개변수로 들어오는 broker 객체를 통해 설정 커스텀 가능.이 함수는 fBeforeInit 과 fAfterInit 사이에 호출됨
  * @returns {Promise<*>}
  */
 async function initShuttingStars(mainDiv, urlContext, fCustom) {
