@@ -231,3 +231,6 @@ ShuttingStars.init(root, './', function(broker) {
     + Stops using the game. It removes the game from the screen and releases all occupied system resources.
     + Cannot be changed. It is not possible to replace this method by using the `apply` method.
 
+# Other APIs
+
+[Manager API](./manager.doc.md)

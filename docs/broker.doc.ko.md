@@ -232,3 +232,6 @@ ShuttingStars.init(root, './', function(broker) {
     + 게임 사용을 중단합니다. 화면에서 게임을 제거하며, 사용된 점유 시스템 리소스를 모두 해제합니다.
     + 변경 불가 (이 apply 메소드를 이용해 apply 메소드를 교체하는 것이 불가능)
 
+# 다른 API 문서
+
+[Manager API](./manager.doc.ko.md)

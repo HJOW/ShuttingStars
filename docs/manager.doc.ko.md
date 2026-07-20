@@ -1,3 +1,5 @@
+한국어 | [English](manager.doc.md)
+
 # Shutting Stars - Manager
 ## Manager
     
@@ -199,3 +201,7 @@ window.addEventListener('load', function(){
 - 설명    
     + 곡 선택 화면으로 전환하고, 바로 지정한 곡을 선택된 상태로 만듭니다.
     + 이미 플레이 중일 때는 호출할 수 없습니다. (오류 발생)
+
+# 다른 API 문서
+
+[Broker API](./broker.doc.ko.md)
