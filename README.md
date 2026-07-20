@@ -7,9 +7,22 @@ to make my own rhythm game !
 
 ## TEST URL
 
-https://hjow.duckdns.org/shuttingstars/
-OR
-https://shuttingstars-3eddf.web.app
+Choose one.
+
+* https://hjow.duckdns.org/shuttingstars/    
+  My private NAS based web server.
+  Google login and cloud score recording are available.
+  My private server - can be shutdown any time.
+
+* https://shuttingstars.pages.dev/    
+  Web service via cloudflare.
+  Google login and cloud score recording are not available yet.
+  New version updates will be applied late.
+
+* https://shuttingstars-3eddf.web.app    
+  Web service via google firebase.
+  Google login and cloud score recording are available.
+  This server has a network traffic usage limit.
 
 ## Simply run this game on local PC (using node)
 
