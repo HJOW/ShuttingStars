@@ -201,7 +201,7 @@ ShuttingStars.init(root, './', function(broker) {
 ### playSong
 
 - Type: method
-- Return type: void
+- Return type: Promise (No resolve types)
 - Parameters
     + song            (ShuttingStarsSong or string) - The song to play, or the song's serial value. The song must already have been added to the game.
     + difficultyLevel (number)                      - The difficulty level to play. Enter an integer; the selected song must have that difficulty.
@@ -214,7 +214,7 @@ ShuttingStars.init(root, './', function(broker) {
 ### directSelectSong
 
 - Type: method
-- Return type: void
+- Return type: Promise (No resolve types)
 - Parameters
     + song            (ShuttingStarsSong or string) - The song to play, or the song's serial value. The song must already have been added to the game.
 - Description

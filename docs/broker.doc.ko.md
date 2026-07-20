@@ -202,7 +202,7 @@ ShuttingStars.init(root, './', function(broker) {
 ### playSong
 
 - 타입 : 메소드    
-- 리턴 타입 : void (없음)
+- 리턴 타입 : Promise (resolve 타입 없음)
 - 매개 변수
     + song            (ShuttingStarsSong or string) - 플레이할 곡, 혹은 곡의 serial 값 (사전에 게임 내에 곡이 추가되어 있어야 합니다.)
     + difficultyLevel (number)                      - 플레이할 난이도 레벨 (정수로 입력, 해당 곡에 해당 난이도가 있어야 함)
@@ -215,9 +215,9 @@ ShuttingStars.init(root, './', function(broker) {
 ### directSelectSong
 
 - 타입 : 메소드    
-- 리턴 타입 : void (없음)
+- 리턴 타입 : Promise (resolve 타입 없음)
 - 매개 변수
-    + song            (ShuttingStarsSong or string) - 플레이할 곡, 혹은 곡의 serial 값 (사전에 게임 내에 곡이 추가되어 있어야 합니다.)
+    + song (ShuttingStarsSong or string) - 플레이할 곡, 혹은 곡의 serial 값 (사전에 게임 내에 곡이 추가되어 있어야 합니다.)
 - 설명    
     + 곡 선택 화면으로 전환하고, 바로 지정한 곡을 선택된 상태로 만듭니다.
     + 이미 플레이 중일 때는 호출할 수 없습니다. (오류 발생)
