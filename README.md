@@ -16,7 +16,7 @@ Choose one.
 
 * https://shuttingstars.pages.dev/    
   Web service via cloudflare.
-  Google login and cloud score recording are not available yet.
+  Google login and cloud score recording are available.
   New version updates will be applied late.
 
 * https://shuttingstars-3eddf.web.app    
