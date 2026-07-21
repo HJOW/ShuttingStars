@@ -1,3 +1,5 @@
 /target/**
 /build/**
 /node_modules/**
+/etc/electron/node_modules/**
+/etc/electron/web/resources/**

@@ -1,5 +1,6 @@
 /**
- * node 서버 구동 전 처리 기능
+ * 웹 소스 동기화 처리
+ *     webpack 처리 완료 후 호출되어야 함
 */
 /*
 
@@ -24,10 +25,12 @@ limitations under the License.
 const ftpClient = require('basic-ftp');
 const fs = require('fs');
 
-/**node 서버 구동 전 추가 동작시킬 커스텀 로직을 이 함수 안에 작성 */
-async function ssNodeCustom() {
-    console.log('Custom script working...');
+/** 소스 동기화 처리 */
+async function ssNodeSync() {
     
+    console.log('Copy files into electron path...');
+    await fs.promises.cp('./src/main/webapp/resources', './etc/electron/web/resources', { recursive: true });
+    console.log('Copy files into electron path... END');
 }
 
-ssNodeCustom().catch(console.error);
+ssNodeSync().catch(console.error);

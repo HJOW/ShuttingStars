@@ -1,0 +1,23 @@
+{
+  "name": "shuttingstars-electron",
+  "version": "0.0.1",
+  "description": "Shutting Stars - Electron Edition",
+  "homepage": "https://github.com/HJOW/ShuttingStars#readme",
+  "bugs": {
+    "url": "https://github.com/HJOW/ShuttingStars/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HJOW/ShuttingStars.git"
+  },
+  "license": "Apache-2.0",
+  "author": "HJOW",
+  "main": "main.js",
+  "scripts": {
+    "start" : "electron ."
+  },
+  "devDependencies": {
+    "electron": "^43.1.1",
+    "electron-build": "^0.0.3"
+  }
+}
