@@ -19,7 +19,8 @@
         "makedoc": "jsdoc -c jsdoc.json",
         "build": "npm run webpack && node backend/nodesync.js && node backend/nodecustom.js",
         "upload:only": "firebase deploy",
-        "upload": "npm run build && npm run upload:only"
+        "upload": "npm run build && npm run upload:only",
+        "electron": "npm run build && npm run start --prefix ./etc/electron"
     },
     "devDependencies": {
         "@babel/core": "^7.29.7",
