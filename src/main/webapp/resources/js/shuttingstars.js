@@ -1057,17 +1057,9 @@ class ShuttingStarsCore {
 
             this.logInit('setting workers...');
 
-            // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
+            // 반복 처리 프로세스 (공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
             this.usingWorker = this.usingWorkerConfig;
             if(this.usingWorker) {
-                /*
-                this.workerRender = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
-                this.workerRender.postMessage({interval : this.frameTime});
-                this.workerRender.onmessage = function(e) {
-                    selfs.render();
-                }
-                */
-
                 this.workerSimultaneousWork = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
                 this.workerSimultaneousWork.postMessage({interval : this.frameTime});
                 this.workerSimultaneousWork.onmessage = function(e) {
@@ -1075,7 +1067,6 @@ class ShuttingStarsCore {
                     selfs.simultaneousWork();
                 }
             } else {
-                // this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime));
                 this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(); }, 20));
             }
 
