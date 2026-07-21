@@ -14,10 +14,11 @@
   "author": "HJOW",
   "main": "main.js",
   "scripts": {
-    "start" : "electron ."
+    "start": "electron .",
+    "build": "electron-builder build --win --x64"
   },
   "devDependencies": {
     "electron": "^43.1.1",
-    "electron-build": "^0.0.3"
+    "electron-builder": "^26.15.3"
   }
 }

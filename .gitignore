@@ -3,3 +3,4 @@
 /node_modules/**
 /etc/electron/node_modules/**
 /etc/electron/web/resources/**
+/etc/electron/dist/**
