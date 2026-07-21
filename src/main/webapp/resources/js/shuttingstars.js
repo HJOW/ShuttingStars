@@ -307,6 +307,10 @@ class ShuttingStarsCore {
     timeProgressKey = null;
     /** @type {boolean} 상태가 title 이면서 로딩은 끝났음을 나타내는 변수 */
     titleScreenWaiting = false;
+    /** @type {number} render 호출을 위한 requestAnimationFrame 의 리턴 값, 닫을 때 필요 */
+    reqAniKey = null;
+    /** @type {boolean} render 반복 중단 신호 */
+    stopRepeatRender = false;
 
     // Worker 종료 함수들
     /** @type {Function|null} 렌더링 Worker 반복을 중단하는 함수입니다. */
@@ -1056,11 +1060,13 @@ class ShuttingStarsCore {
             // 반복 처리 프로세스 2개 (렌더링, 공통 동시처리 프로세스) 시작 (곡 동시처리 프로세스는 곡 초기화 시 진행)
             this.usingWorker = this.usingWorkerConfig;
             if(this.usingWorker) {
+                /*
                 this.workerRender = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
                 this.workerRender.postMessage({interval : this.frameTime});
                 this.workerRender.onmessage = function(e) {
                     selfs.render();
                 }
+                */
 
                 this.workerSimultaneousWork = new Worker( this.convertURL('[RSSC]js/shuttingstarworker.js') );
                 this.workerSimultaneousWork.postMessage({interval : this.frameTime});
@@ -1069,9 +1075,22 @@ class ShuttingStarsCore {
                     selfs.simultaneousWork();
                 }
             } else {
-                this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime));
+                // this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.render(); }, this.frameTime));
                 this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(); }, 20));
             }
+
+            // render 의 경우는 requestAnimationFrame 을 사용하여 브라우저에 최적화된 렌더링을 수행하도록 함
+            const fRenderLoop = (timestamp) => { 
+                selfs.render(); 
+                if(this.stopRepeatRender) { this.stopRepeatRender = false; return;  }
+                this.reqAniKey = requestAnimationFrame(fRenderLoop); // 재귀 호출
+            };
+            this.reqAniKey = requestAnimationFrame(fRenderLoop);
+            this.onDestroyTasks.push(() => { 
+                selfs.stopRepeatRender = true; 
+                if(selfs.reqAniKey != null) { try { cancelAnimationFrame(selfs.reqAniKey); } catch(safes) {} }
+                selfs.reqAniKey = null;
+            });
 
             this.logInit('setting events...');
 
