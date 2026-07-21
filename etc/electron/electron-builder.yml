@@ -1,0 +1,19 @@
+appId : "org.duckdns.hjow.shuttingstars"
+productName : "Shutting Stars"
+win:
+    target:
+        - target: appx
+          arch: x64
+
+appx:
+  applicationId: "org.duckdns.hjow.shuttingstars"
+  identityName: "org.duckdns.hjow.shuttingstars.ShuttingStars"
+  publisher: "CN=HJOW"
+  publisherDisplayName: "HJOW"
+  displayName: "Shutting Stars"
+  languages:
+    - "en-US"
+    - "ko-KR"
+  minVersion: "10.0.19045.0"
+  backgroundColor: "#050505"
+  showNameOnTiles: true
