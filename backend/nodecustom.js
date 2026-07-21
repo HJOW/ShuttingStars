@@ -1,6 +1,6 @@
 /**
- * JSP/Servlet 기반 서버 대신 node.js 기반 서버 기동 시 사용
- *     서버 기동 전 임의 작업이 필요한 경우 이 파일 내에 작성
+ * 웹 소스 동기화 처리
+ *     webpack 처리 완료 후 호출되어야 함
 */
 /*
 
@@ -22,12 +22,16 @@ limitations under the License.
  
  */
 
-import ftpClient from 'basic-ftp';
-import fs from 'fs';
+const ftpClient = require('basic-ftp');
+const fs = require('fs');
 
 /**node 서버 구동 전 추가 동작시킬 커스텀 로직을 이 함수 안에 작성 */
-function ssNodeCustom() {
-
+async function ssNodeCustom() {
+    
+    console.log('Copy files into electron path...');
+    await fs.promises.cp('./src/main/webapp/resources', './etc/electron/web/resources', { recursive: true });
+    await fs.promises.cp('./src/main/webapp/game.html', './etc/electron/web/game.html');
+    console.log('Copy files into electron path... END');
 }
 
-export default ssNodeCustom;
+ssNodeCustom().catch(console.error);

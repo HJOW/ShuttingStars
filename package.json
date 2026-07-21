@@ -17,7 +17,7 @@
         "start": "npm run build && node backend/nodeserver.js",
         "webpack": "webpack",
         "makedoc": "jsdoc -c jsdoc.json",
-        "build": "npm run webpack",
+        "build": "npm run webpack && node backend/nodecustom.js",
         "upload:only": "firebase deploy",
         "upload": "npm run build && npm run upload:only"
     },
