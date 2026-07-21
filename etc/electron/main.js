@@ -18,6 +18,7 @@ app.whenReady().then(() => {
             height: 720
         });
     
+        win.setFullScreen(true);
         win.loadFile('./web/electron.html');
         return win;
     }
