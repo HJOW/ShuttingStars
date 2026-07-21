@@ -29,11 +29,12 @@
         "basic-ftp": "^6.0.1",
         "clean-webpack-plugin": "^4.0.0",
         "copyfiles": "^2.4.1",
+        "eslint": "^9.39.5",
         "firebase-tools": "^15.24.0",
         "jsdoc": "^4.0.5",
         "terser-webpack-plugin": "^5.6.1",
+        "typescript": "5.9.3",
         "webpack": "^5.108.4",
-        "webpack-cli": "^7.2.1",
-        "typescript": "5.9.3"
+        "webpack-cli": "^7.2.1"
     }
 }

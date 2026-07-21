@@ -2334,6 +2334,7 @@ class ShuttingStarsCore {
     async resetStage() {
         const selfs = this;
         let idx, jdx;
+        let diff;
         this.clearTimeHandler();
         this.hp = 100.0;
         this.pw = this.pwMax;
@@ -2370,7 +2371,7 @@ class ShuttingStarsCore {
             // 곡 플레이 세팅 중 처리
             //     곡 마지막 패턴 시간 체크
             this.songLastPatternTime = 0;
-            let diff = this.song.difficulties[ this.difficulty.index ];
+            diff = this.song.difficulties[ this.difficulty.index ];
             let patterns = diff.patterns;
             for(idx=0; idx<patterns.length; idx++) {
                 const pattern = patterns[idx];
@@ -2564,6 +2565,7 @@ class ShuttingStarsCore {
                 this.ss3d.onSongPlayPreparing(this);
             }
         } else if(this.state == 'playing' || this.state == 'listenplaying') { // 곡이 플레이 상황일 경우 처리
+            diff = this.song.difficulties[ this.difficulty.index ];
 
             // 진행 시간 - 처리 끝난 후 아래에서 다시 초기화
             this.elapsedTime = (-1) * ((this.stageRows * 2) + this.songTiming); 
@@ -3758,7 +3760,7 @@ class ShuttingStarsCore {
             if(resultMark == 'MISS') {
                 // MISS
                 minimumNote.missed = true;
-                const newExplosinves = new SSFailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                const newExplosinves = new SSFailExplosing(this, minimumNote.locationIndex, minimumNote.y, '255, 0, 0', '255, 0, 0');
                 this.objects.push(newExplosinves);
             } else {
                 // 그외 (MISS가 아님)
@@ -7677,6 +7679,8 @@ class ShuttingStarsCore {
         const beforeState = this.state;
         let idx;
 
+        let diff = this.song.difficulties[ this.difficulty.index ];
+
         if(beforeState == 'listenplaying') { // 감상 모드 재생곡 끝남 - 다음 리스트 확인
             // 재생 중단
             this.paused = false;
@@ -7736,7 +7740,6 @@ class ShuttingStarsCore {
             this.playPrepared = false;
 
             // Note 갯수 체크
-            let diff = this.song.difficulties[ this.difficulty.index ];
             let count = diff.patterns.length;
             let rank = this.judgeResultRank();
 
@@ -9453,7 +9456,7 @@ class ShuttingStarsCore {
                     setTimeout(() => {
                         resolve(true);
                     }, 300);
-                }).catch((e1) => { reject(e2) });
+                }).catch((e1) => { reject(e1) });
             }).catch((e2) => { reject(e2); });
         });
     }
@@ -9580,7 +9583,7 @@ class ShuttingStarsCore {
     modifyStarlightDirections(xSpeed, ySpeed) {
         this.backStarlightSpdX = xSpeed;
         this.backStarlightSpdY = ySpeed;
-        for(idx=0; idx<this.objects.length; idx++) {
+        for(let idx=0; idx<this.objects.length; idx++) {
             const obj = this.objects[idx];
             if(obj instanceof SSStarlight) {
                 obj.speedX = xSpeed;
@@ -12249,8 +12252,8 @@ class SSTextDeco extends SSDecorationObject {
      * @param {string} color color 값
      */
     constructor(coreInst, text, x, y, fontSize, align, color) {
-        super(coreInst, locationIndex);
-        this.key = coreInst.keyList[locationIndex];
+        super(coreInst, 0);
+        this.key = coreInst.keyList[0];
         this.priority = 'high';
         this.r = 0;
         this.x = x;
