@@ -556,6 +556,33 @@ class ShuttingStarsUtilityClass {
     }
 
     /** 
+     * audio 혹은 video  URL을 입력받아, Blob URL로 변환해 반환 (Promise) 
+     * @param {string} url audio 혹은 video URL
+     * @param {boolean|null} noexception 예외 발생 시 무시 여부, true 인 경우 예외 발생 시 url 그대로 반환, false 인 경우 예외 발생 시 reject 처리
+     * @returns {Promise<string>} Blob URL
+    */
+    convertToBlobURL(url, noexception) {
+        const selfs = this;
+        return new Promise((resolve, reject) => {
+            try {
+                fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    resolve(blobUrl);
+                })
+                .catch(error => {
+                    if(noexception) { selfs.log('Ignorable exception - ' + error); console.error(error); resolve(url); }
+                    else reject(error);
+                });
+            } catch(ex) {
+                if(noexception) { selfs.log('Ignorable exception - ' + ex); console.error(ex); resolve(url); }
+                else reject(ex);
+            }
+        });
+    }
+
+    /** 
      * 일정 시간 (밀리초) 만큼 기다림. Promise.
      * @returns {Promise<*>}
      */

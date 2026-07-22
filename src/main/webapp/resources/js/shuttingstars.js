@@ -1238,8 +1238,13 @@ class ShuttingStarsCore {
             await this.loadAfter();
 
             this.logInit('preparing background audio...');
+
+            // Blob URL로 변환 시도
+            let convertedURL = this.convertURL('[RSSC]songs/woowahan/track09.mp3');
+            try { convertedURL = await ShuttingStarsUtility.convertToBlobURL(convertedURL); } catch(exc) { ShuttingStarsUtility.log('Ignorable exception - ' + exc); console.error(exc); }
+
             try {
-                this.audioBackground = new Audio(this.convertURL('[RSSC]songs/woowahan/track09.mp3'));
+                this.audioBackground = new Audio(convertedURL);
                 this.audioBackground.loop = true;
                 // 지금 재생하면 크롬계열에서 오류 Uncaught (in promise) NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD
             } catch(exAudio) {
@@ -2477,6 +2482,9 @@ class ShuttingStarsCore {
                                 //     Audio Context 닫기
                                 this.closeAudioSources();
                             }
+
+                            // Blob URL로 변환 시도
+                            try { audioUrl = await ShuttingStarsUtility.convertToBlobURL(audioUrl); } catch(exc) { ShuttingStarsUtility.log('Ignorable exception - ' + exc); console.error(exc); }
 
                             // Audio 객체 다시 생성 (실제 플레이 곡 재생을 위함)
                             this.audio = new Audio(audioUrl);
