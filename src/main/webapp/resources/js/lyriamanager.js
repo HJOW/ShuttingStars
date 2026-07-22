@@ -6,6 +6,9 @@
  * Shutting Stars
  *     Google Lyria 기반 음악 생성
  *     lyria.html 과 같이 동작
+ * 
+ * API 참고 : https://ai.google.dev/gemini-api/docs/music-generation?hl=ko
+ * 요금제 : https://ai.google.dev/gemini-api/docs/pricing?hl=ko
  */
 
 /** Lyria 음악 생성 요청을 보낼 Interactions API 주소 */
