@@ -665,6 +665,8 @@ class ShuttingStarsCore {
     fAfterInit   = function(obj, coreInst) {  }
     /** @type {function(Object): void} 화면 새로고침이 필요한 경우 호출 */
     fRefresh     = function() { location.reload(); }
+    /** @type {function(Object): void} 첫 기동인 경우 호출 */
+    fOnFirstUse = function(broker) { broker.refreshPage(); }
     /** @type {null|function(): void} null 입력 시 게임 종료 기능 비활성화 (기본값), 게임 종료 기능 지원 시 이 곳에 함수를 넣으면 메뉴에 게임 종료가 추가되고, 해당 메뉴 선택 시 함수가 호출됨 */
     fOnShutdownCalled = null;
     /** @type {function(Object): void} 게임 동작 세부 사항마다 호출됨 */
@@ -1471,6 +1473,8 @@ class ShuttingStarsCore {
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
         this.broker.fGameEvent              = this.fGameEvent              ;
+        this.broker.fRefresh                = this.fRefresh                ;
+        this.broker.fOnFirstUse             = this.fOnFirstUse             ;
         this.broker.songs                   = [];
         for(let sdx=0; sdx<this.songs.length; sdx++) {
             this.broker.songs.push(this.songs[sdx]);
@@ -1520,12 +1524,16 @@ class ShuttingStarsCore {
             if(typeof(obj.fOuterHeight           ) == 'function' ) { selfs.fOuterHeight            = obj.fOuterHeight            ; brokerSelf.fOuterHeight            = obj.fOuterHeight            }
             if(typeof(obj.fOnShutdownCalled      ) == 'function' ) { selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ; brokerSelf.fOnShutdownCalled       = obj.fOnShutdownCalled       }
             if(typeof(obj.fGameEvent             ) == 'function' ) { selfs.fGameEvent              = obj.fGameEvent              ; brokerSelf.fGameEvent              = obj.fGameEvent              }
+            if(typeof(obj.fRefresh               ) == 'function' ) { selfs.fRefresh                = obj.fRefresh                ; brokerSelf.fRefresh                = obj.fRefresh                }
+            if(typeof(obj.fOnFirstUse            ) == 'function' ) { selfs.fOnFirstUse             = obj.fOnFirstUse             ; brokerSelf.fOnFirstUse             = obj.fOnFirstUse             }
+
             if(typeof(obj.songs                  ) != 'undefined') {
                 for(let ssdx=0; ssdx<obj.songs.length; ssdx++) {
                     selfs.addSong(obj.songs[ssdx]);
                 }
             }
         }
+        
         this.broker.parseSong  = function(json) { return selfs.parseSong(json); }
         this.broker.addSong    = function(song) { return selfs.addSong(song);   }
         this.broker.setSongOne = function(song, idx) { selfs.songs[idx] = song; }
@@ -1554,6 +1562,7 @@ class ShuttingStarsCore {
         this.broker.directSelectSong = async function(song) {
             await selfs.directSelectSong(song);
         }
+        this.broker.refreshPage = function() { selfs.callRefresh(); }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
         this.broker.destroy = function() { selfs.destroy(); };
         this.broker.officialSongSerials = [];
@@ -1786,10 +1795,22 @@ class ShuttingStarsCore {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
             this.resetAll(() => {
-                setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }, 4000);
+                setTimeout(() => { 
+                    selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker });
+                    if(typeof(selfs.fOnFirstUse) == 'function') {
+                        selfs.rebuildBroker();
+                        selfs.fOnFirstUse(selfs.broker);
+                    }
+            }, 4000);
             });
         }
         return true;
+    }
+
+    /** 화면 새로고침 호출 */
+    callRefresh() {
+        if(typeof(this.fRefresh) == 'function') this.fRefresh(); 
+        else location.reload();
     }
 
     /**

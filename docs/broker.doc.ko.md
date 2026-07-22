@@ -159,6 +159,42 @@ ShuttingStars.init(root, './', function(broker) {
 });
 ```
 
+### fRefresh
+
+- Type: 함수 (apply 메소드를 이용해 다른 함수로 교체할 수 있음)    
+- Return type: void (없음)
+- Parameters: 없음
+- Description
+    + 화면 새로고침이 필요한 경우 호출됩니다.
+    + apply 메소드를 이용해 임의의 함수로 교체할 수 있습니다.
+    + 다른 함수로 교체 시, 해당 함수가 본 역할을 대신 수행해야 합니다.
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    broker.apply({
+        fRefresh  : function() { location.reload(); }
+    });
+});
+```
+
+### fOnFirstUse
+
+- Type: 함수 (apply 메소드를 이용해 다른 함수로 교체할 수 있음)    
+- Return type: void (없음)
+- Parameters: Broker
+- Description
+    + 최초 접속한 경우 호출됩니다.
+    + apply 메소드를 이용해 임의의 함수로 교체할 수 있습니다.
+    + 다른 함수로 교체 시, 해당 함수가 본 역할을 대신 수행해야 합니다.
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    broker.apply({
+        fOnFirstUse  : function(broker) { broker.refreshPage(); }
+    });
+});
+```
+
 ### fOnShutdownCalled
 
 - 타입 : 함수 (apply 메소드를 이용해 다른 함수로 교체할 수 있음)    

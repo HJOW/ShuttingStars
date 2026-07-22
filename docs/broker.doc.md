@@ -158,6 +158,42 @@ ShuttingStars.init(root, './', function(broker) {
 });
 ```
 
+### fRefresh
+
+- Type: function (can be replaced with another function by using the `apply` method)
+- Return type: void
+- Parameters: none
+- Description
+    + Called when the page should to be refreshed.
+    + Can be replaced with a custom function by using the `apply` method.
+    + If replaced with another function, that function must perform this original role.
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    broker.apply({
+        fRefresh  : function() { location.reload(); }
+    });
+});
+```
+
+### fOnFirstUse
+
+- Type: function (can be replaced with another function by using the `apply` method)
+- Return type: void
+- Parameters: Broker
+- Description
+    + Called when the page is launched as a first time.
+    + Can be replaced with a custom function by using the `apply` method.
+    + If replaced with another function, that function must perform this original role.
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    broker.apply({
+        fOnFirstUse  : function(broker) { broker.refreshPage(); }
+    });
+});
+```
+
 ### fOnShutdownCalled
 
 - Type: function (can be replaced with another function by using the `apply` method)
