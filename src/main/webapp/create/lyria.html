@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title>Shutting Stars - Lyria 음악 생성</title>
+        <link rel="shortcut icon" href="../resources/icons/icon64.ico" type="image/x-icon"/>
+        <link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
+<!--
+Lyria 로 음원 생성
+
+LICENSE
+
+Copyright 2026 HJOW (hujinone22@naver.com)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+        <style>
+            :root { color-scheme: dark; font-family: "Noto Sans KR", "Malgun Gothic", sans-serif; background: #090b16; color: #f5f6ff; }
+            * { box-sizing: border-box; }
+            body { min-width: 320px; min-height: 100vh; margin: 0; background: radial-gradient(circle at 15% 5%, #273a76 0, transparent 34rem), radial-gradient(circle at 90% 90%, #45265f 0, transparent 32rem), #090b16; }
+            .lyria-page { width: min(100% - 2rem, 780px); margin: 0 auto; padding: clamp(2.5rem, 8vw, 6rem) 0; }
+            .lyria-card { overflow: hidden; border: 1px solid rgba(180, 194, 255, .22); border-radius: 1.25rem; background: rgba(18, 22, 45, .88); box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, .36); backdrop-filter: blur(14px); }
+            .lyria-heading { padding: clamp(1.75rem, 5vw, 3.25rem) clamp(1.5rem, 5vw, 3.5rem) 1.5rem; }
+            .lyria-eyebrow { margin: 0 0 .6rem; color: #aebcff; font-size: .78rem; font-weight: 700; letter-spacing: .12em; }
+            h1 { margin: 0; font-size: clamp(1.75rem, 6vw, 3rem); line-height: 1.18; }
+            .lyria-intro { margin: 1rem 0 0; color: #c9cde5; line-height: 1.65; }
+            .lyria-form, .lyria-result { padding: 0 clamp(1.5rem, 5vw, 3.5rem) clamp(1.75rem, 5vw, 3.25rem); }
+            .lyria-field { display: grid; gap: .55rem; margin-top: 1.25rem; }
+            label { font-weight: 700; }
+            .lyria-hint { margin: 0; color: #aeb4d0; font-size: .86rem; line-height: 1.5; }
+            input, textarea, select, button, a { font: inherit; }
+            input:not([type="checkbox"]), textarea, select { width: 100%; border: 1px solid #4c5276; border-radius: .7rem; padding: .85rem 1rem; background: #10142a; color: inherit; outline: none; transition: border-color .15s, box-shadow .15s; }
+            textarea { min-height: 13rem; resize: vertical; line-height: 1.6; }
+            input:not([type="checkbox"]):focus, textarea:focus, select:focus { border-color: #aebcff; box-shadow: 0 0 0 3px rgba(174, 188, 255, .2); }
+            .lyria-save-key { display: flex; align-items: center; gap: .55rem; color: #c9cde5; font-size: .9rem; cursor: pointer; }
+            .lyria-save-key input { width: 1.1rem; height: 1.1rem; accent-color: #8d72ff; }
+            .lyria-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+            button, .lyria-download { display: inline-flex; align-items: center; justify-content: center; min-height: 2.85rem; border: 0; border-radius: .7rem; padding: .7rem 1.15rem; cursor: pointer; font-weight: 700; text-decoration: none; }
+            .lyria-primary { background: linear-gradient(135deg, #7a72ff, #ad65ff); color: #fff; }
+            .lyria-secondary { background: #303650; color: #fff; }
+            button:hover, .lyria-download:hover { filter: brightness(1.12); }
+            button:disabled { cursor: wait; opacity: .6; }
+            .lyria-status { min-height: 1.5rem; margin: 1rem 0 0; color: #c9cde5; line-height: 1.5; }
+            .lyria-status[data-state="error"] { color: #ffafb8; }
+            .lyria-result { border-top: 1px solid rgba(180, 194, 255, .18); }
+            .lyria-result h2 { margin: 0; font-size: 1.2rem; }
+            audio { width: 100%; margin-top: 1rem; }
+            .lyria-result-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem; }
+            [hidden] { display: none !important; }
+            @media (max-width: 480px) { .lyria-page { width: min(100% - 1rem, 780px); padding: .5rem 0; } .lyria-card { border-radius: .8rem; } .lyria-actions button, .lyria-result-actions > * { width: 100%; } }
+        </style>
+        <script type="module" src="../resources/js/lyriamanager.js"></script>
+    </head>
+    <body>
+        <main class="lyria-page">
+            <section class="lyria-card" aria-labelledby="lyria-title">
+                <header class="lyria-heading">
+                    <p class="lyria-eyebrow">SHUTTING STARS · Lyria 3 Pro</p>
+                    <h1 id="lyria-title">음악 만들기</h1>
+                    <p class="lyria-intro">원하는 분위기, 악기, 가사와 곡 구성을 자세히 적어 나만의 음악을 생성하세요.</p>
+                </header>
+                <form class="lyria-form" novalidate>
+                    <div class="lyria-field">
+                        <label for="lyria-api-key">Google API 키</label>
+                        <input id="lyria-api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza..." required/>
+                        <label class="lyria-save-key" for="lyria-save-api-key"><input id="lyria-save-api-key" name="saveApiKey" type="checkbox"/> 이 브라우저에 API 키 저장</label>
+                        <p class="lyria-hint">저장을 선택하지 않으면 API 키는 이 브라우저 요청에만 사용됩니다.</p>
+                    </div>
+                    <div class="lyria-field">
+                        <label for="lyria-model">모델</label>
+                        <select id="lyria-model" name="model">
+                            <option value="lyria-3-pro-preview">Lyria 3 Pro (Preview)</option>
+                        </select>
+                    </div>
+                    <div class="lyria-field">
+                        <label for="lyria-prompt">음악 프롬프트</label>
+                        <textarea id="lyria-prompt" name="prompt" rows="10" placeholder="예: 2분 길이의 몽환적인 신스 팝.&#10;&#10;[Verse] ...&#10;[Chorus] ..." required></textarea>
+                        <p class="lyria-hint">여러 줄의 가사, [Verse]/[Chorus] 같은 구간 태그, 시간대별 구성을 모두 입력할 수 있습니다.</p>
+                    </div>
+                    <div class="lyria-actions"><button class="lyria-primary" type="submit">음악 생성</button></div>
+                    <p class="lyria-status" role="status" aria-live="polite"></p>
+                </form>
+                <section class="lyria-result" hidden aria-labelledby="lyria-result-title">
+                    <h2 id="lyria-result-title">생성이 완료되었습니다</h2>
+                    <audio class="lyria-audio" controls></audio>
+                    <div class="lyria-result-actions">
+                        <a class="lyria-download lyria-primary" download="lyria-song.mp3">곡 다운로드</a>
+                        <button class="lyria-secondary lyria-reset" type="button">초기화</button>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </body>
+</html>
