@@ -587,21 +587,19 @@ class ShuttingStarsUtilityClass {
                         while(! completed) {
                             reader.read().then(obj => {
                                 const { done, value } = obj;
-                                if(done) { 
-                                    completed = true; 
-                                } else {
-                                    chunks.push(value);
-                                    received += value.length;
+                                if(done) { completed = true; return; }
 
-                                    try {
-                                        if(total) { // total 이 0이어도 false 취급됨
-                                            progressEvent(received * 100.0 / total);
-                                        } else {
-                                            progressEvent(-1);
-                                        }
-                                    } catch(ep) {
-                                        console.error(ep);
+                                chunks.push(value);
+                                received += value.length;
+
+                                try {
+                                    if(total) { // total 이 0이어도 false 취급됨
+                                        progressEvent(received * 100.0 / total);
+                                    } else {
+                                        progressEvent(-1);
                                     }
+                                } catch(ep) {
+                                    console.error(ep);
                                 }
                             });
                             if(completed) break;
