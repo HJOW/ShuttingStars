@@ -558,23 +558,70 @@ class ShuttingStarsUtilityClass {
     /** 
      * audio 혹은 video  URL을 입력받아, Blob URL로 변환해 반환 (Promise) 
      * @param {string} url audio 혹은 video URL
-     * @param {boolean|null} noexception 예외 발생 시 무시 여부, true 인 경우 예외 발생 시 url 그대로 반환, false 인 경우 예외 발생 시 reject 처리
+     * @param {Function|null} progressEvent 선택사항, 진행 이벤트 처리 함수로, 매개변수로 진행률 % (0~100) 이 들어간 채 호출됨
+     * @param {boolean|null} noexception 선택사항, 예외 발생 시 무시 여부, true 인 경우 예외 발생 시 url 그대로 반환, false 인 경우 예외 발생 시 reject 처리, 기본값 false
      * @returns {Promise<string>} Blob URL
     */
-    convertToBlobURL(url, noexception) {
+    convertToBlobURL(url, progressEvent, noexception) {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
-                fetch(url)
-                .then(response => response.blob())
-                .then(blob => {
-                    const blobUrl = URL.createObjectURL(blob);
-                    resolve(blobUrl);
-                })
-                .catch(error => {
-                    if(noexception) { selfs.log('Ignorable exception - ' + error); console.error(error); resolve(url); }
-                    else reject(error);
-                });
+                // 선택적 매개변수 두 개 progressEvent, noexception
+                //    progressEvent 를 입력하지 않고 noexception 를 입력하는 경우도 대비한다.
+                if(typeof(progressEvent) == 'boolean') {
+                    noexception = progressEvent;
+                    progressEvent = null;
+                }
+
+                // progressEvent 가 있으면 fetch 결과로 얻은 response 를 blob() 로 변환하는 과정에서 진행률 이벤트를 발생시켜야 함
+                if(typeof(progressEvent) == 'function') {
+                    fetch(url).then(response => {
+                        const total  = Number(response.headers.get("Content-Length")) || 0;
+                        const reader = response.body.getReader();
+
+                        let received = 0;
+                        let completed = false;
+                        const chunks = [];
+
+                        // TODO : 왠지 모르게 무한반복 사태가 벌어지고 있음. 일단 progressEvent 한동안 안쓰고 나중에 원인 찾아야 할 듯?
+                        while(! completed) {
+                            reader.read().then(obj => {
+                                const { done, value } = obj;
+                                if(done) { 
+                                    completed = true; 
+                                } else {
+                                    chunks.push(value);
+                                    received += value.length;
+
+                                    try {
+                                        if(total) { // total 이 0이어도 false 취급됨
+                                            progressEvent(received * 100.0 / total);
+                                        } else {
+                                            progressEvent(-1);
+                                        }
+                                    } catch(ep) {
+                                        console.error(ep);
+                                    }
+                                }
+                            });
+                            if(completed) break;
+                        }
+
+                        const blob = new Blob(chunks);
+                        resolve(  URL.createObjectURL(blob));
+                    });
+                } else {
+                    fetch(url)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        resolve(blobUrl);
+                    })
+                    .catch(error => {
+                        if(noexception) { selfs.log('Ignorable exception - ' + error); console.error(error); resolve(url); }
+                        else reject(error);
+                    });
+                }
             } catch(ex) {
                 if(noexception) { selfs.log('Ignorable exception - ' + ex); console.error(ex); resolve(url); }
                 else reject(ex);
