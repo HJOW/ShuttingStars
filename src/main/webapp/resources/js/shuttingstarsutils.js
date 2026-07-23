@@ -583,7 +583,7 @@ class ShuttingStarsUtilityClass {
                         let completed = false;
                         const chunks = [];
 
-                        // TODO : 왠지 모르게 무한반복 사태가 벌어지고 있음. 일단 progressEvent 한동안 안쓰고 나중에 원인 찾아야 할 듯?
+                        // TODO : 왠지 모르게 reader.read() 부분에서 멈춤. 일단 progressEvent 한동안 안쓰고 나중에 원인 찾아야 할 듯?
                         while(! completed) {
                             reader.read().then(obj => {
                                 const { done, value } = obj;
