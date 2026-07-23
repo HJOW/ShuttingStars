@@ -88,6 +88,8 @@ class ShuttingStarsCore {
     /*** 글꼴 관련 ***/
     /** @type {string} 메인 폰트, alterFonts 가 뒤에 붙음, config.json 에 정의된 경우 config.json 값으로 대체됨 */
     fontFamily = 'D2 coding';
+    /** @type {string|null} 메인 폰트 (사용자 설정) - 설정 값에 의헤 좌우됨, null 시 fontFamily 값을 대신 사용함 */
+    mainFont = null;
     /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
     pointFont  = 'Nanum Pen Script';
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
@@ -1842,8 +1844,8 @@ class ShuttingStarsCore {
                     this.escKey = settingJson.escKey;
                 }
 
-                if(typeof(settingJson.fontFamily) != 'undefined') {
-                    this.fontFamily = settingJson.fontFamily;
+                if(typeof(settingJson.mainFont) != 'undefined') {
+                    this.mainFont = settingJson.mainFont;
                 }
 
                 if(typeof(settingJson.noteSpeedMultiplier) != 'undefined') {
@@ -1974,7 +1976,7 @@ class ShuttingStarsCore {
             settingJson.arrowKeys           = this.arrowKeys;
             settingJson.enterKey            = this.enterKey;
             settingJson.escKey              = this.escKey;
-            settingJson.fontFamily          = this.fontFamily;
+            settingJson.mainFont            = this.mainFont;
             settingJson.noteSpeedMultiplier = this.noteSpeedMultiplier;
             settingJson.reverseVertical     = this.reverseVertical;
             settingJson.keypressTiming      = this.keypressTiming;
@@ -8699,6 +8701,10 @@ class ShuttingStarsCore {
                                         <span style='margin-left: 20px;'><span style='margin-right:1rem;'>6</span><input type='text' class='inp inp_linekey inp_linekey_6' maxlength='1' style='width:4rem; text-align: center;'/></span>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <th class='target_translate'>Font</th>
+                                    <td><input type='text' class='inp inp_mainfont full' /></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -8887,6 +8893,12 @@ class ShuttingStarsCore {
             if(tempKey.length != 1 && specialKeys.indexOf(tempKey) < 0) tempKey = this.keyList[5];
             this.keyList[5] = tempKey;
 
+            // 폰트
+            this.mainFont = layer.querySelector('.inp_mainfont').value;
+            this.mainFont = ShuttingStarsUtility.replaceString(this.mainFont, "'", "");
+            this.mainFont = ShuttingStarsUtility.replaceString(this.mainFont, '"', '');
+            this.mainFont = ShuttingStarsUtility.replaceString(this.mainFont, ',', '');
+
             // 설정 저장
             selfs.saveSettings(false).then(() => {
                 selfs.closeConfigDiv();
@@ -9053,6 +9065,11 @@ class ShuttingStarsCore {
 
         inp = this.configDiv.querySelector('.inp_linekey_6');
         inp.value = this.keyList[5];
+
+        // 폰트 설정
+        inp = this.configDiv.querySelector('.inp_mainfont');
+        if(this.mainFont) inp.value = this.mainFont;
+        else inp.value = this.fontFamily;
 
         // 커스텀 곡 입력 요소들에 현재값 입력하기
         let ta = this.configDiv.querySelector('.ta_json_song');
@@ -9245,9 +9262,13 @@ class ShuttingStarsCore {
             const fontOne = this.alterFonts[idx].trim();
 
             if(pointFont) {
-                if(this.pointFont ==  fontOne) continue;
+                if(this.pointFont == fontOne) continue;
             } else {
-                if(this.fontFamily == fontOne) continue;
+                if(this.mainFont) {
+                    if(this.mainFont == fontOne) continue;
+                } else {
+                    if(this.fontFamily == fontOne) continue;
+                }
             }
 
             if(added) alters += ', ';
@@ -9258,8 +9279,9 @@ class ShuttingStarsCore {
             added = true;
         }
 
-        if(pointFont) return "'" + this.pointFont  + "'" + (alters == '' ? '' : ', ' + alters);
-        return               "'" + this.fontFamily + "'" + (alters == '' ? '' : ', ' + alters);
+        if(pointFont)          return "'" + this.pointFont  + "'" + (alters == '' ? '' : ', ' + alters);
+        else if(this.mainFont) return "'" + this.mainFont   + "'" + (alters == '' ? '' : ', ' + alters);
+        return                        "'" + this.fontFamily + "'" + (alters == '' ? '' : ', ' + alters);
     }
 
     /**

@@ -107,7 +107,8 @@ const SSStringTable = {
         "GitHub : " : "GitHub : ",
         "EXIT" : "종료",
         "OFFLINE" : "OFFLINE",
-        "EMPTY !" : "비어 있음 !"
+        "EMPTY !" : "비어 있음 !",
+        "Font" : "글꼴"
     }
 };
 export { SSStringTable };
