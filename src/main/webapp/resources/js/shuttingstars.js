@@ -8703,7 +8703,15 @@ class ShuttingStarsCore {
                                 </tr>
                                 <tr>
                                     <th class='target_translate'>Font</th>
-                                    <td><input type='text' class='inp inp_mainfont full' /></td>
+                                    <td>
+                                        <input type='text' class='inp inp_mainfont full' list='ss_config_mainfont_list'/>
+                                        <datalist id='ss_config_mainfont_list'>
+                                            <option value='D2 coding'></option>
+                                            <option value='Nanum Gothic Coding'></option>
+                                            <option value='Noto Sans KR'></option>
+                                            <option value='Nanum Pen Script'></option>
+                                        </datalist>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
