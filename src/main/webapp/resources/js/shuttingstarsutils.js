@@ -21,7 +21,7 @@ JSON5
     Visit https://github.com/json5/json5/blob/main/LICENSE.md
 `); }} catch(nothings) {}
 
-import JSON5 from './json5.min.mjs';
+import JSON5 from './json5.min.js';
 
 class ShuttingStarsUtilityClass {
     /** @type {number} 토스트 메시지에 부여할 고유 순번의 현재 최대값 */

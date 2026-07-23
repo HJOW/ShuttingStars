@@ -293,6 +293,7 @@
         try {
             const backendModule = await import('./resources/js/shuttingstarsinterface.js');
             backend = backendModule.default;
+            if(typeof(backend) == 'function') backend = backend();
             if(backend == null || ! backend.avail) throw 'Firebase backend is not available.';
 
             // Firebase 인증 상태가 바뀌면 현재 화면을 다시 계산
