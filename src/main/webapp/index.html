@@ -98,19 +98,102 @@
     <script type="text/javascript" src='resources/js/crypto-js.min.js'></script>
     <script type="text/javascript" src='resources/js/dist/shuttingstars.bundle.js'></script>
     <!--<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/HJOW/ShuttingStars@main/src/main/webapp/resources/js/dist/shuttingstars.bundle.js"></script>-->
-  </head>
-  <body>
+    <style type="text/css">
+    html {
+        font-size: 16px;
+    }
+    .ss_homepage_root .ss_homepage_main {
+        .ss_topbar {
+            background-color: rgba(150, 150, 150, 0.1);
+        }
+        .pure-menu {
+            overflow: hidden;
+            z-index: 2001;
+            width: 100%;
+            ul { border-top: 0; }
+        }
+        .pure-menu, .pure-menu .pure-menu-heading {
+            background: transparent;
+            a { 
+                text-decoration: none;
+                padding: 0.6em 0.6em 0.6em 0.6em;
+            }
+        }
+        .pure-menu .pure-menu-item {
+            line-height: 1.5rem;
+            font-size: 1.2rem;
+        }
+        .pure-menu .pure-menu-item li, .pure-menu .pure-menu-item a {
+            text-decoration: none;
+            text-align: center;
+        }
+        .pure-menu .pure-menu-item a {
+            display: block;
+            padding: 0.6em 0.6em 0.6em 0.6em;
+        }
+        .ss_footer {
+            position: absolute;
+            bottom: 0px;
+            left: 0px;
+            width: 100%;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+            z-index: 2001;
+            a {
+                color: rgb(220, 220, 220);
+                text-decoration: none;
+                font-size: 0.8rem;
+            }
+        }
+    }
+    
+
+    </style>
     <script type="module">
         window.addEventListener('load', function() {
-            ShuttingStars.init(null, null, function(broker) {
-                document.getElementById('shuttingstars_init_loading').style.display = 'none';
+            const homepageRoot = document.getElementById('ss_homepage_root');
+
+            const backgroundDiv = homepageRoot.querySelector('.ss_homepage_back');
+            const homepageDiv   = homepageRoot.querySelector('.ss_homepage_main');
+
+            const topbar = homepageDiv.querySelector('.ss_topbar');
+            const menuRoot = homepageDiv.querySelector('.ss_menu');
+            const contentDiv = homepageDiv.querySelector('.ss_content');
+
+            ShuttingStars.setBeforeInitializeHook(function(broker) {
+                broker.fCanvasResized = function(obj) {
+                    const canvasSize = obj.canvas;
+                    contentDiv.style.width  = canvasSize.width + 'px';
+                    contentDiv.style.height = canvasSize.height + 'px';
+                }
+            });
+            ShuttingStars.init(backgroundDiv, './', function(broker) {
+                broker.setEmpty();
             }); 
         });
     </script>
+  </head>
+  <body>
+    <div class="ss_homepage_root" id="ss_homepage_root">
+       <div class="ss_homepage_back"></div>
+       <div class="ss_homepage_main">
+          <div class="ss_topbar pure-menu pure-menu-horizontal">
+             <ul class="pure-menu-list">
+                <li class="pure-menu-heading"><a href='#'>Shutting Stars</a></li>
+                <li class="pure-menu-item pure-menu-selected"><a href='#'>HOME</a></li>
+                <li class="pure-menu-item"><a href='game.html'>START</a></li>
+                <li class="pure-menu-item"><a href='./community/board.html'>BOARD</a></li>
+            </ul>
+          </div>
+          <div class="ss_content">
 
-    <!-- 초기화 전 로딩화면 영역 -->
-    <div id="shuttingstars_init_loading" class="shuttingstars_init_loading">
-        <progress></progress>
+          </div>
+          <div class="ss_footer">
+            <a href='license.html' target="_blank">Copyright 2026 HJOW</a>
+          </div>
+       </div>
     </div>
   </body>
 </html>
