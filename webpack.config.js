@@ -51,6 +51,10 @@ module.exports = {
             "banner" : `/**
  * @author HJOW <hujinone22@naver.com>
  * @license Apache-2.0 
+ * 
+ * Third parties are included in this bundle.
+ *     Three.js (https://threejs.org/) - MIT License
+ *     JSON5    (https://json5.org/  ) - MIT License
  */`,
             "footer" : false,
             "raw" : true,
