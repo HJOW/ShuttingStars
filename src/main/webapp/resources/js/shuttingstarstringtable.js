@@ -108,7 +108,8 @@ const SSStringTable = {
         "EXIT" : "종료",
         "OFFLINE" : "OFFLINE",
         "EMPTY !" : "비어 있음 !",
-        "Font" : "글꼴"
+        "Font" : "글꼴",
+        "HOME" : "홈"
     }
 };
 export { SSStringTable };

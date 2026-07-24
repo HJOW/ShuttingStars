@@ -114,8 +114,24 @@ ShuttingStars.init(root, './', function(broker) {
 - Example
 ```
 ShuttingStars.init(root, './', function(broker) {
+    console.log(broker.volume);
     broker.apply({
         volume : 0.5
+    });
+});
+```
+
+### language
+
+- Type: string (2-digit language code)
+- Description
+    + Language code that the game detected
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    console.log(broker.language);
+    broker.apply({
+        language : 'ko'
     });
 });
 ```
@@ -283,6 +299,24 @@ ShuttingStars.init(root, './', function(broker) {
     + Switches to the song selection screen and immediately selects the specified song.
     + Cannot be called while a song is already being played. An error will occur.
     + Cannot be changed. It is not possible to replace this method by using the `apply` method.
+
+### translate
+
+- Type: method
+- Return type: string
+- Parameters
+    + english (string) - words to translate
+- Description
+    + Translate words with stringtable contents.
+
+### setStringTable
+
+- Type: method
+- Return type: void
+- Parameters
+    + table (object) - Pass an object literal (JSON object). See 'shuttingstarstringtable.js' file.
+- Description
+    + Replace stringtable contents.
 
 ### destroy
 

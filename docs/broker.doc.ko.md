@@ -115,8 +115,24 @@ ShuttingStars.init(root, './', function(broker) {
 - 사용 예
 ```
 ShuttingStars.init(root, './', function(broker) {
+    console.log(broker.volume);
     broker.apply({
         volume : 0.5
+    });
+});
+```
+
+### language
+
+- 타입 : string (2자리 언어 코드)
+- 설명
+    + 게임이 인식한 시스템 언어 (저장된 게임 설정에도 영향 받음)
+- 사용 예
+```
+ShuttingStars.init(root, './', function(broker) {
+    console.log(broker.language);
+    broker.apply({
+        language : 'ko'
     });
 });
 ```
@@ -284,6 +300,24 @@ ShuttingStars.init(root, './', function(broker) {
     + 곡 선택 화면으로 전환하고, 바로 지정한 곡을 선택된 상태로 만듭니다.
     + 이미 플레이 중일 때는 호출할 수 없습니다. (오류 발생)
     + 변경 불가 (이 apply 메소드를 이용해 apply 메소드를 교체하는 것이 불가능)
+
+### translate
+
+- 타입 : 메소드
+- 리턴 타입 : string
+- 매개 변수
+    + english (string) - 번역할 영어 단어 혹은 문장
+- 설명
+    + 내장된 stringtable 데이터를 통해 입력받은 내용을 번역합니다.
+
+### setStringTable
+
+- 타입 : 메소드
+- 리턴 타입 : void (없음)
+- 매개 변수
+    + table (object) - 객체 리터럴로 넣습니다. 형식은 shuttingstarstringtable.js 를 참고해 주세요.
+- 설명
+    + 내장된 stringtable 을 교체합니다.
 
 ### destroy
 

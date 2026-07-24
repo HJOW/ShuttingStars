@@ -375,6 +375,8 @@ class ShuttingStarsCore {
     state = 'title';
     /** @type {string} 이전 상태 */
     beforeState = 'none';
+    /** @type {boolean} true 시 배경에 게임 제목 강제 출력 */
+    showGameTitle = false;
 
     /** @type {string} 기기/브라우저 특정을 위한 고유값 (독자 생성, init 호출해야 입력됨) */
     ssuuid = '';
@@ -1441,6 +1443,7 @@ class ShuttingStarsCore {
     rebuildBroker() {
         const selfs = this;
         this.broker = { };
+        this.broker.language                = this.language                ;
         this.broker.createMode              = this.createMode              ;
         this.broker.dark                    = this.dark                    ;
         this.broker.reverseVertical         = this.reverseVertical         ;
@@ -1473,6 +1476,7 @@ class ShuttingStarsCore {
         this.broker.virtualKeyForce         = this.virtualKeyForce         ;
         this.broker.urlCtx                  = this.urlCtx                  ;
         this.broker.rsscDirName             = this.rsscDirName             ;
+        this.broker.showGameTitle           = this.showGameTitle           ;
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
@@ -1495,6 +1499,7 @@ class ShuttingStarsCore {
             
             // 기타 항목 처리
             if(typeof(obj.dark                   ) != 'undefined') { selfs.dark                    = obj.dark                    ; brokerSelf.dark                    = obj.dark                    }
+            if(typeof(obj.language               ) != 'undefined') { selfs.language                = obj.language                ; brokerSelf.language                = obj.language                }
             if(typeof(obj.reverseVertical        ) != 'undefined') { selfs.reverseVertical         = obj.reverseVertical         ; brokerSelf.reverseVertical         = obj.reverseVertical         }
             if(typeof(obj.keyList                ) != 'undefined') { selfs.keyList                 = obj.keyList                 ; brokerSelf.keyList                 = obj.keyList                 }
             if(typeof(obj.arrowKeys              ) != 'undefined') { selfs.arrowKeys               = obj.arrowKeys               ; brokerSelf.arrowKeys               = obj.arrowKeys               }
@@ -1523,6 +1528,7 @@ class ShuttingStarsCore {
             if(typeof(obj.hardcoreMode           ) != 'undefined') { selfs.hardcoreMode            = obj.hardcoreMode            ; brokerSelf.hardcoreMode            = obj.hardcoreMode            }
             if(typeof(obj.mysophobiaMode         ) != 'undefined') { selfs.mysophobiaMode          = obj.mysophobiaMode          ; brokerSelf.mysophobiaMode          = obj.mysophobiaMode          }
             if(typeof(obj.virtualKeyForce        ) != 'undefined') { selfs.virtualKeyForce         = obj.virtualKeyForce         ; brokerSelf.virtualKeyForce         = obj.virtualKeyForce         }
+            if(typeof(obj.showGameTitle          ) != 'undefined') { selfs.showGameTitle           = obj.showGameTitle           ; brokerSelf.showGameTitle           = obj.showGameTitle           }
             if(typeof(obj.urlCtx                 ) != 'undefined') { selfs.urlCtx                  = obj.urlCtx                  ; brokerSelf.urlCtx                  = obj.urlCtx                  }
             if(typeof(obj.rsscDirName            ) != 'undefined') { selfs.rsscDirName             = obj.rsscDirName             ; brokerSelf.rsscDirName             = obj.rsscDirName             }
             if(typeof(obj.fOuterWidth            ) == 'function' ) { selfs.fOuterWidth             = obj.fOuterWidth             ; brokerSelf.fOuterWidth             = obj.fOuterWidth             }
@@ -1572,6 +1578,8 @@ class ShuttingStarsCore {
         this.broker.refreshPage = function() { selfs.callRefresh(); }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
         this.broker.getState = function() { return selfs.state; }
+        this.broker.translate = function(english) { return selfs.trans(english); }
+        this.broker.setStringTable = function(table) { selfs.stringTable = table; }
         this.broker.destroy = function() { selfs.destroy(); };
         this.broker.officialSongSerials = [];
         for(let idx=0; idx<this.officialSongSerials.length; idx++) {
@@ -4359,6 +4367,9 @@ class ShuttingStarsCore {
                 }
             }
 
+            // 게임 제목 강제 표시 옵션 적용 (단 title 상태인 경우는 renderTitle 에서 또 출력하므로 중복출력 방지)
+            if(this.showGameTitle && (this.state != 'title')) this.renderGameTitle();
+
             // 현재 게임 상태별 렌더링
             if(this.state == 'playing' || this.state == 'gameover' || this.state == 'listenplaying') {
                 this.renderPlaying();
@@ -4616,7 +4627,24 @@ class ShuttingStarsCore {
     }
 
     /**
+     * 화면 상단 중앙에 게임 제목을 출력
+     * 
+     * @returns {number} 출력 후 다음 행 Y 위치값
+     */
+    renderGameTitle() {
+        const rows = this.convertY(this.getStageHeight() / 3, false);
+        const fontSize = this.convertFontSize(30);
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
+        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.textAlign = "center";
+        this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), this.applyY(rows));
+        return rows;
+    }
+
+    /**
      * 화면 출력 - 타이틀
+     *     state - title 메인 출력 담당
      */
     renderTitle() {
         let idx;
@@ -4628,14 +4656,7 @@ class ShuttingStarsCore {
         
         this.calculateFontMetric(true);
 
-        rows = this.convertY(this.getStageHeight() / 3, false);
-        fontSize = this.convertFontSize(30);
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-        this.ctx.textAlign = "center";
-        this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), this.applyY(rows));
-
+        rows = this.renderGameTitle();
         rows += this.metricSize3 + gap;
 
         fontSize = this.convertFontSize(15);
