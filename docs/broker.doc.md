@@ -176,6 +176,32 @@ ShuttingStars.init(root, './', function(broker) {
 });
 ```
 
+### fCanvasResized
+
+- Type: function (can be replaced with another function by using the `apply` method)
+- Return type: void
+- Parameters: object ( JSON literal )
+- Description
+    + Called when the canvas size is changed.
+    + Can be replaced with a custom function by using the `apply` method.
+    + Parameter forms like...
+```
+{
+    "broker" : Broker,
+    "canvas" : { "width" : number, "height" : number },
+    "window" : { "width" : number, "height" : number },
+    "resolution" : { "width" : number, "height" : number }
+}
+```
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    broker.apply({
+        fCanvasResized  : function(obj) { console.log(obj.canvas.width + ', ' + obj.canvas.height); }
+    });
+});
+```
+
 ### fOnFirstUse
 
 - Type: function (can be replaced with another function by using the `apply` method)

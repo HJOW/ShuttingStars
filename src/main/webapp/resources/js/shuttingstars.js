@@ -667,6 +667,8 @@ class ShuttingStarsCore {
     fAfterInit   = function(obj, coreInst) {  }
     /** @type {function(Object): void} 화면 새로고침이 필요한 경우 호출 */
     fRefresh     = function() { location.reload(); }
+    /** @type {function(Object): void} 캔버스 크기 변경 처리 시 호출 */
+    fCanvasResized = function(obj) {}
     /** @type {function(Object): void} 첫 기동인 경우 호출 */
     fOnFirstUse = function(broker) { broker.refreshPage(); }
     /** @type {null|function(): void} null 입력 시 게임 종료 기능 비활성화 (기본값), 게임 종료 기능 지원 시 이 곳에 함수를 넣으면 메뉴에 게임 종료가 추가되고, 해당 메뉴 선택 시 함수가 호출됨 */
@@ -1476,6 +1478,7 @@ class ShuttingStarsCore {
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
         this.broker.fGameEvent              = this.fGameEvent              ;
         this.broker.fRefresh                = this.fRefresh                ;
+        this.broker.fCanvasResized          = this.fCanvasResized          ;
         this.broker.fOnFirstUse             = this.fOnFirstUse             ;
         this.broker.songs                   = [];
         for(let sdx=0; sdx<this.songs.length; sdx++) {
@@ -1527,6 +1530,7 @@ class ShuttingStarsCore {
             if(typeof(obj.fOnShutdownCalled      ) == 'function' ) { selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ; brokerSelf.fOnShutdownCalled       = obj.fOnShutdownCalled       }
             if(typeof(obj.fGameEvent             ) == 'function' ) { selfs.fGameEvent              = obj.fGameEvent              ; brokerSelf.fGameEvent              = obj.fGameEvent              }
             if(typeof(obj.fRefresh               ) == 'function' ) { selfs.fRefresh                = obj.fRefresh                ; brokerSelf.fRefresh                = obj.fRefresh                }
+            if(typeof(obj.fCanvasResized         ) == 'function' ) { selfs.fCanvasResized          = obj.fCanvasResized          ; brokerSelf.fCanvasResized          = obj.fCanvasResized          }
             if(typeof(obj.fOnFirstUse            ) == 'function' ) { selfs.fOnFirstUse             = obj.fOnFirstUse             ; brokerSelf.fOnFirstUse             = obj.fOnFirstUse             }
 
             if(typeof(obj.songs                  ) != 'undefined') {
@@ -2723,19 +2727,22 @@ class ShuttingStarsCore {
         let outWidth  = this.fOuterWidth();
         let outHeight = this.fOuterHeight();
 
-        this.contentRoot.style.width  = (outWidth  - this.gap.w - this.getLeftMarginPage() + 1) + 'px';
-        this.contentRoot.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  + 1) + 'px';
+        let contentRootWidth  = (outWidth  - this.gap.w - this.getLeftMarginPage() + 1);
+        let contentRootHeight = (outHeight - this.gap.h - this.getTopMarginPage()  + 1);
 
-        this.canvas.style.width  = (outWidth  - this.gap.w - this.getLeftMarginPage() + 1) + 'px';
-        this.canvas.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  + 1) + 'px';
+        this.contentRoot.style.width  = contentRootWidth  + 'px';
+        this.contentRoot.style.height = contentRootHeight + 'px';
+
+        this.canvas.style.width  = contentRootWidth  + 'px';
+        this.canvas.style.height = contentRootHeight + 'px';
         this.canvas.style.marginLeft = this.getLeftMarginPage() + 'px';
         this.canvas.style.marginTop  = this.getTopMarginPage() + 'px';
         
         if(this.configDiv != null) {
             this.configDiv.style.top    = '10px';
             this.configDiv.style.left   = '10px';
-            this.configDiv.style.width  = (outWidth  - this.gap.w - this.getLeftMarginPage() - 100) + 'px';
-            this.configDiv.style.height = (outHeight - this.gap.h - this.getTopMarginPage()  - 100) + 'px';
+            this.configDiv.style.width  = (contentRootWidth  - 100) + 'px';
+            this.configDiv.style.height = (contentRootHeight - 100) + 'px';
         }
         
         // 해상도 변경
@@ -2787,6 +2794,19 @@ class ShuttingStarsCore {
 
         // 폰트 크기 재계산
         this.calculateFontMetric(true);
+
+        // 이벤트
+        if(typeof(this.fCanvasResized) == 'function') {
+            this.rebuildBroker();
+            this.fCanvasResized({
+                "broker" : this.broker,
+                "window" : { "width" : outWidth, "height" : outHeight },
+                "canvas" : {
+                    "width" : canvasBounding.width, "height" : canvasBounding.height, "left" : canvasBounding.left, "top" : canvasBounding.top
+                },
+                "resolution" : { "width" : this.ressets.w, "height" : this.ressets.h }
+            });
+        }
     }
 
     /**

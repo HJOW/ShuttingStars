@@ -177,6 +177,32 @@ ShuttingStars.init(root, './', function(broker) {
 });
 ```
 
+### fCanvasResized
+
+- Type: 함수 (apply 메소드를 이용해 다른 함수로 교체할 수 있음)    
+- Return type: void (없음)
+- Parameters: 객체 리터럴
+- Description
+    + 화면 새로고침이 필요한 경우 호출됩니다.
+    + apply 메소드를 이용해 임의의 함수로 교체할 수 있습니다.
+    + 매개변수 객체는 다음과 같은 형태로 들어옵니다.
+```
+{
+    "broker" : Broker,
+    "canvas" : { "width" : number, "height" : number },
+    "window" : { "width" : number, "height" : number },
+    "resolution" : { "width" : number, "height" : number }
+}
+```
+- Example
+```
+ShuttingStars.init(root, './', function(broker) {
+    broker.apply({
+        fCanvasResized  : function(obj) { console.log(obj.canvas.width + ', ' + obj.canvas.height); }
+    });
+});
+```
+
 ### fOnFirstUse
 
 - Type: 함수 (apply 메소드를 이용해 다른 함수로 교체할 수 있음)    
