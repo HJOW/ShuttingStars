@@ -1568,8 +1568,10 @@ class ShuttingStarsCore {
         this.broker.directSelectSong = async function(song) {
             await selfs.directSelectSong(song);
         }
+        this.broker.setEmpty = function() { selfs.setState('empty'); }
         this.broker.refreshPage = function() { selfs.callRefresh(); }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
+        this.broker.getState = function() { return selfs.state; }
         this.broker.destroy = function() { selfs.destroy(); };
         this.broker.officialSongSerials = [];
         for(let idx=0; idx<this.officialSongSerials.length; idx++) {
