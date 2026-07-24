@@ -7,7 +7,6 @@
     <title>Shutting Stars</title>
     <link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
     <link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
-    <link rel="manifest" href="manifest.webmanifest"/>
     <link rel="stylesheet" href="./resources/css/pure-min.css"/>
 
     <!--
@@ -108,7 +107,7 @@
             height: 3rem;
         }
         .pure-menu {
-            overflow: hidden;
+            overflow: visible;
             z-index: 3001;
             width: 100%;
             ul { border-top: 0; }
@@ -294,6 +293,16 @@
                 window.open('https://github.com/HJOW/ShuttingStars', '_blank');
             });
 
+            homepageDiv.querySelector('.a_ss_createmode').addEventListener('click', function() {
+                fHome();
+                window.open('./create/create.html', '_blank');
+            });
+
+            homepageDiv.querySelector('.a_ss_deleteacc').addEventListener('click', function() {
+                fHome();
+                window.open('./exit.html', '_blank');
+            });
+
             // 창 크기 변경 이벤트
             const fResize = function() {
                 iframeMain.style.height = (window.innerHeight - topbar.offsetHeight - 20) + 'px';
@@ -314,11 +323,21 @@
           <div class="ss_topbar pure-menu pure-menu-horizontal">
              <ul class="pure-menu-list">
                 <li class="pure-menu-heading"><a href='#'>Shutting Stars</a></li>
-                <li class="pure-menu-item li_ss_home pure-menu-selected"><a href='#' class="a_ss_home target_translate">HOME</a></li>
-                <li class="pure-menu-item li_ss_gamestart"><a href='#' class="a_ss_gamestart target_translate">START</a></li>
-                <li class="pure-menu-item li_ss_board"><a href='#' class="a_ss_board target_translate">BOARD</a></li>
-                <li class="pure-menu-item li_ss_github"><a href='#' class="a_ss_github">GitHub</a></li>
-                
+                <li class="pure-menu-item li_ss_home pure-menu-selected"><a href='#' class="pure-menu-link a_ss_home target_translate">HOME</a></li>
+                <li class="pure-menu-item li_ss_gamestart"><a href='#' class="pure-menu-link a_ss_gamestart target_translate">START</a></li>
+                <li class="pure-menu-item li_ss_board"><a href='#' class="pure-menu-link a_ss_board target_translate">BOARD</a></li>
+                <li class="pure-menu-item li_ss_github"><a href='#' class="pure-menu-link a_ss_github">GitHub</a></li>
+                <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                    <a href="#" class="pure-menu-link target_translate">ETC</a>
+                    <ul class="pure-menu-children">
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link a_ss_createmode">Create Mode</a>
+                        </li>
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link a_ss_deleteacc target_translate">DELETE ACCOUNT</a>
+                        </li>
+                    </ul>
+                </li>
             </ul>
           </div>
           <div class="ss_content full">
