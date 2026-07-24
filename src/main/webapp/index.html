@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="description" content="Shutting Stars - The rhythm game on web !"/>
-    <title>Shutting Stars</title>
+    <title translate="no">Shutting Stars</title>
     <link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
     <link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
     <link rel="stylesheet" href="./resources/css/pure-min.css"/>
@@ -225,6 +225,7 @@
 
                     // 번역했음을 표시
                     itemOne.classList.add('target_translated');
+                    itemOne.setAttribute('lang', broker.language);
                 });
 
                 brk = broker;
@@ -334,7 +335,7 @@
        <div class="ss_homepage_main">
           <div class="ss_topbar pure-menu pure-menu-horizontal">
              <ul class="pure-menu-list">
-                <li class="pure-menu-heading"><a href='#'>Shutting Stars</a></li>
+                <li class="pure-menu-heading"><a href='#' class="notranslate" translate="no">Shutting Stars</a></li>
                 <li class="pure-menu-item li_ss_home pure-menu-selected"><a href='#' class="pure-menu-link a_ss_home target_translate">HOME</a></li>
                 <li class="pure-menu-item li_ss_gamestart"><a href='#' class="pure-menu-link a_ss_gamestart target_translate" title="Launch the game (Popup)">START</a></li>
                 <li class="pure-menu-item li_ss_board"><a href='#' class="pure-menu-link a_ss_board target_translate" title="Board">BOARD</a></li>
