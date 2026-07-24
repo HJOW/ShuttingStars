@@ -176,3 +176,11 @@ https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE
 
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/
+
+## JavaScript Library CDN
+
+이 게임의 핵심 스크립트 번들 파일을 다음과 같이 CDN을 통해서 불러올 수도 있습니다.
+```
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/HJOW/ShuttingStars@main/src/main/webapp/resources/js/dist/shuttingstars.bundle.js"></script>
+```
+게임 구동에는 음원 파일과 폰트 파일 등 리소스들도 필요하기 때문에, 이 CDN 방식은 앱에 번들할 때 스크립트만 최신 버전으로 유지하는 용도로만 사용할 수 있습니다.
