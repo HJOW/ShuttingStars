@@ -1,6 +1,8 @@
-/**
+/** Shutting Stars
  * @author HJOW <hujinone22@naver.com>
  * @license Apache-2.0 
+ * 
+ * GitHub : https://github.com/HJOW/shuttingstars
  * 
  * Third parties are included in this bundle.
  *     Three.js (https://threejs.org/) - MIT License
