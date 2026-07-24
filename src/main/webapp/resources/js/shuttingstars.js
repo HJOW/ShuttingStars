@@ -1580,6 +1580,7 @@ class ShuttingStarsCore {
         this.broker.getState = function() { return selfs.state; }
         this.broker.translate = function(english) { return selfs.trans(english); }
         this.broker.setStringTable = function(table) { selfs.stringTable = table; }
+        this.broker.updateStringTable = function(table) { selfs.updateStringTable(table); }
         this.broker.destroy = function() { selfs.destroy(); };
         this.broker.officialSongSerials = [];
         for(let idx=0; idx<this.officialSongSerials.length; idx++) {
@@ -9302,6 +9303,24 @@ class ShuttingStarsCore {
     }
 
     /**
+     * StringTable 수정 (겹치는 내용 덮어쓰기 방식)
+     * 
+     * @param {object} newStringTable - 새로운 StringTable 객체 (JSON Plain Object)
+     */
+    updateStringTable(newStringTable) {
+        if(this.stringTable == null) this.stringTable = {};
+        if(newStringTable == null) return;
+        for(let key1 in newStringTable) {
+            if(typeof(this.stringTable[key1]) == 'undefined') this.stringTable[key1] = {};
+            const currentLanguageTable = this.stringTable[key1];
+            const newLanguageTable = newStringTable[key1];
+            for(let key2 in newLanguageTable) {
+                currentLanguageTable[key2] = newLanguageTable[key2];
+            }
+        }
+    }
+
+    /**
      * render 메소드 내에서 사용되는 font 값 중 글꼴 파트 반환, pointFont 는 강조하고 싶을 때 true 를 입력 (선택사항)
      * @param {boolean} pointFont pointFont 값
      * @returns {string} 처리 결과
@@ -12800,6 +12819,11 @@ class ShuttingStarsManager {
     /** 스트링 테이블 설정 */
     setStringTable(tableObj) {
         this.#originalInstances.stringTable = tableObj;
+    }
+
+    /** 스트링 테이블 수정 (겹치는 내용 덮어쓰기 방식) */
+    updateStringTable(tableObj) {
+        this.#originalInstances.updateStringTable(tableObj);
     }
 
     /**

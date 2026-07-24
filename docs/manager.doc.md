@@ -158,6 +158,39 @@ window.addEventListener('load', function(){
 </script>
 ```
 
+### updateStringTable
+
+- Type: method
+- Return type: void (none)
+- Parameters
+    + stringTable (object) - Provide an object literal (JSON object) containing translations for in-game text and messages.
+- Description
+    + Use this to translate in-game text and messages into other languages.
+    + The keys must be language codes (`ko`, `en`, ...), and each value must be another object literal (JSON object).
+    + In these objects, the keys are English messages and the values are their translations. Matching is case-sensitive.
+    + [Reference (shuttingstarstringtable.js)](../src/main/webapp/resources/js/shuttingstarstringtable.js)
+- Example
+```
+<script type="module">
+window.addEventListener('load', function(){
+    const root = document.getElementById('shuttingstar_canvas_root');
+
+    ShuttingStars.updateStringTable({
+        ko : {
+            'PLAY' : '플레이',
+            'SETTING' : '설정',
+            'ACCEPT' : '확인',
+            'Accept' : '확인',
+            'CANCEL' : '취소',
+            'Cancel' : '취소',
+            // Add other text and messages here. Only written values will be changed. (Overwritting)
+        }
+    });
+    ShuttingStars.init(root, './', function(broker) {});
+});
+</script>
+```
+
 ### set3DManager
 
 - Type: method

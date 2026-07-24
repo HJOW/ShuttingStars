@@ -136,6 +136,7 @@ window.addEventListener('load', function(){
     + 게임 내 표시되는 문구와 메시지들을 다른 언어로 번역할 때 사용합니다.
     + 키로 언어 코드 (ko, en, ...) 가 들어와야 하며, 값으로는 또 다른 객체 리터럴 (JSON 객체) 이 들어가야 합니다. 
     + 이 객체 내에서 키는 영어 메시지, 값은 번역 메시지를 넣으면 됩니다. 대소문자를 가립니다.
+    + 번역 데이터 전체를 교체하는 방식이므로, 전체 번역 데이터를 넣지 않으면 일부 항목은 삭제됩니다.
     + [참고 (shuttingstarstringtable.js)](../src/main/webapp/resources/js/shuttingstarstringtable.js)
 - 사용 예
 ```
@@ -151,7 +152,41 @@ window.addEventListener('load', function(){
             'Accept' : '확인',
             'CANCEL' : '취소',
             'Cancel' : '취소',
-            // 기타 문구와 메시지들을 이 곳에 입력, 사정 상 내용 생략, 실제로는 전부 기입해야 합니다.
+            // 기타 문구와 메시지들을 이 곳에 입력, 사정 상 내용 생략, 실제로는 전부 기입해야 합니다. 여기에 없는 항목은 삭제됩니다.
+        }
+    });
+    ShuttingStars.init(root, './', function(broker) {});
+});
+</script>
+```
+
+### updateStringTable
+
+- 타입 : 메소드    
+- 리턴 타입 : void (없음)    
+- 매개 변수
+    + stringTable (object) - 객체 리터럴 (JSON 객체) 로 넣습니다. 게임 내 출력되는 문구와 메시지의 언어 번역 정보를 넣습니다.
+- 설명    
+    + 게임 내 표시되는 문구와 메시지들을 다른 언어로 번역할 때 사용합니다.
+    + 키로 언어 코드 (ko, en, ...) 가 들어와야 하며, 값으로는 또 다른 객체 리터럴 (JSON 객체) 이 들어가야 합니다. 
+    + 이 객체 내에서 키는 영어 메시지, 값은 번역 메시지를 넣으면 됩니다. 대소문자를 가립니다.
+    + 수정된 항목만 덮어쓰는 방식으로, 누락된 데이터는 수정되지 않습니다.
+    + [참고 (shuttingstarstringtable.js)](../src/main/webapp/resources/js/shuttingstarstringtable.js)
+- 사용 예
+```
+<script type="module">
+window.addEventListener('load', function(){
+    const root = document.getElementById('shuttingstar_canvas_root');
+
+    ShuttingStars.updateStringTable({
+        ko : {
+            'PLAY' : '플레이',
+            'SETTING' : '설정',
+            'ACCEPT' : '확인',
+            'Accept' : '확인',
+            'CANCEL' : '취소',
+            'Cancel' : '취소',
+            // 기타 문구와 메시지들을 이 곳에 입력, 사정 상 내용 생략, 여기에 기입된 항목만 수정(덮어쓰기) 됩니다. 여기에 없는 항목이 삭제되지는 않습니다.
         }
     });
     ShuttingStars.init(root, './', function(broker) {});

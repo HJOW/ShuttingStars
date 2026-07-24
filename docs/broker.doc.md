@@ -318,6 +318,15 @@ ShuttingStars.init(root, './', function(broker) {
 - Description
     + Replace stringtable contents.
 
+### updateStringTable
+
+- Type: method
+- Return type: void
+- Parameters
+    + table (object) - Pass an object literal (JSON object). See 'shuttingstarstringtable.js' file.
+- Description
+    + Update stringtable contents. No deletes, just overwritting.
+
 ### destroy
 
 - Type: method

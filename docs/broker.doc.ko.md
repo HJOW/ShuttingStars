@@ -319,6 +319,15 @@ ShuttingStars.init(root, './', function(broker) {
 - 설명
     + 내장된 stringtable 을 교체합니다.
 
+### updateStringTable
+
+- 타입 : 메소드
+- 리턴 타입 : void (없음)
+- 매개 변수
+    + table (object) - 객체 리터럴로 넣습니다. 형식은 shuttingstarstringtable.js 를 참고해 주세요.
+- 설명
+    + 내장된 stringtable 의 내용을 수정합니다. 겹치는 내용을 새 데이터로 덮어 씁니다.
+
 ### destroy
 
 - 타입 : 메소드    

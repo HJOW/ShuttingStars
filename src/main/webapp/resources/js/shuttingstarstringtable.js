@@ -90,6 +90,7 @@ const SSStringTable = {
         "Logging in means you agree to our Privacy Policy." : "로그인과 동시에 개인정보처리방침에도 동의하시게 됩니다.",
         "COMMUNITY" : "커뮤니티",
         "BOARD" : "게시판",
+        "Board" : "게시판",
         "Play with your own music !" : "보유한 음악으로 즐겨 보세요 !",
         "Scores will not be saved." : "기록이 저장되지 않습니다.",
         "BPM" : "BPM",
@@ -110,7 +111,11 @@ const SSStringTable = {
         "EMPTY !" : "비어 있음 !",
         "Font" : "글꼴",
         "HOME" : "홈",
-        "ETC" : "기타"
+        "ETC" : "기타",
+        "GitHub" : "GitHub",
+        "Launch the game (Popup)" : "게임 실행 (팝업)",
+        "Delete your informations on game DB (Popup)" : "게임 DB 내 정보 삭제 (팝업)",
+        "Visit the github page (Popup)" : "GitHub 페이지 방문 (팝업)"
     }
 };
 export { SSStringTable };
