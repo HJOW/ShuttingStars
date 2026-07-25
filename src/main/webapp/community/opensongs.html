@@ -258,7 +258,11 @@
         var t = i18n[locale] || i18n.en;
         applyStaticTexts(t);
             const urlCtx = '../'; // (URL Context 여기서 참고 !)
-            ShuttingStars.getAllSongPromise(urlCtx).then(function(songs) {
+            ShuttingStars.getAllSongPromise(urlCtx, function(songOne) {
+              if(! songOne.official  ) return false;
+              if(! songOne.opensource) return false;
+              return true;
+            }).then(function(songs) {
                 var rowsRoot = document.getElementById('songRows');
                 var countRoot = document.getElementById('songCount');
                 var emptyRoot = document.getElementById('songEmpty');

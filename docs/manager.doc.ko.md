@@ -249,7 +249,9 @@ window.addEventListener('load', function(){
 
 - 타입 : 메소드    
 - 리턴 타입 : Promise (원소 : Array)
-- 매개 변수 : urlContext (string)      - 일반적으로 null 또는 './' 를 넣으면 됩니다. 단 URL Context Path 가 다른 환경에서는 이 값의 수정이 필요합니다.
+- 매개 변수 
+    + urlContext (string)      - 일반적으로 null 또는 './' 를 넣으면 됩니다. 단 URL Context Path 가 다른 환경에서는 이 값의 수정이 필요합니다.
+    + fFilter    (function)    - 필터 함수, 곡 정보 객체 하나가 매개변수로 들어오며, 이 함수에서 true 를 리턴해야 Promise 응답에 포함됨
 - 설명    
     + 로딩된 곡 정보 전체를 배열로 반환합니다. 게임 자체를 로딩하고 곡 정보를 추출한 후 게임을 비활성화하는 절차가 포함되어 있습니다. Promise 형태이니 주의하세요.
 

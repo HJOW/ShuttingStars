@@ -1578,7 +1578,8 @@ class ShuttingStarsCore {
         this.broker.setEmpty = function() { selfs.setState('empty'); }
         this.broker.refreshPage = function() { selfs.callRefresh(); }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
-        this.broker.getAllSongData = function() { return selfs.getAllSongData(); }
+        this.broker.getAllSongData = function(fFilter) { return selfs.getAllSongData(fFilter); }
+        this.broker.getAllSongPromise = async function(urlCtx, fFilter) { return await selfs.getAllSongPromise(urlCtx, fFilter); }
         this.broker.getState = function() { return selfs.state; }
         this.broker.translate = function(english) { return selfs.trans(english); }
         this.broker.setStringTable = function(table) { selfs.stringTable = table; }
@@ -10650,18 +10651,33 @@ class ShuttingStarsCore {
 
     /** 
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
+     * @param {function|null} fFilter 필터링 함수 (선택사항) - 반환할 곡 정보에 대해 true/false 를 반환하는 함수, false 반환 시 해당 곡은 제외됨
      * @returns {Array<object>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
-    getAllSongData() {
+    getAllSongData(fFilter) {
         const songInfo = this.songs;
         let plainObjectArray = [];
         for(let idx=0; idx<songInfo.length; idx++) {
             const songOne = songInfo[idx];
-            let json    = songOne.toJSONObject()
+            let json    = songOne.toJSONObject();
+
+            json.opensource = true;
+            json.official = false;
+            if(songOne instanceof OfficialSSSong) {
+                json.official = true;
+            }
+
+            if(songOne instanceof CustomSSSong) {
+                continue;
+            }
             
             // serial 값이 있으면 제거
             if(json.serial) {
                 json.serial = '';
+            }
+
+            if(typeof(fFilter) == 'function') {
+                if(! fFilter(json)) continue;
             }
 
             plainObjectArray.push(json);
@@ -10673,9 +10689,10 @@ class ShuttingStarsCore {
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
      *     로딩 절차까지 포함
      * @param {string} urlCtx 현재 웹 경로의 URL Context
+     * @param {function|null} fFilter 필터링 함수 (선택사항) - 반환할 곡 정보에 대해 true/false 를 반환하는 함수, false 반환 시 해당 곡은 제외됨
      * @returns {Promise<Array<object>>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
-    async getAllSongPromise(urlCtx) {
+    async getAllSongPromise(urlCtx, fFilter) {
         // 숨김 영역에 게임 초기화, 로딩 후 삭제해야 됨
         const div = document.createElement('div');
         div.className = 'shuttingstars-hidden-corearea';
@@ -10683,7 +10700,7 @@ class ShuttingStarsCore {
         document.body.appendChild(div);
 
         try { await this.init(div, urlCtx); } catch(e) { console.error(e); }
-        const allSongData = this.getAllSongData();
+        const allSongData = this.getAllSongData(fFilter);
 
         try { this.destroy();                 } catch(e) { console.error(e); }
         try { document.body.removeChild(div); } catch(e) { console.error(e); }
@@ -12882,20 +12899,22 @@ class ShuttingStarsManager {
 
     /** 
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
+     * @param {function(object):boolean} fFilter 곡 필터링 함수, 선택사항으로, 사용하려면 함수를 넣어야 하며, 첫 번째 매개변수로 들어오는 곡 객체를 통해 필터링 가능. 반환값이 true이면 포함, false이면 제외
      * @returns {Array<object>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
-    getAllSongData() {
-        return this.#originalInstances.getAllSongData();
+    getAllSongData(fFilter) {
+        return this.#originalInstances.getAllSongData(fFilter);
     }
 
     /** 
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
      *     로딩 절차까지 포함
      * @param {string} urlCtx 현재 웹 경로의 URL Context
+     * @param {function(object):boolean} fFilter 곡 필터링 함수, 선택사항으로, 사용하려면 함수를 넣어야 하며, 첫 번째 매개변수로 들어오는 곡 객체를 통해 필터링 가능. 반환값이 true이면 포함, false이면 제외
      * @returns {Promise<Array<object>>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
-    async getAllSongPromise(urlCtx) {
-        return await this.#originalInstances.getAllSongPromise(urlCtx);
+    async getAllSongPromise(urlCtx, fFilter) {
+        return await this.#originalInstances.getAllSongPromise(urlCtx, fFilter);
     }
 
     /**
