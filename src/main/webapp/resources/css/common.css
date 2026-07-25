@@ -36,6 +36,10 @@ body {
     display: none !important;
 }
 
+.shuttingstars-hidden-corearea {
+    display: none !important;
+}
+
 /* pure css 관련 (본 게임 내에서는 쓰이지 않으며, 일부 웹 페이지 출력에만 사용) */
 
 .pure-menu {

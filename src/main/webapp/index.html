@@ -138,7 +138,7 @@
             top: 3rem;
             width: 100%;
             text-align: center;;
-            iframe { width: 100%; border: 0; }
+            iframe { width: 100%; border: 0; overflow-x: hidden; overflow-y: auto; }
             .btn_ss_gamestart {
                 position: fixed;
                 left: 45%;
@@ -301,6 +301,17 @@
                 btnStart.classList.add('invisible');
             });
 
+            homepageDiv.querySelector('.a_ss_songs').addEventListener('click', function() {
+                iframeMain.src = './community/opensongs.html';
+                iframeMain.classList.remove('invisible');
+
+                menuRoot.querySelectorAll('.pure-menu-item').forEach(function(item) {
+                    item.classList.remove('pure-menu-selected');
+                });
+                menuRoot.querySelector('.li_ss_songs').classList.add('pure-menu-selected');
+                btnStart.classList.add('invisible');
+            });
+
             homepageDiv.querySelector('.a_ss_github').addEventListener('click', function() {
                 fHome();
                 window.open('https://github.com/HJOW/ShuttingStars', '_blank');
@@ -339,6 +350,7 @@
                 <li class="pure-menu-item li_ss_home pure-menu-selected"><a href='#' class="pure-menu-link a_ss_home target_translate">HOME</a></li>
                 <li class="pure-menu-item li_ss_gamestart"><a href='#' class="pure-menu-link a_ss_gamestart target_translate" title="Launch the game (Popup)">START</a></li>
                 <li class="pure-menu-item li_ss_board"><a href='#' class="pure-menu-link a_ss_board target_translate" title="Board">BOARD</a></li>
+                <li class="pure-menu-item li_ss_songs"><a href='#' class="pure-menu-link a_ss_songs target_translate" title="Songs">Songs (Open-Source)</a></li>
                 <li class="pure-menu-item li_ss_github"><a href='#' class="pure-menu-link a_ss_github target_translate" title="Visit the github page (Popup)">GitHub</a></li>
                 <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
                     <a href="#" class="pure-menu-link target_translate">ETC</a>

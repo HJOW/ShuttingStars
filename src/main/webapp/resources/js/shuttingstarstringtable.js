@@ -91,6 +91,8 @@ const SSStringTable = {
         "COMMUNITY" : "커뮤니티",
         "BOARD" : "게시판",
         "Board" : "게시판",
+        "Songs" : "곡 목록",
+        "Songs (Open-Source)" : "오픈소스 곡",
         "Play with your own music !" : "보유한 음악으로 즐겨 보세요 !",
         "Scores will not be saved." : "기록이 저장되지 않습니다.",
         "BPM" : "BPM",

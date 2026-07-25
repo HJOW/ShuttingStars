@@ -10678,6 +10678,7 @@ class ShuttingStarsCore {
     async getAllSongPromise(urlCtx) {
         // 숨김 영역에 게임 초기화, 로딩 후 삭제해야 됨
         const div = document.createElement('div');
+        div.className = 'shuttingstars-hidden-corearea';
         div.setAttribute('display', 'none');
         document.body.appendChild(div);
 
