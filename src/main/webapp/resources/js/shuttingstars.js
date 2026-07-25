@@ -488,7 +488,8 @@ class ShuttingStarsCore {
         'nai4ilsgjklnHDHDFHRHR643yJFGJFGJIMEAGMERGgD39p4g',
         'nai4ilaahDFHDFGHmkfmwif35gmSGESGSDGsnmdk',
         'nai4ilahDFSHShirgnn546346HSHMERHMEmSGESGSDGsnmdk',
-        'nai4ilaHbAggERHERM46gERGERHMERERGgD39p4g'
+        'nai4ilaHbAggERHERM46gERGERHMERERGgD39p4g',
+        'nai4ilaHbn7g563&6482HDRHRgmogogesghefdkgm23GeGERGgD39p4g'
     ];
     
 
@@ -1249,7 +1250,7 @@ class ShuttingStarsCore {
             this.logInit('preparing background audio...');
 
             // Blob URL로 변환 시도
-            let convertedURL = this.convertURL('[RSSC]songs/woowahan/track09.mp3');
+            let convertedURL = this.convertURL('[RSSC]songs/ai/Third_Cup_Before_Departure.mp3');
             try { convertedURL = await ShuttingStarsUtility.convertToBlobURL(convertedURL); } catch(exc) { ShuttingStarsUtility.log('Ignorable exception - ' + exc); console.error(exc); }
 
             try {
@@ -2285,28 +2286,8 @@ class ShuttingStarsCore {
         // json 의 songs.json 도 불러오기
         try {
             lastURL = this.convertURL('[RSSC]json/songs.json');
-            const fetchResponse = await fetch(lastURL);
-            const songsText     = await fetchResponse.text();
-            const songsJson     = ShuttingStarsUtility.parseJSON(songsText);
-            for(idx=0; idx<songsJson.length; idx++) {
-                let songJsonOne = songsJson[idx];
-                try {
-                    if(typeof(songJsonOne) == 'string') {
-                        if(songJsonOne.indexOf('[RSSC]') == 0 || songJsonOne.indexOf('[CTX]') == 0 || songJsonOne.indexOf('http://') == 0 || songJsonOne.indexOf('https://') == 0) {
-                            const fetchChild = await fetch(this.convertURL(songJsonOne));
-                            const childText  = await fetchChild.text();
-                            songJsonOne = ShuttingStarsUtility.parseJSON(childText);
-                        } else {
-                            songJsonOne = ShuttingStarsUtility.parseJSON(songJsonOne);
-                        }
-                    }
-                    this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
-                    songAdded = true;
-                } catch(e2) {
-                    ShuttingStarsUtility.log('Failed to read song info from...\n' + songJsonOne);
-                    console.error(e2);
-                }
-            }
+            let nowSongAdded = await this.loadSongsFromURL(lastURL);
+            if(nowSongAdded) songAdded = true;
         } catch(e) {
             ShuttingStarsUtility.log('Failed to load songs from ' + lastURL);
             console.error(e);
@@ -2338,6 +2319,48 @@ class ShuttingStarsCore {
             // songDisplays, songRandoms 도 갱신
             this.refreshSongDisplayList();
         }
+    }
+
+    /**
+     * URL로부터 곡 목록 데이터를 불러와 등록 (Promise)
+     * 
+     * @param {string} url : 곡 목록이 들어있는 JSON 배열을 제공하는 URL
+     * @returns Promise<boolean> : 곡이 하나라도 추가되었으면 true
+     */
+    async loadSongsFromURL(url) {
+        url = this.convertURL(url);
+
+        let songAdded = false;
+        const fetchResponse = await fetch(url);
+        const songsText     = await fetchResponse.text();
+        const songsJson     = ShuttingStarsUtility.parseJSON(songsText);
+
+        if(Array.isArray(songsJson)) {
+            for(let idx=0; idx<songsJson.length; idx++) {
+                let songJsonOne = songsJson[idx];
+                try {
+                    if(typeof(songJsonOne) == 'string') {
+                        if(songJsonOne.indexOf('[RSSC]') == 0 || songJsonOne.indexOf('[CTX]') == 0 || songJsonOne.indexOf('http://') == 0 || songJsonOne.indexOf('https://') == 0) {
+                            const childSongAdded = await this.loadSongsFromURL(songJsonOne);
+                            if(childSongAdded) songAdded = true;
+                            continue;
+                        } else {
+                            songJsonOne = ShuttingStarsUtility.parseJSON(songJsonOne);
+                        }
+                    }
+                    this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
+                    songAdded = true;
+                } catch(e2) {
+                    ShuttingStarsUtility.log('Failed to read song info from...\n' + songJsonOne);
+                    console.error(e2);
+                }
+            }
+        } else {
+            this.addSong(songJsonOne, true); // refreshSongDisplayList 포함
+            songAdded = true;
+        }
+        
+        return songAdded;
     }
 
     /**
