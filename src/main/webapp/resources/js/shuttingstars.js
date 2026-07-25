@@ -1578,6 +1578,7 @@ class ShuttingStarsCore {
         this.broker.setEmpty = function() { selfs.setState('empty'); }
         this.broker.refreshPage = function() { selfs.callRefresh(); }
         this.broker.stopSong = function() { selfs.onSongEnd(); }
+        this.broker.getAllSongData = function() { return selfs.getAllSongData(); }
         this.broker.getState = function() { return selfs.state; }
         this.broker.translate = function(english) { return selfs.trans(english); }
         this.broker.setStringTable = function(table) { selfs.stringTable = table; }
@@ -10647,6 +10648,27 @@ class ShuttingStarsCore {
         this.songChoosing = song;
     }
 
+    /** 
+     * 로딩된 곡 정보 전체 반환 (복제해 반환) 
+     * @returns {Array<object>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
+    */
+    getAllSongData() {
+        const songInfo = this.songs;
+        let plainObjectArray = [];
+        for(let idx=0; idx<songInfo.length; idx++) {
+            const songOne = songInfo[idx];
+            let json    = songOne.toJSONObject()
+            
+            // serial 값이 있으면 제거
+            if(json.serial) {
+                json.serial = '';
+            }
+
+            plainObjectArray.push(json);
+        }
+        return ShuttingStarsUtility.cloneObject(plainObjectArray);
+    }
+
     /**
      * 부동소수 동일여부 확인 (노트 생성 타이밍에 사용, ShuttingStarsUtility 에 있는 동일 메소드와 오차범위를 다르게 지정하게 될 수 있어 분리함)
      * @param {number} a a 값
@@ -12834,6 +12856,14 @@ class ShuttingStarsManager {
      */
     addSong(song) {
         this.#originalInstances.addSong(song);
+    }
+
+    /** 
+     * 로딩된 곡 정보 전체 반환 (복제해 반환) 
+     * @returns {Array<object>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
+    */
+    getAllSongData() {
+        return this.#originalInstances.getAllSongData();
     }
 
     /**

@@ -301,6 +301,15 @@ ShuttingStars.init(root, './', function(broker) {
     + 이미 플레이 중일 때는 호출할 수 없습니다. (오류 발생)
     + 변경 불가 (이 apply 메소드를 이용해 apply 메소드를 교체하는 것이 불가능)
 
+### getAllSongData
+
+- 타입 : 메소드    
+- 리턴 타입 : Array (원소 : 객체 리터럴)
+- 매개 변수 : 없음
+- 설명    
+    + 로딩된 곡 정보 전체를 배열로 반환합니다.
+    + 변경 불가 (이 apply 메소드를 이용해 apply 메소드를 교체하는 것이 불가능)
+
 ### translate
 
 - 타입 : 메소드

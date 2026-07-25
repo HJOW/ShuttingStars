@@ -234,6 +234,14 @@ window.addEventListener('load', function(){
     + Switches to the song selection screen and immediately selects the specified song.
     + It cannot be called while a song is already being played (an error occurs).
 
+### getAllSongData
+
+- Type: method  
+- Return type: Array (Plain Objects)
+- Parameters : none
+- Description    
+    + All song data are returned.
+
 # Other APIs
 
 [Broker API](./broker.doc.md)

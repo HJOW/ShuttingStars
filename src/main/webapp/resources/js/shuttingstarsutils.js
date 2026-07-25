@@ -676,6 +676,35 @@ class ShuttingStarsUtilityClass {
         return res;
     }
 
+    /**
+     * JSON 객체 리터럴 (Plain Object) 복제, 배열도 지원. 객체 리터럴이 아닌 class 타입 혹은 기본 제공 객체인 경우 제대로 복제되지 않음. 함수를 넣어서도 안됨. null 이나 undefined 입력 시 null 반환
+     * 
+     * @param {*} plainObject 
+     */
+    cloneObject(plainObject) {
+        // null 인지 검사
+        if(plainObject == null) return null;
+        if(typeof(plainObject) == 'undefined') return null;
+        // 배열인지, 객체인지, 아니면 일반 원소인지 검사
+        if(Array.isArray(plainObject)) { // 객체
+            let res = [];
+            for(let idx=0; idx<plainObject.length; idx++) {
+                res.push(this.cloneObject(plainObject[idx]));
+            }
+            return res;
+        } else if(typeof(plainObject) == 'object') { // 객체 (객체 리터럴이 아니면 제대로 복제되지 않음)
+            let res = {};
+            for(const key in plainObject) {
+                res[key] = this.cloneObject(plainObject[key]);
+            }
+            return res;
+        } else if(typeof(plainObject) == 'string') {
+            return String(plainObject);
+        } else { // 기타 타입 - 그대로 리턴
+            return plainObject;
+        }
+    }
+
     /** 
      * 해당 문자열을 SHA-256 암호화 (Promise)
      * 

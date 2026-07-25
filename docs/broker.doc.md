@@ -300,6 +300,15 @@ ShuttingStars.init(root, './', function(broker) {
     + Cannot be called while a song is already being played. An error will occur.
     + Cannot be changed. It is not possible to replace this method by using the `apply` method.
 
+### getAllSongData
+
+- Type: method  
+- Return type: Array (Plain Objects)
+- Parameters : none
+- Description
+    + All song data are returned.
+    + Cannot be changed. It is not possible to replace this method by using the `apply` method.
+
 ### translate
 
 - Type: method

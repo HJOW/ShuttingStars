@@ -237,6 +237,14 @@ window.addEventListener('load', function(){
     + 곡 선택 화면으로 전환하고, 바로 지정한 곡을 선택된 상태로 만듭니다.
     + 이미 플레이 중일 때는 호출할 수 없습니다. (오류 발생)
 
+### getAllSongData
+
+- 타입 : 메소드    
+- 리턴 타입 : Array (원소 : 객체 리터럴)
+- 매개 변수 : 없음
+- 설명    
+    + 로딩된 곡 정보 전체를 배열로 반환합니다.
+
 # 다른 API 문서
 
 [Broker API](./broker.doc.ko.md)
