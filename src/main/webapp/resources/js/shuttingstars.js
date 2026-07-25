@@ -10670,6 +10670,12 @@ class ShuttingStarsCore {
             if(songOne instanceof CustomSSSong) {
                 continue;
             }
+
+            if(songOne.composer.indexOf('우아한형제들') >= 0) {
+                json.opensource = false;
+            } else {
+                json.opensource = (songOne.composer.indexOf('Lyria') >= 0 || songOne.composer.indexOf('ChatGPT') >= 0);
+            }
             
             // serial 값이 있으면 제거
             if(json.serial) {
