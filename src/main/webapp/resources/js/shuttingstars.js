@@ -10669,6 +10669,27 @@ class ShuttingStarsCore {
         return ShuttingStarsUtility.cloneObject(plainObjectArray);
     }
 
+    /** 
+     * 로딩된 곡 정보 전체 반환 (복제해 반환) 
+     *     로딩 절차까지 포함
+     * @param {string} urlCtx 현재 웹 경로의 URL Context
+     * @returns {Promise<Array<object>>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
+    */
+    async getAllSongPromise(urlCtx) {
+        // 숨김 영역에 게임 초기화, 로딩 후 삭제해야 됨
+        const div = document.createElement('div');
+        div.setAttribute('display', 'none');
+        document.body.appendChild(div);
+
+        try { await this.init(div, urlCtx); } catch(e) { console.error(e); }
+        const allSongData = this.getAllSongData();
+
+        try { this.destroy();                 } catch(e) { console.error(e); }
+        try { document.body.removeChild(div); } catch(e) { console.error(e); }
+        
+        return allSongData;
+    }
+
     /**
      * 부동소수 동일여부 확인 (노트 생성 타이밍에 사용, ShuttingStarsUtility 에 있는 동일 메소드와 오차범위를 다르게 지정하게 될 수 있어 분리함)
      * @param {number} a a 값
@@ -12864,6 +12885,16 @@ class ShuttingStarsManager {
     */
     getAllSongData() {
         return this.#originalInstances.getAllSongData();
+    }
+
+    /** 
+     * 로딩된 곡 정보 전체 반환 (복제해 반환) 
+     *     로딩 절차까지 포함
+     * @param {string} urlCtx 현재 웹 경로의 URL Context
+     * @returns {Promise<Array<object>>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
+    */
+    async getAllSongPromise(urlCtx) {
+        return await this.#originalInstances.getAllSongPromise(urlCtx);
     }
 
     /**
