@@ -54,6 +54,9 @@ class ShuttingStarsCore {
     /** @type {boolean} 기기 방향값, 수평 방향이면 true, 수직 방향이면 false (창 크기 변경 시 자동 탐지되어 변경됨) */
     screenDirLandscape = true;
 
+    /** @type {number} 초기화 작업 중 리소스 로딩을 위한 대기 시간, 밀리초 단위  */
+    initializingDelayTime = 4000;
+
     /*** 백엔드 **/
     /** @type {ShuttingStarsInterface|null} 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨. */
     backend = null;
@@ -1312,7 +1315,7 @@ class ShuttingStarsCore {
                 selfs.accessililityLog('Press ENTER key to continue.');
                 selfs.fGameEvent({ "event" : 'afterinit', "broker" : selfs.broker });
                 resolve(true);
-            }, 4000);
+            }, selfs.initializingDelayTime);
         });
     }
 
@@ -1458,6 +1461,7 @@ class ShuttingStarsCore {
         this.broker.alterFonts              = this.alterFonts              ;
         this.broker.volume                  = this.volume                  ;
         this.broker.volumeBackgroundDefault = this.volumeBackgroundDefault ;
+        this.broker.initializingDelayTime   = this.initializingDelayTime   ;
         this.broker.noteSpeedMultiplier     = this.noteSpeedMultiplier     ;
         this.broker.useAudioVisualizer      = this.useAudioVisualizer      ;
         this.broker.renderDebugMode         = this.renderDebugMode         ;
@@ -1512,6 +1516,7 @@ class ShuttingStarsCore {
             if(typeof(obj.alterFonts             ) != 'undefined') { selfs.alterFonts              = obj.alterFonts              ; brokerSelf.alterFonts              = obj.alterFonts              }
             if(typeof(obj.volume                 ) != 'undefined') { selfs.volume                  = obj.volume                  ; brokerSelf.volume                  = obj.volume                  }
             if(typeof(obj.volumeBackgroundDefault) != 'undefined') { selfs.volumeBackgroundDefault = obj.volumeBackgroundDefault ; brokerSelf.volumeBackgroundDefault = obj.volumeBackgroundDefault }
+            if(typeof(obj.initializingDelayTime  ) != 'undefined') { selfs.initializingDelayTime   = obj.initializingDelayTime   ; brokerSelf.initializingDelayTime   = obj.initializingDelayTime   }
             if(typeof(obj.noteSpeedMultiplier    ) != 'undefined') { selfs.noteSpeedMultiplier     = obj.noteSpeedMultiplier     ; brokerSelf.noteSpeedMultiplier     = obj.noteSpeedMultiplier     }
             if(typeof(obj.useAudioVisualizer     ) != 'undefined') { selfs.useAudioVisualizer      = obj.useAudioVisualizer      ; brokerSelf.useAudioVisualizer      = obj.useAudioVisualizer      }
             if(typeof(obj.renderDebugMode        ) != 'undefined') { selfs.renderDebugMode         = obj.renderDebugMode         ; brokerSelf.renderDebugMode         = obj.renderDebugMode         }
@@ -10674,7 +10679,7 @@ class ShuttingStarsCore {
 
     /** 
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
-     * @param {function|null} fFilter 필터링 함수 (선택사항) - 반환할 곡 정보에 대해 true/false 를 반환하는 함수, false 반환 시 해당 곡은 제외됨
+     * @param {function|null} fFilter 필터링 함수 (선택사항) - 반환할 곡 정보에 대해 true/false 를 반환하는 함수, false 반환 시 해당 곡은 제외됨, 매개변수 첫 번째로 곡 정보가, 두 번째로 Broker 객체가 들어옴
      * @returns {Array<object>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
     getAllSongData(fFilter) {
@@ -10706,7 +10711,7 @@ class ShuttingStarsCore {
             }
 
             if(typeof(fFilter) == 'function') {
-                if(! fFilter(json)) continue;
+                if(! fFilter(json, this.broker)) continue;
             }
 
             plainObjectArray.push(json);
@@ -10718,7 +10723,7 @@ class ShuttingStarsCore {
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
      *     로딩 절차까지 포함
      * @param {string} urlCtx 현재 웹 경로의 URL Context
-     * @param {function|null} fFilter 필터링 함수 (선택사항) - 반환할 곡 정보에 대해 true/false 를 반환하는 함수, false 반환 시 해당 곡은 제외됨
+     * @param {function|null} fFilter 필터링 함수 (선택사항) - 반환할 곡 정보에 대해 true/false 를 반환하는 함수, false 반환 시 해당 곡은 제외됨, 매개변수 첫 번째로 곡 정보가, 두 번째로 Broker 객체가 들어옴
      * @returns {Promise<Array<object>>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
     async getAllSongPromise(urlCtx, fFilter) {
@@ -12928,7 +12933,7 @@ class ShuttingStarsManager {
 
     /** 
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
-     * @param {function(object):boolean} fFilter 곡 필터링 함수, 선택사항으로, 사용하려면 함수를 넣어야 하며, 첫 번째 매개변수로 들어오는 곡 객체를 통해 필터링 가능. 반환값이 true이면 포함, false이면 제외
+     * @param {function(object):boolean} fFilter 곡 필터링 함수, 선택사항으로, 사용하려면 함수를 넣어야 하며, 첫 번째 매개변수로 들어오는 곡 객체를 통해 필터링 가능. 반환값이 true이면 포함, false이면 제외, 매개변수 첫 번째로 곡 정보가, 두 번째로 Broker 객체가 들어옴
      * @returns {Array<object>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
     getAllSongData(fFilter) {
@@ -12939,7 +12944,7 @@ class ShuttingStarsManager {
      * 로딩된 곡 정보 전체 반환 (복제해 반환) 
      *     로딩 절차까지 포함
      * @param {string} urlCtx 현재 웹 경로의 URL Context
-     * @param {function(object):boolean} fFilter 곡 필터링 함수, 선택사항으로, 사용하려면 함수를 넣어야 하며, 첫 번째 매개변수로 들어오는 곡 객체를 통해 필터링 가능. 반환값이 true이면 포함, false이면 제외
+     * @param {function(object):boolean} fFilter 곡 필터링 함수, 선택사항으로, 사용하려면 함수를 넣어야 하며, 첫 번째 매개변수로 들어오는 곡 객체를 통해 필터링 가능. 반환값이 true이면 포함, false이면 제외, 매개변수 첫 번째로 곡 정보가, 두 번째로 Broker 객체가 들어옴
      * @returns {Promise<Array<object>>} 로딩된 곡 정보 전체 (Plain Object 형태의 배열로 반환)
     */
     async getAllSongPromise(urlCtx, fFilter) {
