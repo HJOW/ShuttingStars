@@ -492,7 +492,8 @@ class ShuttingStarsCore {
         'nai4ilaahDFHDFGHmkfmwif35gmSGESGSDGsnmdk',
         'nai4ilahDFSHShirgnn546346HSHMERHMEmSGESGSDGsnmdk',
         'nai4ilaHbAggERHERM46gERGERHMERERGgD39p4g',
-        'nai4ilaHbn7g563&6482HDRHRgmogogesghefdkgm23GeGERGgD39p4g'
+        'nai4ilaHbn7g563&6482HDRHRgmogogesghefdkgm23GeGERGgD39p4g',
+        'nai4ilaaTEWMB5325WGWIERGWEIGESGSDGsnmdk'
     ];
     
 
@@ -1252,8 +1253,12 @@ class ShuttingStarsCore {
 
             this.logInit('preparing background audio...');
 
-            // Blob URL로 변환 시도
+            // 배경음악 준비
             let convertedURL = this.convertURL('[RSSC]songs/ai/Third_Cup_Before_Departure.mp3');
+            if(ShuttingStarsUtility.isDateToday('yyyy-12-24') || ShuttingStarsUtility.isDateToday('yyyy-12-25')) {
+                convertedURL = this.convertURL('[RSSC]songs/ai/Snow_on_the_Town_Square.mp3');
+            }
+            // Blob URL로 변환 시도
             try { convertedURL = await ShuttingStarsUtility.convertToBlobURL(convertedURL); } catch(exc) { ShuttingStarsUtility.log('Ignorable exception - ' + exc); console.error(exc); }
 
             try {

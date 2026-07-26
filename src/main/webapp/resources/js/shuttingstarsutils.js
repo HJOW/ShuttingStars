@@ -104,6 +104,8 @@ class ShuttingStarsUtilityClass {
      */
     formatDate(dateObject, formatString) {
         if(!(dateObject instanceof Date)) return '';
+        if(typeof(formatString) == 'undefined' || formatString == null) formatString = 'yyyy-MM-dd';
+
         const yyyy = dateObject.getFullYear();
         const MM = ShuttingStarsUtility.fitDigit(dateObject.getMonth() + 1, 2, '0');
         const dd = ShuttingStarsUtility.fitDigit(dateObject.getDate(), 2, '0');
@@ -135,6 +137,8 @@ class ShuttingStarsUtilityClass {
      * @returns {Date} Date 객체
      */
     parseDate(formattedString, formatString) {
+        if(typeof(formatString) == 'undefined' || formatString == null) formatString = 'yyyy-MM-dd';
+
         let yearIndex = formatString.indexOf('yyyy');
         let monthIndex = formatString.indexOf('MM');
         let dayIndex = formatString.indexOf('dd');
@@ -149,6 +153,30 @@ class ShuttingStarsUtilityClass {
         let ss = secondIndex >= 0 ? parseInt(formattedString.substr(secondIndex, 2)) : 0;
 
         return new Date(yyyy, MM, dd, HH, mm, ss);
+    }
+
+    /**
+     * 오늘 날짜가 해당 날짜이면 true
+     * 
+     * @param {string} formattedString 
+     * @param {string} formatString 
+     * @returns {boolean} 오늘 날짜가 해당되는지 여부
+     */
+    isDateToday(formattedString, formatString) {
+        if(typeof(formatString) == 'undefined' || formatString == null) formatString = 'yyyy-MM-dd';
+        let today = new Date();
+
+        // formattedString 에 yyyy, MM, dd 가 포함되어 있으면, 오늘 날짜의 연도, 월, 일로 치환
+        if(formattedString.indexOf('yyyy') >= 0) { formattedString = this.replaceString(formattedString, 'yyyy', String(today.getFullYear())); }
+        if(formattedString.indexOf('MM'  ) >= 0) { formattedString = this.replaceString(formattedString, 'MM'  , String(today.getMonth() + 1)); }
+        if(formattedString.indexOf('dd'  ) >= 0) { formattedString = this.replaceString(formattedString, 'dd'  , String(today.getDate())); }
+
+        let parsedDate = this.parseDate(formattedString, formatString);
+        
+        if(parsedDate.getFullYear() != today.getFullYear()) return false;
+        if(parsedDate.getMonth()    != today.getMonth()) return false;
+        if(parsedDate.getDate()     != today.getDate()) return false;
+        return true;
     }
 
     /**
