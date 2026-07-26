@@ -78,7 +78,7 @@
       .opensongs-wrap {
         max-width: 1080px;
         margin: 0 auto;
-        padding: 28px 16px 48px;
+        padding: 28px 16px 128px;
       }
 
       .opensongs-header {
@@ -153,9 +153,14 @@
         width: 130px;
       }
 
+      .opensongs-col-play {
+        width: 110px;
+      }
+
       .song-composer-empty,
       .song-bpm-empty,
-      .song-download-empty {
+      .song-download-empty,
+      .song-play-empty {
         color: #7f8da0;
       }
 
@@ -170,6 +175,57 @@
         border-bottom-color: currentColor;
       }
 
+      .song-play-button {
+        min-width: 72px;
+        min-height: 34px;
+        border: 1px solid rgba(87, 179, 255, 0.7);
+        border-radius: 6px;
+        background: rgba(87, 179, 255, 0.12);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .song-play-button:hover {
+        border-color: var(--accent);
+        background: rgba(87, 179, 255, 0.2);
+      }
+
+      .song-player-dock {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 20;
+        padding: 12px 16px;
+        background: rgba(11, 15, 22, 0.92);
+        border-top: 1px solid var(--line);
+        backdrop-filter: blur(10px);
+      }
+
+      .song-player-panel {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .song-player-title {
+        min-width: 160px;
+        max-width: 320px;
+        color: var(--muted);
+        font-size: 0.92rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .song-player-panel audio {
+        flex: 1;
+        min-width: 180px;
+      }
+
       .opensongs-error {
         padding: 14px;
         border: 1px solid #613844;
@@ -181,7 +237,7 @@
 
       @media (max-width: 720px) {
         .opensongs-wrap {
-          padding: 18px 10px 32px;
+          padding: 18px 10px 128px;
         }
 
         .opensongs-title {
@@ -192,6 +248,17 @@
         .opensongs-table tbody td {
           padding: 10px 8px;
           font-size: 0.92rem;
+        }
+
+        .song-player-panel {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .song-player-title {
+          min-width: 0;
+          max-width: none;
         }
       }
     </style>
@@ -218,9 +285,12 @@
             colComposer: 'Composer',
             colBpm: 'BPM',
             colDownload: 'Download',
+            colPlay: 'Play',
             noValue: '-',
             noTitle: '(Untitled)',
             download: 'Download',
+            play: 'Play',
+            nowPlaying: 'Now playing',
             loadError: 'An error occurred while loading the list. '
           },
           ko: {
@@ -234,9 +304,12 @@
             colComposer: '작곡가',
             colBpm: 'BPM',
             colDownload: '다운로드',
+            colPlay: '재생',
             noValue: '-',
             noTitle: '(제목 없음)',
             download: '다운로드',
+            play: '재생',
+            nowPlaying: '재생 중',
             loadError: '목록을 불러오는 중 오류가 발생했습니다. '
           }
         };
@@ -252,6 +325,7 @@
           var colComposerRoot = document.getElementById('colComposer');
           var colBpmRoot = document.getElementById('colBpm');
           var colDownloadRoot = document.getElementById('colDownload');
+          var colPlayRoot = document.getElementById('colPlay');
 
           if (titleRoot) titleRoot.textContent = t.pageTitle;
           if (descRoot) descRoot.textContent = t.pageDesc;
@@ -262,11 +336,61 @@
           if (colComposerRoot) colComposerRoot.textContent = t.colComposer;
           if (colBpmRoot) colBpmRoot.textContent = t.colBpm;
           if (colDownloadRoot) colDownloadRoot.textContent = t.colDownload;
+          if (colPlayRoot) colPlayRoot.textContent = t.colPlay;
         }
 
         var locale = detectLocale();
         var t = i18n[locale] || i18n.en;
         applyStaticTexts(t);
+
+        var activePlayerDock = null;
+
+        function removeActivePlayer() {
+          if (activePlayerDock && activePlayerDock.parentNode) {
+            var activeAudio = activePlayerDock.querySelector('audio');
+            if (activeAudio) {
+              activeAudio.pause();
+              activeAudio.removeAttribute('src');
+              activeAudio.load();
+            }
+            activePlayerDock.parentNode.removeChild(activePlayerDock);
+          }
+          activePlayerDock = null;
+        }
+
+        function playSongAudio(title, audioUrl) {
+          if (!audioUrl) return;
+
+          removeActivePlayer();
+
+          var dock = document.createElement('div');
+          dock.className = 'song-player-dock';
+
+          var panel = document.createElement('div');
+          panel.className = 'song-player-panel';
+
+          var titleRoot = document.createElement('div');
+          titleRoot.className = 'song-player-title';
+          titleRoot.textContent = t.nowPlaying + ': ' + title;
+
+          var audio = document.createElement('audio');
+          audio.controls = true;
+          audio.loop = true;
+          audio.autoplay = true;
+          audio.src = audioUrl;
+
+          panel.appendChild(titleRoot);
+          panel.appendChild(audio);
+          dock.appendChild(panel);
+          document.body.appendChild(dock);
+
+          activePlayerDock = dock;
+          var playPromise = audio.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(function() {});
+          }
+        }
+
             const urlCtx = '../'; // (URL Context 여기서 참고 !)
             ShuttingStars.getAllSongPromise(urlCtx, function(songOne) {
               if(! songOne.official  ) return false;
@@ -333,6 +457,22 @@
                     }
                     tr.appendChild(downloadTd);
 
+                    var playTd = document.createElement('td');
+                    if (downloadUrl) {
+                        var playButton = document.createElement('button');
+                        playButton.className = 'song-play-button';
+                        playButton.type = 'button';
+                        playButton.textContent = t.play;
+                        playButton.addEventListener('click', function() {
+                            playSongAudio(title, downloadUrl);
+                        });
+                        playTd.appendChild(playButton);
+                    } else {
+                        playTd.className = 'song-play-empty';
+                        playTd.textContent = t.noValue;
+                    }
+                    tr.appendChild(playTd);
+
                     rowsRoot.appendChild(tr);
                 });
 
@@ -364,6 +504,7 @@
               <th id="colComposer">Composer</th>
               <th id="colBpm" class="opensongs-col-bpm">BPM</th>
               <th id="colDownload" class="opensongs-col-download">Download</th>
+              <th id="colPlay" class="opensongs-col-play">Play</th>
             </tr>
           </thead>
           <tbody id="songRows"></tbody>
