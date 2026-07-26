@@ -97,6 +97,12 @@
         color: var(--muted);
       }
 
+      .opensongs-license-note {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
       .opensongs-count {
         margin-top: 2px;
         color: var(--muted);
@@ -204,6 +210,7 @@
           en: {
             pageTitle: 'Open Songs',
             pageDesc: 'List of open-license songs included in Shutting Stars',
+            licenseNote: 'Allowed for general and commercial use, but you may not claim ownership.',
             loading: 'Loading...',
             songCount: function(count) { return 'Total ' + count + ' songs'; },
             noSongs: 'No songs to display.',
@@ -218,6 +225,7 @@
           },
           ko: {
             pageTitle: 'Open Songs',
+            licenseNote: '일반 및 상업 목적으로 사용이 허용되지만, 소유권을 주장하실 수는 없습니다.',
             pageDesc: 'Shutting Stars에 수록된 오픈 라이선스 곡 목록',
             loading: '로딩 중...',
             songCount: function(count) { return '총 ' + count + '곡'; },
@@ -237,6 +245,7 @@
         function applyStaticTexts(t) {
           var titleRoot = document.getElementById('pageTitle');
           var descRoot = document.getElementById('pageDesc');
+          var licenseNoteRoot = document.getElementById('licenseNote');
           var countRoot = document.getElementById('songCount');
           var emptyRoot = document.getElementById('songEmpty');
           var colTitleRoot = document.getElementById('colTitle');
@@ -246,6 +255,7 @@
 
           if (titleRoot) titleRoot.textContent = t.pageTitle;
           if (descRoot) descRoot.textContent = t.pageDesc;
+          if (licenseNoteRoot) licenseNoteRoot.textContent = t.licenseNote;
           if (countRoot) countRoot.textContent = t.loading;
           if (emptyRoot) emptyRoot.textContent = t.noSongs;
           if (colTitleRoot) colTitleRoot.textContent = t.colTitle;
@@ -342,6 +352,7 @@
       <header class="opensongs-header">
         <h1 id="pageTitle" class="opensongs-title">Open Songs</h1>
         <div id="pageDesc" class="opensongs-desc">List of open-license songs included in Shutting Stars</div>
+        <div id="licenseNote" class="opensongs-license-note">Allowed for general and commercial use, but you may not claim ownership.</div>
         <div id="songCount" class="opensongs-count">Loading...</div>
       </header>
 
