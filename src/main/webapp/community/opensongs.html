@@ -416,7 +416,9 @@
                 // 주석의 [RSSC] 토큰을 실제 resources 상대 경로로 치환한다.
                 function resolveUrl(url) {
                     if (!url || typeof url !== 'string') return '';
-                    return url.replace('[RSSC]', urlCtx + 'resources/');
+                    url = url.replace('[RSSC]', urlCtx + 'resources/');
+                    url = url.replace('[CTX]', urlCtx);
+                    return url;
                 }
 
                 // 값이 비어 있을 때 대체 텍스트를 넣어 테이블 셀을 생성한다.
@@ -437,9 +439,9 @@
                     var composer = song && song.composer ? song.composer : '';
                     var bpm = song && song.bpm !== undefined && song.bpm !== null ? song.bpm : '';
 
-          tr.appendChild(cellText(title, t.noTitle, ''));
-          tr.appendChild(cellText(composer, t.noValue, 'song-composer-empty'));
-          tr.appendChild(cellText(bpm, t.noValue, 'song-bpm-empty'));
+                    tr.appendChild(cellText(title, t.noTitle, ''));
+                    tr.appendChild(cellText(composer, t.noValue, 'song-composer-empty'));
+                    tr.appendChild(cellText(bpm, t.noValue, 'song-bpm-empty'));
 
                     var downloadTd = document.createElement('td');
                     var downloadUrl = resolveUrl(song && (song.musicUrl || song.musicAlterUrl));
@@ -476,7 +478,7 @@
                     rowsRoot.appendChild(tr);
                 });
 
-
+                // console.log(rowsRoot.innerHTML)
             }).catch(function(error) {
                 var errorRoot = document.getElementById('loadError');
                 if (errorRoot) {
@@ -507,7 +509,9 @@
               <th id="colPlay" class="opensongs-col-play">Play</th>
             </tr>
           </thead>
-          <tbody id="songRows"></tbody>
+          <tbody id="songRows">
+            <tr><td>Third Cup Before Departure</td><td>Lyria</td><td>85</td><td><a class="song-download-link" href="../resources/songs/ai/Third_Cup_Before_Departure.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>성운의 심장이 뛰고 있어</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/seongun_heart.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>광속의 왈츠</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/lightspeed_waltz.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Arrival at the Nebular Gate</td><td>Lyria</td><td>90</td><td><a class="song-download-link" href="../resources/songs/ai/Arrival_at_the_Nebular_Gate.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Beneath a Dying Sun</td><td>Lyria</td><td>68</td><td><a class="song-download-link" href="../resources/songs/ai/Beneath_a_Dying_Sun.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>The Plaza Breakout</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/The_Plaza_Breakout.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Slingshot Maneuver</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/Slingshot_Maneuver.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Racing the horizon line</td><td>Lyria</td><td>180</td><td><a class="song-download-link" href="../resources/songs/ai/aitrack_260528_01.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Departure at Port 7</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/Departure_At_Port_Seven.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>도시 숲에서</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/building_forest.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Piercing the Sky</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/Piercing_the_Sky.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Steel Meets Silk</td><td>Lyria</td><td>120</td><td><a class="song-download-link" href="../resources/songs/ai/Steel_Meets_Silk.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr><tr><td>Neon Grid Rush</td><td>AI (OpenAI's ChatGPT)</td><td>150</td><td><a class="song-download-link" href="../resources/songs/ai/NeonGridRush.mp3" target="_blank" rel="noopener noreferrer">다운로드</a></td><td><button class="song-play-button" type="button">재생</button></td></tr>
+          </tbody>
         </table>
       </div>
 
