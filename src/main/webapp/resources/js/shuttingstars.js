@@ -231,7 +231,7 @@ class ShuttingStarsCore {
     /** @type {number} 배경 음악 기본 볼륨 */
     volumeBackgroundDefault = 0.2;
     /** @type {number} 노트 이동 속도 배수 (사용자가 지정 가능) */
-    noteSpeedMultiplier = 1.0;
+    noteSpeedMultiplier = 2.0;
     /** @type {boolean} 시각화 사용여부 */
     useAudioVisualizer = true;
 
