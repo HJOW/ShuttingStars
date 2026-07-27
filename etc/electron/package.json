@@ -15,7 +15,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder build --win appx"
+    "build": "npm run blinux && npm run bwin",
+    "blinux" : "electron-builder build --linux",
+    "bwin" : "electron-builder build --win"
   },
   "devDependencies": {
     "electron": "^43.1.1",
