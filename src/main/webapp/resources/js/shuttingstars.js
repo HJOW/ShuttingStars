@@ -11096,10 +11096,10 @@ class ShuttingStarsState {
     name = ''; // state 값
 
     /** state 값이 이 현재의 클래스로 변경될 때 호출  */
-    onStateChanged(coreInst) {}
+    onStateChanged = function(coreInst) {}
 
     /** 스테이지가 리셋될 때 호출 */
-    onStageReset(coreInst) {}
+    onStageReset = function(coreInst) {}
 
     /** 
      * 화면 그리기 (현재의 state값이 이 클래스에 해당되는 경우 ShuttingStarsCore 의 renderIn 1사이클마다 호출됨)
@@ -11107,7 +11107,7 @@ class ShuttingStarsState {
      * @param {CanvasRenderingContext2D} ctx
      * @param {ShuttingStarsCore} coreInst
     */
-    render(ctx, coreInst) {}
+    render = function(ctx, coreInst) {}
 
     /**
      * 키보드 입력 이벤트 처리 (현재의 state 값이 이 클래스에 해당되는 경우 호출됨)
@@ -11116,7 +11116,7 @@ class ShuttingStarsState {
      * @param {boolean} vkeyExplosion 가상 키 강조 효과 적용 여부
      * @param {ShuttingStarsCore} coreInst
      */
-    handleKeyInput(key, vkeyExplosion, coreInst) {}
+    handleKeyInput = function(key, vkeyExplosion, coreInst) {}
 
     /**
      * 키보드 입력 해제 이벤트 처리 (현재의 state 값이 이 클래스에 해당되는 경우 호출됨)
@@ -11124,7 +11124,21 @@ class ShuttingStarsState {
      * @param {string} key 입력된 키 코드 (웹 keypress 이벤트의 key 값)
      * @param {ShuttingStarsCore} coreInst
      */
-    handleKeyReleased(key, coreInst) {}
+    handleKeyReleased = function(key, coreInst) {}
+
+    /** 기본 생성자 */
+    constructor(obj) {
+        if(typeof(obj) != 'undefined' && obj != null) {
+            if(typeof(obj) == 'string') obj = ShuttingStarsUtility.parseJSON(obj);
+
+            if(typeof(obj.name             ) == 'string'  ) this.name              = obj.name;
+            if(typeof(obj.onStateChanged   ) == 'function') this.onStateChanged    = obj.onStateChanged;
+            if(typeof(obj.onStageReset     ) == 'function') this.onStageReset      = obj.onStageReset;
+            if(typeof(obj.render           ) == 'function') this.render            = obj.render;
+            if(typeof(obj.handleKeyInput   ) == 'function') this.handleKeyInput    = obj.handleKeyInput;
+            if(typeof(obj.handleKeyReleased) == 'function') this.handleKeyReleased = obj.handleKeyReleased;
+        }
+    }
 }
 
 /** 곡 */
@@ -13027,6 +13041,28 @@ class ShuttingStarsManager {
     async set3DManager(ss3d) {
         await ShuttingStarsUtility.waitTime(1000);
         this.#originalInstances.set3DManager(ss3d);
+    }
+
+    /**
+     * JSON 객체 리터럴 (Plain Object) 을 받아 ShuttingStarsState 로 변환
+     * 
+     * @param {object|string|ShuttingStarsState} obj 
+     */
+    parseStateInstance(obj) {
+        if(obj == null) return null;
+        if(obj instanceof ShuttingStarsState) return obj;
+        return new ShuttingStarsState(obj);
+    }
+
+    /**
+     * 임의의 상태를 등록
+     * 
+     * @param {object|string|ShuttingStarsState} obj 
+     */
+    registerState(obj) {
+        const parsedState = this.parseStateInstance(obj);
+        if(parsedState == null) return;
+        this.#originalInstances.states.push(parsedState);
     }
 
     /**
