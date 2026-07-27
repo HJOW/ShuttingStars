@@ -1238,6 +1238,42 @@ class BpmDetectorClass {
     }
 }
 
+/********************** 기타 Util 성 prototype 세팅 ************************/
+if(!String.prototype.hexEncode) {
+	/**
+	 * 문자열의 각 UTF-16 코드 단위를 4자리 16진수 문자열로 인코딩
+	 * @returns {string} 16진수로 인코딩된 문자열
+	 */
+	String.prototype.hexEncode = function(){
+	    var hex, i;
+
+	    var result = "";
+	    for (i=0; i<this.length; i++) {
+	        hex = this.charCodeAt(i).toString(16);
+	        result += ("000"+hex).slice(-4);
+	    }
+
+	    return result
+	}
+}
+
+if(!String.prototype.hexDecode) {
+	/**
+	 * 4자리 16진수 단위로 인코딩된 문자열을 원래 문자열로 디코딩
+	 * @returns {string} 디코딩된 문자열
+	 */
+	String.prototype.hexDecode = function(){
+	    var j;
+	    var hexes = this.match(/.{1,4}/g) || [];
+	    var back = "";
+	    for(j = 0; j<hexes.length; j++) {
+	        back += String.fromCharCode(parseInt(hexes[j], 16));
+	    }
+
+	    return back;
+	}
+}
+
 const ShuttingStarsUtility = new ShuttingStarsUtilityClass();
 const SSUtil = ShuttingStarsUtility;
 
