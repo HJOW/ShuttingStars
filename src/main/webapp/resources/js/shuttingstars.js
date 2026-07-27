@@ -375,7 +375,7 @@ class ShuttingStarsCore {
     noLongNote = false;
 
     /** @type {Array<string>} 기본 상태들 */
-    basicStates = ['title', 'firstset', 'menu', 'songchoosing', 'songtitle', 'playing', 'gameover', 'result', 'listenchoosing', 'listentitle', 'listenplaying', 'setting', 'credit', 'empty'];
+    basicStates = ['title', 'firstset', 'menu', 'songchoosing', 'songtitle', 'playing', 'gameover', 'result', 'listenchoosing', 'listentitle', 'listenplaying', 'setting', 'credit', 'recordlist', 'recorddet', 'empty'];
     /** @type {string} 현재 상태 값 */
     state = 'title';
     /** @type {Array<ShuttingStarsState>} 상태 객체들, 기본 상태를 제외한 상태들은 이 배열로 관리, 상태 값은 이 배열 내 객체들의 name 속성에 해당 */
@@ -4810,9 +4810,10 @@ class ShuttingStarsCore {
         let gap = Math.floor(fontSize / 2.0);
         let label = '';
         
-        this.calculateFontMetric(true);
-        gap = Math.floor(this.metricSize2 / 2.0);
+        this.calculateFontMetric(true); // 글꼴 크기 계산
+        gap = Math.floor(this.metricSize2 / 2.0); // 위쪽 여백 적용
 
+        // 제목 출력
         fontSize = this.convertFontSize(30);
         rows = this.convertY(this.getStageHeight() / 5, false);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
@@ -4820,8 +4821,12 @@ class ShuttingStarsCore {
         else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "center";
         this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), rows);
-        rows += (this.metricSize3 * 2) + gap;
+        rows += this.metricSize3 + (gap * 4);
 
+        // 메뉴 목록 수에 따라 추가 여백 넣어야 함 (갯수가 늘어날 수록 이 여백의 크기는 줄어들도록)
+        rows += Math.floor((this.getStageHeight() - rows - this.metricSize3) / this.menuListDynamic.length);
+
+        // 선택된 메뉴가 없는 경우 첫 번째를 선택
         if(this.menuChoosing == null) this.menuChoosing = this.menuListDynamic[0];
 
         for(idx=0; idx<this.menuListDynamic.length; idx++) {
@@ -4857,7 +4862,7 @@ class ShuttingStarsCore {
                 this.ctx.fillText(label, this.convertX(this.getStageWidth()  / 2), rows);
             }
             
-            rows += (this.metricSize1 * 2) + gap;
+            rows += this.metricSize1 + (gap * 2);
         }
 
         fontSize = this.convertFontSize(30);
