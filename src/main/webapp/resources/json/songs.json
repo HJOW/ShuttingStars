@@ -54935,6 +54935,52 @@
         ]
     },
     {
+        "name": "Caught Under the Sofa",
+        "composer": "Lyria",
+        "noteWriter": "HJOW",
+        "bgaUrl": "",
+        "musicUrl": "[RSSC]songs/ai/Caught_Under_the_Sofa.mp3",
+        "musicAlterUrl": "",
+        "useYoutube": false,
+        "youtubeVideoId": "",
+        "thumbnailUrl": "",
+        "description": "\n|Music: Google Lyria\n|  https://gemini.google/overview/music-generation/\n|License: All license granted by AI Platform.\n",
+        "loadingTime": 10,
+        "bpm": 175,
+        "endTime": 0,
+        "timeConstant": 0,
+        "timeMultiplier": 1,
+        "noteMultiplier": 1,
+        "test": false,
+        "onlyRandom": true,
+        "autoStars": true,
+        "serial": "nai4ilTHRIENGW5235GEMROGEWOPGWEGSAGDSGERSOyMOFASP39p4g",
+        "decorations": [],
+        "difficulties": [
+            {
+                "index": 0,
+                "difficultyLabel": "easy",
+                "difficultyLevel": 3,
+                "patterns": [],
+                "autoCreate": true
+            },
+            {
+                "index": 1,
+                "difficultyLabel": "normal",
+                "difficultyLevel": 5,
+                "patterns": [],
+                "autoCreate": true
+            },
+            {
+                "index": 2,
+                "difficultyLabel": "hard",
+                "difficultyLevel": 8,
+                "patterns": [],
+                "autoCreate": true
+            }
+        ]
+    },
+    {
         "name": "Neon Grid Rush",
         "composer": "AI (OpenAI's ChatGPT)",
         "noteWriter": "HJOW",

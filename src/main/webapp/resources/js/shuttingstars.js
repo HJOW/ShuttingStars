@@ -498,7 +498,8 @@ class ShuttingStarsCore {
         'nai4ilahDFSHShirgnn546346HSHMERHMEmSGESGSDGsnmdk',
         'nai4ilaHbAggERHERM46gERGERHMERERGgD39p4g',
         'nai4ilaHbn7g563&6482HDRHRgmogogesghefdkgm23GeGERGgD39p4g',
-        'nai4ilaaTEWMB5325WGWIERGWEIGESGSDGsnmdk'
+        'nai4ilaaTEWMB5325WGWIERGWEIGESGSDGsnmdk',
+        'nai4ilTHRIENGW5235GEMROGEWOPGWEGSAGDSGERSOyMOFASP39p4g'
     ];
     
 
