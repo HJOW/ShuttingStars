@@ -141,6 +141,18 @@
             .pure-menu-children {
                 z-index: 3003;
             }
+            .ss_etc_menu > .pure-menu-children {
+                left: 100%;
+                top: 0;
+                width: max-content;
+                white-space: nowrap;
+            }
+            .ss_etc_menu > .pure-menu-children > .pure-menu-item {
+                display: inline-block;
+            }
+            .ss_etc_menu > .pure-menu-link:after {
+                content: "\25B8";
+            }
             .ss_content {
                 z-index: 3001;
                 position: fixed;
@@ -362,7 +374,7 @@
                 <li class="pure-menu-item li_ss_board"><a href='#' class="pure-menu-link a_ss_board target_translate" title="Board">BOARD</a></li>
                 <li class="pure-menu-item li_ss_songs"><a href='#' class="pure-menu-link a_ss_songs target_translate" title="Songs">Songs (Open-Source)</a></li>
                 <li class="pure-menu-item li_ss_github"><a href='#' class="pure-menu-link a_ss_github target_translate" title="Visit the github page (Popup)">GitHub</a></li>
-                <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+                <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover ss_etc_menu">
                     <a href="#" class="pure-menu-link target_translate">ETC</a>
                     <ul class="pure-menu-children">
                         <li class="pure-menu-item">
