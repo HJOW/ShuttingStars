@@ -695,11 +695,12 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 }
 
 /** ShuttingStarsInterface 대행 객체 */
-class ShuttingStarsBroker extends ShuttingStarsInterface {
+class ShuttingStarsInterfaceBroker extends ShuttingStarsInterface {
     /** @type {ShuttingStarsInterface} 원본 객체 */
     #originalInstance = null;
 
     constructor(originalInstance) {
+        super();
         this.#originalInstance = originalInstance;
     }
 
@@ -774,9 +775,9 @@ function __ssBackEnd() {
 
 /** 브로커 생성 */
 function getSSBackendBroker(originalInstance) {
-    return new ShuttingStarsBroker(originalInstance);
+    return new ShuttingStarsInterfaceBroker(originalInstance);
 }
 
 const SSBackend = __ssBackEnd;
 export default SSBackend;
-export { SSBackend, getSSBackendBroker, ShuttingStarsInterface, ShuttingStarsBroker };
+export { SSBackend, getSSBackendBroker, ShuttingStarsInterface, ShuttingStarsInterfaceBroker };
