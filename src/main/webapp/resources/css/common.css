@@ -118,3 +118,100 @@ This styles the menu heading.
 #shuttingstars_init_loading progress, .menu-item-divided progress {
     position: fixed; bottom : 15%;
 }
+
+.ss_homepage_root {
+    .ss_homepage_back {
+        position: fixed;
+        top: 0;
+        left: 0;
+
+    }
+    .ss_homepage_main {
+        .ss_topbar {
+            background-color: rgba(150, 150, 150, 0.1);
+            height: 3rem;
+        }
+        .pure-menu {
+            overflow: visible;
+            z-index: 3001;
+            width: 100%;
+            ul { border-top: 0; }
+        }
+        .pure-menu, .pure-menu .pure-menu-heading {
+            background: transparent;
+            a { 
+                text-decoration: none;
+                padding: 0.6em 0.6em 0.6em 0.6em;
+            }
+        }
+        .pure-menu .pure-menu-item {
+            line-height: 1.5rem;
+            font-size: 1.2rem;
+        }
+        .pure-menu .pure-menu-item li, .pure-menu .pure-menu-item a {
+            text-decoration: none;
+            text-align: center;
+        }
+        .pure-menu .pure-menu-item a {
+            display: block;
+            padding: 0.6em 0.6em 0.6em 0.6em;
+        }
+        .pure-menu-children {
+            z-index: 3003;
+        }
+        .ss_etc_menu > .pure-menu-children {
+            left: 100%;
+            top: 0;
+            width: max-content;
+            white-space: nowrap;
+        }
+        .ss_etc_menu > .pure-menu-children > .pure-menu-item {
+            display: inline-block;
+        }
+        .ss_etc_menu > .pure-menu-link:after {
+            content: "\25B8";
+        }
+        .ss_content {
+            z-index: 3001;
+            position: fixed;
+            left: 0px;
+            top: 3rem;
+            width: 100%;
+            text-align: center;;
+            iframe { width: 100%; border: 0; overflow-x: hidden; overflow-y: auto; position: relative; z-index: 3002; }
+            .btn_ss_gamestart {
+                position: fixed;
+                left: 45%;
+                bottom: 100px;
+                z-index: 3002;
+                text-align: center;
+                background-color: rgba(0, 0, 0, 0);
+                border: 0px;
+                font-size: 2rem;
+                color: rgb(153, 153, 153);
+                padding: 0.5rem 1rem 0.5rem 1rem;
+            }
+            .btn_ss_gamestart:hover, .btn_ss_gamestart:focus {
+                background-color: rgba(250, 250, 250, 0.8);
+                color: rgba(0, 0, 0, 0.9);
+            }
+        }
+        .ss_footer {
+            position: absolute;
+            bottom: 0px;
+            left: 0px;
+            width: 100%;
+            height: 30px;
+            line-height: 30px;
+            text-align: left;
+            font-size: 1.2rem;
+            z-index: 3001;url(https://github.com/pure-css/pure/releases/)
+                padding: 0.2rem 0.5rem 0.2rem 0.5rem;
+                a {
+                    color: rgb(153, 153, 153);
+                    text-decoration: none;
+                    font-size: 0.8rem;
+                }
+            }
+        }
+    }
