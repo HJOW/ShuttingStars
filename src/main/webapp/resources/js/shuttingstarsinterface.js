@@ -197,7 +197,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 if(typeof(userObj.uid) != 'undefined' && typeof(userObj.email) != 'undefined') {
                     selfs.user = userObj;
                     selfs.logined = true;
-                    resolve({ success : true, loginAvail : selfs.logined });
+                    resolve({ success : true, loginAvail : selfs.logined, userJson : selfs.user });
                 } else {
                     fNotLogined();    
                 }

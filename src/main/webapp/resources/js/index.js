@@ -16,11 +16,15 @@ window.addEventListener('load', async function() {
     const homepageDiv   = homepageRoot.querySelector('.ss_homepage_main');
 
     const topbar = homepageDiv.querySelector('.ss_topbar');
+    const profileDiv = topbar.querySelector('.ss_topbar_user_profile');
     const menuRoot = homepageDiv.querySelector('.pure-menu-list');
     const contentDiv = homepageDiv.querySelector('.ss_content');
 
     const iframeMain = homepageDiv.querySelector('.iframe_ss');
     const btnStart   = homepageDiv.querySelector('.btn_ss_gamestart');
+    const btnLogin   = profileDiv.querySelector('.btn_login');
+    const btnLogout  = profileDiv.querySelector('.btn_logout');
+    const spanEmail = profileDiv.querySelector('.ss_user_profile_email');
 
     let brk = null;
 
@@ -120,6 +124,28 @@ window.addEventListener('load', async function() {
     homepageDiv.querySelector('.pure-menu-heading').addEventListener('click', fHome);
     homepageDiv.querySelector('.a_ss_gamestart').addEventListener('click', fStart);
     btnStart.addEventListener('click', fStart);
+    btnLogin.addEventListener('click', async function() {
+        if(brk != null) {
+            const backends = brk.getBackendBroker();
+            const res = await backends.openGoogleLogin();
+            if(res.success) {
+                if(res.userJson) {
+                    // 새로고침
+                    location.reload();
+                }
+            }
+        }
+    });
+    btnLogout.addEventListener('click', async function() {
+        if(brk != null) {
+            const backends = brk.getBackendBroker();
+            backends.logout().then(() => {
+                // 새로고침
+                location.reload();
+            });
+        }
+    });
+    
 
     homepageDiv.querySelector('.a_ss_board').addEventListener('click', function() {
         iframeMain.src = './community/board.html';
@@ -167,30 +193,39 @@ window.addEventListener('load', async function() {
     fResize();
 
     // 백엔드 필요 메뉴 제거 // backend_needed
+    homepageRoot.querySelectorAll('.backend_needed').forEach(function(item) {
+        item.classList.add('invisible');
+    });
+    homepageRoot.querySelectorAll('.login_needed').forEach(function(item) {
+        item.classList.add('invisible');
+    });
+    homepageRoot.querySelectorAll('.login_no').forEach(function(item) {
+        item.classList.add('invisible');
+    });
     let logined = false;
+    let userNick = '';
     if(brk != null) {
         const backends = brk.getBackendBroker();
         if(backends != null) {
             let res = await backends.checkLogined();
             if(res.success) logined = res.loginAvail;
             else logined = false;
-        } else {
+
+            if(logined) userNick = res.userJson.email;
+            spanEmail.innerHTML = SSUtil.purifyHTML(userNick);
+
             homepageRoot.querySelectorAll('.backend_needed').forEach(function(item) {
-                item.classList.add('invisible');
-            });    
+                item.classList.remove('invisible');
+            });
         }
-    } else {
-        homepageRoot.querySelectorAll('.backend_needed').forEach(function(item) {
-            item.classList.add('invisible');
-        });
     }
     if(logined) {
-        homepageRoot.querySelectorAll('.login_only').forEach(function(item) {
-            item.classList.add('invisible');
+        homepageRoot.querySelectorAll('.login_needed').forEach(function(item) {
+            item.classList.remove('invisible');
         });
     } else {
-        homepageRoot.querySelectorAll('.login_needed').forEach(function(item) {
-            item.classList.add('invisible');
+        homepageRoot.querySelectorAll('.login_no').forEach(function(item) {
+            item.classList.remove('invisible');
         });
     }
 
