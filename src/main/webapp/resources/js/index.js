@@ -201,6 +201,7 @@ window.addEventListener('load', async function() {
         homepageRoot.querySelectorAll('.login_no').forEach(function(item) {
             item.classList.add('invisible');
         });
+        /*
         let logined = false;
         let userNick = '';
         if(brk != null) {
@@ -227,6 +228,7 @@ window.addEventListener('load', async function() {
                 item.classList.remove('invisible');
             });
         }
+        */
 
         // 첫 메뉴 선택 처리
         menuRoot.querySelector('.li_ss_home').classList.add('pure-menu-selected');
