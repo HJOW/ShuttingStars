@@ -19,7 +19,7 @@
 import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
 import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
-import { SSBackend, ShuttingStarsInterface } from './shuttingstarsinterface.js'
+import { SSBackend, getSSBackendBroker, ShuttingStarsInterface } from './shuttingstarsinterface.js'
 import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './shuttingstars3d.js'
 
 /* 게임 기동 근간을 이루는 전역 객체 */
@@ -1610,6 +1610,10 @@ class ShuttingStarsCore {
         this.broker.translate = function(english) { return selfs.trans(english); }
         this.broker.setStringTable = function(table) { selfs.stringTable = table; }
         this.broker.updateStringTable = function(table) { selfs.updateStringTable(table); }
+        this.broker.getBackendBroker = function() {
+            if(! selfs.backend) return null;
+            return getSSBackendBroker(selfs.backend);
+        }
         this.broker.destroy = function() { selfs.destroy(); };
         this.broker.officialSongSerials = [];
         for(let idx=0; idx<this.officialSongSerials.length; idx++) {
@@ -13083,12 +13087,20 @@ class ShuttingStarsManager {
     }
 
     /**
-     * 
+     * 곡 선택 화면으로 이동하며 바로 해당 곡 선택 상태로 전환
      * @param {*} song 선택할 곡 serial (string) 혹은 곡 자체 (ShuttingStarsSong 타입)
      * @returns {Promise<*>}
      */
     async directSelectSong(song) {
         await this.#originalInstances.directSelectSong(song);
+    }
+
+    /**
+     * 백엔드 접근 객체 반환
+     */
+    getBackendBroker() {
+        if(! this.#originalInstances.backend) return null;
+        return getSSBackendBroker(this.#originalInstances.backend);
     }
 
     /** 빌드 번호 반환 */

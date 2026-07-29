@@ -694,6 +694,76 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
 }
 
+/** ShuttingStarsInterface 대행 객체 */
+class ShuttingStarsBroker extends ShuttingStarsInterface {
+    /** @type {ShuttingStarsInterface} 원본 객체 */
+    #originalInstance = null;
+
+    constructor(originalInstance) {
+        this.#originalInstance = originalInstance;
+    }
+
+    openGoogleLogin() { return this.#originalInstance.openGoogleLogin(); }
+    login(json) { return this.#originalInstance.login(json); }
+    checkLogined(userJson) {
+        return this.#originalInstance.checkLogined(userJson);
+    }
+    logout() {
+        return this.#originalInstance.logout();
+    }
+    applyUserInfo() {
+        return this.#originalInstance.applyUserInfo();
+    }
+    deleteAllMyData() {
+        return this.#originalInstance.deleteAllMyData();
+    }
+    createUser(json) {
+        return this.#originalInstance.createUser(json);
+    }
+    listAdditionalSongs() {
+        return this.#originalInstance.listAdditionalSongs();
+    }
+    listRankBoard() {
+        return this.#originalInstance.listRankBoard();
+    }
+    registerRankRecord(json) {
+        return this.#originalInstance.registerRankRecord(json);
+    }
+    listBoardIds() {
+        return this.#originalInstance.listBoardIds();
+    }
+    listPost(boardId) {
+        return this.#originalInstance.listPost(boardId);
+    }
+    writePost(boardId, text) {
+        return this.#originalInstance.writePost(boardId, text);
+    }
+    modifyPost(boardId, postNo, text) {
+        return this.#originalInstance.modifyPost(boardId, postNo, text);
+    }
+    deletePost(boardId, postNo) {
+        return this.#originalInstance.deletePost(boardId, postNo);
+    }
+    getAdditionalContents() {
+        return this.#originalInstance.getAdditionalContents();
+    }
+    requestPushPermission() {
+        return this.#originalInstance.requestPushPermission();
+    }
+    getOuterStorage() {
+        return this.#originalInstance.getOuterStorage();
+    }
+    storeOuterStorage(jsonObject) {
+        return this.#originalInstance.storeOuterStorage(jsonObject);
+    }
+    getRemoteConfigValues() {
+        return this.#originalInstance.getRemoteConfigValues();
+    }
+    perfTraceStart(traceName) { return this.#originalInstance.perfTraceStart(traceName); }
+    perfTraceStop(traceObj) { this.#originalInstance.perfTraceStop(traceObj); }
+    logEvent(eventMsg) { this.#originalInstance.logEvent(eventMsg); }
+}
+
 /** 직접 호출하지 말 것 (shuttingstars.js 에서 호출함) */
 function __ssBackEnd() {
     let _ssbackend;
@@ -702,6 +772,11 @@ function __ssBackEnd() {
     return _ssbackend;
 }
 
+/** 브로커 생성 */
+function getSSBackendBroker(originalInstance) {
+    return new ShuttingStarsBroker(originalInstance);
+}
+
 const SSBackend = __ssBackEnd;
 export default SSBackend;
-export { SSBackend, ShuttingStarsInterface };
+export { SSBackend, getSSBackendBroker, ShuttingStarsInterface, ShuttingStarsBroker };
