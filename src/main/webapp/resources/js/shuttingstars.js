@@ -10034,7 +10034,7 @@ class ShuttingStarsCore {
             let noteNestedCombo = 0;
             let multipleCombo = 0;
             let lastNote = null;
-            let lastLocationIndexes = [];
+            let lastLines = [];
 
             const minTimeCycle = (this.stageRows * (this.timeMultiplier / 8));
             
@@ -10355,18 +10355,18 @@ class ShuttingStarsCore {
                             let line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                             let preventInfLoop = 0;
                             if(mdx <= 1) {
-                                while(usedIndex.indexOf(line) >= 0 || lastLocationIndexes.indexOf(line) >= 0) {
+                                while(usedIndex.indexOf(line) >= 0 || lastLines.indexOf(line) >= 0) {
                                     line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                                     preventInfLoop++;
 
-                                    if(preventInfLoop > 100) { line = -1; lastLocationIndexes = []; break; }
+                                    if(preventInfLoop > 100) { line = -1; lastLines = []; break; }
                                 }
                             } else {
                                 while(usedIndex.indexOf(line) >= 0) {
                                     line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                                     preventInfLoop++;
 
-                                    if(preventInfLoop > 100) { line = -1; lastLocationIndexes = []; break; }
+                                    if(preventInfLoop > 100) { line = -1; lastLines = []; break; }
                                 }
                             }
                             
@@ -10397,7 +10397,7 @@ class ShuttingStarsCore {
                             lastNote = note;
                             usedIndex.push(line);
                         }
-                        lastLocationIndexes = usedIndex;
+                        lastLines = usedIndex;
                     }
                 }
 
@@ -11811,7 +11811,7 @@ class SSNoteKeyObject extends ShuttingStarsObject {
         super(coreInst);
         this.line = line;
         this.key = coreInst.keyList[line];
-        this.color = this.getColorOfLocationIndex(line);
+        this.color = this.getColorOfLine(line);
     }
 
     /**
@@ -11860,7 +11860,7 @@ class SSNoteKeyObject extends ShuttingStarsObject {
      * @param {number} gradientIndex gradientIndex 값
      * @returns {string} RGB 색상 문자열
      */
-    getColorOfLocationIndex(line, gradientIndex) {
+    getColorOfLine(line, gradientIndex) {
         if(typeof(gradientIndex) == 'undefined') gradientIndex = 0;
         if(gradientIndex < 0) gradientIndex = 0;
         if(gradientIndex > 3) gradientIndex = 3;
@@ -11926,7 +11926,7 @@ class SSNoteKeyObject extends ShuttingStarsObject {
      */
     modifyExplosiveColor(gradientIndex) {
         if(this.explosing >= 3) return '255, 255, 255';
-        return this.getColorOfLocationIndex(this.line, gradientIndex);
+        return this.getColorOfLine(this.line, gradientIndex);
     }
 }
 
@@ -11946,7 +11946,7 @@ class SSNotePlacer extends SSNoteKeyObject {
         this.shape = 'circle';
         this.opacity = 0.3;
         this.dark = true;
-        this.color = this.getColorOfLocationIndex(line);
+        this.color = this.getColorOfLine(line);
         this.fill = false;
         this.hidden = false;
     }
@@ -12039,7 +12039,7 @@ class SSNoteCommon extends SSNoteKeyObject {
                 return '255, 255, 255';   
             }
         }
-        return this.getColorOfLocationIndex(this.line, gradientIndex);
+        return this.getColorOfLine(this.line, gradientIndex);
     }
 }
 
@@ -12072,7 +12072,7 @@ class SSNote extends SSNoteCommon {
         this.key = coreInst.keyList[line];
         this.shape = 'circle';
         this.opacity = 0.9;
-        this.color = this.getColorOfLocationIndex(line);
+        this.color = this.getColorOfLine(line);
     }
     
     /**
@@ -12194,7 +12194,7 @@ class SSLongNote extends SSNoteCommon {
         this.key = coreInst.keyList[line];
         this.shape = 'rect';
         this.opacity = 0.9;
-        this.color = this.getColorOfLocationIndex(line);
+        this.color = this.getColorOfLine(line);
     }
 
     /**
