@@ -577,6 +577,8 @@ class ShuttingStarsCore {
     numberDebugMode = false;
     /** @type {boolean} 성능 지표 (각 동시처리 프로세스의 처리 속도) 출력 여부 */
     performanceDebugMode = false;
+    /** @type {boolean} Core 객체 window 노출 여부 */
+    coreDebugMode = false;
     
     // 마우스 이벤트 처리기
     /** @type {Array<Object>} 마우스 입력 판정 영역 목록 */
@@ -7079,11 +7081,19 @@ class ShuttingStarsCore {
         //    곡 생성 모드
         if(this.createMode) {
             label = '[CREATE]';
+            commands.push(label);
         }
 
         //    감상 모드
         if(this.state == 'listenplaying') {
             label = '[LISTEN]';
+            commands.push(label);
+        }
+
+        // Core 노출 여부
+        if(this.coreDebugMode) {
+            label = '[COREDBG]';
+            commands.push(label);
         }
 
         return commands;
@@ -13104,6 +13114,14 @@ class ShuttingStarsManager {
         return getSSBackendBroker(this.#originalInstances.backend);
     }
 
+    /** Core 디버그 모드 켜기 */
+    startCoreDebug() {
+        this.#originalInstances.coreDebugMode = true;
+        window._sscoreinstances = this.#originalInstances;
+        window._sscore = this.#originalInstances;
+        return this.#originalInstances;
+    }
+
     /** 빌드 번호 반환 */
     build() {
         return this.#originalInstances.build;
@@ -13158,7 +13176,9 @@ function setShuttingStar3D(obj) {
 
 /**  window 객체 내에 ShuttingStars Core 객체 삽입 (비권장) */
 function prepareDebugSSCoreInstances() {
+    _shuttingstarcore.coreDebugMode = true;
     window._sscoreinstances = _shuttingstarcore;
+    window._sscore = _shuttingstarcore;
 }
 
 /**
