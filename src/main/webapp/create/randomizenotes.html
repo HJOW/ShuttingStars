@@ -92,10 +92,10 @@ $(function(){
                     loops = 0;
                     while(lastIndex == createdIndex && lastTime == rowOne.time) { createdIndex = Math.floor(ShuttingStarsUtility.random() * 5.9999); loops++; if(loops >= 6) break; }
                 }
-                rowOne.locationIndex = createdIndex;
+                rowOne.line = createdIndex;
 
-                taAft.val(taAft.val() + '\n' + '{"locationIndex":' + rowOne.locationIndex + ',"time":' + rowOne.time + "}" + (idx == json.length - 1 ? '' : ','));
-                lastIndex = rowOne.locationIndex;
+                taAft.val(taAft.val() + '\n' + '{"line":' + rowOne.line + ',"time":' + rowOne.time + "}" + (idx == json.length - 1 ? '' : ','));
+                lastIndex = rowOne.line;
                 lastTime = rowOne.time;
             }
             taAft.val(taAft.val() + '\n]');

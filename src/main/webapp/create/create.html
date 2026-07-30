@@ -425,7 +425,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     let noteJson = {
                         index : ndx,
                         time : noteOne.originalTiming,
-                        locationIndex : noteOne.locationIndex
+                        line : noteOne.line
                     };
                     if(noteOne instanceof SSLongNote) {
                         noteJson.type = 'long';

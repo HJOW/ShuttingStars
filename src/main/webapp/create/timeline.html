@@ -218,7 +218,7 @@ $(function() {
                         if(processingTime - lastAppend >= minGapVal) {
                             appendStr = '';
                             if(appendCounts >= 1) appendStr += ', ';
-                            if(chkPattern.is(':checked')) appendStr += JSON.stringify({ locationIndex : Math.floor(ShuttingStarsUtility.random() * 6), time : ShuttingStarsUtility.floor3(processingTime) });
+                            if(chkPattern.is(':checked')) appendStr += JSON.stringify({ line : Math.floor(ShuttingStarsUtility.random() * 6), time : ShuttingStarsUtility.floor3(processingTime) });
                             else {
                                 appendStr += String(ShuttingStarsUtility.floor3(processingTime));
                                 if(chkRealtime.is(':checked')) appendStr += ', ' + String(ShuttingStarsUtility.floor3(time));

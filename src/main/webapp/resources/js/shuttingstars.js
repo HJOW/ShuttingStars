@@ -2506,15 +2506,15 @@ class ShuttingStarsCore {
                         pattern.id = idx;
                         
                         // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
-                        if(pattern.locationIndex < 0) {
-                            pattern.locationIndex = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
+                        if(pattern.line < 0) {
+                            pattern.line = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
                         }
 
                         if(typeof(pattern.type) == 'undefined' || pattern.type == null || pattern.type == '') pattern.type = 'normal';
 
                         let note;
                         if(pattern.type == 'long' && (! this.noLongNote)) {
-                            note = new SSLongNote(pattern.locationIndex, this);
+                            note = new SSLongNote(pattern.line, this);
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = pattern.id;
                             note.originalTiming = pattern.time;
@@ -2522,7 +2522,7 @@ class ShuttingStarsCore {
                             note.handling = false;
                             note.handlingEndTiming = note.originalTiming; // 처음에는 최대 길이를 그대로 표현하기 위해 (일부 처리 시 길이가 짧아질 예정)
                         } else {
-                            note = new SSNote(pattern.locationIndex, this);
+                            note = new SSNote(pattern.line, this);
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = pattern.id;
                             note.originalTiming = pattern.time;
@@ -3820,7 +3820,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if((obj instanceof SSNote)) {
-                if(obj.locationIndex != notePlacer.locationIndex) continue;
+                if(obj.line != notePlacer.line) continue;
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
 
@@ -3843,7 +3843,7 @@ class ShuttingStarsCore {
                     });
                 }
             } else if(obj instanceof SSLongNote) {
-                if(obj.locationIndex != notePlacer.locationIndex) continue;
+                if(obj.line != notePlacer.line) continue;
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
                 if(obj.handling) continue;
@@ -3919,11 +3919,11 @@ class ShuttingStarsCore {
             if(resultMark == 'MISS') {
                 // MISS
                 minimumNote.missed = true;
-                const newExplosinves = new SSFailExplosing(this, minimumNote.locationIndex, minimumNote.y, '255, 0, 0', '255, 0, 0');
+                const newExplosinves = new SSFailExplosing(this, minimumNote.line, minimumNote.y, '255, 0, 0', '255, 0, 0');
                 this.objects.push(newExplosinves);
             } else {
                 // 그외 (MISS가 아님)
-                const newExplosinves = new SSCorrectNoteExplosing(this, minimumNote.locationIndex, minimumNote.y, minimumNote.color, '255, 255, 255');
+                const newExplosinves = new SSCorrectNoteExplosing(this, minimumNote.line, minimumNote.y, minimumNote.color, '255, 255, 255');
                 this.objects.push(newExplosinves);
 
                 if(pwConsumed) { // PW 다시 회복
@@ -4001,7 +4001,7 @@ class ShuttingStarsCore {
             for(let idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if(obj instanceof SSLongNote) {
-                    if(obj.handling && obj.locationIndex == keyIndex && (! obj.removed) && (! obj.missed) && (obj.explosing <= 0)) {
+                    if(obj.handling && obj.line == keyIndex && (! obj.removed) && (! obj.missed) && (obj.explosing <= 0)) {
                         obj.handling = false; // 롱노트 처리 중임을 해제
                         obj.handlingEndTiming = this.elapsedTime; // 종료 시간 표시
                     }
@@ -7623,7 +7623,7 @@ class ShuttingStarsCore {
                 for(idx=0; idx<this.objectsPlaying.length; idx++) {
                     const obj = this.objectsPlaying[idx];
                     if(obj instanceof SSLongNote) {
-                        const notePlacer = this.getNotePlacer(obj.locationIndex);
+                        const notePlacer = this.getNotePlacer(obj.line);
                         if(notePlacer == null) continue;
 
                         if(obj.y <= notePlacer.y) {
@@ -7649,7 +7649,7 @@ class ShuttingStarsCore {
                         obj.explosing = 1;
 
                         // 추가 폭발 객체 추가
-                        const newExplosinves = new SSFailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                        const newExplosinves = new SSFailExplosing(this, obj.line, obj.y, '255, 0, 0', '255, 0, 0');
                         this.objects.push(newExplosinves);
                     }
                 }
@@ -7668,7 +7668,7 @@ class ShuttingStarsCore {
                                 obj.missed  = true;
 
                                 // 추가 폭발 객체 추가
-                                const newExplosinves = new SSFailExplosing(this, obj.locationIndex, obj.y, '255, 0, 0', '255, 0, 0');
+                                const newExplosinves = new SSFailExplosing(this, obj.line, obj.y, '255, 0, 0', '255, 0, 0');
                                 this.objects.push(newExplosinves);
                             }
                         }
@@ -7694,7 +7694,7 @@ class ShuttingStarsCore {
                         }
 
                         // 추가 폭발 객체 추가
-                        const newExplosinves = new SSCorrectNoteExplosing(this, obj.locationIndex, obj.y, obj.color, '255, 255, 255');
+                        const newExplosinves = new SSCorrectNoteExplosing(this, obj.line, obj.y, obj.color, '255, 255, 255');
                         this.objects.push(newExplosinves);
                     }
                 }
@@ -8106,14 +8106,14 @@ class ShuttingStarsCore {
 
     /**
      * 지정한 레인의 노트 판정 객체를 반환합니다.
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @returns {SSNotePlacer|null} 해당 레인의 판정 객체
      */
-    getNotePlacer(locationIndex) {
+    getNotePlacer(line) {
         for(let idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if(obj instanceof SSNotePlacer) {
-                if(obj.locationIndex === locationIndex) {
+                if(obj.line === line) {
                     return obj;
                 }
             }
@@ -9304,7 +9304,7 @@ class ShuttingStarsCore {
 //                difficultyLevel : (integer) 난이도 레벨 (숫자)
 //                patterns : (array)
 //                    element : (object)
-//                        locationIndex : (integer) 라인 번호 (0~5 범위 지정, -1 지정 시 게임 내에서 랜덤 지정됨)
+//                        line : (integer) 라인 번호 (0~5 범위 지정, -1 지정 시 게임 내에서 랜덤 지정됨)
 //                        time          : (number) 판정선 도달 시점 ( 초 단위가 아니며 곡의 16분의 N비트 값으로 지정, 소수 사용 가능 )
 //                        type          : (string) 노트 유형 (normal / long 중에 선택, 기본 : normal)
 //                        ends          : (number) long 타입 지정 시 필수값으로, 종료 시점 지정 ( time 과 같은 단위, time 값보다 커야 함 )
@@ -9318,9 +9318,9 @@ class ShuttingStarsCore {
 //                       "difficultyLabel" : "easy"
 //                       "difficultyLevel" : 1
 //                       "patterns" : [
-//                            {"locationIndex" : 1, time : 3}
-//                          , {"locationIndex" : 0, time : 6}
-//                          , {"locationIndex" : 4, time : 9}
+//                            {"line" : 1, time : 3}
+//                          , {"line" : 0, time : 6}
+//                          , {"line" : 4, time : 9}
 //                          ...
 //                       ]
 //                  },
@@ -9328,9 +9328,9 @@ class ShuttingStarsCore {
 //                       "difficultyLabel" : "normal"
 //                       "difficultyLevel" : 4
 //                       "patterns" : [
-//                            {"locationIndex" : 2, time : 2}
-//                          , {"locationIndex" : 1, time : 4}
-//                          , {"locationIndex" : 4, time : 6}
+//                            {"line" : 2, time : 2}
+//                          , {"line" : 1, time : 4}
+//                          , {"line" : 4, time : 6}
 //                          ...
 //                       ]
 //                  }
@@ -9363,7 +9363,7 @@ class ShuttingStarsCore {
 //                difficultyLevel : (integer) Difficulty Number
 //                patterns : (array)
 //                    element : (object)
-//                        locationIndex : (integer) line (0~5, If you using -1 then random)
+//                        line : (integer) line (0~5, If you using -1 then random)
 //                        time          : (number) occuring time ( Not seconds ! Need to test. ) float also OK
 //                        type          : (string) note type (normal / long, default : normal)
 //                        ends          : (number) long note's end time ( Only for long type )
@@ -9377,9 +9377,9 @@ class ShuttingStarsCore {
 //                       "difficultyLabel" : "easy"
 //                       "difficultyLevel" : 1
 //                       "patterns" : [
-//                            {"locationIndex" : 1, time : 3}
-//                          , {"locationIndex" : 0, time : 6}
-//                          , {"locationIndex" : 4, time : 9}
+//                            {"line" : 1, time : 3}
+//                          , {"line" : 0, time : 6}
+//                          , {"line" : 4, time : 9}
 //                          ...
 //                       ]
 //                  },
@@ -9387,9 +9387,9 @@ class ShuttingStarsCore {
 //                       "difficultyLabel" : "normal"
 //                       "difficultyLevel" : 4
 //                       "patterns" : [
-//                            {"locationIndex" : 2, time : 2}
-//                          , {"locationIndex" : 1, time : 4}
-//                          , {"locationIndex" : 4, time : 6}
+//                            {"line" : 2, time : 2}
+//                          , {"line" : 1, time : 4}
+//                          , {"line" : 4, time : 6}
 //                          ...
 //                       ]
 //                  }
@@ -9738,7 +9738,7 @@ class ShuttingStarsCore {
                     if(obj.removed || obj.explosing >= 1) continue;
 
                     // 노트에 해당하는 SSNotePlacer 찾기
-                    notePlacer = this.getNotePlacer(obj.locationIndex);
+                    notePlacer = this.getNotePlacer(obj.line);
                     if(notePlacer == null) continue;
 
                     // 이전 위치 기록
@@ -10343,7 +10343,7 @@ class ShuttingStarsCore {
                                 if(diffTime <= 16) diffTime = 16;
                                 if(diffTimeMultiplier <= 2) diffTimeMultiplier = 2;
                                 if(noteOne.originalTiming - 4 <= timeCycle && timeCycle <= noteOne.originalTiming + (diffTime * diffTimeMultiplier)) {
-                                    usedIndex.push(noteOne.locationIndex);
+                                    usedIndex.push(noteOne.line);
                                 }
                             }
                         }
@@ -10352,34 +10352,34 @@ class ShuttingStarsCore {
                         for(let mdx=0; mdx<multipleCreate; mdx++) {
 
                             // 노트 생성 라인 번호 선정
-                            let locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                            let line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                             let preventInfLoop = 0;
                             if(mdx <= 1) {
-                                while(usedIndex.indexOf(locationIndex) >= 0 || lastLocationIndexes.indexOf(locationIndex) >= 0) {
-                                    locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                while(usedIndex.indexOf(line) >= 0 || lastLocationIndexes.indexOf(line) >= 0) {
+                                    line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                                     preventInfLoop++;
 
-                                    if(preventInfLoop > 100) { locationIndex = -1; lastLocationIndexes = []; break; }
+                                    if(preventInfLoop > 100) { line = -1; lastLocationIndexes = []; break; }
                                 }
                             } else {
-                                while(usedIndex.indexOf(locationIndex) >= 0) {
-                                    locationIndex = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                while(usedIndex.indexOf(line) >= 0) {
+                                    line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
                                     preventInfLoop++;
 
-                                    if(preventInfLoop > 100) { locationIndex = -1; lastLocationIndexes = []; break; }
+                                    if(preventInfLoop > 100) { line = -1; lastLocationIndexes = []; break; }
                                 }
                             }
                             
-                            if(locationIndex < 0) continue;
+                            if(line < 0) continue;
 
                             // 노트 생성
                             let note;
 
                             if(longNote) {
-                                note = new SSLongNote( locationIndex , this );
+                                note = new SSLongNote( line , this );
                                 note.handling = false;
                             } else {
-                                note = new SSNote( locationIndex , this );
+                                note = new SSNote( line , this );
                             }
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = 0;
@@ -10395,7 +10395,7 @@ class ShuttingStarsCore {
 
                             // 마지막 노트 표시
                             lastNote = note;
-                            usedIndex.push(locationIndex);
+                            usedIndex.push(line);
                         }
                         lastLocationIndexes = usedIndex;
                     }
@@ -10516,6 +10516,8 @@ class ShuttingStarsCore {
             if(difficultyOne.patterns) {
                 for(let idx2=0; idx2<difficultyOne.patterns.length; idx2++) {
                     const noteJsonOne = difficultyOne.patterns[idx2];
+                    let line = noteJsonOne.line;
+                    if(typeof(noteJsonOne.line) == 'undefined' && (! (typeof(noteJsonOne.locationIndex) != 'undefined') )) line = noteJsonOne.locationIndex;
 
                     let types = 'normal';
                     let ends = noteJsonOne.time;
@@ -10523,7 +10525,7 @@ class ShuttingStarsCore {
                     if(noteJsonOne.type) types = noteJsonOne.type;
                     if(noteJsonOne.ends) ends  = noteJsonOne.ends;
 
-                    let patternOne = new ShuttingStarsNotePattern(noteJsonOne.locationIndex, noteJsonOne.time, types, ends);
+                    let patternOne = new ShuttingStarsNotePattern(line, noteJsonOne.time, types, ends);
                     newObj.patterns.push(patternOne);
                 }
             }
@@ -11329,8 +11331,8 @@ class ShuttingStarsSong {
                 for(jdx=0; jdx<diffOne.patterns.length; jdx++) {
                     const noteObjOne = diffOne.patterns[jdx];
                     let noteJsonOne = {};
-                    noteJsonOne.locationIndex = noteObjOne.locationIndex;
-                    noteJsonOne.time          = noteObjOne.time;
+                    noteJsonOne.line = noteObjOne.line;
+                    noteJsonOne.time = noteObjOne.time;
                     if(noteObjOne.type) noteJsonOne.type = noteObjOne.type;
                     if(noteObjOne.ends) noteJsonOne.ends = noteObjOne.ends;
                     diffObj.patterns.push(noteJsonOne);
@@ -11556,7 +11558,7 @@ class ShuttingStarsNotePattern {
     /** @type {number} 게임 내부에서 사용하는 객체 고유 식별자 */
     id = 0;
     /** @type {number} 객체가 배치된 노트 라인 번호 */
-    locationIndex = 0;
+    line = 0;
     /** @type {number} 노트 패턴이 판정선에 위치할 타이밍 */
     time = 0.0;
 
@@ -11567,13 +11569,13 @@ class ShuttingStarsNotePattern {
 
     /**
      * 인스턴스 초기화
-     * @param {number} locationIndex 노트 라인의 번호
+     * @param {number} line 노트 라인의 번호
      * @param {number} time 노트 패턴이 판정선에 위치할 타이밍
      * @param {string} type 노트 타입 (normal / long, 기본값 : normal)
      * @param {number} ends 롱 노트인 경우, 종료 타이밍
      */
-    constructor(locationIndex, time, types, ends) {
-        this.locationIndex = locationIndex;
+    constructor(line, time, types, ends) {
+        this.line = line;
         this.time = time;
         if(types) this.type = String(types);
         if(ends ) this.ends = parseFloat(ends);
@@ -11797,19 +11799,19 @@ class SSNoteKeyObject extends ShuttingStarsObject {
     /** @type {string} 입력 키 */
     key = '';
     /** @type {number} 라인 번호 */
-    locationIndex = 0;
+    line = 0;
     /** @type {boolean} 다크 모드 */
     dark = false;
     /**
      * 인스턴스 초기화
-     * @param {number} locationIndex 노트 라인 번호
+     * @param {number} line 노트 라인 번호
      * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex, coreInst) {
+    constructor(line, coreInst) {
         super(coreInst);
-        this.locationIndex = locationIndex;
-        this.key = coreInst.keyList[locationIndex];
-        this.color = this.getColorOfLocationIndex(locationIndex);
+        this.line = line;
+        this.key = coreInst.keyList[line];
+        this.color = this.getColorOfLocationIndex(line);
     }
 
     /**
@@ -11854,38 +11856,38 @@ class SSNoteKeyObject extends ShuttingStarsObject {
     }
     /**
      * 라인 별 컬러
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @param {number} gradientIndex gradientIndex 값
      * @returns {string} RGB 색상 문자열
      */
-    getColorOfLocationIndex(locationIndex, gradientIndex) {
+    getColorOfLocationIndex(line, gradientIndex) {
         if(typeof(gradientIndex) == 'undefined') gradientIndex = 0;
         if(gradientIndex < 0) gradientIndex = 0;
         if(gradientIndex > 3) gradientIndex = 3;
         let r, g, b;
 
         // 총 6개의 라인, 순서대로 빨주노초파남
-        if(locationIndex == 0) {
+        if(line == 0) {
             r = 180;
             g = 80;
             b = 180;
-        } else if(locationIndex == 1) {
+        } else if(line == 1) {
             r = 230;
             g = 180;
             b = 80;
-        } else if(locationIndex == 2) {
+        } else if(line == 2) {
             r = 230;
             g = 230;
             b = 80;
-        } else if(locationIndex == 3) {
+        } else if(line == 3) {
             r = 180;
             g = 230;
             b = 80;
-        } else if(locationIndex == 4) {
+        } else if(line == 4) {
             r = 80;
             g = 230;
             b = 80;
-        } else if(locationIndex == 5) {
+        } else if(line == 5) {
             r = 80;
             g = 230;
             b = 230;
@@ -11924,7 +11926,7 @@ class SSNoteKeyObject extends ShuttingStarsObject {
      */
     modifyExplosiveColor(gradientIndex) {
         if(this.explosing >= 3) return '255, 255, 255';
-        return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
+        return this.getColorOfLocationIndex(this.line, gradientIndex);
     }
 }
 
@@ -11932,19 +11934,19 @@ class SSNoteKeyObject extends ShuttingStarsObject {
 class SSNotePlacer extends SSNoteKeyObject {
     /**
      * 인스턴스 초기화
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex, coreInst) {
-        super(locationIndex, coreInst);
+    constructor(line, coreInst) {
+        super(line, coreInst);
         this.r = coreInst.getNoteRadius();
-        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + coreInst.getLeftMarginNote();
+        this.x = (this.r * 4) + Math.round(line * this.r * 2.5) + coreInst.getLeftMarginNote();
         this.y = coreInst.getNotePlacerYLocation();
-        this.key = coreInst.keyList[locationIndex];
+        this.key = coreInst.keyList[line];
         this.shape = 'circle';
         this.opacity = 0.3;
         this.dark = true;
-        this.color = this.getColorOfLocationIndex(locationIndex);
+        this.color = this.getColorOfLocationIndex(line);
         this.fill = false;
         this.hidden = false;
     }
@@ -12001,11 +12003,11 @@ class SSNoteCommon extends SSNoteKeyObject {
 
     /**
      * 인스턴스 초기화
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex, coreInst) {
-        super(locationIndex, coreInst);
+    constructor(line, coreInst) {
+        super(line, coreInst);
     }
 
     /**
@@ -12037,7 +12039,7 @@ class SSNoteCommon extends SSNoteKeyObject {
                 return '255, 255, 255';   
             }
         }
-        return this.getColorOfLocationIndex(this.locationIndex, gradientIndex);
+        return this.getColorOfLocationIndex(this.line, gradientIndex);
     }
 }
 
@@ -12046,11 +12048,11 @@ class SSNote extends SSNoteCommon {
     // 생성자
     /**
      * 인스턴스 초기화
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex, coreInst) {
-        super(locationIndex, coreInst);
+    constructor(line, coreInst) {
+        super(line, coreInst);
         this.r = coreInst.getNoteRadius();
         this.speedY = 0;
         this.removed = false;
@@ -12059,7 +12061,7 @@ class SSNote extends SSNoteCommon {
         this.tail = false; // TODO
         
         // SSNotePlacer 찾기
-        let notePlacer = coreInst.getNotePlacer(locationIndex);
+        let notePlacer = coreInst.getNotePlacer(line);
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
         this.x = notePlacer.x;
@@ -12067,10 +12069,10 @@ class SSNote extends SSNoteCommon {
         // 노트 속도 비활성화 - 이제 노트를 패턴 시간에 맞게 생성하지 않고 미리 쫙 생성한 다음 시간대에 맞춰 위치를 조정함
         this.y = coreInst.getNoteCreationYLocation() * 2;
 
-        this.key = coreInst.keyList[locationIndex];
+        this.key = coreInst.keyList[line];
         this.shape = 'circle';
         this.opacity = 0.9;
-        this.color = this.getColorOfLocationIndex(locationIndex);
+        this.color = this.getColorOfLocationIndex(line);
     }
     
     /**
@@ -12167,11 +12169,11 @@ class SSLongNote extends SSNoteCommon {
 
     /**
      * 인스턴스 초기화
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @param {ShuttingStarsCore} coreInst
      */
-    constructor(locationIndex, coreInst) {
-        super(locationIndex, coreInst);
+    constructor(line, coreInst) {
+        super(line, coreInst);
         this.r = coreInst.getNoteRadius();
         this.speedY = 0;
         this.removed = false;
@@ -12180,7 +12182,7 @@ class SSLongNote extends SSNoteCommon {
         this.tail = false;
         
         // SSNotePlacer 찾기
-        let notePlacer = coreInst.getNotePlacer(locationIndex);
+        let notePlacer = coreInst.getNotePlacer(line);
         if(notePlacer == null) { this.explosing = this.explosingMax; return; }
 
         this.x = notePlacer.x;
@@ -12189,10 +12191,10 @@ class SSLongNote extends SSNoteCommon {
         this.y = coreInst.getNoteCreationYLocation() * 2;
         this.yEnd = coreInst.getNoteCreationYLocation() * 2; // 일단 y 좌표와 동일하게 입력, 게임 중 위치 조정 시 다시 변경
 
-        this.key = coreInst.keyList[locationIndex];
+        this.key = coreInst.keyList[line];
         this.shape = 'rect';
         this.opacity = 0.9;
-        this.color = this.getColorOfLocationIndex(locationIndex);
+        this.color = this.getColorOfLocationIndex(line);
     }
 
     /**
@@ -12421,19 +12423,19 @@ class SSExplosingObject extends SSDecorationObject {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
-     * @param {number} locationIndex 노트 레인의 인덱스
+     * @param {number} line 노트 레인의 인덱스
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(coreInst, locationIndex, y, color, peakColor) {
+    constructor(coreInst, line, y, color, peakColor) {
         super(coreInst);
         this.peakColor = '255, 255, 255';
         this.priority = 'high';
         this.r = coreInst.getNoteRadius();
-        this.x = (this.r * 4) + Math.round(locationIndex * this.r * 2.5) + coreInst.getLeftMarginNote();
+        this.x = (this.r * 4) + Math.round(line * this.r * 2.5) + coreInst.getLeftMarginNote();
         this.y = y;
-        this.key = coreInst.keyList[locationIndex];
+        this.key = coreInst.keyList[line];
         this.shape = 'circle';
         this.opacity = 0.1;
         this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
@@ -12548,13 +12550,13 @@ class SSCorrectNoteExplosing extends SSExplosingObject {
     /**
      * 인스턴스를 초기화합니다.
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
-     * @param {number} locationIndex 라인 번호
+     * @param {number} line 라인 번호
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(coreInst, locationIndex, y, color, peakColor) {
-        super(coreInst, locationIndex, y, color, peakColor);
+    constructor(coreInst, line, y, color, peakColor) {
+        super(coreInst, line, y, color, peakColor);
         this.r = Math.round(this.r * 1.2);
     }
 }
@@ -12564,13 +12566,13 @@ class SSFailExplosing extends SSExplosingObject {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
-     * @param {number} locationIndex 라인 번호
+     * @param {number} line 라인 번호
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(coreInst, locationIndex, y, color, peakColor) {
-        super(coreInst, locationIndex, y, color, peakColor);
+    constructor(coreInst, line, y, color, peakColor) {
+        super(coreInst, line, y, color, peakColor);
         this.r = Math.round(this.r * 1.2);
     }
 }
@@ -12580,13 +12582,13 @@ class SSPlanetExplosing extends SSExplosingObject {
     /**
      * 인스턴스 초기화
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
-     * @param {number} locationIndex 라인 번호
+     * @param {number} line 라인 번호
      * @param {number} y y 값
      * @param {string} color color 값
      * @param {string} peakColor peakColor 값
      */
-    constructor(coreInst, locationIndex, y, color, peakColor) {
-        super(coreInst, locationIndex, y, color, peakColor);
+    constructor(coreInst, line, y, color, peakColor) {
+        super(coreInst, line, y, color, peakColor);
     }
 }
 
