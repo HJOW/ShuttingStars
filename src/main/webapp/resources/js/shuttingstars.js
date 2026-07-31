@@ -4703,7 +4703,7 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 폰트 실제크기 계산
+     * 폰트 실제크기 (세로길이) 계산
      * @param {boolean} force 측정값을 강제로 다시 계산할지 여부
      */
     calculateFontMetric(force) {
@@ -4714,7 +4714,7 @@ class ShuttingStarsCore {
             // 선택된 곡인 경우, 배경색 출력
             //    곡 이름과 점유 공간 크기를 알아야 함
             fontSize = this.convertFontSize(20);
-            label = 'ABCDE12345';
+            label = 'ABCDE12345한글＆＠';
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             metric1 = this.ctx.measureText(label);
 
