@@ -8801,7 +8801,7 @@ class ShuttingStarsCore {
 
         // 상세설정 영역 HTML 준비
         let html = `
-            <div class='shuttingstar_configlayer'>
+            <div class='shuttingstar_configlayer pure-form'>
                 <div class='shuttingstar_config_tabbuttons'>
                     <button type='button' class='btn tab active target_translate' data-tabarea='.shuttingstar_configsections'>Configuration</button>
                     <button type='button' class='btn tab        target_translate' data-tabarea='.shuttingstar_songssections'>Custom Songs</button>
@@ -8878,7 +8878,7 @@ class ShuttingStarsCore {
                             </tbody>
                         </table>
                     </div>
-                    <div class='shuttingstar_configcontrols'>
+                    <div class='shuttingstar_configcontrols' style='margin-top: 10px;'>
                         <button type='button' class='btn btn_config_accept target_translate'>Accept</button>
                         
                         <button type='button' class='btn red btn_config_resetall target_translate' style='margin-left: 30px;'>Reset All</button>
@@ -8888,7 +8888,7 @@ class ShuttingStarsCore {
                 <div class='shuttingstar_songssections tabarea'>
                     <h1 class='target_translate'>Custom Songs</h1>
                     <textarea class='full ta_json_song'></textarea>
-                    <div class='shuttingstar_songcontrols'>
+                    <div class='shuttingstar_songcontrols' style='margin-top: 20px;'>
                         <button type='button' class='btn btn_song_accept target_translate'>Save</button>
                         <a href='./create/create.html' target='_blank' style='margin-left: 20px; text-decoration: none;'>Song Creation Mode (TEST)</a>
                     </div>
@@ -8898,7 +8898,7 @@ class ShuttingStarsCore {
                     <textarea class='full ta_packages'># Caution ! Lines start with '#' will be ignored.
 # Add package URLs here. Enter one URL per line.
 </textarea>
-                    <div class='shuttingstar_packagescontrols'>
+                    <div class='shuttingstar_packagescontrols' style='margin-top: 20px;'>
                         <button type='button' class='btn btn_packages_accept target_translate'>Save</button>
                     </div>
                 </div>
@@ -11912,11 +11912,12 @@ class SSNoteKeyObject extends ShuttingStarsObject {
      * @returns {string} 그라데이션이 적용된 RGB 색상 문자열
      */
     applyGradientIndex(r, g, b, gradientIndex) {
-        if(gradientIndex >= 1) {
-            r = r + Math.floor(((250 - r) / 7.0) * (gradientIndex + 1));
-            g = g + Math.floor(((250 - g) / 7.0) * (gradientIndex + 1));
-            b = b + Math.floor(((250 - b) / 7.0) * (gradientIndex + 1));
+        if(gradientIndex < 7) {
+            r = r + Math.floor(((250 - r) / 7.0) * (7 - gradientIndex));
+            g = g + Math.floor(((250 - g) / 7.0) * (7 - gradientIndex));
+            b = b + Math.floor(((250 - b) / 7.0) * (7 - gradientIndex));
         }
+
         return r + ', ' + g + ', ' + b;
     }
     /**
@@ -12098,7 +12099,7 @@ class SSNote extends SSNoteCommon {
                 if(tailOpa <= 0) continue;
 
                 const beforeLoc = this.beforeLocations[jdx];
-                for(let idx=0; idx<=3; idx++) {
+                for(let idx=0; idx<=5; idx++) {
                     calculatedR = Math.floor(coreInst.convertX(this.r - idx) * tailR);
                     if(calculatedR <= 0) break;
 
@@ -12120,7 +12121,8 @@ class SSNote extends SSNoteCommon {
         // 본 노트 그리기
         let rs = 0;
         for(let idx=0; idx<=5; idx++) {
-            rs = this.r - (idx * 2);
+            if(idx <= 2) rs = this.r - (idx * 2);
+            else         rs = this.r - 4 - ((idx-2));
             if(rs <= 0) break;
 
             ctx.beginPath();
