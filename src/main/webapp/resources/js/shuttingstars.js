@@ -373,6 +373,8 @@ class ShuttingStarsCore {
     invisibleNoteMode = false;
     /** @type {boolean} 롱노트 거부 (커맨드로 설정) */
     noLongNote = false;
+    /** @type {boolean} 싱글 키 모드 (커맨드로 설정) - 이 설정이 켜져 있으면 noLongNote 도 킨 것으로 간주 */
+    singleKey = false;
 
     /** @type {Array<string>} 기본 상태들 */
     basicStates = ['title', 'firstset', 'menu', 'songchoosing', 'songtitle', 'playing', 'gameover', 'result', 'listenchoosing', 'listentitle', 'listenplaying', 'setting', 'credit', 'recordlist', 'recorddet', 'empty'];
@@ -1974,6 +1976,11 @@ class ShuttingStarsCore {
                     if(typeof(this.noLongNote) == 'string') this.noLongNote = ( (this.noLongNote == 'Y' || this.noLongNote == 'true') ? true : false );
                 }
 
+                if(typeof(settingJson.singleKey) != 'undefined') {
+                    this.singleKey = settingJson.singleKey;
+                    if(typeof(this.singleKey) == 'string') this.singleKey = ( (this.singleKey == 'Y' || this.singleKey == 'true') ? true : false );
+                }
+
                 if(typeof(settingJson.keyList) != 'undefined') {
                     try {
                         if(typeof(settingJson.keyList) == 'string') settingJson.keyList = ShuttingStarsUtility.parseJSON(settingJson.keyList);
@@ -2041,6 +2048,7 @@ class ShuttingStarsCore {
             settingJson.mysophobiaMode      = this.mysophobiaMode;
             settingJson.invisibleNoteMode   = this.invisibleNoteMode;
             settingJson.noLongNote          = this.noLongNote;
+            settingJson.singleKey           = this.singleKey;
             settingJson.language            = this.language;
             settingJson.languageDefault     = this.languageDefault;
             settingJson.usingWorkerConfig   = this.usingWorkerConfig;
@@ -2499,22 +2507,31 @@ class ShuttingStarsCore {
 
                 // 노트 미리 생성
                 if(! this.difficultyUsingAutoCreate) {
+                    let lastTime = -1;
+                    let lastLine = 0;
                     for(idx=0; idx<patterns.length; idx++) {
                         const pattern = patterns[idx];
+                        let lineNo = pattern.line;
 
                         // 패턴 ID 세팅
                         pattern.id = idx;
-                        
-                        // 패턴 내 노트 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
-                        if(pattern.line < 0) {
-                            pattern.line = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
+
+                        // 싱글 키 모드에서는 라인 번호를 모두 0으로 처리하고, 동시 입력 제거
+                        if(this.singleKey) {
+                            lineNo = 0;
+                            if(lastTime == pattern.time) continue; // 동시 입력 제거
                         }
+                        
+                        // 라인 번호가 음수로 지정된 경우, 랜덤하게 다시 지정
+                        if(lineNo < 0) {
+                            lineNo = Math.floor(ShuttingStarsUtility.random() * this.notePlacers.length);
+                        }                        
 
                         if(typeof(pattern.type) == 'undefined' || pattern.type == null || pattern.type == '') pattern.type = 'normal';
 
                         let note;
-                        if(pattern.type == 'long' && (! this.noLongNote)) {
-                            note = new SSLongNote(pattern.line, this);
+                        if(pattern.type == 'long' && (! this.noLongNote) && (! this.singleKey)) {
+                            note = new SSLongNote(lineNo, this);
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = pattern.id;
                             note.originalTiming = pattern.time;
@@ -2522,7 +2539,7 @@ class ShuttingStarsCore {
                             note.handling = false;
                             note.handlingEndTiming = note.originalTiming; // 처음에는 최대 길이를 그대로 표현하기 위해 (일부 처리 시 길이가 짧아질 예정)
                         } else {
-                            note = new SSNote(pattern.line, this);
+                            note = new SSNote(lineNo, this);
                             note.id = this.lastObjectId; this.lastObjectId++;
                             note.patternId = pattern.id;
                             note.originalTiming = pattern.time;
@@ -2530,6 +2547,10 @@ class ShuttingStarsCore {
 
                         // if(idx == patterns.length - 1) { note.debugTarget = true; } // 노트 디버깅
                         this.objectsPlaying.push(note); // 노트 추가
+
+                        // 마지막 타이밍과 번호 기록
+                        lastTime = pattern.time;
+                        lastLine = lineNo;
                     }
                 }
 
@@ -3807,6 +3828,8 @@ class ShuttingStarsCore {
      */
     handleNotePlacerCalledIn(notePlacer, pwConsumed) {
         let idx = 0;
+        if(this.singleKey) notePlacer = this.notePlacers[0];
+        const processingLine = notePlacer.line;
 
         // SSNotePlacer 폭발 처리
         notePlacer.explosing = 1;
@@ -3820,7 +3843,7 @@ class ShuttingStarsCore {
         for(idx=0; idx<this.objectsPlaying.length; idx++) {
             const obj = this.objectsPlaying[idx];
             if((obj instanceof SSNote)) {
-                if(obj.line != notePlacer.line) continue;
+                if(obj.line != processingLine) continue;
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
 
@@ -3843,7 +3866,7 @@ class ShuttingStarsCore {
                     });
                 }
             } else if(obj instanceof SSLongNote) {
-                if(obj.line != notePlacer.line) continue;
+                if(obj.line != processingLine) continue;
                 if(obj.removed) continue;
                 if(obj.explosing >= 1) continue;
                 if(obj.handling) continue;
@@ -6965,6 +6988,13 @@ class ShuttingStarsCore {
         });
 
         this.commands.push({
+            command : [1, 1, 1, 1, 1, 1],
+            act : function() {
+                selfs.singleKey = (! selfs.singleKey);
+            }
+        });
+
+        this.commands.push({
             command : [0, 2, 1, 3, 2, 4],
             act : function() {
                 selfs.invisibleNoteMode = (! selfs.invisibleNoteMode);
@@ -7078,6 +7108,12 @@ class ShuttingStarsCore {
             label = '[NOLONGN]';
             commands.push(label);
         }
+
+        //    싱글 키 모드
+        if(this.singleKey) {
+            label = '[1KEY]';
+            commands.push(label);
+        } 
 
         //    곡 생성 모드
         if(this.createMode) {
@@ -10322,28 +10358,33 @@ class ShuttingStarsCore {
                             if(multipleCreate >= 5) probability4 = probability4 * 0.5;
                             if(multipleCreate >= 6) probability4 = probability4 * 0.5;
 
+                            // 싱글 키 모드에서는 동시노트 생성 안함
+                            if(this.singleKey) { multipleCreate = 1; }
+
                             // 롱노트 확률 적용
-                            if(this.noLongNote) longNote = false;
-                            else                longNote = ( ShuttingStarsUtility.random() <= probability4 );
+                            if(this.noLongNote || this.singleKey) longNote = false;
+                            else longNote = ( ShuttingStarsUtility.random() <= probability4 );
                         }
                     }
 
                     if(createYn) { // 노트 생성
                         const usedIndex = []; // 이 시간대에 이미 점유 중인 라인 번호 탑재
 
-                        // 롱노트 중 아직 유효한 것을 찾아 usedIndex 에 등록 (그 라인에 노트 생성하지 않게)
-                        for(let odx=0; odx<noteCreates.length; odx++) {
-                            const noteOne = noteCreates[odx];
-                            if(noteOne instanceof SSLongNote) {
-                                let diffTime = Math.abs(noteOne.originalEndTiming - noteOne.originalTiming);
-                                let diffTimeMultiplier = 64;
-                                for(let pdx=0; pdx<difficultyLevel; pdx += 2) {
-                                    diffTimeMultiplier = diffTimeMultiplier / 2.0;
-                                }
-                                if(diffTime <= 16) diffTime = 16;
-                                if(diffTimeMultiplier <= 2) diffTimeMultiplier = 2;
-                                if(noteOne.originalTiming - 4 <= timeCycle && timeCycle <= noteOne.originalTiming + (diffTime * diffTimeMultiplier)) {
-                                    usedIndex.push(noteOne.line);
+                        if(! this.singleKey) {
+                            // 롱노트 중 아직 유효한 것을 찾아 usedIndex 에 등록 (그 라인에 노트 생성하지 않게)
+                            for(let odx=0; odx<noteCreates.length; odx++) {
+                                const noteOne = noteCreates[odx];
+                                if(noteOne instanceof SSLongNote) {
+                                    let diffTime = Math.abs(noteOne.originalEndTiming - noteOne.originalTiming);
+                                    let diffTimeMultiplier = 64;
+                                    for(let pdx=0; pdx<difficultyLevel; pdx += 2) {
+                                        diffTimeMultiplier = diffTimeMultiplier / 2.0;
+                                    }
+                                    if(diffTime <= 16) diffTime = 16;
+                                    if(diffTimeMultiplier <= 2) diffTimeMultiplier = 2;
+                                    if(noteOne.originalTiming - 4 <= timeCycle && timeCycle <= noteOne.originalTiming + (diffTime * diffTimeMultiplier)) {
+                                        usedIndex.push(noteOne.line);
+                                    }
                                 }
                             }
                         }
@@ -10352,21 +10393,25 @@ class ShuttingStarsCore {
                         for(let mdx=0; mdx<multipleCreate; mdx++) {
 
                             // 노트 생성 라인 번호 선정
-                            let line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
-                            let preventInfLoop = 0;
-                            if(mdx <= 1) {
-                                while(usedIndex.indexOf(line) >= 0 || lastLines.indexOf(line) >= 0) {
-                                    line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
-                                    preventInfLoop++;
+                            let line = (this.singleKey ? 0 : Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length));
 
-                                    if(preventInfLoop > 100) { line = -1; lastLines = []; break; }
-                                }
-                            } else {
-                                while(usedIndex.indexOf(line) >= 0) {
-                                    line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
-                                    preventInfLoop++;
+                            if(! this.singleKey) {
+                                // 라인 번호 중복 방지
+                                let preventInfLoop = 0;
+                                if(mdx <= 1) {
+                                    while(usedIndex.indexOf(line) >= 0 || lastLines.indexOf(line) >= 0) {
+                                        line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                        preventInfLoop++;
 
-                                    if(preventInfLoop > 100) { line = -1; lastLines = []; break; }
+                                        if(preventInfLoop > 100) { line = -1; lastLines = []; break; }
+                                    }
+                                } else {
+                                    while(usedIndex.indexOf(line) >= 0) {
+                                        line = Math.floor(ShuttingStarsUtility.random() * 0.99 * this.notePlacers.length);
+                                        preventInfLoop++;
+
+                                        if(preventInfLoop > 100) { line = -1; lastLines = []; break; }
+                                    }
                                 }
                             }
                             
@@ -11982,6 +12027,16 @@ class SSNotePlacer extends SSNoteKeyObject {
         if(coreInst.pw < coreInst.getPWUsingCost()) return null;
         if(coreInst.pw < coreInst.getPWUsingCost() * 8) return 'normal';
         return 'bold';
+    }
+
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
+     */
+    draw(ctx, coreInst) {
+        if(coreInst.singleKey && this.line != 0) return;
+        super.draw(ctx, coreInst);
     }
 }
 
