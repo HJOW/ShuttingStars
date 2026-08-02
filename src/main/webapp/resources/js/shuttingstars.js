@@ -26,7 +26,7 @@ import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './sh
 class ShuttingStarsCore {
     /*** 게임 버전 ***/
     /** @type {number} 빌드 번호 */
-    build = 7;
+    build = 8;
 
     /** @type {string} 홈페이지 */
     homepageUrl = 'https://github.com/HJOW/shuttingstars';
