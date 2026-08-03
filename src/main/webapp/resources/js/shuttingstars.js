@@ -1677,7 +1677,7 @@ class ShuttingStarsCore {
                     newList.push('exit');
                 }
 
-                // TODO : fittiming 숨기기 (테스트 후 다시 오픈 예정)
+                // fittiming 메뉴는 숨기고, 필요 시 커맨드로 접근하도록 함
                 const fittimingIndex = newList.indexOf('fittiming');
                 if(fittimingIndex >= 0) { newList.splice(fittimingIndex, 1); }
 
@@ -2799,6 +2799,8 @@ class ShuttingStarsCore {
                         this.audioAnalyser.fftSize = 256;
                         this.audioBufferLen = this.audioAnalyser.frequencyBinCount;
                         this.audioBuffer    = new Uint8Array(this.audioBufferLen);
+
+                        this.remainFittingNotes();
 
                         this.elapsedTimeSynchronized = false;
                         this.songPrepared = true;
@@ -4060,7 +4062,7 @@ class ShuttingStarsCore {
             this.processResultMark(resultMark);
 
             // 판정 출력
-            this.displayResultMark(resultMark);
+            this.displayResultMark(resultMark, ShuttingStarsUtility.floor3(this.elapsedTime - minimumNote.originalTiming));
 
             if(minimumNote instanceof SSLongNote) {
                 if(resultMark != 'MISS') {
@@ -4505,11 +4507,19 @@ class ShuttingStarsCore {
     /**
      * 판정 띄우기
      * @param {string} resultMark resultMark 값
+     * @param {string} alterMsg 콤보 대신 출력할 메시지 (타이밍 보정 모드에서만 유효)
      */
-    displayResultMark(resultMark) {
+    displayResultMark(resultMark, alterMsg) {
         if(resultMark == null) return;
         this.accelerateExplosingSSJudgeMarks();
-        this.objectsPlaying.push(new SSJudgeMark(this, resultMark));
+
+        const newMark = new SSJudgeMark(this, resultMark);
+        if(this.state == 'fitting') {
+            if(alterMsg) {
+                newMark.fittingAlterMessage = String(alterMsg);
+            }
+        }
+        this.objectsPlaying.push(newMark);
     }
 
     /**
@@ -4894,7 +4904,9 @@ class ShuttingStarsCore {
             }
 
             label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
-            label += '    ' + this.trans('EXIT : ') + this.escKey;
+            label += '    ' + this.trans('EXIT : ');
+            if(this.escKey == 'ESCAPE') label += 'ESC';
+            else                        label += this.escKey;
             this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 19 / 20));
         }
 
@@ -7129,7 +7141,7 @@ class ShuttingStarsCore {
         this.commands.push({
             command : [0, 1, 2, 3, 4, 5],
             act : function() {
-                if(selfs.noteSpeedMultiplier < 1) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier * 2.0);
+                if(selfs.noteSpeedMultiplier < 1.0) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier * 2.0);
                 else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier + 1);
                 selfs.saveSettings(false);
             }
@@ -7138,7 +7150,7 @@ class ShuttingStarsCore {
         this.commands.push({
             command : [5, 4, 3, 2, 1, 0],
             act : function() {
-                if(selfs.noteSpeedMultiplier >= 2) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier - 1);
+                if(selfs.noteSpeedMultiplier > 1.0) selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier - 1);
                 else selfs.noteSpeedMultiplier = Math.floor(selfs.noteSpeedMultiplier / 2.0);
                 selfs.saveSettings(false);
             }
@@ -7183,6 +7195,13 @@ class ShuttingStarsCore {
             command : [0, 2, 1, 3, 2, 4],
             act : function() {
                 selfs.invisibleNoteMode = (! selfs.invisibleNoteMode);
+            }
+        });
+
+        this.commands.push({
+            command : [5, 3, 4, 2, 3, 1],
+            act : function() {
+                selfs.setState('fitting');
             }
         });
     }
@@ -7558,10 +7577,13 @@ class ShuttingStarsCore {
             this.refreshNoteYLocations();
 
             // pw 조금 회복
-            if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') {
+            if(this.state == 'playing' || this.state == 'listenplaying') {
                 this.pw++;
                 if(this.pw < 0) this.pw = 0;
                 else if(this.pw > this.pwMax) this.pw = this.pwMax;
+            }
+            if(this.state == 'fitting') {
+                this.pw = this.pwMax;
             }
 
             // CreateMode 인 경우 이미 폭발한 노트도 다시 살리기 (곡 플레이 진행시간을 조절할 수 있기 때문)
@@ -7587,14 +7609,6 @@ class ShuttingStarsCore {
                     if(obj.explosing >= obj.explosingMax) {
                         obj.removed = true;
                         obj.hidden  = true;
-                    }
-                    // fitting 인 경우만 노트를 제거 (그외의 경우는 검증 (나중에 구현) 을 위해 남겨두기)
-                    if(this.state == 'fitting') {
-                        if(obj.removed) {
-                            this.objectsPlaying.splice(idx, 1);
-                            idx--;
-                            continue;
-                        }
                     }
                 } else if(obj instanceof SSNotePlacer) {
                     if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
@@ -7647,6 +7661,9 @@ class ShuttingStarsCore {
 
             // Starlight 갯수 유지
             this.remainStarlightCounts();
+
+            // Fitting 모드 - 노트 갯수 유지
+            if(this.state == 'fitting') this.remainFittingNotes();
 
             // 배경음악 페이드 인/아웃 처리
             if(this.audioBackgroundPlaying && this.volumeBackgroundSpeed != 0) {
@@ -7724,22 +7741,6 @@ class ShuttingStarsCore {
                                 }
                             }
                         }
-                    }
-                }
-
-                // 보정 화면 처리 - 노트 생성
-                if(this.state == 'fitting') {
-                    const floored = Math.floor(this.elapsedTime);
-                    if(floored % 32 == 0) {
-                        let creatingTime = floored + (128 * this.noteSpeedMultiplier * this.noteSpeedFixedConst); // 노트 생성 타이밍 (참고 : calculateNoteY)
-                        if(creatingTime >= 768) creatingTime = creatingTime - 768;
-
-                        const note = new SSNote(0, this);
-                        note.id = this.lastObjectId; this.lastObjectId++;
-                        note.patternId = note.id;
-                        note.originalTiming = creatingTime;
-
-                        this.objectsPlaying.push(note);
                     }
                 }
             }
@@ -7946,54 +7947,72 @@ class ShuttingStarsCore {
 
             // 곡의 끝 체크
             songEnded = false;
-            //   곡의 명시된 종료시간과 마지막 패턴의 시간, 그리고 audio 가 존재하는 경우 실제 종료시간까지 비교해 더 큰 값 선택
-            //      마지막 패턴의 시간
-            let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
-            if(this.song != null) lastPatternTime = lastPatternTime * this.song.noteMultiplier + this.song.timeConstant;
-            //     audio 존재 시 실제 종료 시간 체크
-            if(this.song != null && this.audio != null) {
-                calcRealEndTime = this.calculateSongDuration(this.audio, this.song.bpm) + this.noteLocationConst + this.song.timeConstant + (this.timeMultiplier * 2);
-                if(calcRealEndTime > lastPatternTime) lastPatternTime = calcRealEndTime;
-            }
-            //     명시된 종료 시간 체크 (높은 우선순위)
-            if(this.song != null && this.song.endTime > 0) {
-                calcRealEndTime = (this.song.endTime + this.noteLocationConst) * this.song.noteMultiplier + this.song.timeConstant;
-                lastPatternTime = calcRealEndTime;
-            }
-
-            // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
-            songEnded = this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed));
-            if((! songEnded) && (this.elapsedTime >= 10)) {
-                // 노트들이 남았더라도 곡이 끝났으면 종료 처리
-                if(this.audio != null) {
-                    if(this.audio.ended) songEnded = true;
-                } else if(this.videoBga != null) {
-                    if(this.videoBga.ended) songEnded = true;
-                } else if(this.youtubePlayer != null) {
-                    if(typeof(this.youtubePlayer.getPlayerState) == 'function') {
-                        if(this.youtubePlayer.getPlayerState() == YT.PlayerState.ENDED) songEnded = true;
+            if(this.state == 'fitting') {
+                if(this.elapsedTime < 32) { // 루프 돌아 다시 처음으로 돌아온 경우 노트 다 되살리기
+                    for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                        const obj = this.objectsPlaying[idx];
+                        if(obj instanceof SSNote) {
+                            if(obj.removed) {
+                                obj.y = this.calculateNoteY(obj.originalTiming, this.notePlacers[0].y, this.song);
+                                obj.explosing = 0;
+                                obj.hidden = false;
+                                obj.removed = false;
+                            }
+                            
+                        }
                     }
                 }
-            }
-            if(songEnded) {
-                this.clearTimeHandler();
-
-                if(this.audio != null) {
-                    try { this.audio.pause();  } catch(ex) { console.error(ex); } // 오디오 끄기
-                    try { this.audio.remove(); } catch(ex) { console.error(ex); } 
-                    this.audio = null;
+            } else {
+                //   곡의 명시된 종료시간과 마지막 패턴의 시간, 그리고 audio 가 존재하는 경우 실제 종료시간까지 비교해 더 큰 값 선택
+                //      마지막 패턴의 시간
+                let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
+                if(this.song != null) lastPatternTime = lastPatternTime * this.song.noteMultiplier + this.song.timeConstant;
+                //     audio 존재 시 실제 종료 시간 체크
+                if(this.song != null && this.audio != null) {
+                    calcRealEndTime = this.calculateSongDuration(this.audio, this.song.bpm) + this.noteLocationConst + this.song.timeConstant + (this.timeMultiplier * 2);
+                    if(calcRealEndTime > lastPatternTime) lastPatternTime = calcRealEndTime;
+                }
+                //     명시된 종료 시간 체크 (높은 우선순위)
+                if(this.song != null && this.song.endTime > 0) {
+                    calcRealEndTime = (this.song.endTime + this.noteLocationConst) * this.song.noteMultiplier + this.song.timeConstant;
+                    lastPatternTime = calcRealEndTime;
                 }
 
-                if(this.videoBga != null) {
-                    if(this.videoBgaUrl != null) {
-                        try { this.videoBga.pause(); } catch(ex) { console.error(ex); } // BGA 끄기
-                        this.videoBgaUrl = null;
+                // 곡의 끝에 다다랐는지 확인 (단, 게임오버 출력 시에는 제외)
+                songEnded = this.elapsedTime > lastPatternTime && (! (this.gameOverEnabled && this.gameOverDelayed));
+                if((! songEnded) && (this.elapsedTime >= 10)) {
+                    // 노트들이 남았더라도 곡이 끝났으면 종료 처리
+                    if(this.audio != null) {
+                        if(this.audio.ended) songEnded = true;
+                    } else if(this.videoBga != null) {
+                        if(this.videoBga.ended) songEnded = true;
+                    } else if(this.youtubePlayer != null) {
+                        if(typeof(this.youtubePlayer.getPlayerState) == 'function') {
+                            if(this.youtubePlayer.getPlayerState() == YT.PlayerState.ENDED) songEnded = true;
+                        }
                     }
                 }
+                if(songEnded) {
+                    this.clearTimeHandler();
 
-                this.onSongEnd(); // 종료
-                return;
+                    if(this.audio != null) {
+                        try { this.audio.pause();  } catch(ex) { console.error(ex); } // 오디오 끄기
+                        try { this.audio.remove(); } catch(ex) { console.error(ex); } 
+                        this.audio = null;
+                    }
+
+                    if(this.videoBga != null) {
+                        if(this.videoBgaUrl != null) {
+                            try { this.videoBga.pause(); } catch(ex) { console.error(ex); } // BGA 끄기
+                            this.videoBgaUrl = null;
+                        }
+                    }
+
+                    this.onSongEnd(); // 종료
+                    return;
+                }
             }
+            
 
             // hp 체크 (0 미만이면 게임 오버 처리)
             if(this.hp <= 0) {
@@ -10082,6 +10101,33 @@ class ShuttingStarsCore {
             if(obj instanceof SSStarlight) {
                 obj.speedX = xSpeed;
                 obj.speedY = ySpeed;
+            }
+        }
+    }
+
+    /** 타이밍 보정 모드 - 노트 갯수 보장 */
+    remainFittingNotes() {
+        let timing, idx;
+        for(timing=64; timing<816; timing+=32) {
+            // 해당 타이밍에 노트가 이미 있는지 확인
+            let noteAlreadyExists = false;
+            for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                const obj = this.objectsPlaying[idx];
+                if(obj instanceof SSNote) {
+                    if(obj.originalTiming == timing) {
+                        noteAlreadyExists = true;
+                        break;
+                    }
+                }
+            }
+            if(! noteAlreadyExists) {
+                // 노트 생성
+                const note = new SSNote(0, this);
+                note.id = this.lastObjectId; this.lastObjectId++;
+                note.patternId = note.id;
+                note.originalTiming = timing;
+
+                this.objectsPlaying.push(note);
             }
         }
     }
@@ -12518,7 +12564,7 @@ class SSLongNote extends SSNoteCommon {
     }
 }
 
-/** 판정 글씨와 콤보 마크 */
+/** 판정 글씨와 콤보 마크 (단 타이밍 보정 모드에서는 콤보 대신 고유 메시지 출력) */
 class SSJudgeMark extends ShuttingStarsObject {
     /** @type {string|null} PERFECT / GREAT / GOOD / BAD / MISS */
     judgeResult = null;
@@ -12526,6 +12572,9 @@ class SSJudgeMark extends ShuttingStarsObject {
     explosing = 1;
     /** @type {number} 폭발 효과의 마지막 진행 단계 */
     explosingMax = 32;
+    /** @type {string} 타이밍 보정 모드에서는 콤보 대신 이 문자열 출력 */
+    fittingAlterMessage = '';
+
     /**
      * 인스턴스를 초기화합니다.
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
@@ -12573,18 +12622,29 @@ class SSJudgeMark extends ShuttingStarsObject {
         let combo = coreInst.combo;
         if(this.judgeResult == 'MISS') combo = coreInst.missCombo;
 
-        // 콤보 띄우기
-        if(combo > 1) {
+        if(coreInst.state == 'fitting') {
             fontSize = coreInst.convertFontSize(15);
             ctx.font = 'normal ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
-            if(this.judgeResult == 'MISS') {
-                ctx.fillStyle = coreInst.convertColor('rgba(255, 0, 0, ' + opa + ')');
-            } else {
+            if(this.judgeResult != 'MISS') {
                 if(coreInst.dark) ctx.strokeStyle = coreInst.convertColor('rgba(230, 230, 230, ' + opa + ')');
                 else ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + opa + ')');
+                ctx.fillText(this.fittingAlterMessage, coreInst.convertX(midX), coreInst.convertY(midY + 30)); // 판정 결과 아래에 출력
             }
-            ctx.fillText('COMBO ' + combo, coreInst.convertX(midX), coreInst.convertY(midY + 30)); // 판정 결과 아래에 출력
+        } else {
+            // 콤보 띄우기
+            if(combo > 1) {
+                fontSize = coreInst.convertFontSize(15);
+                ctx.font = 'normal ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
+                if(this.judgeResult == 'MISS') {
+                    ctx.fillStyle = coreInst.convertColor('rgba(255, 0, 0, ' + opa + ')');
+                } else {
+                    if(coreInst.dark) ctx.strokeStyle = coreInst.convertColor('rgba(230, 230, 230, ' + opa + ')');
+                    else ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + opa + ')');
+                }
+                ctx.fillText('COMBO ' + combo, coreInst.convertX(midX), coreInst.convertY(midY + 30)); // 판정 결과 아래에 출력
+            }
         }
+        
     }
 
     /**
