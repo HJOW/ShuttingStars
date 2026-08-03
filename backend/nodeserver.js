@@ -71,7 +71,6 @@ const apis = {
 
 const server = http.createServer((req, res) => {
     // URL 경로 설정 (기본값: index.html)
-    const filePath = path.join(WEB_ROOT, req.url === '/' ? 'index.html' : req.url);
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const url = req.url;
     console.log('REQUEST : ' + url + ' by ' + ip);
@@ -109,6 +108,17 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, {'Content-Type': 'application/json'});
         res.end(results, 'utf-8');
         return;
+    }
+
+    // 정적 URL 처리
+    let filePath = path.join(WEB_ROOT, req.url === '/' ? 'index.html' : req.url);
+
+    // 위 filePath 에는 URL 매개변수 Query String 이 포함되어 있을수가 있음. Query String 분리
+    const queryIndex = filePath.indexOf('?');
+    let queryString = '';
+    if(queryIndex >= 0) {
+        queryString = filePath.substring(queryIndex + 1);
+        filePath = filePath.substring(0, queryIndex);
     }
 
     // 파일 확장자 추출

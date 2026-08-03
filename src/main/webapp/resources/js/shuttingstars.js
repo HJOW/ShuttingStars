@@ -668,6 +668,9 @@ class ShuttingStarsCore {
     /** @type {URLSearchParams|null} 현재 URL에서 읽은 쿼리 매개변수들 */
     urlParameters = null;
 
+    /** @type {boolean} URL 매개변수 집행 여부 (init 동작 중 처리됨) */
+    executeUrlParams = true;
+
     /** @type {Object} 기타 페이지 URL */
     otherPages = {
         board : './community/board.html' // 'http://wo.to/board/board.php?id=a.5.hujinone11'
@@ -1303,6 +1306,8 @@ class ShuttingStarsCore {
             this.logInit('starting game...');
 
             this.rebuildBroker();
+            if(this.executeUrlParams) await this.executeURLParameters();
+
             return this.broker;
         } catch(eGlobal) {
             ShuttingStarsUtility.toast('ERROR : ' + eGlobal, true);
@@ -1468,6 +1473,30 @@ class ShuttingStarsCore {
     }
 
     /**
+     * urlParameters 값을 읽어 후속 조치 진행 (기본 호출 시, init 작업 거의 마무리 단계에서 호출됨)
+     */
+    async executeURLParameters() {
+        if(this.urlParameters == null) return;
+
+        // URL 매개변수 songtoplay 에 곡 이름을 넣은 경우, 해당 이름으로 검색 (LIKE검색) 나오는 곡들 중 맨 위의 곡 선택 처리
+        //    곡 선택 처리는 broker 의 directSelectSong 메소드를 사용하면 됨
+        const songtoplay = this.urlParameters.get('songtoplay');
+        if(songtoplay != null && songtoplay.trim().length >= 1) {
+            const songName = songtoplay.trim();
+            const songs = [];
+            for(let sdx=0; sdx<this.songs.length; sdx++) {
+                const songOne = this.songs[sdx];
+                if(songOne.name.toLowerCase().indexOf(songName.toLowerCase()) >= 0) {
+                    songs.push(songOne);
+                }
+            }
+            if(songs.length >= 1) {
+                this.broker.directSelectSong(songs[0]);
+            }
+        }
+    }
+
+    /**
      * Broker 재생성 (변경 가능한 변수들만 대리로 변경할 수 있도록 하는 중간 매개 객체)
      * @returns {Object} 새로 구성된 broker 객체
      */
@@ -1509,6 +1538,8 @@ class ShuttingStarsCore {
         this.broker.urlCtx                  = this.urlCtx                  ;
         this.broker.rsscDirName             = this.rsscDirName             ;
         this.broker.showGameTitle           = this.showGameTitle           ;
+        this.broker.urlParameters           = this.urlParameters           ;
+        this.broker.executeUrlParams        = this.executeUrlParams        ;
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
@@ -1562,6 +1593,7 @@ class ShuttingStarsCore {
             if(typeof(obj.mysophobiaMode         ) != 'undefined') { selfs.mysophobiaMode          = obj.mysophobiaMode          ; brokerSelf.mysophobiaMode          = obj.mysophobiaMode          }
             if(typeof(obj.virtualKeyForce        ) != 'undefined') { selfs.virtualKeyForce         = obj.virtualKeyForce         ; brokerSelf.virtualKeyForce         = obj.virtualKeyForce         }
             if(typeof(obj.showGameTitle          ) != 'undefined') { selfs.showGameTitle           = obj.showGameTitle           ; brokerSelf.showGameTitle           = obj.showGameTitle           }
+            if(typeof(obj.executeUrlParams       ) != 'undefined') { selfs.executeUrlParams        = obj.executeUrlParams        ; brokerSelf.executeUrlParams        = obj.executeUrlParams        }
             if(typeof(obj.urlCtx                 ) != 'undefined') { selfs.urlCtx                  = obj.urlCtx                  ; brokerSelf.urlCtx                  = obj.urlCtx                  }
             if(typeof(obj.rsscDirName            ) != 'undefined') { selfs.rsscDirName             = obj.rsscDirName             ; brokerSelf.rsscDirName             = obj.rsscDirName             }
             if(typeof(obj.fOuterWidth            ) == 'function' ) { selfs.fOuterWidth             = obj.fOuterWidth             ; brokerSelf.fOuterWidth             = obj.fOuterWidth             }
