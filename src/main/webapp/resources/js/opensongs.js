@@ -90,6 +90,7 @@ window.addEventListener('load', function() {
 
     var activePlayerDock = null;
 
+    // 플레이어 컨트롤 제거
     function removeActivePlayer() {
         if (activePlayerDock && activePlayerDock.parentNode) {
             var activeAudio = activePlayerDock.querySelector('audio');
@@ -103,22 +104,23 @@ window.addEventListener('load', function() {
         activePlayerDock = null;
     }
 
+    // Audio 재생 (컨트롤러 노출)
     function playSongAudio(title, audioUrl) {
         if (!audioUrl) return;
 
         removeActivePlayer();
 
-        var dock = document.createElement('div');
+        const dock = document.createElement('div');
         dock.className = 'song-player-dock';
 
-        var panel = document.createElement('div');
+        const panel = document.createElement('div');
         panel.className = 'song-player-panel';
 
-        var titleRoot = document.createElement('div');
+        const titleRoot = document.createElement('div');
         titleRoot.className = 'song-player-title';
         titleRoot.textContent = t.nowPlaying + ': ' + title;
 
-        var audio = document.createElement('audio');
+        const audio = document.createElement('audio');
         audio.controls = true;
         audio.loop = true;
         audio.autoplay = true;
@@ -155,7 +157,7 @@ window.addEventListener('load', function() {
         rowsRoot.innerHTML = '';
         emptyRoot.style.display = 'none';
 
-        var songList = Array.isArray(songs) ? songs : [];
+        const songList = Array.isArray(songs) ? songs : [];
         countRoot.textContent = t.songCount(songList.length);
 
         if (songList.length <= 0) {
@@ -183,6 +185,7 @@ window.addEventListener('load', function() {
             return td;
         }
 
+        // 곡 목록 출력
         songList.forEach(function(song) {
             var tr = document.createElement('tr');
             var title = song && song.name ? song.name : t.noTitle;
