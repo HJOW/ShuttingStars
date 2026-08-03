@@ -1676,6 +1676,12 @@ class ShuttingStarsCore {
                 if(typeof(selfs.fOnShutdownCalled) == 'function') {
                     newList.push('exit');
                 }
+
+                // TODO : fittiming 숨기기 (테스트 후 다시 오픈 예정)
+                const fittimingIndex = newList.indexOf('fittiming');
+                if(fittimingIndex >= 0) { newList.splice(fittimingIndex, 1); }
+
+                // 응답
                 resolve(newList);
             };
 
@@ -7724,7 +7730,7 @@ class ShuttingStarsCore {
                 // 보정 화면 처리 - 노트 생성
                 if(this.state == 'fitting') {
                     const floored = Math.floor(this.elapsedTime);
-                    if(floored % 16 == 0) {
+                    if(floored % 32 == 0) {
                         let creatingTime = floored + (128 * this.noteSpeedMultiplier * this.noteSpeedFixedConst); // 노트 생성 타이밍 (참고 : calculateNoteY)
                         if(creatingTime >= 768) creatingTime = creatingTime - 768;
 
