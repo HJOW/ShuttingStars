@@ -3965,7 +3965,7 @@ class ShuttingStarsCore {
      */
     handleNotePlacerCalledIn(notePlacer, pwConsumed) {
         let idx = 0;
-        if(this.singleKey) notePlacer = this.notePlacers[0];
+        if(this.singleKey || this.state == 'fitting') notePlacer = this.notePlacers[0];
         const processingLine = notePlacer.line;
 
         // SSNotePlacer 폭발 처리
@@ -8213,6 +8213,7 @@ class ShuttingStarsCore {
             let recordYn = true;
             if(this.createMode) recordYn = false;
             else if(this.song instanceof CustomMySSSong) recordYn = false;
+            else if(this.state == 'fitting') recordYn = false;
 
             if(recordYn) {
                 // Credit 반영
@@ -12294,7 +12295,7 @@ class SSNotePlacer extends SSNoteKeyObject {
      * @param {ShuttingStarsCore} coreInst
      */
     draw(ctx, coreInst) {
-        if(coreInst.singleKey && this.line != 0) return;
+        if((coreInst.singleKey || coreInst.state == 'fitting') && this.line != 0) return;
         super.draw(ctx, coreInst);
     }
 }
