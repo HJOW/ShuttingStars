@@ -13,17 +13,18 @@
 window.addEventListener('load', function() {
     // 브라우저 언어를 감지해 한국어/영어 중 표시 언어를 결정한다.
     function detectLocale() {
-        var language = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+        const language = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
         return language.indexOf('ko') === 0 ? 'ko' : 'en';
     }
 
     // 언어별 UI 문자열 사전
-    var i18n = {
+    const i18n = {
         en: {
             pageTitle: 'Open Songs',
             pageDesc: 'List of open-license songs included in Shutting Stars',
             licenseNote: 'Allowed for general and commercial use, but you may not claim ownership.',
             loading: 'Loading...',
+            searchPlaceholder: 'Search songs',
             songCount: function(count) { return 'Total ' + count + ' songs'; },
             noSongs: 'No songs to display.',
             colTitle: 'Title',
@@ -43,6 +44,7 @@ window.addEventListener('load', function() {
             licenseNote: '일반 및 상업 목적으로 사용이 허용되지만, 소유권을 주장하실 수는 없습니다.',
             pageDesc: 'Shutting Stars에 수록된 오픈 라이선스 곡 목록',
             loading: '로딩 중...',
+            searchPlaceholder: '곡 검색',
             songCount: function(count) { return '총 ' + count + '곡'; },
             noSongs: '표시할 곡이 없습니다.',
             colTitle: '음악 제목',
@@ -61,21 +63,26 @@ window.addEventListener('load', function() {
 
     // 선택된 언어 문자열을 화면 요소에 반영한다.
     function applyStaticTexts(t) {
-        var titleRoot = document.getElementById('pageTitle');
-        var descRoot = document.getElementById('pageDesc');
-        var licenseNoteRoot = document.getElementById('licenseNote');
-        var countRoot = document.getElementById('songCount');
-        var emptyRoot = document.getElementById('songEmpty');
-        var colTitleRoot = document.getElementById('colTitle');
-        var colComposerRoot = document.getElementById('colComposer');
-        var colBpmRoot = document.getElementById('colBpm');
-        var colDownloadRoot = document.getElementById('colDownload');
-        var colPlayRoot = document.getElementById('colPlay');
+        const titleRoot = document.getElementById('pageTitle');
+        const descRoot = document.getElementById('pageDesc');
+        const licenseNoteRoot = document.getElementById('licenseNote');
+        const countRoot = document.getElementById('songCount');
+        const searchRoot = document.getElementById('songSearch');
+        const emptyRoot = document.getElementById('songEmpty');
+        const colTitleRoot = document.getElementById('colTitle');
+        const colComposerRoot = document.getElementById('colComposer');
+        const colBpmRoot = document.getElementById('colBpm');
+        const colDownloadRoot = document.getElementById('colDownload');
+        const colPlayRoot = document.getElementById('colPlay');
 
         if (titleRoot) titleRoot.textContent = t.pageTitle;
         if (descRoot) descRoot.textContent = t.pageDesc;
         if (licenseNoteRoot) licenseNoteRoot.textContent = t.licenseNote;
         if (countRoot) countRoot.textContent = t.loading;
+        if (searchRoot) {
+            searchRoot.placeholder = t.searchPlaceholder;
+            searchRoot.setAttribute('aria-label', t.searchPlaceholder);
+        }
         if (emptyRoot) emptyRoot.textContent = t.noSongs;
         if (colTitleRoot) colTitleRoot.textContent = t.colTitle;
         if (colComposerRoot) colComposerRoot.textContent = t.colComposer;
@@ -84,16 +91,36 @@ window.addEventListener('load', function() {
         if (colPlayRoot) colPlayRoot.textContent = t.colPlay;
     }
 
-    var locale = detectLocale();
-    var t = i18n[locale] || i18n.en;
+    const locale = detectLocale();
+    const t = i18n[locale] || i18n.en;
     applyStaticTexts(t);
 
-    var activePlayerDock = null;
+    // 이미 불러온 곡 행만 검색어에 따라 표시한다.
+    function filterSongRows() {
+        const rowsRoot = document.getElementById('songRows');
+        const searchRoot = document.getElementById('songSearch');
+        const emptyRoot = document.getElementById('songEmpty');
+        if (!rowsRoot || !searchRoot || !emptyRoot) return;
+
+        const keyword = searchRoot.value.trim().toLowerCase();
+        let visibleCount = 0;
+        Array.prototype.forEach.call(rowsRoot.querySelectorAll('tr'), function(row) {
+            const matches = row.textContent.toLowerCase().indexOf(keyword) >= 0;
+            row.style.display = matches ? '' : 'none';
+            if (matches) visibleCount += 1;
+        });
+        emptyRoot.style.display = visibleCount > 0 ? 'none' : 'block';
+    }
+
+    const searchRoot = document.getElementById('songSearch');
+    if (searchRoot) searchRoot.addEventListener('input', filterSongRows);
+
+    let activePlayerDock = null;
 
     // 플레이어 컨트롤 제거
     function removeActivePlayer() {
         if (activePlayerDock && activePlayerDock.parentNode) {
-            var activeAudio = activePlayerDock.querySelector('audio');
+            const activeAudio = activePlayerDock.querySelector('audio');
             if (activeAudio) {
             activeAudio.pause();
             activeAudio.removeAttribute('src');
@@ -132,7 +159,7 @@ window.addEventListener('load', function() {
         document.body.appendChild(dock);
 
         activePlayerDock = dock;
-        var playPromise = audio.play();
+        const playPromise = audio.play();
         if (playPromise && typeof playPromise.catch === 'function') {
             playPromise.catch(function() {});
         }
@@ -144,14 +171,17 @@ window.addEventListener('load', function() {
             initializingDelayTime : 500
         });
     });
+
+    // 곡 목록 불러오기
     ShuttingStars.getAllSongPromise(urlCtx, function(songOne) {
         if(! songOne.official  ) return false;
         if(! songOne.opensource) return false;
         return true;
     }).then(function(songs) {
-        var rowsRoot = document.getElementById('songRows');
-        var countRoot = document.getElementById('songCount');
-        var emptyRoot = document.getElementById('songEmpty');
+        const rowsRoot = document.getElementById('songRows');
+        const countRoot = document.getElementById('songCount');
+        const searchRoot = document.getElementById('songSearch');
+        const emptyRoot = document.getElementById('songEmpty');
         if (!rowsRoot || !countRoot || !emptyRoot) return;
 
         rowsRoot.innerHTML = '';
@@ -159,6 +189,7 @@ window.addEventListener('load', function() {
 
         const songList = Array.isArray(songs) ? songs : [];
         countRoot.textContent = t.songCount(songList.length);
+        if (searchRoot) searchRoot.style.display = '';
 
         if (songList.length <= 0) {
             emptyRoot.style.display = 'block';
@@ -175,65 +206,67 @@ window.addEventListener('load', function() {
 
         // 값이 비어 있을 때 대체 텍스트를 넣어 테이블 셀을 생성한다.
         function cellText(value, fallbackText, fallbackClassName) {
-            var td = document.createElement('td');
+            const td = document.createElement('td');
             if (value === undefined || value === null || value === '') {
-            td.textContent = fallbackText;
-            td.className = fallbackClassName;
+                td.textContent = fallbackText;
+                td.className = fallbackClassName;
             } else {
-            td.textContent = String(value);
+                td.textContent = String(value);
             }
             return td;
         }
 
         // 곡 목록 출력
         songList.forEach(function(song) {
-            var tr = document.createElement('tr');
-            var title = song && song.name ? song.name : t.noTitle;
-            var composer = song && song.composer ? song.composer : '';
-            var bpm = song && song.bpm !== undefined && song.bpm !== null ? song.bpm : '';
+            const tr = document.createElement('tr');
+            const title = song && song.name ? song.name : t.noTitle;
+            const composer = song && song.composer ? song.composer : '';
+            const bpm = song && song.bpm !== undefined && song.bpm !== null ? song.bpm : '';
 
             tr.appendChild(cellText(title, t.noTitle, ''));
             tr.appendChild(cellText(composer, t.noValue, 'song-composer-empty'));
             tr.appendChild(cellText(bpm, t.noValue, 'song-bpm-empty'));
 
-            var downloadTd = document.createElement('td');
-            var downloadUrl = resolveUrl(song && (song.musicUrl || song.musicAlterUrl));
+            const downloadTd = document.createElement('td');
+            const downloadUrl = resolveUrl(song && (song.musicUrl || song.musicAlterUrl));
             if (downloadUrl) {
-            var a = document.createElement('a');
-            a.className = 'song-download-link';
-            a.href = downloadUrl;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.textContent = t.download;
-            downloadTd.appendChild(a);
+                const a = document.createElement('a');
+                a.className = 'song-download-link';
+                a.href = downloadUrl;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.textContent = t.download;
+                downloadTd.appendChild(a);
             } else {
-            downloadTd.className = 'song-download-empty';
-            downloadTd.textContent = t.noValue;
+                downloadTd.className = 'song-download-empty';
+                downloadTd.textContent = t.noValue;
             }
             tr.appendChild(downloadTd);
 
-            var playTd = document.createElement('td');
+            const playTd = document.createElement('td');
             if (downloadUrl) {
-            var playButton = document.createElement('button');
-            playButton.className = 'song-play-button';
-            playButton.type = 'button';
-            playButton.textContent = t.play;
-            playButton.addEventListener('click', function() {
-                playSongAudio(title, downloadUrl);
-            });
-            playTd.appendChild(playButton);
+                const playButton = document.createElement('button');
+                playButton.className = 'song-play-button';
+                playButton.type = 'button';
+                playButton.textContent = t.play;
+                playButton.addEventListener('click', function() {
+                    playSongAudio(title, downloadUrl);
+                });
+                playTd.appendChild(playButton);
             } else {
-            playTd.className = 'song-play-empty';
-            playTd.textContent = t.noValue;
+                playTd.className = 'song-play-empty';
+                playTd.textContent = t.noValue;
             }
             tr.appendChild(playTd);
 
             rowsRoot.appendChild(tr);
         });
 
+        filterSongRows();
+
         // console.log(rowsRoot.innerHTML)
     }).catch(function(error) {
-        var errorRoot = document.getElementById('loadError');
+        const errorRoot = document.getElementById('loadError');
         if (errorRoot) {
             errorRoot.textContent = t.loadError + (error && error.message ? error.message : '');
             errorRoot.style.display = 'block';

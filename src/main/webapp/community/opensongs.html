@@ -109,6 +109,36 @@
         font-size: 0.95rem;
       }
 
+      .opensongs-list-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .opensongs-list-tools .opensongs-count {
+        margin-top: 0;
+      }
+
+      .opensongs-search {
+        width: min(280px, 100%);
+        min-height: 34px;
+        box-sizing: border-box;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 10px;
+        background: var(--bg-elev);
+        color: var(--text);
+        font: inherit;
+      }
+
+      .opensongs-search:focus {
+        border-color: var(--accent);
+        outline: 2px solid rgba(87, 179, 255, 0.25);
+        outline-offset: 1px;
+      }
+
       .opensongs-table-wrap {
         border: 1px solid var(--line);
         border-radius: 12px;
@@ -244,6 +274,16 @@
           font-size: 1.5rem;
         }
 
+        .opensongs-list-tools {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .opensongs-search {
+          width: 100%;
+        }
+
         .opensongs-table thead th,
         .opensongs-table tbody td {
           padding: 10px 8px;
@@ -272,7 +312,10 @@
         <h1 id="pageTitle" class="opensongs-title">Open Songs</h1>
         <div id="pageDesc" class="opensongs-desc">List of open-license songs included in Shutting Stars</div>
         <div id="licenseNote" class="opensongs-license-note">Allowed for general and commercial use, but you may not claim ownership.</div>
-        <div id="songCount" class="opensongs-count">Loading...</div>
+        <div class="opensongs-list-tools">
+          <div id="songCount" class="opensongs-count">Loading...</div>
+          <input id="songSearch" class="opensongs-search" type="search" placeholder="Search songs" aria-label="Search songs" autocomplete="off" style="display: none;"/>
+        </div>
       </header>
 
       <div class="opensongs-table-wrap">
