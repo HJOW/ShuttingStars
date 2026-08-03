@@ -377,7 +377,7 @@ class ShuttingStarsCore {
     singleKey = false;
 
     /** @type {Array<string>} 기본 상태들 */
-    basicStates = ['title', 'firstset', 'menu', 'songchoosing', 'songtitle', 'playing', 'gameover', 'result', 'listenchoosing', 'listentitle', 'listenplaying', 'setting', 'credit', 'recordlist', 'recorddet', 'empty'];
+    basicStates = ['title', 'firstset', 'menu', 'songchoosing', 'songtitle', 'playing', 'gameover', 'result', 'listenchoosing', 'listentitle', 'listenplaying', 'setting', 'credit', 'recordlist', 'recorddet', 'fitting', 'empty'];
     /** @type {string} 현재 상태 값 */
     state = 'title';
     /** @type {Array<ShuttingStarsState>} 상태 객체들, 기본 상태를 제외한 상태들은 이 배열로 관리, 상태 값은 이 배열 내 객체들의 name 속성에 해당 */
@@ -1383,7 +1383,7 @@ class ShuttingStarsCore {
 
             // 상태 별 가상 키 및 마우스 이벤트 부여
             if(this.basicStates.indexOf(state) >= 0) { // 기본 상태들
-                if(state == 'playing') {
+                if(state == 'playing' || state == 'fitting') {
                     // 플레이 중 - 설정된 키 모두 출력
                     for(idx=0; idx<this.keyList.length; idx++) {
                         let keyOne = this.keyList[idx];
@@ -1415,12 +1415,12 @@ class ShuttingStarsCore {
                 }
 
                 // 곡 준비상태 초기화
-                if(state != 'playing' && state != 'listenplaying') {
+                if(state != 'playing' && state != 'listenplaying' && state != 'fitting') {
                     this.songPrepared = false;
                 }
 
                 // 일부 상태는 스테이지 리셋이 필요
-                if(state == 'menu' || state == 'playing' || state == 'listenplaying' || state == 'songchoosing' || state == 'songtitle' || state == 'listenchoosing' || state == 'listentitle') {
+                if(state == 'menu' || state == 'playing' || state == 'listenplaying' || state == 'fitting' || state == 'songchoosing' || state == 'songtitle' || state == 'listenchoosing' || state == 'listentitle') {
                     await this.resetStage();
                 }
 
@@ -2737,7 +2737,7 @@ class ShuttingStarsCore {
                 if(this.ss3d != null && (! this.disable3d)) {
                     this.ss3d.onSongPlayPreparing(this);
                 }
-            } else if(this.state == 'playing' || this.state == 'listenplaying') { // 곡이 플레이 상황일 경우 처리
+            } else if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') { // 곡이 플레이 상황일 경우 처리
                 resetProcessed = true;
                 diff = this.song.difficulties[ this.difficulty.index ];
 
@@ -2769,7 +2769,7 @@ class ShuttingStarsCore {
                     // 노트가 올라가는 시간은 주고 재생 시작
                     const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                     setTimeout(() => {
-                        if(selfs.state != 'playing' && selfs.state != 'listenplaying') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+                        if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
 
                         selfs.youtubePlayer.playVideo();
 
@@ -2780,7 +2780,7 @@ class ShuttingStarsCore {
                     // 노트가 올라가는 시간은 주고 재생 시작
                     const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                     setTimeout(() => {
-                        if(selfs.state != 'playing' && selfs.state != 'listenplaying') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+                        if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
 
                         selfs.audio.play();
 
@@ -2798,7 +2798,7 @@ class ShuttingStarsCore {
                     // audio 와 동일하나 BGA 를 대신 사용
                     const playingGap = (selfs.songBitGap * selfs.stageRows * 2) + selfs.songTiming;
                     setTimeout(() => {
-                        if(selfs.state != 'playing' && selfs.state != 'listenplaying') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
+                        if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') return; // 노트 생성용 재생 전 esc 눌러 나가버린 경우 --> 바로 중단
 
                         selfs.videoBga.play();
                         selfs.videoBga.volume = 0.8;
@@ -2813,8 +2813,9 @@ class ShuttingStarsCore {
                 this.playPrepared = true;
 
                 if(this.backend != null) {
-                    if(this.state == 'playing') { try { this.backend.logEvent('PLAY : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
-                    else                        { try { this.backend.logEvent('LISTEN : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                    if(     this.state == 'playing') { try { this.backend.logEvent('PLAY    : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                    else if(this.state == 'fitting') { try { this.backend.logEvent('FITTING : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                    else                             { try { this.backend.logEvent('LISTEN  : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
                 }
             }
         } else { // 그외의 경우
@@ -2996,7 +2997,7 @@ class ShuttingStarsCore {
 
                 this.keyEventDisabled = false;
                 if(this.audioBackground != null) { 
-                    if(this.state != 'playing' && this.state != 'listenplaying') this.audioBackground.play(); 
+                    if(this.state != 'playing' && this.state != 'listenplaying' && this.state != 'fitting') this.audioBackground.play(); 
                 }
                 if(this.youtubePopPlayer != null) {
                     this.youtubePopPlayer.destroy();
@@ -3026,7 +3027,7 @@ class ShuttingStarsCore {
                 this.handleKeyInputListenChoosing(key, vkeyExplosion);
             } else if(this.state == 'setting') {
                 this.handleKeyInputSetting(key, vkeyExplosion);
-            } else if(this.state == 'playing' || this.state == 'listenplaying') {
+            } else if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') {
                 this.handleKeyInputPlaying(key, vkeyExplosion);
             } else if(this.state == 'recordlist') {
                 this.handleKeyInputRecordList(key, vkeyExplosion);
@@ -4524,7 +4525,7 @@ class ShuttingStarsCore {
             // 현재 게임 상태별 렌더링
             if(this.basicStates.indexOf(this.state) >= 0) {
                 // 기본 상태
-                if(this.state == 'playing' || this.state == 'gameover' || this.state == 'listenplaying') {
+                if(this.state == 'playing' || this.state == 'gameover' || this.state == 'listenplaying' || this.state == 'fitting') {
                     this.renderPlaying();
                 } else if(this.state == 'firstset') {
                     this.renderFirstSet();
@@ -5020,7 +5021,7 @@ class ShuttingStarsCore {
      * 공통 공지사항 (타이틀, 메뉴 화면에서 사용) 출력
      */
     renderNoticeBottom() {
-        if(this.state == 'playing' || this.state == 'listenplaying') return;
+        if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') return;
 
         let label = (this.language == 'ko' ? this.noticeKo : this.noticeEn);
         if(label == null) return;
@@ -6953,7 +6954,7 @@ class ShuttingStarsCore {
                     selfs.pops.dim.classList.add('invisible');
                     selfs.pops.youtube.classList.add('invisible');
                     if(selfs.audioBackground != null) { 
-                        if(selfs.state != 'playing' && selfs.state != 'listenplaying') selfs.audioBackground.play(); 
+                        if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') selfs.audioBackground.play(); 
                     }
                     selfs.youtubePopPlayer.destroy();
                     selfs.youtubePopPlayer = null;
@@ -7405,7 +7406,7 @@ class ShuttingStarsCore {
             this.refreshNoteYLocations();
 
             // pw 조금 회복
-            if(this.state == 'playing' || this.state == 'listenplaying') {
+            if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') {
                 this.pw++;
                 if(this.pw < 0) this.pw = 0;
                 else if(this.pw > this.pwMax) this.pw = this.pwMax;
@@ -7526,7 +7527,7 @@ class ShuttingStarsCore {
                 if(this.creditIndexIncreases >= this.creditIndexIncreaseMax) { this.creditIndex++; this.creditIndexIncreases = 0; }
                 if(this.creditIndex < 0) this.creditIndex = 0;
                 if(this.creditIndex >= this.creditContents.length) this.creditIndex = 0;
-            } else if(this.state == 'playing' || this.state == 'listenplaying') { // 플레이 중 처리
+            } else if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') { // 플레이 중 처리
                 // 재개 대기 타이밍 처리, SSNoteKeyObject 처리중 애니메이션 재생 진행상황 증가
                 if(! this.paused) {
                     // 재개 타이밍 처리
@@ -7627,7 +7628,7 @@ class ShuttingStarsCore {
 
             if(song == null) { this.setState('menu'); return; } // 곡이 선정되지 않은 경우 시간 진행 없음
             if(this.difficulty == null || typeof(this.difficulty) == 'undefined') { this.setState('menu'); return; } // 곡 내 난이도가 선정되지 않은 경우 시간 진행 없음
-            if(this.state != 'playing' && this.state != 'listenplaying') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
+            if(this.state != 'playing' && this.state != 'listenplaying' && this.state != 'fitting') return; // 곡이 재생 중이 아닌 경우 시간 진행 없음
 
             // Audio 가 끝나지는 않았으나 로딩된 버퍼가 다 됐는지 체크하기 위하여 직전 elapsedTime 백업
             this.elapsedTimeLast = this.elapsedTime;
@@ -7832,7 +7833,7 @@ class ShuttingStarsCore {
             console.error(e);
             ShuttingStarsUtility.toast('ERROR : ' + e);
             if(this.state == 'playing') this.onGameOver();
-            else if(this.state == 'listenplaying') this.onSongEnd();
+            else if(this.state == 'listenplaying' || this.state == 'fitting') this.onSongEnd();
         }
     }
 
@@ -8088,8 +8089,9 @@ class ShuttingStarsCore {
             }
         }
 
-        if(beforeState == 'playing') { try { this.backend.logEvent('PLAY END : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
-        else                         { try { this.backend.logEvent('LISTEN END : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+        if(beforeState == 'playing') { try { this.backend.logEvent('PLAY END    : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+        if(beforeState == 'fitting') { try { this.backend.logEvent('FITTING END : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+        else                         { try { this.backend.logEvent('LISTEN END  : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
 
         this.fGameEvent({ "event" : 'songend', "broker" : this.broker });
     }
@@ -8608,7 +8610,7 @@ class ShuttingStarsCore {
             selfs.pops.dim.classList.add('invisible');
 
             if(selfs.audioBackground != null) {
-                if(selfs.state != 'playing' && selfs.state != 'listenplaying') selfs.audioBackground.play();
+                if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') selfs.audioBackground.play();
             }
             if(selfs.youtubePopPlayer != null) {
                 selfs.youtubePopPlayer.destroy();
@@ -8686,7 +8688,7 @@ class ShuttingStarsCore {
             selfs.pops.dim.classList.add('invisible');
             selfs.keyEventDisabled = false;
             if(selfs.audioBackground != null) {
-                if(selfs.state != 'playing' && selfs.state != 'listenplaying') selfs.audioBackground.play();
+                if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') selfs.audioBackground.play();
             }
             if(selfs.youtubePopPlayer != null) {
                 selfs.youtubePopPlayer.destroy();
@@ -9798,7 +9800,7 @@ class ShuttingStarsCore {
      */
     refreshNoteYLocations() {
         let notePlacer;
-        if((this.state == 'playing' || this.state == 'listenplaying') && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
+        if((this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') && this.elapsedTime >= -100 && this.playPrepared && this.song != null) {
             for(let idx=0; idx<this.objectsPlaying.length; idx++) {
                 const obj = this.objectsPlaying[idx];
                 if((obj instanceof SSNote) || (obj instanceof SSLongNote)) {
