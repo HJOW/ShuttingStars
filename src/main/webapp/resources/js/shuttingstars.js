@@ -513,7 +513,7 @@ class ShuttingStarsCore {
 
     // 메뉴 화면 관련
     /** @type {Array<string>} 메뉴들 */
-    menuList = ['play', 'listen', 'records', 'setting', 'credit'];
+    menuList = ['play', 'listen', 'records', 'fittiming', 'setting', 'credit'];
     /** @type {Array<string>} 위 menuList 에 데이터가 추가됨 */
     menuListDynamic = [];
     /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
@@ -2645,6 +2645,7 @@ class ShuttingStarsCore {
                                 this.audio = new Audio(audioUrl);
                                 this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
                                 this.audio.preload = 'auto';
+                                this.audio.loop = false;
                                 
                                 try {
                                     // Audio Context ( https://developer.mozilla.org/ko/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API ) 준비 (시각화)
@@ -2738,6 +2739,73 @@ class ShuttingStarsCore {
                     this.ss3d.onSongPlayPreparing(this);
                 }
             } else if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') { // 곡이 플레이 상황일 경우 처리
+                if(this.state == 'fitting') {
+                    try {
+                        this.closeAudioSources();
+
+                        // 보정 화면인 경우 위 title 상태를 거치지 않았으므로 여기서 곡 초기화를 해야 함
+                        this.song = {
+                            "name" : "FITTING",
+                            "composer" : "Lyria",
+                            "noteWriter" : "HJOW",
+                            "bpm"  : 120,
+                            "musicUrl" : "[RSSC]songs/ai/sunlit_velocity.mp3",
+                            "musicAlterUrl" : "",
+                            "useYoutube" : false,
+                            "youtubeVideoId" : "",
+                            "thumbnailUrl" : "",
+                            "description" : "",
+                            "bgaUrl" : "",
+                            "loadingTime" : 10,
+                            "endTime" : 0,
+                            "timeConstant": 0,
+                            "timeMultiplier": 1,
+                            "noteMultiplier": 1,
+                            "test": false,
+                            "onlyRandom": false,
+                            "autoStars": true,
+                            "serial": "nai4ilhohiterhuenEHNIEHGERGVer643643ERGgD39p4g",
+                            "decorations": [],
+                            "difficulties": [
+                                {
+                                    "index": 0,
+                                    "difficultyLabel": "easy",
+                                    "difficultyLevel": 1,
+                                    "patterns": [],
+                                    "autoCreate": false
+                                }
+                            ]
+                        };
+                        this.difficulty = this.song.difficulties[0];
+                        this.difficultyLevel = this.difficulty.difficultyLevel;
+                        this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+
+                        this.audio = new Audio( this.convertURL( this.song.musicUrl ) );
+                        this.audio.volume = (this.volume * this.volumeSongAudio * this.volumeMultiplier);
+                        this.audio.preload = 'auto';
+                        this.audio.loop = true; // 반복
+
+                        this.audioCtx       = new (window.AudioContext || window.webkitAudioContext)();
+                        this.audioAnalyser  = this.audioCtx.createAnalyser();
+                        this.audioSource    = this.audioCtx.createMediaElementSource(this.audio);
+                        this.audioSource.connect(this.audioAnalyser);
+                        this.audioAnalyser.connect(this.audioCtx.destination);
+                        this.audioAnalyser.fftSize = 256;
+                        this.audioBufferLen = this.audioAnalyser.frequencyBinCount;
+                        this.audioBuffer    = new Uint8Array(this.audioBufferLen);
+
+                        this.elapsedTimeSynchronized = false;
+                        this.songPrepared = true;
+                    } catch(exFit) {
+                        console.error(exFit);
+                        ShuttingStarsUtility.toast('Failed to prepare fitting mode !', true);
+                        this.setState('menu');
+                        return;
+                    }
+                }
+
+                // 플레이 직전 준비상황 처리
+
                 resetProcessed = true;
                 diff = this.song.difficulties[ this.difficulty.index ];
 
@@ -3120,6 +3188,9 @@ class ShuttingStarsCore {
 
                 this.playSE('accept1');
                 this.setState('setting');
+            } else if(selfs.menuChoosing == 'fittiming') { // 메뉴 - 타이밍 보정
+                this.playSE('accept1');
+                this.setState('fitting');
             } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
                 this.playSE('special1');
                 this.prepareCreditList();
@@ -3625,7 +3696,7 @@ class ShuttingStarsCore {
                     if(this.songTiming < 0) this.songTiming = 0;
                 } else if(this.settingChoosing == 'judgeTiming') {
                     this.judgeTiming--;
-                    if(this.judgeTiming < -200) this.judgeTiming = -200;
+                    if(this.judgeTiming < -1000) this.judgeTiming = -1000;
                 } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
                     this.noteSpeedMultiplier--;
                     if(this.noteSpeedMultiplier < 0.1) this.noteSpeedMultiplier = 0.1;
@@ -3644,7 +3715,7 @@ class ShuttingStarsCore {
                     if(this.songTiming >= 1000) this.songTiming = 1000;
                 } else if(this.settingChoosing == 'judgeTiming') {
                     this.judgeTiming++;
-                    if(this.judgeTiming >= 200) this.judgeTiming = 200;
+                    if(this.judgeTiming >= 1000) this.judgeTiming = 1000;
                 } else if(this.settingChoosing == 'setNoteSpeedMultiplier') {
                     this.noteSpeedMultiplier++;
                     if(this.noteSpeedMultiplier >= 8.0) this.noteSpeedMultiplier = 8.0;
@@ -3680,9 +3751,14 @@ class ShuttingStarsCore {
         let index = 0;
 
         if(key == this.enterKey) {
-            // 플레이 중이며 엔터 키
-            if(this.paused) { // 일시정지 중일 때 --> 재개 처리
-                this.resumeSong();
+            if(this.state == 'fitting') {
+                // 타이밍 보정 중 - 설정 저장 후 메뉴로 나가기
+                this.saveSettings().then(() => { selfs.onSongEnd().then(() => { selfs.setState('menu'); }); });
+            } else {
+                // 플레이 중이며 엔터 키
+                if(this.paused) { // 일시정지 중일 때 --> 재개 처리
+                    this.resumeSong();
+                }
             }
         } else if(key == this.escKey) {
             // 플레이 중이며 ESC키
@@ -3703,14 +3779,19 @@ class ShuttingStarsCore {
                 }
                 else this.onGameOver(); // 게임 중인 경우는 포기 처리
             } else {
-                if(this.elapsedTime >= 10) {
-                    // 일시정지 중이 아닐 때 --> 일시정지 시작
-                    this.pauseSong();
+                // 일시정지 중이 아닐 때 ESC 입력
+                if(this.elapsedTime >= 10) { // 초반 10초 이내에는 ESC 입력 무시 (지금 일시정지하면 audio 로딩완료 후 곡은 재생되는데 게임만 일시정지되는 상황 발생)
+                    if(this.state == 'playing' || this.state == 'listenplaying') { // 게임 혹은 감상 중
+                        this.pauseSong();
+                    } else { // 그외의 경우 바로 메인 메뉴로 이동
+                        this.onSongEnd().then(() => { selfs.setState('menu'); });
+                    }
+                    
                 }
             }
         } else {
-            // 노트 처리
             if(this.keyList.indexOf(key) >= 0) {
+                // 노트 처리
                 let idx;
                 let notePlacer = null; // 해당 키에 맞는 SSNotePlacer 를 찾아야 함
                 for(idx=0; idx<this.notePlacers.length; idx++) {
@@ -3722,6 +3803,21 @@ class ShuttingStarsCore {
                 if(notePlacer == null) return;
 
                 this.handleNotePlacerCalled(notePlacer);
+            } else if(this.arrowKeys.indexOf(key) >= 0) {
+                // 방향키 (타이밍 보정 시에만 사용)
+                if(this.state == 'fitting') {
+                    if(key == this.arrowKeys[0]) { // UP
+                        // 다른 종류의 타이밍도 변경 기능 넣을 때 구현 예정
+                    } else if(key == this.arrowKeys[1]) { // DOWN
+                        // 다른 종류의 타이밍도 변경 기능 넣을 때 구현 예정
+                    } else if(key == this.arrowKeys[2]) { // LEFT
+                        this.judgeTiming--;
+                        if(this.judgeTiming < -1000) this.judgeTiming = -1000;
+                    } else if(key == this.arrowKeys[3]) { // RIGHT
+                        this.judgeTiming++;
+                        if(this.judgeTiming > 1000) this.judgeTiming = 1000;
+                    }
+                }
             }
         }
 
@@ -4394,6 +4490,10 @@ class ShuttingStarsCore {
             else this.hp -= (4.0 + (this.missCombo >= 1 ? (  this.missCombo >= 10 ? 2 : 1 ) : 0));
             if(this.hp < 0) this.hp = 0;
         }
+
+        if(this.state == 'fitting') { // 보정 중인 경우 HP 감소 없음
+            this.hp = 100;
+        }
     }
     
     /**
@@ -4747,6 +4847,51 @@ class ShuttingStarsCore {
             this.ctx.fillText(this.trans('AUTO PLAYING'), this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 3));
         }
 
+        // 타이밍 보정화면 출력
+        if(this.state == 'fitting') {
+            // 사용법 출력
+            label = ShuttingStarsUtility.replaceString(this.trans('Modify the timing value with the arrow keys, and press %1 key to save !'), '%1', this.enterKey);
+            fontSize = this.convertFontSize(12);
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.textAlign = "right";
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 15 / 20));
+
+            label = this.trans('You can also test it now !');
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 16 / 20));
+
+            // 현재의 타이밍값 출력
+            label = this.trans('Judge Timing') + ' : ' + this.judgeTiming;
+            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 17 / 20));
+
+            // 현재 타임 출력
+            label = String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME');
+            if(this.elapsedTime < 0) label = this.trans('Please wait...');
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 18 / 20));
+
+            // 키 안내 출력
+            label = this.trans('MOVE : ');
+            for(let idx=0; idx<this.arrowKeys.length; idx++) {
+                let arrowKeyOne = this.arrowKeys[idx];
+                let arrowKeyLabel = String(arrowKeyOne);
+                if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
+                else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
+                else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
+                else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
+                else arrowKeyLabel = String(arrowKeyOne);
+
+                label += arrowKeyLabel;
+            }
+
+            label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
+            label += '    ' + this.trans('EXIT : ') + this.escKey;
+            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 19 / 20));
+        }
+
         // 게임 오버 그리기
         if(this.state == 'gameover') {
             fontSize = this.convertFontSize(20);
@@ -4901,6 +5046,7 @@ class ShuttingStarsCore {
 
             if(menuOne == 'play'     ) label = this.trans('PLAY');
             if(menuOne == 'setting'  ) label = this.trans('SETTING');
+            if(menuOne == 'fittiming') label = this.trans('FIT TIMING');
             if(menuOne == 'listen'   ) label = this.trans('LISTEN');
             if(menuOne == 'credit'   ) label = this.trans('CREDIT');
             if(menuOne == 'community') label = this.trans('COMMUNITY');
@@ -7436,7 +7582,14 @@ class ShuttingStarsCore {
                         obj.removed = true;
                         obj.hidden  = true;
                     }
-                    // 노트는 제거하지 않음
+                    // fitting 인 경우만 노트를 제거 (그외의 경우는 검증 (나중에 구현) 을 위해 남겨두기)
+                    if(this.state == 'fitting') {
+                        if(obj.removed) {
+                            this.objectsPlaying.splice(idx, 1);
+                            idx--;
+                            continue;
+                        }
+                    }
                 } else if(obj instanceof SSNotePlacer) {
                     if(obj.explosing >= obj.explosingMax) obj.explosing = 0;
                 } else if(obj instanceof SSJudgeMark) {
@@ -7565,6 +7718,22 @@ class ShuttingStarsCore {
                                 }
                             }
                         }
+                    }
+                }
+
+                // 보정 화면 처리 - 노트 생성
+                if(this.state == 'fitting') {
+                    const floored = Math.floor(this.elapsedTime);
+                    if(floored % 16 == 0) {
+                        let creatingTime = floored + (128 * this.noteSpeedMultiplier * this.noteSpeedFixedConst); // 노트 생성 타이밍 (참고 : calculateNoteY)
+                        if(creatingTime >= 768) creatingTime = creatingTime - 768;
+
+                        const note = new SSNote(0, this);
+                        note.id = this.lastObjectId; this.lastObjectId++;
+                        note.patternId = note.id;
+                        note.originalTiming = creatingTime;
+
+                        this.objectsPlaying.push(note);
                     }
                 }
             }
@@ -11078,6 +11247,8 @@ class ShuttingStarsCore {
                     this.accessililityLog('    Menu ' + (idx + 1) + ": Play." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
                 } else if(menuKeyword == 'setting') {
                     this.accessililityLog('    Menu ' + (idx + 1) + ": Setting." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
+                } else if(menuKeyword == 'fittiming') {
+                    this.accessililityLog('    Menu ' + (idx + 1) + ": Fit Timing.." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
                 }  else if(menuKeyword == 'listen') {
                     this.accessililityLog('    Menu ' + (idx + 1) + ": Listen." + (this.menuChoosing == menuKeyword ? ' (Currently selected)' : ''));
                 }  else if(menuKeyword == 'credit') {
@@ -11144,6 +11315,8 @@ class ShuttingStarsCore {
             this.accessililityLog('    BPM : ' + this.song.bpm);
         } else if(this.state == 'setting') {
             this.accessililityLog('ShuttingStars - Setting screen.');
+        } else if(this.state == 'fittiming') {
+            this.accessililityLog('ShuttingStars - Fit Timing screen.');
         } else if(this.state == 'credit') {
             this.accessililityLog('ShuttingStars - Credit screen.');
             this.accessililityLog('ESC key to go back.');
