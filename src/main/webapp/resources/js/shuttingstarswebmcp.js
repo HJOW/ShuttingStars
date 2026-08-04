@@ -19,6 +19,7 @@ class SSWebMCP {
      * AI 도구 등록
      */
     async registerTools() {
+        const selfs = this;
         await document.modelContext.registerTool({
             name : 'get_state',
             description : `Get the current state code of the game such as, title, menu, song choosing, playing, result, ...
@@ -48,7 +49,7 @@ class SSWebMCP {
                 type : 'string'
             },
             execute : () => {
-                return this.#coreInstance.state;
+                return selfs.#coreInstance.state;
             }
         });
 
@@ -67,7 +68,7 @@ class SSWebMCP {
             },
             execute : () => {
                 const arr = [];
-                const accessibilityDiv = this.#coreInstance.accessibilityLayer;
+                const accessibilityDiv = selfs.#coreInstance.accessibilityLayer;
                 accessibilityDiv.querySelectorAll('.div_accessibility_log').forEach((div) => {
                     arr.push(div.innerText);
                 });
@@ -88,37 +89,37 @@ class SSWebMCP {
             },
             execute : () => {
                 let msg, idx;
-                if(this.#coreInstance.state == 'title') {
-                    if(this.#coreInstance.titleScreenWaiting) {
+                if(selfs.#coreInstance.state == 'title') {
+                    if(selfs.#coreInstance.titleScreenWaiting) {
                         return 'On title screen. Waiting for user ENTER key input to continue.';
                     } else {
                         return 'On title screen. Loading basic resources. Please wait.';
                     }
-                } else if(this.#coreInstance.state == 'firstset') {
-                    if(this.#coreInstance.firstSetMode == 'language') {
-                        if(this.#coreInstance.language == 'ko') {
+                } else if(selfs.#coreInstance.state == 'firstset') {
+                    if(selfs.#coreInstance.firstSetMode == 'language') {
+                        if(selfs.#coreInstance.language == 'ko') {
                             return 'On first-setting screen, you choosing the language. Current language is Korean. You can choose English or Korean. Use left/right key to change, ENTER key to confirm and go to next.';
                         } else {
                             return 'On first-setting screen, you choosing the language. Current language is English. You can choose English or Korean. Use left/right key to change, ENTER key to confirm and go to next.';
                         }
-                    } else if(this.#coreInstance.firstSetMode == 'quality') {
-                        if(this.#coreInstance.ressets.h <= 720) {
+                    } else if(selfs.#coreInstance.firstSetMode == 'quality') {
+                        if(selfs.#coreInstance.ressets.h <= 720) {
                             return 'On first-setting screen, you choosing the graphic quality. Current graphic quality is low. You can choose low and medium. Use left/right key to change, ENTER key to confirm and go to next.';
-                        } else if(this.#coreInstance.ressets.h <= 1080) {
+                        } else if(selfs.#coreInstance.ressets.h <= 1080) {
                             return 'On first-setting screen, you choosing the graphic quality. Current graphic quality is medium. You can choose low and medium. Use left/right key to change, ENTER key to confirm and go to next.';
                         }
                     } else {
                         return 'On first-setting screen, just press ENTER key to go to adjustment screen.';
                     }
-                } else if(this.#coreInstance.state == 'fitting') {
+                } else if(selfs.#coreInstance.state == 'fitting') {
                     return 'On adjustment screen. ESC key to go to menu.';
-                } else if(this.#coreInstance.state == 'menu') {
+                } else if(selfs.#coreInstance.state == 'menu') {
                     msg = 'On menu screen.';
                     msg += '\n Menu list is...';
 
-                    for(idx=0; idx<this.#coreInstance.menuListDynamic.length; idx++) {
-                        let menuOne = this.#coreInstance.menuListDynamic[idx];
-                        if(this.#coreInstance.menuChoosing == menuOne) {
+                    for(idx=0; idx<selfs.#coreInstance.menuListDynamic.length; idx++) {
+                        let menuOne = selfs.#coreInstance.menuListDynamic[idx];
+                        if(selfs.#coreInstance.menuChoosing == menuOne) {
                             msg += '\n ' + (idx+1) + 'th menu (CHOOSING) is ' + menuOne.name + '.';
                         } else {
                             msg += '\n ' + (idx+1) + 'th menu is ' + menuOne.name + '.';
@@ -128,12 +129,70 @@ class SSWebMCP {
 
                     return msg;
                 }
+                // TODO : 다른 화면들에 대해서도 작성
 
 
                 return 'UNKNOWN;'
             }
         });
 
+        await document.modelContext.registerTool({
+            name : 'get_setting',
+            description : `Get setting values.`,
+            inputSchema : {
+                type : 'object',
+                properties : {
+                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'] }
+                }
+            },
+            outputSchema : {
+                type : 'string'
+            },
+            execute : ({option}) => {
+                // option 에 정의된 속성 값을 반환
+                if(option == 'keypressTiming') {
+                    return selfs.#coreInstance.keypressTiming;
+                } else if(option == 'songTiming') {
+                    return selfs.#coreInstance.songTiming;
+                } else if(option == 'noteSpeed') {
+                    return selfs.#coreInstance.noteSpeedMultiplier;
+                } else if(option == 'judgeTiming') {
+                    return selfs.#coreInstance.judgeTiming;
+                } else if(option == 'language') {
+                    return selfs.#coreInstance.language;
+                }
+            }
+        });
+
+        await document.modelContext.registerTool({
+            name : 'modify_setting',
+            description : `Modify setting values. This tool is not available when the song is already playing.`,
+            inputSchema : {
+                type : 'object',
+                properties : {
+                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'] },
+                    value  : { type : 'string' }
+                }
+            },
+            outputSchema : {
+                type : 'object',
+                properties : {}
+            },
+            execute : ({option, value}) => {
+                if(selfs.#coreInstance.state == 'playing') throw new Error('Cannot modify setting values when the song is already playing.');
+                if(option == 'keypressTiming') {
+                    selfs.#coreInstance.keypressTiming = parseInt(value);
+                } else if(option == 'songTiming') {
+                    selfs.#coreInstance.songTiming = parseInt(value);
+                } else if(option == 'noteSpeed') {
+                    selfs.#coreInstance.noteSpeedMultiplier = parseFloat(value);
+                } else if(option == 'judgeTiming') {
+                    selfs.#coreInstance.judgeTiming = parseInt(value);
+                } else if(option == 'language') {
+                    selfs.#coreInstance.language = value;
+                }
+            }
+        });
 
     }
 }
