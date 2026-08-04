@@ -4937,16 +4937,16 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
 
         // 타이틀 출력
-        this.ctx.fillText(this.trans('ADJUST TIMING'), this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 22 / 30));
+        this.ctx.fillText(this.trans('ADJUST TIMING'), this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 21 / 30));
 
         // 사용법 출력
         fontSize = this.convertFontSize(12);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         label = ShuttingStarsUtility.replaceString(this.trans('Modify the timing value with the arrow keys, and press %1 key to save !'), '%1', this.enterKey);
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 24 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 22 / 30));
 
         label = this.trans('You can also test it now !');
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 25 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 23 / 30));
 
         // 현재의 타이밍값 출력
 
@@ -4957,7 +4957,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         }
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 26 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 24 / 30));
 
 
         label = this.trans('Judge Timing') + '+- : ' + this.judgeTiming;
@@ -4967,7 +4967,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         }
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 27 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 25 / 30));
 
 
         
@@ -4976,7 +4976,7 @@ class ShuttingStarsCore {
         if(this.elapsedTime < 0) label = this.trans('Please wait...');
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 28 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 26 / 30));
 
         // 키 안내 출력
         label = this.trans('MOVE : ');
@@ -4996,7 +4996,7 @@ class ShuttingStarsCore {
         label += '    ' + this.trans('CANCEL : ');
         if(this.escKey == 'ESCAPE') label += 'ESC';
         else                        label += this.escKey;
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 29 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 27 / 30));
     }
 
     /**
