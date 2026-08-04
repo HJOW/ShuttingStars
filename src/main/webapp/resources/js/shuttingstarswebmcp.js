@@ -88,7 +88,7 @@ class SSWebMCP {
                 type : 'string'
             },
             execute : () => {
-                let msg, idx;
+                let msg, idx, ddx;
                 if(selfs.#coreInstance.state == 'title') {
                     if(selfs.#coreInstance.titleScreenWaiting) {
                         return 'On title screen. Waiting for user ENTER key input to continue.';
@@ -128,11 +128,83 @@ class SSWebMCP {
                     msg += '\n Arrow up/down key to move, ENTER key to select.';
 
                     return msg;
+                } else if(selfs.#coreInstance.state == 'songchoosing') {
+                    msg = 'On song-choosing screen for play.';
+                    if(selfs.#coreInstance.songChoosingMode == 'mission') {
+                        msg += '\n Mission choosing mode. You can select the mission to play. You can change modes with left/right arrow key.';
+                        for(idx=0; idx<selfs.#coreInstance.missions.length; idx++) {
+                            let missionOne = selfs.#coreInstance.missions[idx];
+                            if(selfs.#coreInstance.missionChoosing == missionOne) {
+                                msg += '\n ' + (idx+1) + 'th mission (CHOOSING) is ' + missionOne.name + '.';
+                            } else {
+                                msg += '\n ' + (idx+1) + 'th mission is ' + missionOne.name + '.';
+                            }
+                        }
+                        msg += '\n ENTER key to play, up/down arrow key to select another mission, ESC key to go back to menu.';
+                    } else if(selfs.#coreInstance.songChoosingMode == 'mysong') {
+                        msg += '\n My-Song mode. You can upload your own song to play. You can change modes with left/right arrow key.';
+                    } else {
+                        msg += '\n Default mode. You can select a song and its difficulty to play.';
+                        if(selfs.#coreInstance.songDisplays.length <= 0) {
+                            msg += '\n No songs available. ESC key to go back to menu.';
+                        }
+                        for(idx=0; idx<selfs.#coreInstance.songDisplays.length; idx++) {
+                            let songOne = selfs.#coreInstance.songDisplays[idx];
+                            if(selfs.#coreInstance.songChoosing == songOne) {
+                                msg += '\n ' + (idx+1) + 'th song (CHOOSING) is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+
+                                if(selfs.#coreInstance.difficultyChoosing) { // 난이도 선택 단계인 경우
+                                    msg += '\n      You can choose a difficulty to play. Arrow left/right to move, ESC to go back to song-choosing state, ENTER key to play.';
+                                    for(ddx=0; ddx<selfs.#coreInstance.difficultyChoosingList.length; ddx++) {
+                                        const diffOne = selfs.#coreInstance.difficultyChoosingList[ddx];
+                                        const difficultyName = diffOne.difficultyLabel;
+                                        const difficultyNum  = diffOne.difficultyLevel;
+
+                                        if(selfs.#coreInstance.difficulty == diffOne) {
+                                            msg += '\n     ' + (ddx+1) + 'th difficulty (CHOOSING) is ' + difficultyName + ' (Level ' + difficultyNum + ').';
+                                        } else {
+                                            msg += '\n     ' + (ddx+1) + 'th difficulty is ' + difficultyName + ' (Level ' + difficultyNum + ').';
+                                        }
+                                    }
+                                } else {
+                                    msg += '\n    ENTER key to choose a difficulty to play. Arrow up/down to select another song, Arrow left/right to change mode, ESC key to go back to menu.';
+                                }
+                            } else {
+                                msg += '\n ' + (idx+1) + 'th song is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                                msg += '\n    ENTER key to select the song, then you will choose a difficulty. Arrow up/down to select another song, Arrow left/right to change mode, ESC key to go back to menu.';                                
+                            }
+                        }
+                    }
+
+                    return msg;
+                } else if(selfs.#coreInstance.state == 'songtitle') {
+                    return 'On song-loading screen. Please wait.';
+                } else if(selfs.#coreInstance.state == 'playing') {
+                    return 'On playing screen. Use S, D, F, H, J, K keys to play, ESC key to pause. (ESC again to stop and go to menu)';
+                } else if(selfs.#coreInstance.state == 'result') {
+                    msg = 'On result screen.';
+                    msg += '\n SONG INFORMATION ';
+                    msg += '\n  NAME        : ' + selfs.#coreInstance.song.name;
+                    msg += '\n  COMPOSER    : ' + selfs.#coreInstance.song.composer;
+                    msg += '\n  NOTE WRITER : ' + selfs.#coreInstance.song.noteWriter;
+                    msg += '\n  BPM         : ' + selfs.#coreInstance.song.bpm;
+
+                    msg += '\n PLAYING REPORT ';
+                    msg += '\n  PERFECT : ' + selfs.#coreInstance.report.PERFECT;
+                    msg += '\n  GREAT   : ' + selfs.#coreInstance.report.GREAT;
+                    msg += '\n  GOOD    : ' + selfs.#coreInstance.report.GOOD;
+                    msg += '\n  BAD     : ' + selfs.#coreInstance.report.BAD;
+                    msg += '\n  MISS    : ' + selfs.#coreInstance.report.MISS;
+                    msg += '\n  SCORE   : ' + selfs.#coreInstance.point;
+                    msg += '\n  RANK    : ' + selfs.#coreInstance.judgeResultRank();
+
+                    msg += '\n ESC to go back to menu.';
+                    return msg;
                 }
                 // TODO : 다른 화면들에 대해서도 작성
 
 
-                return 'UNKNOWN;'
+                return 'UNKNOWN. ESC to trying to go back to menu.';
             }
         });
 
