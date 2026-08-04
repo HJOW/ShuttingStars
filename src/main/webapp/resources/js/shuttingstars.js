@@ -257,6 +257,8 @@ class ShuttingStarsCore {
     elapsedTime = 0;
     /** @type {number} 플레이 중 진행 시간 (예전 방식, 순수 timeElapse 호출 횟수로 elapsedTime 와 정수 범위 내에서는 동일해야 함) */
     elapsedTimeOld = 0;
+    /** @type {number} 플레이 중 진행 시간 (elapsedTimeOld 와 동일하나, 곡이 반복되더라도 초기화되지 않음) */
+    elapsedTimeCycle = 0;
     /** @type {number} 사이클 처리 직전 elapsedTime 값으로, 음원 로딩이 끊겼는지 판단하기 위해 사용 (게임 중 변경됨) */
     elapsedTimeLast = 0;
     /** @type {number} 버퍼 로딩 부족으로 elapsedTime 가 증가하지 않은 횟수 */
@@ -1309,7 +1311,9 @@ class ShuttingStarsCore {
 
             await this.loadCredit();
             await this.afterInitialized();
-            if(firsts) await this.setState('firstset');
+            if(firsts) {
+                if(this.state != 'empty') await this.setState('firstset');
+            }
             this.logInit('starting game...');
 
             this.rebuildBroker();
@@ -2521,6 +2525,7 @@ class ShuttingStarsCore {
         this.songBitGap = 0;
         this.elapsedTime = 0;
         this.elapsedTimeOld = 0;
+        this.elapsedTimeCycle = 0;
         this.resumed = false;
         this.paused = false;
         this.gameOverDelayed = false;
@@ -2540,13 +2545,7 @@ class ShuttingStarsCore {
                 this.lastObjectId = 0;
                 this.objectsPlaying = [];
                 this.notePlacers = [];
-
-                for(idx=0; idx<this.keyList.length; idx++) {
-                    const notePlacer = new SSNotePlacer(idx, this);
-                    notePlacer.id = this.lastObjectId++;
-                    this.objectsPlaying.push(notePlacer);
-                    this.notePlacers.push(notePlacer);
-                }
+                this.createNotePlacers();
 
                 // 곡 플레이 세팅 중 처리
                 //     곡 마지막 패턴 시간 체크
@@ -2762,9 +2761,16 @@ class ShuttingStarsCore {
                     this.ss3d.onSongPlayPreparing(this);
                 }
             } else if(state == 'playing' || state == 'listenplaying' || state == 'fitting') { // 곡이 플레이 상황일 경우 처리
+
+                // 타이밍 보정 모드인 경우 곡 타이틀 화면을 거치지 않으므로 여기서 가상의 곡과 난이도를 만들어 넣어주어야 함
                 if(state == 'fitting') {
                     try {
                         this.closeAudioSources();
+
+                        // NotePlacer 배치
+                        if(this.notePlacers.length <= 0) {
+                            this.createNotePlacers();
+                        }
 
                         // 보정 화면인 경우 위 title 상태를 거치지 않았으므로 여기서 곡 초기화를 해야 함
                         this.song = {
@@ -2929,12 +2935,7 @@ class ShuttingStarsCore {
             this.objectsPlaying = [];
             this.notePlacers = [];
 
-            for(idx=0; idx<this.keyList.length; idx++) {
-                const notePlacer = new SSNotePlacer(idx, this);
-                notePlacer.id = this.lastObjectId++;
-                this.objectsPlaying.push(notePlacer);
-                this.notePlacers.push(notePlacer);
-            }
+            this.createNotePlacers();
 
             // 배경 오디오 존재 시 재생
             if(this.audioBackground != null) {
@@ -3641,9 +3642,11 @@ class ShuttingStarsCore {
             if(this.firstSetMode == 'confirm') {
                 this.playSE('accept1');
                 this.saveSettings(false).then(() => {
-                    selfs.setState('menu');
-                    // TODO : 아직 초기화 제대로 안된 상태에서 fitting 으로 넘어가면 이상한 오류발생
-                    // selfs.setState('fitting');
+                    // selfs.setState('menu');
+                    // 타이밍 보정 화면부터 가게 만들기
+                    selfs.resetStage('fitting').then(() => { // resetStage 먼저 해야 됨
+                        selfs.setState('fitting');
+                    });
                 });
             } else {
                 if(     this.firstSetMode == 'language') this.firstSetMode = 'quality';
@@ -7905,7 +7908,14 @@ class ShuttingStarsCore {
             } else {
                 this.elapsedTime += 1;
             }
+
             this.elapsedTimeOld++;
+            this.elapsedTimeCycle++;
+
+            // 곡 반복 경우를 대비 (한바퀴 돌고 다시 elapsedTime 가 초기화되서 elapsedTimeLast 와 역전된 경우 elapsedTimeOld 도 초기화가 필요함)
+            if(this.elapsedTimeLast > this.elapsedTime) {
+                this.elapsedTimeOld = Math.floor(this.elapsedTime);
+            }
 
             // Audio 버퍼 초과 탐지
             if(this.elapsedTime >= 100 && (! songEnded) && Math.abs(this.elapsedTime - this.elapsedTimeLast) < 0.1) { // 1 이 증가되어야 하는데 10분의 1도 증가하지 못했다 - 버퍼 다쓴 것
@@ -8016,18 +8026,22 @@ class ShuttingStarsCore {
             // 곡의 끝 체크
             songEnded = false;
             if(this.state == 'fitting') {
-                if(this.elapsedTime < 32) { // 루프 돌아 다시 처음으로 돌아온 경우 노트 다 되살리기
-                    for(idx=0; idx<this.objectsPlaying.length; idx++) {
-                        const obj = this.objectsPlaying[idx];
-                        if(obj instanceof SSNote) {
-                            if(obj.removed) {
-                                obj.y = this.calculateNoteY(obj.originalTiming, this.notePlacers[0].y, this.song);
-                                obj.explosing = 0;
-                                obj.hidden = false;
-                                obj.removed = false;
+                if(this.elapsedTime < 32 && this.elapsedTimeCycle >= 32) { // 루프 돌아 다시 처음으로 돌아온 경우 노트 다 되살리기
+                    try {
+                        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                            const obj = this.objectsPlaying[idx];
+                            if(obj instanceof SSNote) {
+                                if(obj.removed) {
+                                    obj.y = this.calculateNoteY(obj.originalTiming, this.notePlacers[0].y, this.song);
+                                    obj.explosing = 0;
+                                    obj.hidden = false;
+                                    obj.removed = false;
+                                }
+                                
                             }
-                            
                         }
+                    } catch(exFit) {
+                        console.error(exFit);
                     }
                 }
             } else {
@@ -10336,6 +10350,38 @@ class ShuttingStarsCore {
     }
 
     /**
+     * NotePlacer 생성
+     * 
+     * @param {boolean|null} forces true 입력 시 기존 NotePlacer 제거 후 새로 생성
+     * 
+     */
+    createNotePlacers(forces) {
+        let idx;
+        if(forces) {
+            if(this.notePlacers.length >= 1) {
+                // NotePlacer 제거
+                for(idx=0; idx<this.objectsPlaying.length; idx++) {
+                    const obj = this.objectsPlaying[idx];
+                    if(obj instanceof SSNotePlacer) {
+                        this.objectsPlaying.splice(idx, 1);
+                        idx--;
+                    }
+                }
+                this.notePlacers = [];
+            }
+        }
+        if(this.notePlacers.length >= 1) return;
+
+        // 추가
+        for(idx=0; idx<this.keyList.length; idx++) {
+            const notePlacer = new SSNotePlacer(idx, this);
+            notePlacer.id = this.lastObjectId++;
+            this.notePlacers.push(notePlacer);
+            this.objectsPlaying.push(notePlacer);
+        }
+    }
+
+    /**
      * 자동 노트 생성 (Promise)
      * @param {string} audioUrl 
      * @param {number} bpm
@@ -10358,7 +10404,7 @@ class ShuttingStarsCore {
             for(idx=0; idx<this.keyList.length; idx++) {
                 const notePlacer = new SSNotePlacer(idx, this);
                 notePlacer.id = this.lastObjectId++;
-                this.notePlacers.push(notePlacer);
+                this.notePlacers.push(notePlacer); // objectPlaying 에는 아직 배치하지 않음
             }
         }
 
