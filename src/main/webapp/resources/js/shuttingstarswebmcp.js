@@ -223,16 +223,18 @@ class SSWebMCP {
             execute : ({option}) => {
                 // option 에 정의된 속성 값을 반환
                 if(option == 'keypressTiming') {
-                    return selfs.#coreInstance.keypressTiming;
+                    return String(selfs.#coreInstance.keypressTiming);
                 } else if(option == 'songTiming') {
-                    return selfs.#coreInstance.songTiming;
+                    return String(selfs.#coreInstance.songTiming);
                 } else if(option == 'noteSpeed') {
-                    return selfs.#coreInstance.noteSpeedMultiplier;
+                    return String(selfs.#coreInstance.noteSpeedMultiplier);
                 } else if(option == 'judgeTiming') {
-                    return selfs.#coreInstance.judgeTiming;
+                    return String(selfs.#coreInstance.judgeTiming);
                 } else if(option == 'language') {
                     return selfs.#coreInstance.language;
                 }
+
+                return null;
             }
         });
 

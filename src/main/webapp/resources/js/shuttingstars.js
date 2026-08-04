@@ -735,6 +735,8 @@ class ShuttingStarsCore {
             this.ssuuid = ShuttingStarsUtility.assureSSUUID();
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
 
+            try { this.webmcpMan = initSSWebMCP(this); } catch(exmcp) { console.error(exmcp); this.webmcpMan = null; }
+
             this.backend = null;
             try {
                 this.backend = SSBackend();
@@ -1323,8 +1325,6 @@ class ShuttingStarsCore {
 
             this.rebuildBroker();
             if(this.executeUrlParams) await this.executeURLParameters();
-
-            try { this.webmcpMan = initSSWebMCP(this); } catch(exmcp) { console.error(exmcp); this.webmcpMan = null; }
 
             return this.broker;
         } catch(eGlobal) {
