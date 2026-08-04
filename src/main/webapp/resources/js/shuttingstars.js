@@ -13,6 +13,7 @@
  *     shuttingstarstringtable.js - 영어 외 다른 언어 지원
  *     shuttingstarsinterface.js  - 클라우드 기능 사용
  *     shuttingstars3d.js         - 3D 기능 지원
+ *     shuttingstarswebmcp.js     - WebMCP 지원
  * 
  */
 
@@ -21,6 +22,7 @@ import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
 import { SSBackend, getSSBackendBroker, ShuttingStarsInterface } from './shuttingstarsinterface.js'
 import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './shuttingstars3d.js'
+import { SSWebMCP, initSSWebMCP } from './shuttingstarswebmcp.js'
 
 /* 게임 기동 근간을 이루는 전역 객체 */
 class ShuttingStarsCore {
@@ -60,6 +62,9 @@ class ShuttingStarsCore {
     /*** 백엔드 **/
     /** @type {ShuttingStarsInterface|null} 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨. */
     backend = null;
+
+    /** @type {SSWebMCP|null} WebMCP 관리 객체 */
+    webmcpMan = null;
 
     /** @type {boolean} 백엔드 서버에 설정 저장기능 사용여부 */
     useCloudSettings = true;
@@ -1318,6 +1323,8 @@ class ShuttingStarsCore {
 
             this.rebuildBroker();
             if(this.executeUrlParams) await this.executeURLParameters();
+
+            try { this.webmcpMan = initSSWebMCP(this); } catch(exmcp) { console.error(exmcp); this.webmcpMan = null; }
 
             return this.broker;
         } catch(eGlobal) {
