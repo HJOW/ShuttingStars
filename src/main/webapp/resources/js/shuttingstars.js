@@ -194,7 +194,7 @@ class ShuttingStarsCore {
     stageRows = 72;
     /** @type {number} 노트 크기 상수, 이 값이 증가하면 노트 크기가 증가함. 노트 속도에도 비례하게 영향을 끼침. */
     sizeFixedConst = 2;
-    /** @type {number} 노트 위치 보정 상수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음) */
+    /** @type {number} 노트 위치 보정 상수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 noteLocationAdjustment 로 따로 있음) */
     noteLocationConst = 0;
     /** @type {number} 노트 이동 속도 배수. 사용자가 변경할 수 없는 값 (변경 가능한 보정 상수는 따로 있음) */
     noteSpeedFixedConst = 0.25;
@@ -471,6 +471,13 @@ class ShuttingStarsCore {
     /** @type {boolean} 일시정지 재개 전 대기시간 완료 시 임시로 사용하는 값 - 당연히 게임 중에 변경됨 */
     resumed = false;
 
+    /** @type {Object} 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨 */
+    keypressing = {};
+    /** @type {boolean} 게임 시작 준비여부 1 - 게임 중 자동 변경되는 값 */
+    songPrepared = false;
+    /** @type {boolean} 게임 시작 준비여부 2 - 게임 중 자동 변경되는 값 */
+    playPrepared = false;
+
     /** @type {Array<string>} 공식 곡 시리얼 목록 */
     officialSongSerials = [
         'nai4ilaHbn7g93gn34nf9afn438zJ93f8gp34qgD39p4g',
@@ -505,7 +512,6 @@ class ShuttingStarsCore {
         'nai4ilTHRIENG75346GSDIGIOERSGgdg673yMOFASP39p4g',
         'nai4ilTHERHIERGGBberbueri7456HERHIEROMHyMOFASP39p4g'
     ];
-    
 
     // 초기 설정 화면 관련
     /** @type {string} language / graphic */
@@ -542,13 +548,14 @@ class ShuttingStarsCore {
     songTiming = 0;
     /** @type {number} 판정 위치 보정값, 화면에 출력되는 NotePlacer 는 그대로지만, 노트와의 거리 계산 시 반영 */
     judgeTiming = 0;
+    /** @type {number} 노트 위치 보정 상수 */
+    noteLocationAdjustment = 0;
 
-    /** @type {Object} 키 누르는 중 중 여부 기록 (키에서 손가락 떼면 제거할 요량) - 게임 중 자동 측정됨 */
-    keypressing = {};
-    /** @type {boolean} 게임 시작 준비여부 1 - 게임 중 자동 변경되는 값 */
-    songPrepared = false;
-    /** @type {boolean} 게임 시작 준비여부 2 - 게임 중 자동 변경되는 값 */
-    playPrepared = false;
+    // 타이밍 보정화면 관련
+    /** @type {string} 타이밍 보정화면에서 현재 변경 중인 값 */
+    fittingChangingValue = 'judgeTiming';
+    /** @type {Array<string>} 타이밍 보정화면에서 변경 가능한 값 목록 */
+    fittingChangables    = ['judgeTiming', 'noteLocationAdjustment'];
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     /** @type {boolean} 임의 도형 렌더링 디버그 */
@@ -1965,6 +1972,11 @@ class ShuttingStarsCore {
                     if(typeof(this.judgeTiming) == 'string') this.judgeTiming = parseInt(this.judgeTiming);
                 }
 
+                if(typeof(settingJson.noteLocationAdjustment) != 'undefined') {
+                    this.noteLocationAdjustment = settingJson.noteLocationAdjustment;
+                    if(typeof(this.noteLocationAdjustment) == 'string') this.noteLocationAdjustment = parseInt(this.noteLocationAdjustment);
+                }
+
                 if(typeof(settingJson.resolution) != 'undefined') {
                     try {
                         let res = settingJson.resolution.split(',');
@@ -2069,28 +2081,29 @@ class ShuttingStarsCore {
     async saveSettings(skipCloudSaves) {
         try {
             let settingJson = {}
-            settingJson.keyList             = this.keyList;
-            settingJson.arrowKeys           = this.arrowKeys;
-            settingJson.enterKey            = this.enterKey;
-            settingJson.escKey              = this.escKey;
-            settingJson.mainFont            = this.mainFont;
-            settingJson.noteSpeedMultiplier = this.noteSpeedMultiplier;
-            settingJson.reverseVertical     = this.reverseVertical;
-            settingJson.keypressTiming      = this.keypressTiming;
-            settingJson.songTiming          = this.songTiming;
-            settingJson.judgeTiming         = this.judgeTiming;
-            settingJson.resolution          = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
-            settingJson.disable3d           = this.disable3d;
-            settingJson.disable2d           = this.disable2d;
-            settingJson.hardcoreMode        = this.hardcoreMode;
-            settingJson.mysophobiaMode      = this.mysophobiaMode;
-            settingJson.invisibleNoteMode   = this.invisibleNoteMode;
-            settingJson.noLongNote          = this.noLongNote;
-            settingJson.singleKey           = this.singleKey;
-            settingJson.language            = this.language;
-            settingJson.languageDefault     = this.languageDefault;
-            settingJson.usingWorkerConfig   = this.usingWorkerConfig;
-            settingJson.bonusAvails         = this.bonusAvails;
+            settingJson.keyList                = this.keyList;
+            settingJson.arrowKeys              = this.arrowKeys;
+            settingJson.enterKey               = this.enterKey;
+            settingJson.escKey                 = this.escKey;
+            settingJson.mainFont               = this.mainFont;
+            settingJson.noteSpeedMultiplier    = this.noteSpeedMultiplier;
+            settingJson.reverseVertical        = this.reverseVertical;
+            settingJson.keypressTiming         = this.keypressTiming;
+            settingJson.songTiming             = this.songTiming;
+            settingJson.judgeTiming            = this.judgeTiming;
+            settingJson.noteLocationAdjustment = this.noteLocationAdjustment;
+            settingJson.resolution             = Math.floor(this.ressets.h * 16 / 9) + ',' + this.ressets.h;
+            settingJson.disable3d              = this.disable3d;
+            settingJson.disable2d              = this.disable2d;
+            settingJson.hardcoreMode           = this.hardcoreMode;
+            settingJson.mysophobiaMode         = this.mysophobiaMode;
+            settingJson.invisibleNoteMode      = this.invisibleNoteMode;
+            settingJson.noLongNote             = this.noLongNote;
+            settingJson.singleKey              = this.singleKey;
+            settingJson.language               = this.language;
+            settingJson.languageDefault        = this.languageDefault;
+            settingJson.usingWorkerConfig      = this.usingWorkerConfig;
+            settingJson.bonusAvails            = this.bonusAvails;
 
             localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
@@ -3625,6 +3638,8 @@ class ShuttingStarsCore {
                 this.playSE('accept1');
                 this.saveSettings(false).then(() => {
                     selfs.setState('menu');
+                    // TODO : 아직 초기화 제대로 안된 상태에서 fitting 으로 넘어가면 이상한 오류발생
+                    // selfs.setState('fitting');
                 });
             } else {
                 if(     this.firstSetMode == 'language') this.firstSetMode = 'quality';
@@ -3814,16 +3829,33 @@ class ShuttingStarsCore {
             } else if(this.arrowKeys.indexOf(key) >= 0) {
                 // 방향키 (타이밍 보정 시에만 사용)
                 if(this.state == 'fitting') {
+                    let fittingValIndex = (this.fittingChangables.indexOf(this.fittingChangingValue));
+                    if(fittingValIndex < 0) fittingValIndex = 0;
+
                     if(key == this.arrowKeys[0]) { // UP
-                        // 다른 종류의 타이밍도 변경 기능 넣을 때 구현 예정
+                        fittingValIndex++;
+                        if(fittingValIndex >= this.fittingChangables.length) fittingValIndex = 0;
+                        this.fittingChangingValue = this.fittingChangables[fittingValIndex];
                     } else if(key == this.arrowKeys[1]) { // DOWN
-                        // 다른 종류의 타이밍도 변경 기능 넣을 때 구현 예정
+                        fittingValIndex--;
+                        if(fittingValIndex < 0) fittingValIndex = this.fittingChangables.length - 1;
+                        this.fittingChangingValue = this.fittingChangables[fittingValIndex];
                     } else if(key == this.arrowKeys[2]) { // LEFT
-                        this.judgeTiming--;
-                        if(this.judgeTiming < -1000) this.judgeTiming = -1000;
+                        if(this.fittingChangingValue == 'judgeTiming') {
+                            this.judgeTiming--;
+                            if(this.judgeTiming < -64) this.judgeTiming = -64;
+                        } else if(this.fittingChangingValue == 'noteLocationAdjustment') {
+                            this.noteLocationAdjustment--;
+                            if(this.noteLocationAdjustment < -1000) this.noteLocationAdjustment = -1000;
+                        }
                     } else if(key == this.arrowKeys[3]) { // RIGHT
-                        this.judgeTiming++;
-                        if(this.judgeTiming > 1000) this.judgeTiming = 1000;
+                        if(this.fittingChangingValue == 'judgeTiming') {
+                            this.judgeTiming++;
+                            if(this.judgeTiming > 64) this.judgeTiming = 64;
+                        } else if(this.fittingChangingValue == 'noteLocationAdjustment') {
+                            this.noteLocationAdjustment++;
+                            if(this.noteLocationAdjustment > 1000) this.noteLocationAdjustment = 1000;
+                        }
                     }
                 }
             }
@@ -4865,49 +4897,7 @@ class ShuttingStarsCore {
 
         // 타이밍 보정화면 출력
         if(this.state == 'fitting') {
-            // 사용법 출력
-            label = ShuttingStarsUtility.replaceString(this.trans('Modify the timing value with the arrow keys, and press %1 key to save !'), '%1', this.enterKey);
-            fontSize = this.convertFontSize(12);
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.textAlign = "right";
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 15 / 20));
-
-            label = this.trans('You can also test it now !');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 16 / 20));
-
-            // 현재의 타이밍값 출력
-            label = this.trans('Judge Timing') + ' : ' + this.judgeTiming;
-            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 17 / 20));
-
-            // 현재 타임 출력
-            label = String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME');
-            if(this.elapsedTime < 0) label = this.trans('Please wait...');
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 18 / 20));
-
-            // 키 안내 출력
-            label = this.trans('MOVE : ');
-            for(let idx=0; idx<this.arrowKeys.length; idx++) {
-                let arrowKeyOne = this.arrowKeys[idx];
-                let arrowKeyLabel = String(arrowKeyOne);
-                if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
-                else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
-                else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
-                else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
-                else arrowKeyLabel = String(arrowKeyOne);
-
-                label += arrowKeyLabel;
-            }
-
-            label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
-            label += '    ' + this.trans('EXIT : ');
-            if(this.escKey == 'ESCAPE') label += 'ESC';
-            else                        label += this.escKey;
-            this.ctx.fillText(label, this.convertX(this.getStageWidth() * 19 / 20), this.convertY(this.getStageHeight() * 19 / 20));
+            this.renderFitting();
         }
 
         // 게임 오버 그리기
@@ -4919,6 +4909,80 @@ class ShuttingStarsCore {
             this.ctx.textAlign = "center";
             this.ctx.fillText('GAME OVER', this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + 20, false));
         }
+    }
+
+    /** 타이밍 보정모드 관련사항 출력 */
+    renderFitting() {
+        let label, fontSize;
+        
+        // 기본 폰트 설정
+        fontSize = this.convertFontSize(20);
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.textAlign = "right";
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+
+        // 타이틀 출력
+        this.ctx.fillText(this.trans('ADJUST TIMING'), this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 22 / 30));
+
+        // 사용법 출력
+        fontSize = this.convertFontSize(12);
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        label = ShuttingStarsUtility.replaceString(this.trans('Modify the timing value with the arrow keys, and press %1 key to save !'), '%1', this.enterKey);
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 24 / 30));
+
+        label = this.trans('You can also test it now !');
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 25 / 30));
+
+        // 현재의 타이밍값 출력
+
+        label = this.trans('Note Location') + '+- : ' + this.noteLocationAdjustment;
+        if(this.fittingChangingValue == 'noteLocationAdjustment') {
+            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+        } else {
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        }
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 26 / 30));
+
+
+        label = this.trans('Judge Timing') + '+- : ' + this.judgeTiming;
+        if(this.fittingChangingValue == 'judgeTiming') {
+            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+        } else {
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        }
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 27 / 30));
+
+
+        
+        // 현재 타임 출력
+        label = String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME');
+        if(this.elapsedTime < 0) label = this.trans('Please wait...');
+        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 28 / 30));
+
+        // 키 안내 출력
+        label = this.trans('MOVE : ');
+        for(let idx=0; idx<this.arrowKeys.length; idx++) {
+            let arrowKeyOne = this.arrowKeys[idx];
+            let arrowKeyLabel = String(arrowKeyOne);
+            if(arrowKeyOne == 'ARROWUP') arrowKeyLabel = '↑';
+            else if(arrowKeyOne == 'ARROWDOWN') arrowKeyLabel = '↓';
+            else if(arrowKeyOne == 'ARROWLEFT') arrowKeyLabel = '←';
+            else if(arrowKeyOne == 'ARROWRIGHT') arrowKeyLabel = '→';
+            else arrowKeyLabel = String(arrowKeyOne);
+
+            label += arrowKeyLabel;
+        }
+
+        label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
+        label += '    ' + this.trans('CANCEL : ');
+        if(this.escKey == 'ESCAPE') label += 'ESC';
+        else                        label += this.escKey;
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 29 / 30));
     }
 
     /**
@@ -5064,7 +5128,7 @@ class ShuttingStarsCore {
 
             if(menuOne == 'play'     ) label = this.trans('PLAY');
             if(menuOne == 'setting'  ) label = this.trans('SETTING');
-            if(menuOne == 'fittiming') label = this.trans('FIT TIMING');
+            if(menuOne == 'fittiming') label = this.trans('ADJUST TIMING');
             if(menuOne == 'listen'   ) label = this.trans('LISTEN');
             if(menuOne == 'credit'   ) label = this.trans('CREDIT');
             if(menuOne == 'community') label = this.trans('COMMUNITY');
@@ -7965,16 +8029,16 @@ class ShuttingStarsCore {
             } else {
                 //   곡의 명시된 종료시간과 마지막 패턴의 시간, 그리고 audio 가 존재하는 경우 실제 종료시간까지 비교해 더 큰 값 선택
                 //      마지막 패턴의 시간
-                let lastPatternTime = this.songLastPatternTime + this.noteLocationConst;
+                let lastPatternTime = this.songLastPatternTime + this.noteLocationConst + this.noteLocationAdjustment;
                 if(this.song != null) lastPatternTime = lastPatternTime * this.song.noteMultiplier + this.song.timeConstant;
                 //     audio 존재 시 실제 종료 시간 체크
                 if(this.song != null && this.audio != null) {
-                    calcRealEndTime = this.calculateSongDuration(this.audio, this.song.bpm) + this.noteLocationConst + this.song.timeConstant + (this.timeMultiplier * 2);
+                    calcRealEndTime = this.calculateSongDuration(this.audio, this.song.bpm) + this.noteLocationConst + this.noteLocationAdjustment + this.song.timeConstant + (this.timeMultiplier * 2);
                     if(calcRealEndTime > lastPatternTime) lastPatternTime = calcRealEndTime;
                 }
                 //     명시된 종료 시간 체크 (높은 우선순위)
                 if(this.song != null && this.song.endTime > 0) {
-                    calcRealEndTime = (this.song.endTime + this.noteLocationConst) * this.song.noteMultiplier + this.song.timeConstant;
+                    calcRealEndTime = (this.song.endTime + this.noteLocationConst + this.noteLocationAdjustment) * this.song.noteMultiplier + this.song.timeConstant;
                     lastPatternTime = calcRealEndTime;
                 }
 
@@ -9936,7 +10000,7 @@ class ShuttingStarsCore {
         let additionals;
 
         // NotePlacer에 도달하기까지 남은 시간 만큼 멀리 지정 (이미 시간이 지난 경우 음수가 나올 수 있음)
-        additionals  = ( (noteTiming * song.noteMultiplier) + song.timeConstant - this.elapsedTime ) + this.noteLocationConst;
+        additionals  = ( (noteTiming * song.noteMultiplier) + song.timeConstant - this.elapsedTime ) + this.noteLocationConst + this.noteLocationAdjustment;
         additionals  = additionals * this.getNoteRadius() * this.noteSpeedMultiplier * this.noteSpeedFixedConst * song.timeMultiplier;
         calculates  += additionals;
 
