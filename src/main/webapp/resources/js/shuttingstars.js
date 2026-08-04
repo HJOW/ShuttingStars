@@ -2501,8 +2501,10 @@ class ShuttingStarsCore {
 
     /**
      * 스테이지 초기화, 곡이 선정되지 않았을 때는 초기화만 하며, 곡이 선정된 경우는 초기화 후 곡 초기세팅까지 진행 (Promise)
+     * 
+     * @param {string|null} state 
      */
-    async resetStage() {
+    async resetStage(state) {
         const selfs = this;
         let idx, jdx;
         let diff, resetProcessed;
@@ -2524,13 +2526,15 @@ class ShuttingStarsCore {
         this.gameOverDelayed = false;
         this.resumingTime = 0;
 
+        if(typeof(state) == 'undefined' || state == null) state = this.state;
+
         this.fGameEvent({ "event" : 'resetstage', "broker" : this.broker });
         resetProcessed = false;
 
         // 상태별 처리
-        if(this.basicStates.indexOf(this.state) >= 0) { // 기본 상태들
+        if(this.basicStates.indexOf(state) >= 0) { // 기본 상태들
             // 곡 플레이 직전, 풀스크린 곡 타이틀 화면
-            if(this.state == 'songtitle' || this.state == 'listentitle') {
+            if(state == 'songtitle' || state == 'listentitle') {
                 resetProcessed = true;
 
                 this.lastObjectId = 0;
@@ -2757,8 +2761,8 @@ class ShuttingStarsCore {
                 if(this.ss3d != null && (! this.disable3d)) {
                     this.ss3d.onSongPlayPreparing(this);
                 }
-            } else if(this.state == 'playing' || this.state == 'listenplaying' || this.state == 'fitting') { // 곡이 플레이 상황일 경우 처리
-                if(this.state == 'fitting') {
+            } else if(state == 'playing' || state == 'listenplaying' || state == 'fitting') { // 곡이 플레이 상황일 경우 처리
+                if(state == 'fitting') {
                     try {
                         this.closeAudioSources();
 
@@ -2902,15 +2906,15 @@ class ShuttingStarsCore {
                 this.playPrepared = true;
 
                 if(this.backend != null) {
-                    if(     this.state == 'playing') { try { this.backend.logEvent('PLAY    : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
-                    else if(this.state == 'fitting') { try { this.backend.logEvent('FITTING : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
-                    else                             { try { this.backend.logEvent('LISTEN  : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                    if(     state == 'playing') { try { this.backend.logEvent('PLAY    : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                    else if(state == 'fitting') { try { this.backend.logEvent('FITTING : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
+                    else                        { try { this.backend.logEvent('LISTEN  : ' + this.song.name + ' (' + diff.difficultyLevel + ')'); } catch(ignores) {} }
                 }
             }
         } else { // 그외의 경우
             for(let idx=0; idx<this.states.length; idx++) {
                 const stateOne = this.states[idx];
-                if(stateOne.name == this.state) {
+                if(stateOne.name == state) {
                     resetProcessed = true;
                     stateOne.onStageReset(this);
                     break;
@@ -2934,7 +2938,7 @@ class ShuttingStarsCore {
 
             // 배경 오디오 존재 시 재생
             if(this.audioBackground != null) {
-                if(this.state == 'menu') {
+                if(state == 'menu') {
                     if(! this.audioBackgroundPlaying) {
                         this.audioBackground.currentTime = 0;
                         this.audioBackground.loop = true;
