@@ -8335,7 +8335,7 @@ class ShuttingStarsCore {
             let recordYn = true;
             if(this.createMode) recordYn = false;
             else if(this.song instanceof CustomMySSSong) recordYn = false;
-            else if(this.state == 'fitting') recordYn = false;
+            else if(beforeState == 'fitting') recordYn = false;
 
             if(recordYn) {
                 // Credit 반영
