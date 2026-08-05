@@ -894,6 +894,10 @@ class ShuttingStarsCore {
                     font-size: 2rem;
                     line-height: 2.5rem;
                 }
+                .shuttingstars_root .shuttingstars_pop_content.shuttingstars_canvas_config th, .shuttingstars_root .shuttingstars_pop_content.shuttingstars_canvas_config td, .shuttingstars_root .shuttingstars_pop_content.shuttingstars_canvas_config input, .shuttingstars_root .shuttingstars_pop_content.shuttingstars_canvas_config textarea, .shuttingstars_root .shuttingstars_pop_content.shuttingstars_canvas_config select {
+                    font-size: 1.2rem;
+                    line-height: 1.5rem;
+                }
                 .shuttingstars_root .shuttingstars_pop_content.shuttingstars_pop_content2 { z-index: 1005; }
             `;
             //     팝업 영역 CSS
@@ -5290,6 +5294,7 @@ class ShuttingStarsCore {
         let fontSize = this.convertFontSize(20);
         let opacity = 0.9;
         let gap = Math.floor(fontSize / 2.0);
+        let rectBottomY = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5; // 중앙 영역 사각형 (배경색과 글자색이 반전되는 영역) 바닥 Y 좌표
         let label = '';
         let lefts, rights;
 
@@ -5414,6 +5419,7 @@ class ShuttingStarsCore {
                         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
 
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
+                        rectBottomY = this.convertY(this.getStageHeight() / 2, false) + row1Height;
                     }
 
                     // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
@@ -5481,6 +5487,7 @@ class ShuttingStarsCore {
                         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
 
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
+                        rectBottomY = this.convertY(this.getStageHeight() / 2, false) + row1Height;
                     }
 
                     // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
@@ -5552,8 +5559,10 @@ class ShuttingStarsCore {
 
                         if(this.difficultyChoosing) {
                             this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height + this.metricSize2 + (gap * 2)));
+                            rectBottomY = this.convertY(this.getStageHeight() / 2, false) + (row1Height + this.metricSize2 + (gap * 2));
                         } else {
                             this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height));
+                            rectBottomY = this.convertY(this.getStageHeight() / 2, false) + (row1Height);
                         }
                     }
 
@@ -5700,7 +5709,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
             else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
-            rows = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5;
+            rows = rectBottomY + (this.metricSize2 + gap);
             for(const line of desc) {
                 this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
                 rows += fontSize + gap;
@@ -5775,6 +5784,7 @@ class ShuttingStarsCore {
         let fontSize = this.convertFontSize(20);
         let opacity = 0.9;
         let gap = Math.floor(fontSize / 2.0);
+        let rectBottomY = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5; // 중앙 영역 사각형 (배경색과 글자색이 반전되는 영역) 바닥 Y 좌표
         let label = '';
         let lefts, rights;
 
@@ -5869,8 +5879,10 @@ class ShuttingStarsCore {
 
                     if(this.difficultyChoosing) {
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height + this.metricSize2 + (gap * 2)));
+                        rectBottomY = this.convertY(this.getStageHeight() / 2, false) + (row1Height + this.metricSize2 + (gap * 2));
                     } else {
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height));
+                        rectBottomY = this.convertY(this.getStageHeight() / 2, false) + (row1Height);
                     }
                 }
 
@@ -5983,7 +5995,7 @@ class ShuttingStarsCore {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
             else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
 
-            rows = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5;
+            rows = rectBottomY + (this.metricSize2 + gap);
             for(const line of desc) {
                 this.ctx.fillText(line, descX + fontSize + this.getLeftMarginStage(), rows);
                 rows += fontSize + gap;
@@ -6454,6 +6466,7 @@ class ShuttingStarsCore {
         let opacity = 0.9;
         let gap = Math.floor(fontSize / 2.0);
         let divideCount = 2;
+        let rectBottomY = Math.floor((this.canvas.height * 2.7 / 4.0) + (fontSize * 3)) + 5; // 중앙 영역 사각형 (배경색과 글자색이 반전되는 영역) 바닥 Y 좌표
         let label = '';
         let lefts, rights;
         
@@ -6557,6 +6570,7 @@ class ShuttingStarsCore {
                     else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
 
                     this.ctx.fillRect(this.getLeftMarginPage(), centerY - (row1Height / 2), this.convertX(this.getStageWidth()), row1Height);
+                    rectBottomY = centerY + (row1Height / 2) + 5;
                 }
 
                 // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
