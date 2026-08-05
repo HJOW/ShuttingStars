@@ -103,7 +103,7 @@ class ShuttingStarsCore {
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
     judgeFont  = 'D2 coding';
     /** @type {string} 빌드번호 등 출력에 사용할 OCR 스타일 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
-    ocrFont    = 'OCR-A';
+    ocrFont    = 'ShareTechMono'; // OCR-A
     /** @type {string} 대체 폰트들 */
     alterFonts = ['D2 coding', 'Nanum Gothic Coding', 'D2Coding', 'NanumGothicCoding', 'NanumGothic', 'NanumMyeongjo', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Nanum Pen Script', 'ocra', 'monospace'];
 
