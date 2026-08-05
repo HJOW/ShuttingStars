@@ -8764,6 +8764,12 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'https://github.com/brix/crypto-js/blob/develop/LICENSE', fontSize : 15 });
         this.creditContents.push({ label : '', fontSize : 25 });
 
+        this.creditContents.push({ label : 'SheetJS Community Edition', fontSize : 25 });
+        this.creditContents.push({ label : 'Apache License 2.0', fontSize : 15 });
+        this.creditContents.push({ label : 'Copyright (c) 2012-present SheetJS LLC', fontSize : 15 });
+        this.creditContents.push({ label : 'https://docs.sheetjs.com/docs/miscellany/license/', fontSize : 15 });
+        this.creditContents.push({ label : '', fontSize : 25 });
+
         this.creditContents.push({ label : 'jQuery (Only for few features)', fontSize : 25 });
         this.creditContents.push({ label : 'Projects referencing this document are released under the terms of the MIT license.', fontSize : 15 });
         this.creditContents.push({ label : 'https://jquery.com/license/', fontSize : 15 });

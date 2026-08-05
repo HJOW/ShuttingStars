@@ -177,6 +177,12 @@ https://github.com/vanillawc/wc-monaco-editor/blob/main/LICENSE
 Projects referencing this document are released under the terms of the MIT license.
 https://jquery.com/license/
 
++ SheetJS CE
+
+Copyright (C) 2012-present   SheetJS LLC
+Apache License 2.0
+https://docs.sheetjs.com/docs/miscellany/license/
+
 ## JavaScript Library CDN
 
 이 게임의 핵심 스크립트 번들 파일을 다음과 같이 CDN을 통해서 불러올 수도 있습니다.

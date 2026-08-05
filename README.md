@@ -157,6 +157,12 @@ BSD License
 Copyright 2013 Yahoo! Inc.
 https://github.com/pure-css/pure/blob/main/LICENSE
 
++ SheetJS CE
+
+Copyright (C) 2012-present   SheetJS LLC
+Apache License 2.0
+https://docs.sheetjs.com/docs/miscellany/license/
+
 + jQuery (Only for few side features)
 
 Projects referencing this document are released under the terms of the MIT license.
