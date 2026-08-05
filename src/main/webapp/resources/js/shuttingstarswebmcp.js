@@ -288,6 +288,31 @@ class SSWebMCP {
             }
         });
 
+        await document.modelContext.registerTool({
+            name : 'keypress',
+            description : `Make keyboard input to the game. This tool is not available when the song is already playing.`,
+            inputSchema : {
+                type : 'object',
+                properties : {
+                    key  : { type : 'string', enum : ['ESCAPE', 'ENTER', 'ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'S', 'D', 'F', 'H', 'J', 'K'] },
+                    time : { type : 'number', description : 'The time to pressing the key. Input number as milliseconds. Default value is 5.' }
+                }
+            },
+            outputSchema : {
+                type : 'string'
+            },
+            execute : ({key, time}) => {
+                key = key.toUpperCase();
+                selfs.#coreInstance.handleKeyInput(key, false);
+
+                if(typeof(time) == 'undefined' || time == null || isNaN(time) || time <= 5) time = 5;
+                if(typeof(time) != 'number') time = parseInt(String(time));
+                setTimeout(() => {
+                    selfs.#coreInstance.handleKeyRelease(key, false);
+                }, time);
+                return key;
+            }
+        });
     }
 
     trans(msg) {
