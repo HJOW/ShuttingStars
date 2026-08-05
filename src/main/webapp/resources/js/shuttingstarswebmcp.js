@@ -177,10 +177,12 @@ class SSWebMCP {
                     }
 
                     return msg;
-                } else if(selfs.#coreInstance.state == 'songtitle') {
+                } else if(selfs.#coreInstance.state == 'songtitle' || selfs.#coreInstance.state == 'listentitle') {
                     return 'On song-loading screen. Please wait.';
                 } else if(selfs.#coreInstance.state == 'playing') {
-                    return 'On playing screen. Use S, D, F, H, J, K keys to play, ESC key to pause. (ESC again to stop and go to menu)';
+                    if(selfs.#coreInstance.paused) return 'On playing screen. The game is paused. ESC again to stop and go to menu, ENTER key to resume.';
+                    else if(selfs.#coreInstance.resumingTime > 0) return 'On playing screen. The game will be resumed.';
+                    return 'On playing screen. Just let user to play. ESC key to pause. (When paused, ESC again to stop and go to menu, ENTER key to resume.)';
                 } else if(selfs.#coreInstance.state == 'result') {
                     msg = 'On result screen.';
                     msg += '\n SONG INFORMATION ';
@@ -200,6 +202,24 @@ class SSWebMCP {
 
                     msg += '\n ESC to go back to menu.';
                     return msg;
+                } else if(selfs.#coreInstance.state == 'listenchoosing') {
+                    msg = 'On song-choosing screen for just listen.';
+                    if(selfs.#coreInstance.songCanListen.length <= 0) {
+                        return msg + '\n No songs available. ESC key to go back to menu.';
+                    }
+                    for(idx=0; idx<selfs.#coreInstance.songCanListen.length; idx++) {
+                        let songOne = selfs.#coreInstance.songCanListen[idx];
+                        if(selfs.#coreInstance.songChoosing == songOne) {
+                            msg += '\n ' + (idx+1) + 'th song (CHOOSING) is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                        } else {
+                            msg += '\n ' + (idx+1) + 'th song is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                        }
+                    }
+                    return msg + '\n Arrow up/down key to move, ENTER key to select a song to listen, ESC key to go back to menu.';
+                } else if(selfs.#coreInstance.state == 'listenplaying') {
+                    if(selfs.#coreInstance.paused) return 'On listening screen. The song is paused. ESC again to stop and go to menu, ENTER key to resume.';
+                    else if(selfs.#coreInstance.resumingTime > 0) return 'On listening screen. The song will be resumed.';
+                    return 'On listening screen. ESC key to pause. (When paused, ESC again to stop and go to menu, ENTER key to resume.)';
                 }
                 // TODO : 다른 화면들에 대해서도 작성
 
