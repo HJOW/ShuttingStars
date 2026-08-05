@@ -748,8 +748,6 @@ class ShuttingStarsCore {
             this.ssuuid = ShuttingStarsUtility.assureSSUUID();
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
 
-            try { this.webmcpMan = initSSWebMCP(this); } catch(exmcp) { console.error(exmcp); this.webmcpMan = null; }
-
             this.backend = null;
             try {
                 this.backend = SSBackend();
@@ -1116,6 +1114,9 @@ class ShuttingStarsCore {
             
             // 기타 곡 불러오기
             await this.loadSongs();
+
+            // WebMCP 불러오기
+            try { this.webmcpMan = await initSSWebMCP(this); } catch(exmcp) { console.error(exmcp); this.webmcpMan = null; }
 
             this.logInit('setting workers...');
 

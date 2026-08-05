@@ -234,8 +234,9 @@ class SSWebMCP {
             inputSchema : {
                 type : 'object',
                 properties : {
-                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'] }
-                }
+                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'], description : 'The setting option to get.' }
+                },
+                required : ['option']
             },
             outputSchema : {
                 type : 'string'
@@ -264,9 +265,10 @@ class SSWebMCP {
             inputSchema : {
                 type : 'object',
                 properties : {
-                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'] },
-                    value  : { type : 'string' }
-                }
+                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'], description : 'The setting option to modify.' },
+                    value  : { type : 'string', description : 'The new value to set.'}
+                },
+                required : ['option', 'value']
             },
             outputSchema : {
                 type : 'object',
@@ -294,14 +296,17 @@ class SSWebMCP {
             inputSchema : {
                 type : 'object',
                 properties : {
-                    key  : { type : 'string', enum : ['ESCAPE', 'ENTER', 'ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'S', 'D', 'F', 'H', 'J', 'K'] },
+                    key  : { type : 'string', enum : ['ESCAPE', 'ENTER', 'ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'S', 'D', 'F', 'H', 'J', 'K'], description : 'The key to press. Use uppercase letters for alphabet keys.' },
                     time : { type : 'number', description : 'The time to pressing the key. Input number as milliseconds. Default value is 5.' }
-                }
+                },
+                required : ['key']
             },
             outputSchema : {
                 type : 'string'
             },
             execute : ({key, time}) => {
+                if(selfs.#coreInstance.state == 'playing') throw new Error('Cannot make keyboard input when the song is already playing.');
+
                 key = key.toUpperCase();
                 selfs.#coreInstance.handleKeyInput(key, false);
 
@@ -325,14 +330,14 @@ class SSWebMCP {
  *    
  * @returns {SSWebMCP | null} WebMCP 관리 객체, 단 웹 브라우저가 WebMCP 미지원 시 null 가 반환됨
  */
-function initSSWebMCP(coreInst) {
+async function initSSWebMCP(coreInst) {
     if(!coreInst) throw new Error('SSWebMCP.initSSWebMCP() : coreInst is null or undefined.');
     // WebMCP 지원 여부 확인
     if(typeof(document.modelContext             ) == 'undefined' || document.modelContext              == null) return null;
     if(typeof(document.modelContext.registerTool) == 'undefined' || document.modelContext.registerTool == null) return null;
     try {
         const mcpInst = new SSWebMCP(coreInst);
-        mcpInst.registerTools();
+        await mcpInst.registerTools();
         return mcpInst;
     } catch(exmcp) {
         console.error(exmcp);
