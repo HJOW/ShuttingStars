@@ -19,12 +19,6 @@
   + 구글 로그인, 클라우드 기록 저장 기능이 지원됩니다.
   + 트래픽 사용량 제한이 엄격합니다.
 
-* https://hjow.duckdns.org/shuttingstars/    
-  + 제 개인 NAS 기능을 이용한 웹 서버입니다.
-  + 구글 로그인, 클라우드 기록 저장 기능이 지원됩니다.
-  + 제 개인 기기로 언제든 서비스가 중단될 수 있습니다.
-  + 트래픽 제한이 따로 없습니다.
-
 ## 로컬에서 서버 구동 (node 사용)
 
 node 설치가 필요합니다. [Node.JS (https://nodejs.org/ko)](https://nodejs.org/ko)   

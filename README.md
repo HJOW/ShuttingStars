@@ -18,11 +18,6 @@ Choose one.
   + Google login and cloud score recording are available.
   + This server has a network traffic usage limit.
 
-* https://hjow.duckdns.org/shuttingstars/    
-  + My private NAS based web server.
-  + Google login and cloud score recording are available.
-  + My private server - can be shutdown any time.
-
 ## Simply run this game on local PC (using node)
 
 Install node [Node.JS (https://nodejs.org/ko)](https://nodejs.org/ko)       
