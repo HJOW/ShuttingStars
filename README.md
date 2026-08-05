@@ -122,6 +122,14 @@ Visit https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko
 SIL Open font license 1.1
 https://fonts.google.com/noto
 
++ ShareTechMono  
+
+SIL Open font license 1.1
+
++ XanhMono
+
+SIL Open font license 1.1
+
 ## Third Party Icons
 
 + Google Fonts - Material Symbols

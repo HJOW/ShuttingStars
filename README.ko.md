@@ -133,6 +133,14 @@ https://sonniss.com/gdc-bundle-license/
 SIL Open font license 1.1
 https://fonts.google.com/noto
 
++ ShareTechMono  
+
+SIL Open font license 1.1
+
++ XanhMono
+
+SIL Open font license 1.1
+
 ## 써드파티 아이콘
 
 + Google Fonts - Material Symbols

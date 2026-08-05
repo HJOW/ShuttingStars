@@ -107,6 +107,27 @@
 }
 
 @font-face {
+    font-family: 'ShareTechMono';
+    font-style: normal;
+    font-weight: normal;
+    src : url('ShareTechMono-Regular.ttf') format('truetype')
+}
+
+@font-face {
+    font-family: 'XanhMono';
+    font-style: normal;
+    font-weight: normal;
+    src : url('XanhMono-Regular.ttf') format('truetype')
+}
+
+@font-face {
+    font-family: 'XanhMono';
+    font-style: italic;
+    font-weight: normal;
+    src : url('XanhMono-Italic.ttf') format('truetype')
+}
+
+@font-face {
     font-family : "OCR-A";
     src : url("./ocr/ocra.ttf") format("truetype");
     font-weight: normal;
