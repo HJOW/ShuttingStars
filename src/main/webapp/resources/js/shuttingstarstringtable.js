@@ -70,7 +70,7 @@ const SSStringTable = {
         '% key to start' : '% 키를 눌러 시작',
         'Touch here to start' : '이 곳을 터치하여 시작',
         'Do you want to reset all?' : '전부 초기화 하시겠습니까?',
-        'Modify the timing value with the arrow keys, and press %1 key to save !' : '화살표 키로 타이밍을 조정하고, %1 키를 눌러 저장하세요 !',
+        'Modify values, and test it. Press %1 key to save.' : '값을 수정하고 테스트하신 후, %1 키를 눌러 저장하세요 !',
         'You can also test it now !' : '실시간으로 테스트가 가능합니다.',
         'RECORD' : '기록',
         'LOGIN' : '로그인',

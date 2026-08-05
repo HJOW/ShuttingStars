@@ -575,7 +575,7 @@ class ShuttingStarsCore {
     /** @type {string} 타이밍 보정화면에서 현재 변경 중인 값 */
     fittingChangingValue = 'judgeTiming';
     /** @type {Array<string>} 타이밍 보정화면에서 변경 가능한 값 목록 */
-    fittingChangables    = ['judgeTiming', 'noteLocationAdjustment'];
+    fittingChangables    = ['judgeTiming', 'noteLocationAdjustment', 'noteSpeedMultiplier'];
 
     // 렌더링 디버그 모드, true 시 JSON 객체를 objects 에 넣어 임의의 도형 추가 가능, 예: {type : 'circle', x: 100, y : 100, r : 10, color : 'rgb(255, 255, 255)'}
     /** @type {boolean} 임의 도형 렌더링 디버그 */
@@ -3879,6 +3879,9 @@ class ShuttingStarsCore {
                         } else if(this.fittingChangingValue == 'noteLocationAdjustment') {
                             this.noteLocationAdjustment--;
                             if(this.noteLocationAdjustment < -1000) this.noteLocationAdjustment = -1000;
+                        } else if(this.fittingChangingValue == 'noteSpeedMultiplier') {
+                            if(this.noteSpeedMultiplier <= 1) this.noteSpeedMultiplier = this.noteSpeedMultiplier * 0.5;
+                            else this.noteSpeedMultiplier -= 1;
                         }
                     } else if(key == this.arrowKeys[3]) { // RIGHT
                         if(this.fittingChangingValue == 'judgeTiming') {
@@ -3887,6 +3890,9 @@ class ShuttingStarsCore {
                         } else if(this.fittingChangingValue == 'noteLocationAdjustment') {
                             this.noteLocationAdjustment++;
                             if(this.noteLocationAdjustment > 1000) this.noteLocationAdjustment = 1000;
+                        } else if(this.fittingChangingValue == 'noteSpeedMultiplier') {
+                            if(this.noteSpeedMultiplier < 1) this.noteSpeedMultiplier = this.noteSpeedMultiplier * 2;
+                            else this.noteSpeedMultiplier += 1;
                         }
                     }
                 }
@@ -4955,42 +4961,51 @@ class ShuttingStarsCore {
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
 
         // 타이틀 출력
-        this.ctx.fillText(this.trans('ADJUST TIMING'), this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 21 / 30));
+        this.ctx.fillText(this.trans('ADJUST TIMING'), this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 18 / 30));
 
         // 사용법 출력
         fontSize = this.convertFontSize(12);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        label = ShuttingStarsUtility.replaceString(this.trans('Modify the timing value with the arrow keys, and press %1 key to save !'), '%1', this.enterKey);
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 22 / 30));
+        label = ShuttingStarsUtility.replaceString(this.trans('Modify values, and test it. Press %1 key to save.'), '%1', this.enterKey);
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 19 / 30));
 
         label = this.trans('You can also test it now !');
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 23 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 20 / 30));
 
         // 현재의 타이밍값 출력
-
-        label = this.trans('Note Location') + '+- : ' + this.noteLocationAdjustment;
+        label = this.trans('Note Location') + ' : ' + this.noteLocationAdjustment;
         if(this.fittingChangingValue == 'noteLocationAdjustment') {
             this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
         } else {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         }
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 24 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 28 / 30), this.convertY(this.getStageHeight() * 22 / 30));
 
 
-        label = this.trans('Judge Timing') + '+- : ' + this.judgeTiming;
+        label = this.trans('Judge Timing') + ' : ' + this.judgeTiming;
         if(this.fittingChangingValue == 'judgeTiming') {
             this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
         } else {
             if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
             else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         }
-        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 25 / 30));
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 28 / 30), this.convertY(this.getStageHeight() * 23 / 30));
+
+        label = this.trans('Note Speed Rate') + ' : ' + this.noteSpeedMultiplier;
+        if(this.fittingChangingValue == 'noteSpeedMultiplier') {
+            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+        } else {
+            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        }
+        this.ctx.fillText(label, this.convertX(this.getStageWidth() * 28 / 30), this.convertY(this.getStageHeight() * 24 / 30));
 
 
         
         // 현재 타임 출력
-        label = String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME');
+        this.ctx.textAlign = "right";
+        label = String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME, 120 BPM');
         if(this.elapsedTime < 0) label = this.trans('Please wait...');
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
@@ -8723,7 +8738,7 @@ class ShuttingStarsCore {
         this.creditContents.push({ label : 'LICENSE', fontSize : 25 });
         this.creditContents.push({ label : '', fontSize : 15 });
         this.creditContents.push({ label : 'Copyright 2026 HJOW (hujinone22@naver.com)', fontSize : 15 });
-        this.creditContents.push({ label : ShuttingStarsUtility.replaceString(this.trans('Visit % for detail...'), '%', 'https://shuttingstars-3eddf.web.app/license.html'), fontSize : 15 });
+        this.creditContents.push({ label : ShuttingStarsUtility.replaceString(this.trans('Visit % for detail...'), '%', 'https://shuttingstars.pages.dev/license.html'), fontSize : 15 });
         
         for(let idx=0; idx<3; idx++) {
             this.creditContents.push({ label : '', fontSize : 30 });
