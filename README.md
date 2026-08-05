@@ -2,8 +2,7 @@ English | [한글](README.ko.md)
 
 # Shutting Stars
 
-This is now my just practice project for javascript web with canvas
-to make my own rhythm game !
+Simple rhythm game that you can play without any installation.
 
 ## TEST URL
 
