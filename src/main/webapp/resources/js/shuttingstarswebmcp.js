@@ -120,9 +120,9 @@ class SSWebMCP {
                     for(idx=0; idx<selfs.#coreInstance.menuListDynamic.length; idx++) {
                         let menuOne = selfs.#coreInstance.menuListDynamic[idx];
                         if(selfs.#coreInstance.menuChoosing == menuOne) {
-                            msg += '\n ' + (idx+1) + 'th menu (CHOOSING) is ' + menuOne.name + '.';
+                            msg += '\n ' + (idx+1) + 'th menu (CHOOSING) is ' + selfs.trans( selfs.#coreInstance.menuStringTable[ menuOne ] ) + '.';
                         } else {
-                            msg += '\n ' + (idx+1) + 'th menu is ' + menuOne.name + '.';
+                            msg += '\n ' + (idx+1) + 'th menu is ' + selfs.trans( selfs.#coreInstance.menuStringTable[ menuOne ] ) + '.';
                         }
                     }
                     msg += '\n Arrow up/down key to move, ENTER key to select.';
@@ -288,6 +288,10 @@ class SSWebMCP {
             }
         });
 
+    }
+
+    trans(msg) {
+        return this.#coreInstance.trans(msg);
     }
 }
 

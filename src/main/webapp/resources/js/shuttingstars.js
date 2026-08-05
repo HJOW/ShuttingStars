@@ -531,6 +531,19 @@ class ShuttingStarsCore {
     menuListDynamic = [];
     /** @type {*|null} 현재 선택된 메뉴 항목입니다. */
     menuChoosing = null;
+    /** @type {Object} 메뉴 항목에 대한 문자열 테이블 (1차 번역, 추가로 trans 로 번역되어 사용됨) */
+    menuStringTable = {
+        play : 'PLAY',
+        setting : 'SETTING',
+        fittiming : 'ADJUST TIMING',
+        listen : 'LISTEN',
+        credit : 'CREDIT',
+        community : 'COMMUNITY',
+        records : 'RECORDS',
+        login : 'LOGIN',
+        logout : 'LOGOUT',
+        exit : 'EXIT'
+    };
 
     // 설정 화면 관련
     /** @type {Array<string>} 설정 가능한 옵션 목록 */
@@ -5143,17 +5156,7 @@ class ShuttingStarsCore {
             let menuOne = this.menuListDynamic[idx];
 
             if(menuOne == 'login' || menuOne == 'logout') continue;
-
-            if(menuOne == 'play'     ) label = this.trans('PLAY');
-            if(menuOne == 'setting'  ) label = this.trans('SETTING');
-            if(menuOne == 'fittiming') label = this.trans('ADJUST TIMING');
-            if(menuOne == 'listen'   ) label = this.trans('LISTEN');
-            if(menuOne == 'credit'   ) label = this.trans('CREDIT');
-            if(menuOne == 'community') label = this.trans('COMMUNITY');
-            if(menuOne == 'records'  ) label = this.trans('RECORDS');
-            if(menuOne == 'login'    ) label = this.trans('LOGIN');
-            if(menuOne == 'logout'   ) label = this.trans('LOGOUT');
-            if(menuOne == 'exit'     ) label = this.trans('EXIT');
+            if(typeof(this.menuStringTable[menuOne]) != 'undefined') label = this.trans( this.menuStringTable[menuOne] );
 
             fontSize = this.convertFontSize(20);
 
