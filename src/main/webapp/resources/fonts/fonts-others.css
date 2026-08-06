@@ -99,3 +99,27 @@ SIL 오픈 폰트 라이선스
     font-weight: 900;
     font-display: swap;
 }
+
+/*
+구름 산스 코드
+    SIL Open Font License
+    글꼴 단독 판매 / 글꼴 변경하여 상업적 목적 활용은 금지
+    문의 : contact@goorm.io
+*/
+@font-face {
+    font-family: 'CloudSansCode';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/goorm-sans-code.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+/*
+케리스 케듀체 Line
+    국제 SIL(Summer Institute of Linguistics)에서 만든 오픈폰트 라이선스로, OFL 폰트는 이용 대상 및 목적에 제한없이 자유롭게 이용 가능 합니다.
+*/
+@font-face {
+    font-family: 'KerisKeduLine';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-3@1.0/KERISKEDU_Line.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
