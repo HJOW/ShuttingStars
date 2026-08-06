@@ -1,0 +1,30 @@
+{
+    "name": "ShuttingStarsChromeExtension",
+    "version": "0.0.8",
+    "manifest_version": 3,
+    "description": "Simple rhythm game for browser.",
+    "background": {
+        "service_worker": "ssworker.js"
+    },
+    "icons": {
+        "128": "resources/icons/icon128.png"
+    },
+    "action" : {
+        "default_popup" : "shuttingstars.html",
+        "default_icon" : {
+            "128": "resources/icons/icon128.png",
+            "64": "resources/icons/icon64.png"
+        },
+        "default_title" : "Shutting Stars"
+    },
+    "side_panel": {
+        "default_path": "shuttingstars.html"
+    },
+    "permissions": ["sidePanel", "storage"],
+    "requirements": {
+        "3D": {
+            "features": ["webgl"]
+        }
+    },
+    "homepage_url" : "https://shuttingstars.pages.dev"
+}

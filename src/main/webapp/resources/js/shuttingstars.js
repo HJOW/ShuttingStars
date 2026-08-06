@@ -44,6 +44,9 @@ class ShuttingStarsCore {
     /** @type {{w: number, h: number}} 화면 비율에 맞게 변형된 실제 크기. 화면 비율이 16:9보다 커지는 경우 stageSize 와 값이 달라짐. 이 경우 stageSize 외 영역에는 장식용 객체만 배치될 수 있음. */
     realStageSize = {w : 1280, h : 720};
 
+    /** @type {boolean} 크롬 확장프로그램 모드 여부 */
+    chromeExtensionMode = false;
+
     /** @type {{w: number, h: number}} 브라우저 영역 Outer 크기와 Inner 크기 간 차이, 게임 초기화 시 계산하며, 이후 창 크기 변경될 때마다 canvas 크기값 계산에 사용됨 */
     gap = { w : 0, h : 0 };
     /** @type {Object} 페이지, 스테이지, 노트 영역별 여백 설정 */
@@ -1247,8 +1250,14 @@ class ShuttingStarsCore {
             let outWidth  = this.fOuterWidth();
             let outHeight = this.fOuterHeight();
 
-            this.gap.w = outWidth  - window.innerWidth;
-            this.gap.h = outHeight - window.innerHeight;
+            if(this.chromeExtensionMode) {
+                this.gap.w = 0;
+                this.gap.h = 0;
+            } else {
+                this.gap.w = outWidth  - window.innerWidth;
+                this.gap.h = outHeight - window.innerHeight;
+            }
+            
             if(this.gap.w < 0) this.gap.w = 0;
             if(this.gap.h < 0) this.gap.h = 0;
 
@@ -1576,6 +1585,7 @@ class ShuttingStarsCore {
         this.broker.showGameTitle           = this.showGameTitle           ;
         this.broker.urlParameters           = this.urlParameters           ;
         this.broker.executeUrlParams        = this.executeUrlParams        ;
+        this.broker.chromeExtensionMode     = this.chromeExtensionMode     ;
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
@@ -1632,6 +1642,7 @@ class ShuttingStarsCore {
             if(typeof(obj.executeUrlParams       ) != 'undefined') { selfs.executeUrlParams        = obj.executeUrlParams        ; brokerSelf.executeUrlParams        = obj.executeUrlParams        }
             if(typeof(obj.urlCtx                 ) != 'undefined') { selfs.urlCtx                  = obj.urlCtx                  ; brokerSelf.urlCtx                  = obj.urlCtx                  }
             if(typeof(obj.rsscDirName            ) != 'undefined') { selfs.rsscDirName             = obj.rsscDirName             ; brokerSelf.rsscDirName             = obj.rsscDirName             }
+            if(typeof(obj.chromeExtensionMode    ) != 'undefined') { selfs.chromeExtensionMode     = obj.chromeExtensionMode     ; brokerSelf.chromeExtensionMode     = obj.chromeExtensionMode     }
             if(typeof(obj.fOuterWidth            ) == 'function' ) { selfs.fOuterWidth             = obj.fOuterWidth             ; brokerSelf.fOuterWidth             = obj.fOuterWidth             }
             if(typeof(obj.fOuterHeight           ) == 'function' ) { selfs.fOuterHeight            = obj.fOuterHeight            ; brokerSelf.fOuterHeight            = obj.fOuterHeight            }
             if(typeof(obj.fOnShutdownCalled      ) == 'function' ) { selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ; brokerSelf.fOnShutdownCalled       = obj.fOnShutdownCalled       }
@@ -1850,6 +1861,8 @@ class ShuttingStarsCore {
 
         let outWidth  = this.fOuterWidth();
         let outHeight = this.fOuterHeight();
+        if(outWidth  < 500) outWidth  = 500;
+        if(outHeight < 500) outHeight = 500;
         let ratio = (outWidth - this.gap.w) / (outHeight - this.gap.h);
 
         this.screenDirLandscape = this.detectScreenLandscape();
@@ -1886,7 +1899,7 @@ class ShuttingStarsCore {
         this.realStageSize.h = this.stageSize.h;
         this.realStageSize.w = this.stageSize.h * (ratio);
 
-        if(ratio < 1.69) { // 가로 : 세로 비율이 16:9보다 작은 경우 - 가로 길이를 다시 현 디스플레이 비율에 맞게 변경 (설정값은 높이만 가지고 판단하므로)
+        if(ratio > 0 && ratio < 1.69) { // 가로 : 세로 비율이 16:9보다 작은 경우 - 가로 길이를 다시 현 디스플레이 비율에 맞게 변경 (설정값은 높이만 가지고 판단하므로)
             this.stageSize.w  = Math.floor(this.stageSize.h  * ratio);
             this.resolution.w = Math.floor(this.resolution.h * ratio);
         }
@@ -4703,6 +4716,19 @@ class ShuttingStarsCore {
                 if(obj.priority == 'low') {
                     if(typeof(obj.draw) == 'function') obj.draw(this.ctx, this);
                 }
+            }
+
+            // 크롬 확장 프로그램 - 사이드 패널 크기 조절 불가능한 문제로, 크기 미달하면 크기 변경하라고 안내해야 함
+            if(this.chromeExtensionMode && (this.fOuterWidth() < 500)) {
+                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+                this.ctx.font = 'bold ' + this.convertFontSize(40) + 'px ' + this.getRenderFontFamily();
+                this.ctx.textAlign = "center";
+                this.ctx.fillText('<<', this.convertX(this.getStageWidth() / 7), this.convertY(this.getStageHeight() / 2));
+                this.ctx.textAlign = "left";
+                this.ctx.font = 'bold ' + this.convertFontSize(20) + 'px ' + this.getRenderFontFamily();
+                this.ctx.fillText(this.trans('Please increase the window size.'), this.convertX(this.getStageWidth() / 5), this.convertY(this.getStageHeight() / 2) - 10);
+                return;
             }
 
             // 게임 제목 강제 표시 옵션 적용 (단 title 상태인 경우는 renderTitle 에서 또 출력하므로 중복출력 방지)

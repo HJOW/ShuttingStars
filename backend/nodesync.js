@@ -31,6 +31,11 @@ async function ssNodeSync() {
     console.log('Copy files into electron path...');
     await fs.promises.cp('./src/main/webapp/resources', './etc/electron/web/resources', { recursive: true });
     console.log('Copy files into electron path... END');
+
+    // Chrome Extension
+    console.log('Copy files into chrome ext path...');
+    await fs.promises.cp('./src/main/webapp/resources', './etc/chrome_extension/resources', { recursive: true });
+    console.log('Copy files into chrome ext path... END');
 }
 
 ssNodeSync().catch(console.error);

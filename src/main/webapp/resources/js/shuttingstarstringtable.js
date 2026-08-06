@@ -124,7 +124,8 @@ const SSStringTable = {
         "GitHub" : "GitHub",
         "Launch the game (Popup)" : "게임 실행 (팝업)",
         "Delete your informations on game DB (Popup)" : "게임 DB 내 정보 삭제 (팝업)",
-        "Visit the github page (Popup)" : "GitHub 페이지 방문 (팝업)"
+        "Visit the github page (Popup)" : "GitHub 페이지 방문 (팝업)",
+        'Please increase the window size.' : '창 크기를 늘려주세요.'
     }
 };
 export { SSStringTable };
