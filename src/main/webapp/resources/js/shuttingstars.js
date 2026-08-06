@@ -5484,7 +5484,7 @@ class ShuttingStarsCore {
             row1Height = this.metricSize3 + (gap * 3);
 
             // 난이도 배열 준비 (곡 목록처럼 사용)
-            const numberArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            const numberArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
             
             // 선택 중인 난이도가 몇 번째인지 확인
             for(idx=0; idx<numberArray.length; idx++) {
