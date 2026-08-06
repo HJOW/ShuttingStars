@@ -31,11 +31,6 @@ async function ssNodeSync() {
     console.log('Copy files into electron path...');
     await fs.promises.cp('./src/main/webapp/resources', './etc/electron/web/resources', { recursive: true });
     console.log('Copy files into electron path... END');
-
-    // Tauri
-    console.log('Copy files into tauri path...');
-    await fs.promises.cp('./src/main/webapp/resources', './etc/tauri/shuttingstars-tauri/src/resources', { recursive: true });
-    console.log('Copy files into tauri path... END');
 }
 
 ssNodeSync().catch(console.error);
