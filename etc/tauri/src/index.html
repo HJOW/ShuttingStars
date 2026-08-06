@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="description" content="Shutting Stars - The rhythm game on web !"/>
+    <title>Shutting Stars</title>
+    <script type="module" src="/main.js" defer></script>
+    <link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
+    <link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
+    <link rel="manifest" href="manifest.webmanifest"/>
+    <link rel="stylesheet" href="./resources/css/pure-min.css"/>
+    
+    <!--
+    
+    게임 플레이 화면
+    
+    LICENSE
+    
+    Copyright 2026 HJOW (hujinone22@naver.com)
+    
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+    
+        http://www.apache.org/licenses/LICENSE-2.0
+    
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License. 
+    -->
+    
+    
+    <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
+    <!-- This part is not my code, Only for backend, not necessary for game engine works -->
+    <!-- Google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Nanum+Pen+Script&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet"/>
+    <!-- // Google fonts -->
+     <link rel="stylesheet" href="./resources/css/googleloginbuttons.css"/>
+    <!-- YOUTUBE -->
+    <script type="text/javascript" src="https://www.youtube.com/iframe_api"></script>
+    <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
+    
+    <link rel="stylesheet" href="./resources/fonts/fonts.css"/>
+    <link rel="stylesheet" href="./resources/fonts/fonts-others.css"/>
+    <link rel="stylesheet" href="./resources/css/common.css"/>
+    <script type="text/javascript" src='resources/js/jquery-1.12.4.min.js'></script>
+    <script type="text/javascript" src='resources/js/crypto-js.min.js'></script>
+    <script type="text/javascript" src='resources/js/dist/shuttingstars.bundle.js'></script>
+  </head>
+  <body>
+    <!-- Game 메인 영역 -->
+    <div class='shuttingstar_canvas_root'></div>
+  
+    <!-- 초기화 전 로딩화면 영역 -->
+    <div id="shuttingstars_init_loading" class="shuttingstars_init_loading">
+        <progress></progress>
+    </div>
+
+    <!-- 스크립트로 게임 구동 -->
+    <script type="module">
+    window.addEventListener('load', function(){
+        const root = document.getElementsByClassName('shuttingstar_canvas_root')[0];
+        /*
+        // tauri 에서 앱 종료 기능이 있는지 확인해야 함
+        ShuttingStars.setBeforeInitializeHook(function(broker) {
+            broker.apply({
+                fOnShutdownCalled : function() {
+                    window.close(); // 이 곳에서 앱 종료시켜야 함
+                }
+            });
+        });
+        */
+        ShuttingStars.init(root, './', function(broker) {
+          document.getElementById('shuttingstars_init_loading').style.display = 'none';
+        });
+    });
+    </script>
+  </body>
+</html>
