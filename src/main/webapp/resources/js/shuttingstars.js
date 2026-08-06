@@ -101,7 +101,7 @@ class ShuttingStarsCore {
     /** @type {string} 강조할 일이 있을 때 fontFamily 대신 사용되는 폰트, alterFonts 가 뒤에 붙음 */
     pointFont  = 'Nanum Pen Script';
     /** @type {string} 판정 마크에 사용될 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
-    judgeFont  = 'D2 coding';
+    judgeFont  = 'ShareTechMono';
     /** @type {string} 빌드번호 등 출력에 사용할 OCR 스타일 폰트, 마찬가지로 alterFonts 가 뒤에 붙음 */
     ocrFont    = 'ShareTechMono'; // OCR-A
     /** @type {string} 대체 폰트들 */
@@ -4863,7 +4863,7 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(40);
             rows -= this.metricSize2 / 2;
             this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
-            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+            this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
             this.ctx.textAlign = "right";
             this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
         }
@@ -5663,8 +5663,8 @@ class ShuttingStarsCore {
                             if(ddx == diffIdx) label += ']';
 
                             fontSize = this.convertFontSize(15);
-                            if(ddx == diffIdx) this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-                            else               this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                            if(ddx == diffIdx) this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
+                            else               this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
 
                             if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height));
                             else               this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height));
@@ -6302,7 +6302,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(40);
         rows -= this.metricSize2 / 2;
         this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
 
@@ -6347,7 +6347,7 @@ class ShuttingStarsCore {
         // 판정별 숫자 출력
         fontSize = this.convertFontSize(20);
         label = 'PERFECT';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6357,7 +6357,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'GREAT';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6367,7 +6367,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'GOOD';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6378,7 +6378,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'BAD';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6388,7 +6388,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'MISS';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6399,7 +6399,7 @@ class ShuttingStarsCore {
 
         // 점수 출력
         label = ShuttingStarsUtility.fitDigit(this.point, 10);
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "left";
@@ -6409,7 +6409,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + gap;
 
         // 랭크 출력
-        this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getJudgeFontFamily();
         this.ctx.textAlign = "center";
         label = this.judgeResultRank();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', 0.9)');
@@ -6453,7 +6453,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(40);
         rows -= this.convertFontSize(5);
         this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.difficulty.difficultyLevel) + ', 0.9)');
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
 
@@ -6647,7 +6647,7 @@ class ShuttingStarsCore {
                 // 점수 및 날짜 출력
                 fontSize = this.convertFontSize(20);
                 this.ctx.textAlign = "center";
-                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+                this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
 
                 const playDate = new Date();
                 playDate.setTime(recordOne.date);
@@ -6659,7 +6659,7 @@ class ShuttingStarsCore {
                 // 랭크 출력
                 fontSize = this.convertFontSize(80);
                 this.ctx.textAlign = "center";
-                this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+                this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
                 label = recordOne.rank;
                 let colorRank = this.judgeResultRankColor(recordOne.rank);
                 this.ctx.fillStyle = this.convertColor('rgba(' + colorRank + ', ' + opacity + ')');
@@ -6735,7 +6735,7 @@ class ShuttingStarsCore {
         // 판정별 숫자 출력
         fontSize = this.convertFontSize(20);
         label = 'PERFECT';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6745,7 +6745,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'GREAT';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6755,7 +6755,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'GOOD';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6766,7 +6766,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'BAD';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6776,7 +6776,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + (gap/4);
 
         label = 'MISS';
-        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeMarkColor(label) + ', 0.8)');
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
@@ -6787,7 +6787,7 @@ class ShuttingStarsCore {
 
         // 점수 출력
         label = ShuttingStarsUtility.fitDigit(this.seeingRecord.point, 10);
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
         if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
         else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
         this.ctx.textAlign = "left";
@@ -6797,7 +6797,7 @@ class ShuttingStarsCore {
         rows += this.metricSize1 + gap;
 
         // 랭크 출력
-        this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'bold ' + this.convertFontSize(100) + 'px ' + this.getJudgeFontFamily();
         this.ctx.textAlign = "center";
         label = this.judgeResultRank(this.seeingRecord);
         this.ctx.fillStyle = this.convertColor('rgba(' + this.judgeResultRankColor(label) + ', 0.9)');
@@ -6830,7 +6830,7 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(40);
         rows -= this.convertFontSize(5);
         this.ctx.fillStyle = this.convertColor('rgba(' + this.difficultyNumberColor(this.seeingRecord.level) + ', 0.9)');
-        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
+        this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
 
