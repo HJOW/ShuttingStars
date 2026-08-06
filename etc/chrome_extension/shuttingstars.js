@@ -27,7 +27,8 @@ window.addEventListener('load', function(){
         broker.apply({
             fOuterWidth  : function() { return window.innerWidth; },
             fOuterHeight : function() { return window.innerHeight; },
-            chromeExtensionMode : true
+            chromeExtensionMode : true,
+            virtualKeyNone : true
         });
     });
     // 게임 초기화 및 동작 시작

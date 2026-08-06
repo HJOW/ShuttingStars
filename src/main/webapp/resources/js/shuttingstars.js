@@ -1586,6 +1586,7 @@ class ShuttingStarsCore {
         this.broker.urlParameters           = this.urlParameters           ;
         this.broker.executeUrlParams        = this.executeUrlParams        ;
         this.broker.chromeExtensionMode     = this.chromeExtensionMode     ;
+        this.broker.virtualKeyNone          = this.virtualKeyNone          ;
         this.broker.fOuterWidth             = this.fOuterWidth             ;
         this.broker.fOuterHeight            = this.fOuterHeight            ;
         this.broker.fOnShutdownCalled       = this.fOnShutdownCalled       ;
@@ -1643,6 +1644,7 @@ class ShuttingStarsCore {
             if(typeof(obj.urlCtx                 ) != 'undefined') { selfs.urlCtx                  = obj.urlCtx                  ; brokerSelf.urlCtx                  = obj.urlCtx                  }
             if(typeof(obj.rsscDirName            ) != 'undefined') { selfs.rsscDirName             = obj.rsscDirName             ; brokerSelf.rsscDirName             = obj.rsscDirName             }
             if(typeof(obj.chromeExtensionMode    ) != 'undefined') { selfs.chromeExtensionMode     = obj.chromeExtensionMode     ; brokerSelf.chromeExtensionMode     = obj.chromeExtensionMode     }
+            if(typeof(obj.virtualKeyNone         ) != 'undefined') { selfs.virtualKeyNone          = obj.virtualKeyNone          ; brokerSelf.virtualKeyNone          = obj.virtualKeyNone          }
             if(typeof(obj.fOuterWidth            ) == 'function' ) { selfs.fOuterWidth             = obj.fOuterWidth             ; brokerSelf.fOuterWidth             = obj.fOuterWidth             }
             if(typeof(obj.fOuterHeight           ) == 'function' ) { selfs.fOuterHeight            = obj.fOuterHeight            ; brokerSelf.fOuterHeight            = obj.fOuterHeight            }
             if(typeof(obj.fOnShutdownCalled      ) == 'function' ) { selfs.fOnShutdownCalled       = obj.fOnShutdownCalled       ; brokerSelf.fOnShutdownCalled       = obj.fOnShutdownCalled       }
