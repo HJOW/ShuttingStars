@@ -10133,13 +10133,17 @@ class ShuttingStarsCore {
 
     /**
      * 첫 세션 (이제 막 브라우저 띄웠는지) 여부 체크하여, 첫 세션이 맞으면 화면 새로고침 호출 후 true 반환
+     *      크롬 플러그인 모드에서는 새로고침 안함
      * @returns {boolean} 첫 세션이면 true (반환되고, 화면 새로고침 호출됨), 그외 false
      */
     refreshOnFirstSession() {
         const selfs = this;
         const mark = sessionStorage.getItem('ss_firsts');
+
         if(mark == null || typeof(mark) == 'undefined' || mark == '') {
             sessionStorage.setItem('ss_firsts', 'Y');
+
+            if(this.chromeExtensionMode) return true;
             setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }, 2000);
             return true;
         }
