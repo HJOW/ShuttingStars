@@ -16,6 +16,7 @@
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -28,7 +29,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>0.0.8.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -58,6 +58,9 @@
   <PropertyGroup>
     <ApplicationIcon>web\icon64.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.4129.50, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Web.WebView2.1.0.4129.50\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
@@ -71,6 +74,7 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationFramework.Royale" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -123,31 +127,74 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="packages.config" />
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <Resource Include="web\resources\fonts\codicon.ttf" />
-    <None Include="web\resources\fonts\D2Coding.woff2" />
-    <None Include="web\resources\fonts\D2CodingBold.woff2" />
-    <Resource Include="web\resources\fonts\NanumGothic.otf" />
-    <Resource Include="web\resources\fonts\NanumGothicBold.otf" />
-    <Resource Include="web\resources\fonts\NanumGothicCoding.ttf" />
-    <Resource Include="web\resources\fonts\NanumMyeongjo.otf" />
-    <Resource Include="web\resources\fonts\NanumMyeongjoBold.otf" />
-    <None Include="web\resources\fonts\ocr\LICENSE" />
-    <Resource Include="web\resources\fonts\ocr\ocra.ttf" />
-    <Resource Include="web\resources\fonts\ocr\ocraI.ttf" />
-    <Resource Include="web\resources\fonts\ocr\ocraIII.ttf" />
-    <Resource Include="web\resources\fonts\ocr\ocraIV.ttf" />
-    <Resource Include="web\resources\fonts\ShareTechMono-Regular.ttf" />
-    <Resource Include="web\resources\fonts\XanhMono-Italic.ttf" />
-    <Resource Include="web\resources\fonts\XanhMono-Regular.ttf" />
-    <None Include="web\resources\json\config.json" />
-    <None Include="web\resources\json\songs.json" />
-    <None Include="web\resources\js\wc-monaco\README" />
-    <None Include="web\resources\se\sonniss-gdc\License.pdf" />
-    <None Include="web\resources\songs\woowahan\songswoowahan.json" />
+    <EmbeddedResource Include="web\resources\fonts\codicon.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\D2Coding.woff2">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\D2CodingBold.woff2">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\NanumGothic.otf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\NanumGothicBold.otf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\NanumGothicCoding.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\NanumMyeongjo.otf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\NanumMyeongjoBold.otf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ocr\LICENSE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ocr\ocra.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ocr\ocraI.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ocr\ocraIII.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ocr\ocraIV.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ShareTechMono-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\XanhMono-Italic.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\XanhMono-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\json\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\json\songs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\README">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\License.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\songswoowahan.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -165,112 +212,390 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="web\game.html" />
-    <Resource Include="web\icon64.ico" />
-    <Content Include="web\resources\css\common.css" />
-    <Content Include="web\resources\css\googleloginbuttons.css" />
-    <Content Include="web\resources\css\pure-min.css" />
-    <Content Include="web\resources\fonts\fonts-others.css" />
-    <Content Include="web\resources\fonts\fonts.css" />
-    <Resource Include="web\resources\fonts\ShareTechMono-Regular-LICENSE.txt" />
-    <Resource Include="web\resources\fonts\XanhMono-LICENSE.txt" />
-    <Resource Include="web\resources\icons\icon128.png" />
-    <Resource Include="web\resources\icons\icon300.png" />
-    <Resource Include="web\resources\icons\icon512.png" />
-    <Resource Include="web\resources\icons\icon64.ico" />
-    <Resource Include="web\resources\icons\icon64.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\check_box_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\check_box_24dp_050505_FILL1_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\check_box_outline_blank_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\check_circle_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\close_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\directory_sync_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\exit_to_app_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\favorite_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\favorite_24dp_050505_FILL1_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\home_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\login_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\logout_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\menu_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\redo_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\search_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\settings_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\star_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\thumb_up_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Resource Include="web\resources\img\icons\googlefonts\toggle_on_24dp_050505_FILL0_wght400_GRAD0_opsz24.png" />
-    <Content Include="web\resources\js\cloudflareservices.js" />
-    <Content Include="web\resources\js\crypto-js.min.js" />
-    <Content Include="web\resources\js\dist\shuttingstars.bundle.js" />
-    <Content Include="web\resources\js\index.js" />
-    <Content Include="web\resources\js\jquery-1.12.4.min.js" />
-    <Content Include="web\resources\js\json5.min.js" />
-    <Content Include="web\resources\js\lyriamanager.js" />
-    <Content Include="web\resources\js\opensongs.js" />
-    <Content Include="web\resources\js\shuttingstarboard.js" />
-    <Content Include="web\resources\js\shuttingstars.js" />
-    <Content Include="web\resources\js\shuttingstars3d.js" />
-    <Content Include="web\resources\js\shuttingstarsinterface.js" />
-    <Content Include="web\resources\js\shuttingstarsongs.js" />
-    <Content Include="web\resources\js\shuttingstarstringtable.js" />
-    <Content Include="web\resources\js\shuttingstarsutils.js" />
-    <Content Include="web\resources\js\shuttingstarswebmcp.js" />
-    <Content Include="web\resources\js\shuttingstarworker.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\EffectComposer.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\MaskPass.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\OutputPass.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\Pass.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\RenderPass.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\ShaderPass.js" />
-    <Content Include="web\resources\js\threejs\postprocessing\UnrealBloomPass.js" />
-    <Content Include="web\resources\js\threejs\shaders\CopyShader.js" />
-    <Content Include="web\resources\js\threejs\shaders\LuminosityHighPassShader.js" />
-    <Content Include="web\resources\js\threejs\shaders\OutputShader.js" />
-    <Content Include="web\resources\js\threejs\three.core.min.js" />
-    <Content Include="web\resources\js\threejs\three.module.min.js" />
-    <Content Include="web\resources\js\wc-monaco\monaco\workers\css.worker.js" />
-    <Content Include="web\resources\js\wc-monaco\monaco\workers\editor.worker.js" />
-    <Content Include="web\resources\js\wc-monaco\monaco\workers\html.worker.js" />
-    <Content Include="web\resources\js\wc-monaco\monaco\workers\json.worker.js" />
-    <Content Include="web\resources\js\wc-monaco\monaco\workers\ts.worker.js" />
-    <Content Include="web\resources\js\wc-monaco\wc-monaco-editor.js" />
-    <Content Include="web\resources\js\xlsx.full.min.js" />
-    <Content Include="web\resources\se\sonniss-gdc\accept01.mp3" />
-    <Content Include="web\resources\se\sonniss-gdc\accept02.mp3" />
-    <Content Include="web\resources\se\sonniss-gdc\accept03.mp3" />
-    <Content Include="web\resources\se\sonniss-gdc\cancel01.mp3" />
-    <Content Include="web\resources\se\sonniss-gdc\cancel02.mp3" />
-    <Resource Include="web\resources\se\sonniss-gdc\Readme.txt" />
-    <Content Include="web\resources\se\sonniss-gdc\special01.mp3" />
-    <Content Include="web\resources\se\sonniss-gdc\special02.mp3" />
-    <Content Include="web\resources\se\tick.ogg" />
-    <Content Include="web\resources\songs\ai\aitrack_260528_01.mp3" />
-    <Content Include="web\resources\songs\ai\Arrival_at_the_Nebular_Gate.mp3" />
-    <Content Include="web\resources\songs\ai\Beneath_a_Dying_Sun.mp3" />
-    <Content Include="web\resources\songs\ai\building_forest.mp3" />
-    <Content Include="web\resources\songs\ai\Caught_Under_the_Sofa.mp3" />
-    <Content Include="web\resources\songs\ai\Cockpit_Pressure.mp3" />
-    <Content Include="web\resources\songs\ai\Departure_At_Port_Seven.mp3" />
-    <Content Include="web\resources\songs\ai\lightspeed_waltz.mp3" />
-    <Content Include="web\resources\songs\ai\NeonGridRush.mp3" />
-    <Content Include="web\resources\songs\ai\Piercing_the_Sky.mp3" />
-    <Content Include="web\resources\songs\ai\seongun_heart.mp3" />
-    <Content Include="web\resources\songs\ai\Slingshot_Maneuver.mp3" />
-    <Content Include="web\resources\songs\ai\Snow_on_the_Town_Square.mp3" />
-    <Content Include="web\resources\songs\ai\Steel_Meets_Silk.mp3" />
-    <Content Include="web\resources\songs\ai\sunlit_velocity.mp3" />
-    <Content Include="web\resources\songs\ai\The_Architecture_of_Dawn.mp3" />
-    <Content Include="web\resources\songs\ai\The_Plaza_Breakout.mp3" />
-    <Content Include="web\resources\songs\ai\Third_Cup_Before_Departure.mp3" />
-    <Resource Include="web\resources\songs\woowahan\license.txt" />
-    <Content Include="web\resources\songs\woowahan\track01.mp3" />
-    <Content Include="web\resources\songs\woowahan\track02.mp3" />
-    <Content Include="web\resources\songs\woowahan\track03.mp3" />
-    <Content Include="web\resources\songs\woowahan\track04.mp3" />
-    <Content Include="web\resources\songs\woowahan\track05.mp3" />
-    <Content Include="web\resources\songs\woowahan\track06.mp3" />
-    <Content Include="web\resources\songs\woowahan\track07.mp3" />
-    <Content Include="web\resources\songs\woowahan\track08.mp3" />
-    <Content Include="web\resources\songs\woowahan\track09.mp3" />
+    <EmbeddedResource Include="Libraries\Microsoft.CSharp.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Microsoft.Web.WebView2.Core.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Microsoft.Web.WebView2.Core.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Microsoft.Web.WebView2.WinForms.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Microsoft.Web.WebView2.WinForms.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Microsoft.Web.WebView2.Wpf.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Microsoft.Web.WebView2.Wpf.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Newtonsoft.Json.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Newtonsoft.Json.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\PresentationCore.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\PresentationFramework.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\PresentationFramework.Royale.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.Data.DataSetExtensions.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.Data.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.IO.Compression.FileSystem.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.Net.Http.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.Xaml.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.Xml.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\System.Xml.Linq.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\WindowsBase.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\game.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\icon64.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\css\common.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\css\googleloginbuttons.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\css\pure-min.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\fonts-others.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\fonts.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\ShareTechMono-Regular-LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\fonts\XanhMono-LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\icons\icon128.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\icons\icon300.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\icons\icon512.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\icons\icon64.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\icons\icon64.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\check_box_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\check_box_24dp_050505_FILL1_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\check_box_outline_blank_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\check_circle_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\close_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\directory_sync_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\exit_to_app_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\favorite_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\favorite_24dp_050505_FILL1_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\home_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\login_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\logout_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\menu_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\redo_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\search_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\settings_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\star_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\thumb_up_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\img\icons\googlefonts\toggle_on_24dp_050505_FILL0_wght400_GRAD0_opsz24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\cloudflareservices.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\crypto-js.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\dist\shuttingstars.bundle.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\index.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\jquery-1.12.4.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\json5.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\lyriamanager.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\opensongs.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarboard.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstars.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstars3d.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarsinterface.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarsongs.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarstringtable.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarsutils.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarswebmcp.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\shuttingstarworker.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\EffectComposer.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\MaskPass.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\OutputPass.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\Pass.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\RenderPass.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\ShaderPass.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\postprocessing\UnrealBloomPass.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\shaders\CopyShader.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\shaders\LuminosityHighPassShader.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\shaders\OutputShader.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\three.core.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\threejs\three.module.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\monaco\workers\css.worker.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\monaco\workers\editor.worker.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\monaco\workers\html.worker.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\monaco\workers\json.worker.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\monaco\workers\ts.worker.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\wc-monaco\wc-monaco-editor.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\js\xlsx.full.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\accept01.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\accept02.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\accept03.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\cancel01.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\cancel02.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\Readme.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\special01.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\sonniss-gdc\special02.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\se\tick.ogg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\aitrack_260528_01.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Arrival_at_the_Nebular_Gate.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Beneath_a_Dying_Sun.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\building_forest.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Caught_Under_the_Sofa.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Cockpit_Pressure.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Departure_At_Port_Seven.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\lightspeed_waltz.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\NeonGridRush.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Piercing_the_Sky.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\seongun_heart.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Slingshot_Maneuver.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Snow_on_the_Town_Square.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Steel_Meets_Silk.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\sunlit_velocity.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\The_Architecture_of_Dawn.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\The_Plaza_Breakout.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\ai\Third_Cup_Before_Departure.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\license.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track01.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track02.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track03.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track04.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track05.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track06.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track07.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track08.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="web\resources\songs\woowahan\track09.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.4129.50\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.4129.50\build\Microsoft.Web.WebView2.targets')" />
