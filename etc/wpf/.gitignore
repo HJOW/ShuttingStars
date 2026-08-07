@@ -1,0 +1,5 @@
+packages/**
+ShuttingStarsWin/bin/**
+ShuttingStarsWin/obj/**
+ShuttingStarsWin/web/resources/**
+.vs/**

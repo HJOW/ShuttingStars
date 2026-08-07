@@ -36,6 +36,11 @@ async function ssNodeSync() {
     console.log('Copy files into chrome ext path...');
     await fs.promises.cp('./src/main/webapp/resources', './etc/chrome_extension/resources', { recursive: true });
     console.log('Copy files into chrome ext path... END');
+
+    // WPF
+    console.log('Copy files into WPF path...');
+    await fs.promises.cp('./src/main/webapp/resources', './etc/wpf/ShuttingStarsWin/web/resources', { recursive: true });
+    console.log('Copy files into WPF path... END');
 }
 
 ssNodeSync().catch(console.error);
