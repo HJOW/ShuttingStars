@@ -3,3 +3,5 @@ ShuttingStarsWin/bin/**
 ShuttingStarsWin/obj/**
 ShuttingStarsWin/web/resources/**
 .vs/**
+Setup/Debug/**
+Setup/Release/**

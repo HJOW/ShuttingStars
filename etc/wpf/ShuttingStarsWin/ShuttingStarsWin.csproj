@@ -51,6 +51,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ShuttingStarsWin.App</StartupObject>
@@ -60,6 +61,9 @@
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.4129.50, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
@@ -76,7 +80,9 @@
     </Reference>
     <Reference Include="PresentationFramework.Royale" />
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -180,21 +186,15 @@
     <EmbeddedResource Include="web\resources\fonts\XanhMono-Regular.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\json\config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <None Include="web\resources\json\config.json" />
     <EmbeddedResource Include="web\resources\json\songs.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="web\resources\js\wc-monaco\README">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\License.pdf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\songswoowahan.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <None Include="web\resources\se\sonniss-gdc\License.pdf" />
+    <None Include="web\resources\songs\woowahan\songswoowahan.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -482,117 +482,43 @@
     <EmbeddedResource Include="web\resources\js\xlsx.full.min.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\accept01.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\accept02.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\accept03.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\cancel01.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\cancel02.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\Readme.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\special01.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\sonniss-gdc\special02.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\se\tick.ogg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\aitrack_260528_01.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Arrival_at_the_Nebular_Gate.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Beneath_a_Dying_Sun.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\building_forest.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Caught_Under_the_Sofa.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Cockpit_Pressure.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Departure_At_Port_Seven.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\lightspeed_waltz.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\NeonGridRush.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Piercing_the_Sky.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\seongun_heart.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Slingshot_Maneuver.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Snow_on_the_Town_Square.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Steel_Meets_Silk.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\sunlit_velocity.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\The_Architecture_of_Dawn.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\The_Plaza_Breakout.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\ai\Third_Cup_Before_Departure.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\license.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track01.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track02.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track03.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track04.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track05.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track06.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track07.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track08.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="web\resources\songs\woowahan\track09.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <None Include="web\resources\se\sonniss-gdc\accept01.mp3" />
+    <None Include="web\resources\se\sonniss-gdc\accept02.mp3" />
+    <None Include="web\resources\se\sonniss-gdc\accept03.mp3" />
+    <None Include="web\resources\se\sonniss-gdc\cancel01.mp3" />
+    <None Include="web\resources\se\sonniss-gdc\cancel02.mp3" />
+    <None Include="web\resources\se\sonniss-gdc\Readme.txt" />
+    <None Include="web\resources\se\sonniss-gdc\special01.mp3" />
+    <None Include="web\resources\se\sonniss-gdc\special02.mp3" />
+    <None Include="web\resources\se\tick.ogg" />
+    <None Include="web\resources\songs\ai\aitrack_260528_01.mp3" />
+    <None Include="web\resources\songs\ai\Arrival_at_the_Nebular_Gate.mp3" />
+    <None Include="web\resources\songs\ai\Beneath_a_Dying_Sun.mp3" />
+    <None Include="web\resources\songs\ai\building_forest.mp3" />
+    <None Include="web\resources\songs\ai\Caught_Under_the_Sofa.mp3" />
+    <None Include="web\resources\songs\ai\Cockpit_Pressure.mp3" />
+    <None Include="web\resources\songs\ai\Departure_At_Port_Seven.mp3" />
+    <None Include="web\resources\songs\ai\lightspeed_waltz.mp3" />
+    <None Include="web\resources\songs\ai\NeonGridRush.mp3" />
+    <None Include="web\resources\songs\ai\Piercing_the_Sky.mp3" />
+    <None Include="web\resources\songs\ai\seongun_heart.mp3" />
+    <None Include="web\resources\songs\ai\Slingshot_Maneuver.mp3" />
+    <None Include="web\resources\songs\ai\Snow_on_the_Town_Square.mp3" />
+    <None Include="web\resources\songs\ai\Steel_Meets_Silk.mp3" />
+    <None Include="web\resources\songs\ai\sunlit_velocity.mp3" />
+    <None Include="web\resources\songs\ai\The_Architecture_of_Dawn.mp3" />
+    <None Include="web\resources\songs\ai\The_Plaza_Breakout.mp3" />
+    <None Include="web\resources\songs\ai\Third_Cup_Before_Departure.mp3" />
+    <None Include="web\resources\songs\woowahan\license.txt" />
+    <None Include="web\resources\songs\woowahan\track01.mp3" />
+    <None Include="web\resources\songs\woowahan\track02.mp3" />
+    <None Include="web\resources\songs\woowahan\track03.mp3" />
+    <None Include="web\resources\songs\woowahan\track04.mp3" />
+    <None Include="web\resources\songs\woowahan\track05.mp3" />
+    <None Include="web\resources\songs\woowahan\track06.mp3" />
+    <None Include="web\resources\songs\woowahan\track07.mp3" />
+    <None Include="web\resources\songs\woowahan\track08.mp3" />
+    <None Include="web\resources\songs\woowahan\track09.mp3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
