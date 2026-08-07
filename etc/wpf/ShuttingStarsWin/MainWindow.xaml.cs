@@ -30,16 +30,13 @@ namespace ShuttingStarsWin
 
         private async void initWebView() {
             await sswebview.EnsureCoreWebView2Async(null);
-
-            string url = "ms-appx-web://web/game.html";
-            /*
+            
+            string url = "https://app.local/game.html";
+            
             string local = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "web");
             sswebview.CoreWebView2.SetVirtualHostNameToFolderMapping("app.local", local, Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
-            */
-
-            // sswebview.Source = new Uri(url);
+            
             sswebview.CoreWebView2.Navigate(url);
-
             sswebview.Focus();
         }
     }

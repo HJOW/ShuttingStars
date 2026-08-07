@@ -280,4 +280,10 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.4129.50\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.4129.50\build\Microsoft.Web.WebView2.targets'))" />
   </Target>
+  <PropertyGroup>
+    <PreBuildEvent>if not exist "$(TargetDir)web" mkdir "$(TargetDir)web"</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>xcopy "$(ProjectDir)web" "$(TargetDir)web\" /E /I /Y</PostBuildEvent>
+  </PropertyGroup>
 </Project>
