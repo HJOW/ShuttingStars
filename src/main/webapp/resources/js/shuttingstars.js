@@ -520,7 +520,8 @@ class ShuttingStarsCore {
         'nai4ilaaTEWMB5325WGWIERGWEIGESGSDGsnmdk',
         'nai4ilTHRIENGW5235GEMROGEWOPGWEGSAGDSGERSOyMOFASP39p4g',
         'nai4ilTHRIENG75346GSDIGIOERSGgdg673yMOFASP39p4g',
-        'nai4ilTHERHIERGGBberbueri7456HERHIEROMHyMOFASP39p4g'
+        'nai4ilTHERHIERGGBberbueri7456HERHIEROMHyMOFASP39p4g',
+        'nai4ilTHRIENGW5235svsdngDSGDSGNKSDGN6346ERSOyMOFASP39p4g'
     ];
 
     // 초기 설정 화면 관련
@@ -12410,9 +12411,9 @@ class SSNoteKeyObject extends ShuttingStarsObject {
      */
     applyGradientIndex(r, g, b, gradientIndex) {
         if(gradientIndex < 7) {
-            r = r + Math.floor(((250 - r) / 7.0) * (7 - gradientIndex));
-            g = g + Math.floor(((250 - g) / 7.0) * (7 - gradientIndex));
-            b = b + Math.floor(((250 - b) / 7.0) * (7 - gradientIndex));
+            r = r + Math.floor(((255 - r) / 7.0) * (7 - gradientIndex));
+            g = g + Math.floor(((255 - g) / 7.0) * (7 - gradientIndex));
+            b = b + Math.floor(((255 - b) / 7.0) * (7 - gradientIndex));
         }
 
         return r + ', ' + g + ', ' + b;
