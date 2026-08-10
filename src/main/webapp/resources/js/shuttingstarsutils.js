@@ -373,6 +373,11 @@ class ShuttingStarsUtilityClass {
         return Math.abs(a - b) < 0.000001;
     }
 
+    /** 컬러 객체 생성 */
+    color(r, g, b) {
+        return new SSColor(r, g, b);
+    }
+
     /**
      * 소수 2째자리까지 남기고 반올림
      * @param {number} numbers numbers 값
