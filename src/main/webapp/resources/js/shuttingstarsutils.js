@@ -991,6 +991,31 @@ class SSColor {
     toString() {
         return 'rgb(' + this.stringSplit() + ')';
     }
+    /** 16진수 표기법으로 반환, 예 : "#ffffff" 
+     * @returns {string} 처리 결과
+    */
+    toHexString() {
+        let r = this.r.toString(16).padStart(2, '0');
+        let g = this.g.toString(16).padStart(2, '0');
+        let b = this.b.toString(16).padStart(2, '0');
+        return '#' + r + g + b;
+    }
+    /** 16진수 타입의 정수로 반환, 예 : 0xffffff
+     * @returns {number} 처리 결과
+     */
+    toHexNumber() {
+        let r = this.r.toString(16).padStart(2, '0');
+        let g = this.g.toString(16).padStart(2, '0');
+        let b = this.b.toString(16).padStart(2, '0');
+        return parseInt(r + g + b, 16);
+    }
+    /**
+     * 문자열 연결에서는 RGB 구성요소만 사용해 기존 rgba 조합 코드와 호환한다.
+     * @returns {string} RGB 구성요소 문자열
+     */
+    [Symbol.toPrimitive]() {
+        return this.stringSplit();
+    }
 }
 
 /** Browser 감지 클래스 (TODO 미완성) */

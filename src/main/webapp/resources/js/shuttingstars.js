@@ -4723,8 +4723,8 @@ class ShuttingStarsCore {
 
             // 크롬 확장 프로그램 - 사이드 패널 크기 조절 불가능한 문제로, 크기 미달하면 크기 변경하라고 안내해야 함
             if(this.chromeExtensionMode && (this.fOuterWidth() < 500)) {
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
                 this.ctx.font = 'bold ' + this.convertFontSize(40) + 'px ' + this.getRenderFontFamily();
                 this.ctx.textAlign = "center";
                 this.ctx.fillText('<<', this.convertX(this.getStageWidth() / 7), this.convertY(this.getStageHeight() / 2));
@@ -4843,8 +4843,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(20);
             this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
             this.ctx.textAlign = "center";
             this.ctx.strokeText(this.trans('PAUSED'), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + 10));
 
@@ -4854,8 +4854,8 @@ class ShuttingStarsCore {
             let escKeyLabel = this.escKey;
             if(this.escKey == 'ESCAPE') escKeyLabel = 'ESC';
 
-            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
             this.ctx.textAlign = "center";
 
             let message = '%1 key to resume, %2 key to give up !';
@@ -4871,8 +4871,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(30);
             this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
             this.ctx.textAlign = "center";
             this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), Math.floor(rows));
             rows += this.metricSize2 + (this.metricSize2 / 2);
@@ -4882,8 +4882,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(20);
             label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
             this.ctx.textAlign = "left";
             this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
@@ -4902,8 +4902,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(15);
             this.ctx.font = fontSize + 'px ' + this.getRenderFontFamily();
 
-            if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
             this.ctx.textAlign = "center";
             this.ctx.strokeText(ShuttingStarsUtility.replaceString(this.trans('Resume within % !'), '%', String(this.resumingTime)), this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + 10));
         }
@@ -4914,8 +4914,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
             this.ctx.textAlign = "right";
 
             this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
@@ -4927,8 +4927,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
             this.ctx.textAlign = "right";
 
             this.ctx.fillText(String(ShuttingStarsUtility.floor2(this.hp) + ' / 100' + ' LIVES'), this.convertX(this.getStageWidth() * 4 / 5), debugAreaY); debugAreaY += this.metricSize2;
@@ -4941,8 +4941,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
             this.ctx.textAlign = "right";
 
             debugAreaY += this.metricSize2;
@@ -4957,7 +4957,7 @@ class ShuttingStarsCore {
         if(this.createMode || this.state == 'listenplaying') {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+            this.ctx.fillStyle = this.convertColor(new SSColor(192, 240, 80), 0.9);
             this.ctx.textAlign = "center";
             this.ctx.fillText(this.trans('AUTO PLAYING'), this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 3));
         }
@@ -4972,7 +4972,7 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(20);
             this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-            this.ctx.fillStyle = this.convertColor('rgba(250, 40, 40, 0.9)');
+            this.ctx.fillStyle = this.convertColor(new SSColor(250, 40, 40), 0.9);
             this.ctx.textAlign = "center";
             this.ctx.fillText('GAME OVER', this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() / 2) + 20, false));
         }
@@ -4986,8 +4986,8 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(20);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "right";
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
 
         // 타이틀 출력
         this.ctx.fillText(this.trans('ADJUST TIMING'), this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 18 / 30));
@@ -5004,29 +5004,29 @@ class ShuttingStarsCore {
         // 현재의 타이밍값 출력
         label = this.trans('Note Location') + ' : ' + this.noteLocationAdjustment;
         if(this.fittingChangingValue == 'noteLocationAdjustment') {
-            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+            this.ctx.fillStyle = this.convertColor(new SSColor(192, 240, 80), 0.9);
         } else {
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         }
         this.ctx.fillText(label, this.convertX(this.getStageWidth() * 28 / 30), this.convertY(this.getStageHeight() * 22 / 30));
 
 
         label = this.trans('Judge Timing') + ' : ' + this.judgeTiming;
         if(this.fittingChangingValue == 'judgeTiming') {
-            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+            this.ctx.fillStyle = this.convertColor(new SSColor(192, 240, 80), 0.9);
         } else {
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         }
         this.ctx.fillText(label, this.convertX(this.getStageWidth() * 28 / 30), this.convertY(this.getStageHeight() * 23 / 30));
 
         label = this.trans('Note Speed Rate') + ' : ' + this.noteSpeedMultiplier;
         if(this.fittingChangingValue == 'noteSpeedMultiplier') {
-            this.ctx.fillStyle = this.convertColor('rgba(192, 240, 80, 0.9)');
+            this.ctx.fillStyle = this.convertColor(new SSColor(192, 240, 80), 0.9);
         } else {
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         }
         this.ctx.fillText(label, this.convertX(this.getStageWidth() * 28 / 30), this.convertY(this.getStageHeight() * 24 / 30));
 
@@ -5036,8 +5036,8 @@ class ShuttingStarsCore {
         this.ctx.textAlign = "right";
         label = String(ShuttingStarsUtility.floor2(this.elapsedTime) + '  TIME, 120 BPM');
         if(this.elapsedTime < 0) label = this.trans('Please wait...');
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.fillText(label, this.convertX(this.getStageWidth() * 29 / 30), this.convertY(this.getStageHeight() * 26 / 30));
 
         // 키 안내 출력
@@ -5100,8 +5100,8 @@ class ShuttingStarsCore {
         const rows = this.convertY(this.getStageHeight() / 3, false);
         const fontSize = this.convertFontSize(30);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), this.applyY(rows));
         return rows;
@@ -5126,8 +5126,8 @@ class ShuttingStarsCore {
 
         fontSize = this.convertFontSize(15);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         label = 'Please wait...';
         if(this.titleScreenWaiting) {
@@ -5185,8 +5185,8 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(30);
         rows = this.convertY(this.getStageHeight() / 5, false);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), rows);
         rows += this.metricSize3 + (gap * 4);
@@ -5209,15 +5209,15 @@ class ShuttingStarsCore {
                 this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.99;
 
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
             } else {
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.3;
 
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                 this.ctx.fillText(label, this.convertX(this.getStageWidth()  / 2), rows);
             }
             
@@ -5244,15 +5244,15 @@ class ShuttingStarsCore {
             label += arrowKeyLabel;
         }
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = 'left';
         rows = this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 3);
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), rows);
 
         // Copyright, 빌드 번호 출력
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = 'right';
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getOcrFontFamily();
         this.ctx.fillText('BUILD ' + this.build, this.convertX(this.getStageWidth() * 9 / 10), rows);
@@ -5268,13 +5268,13 @@ class ShuttingStarsCore {
             if(this.menuChoosing == 'login' || this.menuChoosing == 'logout') {
                 this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.99;
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
             } else {
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.6;
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
             }
 
             if(this.backend.logined) {
@@ -5292,8 +5292,8 @@ class ShuttingStarsCore {
         } else {
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             opacity = 0.99;
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
             label = this.trans('OFFLINE');
             this.ctx.fillText(label, this.convertX(fontSize * 2.8), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 4.5));
         }
@@ -5325,8 +5325,8 @@ class ShuttingStarsCore {
         const fontSize = this.convertFontSize(12);
         const opacity = 0.9;
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = 'center';
         this.ctx.fillText(label, this.convertX(x), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.2));
     }
@@ -5355,8 +5355,8 @@ class ShuttingStarsCore {
         // 곡 목록이 비어 있는 경우를 처리
         fontSize = this.convertFontSize(20);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         let emptyState = false;
         let onlyOneState = false;
 
@@ -5388,8 +5388,8 @@ class ShuttingStarsCore {
         }
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         if(this.songChoosingMode == 'mission') {
             this.ctx.strokeText(lefts + this.trans('Choose your mission !') + rights, this.convertX(this.getStageWidth() / 2), rows);
@@ -5463,8 +5463,8 @@ class ShuttingStarsCore {
                     if(choosen) {
                         songChoosen = missionOne;
 
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
 
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
                         rectBottomY = this.convertY(this.getStageHeight() / 2, false) + row1Height;
@@ -5492,12 +5492,12 @@ class ShuttingStarsCore {
                     this.ctx.textAlign = "center";
                     this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                     if(choosen) {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 2));
                     } else {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
                     }
 
@@ -5531,8 +5531,8 @@ class ShuttingStarsCore {
                     if(choosen) {
                         songChoosen = null; // mysong 모드인 경우 일단 null 로 설정 (파일 입력받은 이후에야 곡 객체를 만들 수 있음)
 
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
 
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
                         rectBottomY = this.convertY(this.getStageHeight() / 2, false) + row1Height;
@@ -5560,12 +5560,12 @@ class ShuttingStarsCore {
                     this.ctx.textAlign = "center";
                     this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                     if(choosen) {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 2));
                     } else {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
                     }
 
@@ -5602,8 +5602,8 @@ class ShuttingStarsCore {
                         
                         if(songOne.useYoutube) youtubeSongChoosed = songOne.youtubeVideoId;
 
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
 
                         if(this.difficultyChoosing) {
                             this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height + this.metricSize2 + (gap * 2)));
@@ -5636,12 +5636,12 @@ class ShuttingStarsCore {
                     this.ctx.textAlign = "center";
                     this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                     if(choosen) {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3));
                     } else {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
                     }
 
@@ -5652,12 +5652,12 @@ class ShuttingStarsCore {
 
                     this.ctx.textAlign = "center";
                     if(choosen) {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
+                        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height * 2 / 3));
                     } else {
-                        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                         this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height * 2 / 3));
                     }
 
@@ -5677,7 +5677,7 @@ class ShuttingStarsCore {
                             const difficultyName = diffOne.difficultyLabel;
                             const difficultyNum  = diffOne.difficultyLevel;
                             const colors = this.difficultyNumberColor(difficultyNum);
-                            this.ctx.fillStyle = this.convertColor('rgba(' + colors + ', ' + opacity + ')');
+                            this.ctx.fillStyle = this.convertColor(new SSColor(colors), opacity);
 
                             label = '';
 
@@ -5730,8 +5730,8 @@ class ShuttingStarsCore {
         
         if(youtubeSongChoosed) label += '    ' + this.trans('Open YouTube : ') + this.keyList[0];
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
         
@@ -5754,8 +5754,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.textAlign = "left";
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(180, 180, 180), opacity);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(100, 100, 100), opacity);
 
             rows = rectBottomY + (this.metricSize2 + gap);
             for(const line of desc) {
@@ -5792,8 +5792,8 @@ class ShuttingStarsCore {
         rows = this.metricSize2 * 1.5;
         cols = this.metricSize2 * 1.5;
         gap  = this.metricSize2;
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, 0.6)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, 0.6)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(180, 180, 180), 0.6);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(100, 100, 100), 0.6);
 
         // 적용된 커맨드 출력
         for(idx=0; idx<commandArr.length; idx++) {
@@ -5845,8 +5845,8 @@ class ShuttingStarsCore {
         // 곡 목록이 비어 있는 경우를 처리
         fontSize = this.convertFontSize(20);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         let emptyState = false;
 
         this.songChoosingMode = 'default'; // 감상 모드에서는 곡 목록만 선택
@@ -5860,8 +5860,8 @@ class ShuttingStarsCore {
         rights = '';
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
         else this.ctx.strokeText(lefts + this.trans('Choose your song to listen !') + rights, this.convertX(this.getStageWidth() / 2), rows);
@@ -5922,8 +5922,8 @@ class ShuttingStarsCore {
                     
                     if(songOne.useYoutube) youtubeSongChoosed = songOne.youtubeVideoId;
 
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
 
                     if(this.difficultyChoosing) {
                         this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), (row1Height + this.metricSize2 + (gap * 2)));
@@ -5957,12 +5957,12 @@ class ShuttingStarsCore {
                 this.ctx.textAlign = "center";
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 if(choosen) {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3));
                 } else {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
                 }
 
@@ -5973,12 +5973,12 @@ class ShuttingStarsCore {
 
                 this.ctx.textAlign = "center";
                 if(choosen) {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height * 2 / 3));
                 } else {
-                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                    else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                     this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height * 2 / 3));
                 }
 
@@ -6016,8 +6016,8 @@ class ShuttingStarsCore {
         
         if(youtubeSongChoosed) label += '    ' + this.trans('Open YouTube : ') + this.keyList[0];
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
         
@@ -6040,8 +6040,8 @@ class ShuttingStarsCore {
             fontSize = this.convertFontSize(12);
             this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
             this.ctx.textAlign = "left";
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(180, 180, 180, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(100, 100, 100, ' + opacity + ')');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(180, 180, 180), opacity);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(100, 100, 100), opacity);
 
             rows = rectBottomY + (this.metricSize2 + gap);
             for(const line of desc) {
@@ -6074,8 +6074,8 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(30);
         rows = this.convertY(this.getStageHeight() / 5, false);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getOcrFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         this.ctx.strokeText('Shutting Stars', this.convertX(this.getStageWidth() / 2), rows);
         rows += (this.metricSize3 * 2) + gap;
@@ -6083,8 +6083,8 @@ class ShuttingStarsCore {
 
         fontSize = this.convertFontSize(20);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         this.ctx.fillText(this.trans('First Settings'), this.convertX(this.getStageWidth() / 2), rows);
         rows += (this.metricSize1 * 2) + gap;
@@ -6147,8 +6147,8 @@ class ShuttingStarsCore {
             opacity = 0.8;
             if(choosen) opacity = 0.99;
 
-            if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-            else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+            if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+            else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
 
             if(settingOne == 'language' || settingOne == 'quality') {
                 this.ctx.textAlign = "left";
@@ -6181,8 +6181,8 @@ class ShuttingStarsCore {
         }
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() * 9 / 10), false));
         rows += fontSize + gap;
     }
@@ -6207,8 +6207,8 @@ class ShuttingStarsCore {
 
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         this.ctx.strokeText(this.trans('Settings'), this.convertX(this.getStageWidth()/ 2), rows);
         rows += this.metricSize3 + gap;
@@ -6241,15 +6241,15 @@ class ShuttingStarsCore {
                 if(this.settingModifyingMode) opacity = 0.99;
                 else opacity = 0.8;
 
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
             } else {
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 opacity = 0.3;
 
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
             }
             
@@ -6276,8 +6276,8 @@ class ShuttingStarsCore {
         }
         label += '    ' + this.trans('ACCEPT : ') + this.enterKey;
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY((this.getStageHeight() * 9 / 10), false));
         rows += fontSize + gap;
     }
@@ -6311,8 +6311,8 @@ class ShuttingStarsCore {
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = "center";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 3, false));
 
@@ -6321,8 +6321,8 @@ class ShuttingStarsCore {
         label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
         rows = this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 2);
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
@@ -6354,8 +6354,8 @@ class ShuttingStarsCore {
         this.calculateFontMetric();
         gap = Math.floor(this.metricSize2 / 2.0);
 
-        if(this.dark) defColor = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          defColor = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) defColor = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          defColor = this.convertColor(new SSColor(80, 80, 80), 0.9);
 
         // create 모드 출력
         if(this.createMode) {
@@ -6429,8 +6429,8 @@ class ShuttingStarsCore {
         // 점수 출력
         label = ShuttingStarsUtility.fitDigit(this.point, 10);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "left";
         this.ctx.fillText(this.trans('TOTAL'), this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.textAlign = "right";
@@ -6450,8 +6450,8 @@ class ShuttingStarsCore {
         label = 'PERFECT:' + this.report.PERFECT + ',GREAT:' + this.report.GREAT + ',GOOD:' + this.report.GOOD + ',BAD:' + this.report.BAD + ',MISS:' + this.report.MISS + ',TOTAL:' + ShuttingStarsUtility.fitDigit(this.point, 10, '0') + ',RANK:' + label;
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getOcrFontFamily();
         this.ctx.textAlign = "center";
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + this.convertX(fontSize * 4), rows);
         */
 
@@ -6461,8 +6461,8 @@ class ShuttingStarsCore {
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         rows = this.convertY(this.getStageHeight()) - ((this.metricSize3 * 3) + gap);
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
@@ -6472,8 +6472,8 @@ class ShuttingStarsCore {
         label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.song.composer), '%2', this.song.noteWriter), '%3', String(this.song.bpm));
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
@@ -6486,8 +6486,8 @@ class ShuttingStarsCore {
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
 
         // ESC 표기
         let escKeyLabel = this.escKey;
@@ -6530,8 +6530,8 @@ class ShuttingStarsCore {
         // 기록 목록이 비어 있는 경우를 처리
         fontSize = this.convertFontSize(20);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         let emptyState = false;
         let onlyOneState = false;
 
@@ -6552,8 +6552,8 @@ class ShuttingStarsCore {
         }
         fontSize = this.convertFontSize(30);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-        if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
         if(this.backend != null && this.backend.avail) {
             this.ctx.strokeText(lefts + this.trans('RECORD') + ' - ' + (this.selectRecordType == 'internet' ? this.trans('INTERNET') : this.trans('LOCAL')) + rights, this.convertX(this.getStageWidth() / 2), rows);
@@ -6614,8 +6614,8 @@ class ShuttingStarsCore {
                 if(choosen) {
                     recordChoosen = recordOne;
 
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
 
                     this.ctx.fillRect(this.getLeftMarginPage(), centerY - (row1Height / 2), this.convertX(this.getStageWidth()), row1Height);
                     rectBottomY = centerY + (row1Height / 2) + 5;
@@ -6645,12 +6645,12 @@ class ShuttingStarsCore {
                 this.ctx.textAlign = "center";
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
                 if(choosen) {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
                 } else {
-                    if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                    else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
                 }
                 upperY = currentRow + (row1Height / 3); // 우측 랭크 출력 위치 미리 계산
@@ -6662,13 +6662,13 @@ class ShuttingStarsCore {
                 this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
                 this.ctx.textAlign = "center";
-                if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
-                else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
+                if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
+                else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
                 if(choosen) {
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow);
                 } else {
-                    if(this.dark) this.ctx.strokeStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-                    else          this.ctx.strokeStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+                    if(this.dark) this.ctx.strokeStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+                    else          this.ctx.strokeStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                     this.ctx.strokeText(label, this.convertX(this.getStageWidth() / 2), currentRow);
                 }
                 currentRow += this.metricSize2 + gap;
@@ -6691,12 +6691,12 @@ class ShuttingStarsCore {
                 this.ctx.font = 'bold ' + fontSize + 'px ' + this.getJudgeFontFamily();
                 label = recordOne.rank;
                 let colorRank = this.judgeResultRankColor(recordOne.rank);
-                this.ctx.fillStyle = this.convertColor('rgba(' + colorRank + ', ' + opacity + ')');
+                this.ctx.fillStyle = this.convertColor(new SSColor(colorRank), opacity);
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY);
                 if(choosen && recordOne.rank == 'A') { // A color is silver which can be invisible in selected (white background)
                     if(this.dark) colorRank = '80, 80, 80';
                     else          colorRank = '200, 200, 200';
-                    this.ctx.strokeStyle = this.convertColor('rgba(' + colorRank + ', ' + opacity + ')');
+                    this.ctx.strokeStyle = this.convertColor(new SSColor(colorRank), opacity);
                     this.ctx.strokeText(label, this.convertX(this.getStageWidth() * 9 / 10), upperY);
                 }
 
@@ -6726,8 +6726,8 @@ class ShuttingStarsCore {
         if(this.escKey == 'ESCAPE') label += 'ESC';
         else                        label += this.escKey;
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (this.metricSize2 * 1.5));
     }
@@ -6749,8 +6749,8 @@ class ShuttingStarsCore {
         this.calculateFontMetric();
         gap = Math.floor(this.metricSize2 / 2.0);
 
-        if(this.dark) defColor = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          defColor = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) defColor = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          defColor = this.convertColor(new SSColor(80, 80, 80), 0.9);
 
         // 타이틀 출력
         rows = this.convertY(this.getStageHeight() / 6, false);
@@ -6817,8 +6817,8 @@ class ShuttingStarsCore {
         // 점수 출력
         label = ShuttingStarsUtility.fitDigit(this.seeingRecord.point, 10);
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getJudgeFontFamily();
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "left";
         this.ctx.fillText(this.trans('TOTAL'), this.convertX(this.getStageWidth() / 2) - this.convertX(fontSize * 6), rows);
         this.ctx.textAlign = "right";
@@ -6838,8 +6838,8 @@ class ShuttingStarsCore {
         this.ctx.font = 'bold ' + fontSize + 'px ' + this.getRenderFontFamily();
         rows = this.convertY(this.getStageHeight(), false) - ((this.metricSize3 * 3) + gap);
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
@@ -6849,8 +6849,8 @@ class ShuttingStarsCore {
         label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', this.seeingRecord.song.composer), '%2', this.seeingRecord.song.noteWriter), '%3', String(this.seeingRecord.song.bpm));
         this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(fontSize * 2), rows);
 
@@ -6863,8 +6863,8 @@ class ShuttingStarsCore {
         this.ctx.textAlign = "right";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() - (fontSize * 2)), rows);
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
 
         // 적용된 커맨드 표기
         this.renderCommands(this.seeingRecord.commands);
@@ -6883,13 +6883,8 @@ class ShuttingStarsCore {
      * HP 표시 수단 (즉 행성) 그리기
      */
     renderHpBar() {
-        let arr = this.calculateHpColor();
-        let r, g, b;
-        r = arr[0];
-        g = arr[1];
-        b = arr[2];
-        
-        const hpBarInsideColor = this.convertColor('rgba(' + r + ', ' + g + ', ' + b + ', 0.8)');
+        let colorObj = this.calculateHpColor();
+        const hpBarInsideColor = this.convertColor(colorObj, 0.8);
 
         // HP바 (행성형) 출력
         if(this.notePlacers.length >= 1) {
@@ -6905,7 +6900,7 @@ class ShuttingStarsCore {
             this.ctx.beginPath();
             this.ctx.fillStyle = hpBarInsideColor;
             // this.ctx.arc(this.convertX(x), this.convertY(y), this.convertX(radius), 0, 2 * Math.PI);
-            ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertY(radius), r, g, b, 0.8, 7);
+            ShuttingStarsUtility.drawGradientedArc(this.ctx, this.convertX(x), this.convertY(y), this.convertY(radius), colorObj.r, colorObj.g, colorObj.b, 0.8, 7);
             this.ctx.fill();
         }
 
@@ -7044,8 +7039,8 @@ class ShuttingStarsCore {
         rows = this.convertFontSize(30);
         rows = rows - Math.floor( rows * ( this.creditIndexIncreases * 1.0 / this.creditIndexIncreaseMax ));
 
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
         this.ctx.textAlign = "center";
 
         // 현재 출력 차례부터 처리
@@ -7085,8 +7080,8 @@ class ShuttingStarsCore {
         if(this.enterKey == 'ENTER') label += 'ENTER';
         else                         label += this.enterKey;
         
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, ' + opacity + ')');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, ' + opacity + ')');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
         this.ctx.textAlign = "left";
         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 20), this.convertY(this.getStageHeight(), false) - (fontSize * 1.5));
     }
@@ -7104,18 +7099,18 @@ class ShuttingStarsCore {
         if(this.ressets.h > 720) gap2 = this.metricSize3;
 
         // 전체크기 DIM 배경 사각형 그리기
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.7)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.7)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.7);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.7);
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 메시지 사각형 그리기
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.99)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.99)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
         this.ctx.fillRect(0, this.convertY(row - this.metricSize3 - gap, false), this.convertX(this.getStageWidth()), ((this.metricSize3 * 3) + (gap * 2 + gap2)));
 
         // 메시지 그리기
-        if(this.dark) this.ctx.fillStyle = this.convertColor('rgba(80, 80, 80, 0.9)');
-        else          this.ctx.fillStyle = this.convertColor('rgba(200, 200, 200, 0.9)');
+        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.9);
+        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.9);
         this.ctx.font = 'normal ' + this.convertFontSize(30) + 'px ' + this.getRenderFontFamily();
         this.ctx.textAlign = "center";
         this.ctx.fillText(this.confirmMessage, this.convertX(this.getStageWidth() / 2), this.convertY(row, false));
@@ -7528,60 +7523,60 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 랭크 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255)
+     * 랭크 컬러 반환
      * @param {string} resultRankChar resultRankChar 값
-     * @returns {string} 처리 결과
+     * @returns {SSColor} 처리 결과
      */
     judgeResultRankColor(resultRankChar) {
-        if(resultRankChar == 'P') return '255, 215, 0';
-        if(resultRankChar == 'S') return '255, 215, 0';
-        if(resultRankChar == 'A') return '192, 192, 192';
-        if(resultRankChar == 'B') return '204, 114, 61';
-        if(resultRankChar == 'C') return '47, 157, 39';
-        if(resultRankChar == 'D') return '128, 65, 217';
-        return '153, 0, 76';
+        if(resultRankChar == 'P') return new SSColor(255, 215, 0);
+        if(resultRankChar == 'S') return new SSColor(255, 215, 0);
+        if(resultRankChar == 'A') return new SSColor(192, 192, 192);
+        if(resultRankChar == 'B') return new SSColor(204, 114, 61);
+        if(resultRankChar == 'C') return new SSColor(47, 157, 39);
+        if(resultRankChar == 'D') return new SSColor(128, 65, 217);
+        return new SSColor(153, 0, 76);
     }
 
     /**
-     * 판정 별 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255)
+     * 판정 별 컬러 반환
      * @param {string} judgeResult judgeResult 값
-     * @returns {string} 처리 결과
+     * @returns {SSColor} 처리 결과
      */
     judgeMarkColor(judgeResult) {
-        if(     judgeResult == 'MISS'   ) return '230, 40, 40';
-        else if(judgeResult == 'BAD'    ) return '102, 37, 0';
-        else if(judgeResult == 'GOOD'   ) return '47, 157, 39';
-        else if(judgeResult == 'GREAT'  ) return '103, 153, 250';
-        else if(judgeResult == 'PERFECT') return '255, 215, 0';
-        return '230, 40, 40';
+        if(     judgeResult == 'MISS'   ) return new SSColor(230, 40, 40);
+        else if(judgeResult == 'BAD'    ) return new SSColor(102, 37, 0);
+        else if(judgeResult == 'GOOD'   ) return new SSColor(47, 157, 39);
+        else if(judgeResult == 'GREAT'  ) return new SSColor(103, 153, 250);
+        else if(judgeResult == 'PERFECT') return new SSColor(255, 215, 0);
+        return new SSColor(230, 40, 40);
     }
 
     /**
-     * 난이도 표시 컬러 반환 (rgb 파트만 반환, 예: 255, 255, 255)
+     * 난이도 표시 컬러 반환
      * @param {number} difficultyNumber difficultyNumber 값
-     * @returns {string} 처리 결과
+     * @returns {SSColor} 처리 결과
      */
     difficultyNumberColor(difficultyNumber) {
         if(difficultyNumber <= 2) {
-            return '159, 201, 60';
+            return new SSColor(159, 201, 60);
         } else if(difficultyNumber <= 3) {
-            return '159, 201, 60';
+            return new SSColor(159, 201, 60);
         } else if(difficultyNumber == 4) {
-            return '107, 153, 0';
+            return new SSColor(107, 153, 0);
         } else if(difficultyNumber <= 6) {
-            return '153, 112, 0';
+            return new SSColor(153, 112, 0);
         } else if(difficultyNumber == 7) {
-            return '153, 56, 0';
+            return new SSColor(153, 56, 0);
         } else if(difficultyNumber == 8) {
-            return '102, 37, 0';
+            return new SSColor(102, 37, 0);
         } else {
-            return '230, 40, 40';
+            return new SSColor(230, 40, 40);
         }
     }
 
     /**
      * HP 표시 컬러 계산 (r, g, b 순서대로 0~255 숫자값이 담긴 배열 반환)
-     * @returns {Array<number>} 빨강, 초록, 파랑 성분 배열
+     * @returns {SSColor} 색상 객체 반환
      */
     calculateHpColor() {
         let   changes = 0;
@@ -7629,7 +7624,7 @@ class ShuttingStarsCore {
             // HP가 감소함에 따라 230, 80, 80 --> 200, 40, 40 으로 변화
 
             r = 230 - Math.round(30 * (changes / 100.0));
-            if(g < 200) g = 200;
+            if(r < 200) r = 200;
 
             g = 80 - Math.round(40 * (changes / 100.0));
             if(g < 40) g = 40;
@@ -7649,11 +7644,7 @@ class ShuttingStarsCore {
             b = 40 - Math.round(20 * (changes / 100.0));
             if(b < 20) b = 20;
         }
-        let arr = [];
-        arr.push(Math.floor(r));
-        arr.push(Math.floor(g));
-        arr.push(Math.floor(b));
-        return arr;
+        return new SSColor(Math.floor(r), Math.floor(g), Math.floor(b));
     }
 
     /**
@@ -9989,24 +9980,29 @@ class ShuttingStarsCore {
     }
 
     /**
-     * 컬러 변환 시도 (alpha 값 미지원 시)
-     * @param {string} rgbaColor rgbaColor 값
+     * SSColor와 opacity를 캔버스용 CSS 색상으로 변환 (alpha 값 미지원 시 보정)
+     * @param {SSColor} color RGB 색상
+     * @param {number} opacity 불투명도
      * @returns {string} 렌더링에 사용할 CSS 색상 문자열
      */
-    convertColor(rgbaColor) {
-        if(rgbaColor.indexOf('rgba(') != 0) return rgbaColor;
+    convertColor(color, opacity = 1.0) {
+        let ssColor = color;
+        // 아직 문자열 색상을 전달하는 외부/디버그 경로도 호환한다.
+        if(!(ssColor instanceof SSColor)) {
+            const rgba = typeof(color) == 'string' && color.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/);
+            if(rgba) {
+                ssColor = new SSColor(parseInt(rgba[1]), parseInt(rgba[2]), parseInt(rgba[3]));
+                opacity = parseFloat(rgba[4]);
+            } else {
+                ssColor = new SSColor(color);
+            }
+        }
 
-        // rgba 컬러의 opacity (alpha) 값이 의미가 없는 경우가 있어, rgb 컬러로 변환
+        // alpha 값이 의미가 없는 경우가 있어, SSColor 채널에 opacity를 반영
         if(this.colorManualAlpha) {
-            const rgbaValues = rgbaColor.substring(5, rgbaColor.length - 1).split(',').map(s => s.trim());
-            const br = parseInt(rgbaValues[0]);
-            const bg = parseInt(rgbaValues[1]);
-            const bb = parseInt(rgbaValues[2]);
-            const ba = parseInt(rgbaValues[3]);
-
-            let r = Math.floor((br / 255.0) * (ba) * 255.0);
-            let g = Math.floor((bg / 255.0) * (ba) * 255.0);
-            let b = Math.floor((bb / 255.0) * (ba) * 255.0);
+            let r = Math.floor(ssColor.r * opacity);
+            let g = Math.floor(ssColor.g * opacity);
+            let b = Math.floor(ssColor.b * opacity);
 
             if(! this.dark) {
                 r = 255 - r;
@@ -10014,9 +10010,9 @@ class ShuttingStarsCore {
                 b = 255 - b;
             }
             
-            return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+            return new SSColor(r, g, b).toString();
         }
-        return rgbaColor;
+        return 'rgba(' + ssColor.stringSplit() + ', ' + opacity + ')';
     }
 
     /**
@@ -12110,8 +12106,8 @@ class ShuttingStarsObject {
     opacity = 1.0;
     /** @type {string} 렌더링할 도형 종류 */
     shape = 'circle';
-    /** @type {string} 객체의 색상 (rgba 혹은 rgb 키워드 포함 전체를 입력해야 함) */
-    color = 'rgba(200, 200, 200, 0.99)';
+    /** @type {SSColor} 객체의 색상 */
+    color = new SSColor(200, 200, 200);
     /** @type {boolean} 도형 내부 채움 여부 (false 시 테두리만 그려짐) */
     fill = true;
     /** @type {number} 폭발 (강조) 효과의 현재 진행 단계 */
@@ -12166,19 +12162,19 @@ class ShuttingStarsObject {
                     ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), 0, 2 * Math.PI);
 
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor().stringSplit() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.fill();
                     } else {
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor().stringSplit() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
                 } else if(this.shape == 'rect') {
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor().stringSplit() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.fillRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     } else {
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor().stringSplit() + ', ' + (this.getNowOpacity(coreInst) / 2) + ')');
                         ctx.lineWidth = 1;
                         ctx.strokeRect(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), coreInst.convertX(this.r), coreInst.convertY(this.h));
                     }
@@ -12191,7 +12187,7 @@ class ShuttingStarsObject {
     /**
      * modifyExplosiveColor 관련 상태를 갱신
      * @param {number} gradientIndex gradientIndex 값
-     * @returns {string} 처리 결과
+     * @returns {SSColor} 처리 결과
      */
     modifyExplosiveColor(gradientIndex) {
         return this.color;
@@ -12345,8 +12341,8 @@ class SSNoteKeyObject extends ShuttingStarsObject {
         if(fontWeight != null) {
             ctx.font = fontWeight + ' ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
-            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
-            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
+            if(this.dark) ctx.fillStyle = coreInst.convertColor(new SSColor(200, 200, 200), this.getNowOpacity(coreInst));
+            else          ctx.fillStyle = coreInst.convertColor(new SSColor(80, 80, 80), this.getNowOpacity(coreInst));
 
             ctx.textAlign = "center";
             ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
@@ -12356,7 +12352,7 @@ class SSNoteKeyObject extends ShuttingStarsObject {
      * 라인 별 컬러
      * @param {number} line 노트 레인의 인덱스
      * @param {number} gradientIndex gradientIndex 값
-     * @returns {string} RGB 색상 문자열
+     * @returns {SSColor} RGB 색상
      */
     getColorOfLine(line, gradientIndex) {
         if(typeof(gradientIndex) == 'undefined') gradientIndex = 0;
@@ -12396,35 +12392,36 @@ class SSNoteKeyObject extends ShuttingStarsObject {
         }
 
         if(gradientIndex >= 1) {
-            return this.applyGradientIndex(r, g, b, gradientIndex);
+            return this.applyGradientIndex(new SSColor(r, g, b), gradientIndex);
         }
 
-        return r + ', ' + g + ', ' + b;
+        return new SSColor(r, g, b);
     }
     /**
      * RGB 색상에 지정한 그라데이션 단계를 적용
-     * @param {number} r r 값
-     * @param {number} g g 값
-     * @param {number} b b 값
+     * @param {SSColor} color 색상
      * @param {number} gradientIndex gradientIndex 값
-     * @returns {string} 그라데이션이 적용된 RGB 색상 문자열
+     * @returns {SSColor} 그라데이션이 적용된 색상
      */
-    applyGradientIndex(r, g, b, gradientIndex) {
+    applyGradientIndex(color, gradientIndex) {
         if(gradientIndex < 7) {
-            r = r + Math.floor(((255 - r) / 7.0) * (7 - gradientIndex));
-            g = g + Math.floor(((255 - g) / 7.0) * (7 - gradientIndex));
-            b = b + Math.floor(((255 - b) / 7.0) * (7 - gradientIndex));
+            const ratio = (7 - gradientIndex) / 7.0;
+            return new SSColor(
+                color.r + Math.floor((255 - color.r) * ratio),
+                color.g + Math.floor((255 - color.g) * ratio),
+                color.b + Math.floor((255 - color.b) * ratio)
+            );
         }
 
-        return r + ', ' + g + ', ' + b;
+        return new SSColor(color);
     }
     /**
      * modifyExplosiveColor 관련 상태를 갱신
      * @param {number} gradientIndex gradientIndex 값
-     * @returns {string} 처리 결과
+     * @returns {SSColor} 처리 결과
      */
     modifyExplosiveColor(gradientIndex) {
-        if(this.explosing >= 3) return '255, 255, 255';
+        if(this.explosing >= 3) return new SSColor(255, 255, 255);
         return this.getColorOfLine(this.line, gradientIndex);
     }
 }
@@ -12538,14 +12535,14 @@ class SSNoteCommon extends SSNoteKeyObject {
     /**
      * modifyExplosiveColor 관련 상태를 갱신합니다.
      * @param {number} gradientIndex gradientIndex 값
-     * @returns {string} 처리 결과
+     * @returns {SSColor} 처리 결과
      */
     modifyExplosiveColor(gradientIndex) {
         if(this.explosing >= 3) {
             if(this.missed) {
-                return '255, 0, 0';
+                return new SSColor(255, 0, 0);
             } else {
-                return '255, 255, 255';   
+                return new SSColor(255, 255, 255);
             }
         }
         return this.getColorOfLine(this.line, gradientIndex);
@@ -12615,11 +12612,11 @@ class SSNote extends SSNoteCommon {
                     ctx.arc(coreInst.convertX(beforeLoc.x), coreInst.convertY(beforeLoc.y, true), calculatedR, 0, 2 * Math.PI);
 
                     if(this.fill) {
-                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx).stringSplit() + ', ' + tailOpa + ')');
                         ctx.fill();
                     } else {
                         ctx.lineWidth = 1;
-                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + tailOpa + ')');
+                        ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx).stringSplit() + ', ' + tailOpa + ')');
                         ctx.stroke();
                     }
                 }
@@ -12637,11 +12634,11 @@ class SSNote extends SSNoteCommon {
             ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(rs), 0, 2 * Math.PI);
 
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx).stringSplit() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.fill();
             } else {
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx).stringSplit() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.stroke();
             }
         }
@@ -12651,8 +12648,8 @@ class SSNote extends SSNoteCommon {
             let fontSize = coreInst.convertFontSize(Math.round(this.r / 1.1));
             ctx.font = 'bold ' + fontSize + 'px ' + coreInst.getRenderFontFamily();
 
-            if(this.dark) ctx.fillStyle = coreInst.convertColor('rgba(200, 200, 200, ' + this.getNowOpacity(coreInst) + ')');
-            else          ctx.fillStyle = coreInst.convertColor('rgba(80, 80, 80, ' + this.getNowOpacity(coreInst) + ')');
+            if(this.dark) ctx.fillStyle = coreInst.convertColor(new SSColor(200, 200, 200), this.getNowOpacity(coreInst));
+            else          ctx.fillStyle = coreInst.convertColor(new SSColor(80, 80, 80), this.getNowOpacity(coreInst));
 
             ctx.textAlign = "center";
             ctx.fillText(this.key, coreInst.convertX(this.x), coreInst.convertY(this.y + (fontSize / 4.0), true)); // Note 중앙에 출력
@@ -12714,7 +12711,7 @@ class SSLongNote extends SSNoteCommon {
      */
     modifyExplosiveColor(gradientIndex) {
         if(this.missed) {
-            return '90, 90, 90';
+            return new SSColor(90, 90, 90);
         }
         return super.modifyExplosiveColor(gradientIndex);
     }
@@ -12736,10 +12733,10 @@ class SSLongNote extends SSNoteCommon {
         for(let idx=0; idx<=5; idx++) {
             ctx.beginPath();
             if(this.fill) {
-                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.fillStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx).stringSplit() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.fillRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2) + additionalY));
             } else {
-                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx) + ', ' + this.getNowOpacity(coreInst) + ')');
+                ctx.strokeStyle = coreInst.convertColor('rgba(' + this.modifyExplosiveColor(idx).stringSplit() + ', ' + this.getNowOpacity(coreInst) + ')');
                 ctx.strokeRect(coreInst.convertX(this.x - this.r + idx), coreInst.convertY(this.y - this.r + idx), coreInst.convertX((this.r * 2) - (idx * 2)), coreInst.convertY((this.yEnd - this.y) - (idx * 2) + additionalY));
             }
         }
@@ -12895,8 +12892,8 @@ class SSMouseEventArea extends ShuttingStarsObject {
 
 /** 장식용 상위 객체 */
 class SSDecorationObject extends ShuttingStarsObject {
-    /** @type {string} 폭발 효과가 정점일 때 사용할 색상 */
-    peakColor = '255, 255, 255';
+    /** @type {SSColor} 폭발 효과가 정점일 때 사용할 색상 */
+    peakColor = new SSColor(255, 255, 255);
     /** @type {string} 장식 객체의 렌더링 우선순위 */
     priority = 'low';
     /**
@@ -12922,7 +12919,7 @@ class SSStarlight extends SSDecorationObject {
         this.y = Math.round(ShuttingStarsUtility.random() * coreInst.getStageHeight());
         this.shape = 'circle';
         this.opacity = 0.5 + (0.49 * ShuttingStarsUtility.random());
-        this.color = '255, 255, 255';
+        this.color = new SSColor(255, 255, 255);
         this.priority = 'low';
         this.dark = false;
         this.fill = true;
@@ -12954,7 +12951,7 @@ class SSExplosingObject extends SSDecorationObject {
      */
     constructor(coreInst, line, y, color, peakColor) {
         super(coreInst);
-        this.peakColor = '255, 255, 255';
+        this.peakColor = new SSColor(255, 255, 255);
         this.priority = 'high';
         this.r = coreInst.getNoteRadius();
         this.x = (this.r * 4) + Math.round(line * this.r * 2.5) + coreInst.getLeftMarginNote();
@@ -12962,7 +12959,7 @@ class SSExplosingObject extends SSDecorationObject {
         this.key = coreInst.keyList[line];
         this.shape = 'circle';
         this.opacity = 0.1;
-        this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
+        this.color = new SSColor(color);
         this.dark = false;
         this.fill = true;
         this.speedX = 0;
@@ -12970,7 +12967,7 @@ class SSExplosingObject extends SSDecorationObject {
         this.explosing = 1; // 폭발 객체이므로
 
         if(peakColor) {
-            this.peakColor = peakColor;
+            this.peakColor = new SSColor(peakColor);
         }
     }
 
@@ -13009,18 +13006,12 @@ class SSExplosingObject extends SSDecorationObject {
      * @returns {string} 처리 결과
      */
     modifyExplosiveColor() {
-        let color = this.color;
-        let splits = color.split(',');
-        let eplits = this.peakColor.split(',');
-        let r, g, b, er, eg, eb;
-
-        r = parseInt(String(splits[0]).trim());
-        g = parseInt(String(splits[1]).trim());
-        b = parseInt(String(splits[2]).trim());
-
-        er = parseInt(String(eplits[0]).trim());
-        eg = parseInt(String(eplits[1]).trim());
-        eb = parseInt(String(eplits[2]).trim());
+        let r = this.color.r;
+        let g = this.color.g;
+        let b = this.color.b;
+        const er = this.peakColor.r;
+        const eg = this.peakColor.g;
+        const eb = this.peakColor.b;
 
         let oroginalR = r;
         let oroginalG = g;
@@ -13045,9 +13036,7 @@ class SSExplosingObject extends SSDecorationObject {
         g = Math.floor(g);
         b = Math.floor(b);
 
-        color = '' + r + ', ' + g + ', ' + b;
-
-        return color;
+        return new SSColor(r, g, b);
     }
 
     /**
@@ -13237,11 +13226,11 @@ class SSVirtualKey extends SSDecorationObject {
         this.speedY = 0;
         this.opacity = 0.9;
         if(coreInst.dark) {
-            this.color = '200, 200, 200';
-            this.peakColor = '255, 255, 255';
+            this.color = new SSColor(200, 200, 200);
+            this.peakColor = new SSColor(255, 255, 255);
         } else {
-            this.color = '100, 100, 100';
-            this.peakColor = '50, 50, 50';
+            this.color = new SSColor(100, 100, 100);
+            this.peakColor = new SSColor(50, 50, 50);
         }
         this.fill = true;
         this.priority = 'high';
