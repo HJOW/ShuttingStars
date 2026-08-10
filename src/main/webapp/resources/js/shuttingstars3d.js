@@ -15,7 +15,7 @@ import { EffectComposer  } from './threejs/postprocessing/EffectComposer.js';
 import { RenderPass      } from './threejs/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './threejs/postprocessing/UnrealBloomPass.js';
 import { OutputPass      } from './threejs/postprocessing/OutputPass.js';
-import { ShuttingStarsUtility, SSUtil, BrowserDetector  } from './shuttingstarsutils.js'
+import { ShuttingStarsUtility, SSUtil, SSColor, BrowserDetector  } from './shuttingstarsutils.js'
 
 class ShuttingStars3DManager {
     /**
