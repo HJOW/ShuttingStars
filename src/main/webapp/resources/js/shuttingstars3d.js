@@ -183,20 +183,26 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                     for(let idx=0; idx<coreInst.objectsPlaying.length; idx++) {
                         const objOne = coreInst.objectsPlaying[idx];
                         if(objOne.shape != 'circle') continue;
-                        if(! (objOne instanceof SSNote)) continue;
+                        if(! (objOne.getClassType() == 'SSNote' || objOne.getClassType() == 'SSLongNote')) continue;
 
-                        const newObj = new SphereObject(this);
-                        newObj.uniqueSerial = objOne.uniqueSerial;
-                        newObj.x = this.convertX(objOne.x);
-                        newObj.y = this.convertY(objOne.y);
-                        newObj.z = 1;
-                        newObj.r = this.convertX(objOne.r);
-                        newObj.opacity = objOne.opacity;
-                        newObj.fill = true;
-                        newObj.hidden = false;
-                        newObj.setColor(objOne.color);
-                        newObj.prepareDefaults();
-                        coreInst.object3ds.push(newObj);
+                        if(objOne.getClassType() == 'SSLongNote') {
+                            // 롱노트 구현 (직육면체임에 유의 !)
+                            // TODO
+                        } else {
+                            // 일반 노트 (구형)
+                            const newObj = new SphereObject(this);
+                            newObj.uniqueSerial = objOne.uniqueSerial;
+                            newObj.x = this.convertX(objOne.x);
+                            newObj.y = this.convertY(objOne.y);
+                            newObj.z = 1;
+                            newObj.r = this.convertX(objOne.r);
+                            newObj.opacity = objOne.opacity;
+                            newObj.fill = true;
+                            newObj.hidden = false;
+                            newObj.setColor(objOne.color);
+                            newObj.prepareDefaults();
+                            coreInst.object3ds.push(newObj);
+                        }
                     }
                 }
             }
@@ -241,20 +247,15 @@ class ShuttingStars3DModule extends ShuttingStars3DManager {
                 let radius = Math.round((coreInst.notePlacers[coreInst.notePlacers.length-1].x - coreInst.notePlacers[0].x) / 2.0) * 8;
                 let y      = coreInst.getHpBarYLocation() - radius;
 
-                let arr = coreInst.calculateHpColor();
-                let r, g, b;
-                r = arr[0];
-                g = arr[1];
-                b = arr[2];
-                
-                const hpBarInsideColor = coreInst.convertColor('rgb(' + r + ', ' + g + ', ' + b + ')');
+                // 2D 코어의 HP 색상은 SSColor로 전달되며, 3D 객체가 16진수 정수로 변환한다.
+                const hpBarInsideColor = coreInst.calculateHpColor();
 
                 const newObj = new SphereObject(this);
                 newObj.uniqueSerial = ShuttingStarsUtility.randomInt();
                 newObj.x = this.convertX(x);
                 newObj.y = this.convertY(y);
                 newObj.z = 1;
-                newObj.r = this.convertX(r);
+                newObj.r = this.convertX(radius);
                 newObj.opacity = 1.0;
                 newObj.fill = true;
                 newObj.hidden = false;
@@ -474,13 +475,20 @@ class Locational3DObject extends ShuttingStars3DObject {
     }
 
     setColor(colorRGB) {
-        let obj = colorRGB;
-        if(typeof(obj) == 'number') {
-            this.color = obj;
+        if(typeof(colorRGB) == 'number') {
+            this.color = colorRGB;
             return;
         }
 
-        obj = String(obj);
+        // shuttingstars.js의 2D 객체는 SSColor를 사용한다. Three.js material에는
+        // 0xRRGGBB 형태의 정수값이 필요하므로 SSColor에서 직접 변환한다.
+        if(colorRGB != null && typeof(colorRGB.toHexNumber) == 'function') {
+            this.color = colorRGB.toHexNumber();
+            return;
+        }
+
+        // 외부 플러그인 또는 이전 저장 데이터의 문자열 색상은 호환을 위해 유지한다.
+        let obj = String(colorRGB);
         if(obj.indexOf('rgb(') == 0 || obj.indexOf('rgba(') == 0) {
             if(obj.indexOf('rgb(') == 0) obj = obj.substring(4, obj.length - 1);
             else                         obj = obj.substring(5, obj.length - 1);

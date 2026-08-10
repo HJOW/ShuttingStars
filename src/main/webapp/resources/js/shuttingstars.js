@@ -9981,22 +9981,26 @@ class ShuttingStarsCore {
 
     /**
      * SSColor와 opacity를 캔버스용 CSS 색상으로 변환 (alpha 값 미지원 시 보정)
-     * @param {SSColor} color RGB 색상
+     * @param {SSColor|string} color RGB 색상
      * @param {number} opacity 불투명도
      * @returns {string} 렌더링에 사용할 CSS 색상 문자열
      */
-    convertColor(color, opacity = 1.0) {
+    convertColor(color, opacity) {
         let ssColor = color;
-        // 아직 문자열 색상을 전달하는 외부/디버그 경로도 호환한다.
-        if(!(ssColor instanceof SSColor)) {
-            const rgba = typeof(color) == 'string' && color.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/);
-            if(rgba) {
-                ssColor = new SSColor(parseInt(rgba[1]), parseInt(rgba[2]), parseInt(rgba[3]));
-                opacity = parseFloat(rgba[4]);
-            } else {
-                ssColor = new SSColor(color);
+
+        if(typeof(ssColor) == 'string') {
+            // color 에 opacity (alpha) 값까지 포함되어 있는 경우도 고려하여, alpha 값 구하기
+            if(ssColor.indexOf('rgba(') == 0 && typeof(opacity) == 'undefined') {
+                const rgba = ssColor.substring(5, ssColor.length - 1).split(',');
+                if(rgba.length == 4) {
+                    opacity = parseFloat(rgba[3]);
+                }
             }
+            ssColor = new SSColor(ssColor);
         }
+
+        if(typeof(opacity) == 'undefined') opacity = 1.0;
+        if(opacity < 0) opacity = 0;
 
         // alpha 값이 의미가 없는 경우가 있어, SSColor 채널에 opacity를 반영
         if(this.colorManualAlpha) {
@@ -12124,6 +12128,12 @@ class ShuttingStarsObject {
         this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
     /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'ShuttingStarsObject'; }
+    
+    /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
@@ -12307,6 +12317,11 @@ class SSNoteKeyObject extends ShuttingStarsObject {
         this.key = coreInst.keyList[line];
         this.color = this.getColorOfLine(line);
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSNoteKeyObject'; }
 
     /**
      * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
@@ -12446,6 +12461,11 @@ class SSNotePlacer extends SSNoteKeyObject {
         this.fill = false;
         this.hidden = false;
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSNotePlacer'; }
 
     /**
      * 폭발 진행 상태를 반영한 불투명도를 계산
@@ -12515,6 +12535,11 @@ class SSNoteCommon extends SSNoteKeyObject {
     constructor(line, coreInst) {
         super(line, coreInst);
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSNoteCommon'; }
 
     /**
      * 현재 효과 진행 상태를 종합적으로 반영한 불투명도를 반환
@@ -12580,6 +12605,11 @@ class SSNote extends SSNoteCommon {
         this.opacity = 0.9;
         this.color = this.getColorOfLine(line);
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSNote'; }
     
     /**
      * draw 대상을 화면에 렌더링
@@ -12703,6 +12733,11 @@ class SSLongNote extends SSNoteCommon {
         this.opacity = 0.9;
         this.color = this.getColorOfLine(line);
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSLongNote'; }
 
     /**
      * modifyExplosiveColor 관련 상태를 갱신합니다.
@@ -12775,6 +12810,12 @@ class SSJudgeMark extends ShuttingStarsObject {
         super(coreInst);
         this.judgeResult = judgeResult;
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSJudgeMark'; }
 
     /**
      * draw 대상을 화면에 렌더링합니다.
@@ -12888,6 +12929,11 @@ class SSMouseEventArea extends ShuttingStarsObject {
     constructor(coreInst) {
         super(coreInst);
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSMouseEventArea'; }
 }
 
 /** 장식용 상위 객체 */
@@ -12903,6 +12949,11 @@ class SSDecorationObject extends ShuttingStarsObject {
     constructor(coreInst) {
         super(coreInst);
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSDecorationObject'; }
 }
 
 /** 장식용 별빛 객체 */
@@ -12927,6 +12978,11 @@ class SSStarlight extends SSDecorationObject {
         this.speedY = 0;
         this.explosing = 0;
     }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSStarlight'; }
 }
 
 /** 클래스 이름 변경을 위한 임시 클래스 */
@@ -12937,6 +12993,11 @@ class Starlight extends SSStarlight {
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
     constructor(coreInst) { super(coreInst); }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'Starlight'; }
 }
 
 /** 장식용 폭발 객체 */
@@ -12946,8 +13007,8 @@ class SSExplosingObject extends SSDecorationObject {
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} line 노트 레인의 인덱스
      * @param {number} y y 값
-     * @param {string} color color 값
-     * @param {string} peakColor peakColor 값
+     * @param {SSColor} color color 값
+     * @param {SSColor} peakColor peakColor 값
      */
     constructor(coreInst, line, y, color, peakColor) {
         super(coreInst);
@@ -12970,6 +13031,12 @@ class SSExplosingObject extends SSDecorationObject {
             this.peakColor = new SSColor(peakColor);
         }
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSExplosingObject'; }
 
     /**
      * draw 대상을 화면에 렌더링
@@ -13065,13 +13132,19 @@ class SSCorrectNoteExplosing extends SSExplosingObject {
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} line 라인 번호
      * @param {number} y y 값
-     * @param {string} color color 값
-     * @param {string} peakColor peakColor 값
+     * @param {SSColor} color color 값
+     * @param {SSColor} peakColor peakColor 값
      */
     constructor(coreInst, line, y, color, peakColor) {
         super(coreInst, line, y, color, peakColor);
         this.r = Math.round(this.r * 1.2);
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSCorrectNoteExplosing'; }
 }
 
 /** 노트 미스 폭발 효과 */
@@ -13081,13 +13154,19 @@ class SSFailExplosing extends SSExplosingObject {
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} line 라인 번호
      * @param {number} y y 값
-     * @param {string} color color 값
-     * @param {string} peakColor peakColor 값
+     * @param {SSColor} color color 값
+     * @param {SSColor} peakColor peakColor 값
      */
     constructor(coreInst, line, y, color, peakColor) {
         super(coreInst, line, y, color, peakColor);
         this.r = Math.round(this.r * 1.2);
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSFailExplosing'; }
 }
 
 /** 게임오버 최종 폭발 효과 */
@@ -13097,12 +13176,18 @@ class SSPlanetExplosing extends SSExplosingObject {
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      * @param {number} line 라인 번호
      * @param {number} y y 값
-     * @param {string} color color 값
-     * @param {string} peakColor peakColor 값
+     * @param {SSColor} color color 값
+     * @param {SSColor} peakColor peakColor 값
      */
     constructor(coreInst, line, y, color, peakColor) {
         super(coreInst, line, y, color, peakColor);
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSPlanetExplosing'; }
 }
 
 /** 마우스 클릭 표시 */
@@ -13113,6 +13198,12 @@ class SSMouseClickHighlighter extends SSExplosingObject {
     constructor(coreInst) {
         super(coreInst, 0, 0, '255,255,255', '255,255,255');
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSMouseClickHighlighter'; }
 }
 
 /** 텍스트 출력 장식 */
@@ -13131,7 +13222,7 @@ class SSTextDeco extends SSDecorationObject {
      * @param {number} y y 값
      * @param {number} fontSize fontSize 값
      * @param {CanvasTextAlign} align align 값
-     * @param {string} color color 값
+     * @param {SSColor} color color 값
      */
     constructor(coreInst, text, x, y, fontSize, align, color) {
         super(coreInst, 0);
@@ -13145,14 +13236,20 @@ class SSTextDeco extends SSDecorationObject {
         this.align = align;
         this.shape = 'circle';
         this.opacity = 1.0;
-        this.color = color; // 255, 0, 0 과 같이 rgb 정수와 쉼표만 들어가야 함
-        this.peakColor = color;
+        this.color = new SSColor(color);
+        this.peakColor = new SSColor(color);
         this.dark = false;
         this.fill = true;
         this.speedX = 0;
         this.speedY = 0;
         this.explosing = 1;
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSTextDeco'; }
 
     /**
      * 폭발 진행 상태를 반영한 불투명도를 계산
@@ -13185,7 +13282,7 @@ class SSTextDeco extends SSDecorationObject {
      */
     draw(ctx, coreInst) {
         this.ctx.textAlign = this.align;
-        this.ctx.fillStyle = this.convertColor('rgba(' + this.color + ', ' + this.getNowOpacity(coreInst) + ')');
+        this.ctx.fillStyle = this.convertColor('rgba(' + this.color.stringSplit() + ', ' + this.getNowOpacity(coreInst) + ')');
         this.ctx.fillText(this.text, this.convertX(this.x), this.convertY(this.y));
     }
 }
@@ -13277,6 +13374,13 @@ class SSVirtualKey extends SSDecorationObject {
             this.y = Math.round(coreInst.getStageHeight()  * 1.0 / 10.0);
         }
     }
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSVirtualKey'; }
+    
     /**
      * 폭발 진행 상태를 반영한 불투명도를 계산
      * @param {ShuttingStarsCore} coreInst
@@ -13341,6 +13445,12 @@ class SSBonusProduct {
      * @type{string} name
      */
     constructor(name) { if(name) this.name = String(name); }
+    
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSBonusProduct'; }
 }
 
 /** 2D 오디오 시각화 공통 클래스 */
@@ -13360,6 +13470,11 @@ class SSAudio2DVisualizer extends SSBonusProduct {
      * @type{string} name
      */
     constructor(name) { super(name); }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSAudio2DVisualizer'; }
     /**
      * draw 대상을 화면에 렌더링
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
@@ -13416,6 +13531,11 @@ class BarTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
      */
     constructor() { super('CLASSIC VISUALIZER'); }
     /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'BarTypeSSAudio2DVisualizer'; }
+    /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
      * @param {ShuttingStarsCore} coreInst
@@ -13454,6 +13574,11 @@ class CircleTypeSSAudio2DVisualizer extends SSAudio2DVisualizer {
      * 인스턴스 초기화
      */
     constructor() { super('CIRCULAR VISUALIZER'); }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'CircleTypeSSAudio2DVisualizer'; }
     /**
      * draw 대상을 화면에 렌더링합니다.
      * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
@@ -13502,6 +13627,11 @@ class SSNoteTheme extends SSBonusProduct {
      * @param {SSNote} noteObject 
      */
     draw(ctx, coreInst, noteObject) {  noteObject.draw(ctx, coreInst);  }
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSNoteTheme'; }
 }
 
 /********************** 외부에서 호출할 수 있는 객체 및 함수 구현 ************************/

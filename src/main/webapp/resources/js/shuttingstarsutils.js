@@ -937,7 +937,15 @@ class SSColor {
         }
 
         if(typeof(red) == 'string' && typeof(green) == 'undefined' && typeof(blue) == 'undefined') {
-            let str = red.trim(); // r, g, b 형태의 문자열을 받아 콤마로 나누어 멤버변수에 세팅
+            let str = red.trim(); 
+            // rgb( r, g, b )  형태이거나 rgba( r, g, b, a )  형태로 들어온 경우, 괄호와 공백 제거 후 r, g, b 형태의 문자열로 변환
+            if(str.startsWith('rgb(') || str.startsWith('rgba(')) {
+                str = str.replace('rgb(', '');
+                str = str.replace('rgba(', '');
+                str = str.replace(')', '');
+            }
+            
+            // r, g, b 형태의 문자열을 받아 콤마로 나누어 멤버변수에 세팅
             let arr = str.split(',');
             if(arr.length >= 3) {
                 this.r = parseInt(arr[0].trim());
