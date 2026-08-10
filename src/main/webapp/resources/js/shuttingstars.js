@@ -17,7 +17,7 @@
  * 
  */
 
-import { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
+import { ShuttingStarsUtility, SSUtil, SSColor, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
 import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
 import { SSBackend, getSSBackendBroker, ShuttingStarsInterface } from './shuttingstarsinterface.js'

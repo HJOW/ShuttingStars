@@ -916,6 +916,83 @@ class ShuttingStarsUtilityClass {
     }
 }
 
+/** 색상 처리용 클래스, 투명도는 이 클래스에서 취급하지 않음 */
+class SSColor {
+    r = 0;
+    g = 0;
+    b = 0;
+    /**
+     * 생성자, red, green, blue 를 각각 0~255 사이 정수로 입력하거나, "r, g, b" 형태의 문자열을 입력하거나, SSColor 객체를 입력 가능
+     * 
+     * @param {*} red   rgb 따로 입력 시 빨강 성분을 0 ~ 255 사이 정수로 입력, 혹은 단독으로 문자열로 입력하거나 SSColor 객체를 입력해 복제할 수도 있음
+     * @param {*} green rgb 따로 입력 시 초록 성분을 0 ~ 255 사이 정수로 입력
+     * @param {*} blue  rgb 따로 입력 시 파랑 성분을 0 ~ 255 사이 정수로 입력
+     */
+    constructor(red, green, blue) {
+        if(typeof(red) == 'object' && (red instanceof SSColor)) {
+            this.r = red.r;
+            this.g = red.g;
+            this.b = red.b;
+            return;
+        }
+
+        if(typeof(red) == 'string' && typeof(green) == 'undefined' && typeof(blue) == 'undefined') {
+            let str = red.trim(); // r, g, b 형태의 문자열을 받아 콤마로 나누어 멤버변수에 세팅
+            let arr = str.split(',');
+            if(arr.length >= 3) {
+                this.r = parseInt(arr[0].trim());
+                this.g = parseInt(arr[1].trim());
+                this.b = parseInt(arr[2].trim());
+            }
+            return;
+        }
+
+        if(typeof(red  ) == 'number') this.r = red;
+        if(typeof(green) == 'number') this.g = green;
+        if(typeof(blue ) == 'number') this.b = blue;
+    }
+    /**
+     * 색상을 더 어둡게 변경, 새 객체가 반환됨.
+     * 
+     * @param {number} darkRatio 어둡게 할 비율 (0~1 사이 소수)
+     * @returns {SSColor} 처리 결과 (새 객체로 반환)
+     */
+    darker(darkRatio) {
+        return new SSColor(
+            Math.max(0, Math.min(255, Math.floor(this.r * (1.0 - darkRatio)))),
+            Math.max(0, Math.min(255, Math.floor(this.g * (1.0 - darkRatio)))),
+            Math.max(0, Math.min(255, Math.floor(this.b * (1.0 - darkRatio))))
+        );
+    }
+    /**
+     * 색상을 더 밝게 변경, 새 객체가 반환됨
+     * 
+     * @param {number} brightRatio 밝게 할 비율 (0~1 사이 소수)
+     * @returns {SSColor} 처리 결과 (새 객체로 반환)
+     */
+    brighter(brightRatio) {
+        return new SSColor(
+            Math.max(0, Math.min(255, Math.floor(this.r * (1.0 + brightRatio)))),
+            Math.max(0, Math.min(255, Math.floor(this.g * (1.0 + brightRatio)))),
+            Math.max(0, Math.min(255, Math.floor(this.b * (1.0 + brightRatio))))
+        );
+    }
+    /**
+     * RGB 값을 문자열로 반환, 예 : "255, 255, 255"
+     * @returns {string} 처리 결과
+     */
+    stringSplit() {
+        return this.r + ', ' + this.g + ', ' + this.b;
+    }
+    /**
+     * CSS 에 바로 사용할 수 있는 문자열로 반환, 예 : "rgb(255, 255, 255)"
+     * @returns {string} 처리 결과
+     */
+    toString() {
+        return 'rgb(' + this.stringSplit() + ')';
+    }
+}
+
 /** Browser 감지 클래스 (TODO 미완성) */
 class BrowserDetectorClass {
     /**
@@ -1280,4 +1357,4 @@ const SSUtil = ShuttingStarsUtility;
 const BrowserDetector = new BrowserDetectorClass();
 const BpmDetector     = new BpmDetectorClass();
 
-export { ShuttingStarsUtility, SSUtil, BrowserDetector, BpmDetector };
+export { ShuttingStarsUtility, SSUtil, SSColor, BrowserDetector, BpmDetector };
