@@ -711,7 +711,7 @@ class ShuttingStarsCore {
     /** @type {Array<function(): void>} destroy 호출 시 호출해야 할 함수 리스트 */
     onDestroyTasks = [];
 
-    /** @type {Object} 초기화 시 전달된 매개변수들을 저장, init 끝나는 시점에 삭제함. */
+    /** @type {Object} 초기화 시 전달된 매개변수들을 저장. */
     storeInitParams = {};
 
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
@@ -1152,10 +1152,16 @@ class ShuttingStarsCore {
 
             // render 의 경우는 requestAnimationFrame 을 사용하여 브라우저에 최적화된 렌더링을 수행하도록 함
             const fRenderLoop = (timestamp) => { 
-                selfs.render(); 
-                if(this.stopRepeatRender) { this.stopRepeatRender = false; return;  }
-                this.reqAniKey = requestAnimationFrame(fRenderLoop); // 재귀 호출
+                try { selfs.render();  } catch(erender) { console.error(erender); }
+                if(selfs.stopRepeatRender) { 
+                    selfs.stopRepeatRender = false;
+                    if(selfs.reqAniKey != null) { try { cancelAnimationFrame(selfs.reqAniKey); } catch(safes) {} }
+                    selfs.reqAniKey = null;
+                    return; 
+                }
+                selfs.reqAniKey = requestAnimationFrame(fRenderLoop); // 재귀 호출
             };
+            this.stopRepeatRender = false;
             this.reqAniKey = requestAnimationFrame(fRenderLoop);
             this.onDestroyTasks.push(() => { 
                 selfs.stopRepeatRender = true; 
@@ -1406,7 +1412,7 @@ class ShuttingStarsCore {
      */
     logInit(msg) {
         this.lastInitSuccessMessage = msg;
-        if(this.initDebugMode) ShuttingStarsUtility.toast(msg);
+        if(this.initDebugMode) { ShuttingStarsUtility.toast(msg); ShuttingStarsUtility.log(msg); }
     }
 
     /**
@@ -4635,8 +4641,8 @@ class ShuttingStarsCore {
 
     /** 3D 매니저의 render 호출 (3D 매니저 로딩이 되어 있어야 사용 가능) */
     call3Drender() {
-        if(this.render3DEndTime <= 0) {
-            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+        if(this.render3DEndTime < this.render3DStartTime) {
+            // 아직 이전 사이클의의 3D render 가 끝나지 않음
             ShuttingStarsUtility.log('3D render performance is too slow !');
             return;
         }
@@ -4654,8 +4660,8 @@ class ShuttingStarsCore {
 
     /** 3D 매니저의 simultaneousJob 호출 (3D 매니저 로딩이 되어 있어야 사용 가능) */
     call3DsimultaneousWork() {
-        if(this.simultaneous3DEndTime <= 0) {
-            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+        if(this.simultaneous3DEndTime < this.simultaneous3DStartTime) {
+            // 아직 이전 사이클의 3D simultaneousJob 가 끝나지 않음
             ShuttingStarsUtility.log('3D simultaneous performance is too slow !');
             return;
         }
@@ -4675,8 +4681,8 @@ class ShuttingStarsCore {
      * 화면에 객체들 출력, 동시 반복 호출되며 init 에서 시작됨
      */
     render() {
-        if(this.renderEndTime <= 0) {
-            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+        if(this.renderEndTime < this.renderStartTime) {
+            // 아직 이전 사이클의 renderIn 가 끝나지 않음
             ShuttingStarsUtility.log('render performance is too slow !');
             return;
         }
@@ -7670,8 +7676,8 @@ class ShuttingStarsCore {
     simultaneousWork() {
         const selfs = this;
 
-        if(this.simultaneousEndTime <= 0) {
-            // 아직 이전 사이틀의 simultaneousWorkIn 가 끝나지 않음
+        if(this.simultaneousEndTime < this.simultaneousStartTime) {
+            // 아직 이전 사이클의 simultaneousWorkIn 가 끝나지 않음
             ShuttingStarsUtility.log('simultaneousWork performance is too slow !');
             return;
         }
@@ -7915,8 +7921,8 @@ class ShuttingStarsCore {
     timeElapse() {
         const selfs = this;
 
-        if(this.timeElapseWorkEndTime <= 0) {
-            // 아직 이전 사이틀의 timeElapseIn 가 끝나지 않음
+        if(this.timeElapseWorkEndTime < this.timeElapseWorkStartTime) {
+            // 아직 이전 사이클의 timeElapseIn 가 끝나지 않음
             ShuttingStarsUtility.log('timeElapseWork performance is too slow !');
             return;
         }
@@ -8698,12 +8704,18 @@ class ShuttingStarsCore {
                         } else { ss3dworked = true; selfs.call3DsimultaneousWork(); }
                     }
                 }
+                this.onDestroyTasks.push(() => {
+                    if(selfs.workerRender != null) {
+                        selfs.workerRender.terminate();
+                        selfs.workerRender = null;
+                    }
+                });
             } else {
-                ShuttingStarsUtility.repeat(() => {
+                this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => {
                     if(selfs.ss3d != null && selfs.canvas3d != null && (! selfs.disable3d)) { selfs.call3Drender(); }
-                }, this.frameTime * 2);
+                }, selfs.frameTime * 2));
 
-                ShuttingStarsUtility.repeat(() => {
+                this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => {
                     if(selfs.ss3d != null) { 
                         if(selfs.disable3d) {  
                             if(ss3dworked) {
@@ -8712,7 +8724,7 @@ class ShuttingStarsCore {
                             }
                         } else { ss3dworked = true; selfs.call3DsimultaneousWork(); }
                     }
-                }, this.frameTime);
+                }, selfs.frameTime));
             }
 
             this.fGameEvent({ "event" : '3dmanagerready', "broker" : this.broker });
@@ -10183,18 +10195,13 @@ class ShuttingStarsCore {
     }
 
     /** 
-    * refreshOnFirstSession 에서, 새로고침 필요여부가 판단된 이후 호출됨.
+    * refreshOnFirstSession 에서, 새로고침 필요여부가 판단된 이후 호출됨. Promise
     */
-    async actionRefreshOnFirstSession() {
+    actionRefreshOnFirstSession() {
         const selfs = this;
-        const initParams = this.storeInitParams;
-        // setTimeout(() => { selfs.callRefresh(); }, 50);
-        await ShuttingStarsUtility.waitTime(2000);
-        /*
-        this.destroy();
-        await ShuttingStarsUtility.waitTime(2000);
-        await this.init(initParams.rootDiv, initParams.urlContext, initParams.fCustom);
-        */
+        return new Promise((resolve, reject) => {
+            selfs.reInitialize().then((res) => { resolve(res); }).catch((e) => { reject(e); });
+        });
     }
 
     /**
@@ -11619,6 +11626,24 @@ class ShuttingStarsCore {
         }
     }
 
+    /**  
+     * 게임 Core 객체를 재초기화 (destroy 후 init)
+    */
+    reInitialize() {
+        const selfs = this;
+        const initParams = this.storeInitParams;
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                selfs.destroy();
+                setTimeout(() => {
+                    selfs.init(initParams.rootDiv, initParams.urlContext, initParams.fCustom).then(() => {
+                        resolve(true);
+                    }).catch((e) => { reject(e); });
+                }, 1000);
+            }, 2000);
+        });
+    }
+
     /** 
      * init 의 역행. 게임을 종료시키고 화면에서 게임 제거.
      *     게임 동작 과정에서 등록된 이벤트 모두 해제
@@ -11649,6 +11674,7 @@ class ShuttingStarsCore {
 
         this.rootDiv.innerHTML = '';
         this.rootDiv = null;
+        this.storeInitParams = {};
         ShuttingStarsUtility.log('ShuttingStars - The game core has been destroyed.');
     }
 }
