@@ -9403,13 +9403,18 @@ class ShuttingStarsCore {
                     action : function() { selfs.handleMenuEnter(this.getAttribute('data-menukey')); }
                 });
             }
-        } else if(this.state == 'playing') {
+        } else if(this.state == '' || this.state == 'empty') {
             // DO NOTHING
+        } else if(this.state == 'firstset' || this.state == 'songtitle' || this.state == 'listentitle' || this.state == 'playing') {
+            arrays.push({
+                label : this.trans('Please wait...'),
+                hidden : true,
+                action : function() {  }
+            });
         } else {
             arrays.push({
                 label : this.trans('Go back'),
                 action : async function() { 
-                    if(selfs.state == 'songtitle' || selfs.state == 'listentitle') return;
                     if(selfs.state == 'listenplaying' || selfs.state == 'fitting') await selfs.onSongEnd();
                     await selfs.setState('menu');
                 }
@@ -9418,6 +9423,8 @@ class ShuttingStarsCore {
 
         // 배열에 담긴 메뉴 적용
         for(const menuOne of arrays) {
+            if(menuOne.hidden) continue;
+            
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.classList.add('btn');
