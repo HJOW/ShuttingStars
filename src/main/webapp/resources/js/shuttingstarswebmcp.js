@@ -324,6 +324,26 @@ class SSWebMCP {
                     return key;
                 }
             });
+
+
+            await document.modelContext.registerTool({
+                name : 'how_to_play_this_game_for_user',
+                description : `Get information for user to play this game.`,
+                inputSchema : {
+                    type : 'object',
+                    properties : {}
+                },
+                outputSchema : {
+                    type : 'string'
+                },
+                execute : () => {
+                    let msg = `
+                    This game is a rhythm game. You can play the game with keyboard.
+                    When the game started, notes will be going up from bottom to top. Press right key when notes reach the note placer (judge point). You can use S, D, F, H, J, K keys to remove notes in each line.
+                    `;
+                    return msg;
+                }
+            });
         } catch(e) {
             console.error(e);
         }
