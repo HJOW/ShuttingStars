@@ -1051,6 +1051,52 @@ class SSColor {
     }
 }
 
+/** 스토리지 처리 최상위 클래스, 인터페이스 역할로 이 클래스에는 아무 기능이 없음. */
+class SSStorage {
+    constructor() {}
+    setItem(key, value) {}
+    getItem(key) {}
+    removeItem(key) {}
+    clear() {}
+}
+
+/** Web Storage API 구현체로 localStorage 사용 */
+class SSLocalStorage extends SSStorage {
+    constructor() { super(); }
+    /** 
+     * SSLocalStorage에 값 저장
+     * @param {string} key 키
+     * @param {*} value 값
+     */
+    setItem(key, value) {
+        if(value == null) value = '';
+        if(typeof(value) == 'object') value = JSON.stringify(value);
+        localStorage.setItem(key, value);
+    }
+    /** 
+     * SSLocalStorage에서 값 추출
+     * @param {string} key 키
+     * @returns {string|null} 값
+     */
+    getItem(key) {
+        return localStorage.getItem(key);
+    }
+    /** 
+     * SSLocalStorage에서 값 삭제
+     * @param {string} key 키
+     */
+    removeItem(key) {
+        localStorage.removeItem(key);
+    }
+
+    /** 
+     * 모든 값 삭제
+     */
+    clear() {
+        localStorage.clear();
+    }
+}
+
 /** Browser 감지 클래스 (TODO 미완성) */
 class BrowserDetectorClass {
     /**
@@ -1415,4 +1461,4 @@ const SSUtil = ShuttingStarsUtility;
 const BrowserDetector = new BrowserDetectorClass();
 const BpmDetector     = new BpmDetectorClass();
 
-export { ShuttingStarsUtility, SSUtil, SSColor, BrowserDetector, BpmDetector };
+export { ShuttingStarsUtility, SSUtil, SSColor, SSStorage, SSLocalStorage, BrowserDetector, BpmDetector };

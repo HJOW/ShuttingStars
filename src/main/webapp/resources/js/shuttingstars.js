@@ -17,7 +17,7 @@
  * 
  */
 
-import { ShuttingStarsUtility, SSUtil, SSColor, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
+import { ShuttingStarsUtility, SSUtil, SSColor, SSStorage, SSLocalStorage, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
 import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
 import { SSBackend, getSSBackendBroker, ShuttingStarsInterface } from './shuttingstarsinterface.js'
@@ -61,6 +61,9 @@ class ShuttingStarsCore {
 
     /** @type {number} 초기화 작업 중 리소스 로딩을 위한 대기 시간, 밀리초 단위  */
     initializingDelayTime = 4000;
+
+    /** @type {SSStorage|null} 로컬 저장 수단 */
+    storage = new SSStorage();
 
     /*** 백엔드 **/
     /** @type {ShuttingStarsInterface|null} 백엔드 서버와의 통신을 담당하는 객체로 shuttingstarsinterface.js의 ShuttingStarsInterface 타입 객체가 들어와야 함. null 로 넣어도 게임 자체는 정상 동작하며 서버 통신관련 기능만 비활성화됨. */
@@ -761,6 +764,10 @@ class ShuttingStarsCore {
             this.ssuuid = ShuttingStarsUtility.assureSSUUID();
             ShuttingStarsUtility.log('ShuttingStars - BUILD ' + ShuttingStars.build());
 
+            // 저장소 준비
+            this.storage = new SSLocalStorage();
+
+            // 백엔드 준비
             this.backend = null;
             try {
                 this.backend = SSBackend();
@@ -821,6 +828,8 @@ class ShuttingStarsCore {
             console.error(e);
             this.backend = null;
         }
+
+        // 본격 초기화 시작
         try {
             this.logInit('init started');
             this.rebuildBroker();
@@ -1950,7 +1959,7 @@ class ShuttingStarsCore {
      */
     checkFirstUsing() {
         const selfs = this;
-        const settingJsonStr = localStorage.getItem('shuttingstar_settings');
+        const settingJsonStr = this.storage.getItem('shuttingstar_settings');
         try {
             if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
                 ShuttingStarsUtility.parseJSON(settingJsonStr); 
@@ -1983,7 +1992,7 @@ class ShuttingStarsCore {
      */
     async loadSettings() {
         try {
-            let settingJsonStr = localStorage.getItem('shuttingstar_settings');
+            let settingJsonStr = this.storage.getItem('shuttingstar_settings');
             if(typeof(settingJsonStr) != 'undefined' && settingJsonStr != null && settingJsonStr != '') {
                 let settingJson = ShuttingStarsUtility.parseJSON(settingJsonStr);
                 
@@ -2169,7 +2178,7 @@ class ShuttingStarsCore {
             settingJson.usingWorkerConfig      = this.usingWorkerConfig;
             settingJson.bonusAvails            = this.bonusAvails;
 
-            localStorage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
+            this.storage.setItem('shuttingstar_settings', JSON.stringify(settingJson));
         } catch(e) {
             ShuttingStarsUtility.log('Failed to save settings.');
             console.error(e);
@@ -2235,7 +2244,7 @@ class ShuttingStarsCore {
     async loadCredit() {
         // antiMatterCredit 로컬에서 불러오기
         try {
-            const step1 = localStorage.getItem('shuttingstar_credit');
+            const step1 = this.storage.getItem('shuttingstar_credit');
             if(step1 != null && typeof(step1) != 'undefined' && step1 != '') {
                 const step2 = ShuttingStarsUtility.parseJSON(step1);
                 
@@ -2336,7 +2345,7 @@ class ShuttingStarsCore {
 
         try {
             newPackage.hashKey   = hashKey;
-            localStorage.setItem('shuttingstar_credit', JSON.stringify(newPackage));
+            this.storage.setItem('shuttingstar_credit', JSON.stringify(newPackage));
         } catch(e) {
             ShuttingStarsUtility.log('Failed to save anti-matter credit.');
             console.error(e);
@@ -2452,7 +2461,7 @@ class ShuttingStarsCore {
 
         // 스토리지에서 불러오기
         try {
-            let songsArr = localStorage.getItem('shuttingstar_songs');
+            let songsArr = this.storage.getItem('shuttingstar_songs');
             if(typeof(songsArr) == 'undefined' || songsArr == null) return;
             if(songsArr == '') return;
 
@@ -2541,7 +2550,7 @@ class ShuttingStarsCore {
 
         // 스토리지에 저장
         try {
-            localStorage.setItem('shuttingstar_songs', JSON.stringify(list));
+            this.storage.setItem('shuttingstar_songs', JSON.stringify(list));
         } catch(e) {
             ShuttingStarsUtility.log('Failed to save songs.');
             console.error(e);
@@ -4323,7 +4332,7 @@ class ShuttingStarsCore {
                 // 백엔드 로그아웃
                 selfs.backend.logout().then(() => {
                     // 로컬 스토리지에서 세션 비우기
-                    try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; }
+                    try { selfs.storage.setItem('shuttingstar_credit', ''); } catch(e) { try { selfs.storage.clear(); } catch(e2) {}; }
                     // Credit 초기화
                     selfs.antiMatterCredit = 0;
                     selfs.darkMatterCredit = 0;
@@ -9567,11 +9576,11 @@ class ShuttingStarsCore {
             try {
                 // json = ShuttingStarsUtility.removeLinesStartKey(json, '#');
                 json = ShuttingStarsUtility.parseJSON(json);
-                localStorage.setItem('shuttingstar_songs', JSON.stringify(json));
-                this.loadSongs();
+                selfs.storage.setItem('shuttingstar_songs', JSON.stringify(json));
+                selfs.loadSongs();
             } catch(ejson) {
                 console.error(ejson);
-                alert(this.trans('ERROR') + ' : ' + ejson);
+                alert(selfs.trans('ERROR') + ' : ' + ejson);
                 return;
             }
 
@@ -9587,11 +9596,11 @@ class ShuttingStarsCore {
         btnSave3.addEventListener('click', () => {
             let urls = String(ta2.value).trim();
             try {
-                localStorage.setItem('shuttingstar_packages', urls);
-                this.loadPackages().then(() => { selfs.loadSongs(); }).catch((ex) => { console.error(ex); });
+                selfs.storage.setItem('shuttingstar_packages', urls);
+                selfs.loadPackages().then(() => { selfs.loadSongs(); }).catch((ex) => { console.error(ex); });
             } catch(ejson) {
                 console.error(ejson);
-                alert(this.trans('ERROR') + ' : ' + ejson);
+                alert(selfs.trans('ERROR') + ' : ' + ejson);
                 return;
             }
 
@@ -10365,7 +10374,7 @@ class ShuttingStarsCore {
     async loadPackages() {
         let idx, jdx;
 
-        let packages = localStorage.getItem('shuttingstar_packages');
+        let packages = this.storage.getItem('shuttingstar_packages');
         if(packages == null || typeof(packages) == 'undefined') return;
         if(packages == '') return;
         packages = ShuttingStarsUtility.removeLinesStartKey(packages, '#');
@@ -11404,7 +11413,7 @@ class ShuttingStarsCore {
      * @returns {Array<Object>} 최신 기록부터 정렬된 로컬 기록 목록
      */
     getRecords() {
-        let storageStrings = localStorage.getItem('shuttingstar_records');
+        let storageStrings = this.storage.getItem('shuttingstar_records');
         if(typeof(storageStrings) == 'undefined' || storageStrings == '' || storageStrings == null) return [];
         let storageJson = ShuttingStarsUtility.parseJSON(storageStrings);
         if(storageJson == null) storageJson = [];
@@ -11469,7 +11478,7 @@ class ShuttingStarsCore {
             if(recordArray.length <= 100) break;
         }
 
-        localStorage.setItem('shuttingstar_records', JSON.stringify(recordArray));
+        this.storage.setItem('shuttingstar_records', JSON.stringify(recordArray));
 
         // 로그인된 경우 Firestore 에도 기록
         if(recordOne.clear) {
@@ -11492,11 +11501,11 @@ class ShuttingStarsCore {
             else { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }
         }
         try { this.fGameEvent({ "event" : 'reset', "broker" : this.broker }); } catch(e) {}
-        try { localStorage.setItem('shuttingstar_settings', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
-        try { localStorage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
-        try { localStorage.setItem('shuttingstar_packages', ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
-        try { localStorage.setItem('shuttingstar_records' , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
-        try { localStorage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { localStorage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { this.storage.setItem('shuttingstar_settings', ''); } catch(e) { try { this.storage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { this.storage.setItem('shuttingstar_songs'   , ''); } catch(e) { try { this.storage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { this.storage.setItem('shuttingstar_packages', ''); } catch(e) { try { this.storage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { this.storage.setItem('shuttingstar_records' , ''); } catch(e) { try { this.storage.clear(); } catch(e2) {}; fAfter(); return; }
+        try { this.storage.setItem('shuttingstar_credit'  , ''); } catch(e) { try { this.storage.clear(); } catch(e2) {}; fAfter(); return; }
 
         if(this.backend != null) {
             if(this.backend.logined) {
