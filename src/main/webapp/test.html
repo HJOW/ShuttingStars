@@ -95,7 +95,7 @@ window.addEventListener('load', function(){
             performanceDebugMode : true,
             gameOverEnabled : false,
             virtualKeyForce : false,
-            initDebugMode : true,
+            initDebugMode : false,
          /* fOnShutdownCalled : function(){ window.close(); } */
          /* fOuterWidth  : function() { return window.outerWidth;  }, */
          /* fOuterHeight : function() { return window.outerHeight; }, */
@@ -107,6 +107,9 @@ window.addEventListener('load', function(){
         });
     });
     ShuttingStars.setAfterInitializeHook(function(broker) {
+        broker.apply({
+            useContextMenu : false
+        });
         // broker.directSelectSong('nai4ilahDFSHShirgnn546346HSHMERHMEmSGESGSDGsnmdk'); // 곡 바로 선택
     });
     ShuttingStars.init(root);

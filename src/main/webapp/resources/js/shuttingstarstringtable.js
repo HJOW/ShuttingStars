@@ -57,6 +57,7 @@ const SSStringTable = {
         'Survive (CRAZY)' : '생존 (CRASY)',
         "PLAY : " : "플레이 : ",
         'BACK : ' : '돌아가기 : ',
+        'Go back' : '돌아가기',
         '% key to continue...' : '% 키를 눌러 계속...',
         'PLAYING REPORT' : 'PLAYING REPORT',
         'TOTAL' : 'TOTAL',

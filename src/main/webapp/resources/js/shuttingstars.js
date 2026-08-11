@@ -134,6 +134,8 @@ class ShuttingStarsCore {
         youtube : null,   // 유튜브 팝업 div
         mysong : null     // mp3 첨부 div   
     };
+    /** @type {HTMLElement|null} 컨텍스트 메뉴 영역 */
+    contextMenuDiv = null;
     /** @type {HTMLElement|null} 상세 설정 화면 영역 */
     configDiv = null;
     /** @type {HTMLElement|null} 웹 접근성을 위한 영역 */
@@ -877,6 +879,7 @@ class ShuttingStarsCore {
                         <canvas class='shuttingstars_canvas_3d'></canvas>
                     </div>
                     <div class='shuttingstars_pop_root'></div>
+                    <div class='shuttingstars_ctxmenu'></div>
                 </div>                                     
             `;
             rootDiv.innerHTML = htmls;
@@ -884,11 +887,13 @@ class ShuttingStarsCore {
             this.contentRoot = rootDiv.querySelector('.shuttingstars_canvas_content_root');
             this.videoBga    = rootDiv.querySelector('.shuttingstars_bga');
             this.youtubeDiv  = rootDiv.querySelector('.shuttingstars_youtubes');
+            this.contextMenuDiv = rootDiv.querySelector('.shuttingstars_ctxmenu');
             this.accessibilityLayer = rootDiv.querySelector('.shuttingstars_webaccessibility_layer');
-
+            
             this.pops.root = this.rootDiv.querySelector('.shuttingstars_pop_root');
             this.renderPopupDiv();
 
+            if(this.contextMenuDiv != null) this.contextMenuDiv.classList.add('invisible');
             this.logInit('preparing global css...');
 
             // Set global CSS
@@ -932,6 +937,15 @@ class ShuttingStarsCore {
                     line-height: 1.5rem;
                 }
                 .shuttingstars_root .shuttingstars_pop_content.shuttingstars_pop_content2 { z-index: 1005; }
+                .shuttingstars_root .shuttingstars_ctxmenu {
+                    width: 15rem;
+                    display: block;
+                    position: absolute;
+                }
+                .shuttingstars_root .shuttingstars_ctxmenu button {
+                    text-align: left;
+                    width: 100%;
+                }
             `;
             //     팝업 영역 CSS
             styles += `
@@ -1240,8 +1254,15 @@ class ShuttingStarsCore {
 
             // 마우스 클릭 시작 이벤트 부여
             const fMouseDown = (event) => {
+                // 컨텍스트 메뉴 숨김 처리
+                if(selfs.contextMenuDiv != null) selfs.contextMenuDiv.classList.add('invisible');
+
+                // 곡 생성 모드에서는 마우스 클릭 동작 무시
                 if(selfs.createMode) return;
+
+                // 기본 마우스 클릭 탑지
                 const obj = fMouseClickConversion(event, true);
+                // 마우스 클릭 이벤트 처리
                 selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
             };
             this.canvas.addEventListener('mousedown', fMouseDown);
@@ -1259,11 +1280,18 @@ class ShuttingStarsCore {
             // 주 캔버스 위에 겹쳐져 있는 3D 장식용 캔버스에도 마우스 이벤트 동일하게 부여
             if(this.canvas3d != null) {
                 const f3DMouseDown = (event) => {
+                    // 컨텍스트 메뉴 숨김 처리
+                    if(selfs.contextMenuDiv != null) selfs.contextMenuDiv.classList.add('invisible');
+
+                    // 곡 생성 모드에서는 마우스 클릭 동작 무시
                     if(selfs.createMode) return;
+
+                    // 기본 마우스 클릭 탑지
                     const obj = fMouseClickConversion(event, true);
                     selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
                 };
                 this.canvas3d.addEventListener('mousedown', f3DMouseDown);
+                // 마우스 클릭 이벤트 처리
                 this.onDestroyTasks.push(() => { selfs.canvas3d.removeEventListener('mousedown', f3DMouseDown); });
 
                 const f3DMouseUp = (event) => {
@@ -1273,6 +1301,32 @@ class ShuttingStarsCore {
                 };
                 this.canvas3d.addEventListener('mouseup', f3DMouseUp);
                 this.onDestroyTasks.push(() => { selfs.canvas3d.removeEventListener('mouseup', f3DMouseUp); });
+            }
+
+            // 컨텍스트 메뉴 이벤트 부여
+            const fContextMenu = function(ec) {
+                const x = ec.clientX;
+                const y = ec.clientY;
+
+                if(selfs.contextMenuDiv != null) {
+                    ec.preventDefault();
+                    selfs.renderContextMenu();
+                    selfs.contextMenuDiv.style.top  = y + 'px';
+                    selfs.contextMenuDiv.style.left = x + 'px';
+                    selfs.contextMenuDiv.style.zIndex   = (selfs.mainZindex + 1000);
+
+                    const items = selfs.contextMenuDiv.querySelectorAll('.sscontextmenu_item');
+                    if(items == null) return;
+                    if(items.length <= 0) return;
+                    selfs.contextMenuDiv.classList.remove('invisible');
+                }
+            };
+            this.canvas.addEventListener('contextmenu', fContextMenu);
+            this.onDestroyTasks.push(() => { selfs.canvas.removeEventListener('contextmenu', fContextMenu); });
+
+            if(this.canvas3d != null) {
+                this.canvas3d.addEventListener('contextmenu', fContextMenu);
+                this.onDestroyTasks.push(() => { selfs.canvas3d.removeEventListener('contextmenu', fContextMenu); });
             }
 
             // 화면 크기 계산 - 화면 크기변경 이벤트 부여를 위해
@@ -1408,6 +1462,7 @@ class ShuttingStarsCore {
 
                 selfs.handleScreenResized();
                 selfs.titleScreenWaiting = true;
+                selfs.renderContextMenu();
                 selfs.accessililityLog('Press ENTER key to continue.');
                 selfs.fGameEvent({ "event" : 'afterinit', "broker" : selfs.broker });
                 resolve(true);
@@ -1531,6 +1586,9 @@ class ShuttingStarsCore {
         // 웹 접근성 관련 처리
         this.processWebAccessibility(state);
 
+        // 컨텍스트 메뉴 관리
+        this.renderContextMenu();
+
         // 이벤트
         this.fGameEvent({ "event" : 'statechanged', "broker" : this.broker, "state" : state, "before" : this.beforeState });
     }
@@ -1623,6 +1681,7 @@ class ShuttingStarsCore {
         this.broker.fRefresh                = this.fRefresh                ;
         this.broker.fCanvasResized          = this.fCanvasResized          ;
         this.broker.fOnFirstUse             = this.fOnFirstUse             ;
+        this.broker.useContextMenu          = (this.contextMenuDiv != null);
         this.broker.songs                   = [];
         for(let sdx=0; sdx<this.songs.length; sdx++) {
             this.broker.songs.push(this.songs[sdx]);
@@ -1685,6 +1744,24 @@ class ShuttingStarsCore {
             if(typeof(obj.songs                  ) != 'undefined') {
                 for(let ssdx=0; ssdx<obj.songs.length; ssdx++) {
                     selfs.addSong(obj.songs[ssdx]);
+                }
+            }
+
+            if(typeof(obj.useContextMenu) != 'undefined') {
+                if(obj.useContextMenu) {
+                    if(selfs.contextMenuDiv == null) {
+                        if(selfs.rootDiv != null) {
+                            selfs.contextMenuDiv = selfs.rootDiv.querySelector('.shuttingstars_ctxmenu');
+                            selfs.contextMenuDiv.classList.add('invisible');
+                            selfs.renderContextMenu();
+                        }
+                    }
+                } else {
+                    if(selfs.contextMenuDiv != null) {
+                        selfs.contextMenuDiv.classList.add('invisible');
+                        selfs.contextMenuDiv.innerHTML = '';
+                        selfs.contextMenuDiv = null;
+                    }
                 }
             }
         }
@@ -3269,62 +3346,71 @@ class ShuttingStarsCore {
             
             this.accessililityLog('Menu cursor moved to ' + (index+1) + ' (' + this.menuChoosing + ')');
         } else if(key == this.enterKey) { // ENTER
-            if(this.menuChoosing == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
-                this.audio = null;
-                this.songThumb = null;
-                this.videoBgaUrl = null; // TODO
+            this.handleMenuEnter(this.menuChoosing);
+        }
+    }
 
-                this.playSE('accept1');
-                this.setState('songchoosing');
-            } else if(selfs.menuChoosing == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
-                // 그래픽 퀄리티 해상도는 해상도+3D 관련 사항이므로 따로 처리
-                if(this.resolution.h <= 720) {
-                    this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
-                } else {
-                    if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
-                    else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
-                }
+    /** 
+     * 메뉴 선택 처리 
+     * 
+    */
+    handleMenuEnter(menuOne) {
+        const selfs = this;
+        if(menuOne == 'play') { // 메뉴 - 플레이에 커서가 있는 상태에서 엔터 키 누름
+            this.audio = null;
+            this.songThumb = null;
+            this.videoBgaUrl = null; // TODO
 
-                this.playSE('accept1');
-                this.setState('setting');
-            } else if(selfs.menuChoosing == 'fittiming') { // 메뉴 - 타이밍 보정
-                this.playSE('accept1');
-                this.setState('fitting');
-            } else if(this.menuChoosing == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
-                this.playSE('special1');
-                this.prepareCreditList();
-                this.setState('credit');
-            } else if(this.menuChoosing == 'records') { // 메뉴 - 기록
-                this.playSE('accept1');
-                this.selectedRecordList = selfs.getRecords();
-                this.selectRecordType = 'local';
-                this.seeingRecord = null;
-                if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
-                this.setState('recordlist');
-            } else if(this.menuChoosing == 'listen') {
-                this.playSE('accept1');
-                this.setState('listenchoosing');
-            } else if(this.menuChoosing == 'community') {
-                this.playSE('accept1');
-                this.showCommunityPopup();
-            } else if(this.menuChoosing == 'login') { // 메뉴 - 로그인 (동적 메뉴)
-                this.playSE('accept1');
-                if(this.backend != null && this.backend.avail) {
-                    this.showLoginPopup();
-                }
-            } else if(this.menuChoosing == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
-                this.playSE('special1');
-                if(this.backend != null && this.backend.avail) {
-                    this.confirm( this.trans('Do you want to logout now?') ).then((yn) => {
-                        if(yn) {
-                            selfs.handleLogout();
-                        }
-                    });
-                }
-            } else if(this.menuChoosing == 'exit') { // 메뉴 - 종료
-                this.playSE('special1');
-                this.fOnShutdownCalled();
+            this.playSE('accept1');
+            this.setState('songchoosing');
+        } else if(menuOne == 'setting') { // 메뉴 - 설정에 커서가 있는 상태에서 엔터 키 누름
+            // 그래픽 퀄리티 해상도는 해상도+3D 관련 사항이므로 따로 처리
+            if(this.resolution.h <= 720) {
+                this.settingGraphicQualityChoosing = this.settingsGraphicQuality[0];
+            } else {
+                if(this.disable3d) this.settingGraphicQualityChoosing = this.settingsGraphicQuality[1];
+                else               this.settingGraphicQualityChoosing = this.settingsGraphicQuality[2];
             }
+
+            this.playSE('accept1');
+            this.setState('setting');
+        } else if(menuOne == 'fittiming') { // 메뉴 - 타이밍 보정
+            this.playSE('accept1');
+            this.setState('fitting');
+        } else if(menuOne == 'credit') { // 메뉴 - 크레딧에 커서가 있는 상태에서 엔터 키 누름
+            this.playSE('special1');
+            this.prepareCreditList();
+            this.setState('credit');
+        } else if(menuOne == 'records') { // 메뉴 - 기록
+            this.playSE('accept1');
+            this.selectedRecordList = selfs.getRecords();
+            this.selectRecordType = 'local';
+            this.seeingRecord = null;
+            if(this.selectedRecordList.length >= 1) this.seeingRecord = this.selectedRecordList[0];
+            this.setState('recordlist');
+        } else if(menuOne == 'listen') {
+            this.playSE('accept1');
+            this.setState('listenchoosing');
+        } else if(menuOne == 'community') {
+            this.playSE('accept1');
+            this.showCommunityPopup();
+        } else if(menuOne == 'login') { // 메뉴 - 로그인 (동적 메뉴)
+            this.playSE('accept1');
+            if(this.backend != null && this.backend.avail) {
+                this.showLoginPopup();
+            }
+        } else if(menuOne == 'logout') { // 메뉴 - 로그아웃 (동적 메뉴)
+            this.playSE('special1');
+            if(this.backend != null && this.backend.avail) {
+                this.confirm( this.trans('Do you want to logout now?') ).then((yn) => {
+                    if(yn) {
+                        selfs.handleLogout();
+                    }
+                });
+            }
+        } else if(menuOne == 'exit') { // 메뉴 - 종료
+            this.playSE('special1');
+            this.fOnShutdownCalled();
         }
     }
 
@@ -5234,6 +5320,7 @@ class ShuttingStarsCore {
 
             if(menuOne == 'login' || menuOne == 'logout') continue;
             if(typeof(this.menuStringTable[menuOne]) != 'undefined') label = this.trans( this.menuStringTable[menuOne] );
+            else label = this.trans(menuOne);
 
             fontSize = this.convertFontSize(20);
 
@@ -9269,6 +9356,89 @@ class ShuttingStarsCore {
             });
         };
         setTimeout(fTrans, 1000);
+    }
+
+    /** 컨텍스트 메뉴 렌더링 */
+    renderContextMenu() {
+        const selfs = this;
+        if(this.contextMenuDiv == null) return;
+
+        // 렌더링 전 기존 숨김여부 체크
+        const hiddenBefore = this.contextMenuDiv.classList.contains('invisible');
+
+        // 일단 싹 초기화하고 시작
+        this.contextMenuDiv.innerHTML = `
+            <div class='sscontextmenu_inner'></div>
+        `;
+        this.contextMenuDiv.classList.add('sscontextmenu');
+        this.contextMenuDiv.classList.add('invisible');
+
+        const inners = this.contextMenuDiv.querySelector('.sscontextmenu_inner');
+        const arrays = []; // 메뉴를 담을 예정
+        // 각 상태별 컨텍스트 메뉴 추가
+        if(this.state == 'title') {
+            if(this.titleScreenWaiting) {
+                arrays.push({
+                    label : this.trans('PLAY'),
+                    action : function() { selfs.handleKeyInput(selfs.enterKey, false); }
+                });
+            } else {
+                arrays.push({
+                    label : this.trans('Please wait...'),
+                    action : function() {  }
+                });
+            }   
+        } else if(this.state == 'menu') {
+            for(let idx=0; idx<this.menuListDynamic.length; idx++) {
+                let menuOne = this.menuListDynamic[idx];
+                let label = '';
+                if(typeof(this.menuStringTable[menuOne]) != 'undefined') label = this.trans( this.menuStringTable[menuOne] );
+                else label = this.trans(menuOne);
+
+                arrays.push({
+                    label : label,
+                    data : {
+                        menukey : menuOne
+                    },
+                    action : function() { selfs.handleMenuEnter(this.getAttribute('data-menukey')); }
+                });
+            }
+        } else if(this.state == 'playing') {
+            // DO NOTHING
+        } else {
+            arrays.push({
+                label : this.trans('Go back'),
+                action : async function() { 
+                    if(selfs.state == 'songtitle' || selfs.state == 'listentitle') return;
+                    if(selfs.state == 'listenplaying' || selfs.state == 'fitting') await selfs.onSongEnd();
+                    await selfs.setState('menu');
+                }
+            });
+        }
+
+        // 배열에 담긴 메뉴 적용
+        for(const menuOne of arrays) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.classList.add('btn');
+            btn.classList.add('sscontextmenu_item');
+            btn.innerText = String(menuOne.label);
+            if(typeof(menuOne.action) == 'function') {
+                btn.addEventListener('click', function() {
+                    menuOne.action.call(this);
+                    selfs.contextMenuDiv.classList.add('invisible');
+                });
+            }
+            if(typeof(menuOne.data  ) == 'object' ) {
+                for(const key in menuOne.data) {
+                    btn.setAttribute('data-' + key, String(menuOne.data[key]));
+                }
+            }
+            inners.appendChild(btn);
+        }
+
+        // 숨김 여부 다시 적용
+        if(! hiddenBefore) this.contextMenuDiv.classList.remove('invisible');
     }
 
     /**
