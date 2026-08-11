@@ -711,6 +711,9 @@ class ShuttingStarsCore {
     /** @type {Array<function(): void>} destroy 호출 시 호출해야 할 함수 리스트 */
     onDestroyTasks = [];
 
+    /** @type {Object} 초기화 시 전달된 매개변수들을 저장, init 끝나는 시점에 삭제함. */
+    storeInitParams = {};
+
     // 브라우저 영역 크기 감지 함수 (플랫폼이 다른 경우 함수도 달라져야 함)
     /** @type {function(): number} 플랫폼별 브라우저 외부 너비를 반환하는 함수 */
     fOuterWidth  = function() { return window.outerWidth;  }
@@ -746,6 +749,11 @@ class ShuttingStarsCore {
     async init(rootDiv, urlContext, fCustom) {
         const selfs = this;
         this.titleScreenWaiting = false;
+
+        if(typeof(rootDiv   ) != 'undefined') this.storeInitParams.rootDiv    = rootDiv;
+        if(typeof(urlContext) != 'undefined') this.storeInitParams.urlContext = urlContext;
+        if(typeof(fCustom   ) != 'undefined') this.storeInitParams.fCustom    = fCustom;
+
         try {
             if(urlContext) this.urlCtx = urlContext;
 
@@ -1134,6 +1142,10 @@ class ShuttingStarsCore {
                     // const {drift, time} = e.data;
                     selfs.simultaneousWork();
                 }
+                this.onDestroyTasks.push(() => {
+                    if(selfs.workerSimultaneousWork) selfs.workerSimultaneousWork.terminate();
+                    selfs.workerSimultaneousWork = null;
+                });
             } else {
                 this.onDestroyTasks.push(ShuttingStarsUtility.repeat(() => { selfs.simultaneousWork(); }, 20));
             }
@@ -2898,6 +2910,10 @@ class ShuttingStarsCore {
                         // const {drift, time} = e.data;
                         selfs.timeElapse();
                     }
+                    this.onDestroyTasks.push(() => {
+                        if(selfs.workerSongPlaying) selfs.workerSongPlaying.terminate();
+                        selfs.workerSongPlaying = null;
+                    });
                 } else {
                     this.timeProgressKey = ShuttingStarsUtility.repeat(() => { selfs.timeElapse(); }, selfs.songBitGap);
                 }
@@ -10120,9 +10136,9 @@ class ShuttingStarsCore {
     loadAfter() {
         const selfs = this;
         return new Promise((resolve, reject) => {
+            selfs.setStarlights();
             if(selfs.refreshOnFirstSession()) { resolve(false); return; }
 
-            selfs.setStarlights();
             selfs.loadPlugins().then(() => {
                 selfs.loadPackages().then(() => {
                     setTimeout(() => {
@@ -10146,10 +10162,26 @@ class ShuttingStarsCore {
             sessionStorage.setItem('ss_firsts', 'Y');
 
             if(this.chromeExtensionMode) return true;
-            setTimeout(() => { selfs.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker }); if(selfs.fRefresh) selfs.fRefresh(); }, 2000);
+            this.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker });
+            this.actionRefreshOnFirstSession();
             return true;
         }
         return false;
+    }
+
+    /** 
+    * refreshOnFirstSession 에서, 새로고침 필요여부가 판단된 이후 호출됨.
+    */
+    async actionRefreshOnFirstSession() {
+        const selfs = this;
+        const initParams = this.storeInitParams;
+        // setTimeout(() => { selfs.callRefresh(); }, 50);
+        await ShuttingStarsUtility.waitTime(2000);
+        /*
+        this.destroy();
+        await ShuttingStarsUtility.waitTime(2000);
+        await this.init(initParams.rootDiv, initParams.urlContext, initParams.fCustom);
+        */
     }
 
     /**

@@ -8,6 +8,9 @@
  *     참고 : https://developer.chrome.com/docs/ai/webmcp?hl=ko
  */
 
+/** AI도구 이미 등록됐는지 여부 판단 */
+let toolsRegistered = false;
+
 /** WebMCP 지원 클래스 */
 class SSWebMCP {
     #coreInstance = null;
@@ -20,304 +23,310 @@ class SSWebMCP {
      */
     async registerTools() {
         const selfs = this;
-        await document.modelContext.registerTool({
-            name : 'get_state',
-            description : `Get the current state code of the game such as, title, menu, song choosing, playing, result, ...
-                title : The title screen of the game. Loading basic resources, then the game request "press enter key to continue" to you.
-                firstset : Basic setting screen of the game. This screen is shown only once when you first play the game. You can set your language, and graphic quality.
-                menu : The main menu of the game. Arrow keys to move, ENTER key to select.
-                songchoosing : The song choosing screen of the game. You can choose a song to play. Use Arrow keys to move, ENTER key to select a song (ENTER again to select a difficulty), ESC key to cancel or go back to menu.
-                songtitle : Loading screen of the song you choose. Please wait.
-                playing : The game is playing now. Using S, D, F, H, J, K keys to play, ESC to pause. (ESC again to stop and go to menu)
-                result : The result screen of the game. This screen is shown after you finish playing a song. (ESC to go to menu)
-                listenchoosing : The song choosing screen of the game. You can just listen a song without playing.
-                listentitle : Loading screen of the song you choose. Please wait.
-                listenplaying : The game is playing a song without playing. You can just listen a song. ESC to pause. (ESC again to stop and go to menu)
-                fitting : You can adjust some constant settings in this screen, Such as note location, judge timing, .... You can also test these values right now. ENTER key to save, ESC key to cancel and go to menu.
-                gameover : Game over. Just wait to see result or go to menu.
-                credit : Credit screen. ESC to go to menu.
-                recordlist : You can see your playing record list in this screen. ESC to go to menu. 
-                recorddet : You can see your playing record detail in this screen. ESC to go to list.
-                setting : Setting screen for the game. ESC to go back to menu. This screen is for real person. (If you are AI, it is better to see another WebMCP tool to use this feature.)
-                empty : This state shows just background decoration in homepage. The game is not running now.
-            `,
-            inputSchema : {
-                type : 'object',
-                properties : {}
-            },
-            outputSchema : {
-                type : 'string'
-            },
-            execute : () => {
-                return selfs.#coreInstance.state;
-            }
-        });
-
-        await document.modelContext.registerTool({
-            name : 'get_accessibility_logs',
-            description : `Get log messages for accessibility. You can see the game screen descriptions by this logs.`,
-            inputSchema : {
-                type : 'object',
-                properties : {}
-            },
-            outputSchema : {
-                type : 'array',
-                items : {
+        if(toolsRegistered) return;
+        toolsRegistered = true;
+        try {
+            await document.modelContext.registerTool({
+                name : 'get_state',
+                description : `Get the current state code of the game such as, title, menu, song choosing, playing, result, ...
+                    title : The title screen of the game. Loading basic resources, then the game request "press enter key to continue" to you.
+                    firstset : Basic setting screen of the game. This screen is shown only once when you first play the game. You can set your language, and graphic quality.
+                    menu : The main menu of the game. Arrow keys to move, ENTER key to select.
+                    songchoosing : The song choosing screen of the game. You can choose a song to play. Use Arrow keys to move, ENTER key to select a song (ENTER again to select a difficulty), ESC key to cancel or go back to menu.
+                    songtitle : Loading screen of the song you choose. Please wait.
+                    playing : The game is playing now. Using S, D, F, H, J, K keys to play, ESC to pause. (ESC again to stop and go to menu)
+                    result : The result screen of the game. This screen is shown after you finish playing a song. (ESC to go to menu)
+                    listenchoosing : The song choosing screen of the game. You can just listen a song without playing.
+                    listentitle : Loading screen of the song you choose. Please wait.
+                    listenplaying : The game is playing a song without playing. You can just listen a song. ESC to pause. (ESC again to stop and go to menu)
+                    fitting : You can adjust some constant settings in this screen, Such as note location, judge timing, .... You can also test these values right now. ENTER key to save, ESC key to cancel and go to menu.
+                    gameover : Game over. Just wait to see result or go to menu.
+                    credit : Credit screen. ESC to go to menu.
+                    recordlist : You can see your playing record list in this screen. ESC to go to menu. 
+                    recorddet : You can see your playing record detail in this screen. ESC to go to list.
+                    setting : Setting screen for the game. ESC to go back to menu. This screen is for real person. (If you are AI, it is better to see another WebMCP tool to use this feature.)
+                    empty : This state shows just background decoration in homepage. The game is not running now.
+                `,
+                inputSchema : {
+                    type : 'object',
+                    properties : {}
+                },
+                outputSchema : {
                     type : 'string'
+                },
+                execute : () => {
+                    return selfs.#coreInstance.state;
                 }
-            },
-            execute : () => {
-                const arr = [];
-                const accessibilityDiv = selfs.#coreInstance.accessibilityLayer;
-                accessibilityDiv.querySelectorAll('.div_accessibility_log').forEach((div) => {
-                    arr.push(div.innerText);
-                });
+            });
 
-                return arr;
-            }
-        });
-
-        await document.modelContext.registerTool({
-            name : 'describe_screen',
-            description : `Just describe the current screen of the game.`,
-            inputSchema : {
-                type : 'object',
-                properties : {}
-            },
-            outputSchema : {
-                type : 'string'
-            },
-            execute : () => {
-                let msg, idx, ddx;
-                if(selfs.#coreInstance.state == 'title') {
-                    if(selfs.#coreInstance.titleScreenWaiting) {
-                        return 'On title screen. Waiting for user ENTER key input to continue.';
-                    } else {
-                        return 'On title screen. Loading basic resources. Please wait.';
+            await document.modelContext.registerTool({
+                name : 'get_accessibility_logs',
+                description : `Get log messages for accessibility. You can see the game screen descriptions by this logs.`,
+                inputSchema : {
+                    type : 'object',
+                    properties : {}
+                },
+                outputSchema : {
+                    type : 'array',
+                    items : {
+                        type : 'string'
                     }
-                } else if(selfs.#coreInstance.state == 'firstset') {
-                    if(selfs.#coreInstance.firstSetMode == 'language') {
-                        if(selfs.#coreInstance.language == 'ko') {
-                            return 'On first-setting screen, you choosing the language. Current language is Korean. You can choose English or Korean. Use left/right key to change, ENTER key to confirm and go to next.';
+                },
+                execute : () => {
+                    const arr = [];
+                    const accessibilityDiv = selfs.#coreInstance.accessibilityLayer;
+                    accessibilityDiv.querySelectorAll('.div_accessibility_log').forEach((div) => {
+                        arr.push(div.innerText);
+                    });
+
+                    return arr;
+                }
+            });
+
+            await document.modelContext.registerTool({
+                name : 'describe_screen',
+                description : `Just describe the current screen of the game.`,
+                inputSchema : {
+                    type : 'object',
+                    properties : {}
+                },
+                outputSchema : {
+                    type : 'string'
+                },
+                execute : () => {
+                    let msg, idx, ddx;
+                    if(selfs.#coreInstance.state == 'title') {
+                        if(selfs.#coreInstance.titleScreenWaiting) {
+                            return 'On title screen. Waiting for user ENTER key input to continue.';
                         } else {
-                            return 'On first-setting screen, you choosing the language. Current language is English. You can choose English or Korean. Use left/right key to change, ENTER key to confirm and go to next.';
+                            return 'On title screen. Loading basic resources. Please wait.';
                         }
-                    } else if(selfs.#coreInstance.firstSetMode == 'quality') {
-                        if(selfs.#coreInstance.ressets.h <= 720) {
-                            return 'On first-setting screen, you choosing the graphic quality. Current graphic quality is low. You can choose low and medium. Use left/right key to change, ENTER key to confirm and go to next.';
-                        } else if(selfs.#coreInstance.ressets.h <= 1080) {
-                            return 'On first-setting screen, you choosing the graphic quality. Current graphic quality is medium. You can choose low and medium. Use left/right key to change, ENTER key to confirm and go to next.';
-                        }
-                    } else {
-                        return 'On first-setting screen, just press ENTER key to go to adjustment screen.';
-                    }
-                } else if(selfs.#coreInstance.state == 'fitting') {
-                    return 'On adjustment screen. ESC key to go to menu.';
-                } else if(selfs.#coreInstance.state == 'menu') {
-                    msg = 'On menu screen.';
-                    msg += '\n Menu list is...';
-
-                    for(idx=0; idx<selfs.#coreInstance.menuListDynamic.length; idx++) {
-                        let menuOne = selfs.#coreInstance.menuListDynamic[idx];
-                        if(selfs.#coreInstance.menuChoosing == menuOne) {
-                            msg += '\n ' + (idx+1) + 'th menu (CHOOSING) is ' + selfs.trans( selfs.#coreInstance.menuStringTable[ menuOne ] ) + '.';
-                        } else {
-                            msg += '\n ' + (idx+1) + 'th menu is ' + selfs.trans( selfs.#coreInstance.menuStringTable[ menuOne ] ) + '.';
-                        }
-                    }
-                    msg += '\n Arrow up/down key to move, ENTER key to select.';
-
-                    return msg;
-                } else if(selfs.#coreInstance.state == 'songchoosing') {
-                    msg = 'On song-choosing screen for play.';
-                    if(selfs.#coreInstance.songChoosingMode == 'mission') {
-                        msg += '\n Mission choosing mode. You can select the mission to play. You can change modes with left/right arrow key.';
-                        for(idx=0; idx<selfs.#coreInstance.missions.length; idx++) {
-                            let missionOne = selfs.#coreInstance.missions[idx];
-                            if(selfs.#coreInstance.missionChoosing == missionOne) {
-                                msg += '\n ' + (idx+1) + 'th mission (CHOOSING) is ' + missionOne.name + '.';
+                    } else if(selfs.#coreInstance.state == 'firstset') {
+                        if(selfs.#coreInstance.firstSetMode == 'language') {
+                            if(selfs.#coreInstance.language == 'ko') {
+                                return 'On first-setting screen, you choosing the language. Current language is Korean. You can choose English or Korean. Use left/right key to change, ENTER key to confirm and go to next.';
                             } else {
-                                msg += '\n ' + (idx+1) + 'th mission is ' + missionOne.name + '.';
+                                return 'On first-setting screen, you choosing the language. Current language is English. You can choose English or Korean. Use left/right key to change, ENTER key to confirm and go to next.';
+                            }
+                        } else if(selfs.#coreInstance.firstSetMode == 'quality') {
+                            if(selfs.#coreInstance.ressets.h <= 720) {
+                                return 'On first-setting screen, you choosing the graphic quality. Current graphic quality is low. You can choose low and medium. Use left/right key to change, ENTER key to confirm and go to next.';
+                            } else if(selfs.#coreInstance.ressets.h <= 1080) {
+                                return 'On first-setting screen, you choosing the graphic quality. Current graphic quality is medium. You can choose low and medium. Use left/right key to change, ENTER key to confirm and go to next.';
+                            }
+                        } else {
+                            return 'On first-setting screen, just press ENTER key to go to adjustment screen.';
+                        }
+                    } else if(selfs.#coreInstance.state == 'fitting') {
+                        return 'On adjustment screen. ESC key to go to menu.';
+                    } else if(selfs.#coreInstance.state == 'menu') {
+                        msg = 'On menu screen.';
+                        msg += '\n Menu list is...';
+
+                        for(idx=0; idx<selfs.#coreInstance.menuListDynamic.length; idx++) {
+                            let menuOne = selfs.#coreInstance.menuListDynamic[idx];
+                            if(selfs.#coreInstance.menuChoosing == menuOne) {
+                                msg += '\n ' + (idx+1) + 'th menu (CHOOSING) is ' + selfs.trans( selfs.#coreInstance.menuStringTable[ menuOne ] ) + '.';
+                            } else {
+                                msg += '\n ' + (idx+1) + 'th menu is ' + selfs.trans( selfs.#coreInstance.menuStringTable[ menuOne ] ) + '.';
                             }
                         }
-                        msg += '\n ENTER key to play, up/down arrow key to select another mission, ESC key to go back to menu.';
-                    } else if(selfs.#coreInstance.songChoosingMode == 'mysong') {
-                        msg += '\n My-Song mode. You can upload your own song to play. You can change modes with left/right arrow key.';
-                    } else {
-                        msg += '\n Default mode. You can select a song and its difficulty to play.';
-                        if(selfs.#coreInstance.songDisplays.length <= 0) {
-                            msg += '\n No songs available. ESC key to go back to menu.';
-                        }
-                        for(idx=0; idx<selfs.#coreInstance.songDisplays.length; idx++) {
-                            let songOne = selfs.#coreInstance.songDisplays[idx];
-                            if(selfs.#coreInstance.songChoosing == songOne) {
-                                msg += '\n ' + (idx+1) + 'th song (CHOOSING) is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                        msg += '\n Arrow up/down key to move, ENTER key to select.';
 
-                                if(selfs.#coreInstance.difficultyChoosing) { // 난이도 선택 단계인 경우
-                                    msg += '\n      You can choose a difficulty to play. Arrow left/right to move, ESC to go back to song-choosing state, ENTER key to play.';
-                                    for(ddx=0; ddx<selfs.#coreInstance.difficultyChoosingList.length; ddx++) {
-                                        const diffOne = selfs.#coreInstance.difficultyChoosingList[ddx];
-                                        const difficultyName = diffOne.difficultyLabel;
-                                        const difficultyNum  = diffOne.difficultyLevel;
+                        return msg;
+                    } else if(selfs.#coreInstance.state == 'songchoosing') {
+                        msg = 'On song-choosing screen for play.';
+                        if(selfs.#coreInstance.songChoosingMode == 'mission') {
+                            msg += '\n Mission choosing mode. You can select the mission to play. You can change modes with left/right arrow key.';
+                            for(idx=0; idx<selfs.#coreInstance.missions.length; idx++) {
+                                let missionOne = selfs.#coreInstance.missions[idx];
+                                if(selfs.#coreInstance.missionChoosing == missionOne) {
+                                    msg += '\n ' + (idx+1) + 'th mission (CHOOSING) is ' + missionOne.name + '.';
+                                } else {
+                                    msg += '\n ' + (idx+1) + 'th mission is ' + missionOne.name + '.';
+                                }
+                            }
+                            msg += '\n ENTER key to play, up/down arrow key to select another mission, ESC key to go back to menu.';
+                        } else if(selfs.#coreInstance.songChoosingMode == 'mysong') {
+                            msg += '\n My-Song mode. You can upload your own song to play. You can change modes with left/right arrow key.';
+                        } else {
+                            msg += '\n Default mode. You can select a song and its difficulty to play.';
+                            if(selfs.#coreInstance.songDisplays.length <= 0) {
+                                msg += '\n No songs available. ESC key to go back to menu.';
+                            }
+                            for(idx=0; idx<selfs.#coreInstance.songDisplays.length; idx++) {
+                                let songOne = selfs.#coreInstance.songDisplays[idx];
+                                if(selfs.#coreInstance.songChoosing == songOne) {
+                                    msg += '\n ' + (idx+1) + 'th song (CHOOSING) is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
 
-                                        if(selfs.#coreInstance.difficulty == diffOne) {
-                                            msg += '\n     ' + (ddx+1) + 'th difficulty (CHOOSING) is ' + difficultyName + ' (Level ' + difficultyNum + ').';
-                                        } else {
-                                            msg += '\n     ' + (ddx+1) + 'th difficulty is ' + difficultyName + ' (Level ' + difficultyNum + ').';
+                                    if(selfs.#coreInstance.difficultyChoosing) { // 난이도 선택 단계인 경우
+                                        msg += '\n      You can choose a difficulty to play. Arrow left/right to move, ESC to go back to song-choosing state, ENTER key to play.';
+                                        for(ddx=0; ddx<selfs.#coreInstance.difficultyChoosingList.length; ddx++) {
+                                            const diffOne = selfs.#coreInstance.difficultyChoosingList[ddx];
+                                            const difficultyName = diffOne.difficultyLabel;
+                                            const difficultyNum  = diffOne.difficultyLevel;
+
+                                            if(selfs.#coreInstance.difficulty == diffOne) {
+                                                msg += '\n     ' + (ddx+1) + 'th difficulty (CHOOSING) is ' + difficultyName + ' (Level ' + difficultyNum + ').';
+                                            } else {
+                                                msg += '\n     ' + (ddx+1) + 'th difficulty is ' + difficultyName + ' (Level ' + difficultyNum + ').';
+                                            }
                                         }
+                                    } else {
+                                        msg += '\n    ENTER key to choose a difficulty to play. Arrow up/down to select another song, Arrow left/right to change mode, ESC key to go back to menu.';
                                     }
                                 } else {
-                                    msg += '\n    ENTER key to choose a difficulty to play. Arrow up/down to select another song, Arrow left/right to change mode, ESC key to go back to menu.';
+                                    msg += '\n ' + (idx+1) + 'th song is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                                    msg += '\n    ENTER key to select the song, then you will choose a difficulty. Arrow up/down to select another song, Arrow left/right to change mode, ESC key to go back to menu.';                                
                                 }
-                            } else {
-                                msg += '\n ' + (idx+1) + 'th song is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
-                                msg += '\n    ENTER key to select the song, then you will choose a difficulty. Arrow up/down to select another song, Arrow left/right to change mode, ESC key to go back to menu.';                                
                             }
                         }
-                    }
 
-                    return msg;
-                } else if(selfs.#coreInstance.state == 'songtitle' || selfs.#coreInstance.state == 'listentitle') {
-                    return 'On song-loading screen. Please wait.';
-                } else if(selfs.#coreInstance.state == 'playing') {
-                    if(selfs.#coreInstance.paused) return 'On playing screen. The game is paused. ESC again to stop and go to menu, ENTER key to resume.';
-                    else if(selfs.#coreInstance.resumingTime > 0) return 'On playing screen. The game will be resumed.';
-                    return 'On playing screen. Just let user to play. ESC key to pause. (When paused, ESC again to stop and go to menu, ENTER key to resume.)';
-                } else if(selfs.#coreInstance.state == 'result') {
-                    msg = 'On result screen.';
-                    msg += '\n SONG INFORMATION ';
-                    msg += '\n  NAME        : ' + selfs.#coreInstance.song.name;
-                    msg += '\n  COMPOSER    : ' + selfs.#coreInstance.song.composer;
-                    msg += '\n  NOTE WRITER : ' + selfs.#coreInstance.song.noteWriter;
-                    msg += '\n  BPM         : ' + selfs.#coreInstance.song.bpm;
+                        return msg;
+                    } else if(selfs.#coreInstance.state == 'songtitle' || selfs.#coreInstance.state == 'listentitle') {
+                        return 'On song-loading screen. Please wait.';
+                    } else if(selfs.#coreInstance.state == 'playing') {
+                        if(selfs.#coreInstance.paused) return 'On playing screen. The game is paused. ESC again to stop and go to menu, ENTER key to resume.';
+                        else if(selfs.#coreInstance.resumingTime > 0) return 'On playing screen. The game will be resumed.';
+                        return 'On playing screen. Just let user to play. ESC key to pause. (When paused, ESC again to stop and go to menu, ENTER key to resume.)';
+                    } else if(selfs.#coreInstance.state == 'result') {
+                        msg = 'On result screen.';
+                        msg += '\n SONG INFORMATION ';
+                        msg += '\n  NAME        : ' + selfs.#coreInstance.song.name;
+                        msg += '\n  COMPOSER    : ' + selfs.#coreInstance.song.composer;
+                        msg += '\n  NOTE WRITER : ' + selfs.#coreInstance.song.noteWriter;
+                        msg += '\n  BPM         : ' + selfs.#coreInstance.song.bpm;
 
-                    msg += '\n PLAYING REPORT ';
-                    msg += '\n  PERFECT : ' + selfs.#coreInstance.report.PERFECT;
-                    msg += '\n  GREAT   : ' + selfs.#coreInstance.report.GREAT;
-                    msg += '\n  GOOD    : ' + selfs.#coreInstance.report.GOOD;
-                    msg += '\n  BAD     : ' + selfs.#coreInstance.report.BAD;
-                    msg += '\n  MISS    : ' + selfs.#coreInstance.report.MISS;
-                    msg += '\n  SCORE   : ' + selfs.#coreInstance.point;
-                    msg += '\n  RANK    : ' + selfs.#coreInstance.judgeResultRank();
+                        msg += '\n PLAYING REPORT ';
+                        msg += '\n  PERFECT : ' + selfs.#coreInstance.report.PERFECT;
+                        msg += '\n  GREAT   : ' + selfs.#coreInstance.report.GREAT;
+                        msg += '\n  GOOD    : ' + selfs.#coreInstance.report.GOOD;
+                        msg += '\n  BAD     : ' + selfs.#coreInstance.report.BAD;
+                        msg += '\n  MISS    : ' + selfs.#coreInstance.report.MISS;
+                        msg += '\n  SCORE   : ' + selfs.#coreInstance.point;
+                        msg += '\n  RANK    : ' + selfs.#coreInstance.judgeResultRank();
 
-                    msg += '\n ESC to go back to menu.';
-                    return msg;
-                } else if(selfs.#coreInstance.state == 'listenchoosing') {
-                    msg = 'On song-choosing screen for just listen.';
-                    if(selfs.#coreInstance.songCanListen.length <= 0) {
-                        return msg + '\n No songs available. ESC key to go back to menu.';
-                    }
-                    for(idx=0; idx<selfs.#coreInstance.songCanListen.length; idx++) {
-                        let songOne = selfs.#coreInstance.songCanListen[idx];
-                        if(selfs.#coreInstance.songChoosing == songOne) {
-                            msg += '\n ' + (idx+1) + 'th song (CHOOSING) is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
-                        } else {
-                            msg += '\n ' + (idx+1) + 'th song is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                        msg += '\n ESC to go back to menu.';
+                        return msg;
+                    } else if(selfs.#coreInstance.state == 'listenchoosing') {
+                        msg = 'On song-choosing screen for just listen.';
+                        if(selfs.#coreInstance.songCanListen.length <= 0) {
+                            return msg + '\n No songs available. ESC key to go back to menu.';
                         }
+                        for(idx=0; idx<selfs.#coreInstance.songCanListen.length; idx++) {
+                            let songOne = selfs.#coreInstance.songCanListen[idx];
+                            if(selfs.#coreInstance.songChoosing == songOne) {
+                                msg += '\n ' + (idx+1) + 'th song (CHOOSING) is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                            } else {
+                                msg += '\n ' + (idx+1) + 'th song is ' + songOne.name + ', composer is ' + songOne.composer + ', note writer is ' + songOne.noteWriter + ', BPM is ' + songOne.bpm + '.';
+                            }
+                        }
+                        return msg + '\n Arrow up/down key to move, ENTER key to select a song to listen, ESC key to go back to menu.';
+                    } else if(selfs.#coreInstance.state == 'listenplaying') {
+                        if(selfs.#coreInstance.paused) return 'On listening screen. The song is paused. ESC again to stop and go to menu, ENTER key to resume.';
+                        else if(selfs.#coreInstance.resumingTime > 0) return 'On listening screen. The song will be resumed.';
+                        return 'On listening screen. ESC key to pause. (When paused, ESC again to stop and go to menu, ENTER key to resume.)';
                     }
-                    return msg + '\n Arrow up/down key to move, ENTER key to select a song to listen, ESC key to go back to menu.';
-                } else if(selfs.#coreInstance.state == 'listenplaying') {
-                    if(selfs.#coreInstance.paused) return 'On listening screen. The song is paused. ESC again to stop and go to menu, ENTER key to resume.';
-                    else if(selfs.#coreInstance.resumingTime > 0) return 'On listening screen. The song will be resumed.';
-                    return 'On listening screen. ESC key to pause. (When paused, ESC again to stop and go to menu, ENTER key to resume.)';
+                    // TODO : 다른 화면들에 대해서도 작성
+
+
+                    return 'UNKNOWN. ESC to trying to go back to menu.';
                 }
-                // TODO : 다른 화면들에 대해서도 작성
+            });
 
-
-                return 'UNKNOWN. ESC to trying to go back to menu.';
-            }
-        });
-
-        await document.modelContext.registerTool({
-            name : 'get_setting',
-            description : `Get setting values.`,
-            inputSchema : {
-                type : 'object',
-                properties : {
-                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'], description : 'The setting option to get.' }
+            await document.modelContext.registerTool({
+                name : 'get_setting',
+                description : `Get setting values.`,
+                inputSchema : {
+                    type : 'object',
+                    properties : {
+                        option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'], description : 'The setting option to get.' }
+                    },
+                    required : ['option']
                 },
-                required : ['option']
-            },
-            outputSchema : {
-                type : 'string'
-            },
-            execute : ({option}) => {
-                // option 에 정의된 속성 값을 반환
-                if(option == 'keypressTiming') {
-                    return String(selfs.#coreInstance.keypressTiming);
-                } else if(option == 'songTiming') {
-                    return String(selfs.#coreInstance.songTiming);
-                } else if(option == 'noteSpeed') {
-                    return String(selfs.#coreInstance.noteSpeedMultiplier);
-                } else if(option == 'judgeTiming') {
-                    return String(selfs.#coreInstance.judgeTiming);
-                } else if(option == 'language') {
-                    return selfs.#coreInstance.language;
+                outputSchema : {
+                    type : 'string'
+                },
+                execute : ({option}) => {
+                    // option 에 정의된 속성 값을 반환
+                    if(option == 'keypressTiming') {
+                        return String(selfs.#coreInstance.keypressTiming);
+                    } else if(option == 'songTiming') {
+                        return String(selfs.#coreInstance.songTiming);
+                    } else if(option == 'noteSpeed') {
+                        return String(selfs.#coreInstance.noteSpeedMultiplier);
+                    } else if(option == 'judgeTiming') {
+                        return String(selfs.#coreInstance.judgeTiming);
+                    } else if(option == 'language') {
+                        return selfs.#coreInstance.language;
+                    }
+
+                    return null;
                 }
+            });
 
-                return null;
-            }
-        });
-
-        await document.modelContext.registerTool({
-            name : 'modify_setting',
-            description : `Modify setting values. This tool is not available when the song is already playing.`,
-            inputSchema : {
-                type : 'object',
-                properties : {
-                    option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'], description : 'The setting option to modify.' },
-                    value  : { type : 'string', description : 'The new value to set.'}
+            await document.modelContext.registerTool({
+                name : 'modify_setting',
+                description : `Modify setting values. This tool is not available when the song is already playing.`,
+                inputSchema : {
+                    type : 'object',
+                    properties : {
+                        option : { type : 'string', enum : ['keypressTiming', 'songTiming', 'noteSpeed', 'judgeTiming', 'language'], description : 'The setting option to modify.' },
+                        value  : { type : 'string', description : 'The new value to set.'}
+                    },
+                    required : ['option', 'value']
                 },
-                required : ['option', 'value']
-            },
-            outputSchema : {
-                type : 'object',
-                properties : {}
-            },
-            execute : ({option, value}) => {
-                if(selfs.#coreInstance.state == 'playing') throw new Error('Cannot modify setting values when the song is already playing.');
-                if(option == 'keypressTiming') {
-                    selfs.#coreInstance.keypressTiming = parseInt(value);
-                } else if(option == 'songTiming') {
-                    selfs.#coreInstance.songTiming = parseInt(value);
-                } else if(option == 'noteSpeed') {
-                    selfs.#coreInstance.noteSpeedMultiplier = parseFloat(value);
-                } else if(option == 'judgeTiming') {
-                    selfs.#coreInstance.judgeTiming = parseInt(value);
-                } else if(option == 'language') {
-                    selfs.#coreInstance.language = value;
+                outputSchema : {
+                    type : 'object',
+                    properties : {}
+                },
+                execute : ({option, value}) => {
+                    if(selfs.#coreInstance.state == 'playing') throw new Error('Cannot modify setting values when the song is already playing.');
+                    if(option == 'keypressTiming') {
+                        selfs.#coreInstance.keypressTiming = parseInt(value);
+                    } else if(option == 'songTiming') {
+                        selfs.#coreInstance.songTiming = parseInt(value);
+                    } else if(option == 'noteSpeed') {
+                        selfs.#coreInstance.noteSpeedMultiplier = parseFloat(value);
+                    } else if(option == 'judgeTiming') {
+                        selfs.#coreInstance.judgeTiming = parseInt(value);
+                    } else if(option == 'language') {
+                        selfs.#coreInstance.language = value;
+                    }
                 }
-            }
-        });
+            });
 
-        await document.modelContext.registerTool({
-            name : 'keypress',
-            description : `Make keyboard input to the game. This tool is not available when the song is already playing.`,
-            inputSchema : {
-                type : 'object',
-                properties : {
-                    key  : { type : 'string', enum : ['ESCAPE', 'ENTER', 'ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'S', 'D', 'F', 'H', 'J', 'K'], description : 'The key to press. Use uppercase letters for alphabet keys.' },
-                    time : { type : 'number', description : 'The time to pressing the key. Input number as milliseconds. Default value is 5.' }
+            await document.modelContext.registerTool({
+                name : 'keypress',
+                description : `Make keyboard input to the game. This tool is not available when the song is already playing.`,
+                inputSchema : {
+                    type : 'object',
+                    properties : {
+                        key  : { type : 'string', enum : ['ESCAPE', 'ENTER', 'ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'S', 'D', 'F', 'H', 'J', 'K'], description : 'The key to press. Use uppercase letters for alphabet keys.' },
+                        time : { type : 'number', description : 'The time to pressing the key. Input number as milliseconds. Default value is 5.' }
+                    },
+                    required : ['key']
                 },
-                required : ['key']
-            },
-            outputSchema : {
-                type : 'string'
-            },
-            execute : ({key, time}) => {
-                if(selfs.#coreInstance.state == 'playing') throw new Error('Cannot make keyboard input when the song is already playing.');
+                outputSchema : {
+                    type : 'string'
+                },
+                execute : ({key, time}) => {
+                    if(selfs.#coreInstance.state == 'playing') throw new Error('Cannot make keyboard input when the song is already playing.');
 
-                key = key.toUpperCase();
-                selfs.#coreInstance.handleKeyInput(key, false);
+                    key = key.toUpperCase();
+                    selfs.#coreInstance.handleKeyInput(key, false);
 
-                if(typeof(time) == 'undefined' || time == null || isNaN(time) || time <= 5) time = 5;
-                if(typeof(time) != 'number') time = parseInt(String(time));
-                setTimeout(() => {
-                    selfs.#coreInstance.handleKeyRelease(key, false);
-                }, time);
-                return key;
-            }
-        });
+                    if(typeof(time) == 'undefined' || time == null || isNaN(time) || time <= 5) time = 5;
+                    if(typeof(time) != 'number') time = parseInt(String(time));
+                    setTimeout(() => {
+                        selfs.#coreInstance.handleKeyRelease(key, false);
+                    }, time);
+                    return key;
+                }
+            });
+        } catch(e) {
+            console.error(e);
+        }
     }
 
     trans(msg) {
