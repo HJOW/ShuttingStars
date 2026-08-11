@@ -252,7 +252,7 @@ class ShuttingStarsCore {
 
     /** @type {number} 객체 ID 부여용 카운터 */
     lastObjectId = 0;
-    /** @type {Array<ShuttingStarsObject>} 항상 렌더링 대상인 객체들 (주로 장식) */
+    /** @type {Array<SSDrawableObject>} 항상 렌더링 대상인 객체들 (주로 장식) */
     objects = [];
     /** @type {Array<ShuttingStarsObject>} 상태가 playing 중일 때 렌더링 대상 객체들 (NotePlacer, Note 등 주요 게임 구성요소) */
     objectsPlaying = [];
@@ -7771,7 +7771,13 @@ class ShuttingStarsCore {
             // 기타 폭발 / 장식 오브젝트도 처리
             for(idx=0; idx<this.objects.length; idx++) {
                 const obj = this.objects[idx];
-                if(typeof(obj.explosing) == 'number') {
+                if(obj instanceof SSAnimationEffect) {
+                    if(obj.effectFinished()) {
+                        this.objects.splice(idx, 1);
+                        idx--;
+                        continue;
+                    }
+                } else if(typeof(obj.explosing) == 'number') {
                     if(typeof(obj.explosingMax) == 'number') {
                         if(obj.explosing >= obj.explosingMax) {
                             if(obj instanceof SSVirtualKey) {
@@ -8365,8 +8371,9 @@ class ShuttingStarsCore {
             this.playPrepared = false;
 
             // Note 갯수 체크
-            let count = diff.patterns.length;
-            let rank = this.judgeResultRank();
+            const count   = diff.patterns.length;
+            const rank    = this.judgeResultRank();
+            const cleared = (this.hp >= 1 && (! this.gameOverDelayed)); 
 
             // 기록 여부 결정
             let recordYn = true;
@@ -8399,13 +8406,19 @@ class ShuttingStarsCore {
                     combo : this.maxCombo,
                     rank : rank,
                     hp : this.hp,
-                    gameover : this.gameOverDelayed,
-                    clear : (this.hp >= 1 && (! this.gameOverDelayed)),
+                    gameover : (! cleared),
+                    clear : cleared,
                     notehistory : [],
                     commands : selfs.getCommandsApplied(),
                     build : this.build,
                     userAgent : window.navigator.userAgent
                 });
+            }
+
+            // 불꽃놀이 효과
+            if(cleared && (rank == 'P' || rank == 'S' || rank == 'A')) {
+                const fw = new SSFireworkEffect();
+                this.objects.push(fw);
             }
 
             // MySong 인 곡들을 목록에서 제거
@@ -12113,10 +12126,36 @@ class ShuttingStarsNotePattern {
     }
 }
 
-/* 게임 내 Note 및 SSNotePlacer 의 상위 클래스 */
-class ShuttingStarsObject {
+/** 게임 내 2D 그리기 영역에 들어갈 최상위 클래스 */
+class SSDrawableObject {
     /** @type {number} 인스턴스를 식별하는 고유 번호 */
     uniqueSerial = ShuttingStarsUtility.randomInt();
+    /** @type {boolean} 렌더링에서 숨길지 여부 */
+    hidden = false;
+    /** @type {string} 렌더링 우선순위 (low / high) */
+    priority = 'high';
+
+    /** 기본 생성자 */
+    constructor() {}
+
+    /**
+     * 클래스명을 그대로 반환
+     * @returns {string} 클래스명
+    */
+    getClassType() { return 'SSDrawableObject'; }
+
+    /**
+     * draw 대상을 화면에 렌더링
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst 게임 코어 객체
+     */
+    draw(ctx, coreInst) {
+        if(this.hidden) return;
+    }
+}
+
+/* 게임 내 Note 및 SSNotePlacer 의 상위 클래스 */
+class ShuttingStarsObject extends SSDrawableObject {
     /** @type {number} 게임 내부에서 사용하는 객체 식별자 */
     id = 0;
     /** @type {number} 객체의 X 좌표 */
@@ -12137,8 +12176,6 @@ class ShuttingStarsObject {
     beforeLocationCountMax = 32;
     /** @type {boolean} 꼬리 출력 (이전 위치 사용) */
     tail = false;
-    /** @type {boolean} 렌더링에서 숨길지 여부 */
-    hidden = false;
     /** @type {number} 객체의 불투명도 */
     opacity = 1.0;
     /** @type {string} 렌더링할 도형 종류 */
@@ -12158,6 +12195,7 @@ class ShuttingStarsObject {
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
     constructor(coreInst) {
+        super();
         this.uniqueSerial = 10000000 + ShuttingStarsUtility.randomInt() + (ShuttingStarsUtility.randomInt() * 10000); // 고유값
     }
     /**
@@ -12973,14 +13011,13 @@ class SSMouseEventArea extends ShuttingStarsObject {
 class SSDecorationObject extends ShuttingStarsObject {
     /** @type {SSColor} 폭발 효과가 정점일 때 사용할 색상 */
     peakColor = new SSColor(255, 255, 255);
-    /** @type {string} 장식 객체의 렌더링 우선순위 */
-    priority = 'low';
     /**
      * 인스턴스를 초기화합니다.
      * @param {ShuttingStarsCore} coreInst 게임 코어 객체
      */
     constructor(coreInst) {
         super(coreInst);
+        this.priority = 'low';
     }
     /**
      * 클래스명을 그대로 반환
@@ -13465,6 +13502,109 @@ class SSVirtualKey extends SSDecorationObject {
     }
 }
 
+/** 동작이 있는 2D 그리기 객체 */
+class SSAnimationEffect extends SSDrawableObject {
+    animationProgress = 0;
+    animationMaxProgress = 0;
+    constructor() {
+        super();
+    }
+
+    /**
+     * draw 대상을 화면에 렌더링, 이 메소드는 오버라이드하지 말 것 !
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
+     */
+    draw(ctx, coreInst) {
+        if(this.hidden) return;
+        if(this.effectFinished()) return;
+
+        // 이 메소드에 시각화 구현
+        try { this.drawAnimation(ctx, coreInst, this.animationProgress); } catch(e) { console.error(e); }
+        this.animationProgress++;
+    }
+
+    /**
+     * 애니메이션 효과 그리기
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
+     * @param {number} animationProgress 애니메이션 진행도
+     */
+    drawAnimation(ctx, coreInst, animationProgress) { }
+
+    /**
+     * 
+     * @returns {boolean} 효과 종료 여부 확인
+     */
+    effectFinished() {
+        return (this.animationProgress > this.animationMaxProgress);
+    }
+}
+
+/** 불꽃놀이 효과 */
+class SSFireworkEffect extends SSAnimationEffect {
+    particles = [];
+    constructor() {
+        super();
+        this.animationMaxProgress = 120;
+    }
+
+    /** 구성 파티클 생성 */
+    createRandomParticle(coreInst, maxWidth, maxHeight) {
+        const particle = {};
+        particle.color = new SSColor(Math.floor(ShuttingStarsUtility.random() * 256), Math.floor(ShuttingStarsUtility.random() * 256), Math.floor(ShuttingStarsUtility.random() * 256));
+        particle.x = Math.floor(ShuttingStarsUtility.random() * (maxWidth  * 3 / 4)) + (maxWidth  / 8);
+        particle.y = Math.floor(ShuttingStarsUtility.random() * (maxHeight * 3 / 4)) + (maxHeight / 8);
+        particle.r = Math.floor(ShuttingStarsUtility.random() * 5) + 1;
+        particle.angle = ShuttingStarsUtility.random() * 2 * Math.PI;
+        particle.speed = ShuttingStarsUtility.random() * 5 + 1;
+        particle.vx = Math.cos(particle.angle) * particle.speed;
+        particle.vy = Math.sin(particle.angle) * particle.speed;
+        particle.decay = ShuttingStarsUtility.random() * 0.05 + 0.01;
+        particle.opacity = 1.0;
+        particle.update = function() {
+            this.vx *= 0.98; // 속도 감소
+            this.vy *= 0.98; // 속도 감소
+            this.x += this.vx;
+            this.y += this.vy;
+            this.opacity -= this.decay;
+        }
+        particle.draw = function(ctx, coreInst) {
+            ctx.fillStyle = 'rgba(' + this.color.stringSplit() + ', ' + this.opacity + ')';
+            ctx.beginPath();
+            ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y), this.r, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        this.particles.push(particle);
+    }
+
+    /**
+     * 애니메이션 효과 그리기
+     * @param {CanvasRenderingContext2D} ctx 렌더링에 사용할 2D 컨텍스트
+     * @param {ShuttingStarsCore} coreInst
+     * @param {number} animationProgress 애니메이션 진행도
+     */
+    drawAnimation(ctx, coreInst, animationProgress) { 
+        if(animationProgress <= 60) {
+            const cnt = Math.floor(ShuttingStarsUtility.random() * 5) + 1;
+            for(let rdx=0; rdx<cnt; rdx++) {
+                this.createRandomParticle(coreInst, coreInst.getStageWidth(), coreInst.getStageHeight());
+            }
+        }
+
+        for(let idx=0; idx<this.particles.length; idx++) {
+            const particle = this.particles[idx];
+            particle.update();
+            particle.draw(ctx, coreInst);
+        }
+
+        if(animationProgress >= this.animationMaxProgress) {
+            this.particles = [];
+        }
+    }
+}
+
 /** 재화를 통해 활성화 / 사용 선택 가능한 대상 */
 class SSBonusProduct {
     /** @type{string} name : 상품의 이름 (전체가 고유해야 함) */
@@ -13876,4 +14016,4 @@ window.ssmanager     = ShuttingStars;
 window.SSUtil        = ShuttingStarsUtility;
 window.ssutil        = ShuttingStarsUtility;
 
-export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStarsCore, ShuttingStars3DManager, ShuttingStars3DObject, ShuttingStarsSong, CustomSSSong, SSNoteCommon, SSNote, SSLongNote, SSVirtualKey, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };
+export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStarsCore, ShuttingStars3DManager, ShuttingStars3DObject, SSAnimationEffect, ShuttingStarsSong, CustomSSSong, SSNoteCommon, SSNote, SSLongNote, SSVirtualKey, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };

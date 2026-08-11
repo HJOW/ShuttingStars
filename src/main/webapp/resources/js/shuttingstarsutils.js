@@ -948,6 +948,26 @@ class SSColor {
                 str = str.replace('rgb(', '');
                 str = str.replace('rgba(', '');
                 str = str.replace(')', '');
+            } else if(str.startsWith('#')) {
+                // #ffffff 형태로 들어온 경우, 16진수 문자열을 r, g, b 형태의 문자열로 변환
+                let hex = str.substring(1);
+                if(hex.length == 3) {
+                    let r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+                    let g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+                    let b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+                    this.r = r;
+                    this.g = g;
+                    this.b = b;
+                    return;
+                } else { // 뒤에 3자리 이상이 있으면 6자리로 간주
+                    let r = parseInt(hex.substring(0, 2), 16);
+                    let g = parseInt(hex.substring(2, 4), 16);
+                    let b = parseInt(hex.substring(4, 6), 16);
+                    this.r = r;
+                    this.g = g;
+                    this.b = b;
+                    return;
+                }
             }
             
             // r, g, b 형태의 문자열을 받아 콤마로 나누어 멤버변수에 세팅
