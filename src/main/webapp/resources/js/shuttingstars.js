@@ -8313,11 +8313,22 @@ class ShuttingStarsCore {
      */
     async onSongEnd() {
         const selfs = this;
-        const beforeState = this.state;
+        const beforeState = this.state; // 이전 상태값 백업
         let idx;
 
+        // 난이도 정보 미리 꺼내기
         let diff = this.song.difficulties[ this.difficulty.index ];
 
+        // 혹시라도 있을 잔여 노트 모두 폭발 처리
+        for(idx=0; idx<this.objectsPlaying.length; idx++) {
+            let obj = this.objectsPlaying[idx];
+            if(obj.hidden) continue;
+            if(obj instanceof SSNote || obj instanceof SSLongNote) {
+                if(obj.explosing <= 0) obj.explosing = 1;
+            }
+        }
+
+        // 상태별 조치
         if(beforeState == 'listenplaying') { // 감상 모드 재생곡 끝남 - 다음 리스트 확인
             // 재생 중단
             this.paused = false;
