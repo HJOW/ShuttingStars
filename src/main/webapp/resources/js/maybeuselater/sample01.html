@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Sample Page</title>
+        <script type="text/javascript" src="pixi.min.js"></script>
+        <script type="text/javascript">
+            window.addEventListener('load', async function() {
+                // 참고 : https://pixijs.download/release/docs/core-concepts.html
+                const app = new PIXI.Application();
+                await app.init({ width: 800, height: 600 });
+
+                const canvas = app.canvas; // canvas 객체가 리턴됨
+                canvas.classList.add('pixi-canvas');
+                document.body.appendChild(canvas); // body 에 canvas 배치
+
+                const graphics = new PIXI.Graphics();
+                graphics.beginFill(0xff0000);
+                graphics.drawRect(100, 100, 200, 200);
+                graphics.endFill();
+
+                app.stage.addChild(graphics);
+            });
+        </script>
+    </head>
+    <body>
+
+
+    </body>
+</html>

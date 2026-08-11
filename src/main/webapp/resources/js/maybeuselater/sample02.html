@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Sample Page</title>
+        <script type="text/javascript" src="konva.min.js"></script>
+        <script type="text/javascript">
+            window.addEventListener('load', async function() {
+                // 참고 : https://konvajs.org/docs/index.html
+                const stage = new Konva.Stage({
+                    container: 'container', // 배치할 div 의 id
+                    width: 800,
+                    height: 600
+                });
+
+                const layer = new Konva.Layer();
+                stage.add(layer);
+
+                const rect = new Konva.Rect({
+                    x: 100,
+                    y: 100,
+                    width: 200,
+                    height: 200,
+                    fill: 'red'
+                });
+                layer.add(rect);
+            });
+        </script>
+    </head>
+    <body>
+        <div id="container"></div>
+    </body>
+</html>
