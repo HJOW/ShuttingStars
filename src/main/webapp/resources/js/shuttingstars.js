@@ -8443,7 +8443,11 @@ class ShuttingStarsCore {
 
             // 불꽃놀이 효과
             if(cleared && (rank == 'P' || rank == 'S' || rank == 'A')) {
-                const fw = new SSFireworkEffect();
+                let fireworkScale = 1;
+                if(     rank == 'S') fireworkScale = 2;
+                else if(rank == 'P') fireworkScale = 3;
+
+                const fw = new SSFireworkEffect(fireworkScale);
                 this.objects.push(fw);
             }
 
@@ -13590,9 +13594,13 @@ class SSAnimationEffect extends SSDrawableObject {
 /** 불꽃놀이 효과 */
 class SSFireworkEffect extends SSAnimationEffect {
     particles = [];
-    constructor() {
+    constructor(scale) {
         super();
         this.animationMaxProgress = 120;
+        if(typeof(scale) == 'number' && (! isNaN(scale))) {
+            this.animationMaxProgress = Math.floor(this.animationMaxProgress * 1.0 * scale);
+        }
+        this.priority = 'low';
     }
 
     /** 구성 파티클 생성 */
@@ -13632,7 +13640,7 @@ class SSFireworkEffect extends SSAnimationEffect {
      * @param {number} animationProgress 애니메이션 진행도
      */
     drawAnimation(ctx, coreInst, animationProgress) { 
-        if(animationProgress <= 60) {
+        if(animationProgress <= this.animationMaxProgress / 2) {
             const cnt = Math.floor(ShuttingStarsUtility.random() * 5) + 1;
             for(let rdx=0; rdx<cnt; rdx++) {
                 this.createRandomParticle(coreInst, coreInst.getStageWidth(), coreInst.getStageHeight());
