@@ -527,7 +527,8 @@ class ShuttingStarsCore {
         'nai4ilTHRIENG75346GSDIGIOERSGgdg673yMOFASP39p4g',
         'nai4ilTHERHIERGGBberbueri7456HERHIEROMHyMOFASP39p4g',
         'nai4ilTHRIENGW5235svsdngDSGDSGNKSDGN6346ERSOyMOFASP39p4g',
-        'nai4ilTHRIENGhDF63HIEbmdrbherhnoierdbn634yMOFASP39p4g'
+        'nai4ilTHRIENGhDF63HIEbmdrbherhnoierdbn634yMOFASP39p4g',
+        'nai4ilTgergmoier36m7gpejERGJEIRGn563MOFASP39p4g'
     ];
 
     // 초기 설정 화면 관련
