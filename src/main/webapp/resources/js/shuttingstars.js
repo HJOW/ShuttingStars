@@ -6272,9 +6272,11 @@ class ShuttingStarsCore {
 
             if(settingOne == 'language' || settingOne == 'quality') {
                 this.ctx.textAlign = "left";
-                this.ctx.fillText(label, this.convertX(this.getStageWidth() * 3 / 8), rows);
+                this.ctx.fillText(label + '\t' + label2, this.convertX(this.getStageWidth() * 3 / 8), rows);
+                /*
                 this.ctx.textAlign = "right";
                 this.ctx.fillText(label2, this.convertX(this.getStageWidth() * 5 / 8), rows);
+                */
             } else {
                 this.ctx.textAlign = "center";
                 this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), rows);
