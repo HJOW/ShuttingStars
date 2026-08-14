@@ -944,13 +944,26 @@ class ShuttingStarsCore {
                 }
                 .shuttingstars_root .shuttingstars_pop_content.shuttingstars_pop_content2 { z-index: 1005; }
                 .shuttingstars_root .shuttingstars_ctxmenu {
-                    width: 15rem;
+                    width: 25rem;
                     display: block;
                     position: absolute;
                 }
                 .shuttingstars_root .shuttingstars_ctxmenu button {
                     text-align: left;
                     width: 100%;
+                    border: 3px solid rgba(122, 165, 240, 0.7);
+                    background-color: rgba(122, 165, 240, 0.1);
+                    color: rgba(122, 165, 240, 0.99);
+                    border-bottom: 0;
+                    font-size: 1.2rem;
+                    line-height: 1.5rem;
+                }
+                .shuttingstars_root .shuttingstars_ctxmenu button:hover {
+                    background-color: rgba(122, 165, 240, 0.2);
+                    border-bottom: 0;
+                }
+                .shuttingstars_root .shuttingstars_ctxmenu button:last-child {
+                    border-bottom: 3px solid rgba(122, 165, 240, 0.7);
                 }
             `;
             //     팝업 영역 CSS
@@ -11774,7 +11787,7 @@ class ShuttingStarsCore {
                         <span class='span span_songchoose_search_res bpm'><span class='label target_translated'>BPM</span><span class='span_value'>%4</span></span>
                     </div>
                 </div>
-                <button type='button' class='btn btn_songchoose_search_play target_translated'>PLAY</button>
+                <button type='button' class='btn btn_songchoose_search_play'>▶</button>
             `;
 
             htmlBlocks = ShuttingStarsUtility.replaceString(htmlBlocks, '%0', ShuttingStarsUtility.purifyHTML(songOne.serial));
