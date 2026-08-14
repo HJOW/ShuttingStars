@@ -11813,6 +11813,7 @@ class ShuttingStarsCore {
                     selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
                     selfs.difficultyChoosing        = true;
                 }
+                selfs.keyEventDisabled = false;
             });
 
             divRes.appendChild(divOne);
