@@ -127,7 +127,8 @@ const SSStringTable = {
         "Delete your informations on game DB (Popup)" : "게임 DB 내 정보 삭제 (팝업)",
         "Visit the github page (Popup)" : "GitHub 페이지 방문 (팝업)",
         "If you click this, you will see the privacy policy. (Popup)" : "이 버튼을 클릭하면 개인정보처리방침을 확인할 수 있습니다. (팝업)",
-        'Please increase the window size.' : '창 크기를 늘려주세요.'
+        'Please increase the window size.' : '창 크기를 늘려주세요.',
+        "Search" : '검색'
     }
 };
 export { SSStringTable };

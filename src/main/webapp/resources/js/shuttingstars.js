@@ -125,15 +125,16 @@ class ShuttingStarsCore {
     videoBga = null;
     /** @type {Object} 팝업 (별도 창이 아닌 인앱 대화상자 형태) */
     pops = {
-        root : null,      // 팝업 최상위 div
-        dim : null,       // 모달 팝업 구현을 위한 흐린 투명 레이어 div, canvas 보다 위층을 차지함
-        config : null,    // 설정 팝업 영역 div
-        login : null,     // 로그인 팝업 영역 div
-        join : null,      // 회원가입 팝업 영역 div (현재 미사용)
-        community : null, // 커뮤니티 팝업 영역 div
-        iframes : null,   // 외부 페이지 (iframe) div
-        youtube : null,   // 유튜브 팝업 div
-        mysong : null     // mp3 첨부 div   
+        root : null,       // 팝업 최상위 div
+        dim : null,        // 모달 팝업 구현을 위한 흐린 투명 레이어 div, canvas 보다 위층을 차지함
+        config : null,     // 설정 팝업 영역 div
+        login : null,      // 로그인 팝업 영역 div
+        join : null,       // 회원가입 팝업 영역 div (현재 미사용)
+        community : null,  // 커뮤니티 팝업 영역 div
+        iframes : null,    // 외부 페이지 (iframe) div
+        youtube : null,    // 유튜브 팝업 div
+        songchoose : null, // 곡 검색 및 선택 duv
+        mysong : null      // mp3 첨부 div   
     };
     /** @type {HTMLElement|null} 컨텍스트 메뉴 영역 */
     contextMenuDiv = null;
@@ -918,6 +919,7 @@ class ShuttingStarsCore {
                 .shuttingstars_root { width: 100%; margin: 0; padding: 0; background: transparent; }
                 .shuttingstars_root .full { width: 100%; }
                 .shuttingstars_root .invisible { display: none !important; }
+                .shuttingstars_root .shuttingstars-hidden-corearea { display: none !important; }
                 .shuttingstars_root .only_for_screenreader { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: polygon(0 0, 0 0, 0 0); white-space: nowrap; left: -19999px; top: -19999px; }
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .shuttingstars_root.ss_backend_guest   .ss_only_for_login_user { display: none !important; }
@@ -978,6 +980,55 @@ class ShuttingStarsCore {
                 }
                 .shuttingstars_root .shuttingstars_pop_root .menu .btn_exit:hover {
                     border: 0;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .inp_songchoose_search_keyword {
+                    width: 100%;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_results {
+                    height: 290px;
+                    margin-top: 10px;
+                    overflow-y: auto;
+                    border: 1px solid black;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res {
+                    padding: 1rem 1rem 1rem 1rem;
+                    background: transparent;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res:hover {
+                    background-color: rgba(150, 150, 150, 0.1);
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res_row {
+                    width: 360px;
+                    display: inline-block;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res_row .songname {
+                    text-align: left;
+                    font-size: 2rem;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res_row .span_songchoose_search_res {
+                    margin-right: 3rem;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res_row span.label {
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    margin-right: 1rem;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res_row span.span_value {
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
+                .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .div_songchoose_search_res .btn_songchoose_search_play {
+                    float: right;
+                    text-align: right;
+                    margin-right: 0;
+                    display: inline-block;
+                    font-size: 1.5rem;
+                    line-height: 1.7rem;
+                    vertical-align: top;
                 }
             `;
             //     설정 영역 CSS
@@ -3245,6 +3296,7 @@ class ShuttingStarsCore {
                 this.pops.iframes.classList.add('invisible');
                 this.pops.youtube.classList.add('invisible');
                 this.pops.mysong.classList.add('invisible');
+                this.pops.songchoose.classList.add('invisible');
                 this.configDiv.classList.add('invisible');
 
                 if(this.state == 'setting') this.setState(this.beforeSettingState);
@@ -9041,6 +9093,7 @@ class ShuttingStarsCore {
             <div class='shuttingstars_pop_content shuttingstars_canvas_config invisible'></div>  
             <div class='shuttingstars_pop_content pop_login invisible'></div>
             <div class='shuttingstars_pop_content pop_mysong invisible'></div>
+            <div class='shuttingstars_pop_content pop_songchoose invisible'></div>
             <div class='shuttingstars_pop_content pop_community invisible'></div>
             <div class='shuttingstars_pop_content pop_youtube invisible'></div>
             <div class='shuttingstars_pop_content pop_iframe invisible'></div>
@@ -9136,11 +9189,14 @@ class ShuttingStarsCore {
             }
 
             selfs.keyEventDisabled = false;
+            selfs.pops.dim.classList.add('invisible');
             selfs.pops.login.classList.add('invisible');
-            selfs.pops.mysong.classList.add('invisible');
+            selfs.pops.community.classList.add('invisible');
             selfs.pops.iframes.classList.add('invisible');
             selfs.pops.youtube.classList.add('invisible');
-            selfs.pops.dim.classList.add('invisible');
+            selfs.pops.mysong.classList.add('invisible');
+            selfs.pops.songchoose.classList.add('invisible');
+            selfs.configDiv.classList.add('invisible');
 
             if(selfs.audioBackground != null) {
                 if(selfs.state != 'playing' && selfs.state != 'listenplaying' && selfs.state != 'fitting') selfs.audioBackground.play();
@@ -9229,6 +9285,42 @@ class ShuttingStarsCore {
             }
         });
         this.pops.youtube = popInside;
+
+        // 곡 검색/선택 팝업
+        popInside = popRoot.querySelector('.pop_songchoose');
+        htmls = `
+            <div class='div_songchoose_menu menu'>
+                <h2 class='target_translate' style='position: absolute;'>Search</h2>
+                <button type='button' class='btn btn_exit red'>X</button>
+            </div>
+            <div class='div_songchoose_inner1 full pure-form' style='padding-top : 50px;'>
+                <div class='div_songchoose_search full'>
+                    <input type='text' class='inp inp_songchoose_search_keyword'/>
+                </div>
+                <div class='div_songchoose_results full'>
+
+                </div>
+            </div>
+        `;
+        popInside.innerHTML = htmls;
+        popInside.style.height = '400px';
+
+        popInside.querySelector('.btn_exit').addEventListener('click', () => {
+            selfs.pops.songchoose.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+            selfs.keyEventDisabled = false;
+        });
+        const inpSongChooseSearch = popInside.querySelector('.inp_songchoose_search_keyword');
+        const fKeywordChanges = function(keyword) {
+            let list = [];
+            if(     selfs.state == 'songchoosing'  ) list = selfs.songDisplays;
+            else if(selfs.state == 'listenchoosing') list = selfs.songCanListen;
+            selfs.processPopSongChooseSearch(keyword, list);
+        };
+        inpSongChooseSearch.addEventListener('change', (e) => { fKeywordChanges(e.target.value); });
+        inpSongChooseSearch.addEventListener('input' , (e) => { fKeywordChanges(e.target.value); });
+
+        this.pops.songchoose = popInside;
 
         // mysong 팝업
         popInside = popRoot.querySelector('.pop_mysong');
@@ -9456,6 +9548,36 @@ class ShuttingStarsCore {
                     await selfs.setState('menu');
                 }
             });
+            if(this.state == 'songchoosing') {
+                // 곡 검색/선택 팝업 띄우기
+                arrays.push({
+                    label : this.trans('Search'),
+                    action : async function() {
+                        selfs.pops.dim.classList.remove('invisible');
+                        selfs.pops.songchoose.classList.remove('invisible');
+                        selfs.keyEventDisabled = true;
+
+                        const inpKeyword = selfs.pops.songchoose.querySelector('.inp_songchoose_search_keyword');
+                        inpKeyword.value = '';
+                        selfs.processPopSongChooseSearch('', selfs.songDisplays);
+                        inpKeyword.focus();
+                    }
+                });
+            } else if(this.state == 'listenchoosing') {
+                arrays.push({
+                    label : this.trans('Search'),
+                    action : async function() {
+                        selfs.pops.dim.classList.remove('invisible');
+                        selfs.pops.songchoose.classList.remove('invisible');
+                        selfs.keyEventDisabled = true;
+
+                        const inpKeyword = selfs.pops.songchoose.querySelector('.inp_songchoose_search_keyword');
+                        inpKeyword.value = '';
+                        selfs.processPopSongChooseSearch('', selfs.songCanListen);
+                        inpKeyword.focus();
+                    }
+                });
+            }
         }
 
         // 배열에 담긴 메뉴 적용
@@ -11523,8 +11645,9 @@ class ShuttingStarsCore {
      * 해당 곡을 선택된 상태로 만들기
      * 
      * @param {*} song 대상 곡 (ShuttingStarsSong 객체, 또는 곡의 serial 값)
+     * @param {boolean|null} listen 감상모드 여부 (선택사항)
      */
-    async directSelectSong(song) {
+    async directSelectSong(song, listen) {
         const selfs = this;
         if(this.state == 'playing') throw new Error('Cannot use this while playing');
 
@@ -11545,9 +11668,13 @@ class ShuttingStarsCore {
         if(typeof(song) == 'string') { throw new Error('Cannot find song ' + song + ' in songs list'); }
         if(this.songs.indexOf(song) < 0) { throw new Error('Cannot find song ' + song.name + ' in songs list'); }
 
-        await this.setState('songchoosing');
+        if(listen) {
+            await this.setState('listenchoosing');
+        } else {
+            await this.setState('songchoosing');
+            this.songChoosingMode = 'default';
+        }
         this.song = song;
-        this.songChoosingMode = 'default';
         this.songChoosing = song;
     }
 
@@ -11614,6 +11741,75 @@ class ShuttingStarsCore {
         try { document.body.removeChild(div); } catch(e) { console.error(e); }
         
         return allSongData;
+    }
+
+    /** 곡 선택 화면 내 검색 팝업에서 검색 동작 
+     * @param {string} keyword 검색 키워드
+     * @param {Array<ShuttingStarsSong>} list 검색 대상 곡 목록
+    */
+    processPopSongChooseSearch(keyword, list) {
+        const selfs = this;
+        const popRoot = this.pops.songchoose;
+        if(! popRoot) return;
+
+        const divRes  = popRoot.querySelector('.div_songchoose_results');
+        divRes.innerHTML = '';
+
+        for(let idx=0; idx<list.length; idx++) {
+            const songOne = list[idx];
+            if(songOne.name.indexOf(keyword) < 0 && songOne.composer.indexOf(keyword) < 0) continue;
+
+            const divOne = document.createElement('div');
+            divOne.classList.add('div');
+            divOne.classList.add('div_songchoose_search_res');
+            divOne.setAttribute('data-serial', songOne.serial);
+            divOne.setAttribute('data-index', idx + '');
+
+            let htmlBlocks = `
+                <div class='div div_songchoose_search_res_row'>
+                    <div class='div div_songchoose_search_res_row_in songname'>%1</div>
+                    <div class='div div_songchoose_search_res_row_in'>
+                        <span class='span span_songchoose_search_res composer'><span class='label target_translated'>Composer</span><span class='span_value'>%2</span></span>
+                        <span class='span span_songchoose_search_res notewriter'><span class='label target_translated'>Note Writer</span><span class='span_value'>%3</span></span>
+                        <span class='span span_songchoose_search_res bpm'><span class='label target_translated'>BPM</span><span class='span_value'>%4</span></span>
+                    </div>
+                </div>
+                <button type='button' class='btn btn_songchoose_search_play target_translated'>PLAY</button>
+            `;
+
+            htmlBlocks = ShuttingStarsUtility.replaceString(htmlBlocks, '%0', ShuttingStarsUtility.purifyHTML(songOne.serial));
+            htmlBlocks = ShuttingStarsUtility.replaceString(htmlBlocks, '%1', ShuttingStarsUtility.purifyHTML(songOne.name));
+            htmlBlocks = ShuttingStarsUtility.replaceString(htmlBlocks, '%2', ShuttingStarsUtility.purifyHTML(songOne.composer));
+            htmlBlocks = ShuttingStarsUtility.replaceString(htmlBlocks, '%3', ShuttingStarsUtility.purifyHTML(songOne.noteWriter));
+            htmlBlocks = ShuttingStarsUtility.replaceString(htmlBlocks, '%4', ShuttingStarsUtility.purifyHTML(songOne.bpm + ''));
+            divOne.innerHTML = htmlBlocks;
+
+            const btnPlay = divOne.querySelector('.btn_songchoose_search_play');
+            btnPlay.setAttribute('data-serial', songOne.serial);
+            btnPlay.addEventListener('click', async (evt) => {
+                const serial = evt.target.getAttribute('data-serial');
+                if(! serial) return;
+                
+                await selfs.directSelectSong(serial, (selfs.state == 'listenchoosing'));
+                popRoot.classList.add('invisible');
+                selfs.pops.dim.classList.add('invisible');
+                
+                if(selfs.state == 'songchoosing') {
+                    selfs.difficulty                = selfs.song.difficulties[0];
+                    selfs.difficultyLevel           = selfs.difficulty.difficultyLevel;
+                    selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
+                    selfs.difficultyChoosing        = true;
+                }
+            });
+
+            divRes.appendChild(divOne);
+        }
+
+        popRoot.querySelectorAll('.target_translate').forEach((itemOne) => {
+            if(itemOne.classList.contains('target_translated')) return;
+            itemOne.innerHTML = selfs.trans(itemOne.innerHTML);
+            itemOne.classList.add('target_translated');
+        });
     }
 
     /**
