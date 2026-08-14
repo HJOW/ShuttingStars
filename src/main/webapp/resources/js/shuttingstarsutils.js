@@ -919,6 +919,37 @@ class ShuttingStarsUtilityClass {
             throw e;
         }
     }
+
+    /** 해당 URL로부터 Youtube 의 Video ID 추출해 반환 
+     * @param {string} url Youtube URL
+     * @returns {string|null} Youtube Video ID, 추출 실패 시 null 반환
+    */
+    findYoutubeVideoId(url) {
+        if(typeof(url) != 'string') return null;
+        url = url.trim();
+        if(url == '') return null;
+
+        if(url.indexOf('youtu.be/') >= 0) {
+            let idx = url.indexOf('youtu.be/');
+            let str = url.substring(idx + 9);
+            if(str.indexOf('?') >= 0) str = str.substring(0, str.indexOf('?'));
+            if(str.indexOf('&') >= 0) str = str.substring(0, str.indexOf('&'));
+            if(str.length == 11) return str;
+        } else if(url.indexOf('youtube.com/embed/') >= 0) {
+            let idx = url.indexOf('youtube.com/embed/');
+            let str = url.substring(idx + 18);
+            if(str.indexOf('?') >= 0) str = str.substring(0, str.indexOf('?'));
+            if(str.indexOf('&') >= 0) str = str.substring(0, str.indexOf('&'));
+            if(str.length == 11) return str;
+        } else if(url.indexOf('youtube.com/watch?v=') >= 0) {
+            let idx = url.indexOf('youtube.com/watch?v=');
+            let str = url.substring(idx + 20);
+            if(str.indexOf('?') >= 0) str = str.substring(0, str.indexOf('?'));
+            if(str.indexOf('&') >= 0) str = str.substring(0, str.indexOf('&'));
+            if(str.length == 11) return str;
+        }
+        return null;
+    }
 }
 
 /** 색상 처리용 클래스, 투명도는 이 클래스에서 취급하지 않음 */
