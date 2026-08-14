@@ -988,11 +988,11 @@ class ShuttingStarsCore {
                     color: rgba(120, 250, 120, 0.99);
                 }
                 .shuttingstars_root .shuttingstars_pop_root .menu .btn_exit {
-                    border: 0;
+                    border: 3px solid rgba(244, 66, 66, 0.3);
                     float: right;
                 }
                 .shuttingstars_root .shuttingstars_pop_root .menu .btn_exit:hover {
-                    border: 0;
+                    border: 3px solid rgba(244, 66, 66, 0.6);
                 }
                 .shuttingstars_root .shuttingstars_pop_root .pop_songchoose .inp_songchoose_search_keyword {
                     width: 100%;
