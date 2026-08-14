@@ -21,6 +21,7 @@ import { ShuttingStarsUtility, SSUtil, SSColor, SSStorage, SSLocalStorage, Brows
 import { SSBundleSongs } from './shuttingstarsongs.js'
 import { SSStringTable } from './shuttingstarstringtable.js'
 import { SSBackend, getSSBackendBroker, ShuttingStarsInterface } from './shuttingstarsinterface.js'
+import { SSYoutubeMusicStore } from './youtubestores/shuttingstarsyts.js';
 import { ShuttingStars3DManager, ShuttingStars3DObject, SS3DManager } from './shuttingstars3d.js'
 import { SSWebMCP, initSSWebMCP } from './shuttingstarswebmcp.js'
 
@@ -184,6 +185,8 @@ class ShuttingStarsCore {
     youtubePlayerEnded = false;
     /** @type {*} Youtube IFrame API - YT.Player - 팝업 iframe 플레이어 */
     youtubePopPlayer = null;
+    /** @type {object|null} 유튜브 저작권 프리 음악과 그 음악의 곡 정보 및 노트 패턴을 담은 데이터베이스 객체로, youtubestore.js 참조 */
+    youtubeMusicStore = null;
 
     /*** 3D 각 구성요소 사용여부 설정 ***/
     /** @type {Object} 게임 요소별 3D 렌더링 사용 여부를 저장합니다. */
@@ -1427,6 +1430,10 @@ class ShuttingStarsCore {
             this.menuListDynamic = mnList;
             this.menuChoosing = this.menuListDynamic[0];
 
+            if(typeof(SSYoutubeMusicStore) != 'undefined') {
+                this.setYoutubeMusicStore(SSYoutubeMusicStore);
+            }
+
             await this.loadCredit();
             await this.afterInitialized();
             if(firsts) {
@@ -1807,6 +1814,9 @@ class ShuttingStarsCore {
         this.broker.getBackendBroker = function() {
             if(! selfs.backend) return null;
             return getSSBackendBroker(selfs.backend);
+        }
+        this.broker.setYoutubeMusicStore = async function(storeObj) {
+            await selfs.setYoutubeMusicStore(storeObj);
         }
         this.broker.destroy = function() { selfs.destroy(); };
         this.broker.officialSongSerials = [];
@@ -8847,6 +8857,30 @@ class ShuttingStarsCore {
     }
 
     /**
+     * Youtube 저작권 프리 음악과 곡 정보, 패턴 정보를 담은 Store 객체 입력, youtubestore.js 참조
+     * @param {object|null} storeObj 
+     * @returns {Promise<void>}
+     */
+    async setYoutubeMusicStore(storeObj) {
+        if(this.youtubeMusicStore != null && this.youtubeMusicStore != storeObj) {
+            this.youtubeMusicStore.destroy();
+            this.youtubeMusicStore = null;
+        }
+
+        if(storeObj == null) storeObj = null;
+        if(typeof(storeObj) == 'undefined') storeObj = null;
+        if(typeof(storeObj.database) == 'undefined') storeObj = null;
+        if(typeof(storeObj.init         ) != 'function') storeObj = null;
+        if(typeof(storeObj.destroy      ) != 'function') storeObj = null;
+        if(typeof(storeObj.find         ) != 'function') storeObj = null;
+        if(typeof(storeObj.findByVideoId) != 'function') storeObj = null;
+        if(storeObj != null && this.youtubeMusicStore != storeObj) {
+            await storeObj.init(this.urlCtx, this.rsscDirName);
+            this.youtubeMusicStore = storeObj;
+        }
+    }
+
+    /**
      * 해당 장식 객체가 UI 관련 장식인지 확인
      * @param {SSDecorationObject} obj
      * @return {boolean} UI 관련 장식인지 여부
@@ -11866,6 +11900,7 @@ class ShuttingStarsCore {
         this.onDestroyTasks = [];
 
         if(this.ss3d != null) { try { this.ss3d.destroy(this); } catch(e) {}; this.ss3d = null; }
+        if(this.youtubeMusicStore != null) { try { this.youtubeMusicStore.destroy(); } catch(e) {}; this.youtubeMusicStore = null; }
 
         this.songs = [];
         this.songDisplays = [];
@@ -14043,7 +14078,11 @@ class SSNoteTheme extends SSBonusProduct {
 
 /********************** 외부에서 호출할 수 있는 객체 및 함수 구현 ************************/
 class ShuttingStarsManager {
+    /** ShuttingStarsCore 객체 
+     * @type {ShuttingStarsCore|null}
+    */
     #originalInstances = null;
+
     constructor(originalInst) {
         this.#originalInstances = originalInst;
     }
@@ -14105,6 +14144,14 @@ class ShuttingStarsManager {
     */
     async getAllSongPromise(urlCtx, fFilter) {
         return await this.#originalInstances.getAllSongPromise(urlCtx, fFilter);
+    }
+
+    /**
+     * Youtube 저작권 프리 음악과 곡 정보, 패턴 정보를 담은 Store 객체 입력, youtubestore.js 참조
+     * @param {object|null} storeObj 
+     */
+    async setYoutubeMusicStore(storeObj) {
+        await this.#originalInstances.setYoutubeMusicStore(storeObj);
     }
 
     /**
@@ -14247,7 +14294,5 @@ async function initShuttingStars(mainDiv, urlContext, fCustom) {
 
 window.ShuttingStars = ShuttingStars;
 window.ssmanager     = ShuttingStars;
-window.SSUtil        = ShuttingStarsUtility;
-window.ssutil        = ShuttingStarsUtility;
 
 export { ShuttingStars, ShuttingStarsUtility, SSUtil, ShuttingStarsCore, ShuttingStars3DManager, ShuttingStars3DObject, SSAnimationEffect, ShuttingStarsSong, CustomSSSong, SSNoteCommon, SSNote, SSLongNote, SSVirtualKey, initShuttingStars, addShuttingStarSong, setShuttingStar3D, ssConsoleLogs, prepareDebugSSCoreInstances };

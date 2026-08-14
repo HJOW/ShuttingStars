@@ -1492,4 +1492,7 @@ const SSUtil = ShuttingStarsUtility;
 const BrowserDetector = new BrowserDetectorClass();
 const BpmDetector     = new BpmDetectorClass();
 
+window.SSUtil = ShuttingStarsUtility;
+window.ssutil = ShuttingStarsUtility;
+
 export { ShuttingStarsUtility, SSUtil, SSColor, SSStorage, SSLocalStorage, BrowserDetector, BpmDetector };
