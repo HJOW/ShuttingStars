@@ -4419,6 +4419,18 @@ class ShuttingStarsCore {
 
             if(mouseCursorObject.isConflicted(tempObject)) {
                 if(typeof(evOne.click) == 'function') evOne.click();
+                break;
+            }
+        }
+
+        // 그외 객체들 중 클릭 가능한 객체 탐지
+        for(let odx=0; odx<this.objectsPlaying.length; odx++) {
+            const objOne = this.objectsPlaying[odx];
+            if(objOne instanceof SSNotePlacer) {
+                if(mouseCursorObject.isConflicted(objOne)) {
+                    this.handleNotePlacerCalled(objOne);
+                    break;
+                }
             }
         }
     }
