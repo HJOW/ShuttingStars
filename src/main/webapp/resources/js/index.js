@@ -82,7 +82,7 @@ window.addEventListener('load', async function() {
         }
 
         // 시작 버튼 이벤트
-        const fStart = function() {
+        const fStart = function(page) {
             let width  = 1280;
             let height = 720;
 
@@ -109,7 +109,7 @@ window.addEventListener('load', async function() {
                 height = Math.floor(width * 9 / 16);
             }
 
-            window.open('game.html', 'shuttingstars_game', 'width=' + width + ',height=' + height + ',menubar=no,location=yes,resizable=yes,scrollbars=no,status=no,toolbar=no');
+            window.open(page, 'shuttingstars_game', 'width=' + width + ',height=' + height + ',menubar=no,location=yes,resizable=yes,scrollbars=no,status=no,toolbar=no');
             fHome();
 
             // 시작 버튼에 포커스
@@ -121,8 +121,8 @@ window.addEventListener('load', async function() {
         // 버튼 및 링크 이벤트 부여
         homepageDiv.querySelector('.a_ss_home').addEventListener('click', fHome);
         homepageDiv.querySelector('.pure-menu-heading').addEventListener('click', fHome);
-        homepageDiv.querySelector('.a_ss_gamestart').addEventListener('click', fStart);
-        btnStart.addEventListener('click', fStart);
+        homepageDiv.querySelector('.a_ss_gamestart').addEventListener('click', () => { fStart('game.html'); });
+        btnStart.addEventListener('click', () => { fStart('game.html'); });
         btnLogin.addEventListener('click', async function() {
             if(brk != null) {
                 const backends = brk.getBackendBroker();
@@ -176,6 +176,10 @@ window.addEventListener('load', async function() {
         homepageDiv.querySelector('.a_ss_createmode').addEventListener('click', function() {
             fHome();
             window.open('./create/create.html', '_blank');
+        });
+
+        homepageDiv.querySelector('.a_ss_testmode').addEventListener('click', function() {
+            fStart('./mode/test.html');
         });
 
         homepageDiv.querySelector('.a_ss_deleteacc').addEventListener('click', function() {

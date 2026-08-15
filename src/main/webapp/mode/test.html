@@ -4,9 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="height=device-height, initial-scale=1"/>
 <title>Shutting Stars</title>
-<link rel="shortcut icon" href="./resources/icons/icon64.ico" type="image/x-icon"/>
-<link rel="icon" href="./resources/icons/icon64.png" type="image/png"/>
-<link rel="stylesheet" href="./resources/css/pure-min.css"/>
+<link rel="shortcut icon" href="../resources/icons/icon64.ico" type="image/x-icon"/>
+<link rel="icon" href="../resources/icons/icon64.png" type="image/png"/>
+<link rel="stylesheet" href="../resources/css/pure-min.css"/>
 <!--
 LICENSE
 
@@ -29,60 +29,24 @@ limitations under the License.
 
 <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
 <!-- This part is not my code, Only for backend, not necessary for game engine works -->
-<!-- Firebase Codes (update the version number as needed) -->
-<!-- Use this gstatic CDN instead of /__/ URL series -->
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-database-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-remote-config-compat.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/firebasejs/12.13.0/firebase-performance-compat.js"></script>
-<!-- /__/ url can available only when hosting on Firebase Hosting
-<script defer src="/__/firebase/12.13.0/firebase-app-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-auth-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-database-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-firestore-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-messaging-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-analytics-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-remote-config-compat.js"></script>
-<script defer src="/__/firebase/12.13.0/firebase-performance-compat.js"></script>
--->
-<!-- 
-            initialize the SDK after all desired features are loaded, set useEmulator to false
-            to avoid connecting the SDK to running emulators.
--->
-<script defer src="/__/firebase/init.js?useEmulator=true"></script>
-<!--<script defer src="./___/init.js?useEmulator=true"></script>-->
-<!-- Google tag (This part is not my code, Only for backend, not necessary for game engine works) -->
-<script type="text/javascript" async src="https://www.googletagmanager.com/gtag/js?id=G-7PWH500WNJ"></script>
-<script type="text/javascript">
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-</script>
-<!-- // Google tag (gtag.js) -->
 <!-- Google fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Nanum+Pen+Script&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet"/>
-<!-- // Google fonts -->
-<link rel="stylesheet" href="./resources/css/googleloginbuttons.css"/>
 <!-- YOUTUBE -->
 <script type="text/javascript" src="https://www.youtube.com/iframe_api"></script>
 <!-- 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 -->
 
-<link rel="stylesheet" href="./resources/fonts/fonts.css"/>
-<link rel="stylesheet" href="./resources/fonts/fonts-others.css"/>
-<link rel="stylesheet" href="./resources/css/common.css"/>
+<link rel="stylesheet" href="../resources/fonts/fonts.css"/>
+<link rel="stylesheet" href="../resources/fonts/fonts-others.css"/>
+<link rel="stylesheet" href="../resources/css/common.css"/>
 
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@mcp-b/webmcp-polyfill@4.0.0/dist/index.iife.min.js"></script>
-<script type="text/javascript" src='./resources/js/jquery-1.12.4.min.js'></script>
-<script type="text/javascript" src='./resources/js/crypto-js.min.js'></script>
-<script type="text/javascript" src='./resources/js/xlsx.full.min.js'></script>
+<script type="text/javascript" src='../resources/js/jquery-1.12.4.min.js'></script>
+<script type="text/javascript" src='../resources/js/crypto-js.min.js'></script>
+<script type="text/javascript" src='../resources/js/xlsx.full.min.js'></script>
 <script type="module">
-import { ShuttingStars, prepareDebugSSCoreInstances } from './resources/js/shuttingstars.js';
+import { ShuttingStars, prepareDebugSSCoreInstances } from '../resources/js/shuttingstars.js';
 
 /* 페이지 접속 시 호출 */
 window.addEventListener('load', function(){
@@ -112,7 +76,7 @@ window.addEventListener('load', function(){
         });
         // broker.directSelectSong('nai4ilahDFSHShirgnn546346HSHMERHMEmSGESGSDGsnmdk'); // 곡 바로 선택
     });
-    ShuttingStars.init(root);
+    ShuttingStars.init(root, '../');
     prepareDebugSSCoreInstances();
 
     document.getElementById('shuttingstars_init_loading').style.display = 'none';
