@@ -9517,9 +9517,6 @@ class ShuttingStarsCore {
 
             if(urlMysong == null) { ShuttingStarsUtility.toast(selfs.trans('Please select your file first !')); return; }
 
-            selfs.pops.mysong.classList.add('invisible');
-            selfs.pops.dim.classList.add('invisible');
-
             bpmMySong  = parseInt(inpMysongBpm.value);
             jsonMySong = taMysongJson.value;
 
@@ -9527,6 +9524,10 @@ class ShuttingStarsCore {
 
             try {
                 await selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel, jsonMySong);
+                selfs.playSE('accept2');
+                selfs.pops.mysong.classList.add('invisible');
+                selfs.pops.dim.classList.add('invisible');
+                selfs.keyEventDisabled = false;
             } catch(e) {
                 console.error(e);
                 selfs.alert('ERROR : ' + e);
@@ -9656,6 +9657,10 @@ class ShuttingStarsCore {
                 selYoutubePlayDiff.disabled = true;
                 btnYoutubePlayPly.disabled = true;
                 await selfs.loadYoutubePlay(videoId, songInfo, parseInt(selYoutubePlayDiff.value));
+                selfs.playSE('accept2');
+                selfs.pops.youtubePlay.classList.add('invisible');
+                selfs.pops.dim.classList.add('invisible');
+                selfs.keyEventDisabled = false;
                 selYoutubePlayDiff.disabled = false;
                 btnYoutubePlayPly.disabled = false;
             } catch(e) {
