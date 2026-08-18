@@ -3521,15 +3521,8 @@ class ShuttingStarsCore {
 
         // 곡이 아무것도 준비 안된 상태로 키를 누름
         if((this.songDisplays.length <= 0 && this.songChoosingMode == 'default') || (this.missions.length <= 0 && this.songChoosingMode == 'mission')) {
-            if(key == this.enterKey || key == this.escKey) {
-                this.accessililityLog('No song available. Returning to menu.');
-                this.setState('menu'); 
-            } else {
-                if(  this.songChoosingMode == 'mission') this.songChoosingMode = 'mysong';
-                else                                     this.songChoosingMode = 'mission';
-                if(this.songChoosingMode == 'mysong' && this.difficultyLevel < 0) this.difficultyLevel = 1;
-                this.accessililityLog('Not enough content available. Switching to ' + this.songChoosingMode + ' mode.');
-            }
+            this.accessililityLog('No song available. Returning to menu.');
+            this.setState('menu'); 
             return;
         }
 
@@ -3572,9 +3565,9 @@ class ShuttingStarsCore {
                 if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
                 this.accessililityLog('Default Stage Mode');
             } else if(key == this.arrowKeys[3]) { // RIGHT
-                this.songChoosingMode = 'mysong';
-                if(this.difficultyLevel < 0) this.difficultyLevel = 1;
-                this.accessililityLog('My Song Mode');
+                this.songChoosingMode = 'default';
+                if(this.songChoosing == null) this.songChoosing = this.songDisplays[0];
+                this.accessililityLog('Default Stage Mode');
             } else if(key == this.enterKey) { // ENTER
                 if(this.missionChoosing == null) return;
                 this.playSE('accept2');
@@ -3599,19 +3592,22 @@ class ShuttingStarsCore {
         } else if(this.songChoosingMode == 'mysong') {
             // 자기가 가지고 있는 곡으로 플레이하는 모드 - 위 아래 방향키는 난이도만 선택 가능하며, 좌우 방향키는 모드 변경, 엔터 시 파일 첨부, ESC는 메뉴로 나가기
             if(key == this.enterKey) {
-                
                 this.pops.dim.classList.remove('invisible');
                 this.pops.mysong.classList.remove('invisible');
+                this.pops.mysong.querySelector('.sel_mysong_difficulty').value = this.difficultyLevel;
+                this.pops.mysong.querySelector('.inp_mysong_file').value = '';
+                this.pops.mysong.querySelector('.inp_mysong_url').value = '';
+                this.keyEventDisabled = true;
             } else if(key == this.escKey) {
                 this.setState('menu');
                 return;
             } else if(key == this.arrowKeys[0]) { // UP
                 this.difficultyLevel--;
-                if(this.difficultyLevel < 1) this.difficultyLevel = 19;
+                if(this.difficultyLevel < 1) this.difficultyLevel = 15;
                 this.accessililityLog('My Song Mode difficulty level changed to ' + this.difficultyLevel);
             } else if(key == this.arrowKeys[1]) { // DOWN
                 this.difficultyLevel++;
-                if(this.difficultyLevel > 19) this.difficultyLevel = 1;
+                if(this.difficultyLevel > 15) this.difficultyLevel = 1;
                 this.accessililityLog('My Song Mode difficulty level changed to ' + this.difficultyLevel);
             } else if(key == this.arrowKeys[2]) { // LEFT
                 this.songChoosingMode = 'mission';
@@ -3676,9 +3672,9 @@ class ShuttingStarsCore {
                     this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
                     this.accessililityLog('Difficulty cursor moved to ' + this.difficulty.difficultyLabel + ' (' + this.difficulty.difficultyLevel + ')');
                 } else {
-                    this.songChoosingMode = 'mysong';
-                    if(this.difficultyLevel < 0) this.difficultyLevel = 1;
-                    this.accessililityLog('My Song Mode');
+                    this.songChoosingMode = 'mission';
+                    if(this.missionChoosing == null) this.missionChoosing = this.missions[0];
+                    this.accessililityLog('Mission Mode');
                 }
             } else if(key == this.arrowKeys[3]) { // RIGHT
                 if(this.difficultyChoosing) {
@@ -9386,6 +9382,28 @@ class ShuttingStarsCore {
                             </td>
                         </tr>
                         <tr>
+                            <th class='target_translate'>Difficulty</th>
+                            <td>
+                                <select class='sel sel_mysong_difficulty' style='width:90%'>
+                                    <option value='1'>1 (EASY)</option>
+                                    <option value='2'>2 (EASY)</option>
+                                    <option value='3'>3 (EASY)</option>
+                                    <option value='4'>4 (NORMAL)</option>
+                                    <option value='5'>5 (NORMAL)</option>
+                                    <option value='6'>6 (NORMAL)</option>
+                                    <option value='7'>7 (HARD)</option>
+                                    <option value='8'>8 (HARD)</option>
+                                    <option value='9'>9 (HARD)</option>
+                                    <option value='10'>10 (HARD)</option>
+                                    <option value='11'>11 (EX)</option>
+                                    <option value='12'>12 (EX)</option>
+                                    <option value='13'>13 (EX)</option>
+                                    <option value='14'>14 (EX)</option>
+                                    <option value='15'>15 (EX)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
                             <td colspan='2' class='center' style='text-align: center'>
                                 <textarea class='full ta_mysong_json'></textarea>
                             </tr>
@@ -9398,9 +9416,10 @@ class ShuttingStarsCore {
             </div>
         `;
         popInside.innerHTML = htmls;
-        popInside.style.height = '400px';
+        popInside.style.height = '420px';
 
         const selMysongSrc  = popInside.querySelector('.sel_mysong_sourcetype');
+        const selMysongDiff = popInside.querySelector('.sel_mysong_difficulty');
         const inpMysongFile = popInside.querySelector('.inp_mysong_file');
         const inpMysongUrl  = popInside.querySelector('.inp_mysong_url');
         const inpMysongBpm  = popInside.querySelector('.inp_mysong_bpm');
@@ -9491,6 +9510,8 @@ class ShuttingStarsCore {
 
             bpmMySong  = parseInt(inpMysongBpm.value);
             jsonMySong = taMysongJson.value;
+
+            selfs.difficultyLevel = parseInt(selMysongDiff.value);
 
             try {
                 await selfs.loadMySong(urlMysong, nameMySong, bpmMySong, selfs.difficultyLevel, jsonMySong);
@@ -9587,6 +9608,18 @@ class ShuttingStarsCore {
                         inpKeyword.value = '';
                         selfs.processPopSongChooseSearch('', selfs.songDisplays);
                         inpKeyword.focus();
+                    }
+                });
+
+                arrays.push({
+                    label : this.trans('Play with my own'),
+                    action : async function() {
+                        selfs.pops.dim.classList.remove('invisible');
+                        selfs.pops.mysong.classList.remove('invisible');
+                        selfs.pops.mysong.querySelector('.sel_mysong_difficulty').value = '1';
+                        selfs.pops.mysong.querySelector('.inp_mysong_file').value = '';
+                        selfs.pops.mysong.querySelector('.inp_mysong_url').value = '';
+                        selfs.keyEventDisabled = true;
                     }
                 });
             } else if(this.state == 'listenchoosing') {
