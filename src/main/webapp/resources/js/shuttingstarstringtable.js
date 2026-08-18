@@ -108,6 +108,7 @@ const SSStringTable = {
         "NOT USE" : "사용 안 함",
         "Custom settings here (JSON format)" : '커스텀 설정 (JSON 형식으로 입력)',
         "Open YouTube : " : "유튜브 열기 : ",
+        "YouTube" : '유튜브',
         "Content buffer is empty. Please check your network connection." : "콘텐츠 버퍼가 비어있습니다. 네트워크 연결을 확인하세요.",
         "AUTO PLAYING" : "자동 플레이 중",
         "MUSIC SOURCE" : "음원 소스",
@@ -130,7 +131,9 @@ const SSStringTable = {
         "If you click this, you will see the privacy policy. (Popup)" : "이 버튼을 클릭하면 개인정보처리방침을 확인할 수 있습니다. (팝업)",
         'Please increase the window size.' : '창 크기를 늘려주세요.',
         "Search" : '검색',
-        "Play with my own" : '내 곡으로 플레이'
+        "Play with my own" : '내 곡으로 플레이',
+        'Play with youtube URL !' : '유튜브 URL로 플레이 !',
+        'Unavailable' : '사용 불가'
     }
 };
 export { SSStringTable };

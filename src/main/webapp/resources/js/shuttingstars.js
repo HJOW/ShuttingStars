@@ -133,6 +133,7 @@ class ShuttingStarsCore {
         community : null,  // 커뮤니티 팝업 영역 div
         iframes : null,    // 외부 페이지 (iframe) div
         youtube : null,    // 유튜브 팝업 div
+        youtubePlay : null,// 유튜브 플레이 팝업 div
         songchoose : null, // 곡 검색 및 선택 duv
         mysong : null      // mp3 첨부 div   
     };
@@ -3309,6 +3310,7 @@ class ShuttingStarsCore {
                 this.pops.community.classList.add('invisible');
                 this.pops.iframes.classList.add('invisible');
                 this.pops.youtube.classList.add('invisible');
+                this.pops.youtubePlay.classList.add('invisible');
                 this.pops.mysong.classList.add('invisible');
                 this.pops.songchoose.classList.add('invisible');
                 this.configDiv.classList.add('invisible');
@@ -9117,6 +9119,7 @@ class ShuttingStarsCore {
             <div class='shuttingstars_pop_content pop_mysong invisible'></div>
             <div class='shuttingstars_pop_content pop_songchoose invisible'></div>
             <div class='shuttingstars_pop_content pop_community invisible'></div>
+            <div class='shuttingstars_pop_content pop_youtubeplay invisible'></div>
             <div class='shuttingstars_pop_content pop_youtube invisible'></div>
             <div class='shuttingstars_pop_content pop_iframe invisible'></div>
 
@@ -9216,6 +9219,7 @@ class ShuttingStarsCore {
             selfs.pops.community.classList.add('invisible');
             selfs.pops.iframes.classList.add('invisible');
             selfs.pops.youtube.classList.add('invisible');
+            selfs.pops.youtubePlay.classList.add('invisible');
             selfs.pops.mysong.classList.add('invisible');
             selfs.pops.songchoose.classList.add('invisible');
             selfs.configDiv.classList.add('invisible');
@@ -9522,6 +9526,144 @@ class ShuttingStarsCore {
             
         });
         this.pops.mysong = popInside;
+
+        // Youtube 플레이 팝업
+        popInside = popRoot.querySelector('.pop_youtubeplay');
+        htmls = `
+            <div class='div_youtubeplay_menu menu'>
+                <h2 class='target_translate' style='position: absolute;'>Play with youtube URL !</h2>
+                <button type='button' class='btn btn_exit red'>X</button>
+            </div>
+            <div class='div_youtubeplay_inner full' style='padding-top : 50px;'>
+                <table class='layout' style='width: 90%;'>
+                    <colgroup>
+                        <col style='width:12rem;'/>
+                        <col/>
+                    </colgroup>
+                    <tbody class='tbody_youtubeplay'>
+                        <tr class='tr_youtubeplay tr_youtubeplay_url'>
+                            <th class='target_translate'>YouTube</th>
+                            <td>
+                                <input type='url' class='inp inp_url inp_youtubeplay_url' style='font-size: 1rem; width: 90%;'/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class='target_translate'>Difficulty</th>
+                            <td>
+                                <select class='sel sel_youtubeplay_difficulty' style='width:90%' disabled>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan='2' class='center' style='text-align: center'><button type='button' class='btn btn_youtubeplay_accept target_translate' disabled>PLAY</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+        popInside.innerHTML = htmls;
+        popInside.style.height = '420px';
+
+        const tbodyYoutubePlay   = popInside.querySelector('.tbody_youtubeplay');
+        const inpYoutubePlayUrl  = popInside.querySelector('.inp_youtubeplay_url');
+        const selYoutubePlayDiff = popInside.querySelector('.sel_youtubeplay_difficulty');
+        const btnYoutubePlayPly  = popInside.querySelector('.btn_youtubeplay_accept');
+
+        inpYoutubePlayUrl.addEventListener('change', async (e) => {
+            const url = e.target.value;
+            if(url == null || url.trim() == '') {
+                selYoutubePlayDiff.innerHTML = '';
+                selYoutubePlayDiff.disabled = true;
+                btnYoutubePlayPly.disabled = true;
+                return;
+            }
+
+            try {
+                const videoId = ShuttingStarsUtility.findYoutubeVideoId(url);
+                if(videoId == null || SSYoutubeMusicStore == null) {
+                    ShuttingStarsUtility.toast(selfs.trans('Unavailable'));
+                    ShuttingStarsUtility.toast('Error : ' + e);
+                    selYoutubePlayDiff.innerHTML = '';
+                    selYoutubePlayDiff.disabled = true;
+                    btnYoutubePlayPly.disabled = true;
+                    return;
+                }
+
+                const songInfoUrl = await SSYoutubeMusicStore.findByVideoId(videoId);
+                const resp  = await fetch(songInfoUrl);
+                const texts = await resp.text();
+                const songInfo = ShuttingStarsUtility.parseJSON(texts);
+
+                songInfo.youtubeVideoId = videoId;
+                songInfo.useYoutube = true;       
+
+                selYoutubePlayDiff.innerHTML = '';
+                selYoutubePlayDiff.disabled = true;
+                btnYoutubePlayPly.disabled = true;
+                for(let idx=0; idx<songInfo.difficulties.length; idx++) {
+                    const diffOne = songInfo.difficulties[idx];
+                    const optionOne = document.createElement('option');
+
+                    optionOne.value     = diffOne.difficultyLevel;
+                    optionOne.innerText = diffOne.difficultyLevel + ' ';
+                    if(diffOne.difficultyLevel <= 3) optionOne.innerText += '(EASY)';
+                    else if(diffOne.difficultyLevel <= 6) optionOne.innerText += '(NORMAL)';
+                    else if(diffOne.difficultyLevel <= 10) optionOne.innerText += '(HARD)';
+                    else optionOne.innerText += '(EX)';
+
+                    selYoutubePlayDiff.appendChild(optionOne);
+                    selYoutubePlayDiff.disabled = false;
+                    btnYoutubePlayPly.disabled = false;
+                }
+
+            } catch(e) {
+                console.error(e);
+                ShuttingStarsUtility.toast('Error : ' + e);
+                selYoutubePlayDiff.innerHTML = '';
+                selYoutubePlayDiff.disabled = true;
+                btnYoutubePlayPly.disabled = true;
+                return;
+            }
+        });
+
+        btnYoutubePlayPly.addEventListener('click', async () => {
+            const url = inpYoutubePlayUrl.value;
+            if(url == null || url.trim() == '') {
+                ShuttingStarsUtility.toast(selfs.trans('Please input correct youtube URL !'));
+                return;
+            }
+
+            const videoId = ShuttingStarsUtility.findYoutubeVideoId(url);
+            if(videoId == null || videoId.trim() == '') {
+                ShuttingStarsUtility.toast(selfs.trans('Please input correct youtube URL !'));
+                return;
+            }
+
+            try {
+                const songInfoUrl = await SSYoutubeMusicStore.findByVideoId(videoId);
+                const resp  = await fetch(songInfoUrl);
+                const texts = await resp.text();
+                const songInfo = ShuttingStarsUtility.parseJSON(texts);
+
+                selYoutubePlayDiff.disabled = true;
+                btnYoutubePlayPly.disabled = true;
+                await selfs.loadYoutubePlay(videoId, songInfo, parseInt(selYoutubePlayDiff.value));
+                selYoutubePlayDiff.disabled = false;
+                btnYoutubePlayPly.disabled = false;
+            } catch(e) {
+                console.error(e);
+                ShuttingStarsUtility.toast('Error : ' + e);
+                selYoutubePlayDiff.disabled = false;
+                btnYoutubePlayPly.disabled = false;
+            }
+        });
+
+        popInside.querySelector('.btn_exit').addEventListener('click', () => {
+            selfs.pops.youtubePlay.classList.add('invisible');
+            selfs.pops.dim.classList.add('invisible');
+            selfs.keyEventDisabled = false;
+        });
+        this.pops.youtubePlay = popInside;
 
         // 스트링 테이블 번역 적용
         const fTrans = function() {
@@ -11586,6 +11728,73 @@ class ShuttingStarsCore {
         this.song = song;
 
         this.difficulty = song.difficulties[0];
+        this.difficultyLevel = this.difficulty.difficultyLevel;
+        this.difficultyUsingAutoCreate = true;
+
+        this.setState('songtitle');
+    }
+
+    /**
+     * 사용자가 첨부한 유튜브 URL로 바로 곡 불러와 플레이하기 (Promise)
+     * 
+     * @param {string} videoId 유튜브 영상 ID
+     * @param {object} json 미리 준비된 곡 데이터
+     * @param {number} diff 난이도
+     * @returns {Promise<void>}
+     */
+    async loadYoutubePlay(videoId, json, diff) {
+        const song = new CustomMySSSong();
+        song.composer = '?';
+        song.noteWriter = '?';
+        song.noteWriter = '?';
+        song.bgaUrl = '';
+        song.musicUrl = '';
+        song.musicAlterUrl = '';
+        song.thumbnailUrl = '';
+        song.canListen = false;
+        song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
+        song.loadingTime = 20;
+        song.endTime = 0;
+        song.timeConstant = 0;
+        song.noteMultiplier = 1;
+        song.timeMultiplier = 1;
+        song.test = false;
+        song.serial = 'CUSTOMSONG_' + ShuttingStarsUtility.randomString(false, 32);
+        if(json) {
+            if(typeof(json) == 'string') {
+                json = json.trim();
+                if(json == '') json = {};
+                else           json = ShuttingStarsUtility.parseJSON(json);
+            }
+            for(let k in json) {
+                song[k] = json[k];
+            }
+        }
+        song.useYoutube = true;
+        song.youtubeVideoId = videoId;
+
+        // 받은 난이도 레벨 번호가 이미 song.difficulties 에 존재하는지 확인
+        let difficultyChoosed = null;
+        for(let idx=0; idx<song.difficulties.length; idx++) {
+            const diffOne = song.difficulties[idx];
+            if(diffOne.difficultyLevel == diff) {
+                difficultyChoosed = diffOne;
+                break;
+            }
+        }
+
+        if(difficultyChoosed == null) {
+            throw new Error(this.trans(ShuttingStarsUtility.replaceString('Cannot find difficulty level % prepared.', '%', diff + '')));
+        }
+        
+        song.name = songName;
+        song.description = '|Music: ' + songName + ' (CUSTOM LEVEL)';
+        song.bpm = bpm;
+
+        this.addSong(song);
+        this.song = song;
+
+        this.difficulty = difficultyChoosed;
         this.difficultyLevel = this.difficulty.difficultyLevel;
         this.difficultyUsingAutoCreate = true;
 
