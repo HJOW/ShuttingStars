@@ -132,7 +132,7 @@ const SSStringTable = {
         'Please increase the window size.' : '창 크기를 늘려주세요.',
         "Search" : '검색',
         "Play with my own" : '내 곡으로 플레이',
-        'Play with youtube URL !' : '유튜브 URL로 플레이 !',
+        'Play with youtube URL' : '유튜브 URL로 플레이',
         'Unavailable' : '사용 불가'
     }
 };

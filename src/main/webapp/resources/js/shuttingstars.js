@@ -926,10 +926,12 @@ class ShuttingStarsCore {
                 .shuttingstars_root .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .shuttingstars_root.ss_backend_guest   .ss_only_for_login_user { display: none !important; }
                 .shuttingstars_root.ss_backend_logined .ss_only_for_guest      { display: none !important; }
-                .shuttingstars_root button.btn       { background: transparent; border: 3px solid rgba(122, 165, 240, 0.7); color: rgba(122, 165, 240, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root button.btn:hover { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.8); color: rgba(122, 165, 240, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root button.btn.red       { background: transparent; border: 3px solid rgba(244, 66, 66, 0.7); color: rgba(244, 66, 66, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
-                .shuttingstars_root button.btn.red:hover { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.8); color: rgba(244, 66, 66, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn          { background: transparent; border: 3px solid rgba(122, 165, 240, 0.7); color: rgba(122, 165, 240, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn:hover    { background: rgba(122, 165, 240, 0.1); border: 3px solid rgba(122, 165, 240, 0.8); color: rgba(122, 165, 240, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn:disabled { background: transparent; border: 3px solid rgba(122, 165, 240, 0.3); color: rgba(122, 165, 240, 0.3); }
+                .shuttingstars_root button.btn.red          { background: transparent; border: 3px solid rgba(244, 66, 66, 0.7); color: rgba(244, 66, 66, 0.7); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn.red:hover    { background: rgba(244, 66, 66, 0.1); border: 3px solid rgba(244, 66, 66, 0.8); color: rgba(244, 66, 66, 0.8); padding: 0.5rem 1.5rem 0.5rem 1.5rem; }
+                .shuttingstars_root button.btn.red:disabled { background: transparent; border: 3px solid rgba(244, 66, 66, 0.3); color: rgba(244, 66, 66, 0.3);  }                
                 .shuttingstars_root .shuttingstars_canvas { position: absolute; left: 0px; top: 0px; }
                 .shuttingstars_root .shuttingstars_youtubes { background: transparent; }
                 .shuttingstars_root .shuttingstars_pop_dim  { position: fixed; left: 0px; top: 0px; width: 100%; height: 99999px; margin: 0; padding: 0; z-index: 11; background-color: rgba(80, 80, 80, 0.3); text-align: center; }
@@ -966,6 +968,12 @@ class ShuttingStarsCore {
                 }
                 .shuttingstars_root .shuttingstars_ctxmenu button:last-child {
                     border-bottom: 3px solid rgba(122, 165, 240, 0.7);
+                }
+                .shuttingstars_root .shuttingstars_ctxmenu button:disabled {
+                    border: 3px solid rgba(122, 165, 240, 0.3);
+                    background-color: rgba(122, 165, 240, 0.05);
+                    border-bottom: 3px solid rgba(122, 165, 240, 0.3);
+                    color: rgba(122, 165, 240, 0.3);
                 }
             `;
             //     팝업 영역 CSS
@@ -9764,6 +9772,18 @@ class ShuttingStarsCore {
                         selfs.keyEventDisabled = true;
                     }
                 });
+
+                /*
+                TODO : Youtube Play
+                arrays.push({
+                    label : this.trans('Play with youtube URL'),
+                    action : async function() {
+                        selfs.pops.dim.classList.remove('invisible');
+                        selfs.pops.youtubePlay.classList.remove('invisible');
+                        selfs.keyEventDisabled = true;
+                    }
+                });
+                */
             } else if(this.state == 'listenchoosing') {
                 arrays.push({
                     label : this.trans('Search'),
