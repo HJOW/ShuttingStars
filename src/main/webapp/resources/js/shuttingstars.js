@@ -1996,6 +1996,7 @@ class ShuttingStarsCore {
 
         selfs.mouseEvents.push({
             type : 'circle',
+            source : 'virtualkey',
             x : vkey.x,
             y : vkey.y,
             r : vkey.r, // rect 인 경우 w 대신
@@ -4886,7 +4887,15 @@ class ShuttingStarsCore {
             // 캔버스 비우기
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-            // 좌표계 디버그 모드
+            // 마우스 이벤트 비우기 (virtualkey 타입 제외)
+            for(let msdx=0; msdx<this.mouseEvents.length; msdx++) {
+                const evOne = this.mouseEvents[msdx];
+                if(evOne.source == 'virtualkey') continue; // 가상키 제외
+                this.mouseEvents.splice(msdx, 1);
+                msdx--;
+            }
+
+            // 좌표계 디버그 모드 처리
             if(this.coordinate2dDebugMode) {
                 this.renderCoordinate2dDebug();
             }
@@ -9449,7 +9458,7 @@ class ShuttingStarsCore {
         popInside = popRoot.querySelector('.pop_youtubeplay');
         htmls = `
             <div class='div_youtubeplay_menu menu'>
-                <h2 class='target_translate' style='position: absolute;'>Play with youtube URL !</h2>
+                <h2 class='target_translate' style='position: absolute;'>Play with youtube URL</h2>
                 <button type='button' class='btn btn_exit red'>X</button>
             </div>
             <div class='div_youtubeplay_inner full' style='padding-top : 50px;'>
