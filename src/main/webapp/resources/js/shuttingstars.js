@@ -425,7 +425,7 @@ class ShuttingStarsCore {
     songCanListen = [];
     /** @type {Array<ShuttingStarsMission>} 특수한 곡들 (mission 모드일 때 선택) */
     missions = [];
-    /** @type {string} default / mission / mysong */
+    /** @type {string} default / mission */
     songChoosingMode = 'default';
     
 
@@ -3598,35 +3598,6 @@ class ShuttingStarsCore {
                 this.difficultyChoosing = false;
                 this.titleDelayTime = this.titleDelayTimeMax;
             }
-
-        } else if(this.songChoosingMode == 'mysong') {
-            // 자기가 가지고 있는 곡으로 플레이하는 모드 - 위 아래 방향키는 난이도만 선택 가능하며, 좌우 방향키는 모드 변경, 엔터 시 파일 첨부, ESC는 메뉴로 나가기
-            if(key == this.enterKey) {
-                this.pops.dim.classList.remove('invisible');
-                this.pops.mysong.classList.remove('invisible');
-                this.pops.mysong.querySelector('.sel_mysong_difficulty').value = this.difficultyLevel;
-                this.pops.mysong.querySelector('.inp_mysong_file').value = '';
-                this.pops.mysong.querySelector('.inp_mysong_url').value = '';
-                this.keyEventDisabled = true;
-            } else if(key == this.escKey) {
-                this.setState('menu');
-                return;
-            } else if(key == this.arrowKeys[0]) { // UP
-                this.difficultyLevel--;
-                if(this.difficultyLevel < 1) this.difficultyLevel = 15;
-                this.accessililityLog('My Song Mode difficulty level changed to ' + this.difficultyLevel);
-            } else if(key == this.arrowKeys[1]) { // DOWN
-                this.difficultyLevel++;
-                if(this.difficultyLevel > 15) this.difficultyLevel = 1;
-                this.accessililityLog('My Song Mode difficulty level changed to ' + this.difficultyLevel);
-            } else if(key == this.arrowKeys[2]) { // LEFT
-                this.songChoosingMode = 'mission';
-                this.accessililityLog('Mission Mode');
-            } else if(key == this.arrowKeys[3]) { // RIGHT
-                this.songChoosingMode = 'default';
-                this.accessililityLog('Default Stage Mode');
-            }
-
         } else {
             // default 모드
 
@@ -5581,9 +5552,6 @@ class ShuttingStarsCore {
             } else if(this.missions.length == 1) {
                 onlyOneState = true;
             }
-        } else if(this.songChoosingMode == 'mysong') {
-            emptyState = false;
-            onlyOneState = false;
         } else {
             if(this.songDisplays.length <= 0) {
                 this.ctx.strokeText(this.trans('No songs available !'), this.convertX(this.getStageWidth() / 2), rows);
@@ -5596,7 +5564,7 @@ class ShuttingStarsCore {
         // 타이틀 출력
         lefts  = '';
         rights = '';
-        if((this.songChoosingMode == 'mission' && this.missions.length >= 1) || (this.songChoosingMode == 'default' && this.songDisplays.length >= 1) || (this.songChoosingMode == 'mysong')) {
+        if((this.songChoosingMode == 'mission' && this.missions.length >= 1) || (this.songChoosingMode == 'default' && this.songDisplays.length >= 1)) {
             lefts  = '◀ ';
             rights = ' ▶';
         }
@@ -5607,8 +5575,6 @@ class ShuttingStarsCore {
         this.ctx.textAlign = "center";
         if(this.songChoosingMode == 'mission') {
             this.ctx.strokeText(lefts + this.trans('Choose your mission !') + rights, this.convertX(this.getStageWidth() / 2), rows);
-        } else if(this.songChoosingMode == 'mysong') {
-            this.ctx.strokeText(lefts + this.trans('Play with your own music !') + rights, this.convertX(this.getStageWidth() / 2), rows);
         } else {
             if(this.difficultyChoosing) this.ctx.strokeText(this.trans('Choose difficulty !'), this.convertX(this.getStageWidth() / 2), rows);
             else this.ctx.strokeText(lefts + this.trans('Choose your song !') + rights, this.convertX(this.getStageWidth() / 2), rows);
@@ -5720,76 +5686,6 @@ class ShuttingStarsCore {
                     if(opacity <= 0) opacity = 0.0;
                 }
             }
-        } else if(this.songChoosingMode == 'mysong') { // MYSONG
-            // mysong 모드 - 난이도만 선택하고, 엔터 키를 누르면 파일첨부 창을 띄움
-
-            // 1개 행 높이 사전 계산
-            row1Height = this.metricSize3 + (gap * 3);
-
-            // 난이도 배열 준비 (곡 목록처럼 사용)
-            const numberArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-            
-            // 선택 중인 난이도가 몇 번째인지 확인
-            for(idx=0; idx<numberArray.length; idx++) {
-                if(numberArray[idx] == this.difficultyLevel) { currentIndex = idx; break; }
-            }
-
-            currentRow = centerY - (  (row1Height * (numberArray.length + currentIndex))); // 1바퀴 하고도 선택된 미션 전단계 만큼 위로 올려야 함
-
-            // 난이도 목록 출력 (현재 선택된 난이도가 중앙에 표기되도록) - 3번 출력 (레벨 1 선택된 경우, 그 위로 19, 18이 떠야 하므로)
-            for(jdx=0; jdx<3; jdx++) {
-                for(idx=0; idx<numberArray.length; idx++) {
-                    let diffOne = numberArray[idx];
-
-                    let choosen = (jdx == 1 && this.difficultyLevel == diffOne);
-                    if(choosen) {
-                        songChoosen = null; // mysong 모드인 경우 일단 null 로 설정 (파일 입력받은 이후에야 곡 객체를 만들 수 있음)
-
-                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
-                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
-
-                        this.ctx.fillRect(this.getLeftMarginPage(), this.convertY(this.getStageHeight() / 2, false), this.convertX(this.getStageWidth()), row1Height);
-                        rectBottomY = this.convertY(this.getStageHeight() / 2, false) + row1Height;
-                    }
-
-                    // 현재 출력하는 차례가, 중앙으로부터 얼마나 떨어져 있는지를 계산
-                    const distanceFromCenter = Math.abs(Math.floor( jdx == 0 ? ( (idx - ( currentIndex + numberArray.length )) ) : (jdx == 1 ? (idx - currentIndex) : ( (( numberArray.length ) - (currentIndex - idx)) )) ));
-                    opacity = (distanceFromCenter <= 0.1 ? 0.99 : (distanceFromCenter <= 1.1 ? 0.49 : ( distanceFromCenter <= 2.1 ? 0.245 : ( distanceFromCenter <= 3.1 ? 0.1245 : 0.051225 ) )));
-
-                    // 화면이 수직 방향인 경우 하단 3분의 1 영역 이하는 더 흐리게 처리
-                    if(! this.screenDirLandscape) {
-                        if(currentRow >= this.convertY(this.getStageHeight() * 1.7 / 3, false)) {
-                            opacity = opacity / 4;
-                        }
-                    }
-
-                    // 타이틀 아래부분을 뚧고 위로 올라가는 위치인 경우 더 흐리게
-                    if(currentRow + row1Height < rows) {
-                        opacity = opacity / 2.0;
-                    }
-
-                    // 난이도 목록 출력
-                    fontSize = this.convertFontSize(20);
-                    label = 'Level ' + String(diffOne);
-                    this.ctx.textAlign = "center";
-                    this.ctx.font = 'normal ' + fontSize + 'px ' + this.getRenderFontFamily();
-                    if(choosen) {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), 0.99);
-                        else          this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), 0.99);
-                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height / 2));
-                    } else {
-                        if(this.dark) this.ctx.fillStyle = this.convertColor(new SSColor(200, 200, 200), opacity);
-                        else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
-                        this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
-                    }
-
-                    currentRow += row1Height;
-                    if(opacity >= 0.99) opacity = 0.99;
-                    if(opacity <= 0) opacity = 0.0;
-                }
-            }
-
-            
         } else { // DEFAULT
             // default 모드 - 곡을 선택해야 함
             //     곡을 선택하지 않은 상태인 경우 첫 곡을 출력
@@ -5960,9 +5856,6 @@ class ShuttingStarsCore {
         let desc = [];
         if(songChoosen != null) {
             desc = songChoosen.getDescriptionSplit();
-        } else if(this.songChoosingMode == 'mysong') {
-            desc.push(this.trans('Play with your own music !'));
-            desc.push('(' + this.trans('Scores will not be saved.') + ')');
         }
         if(desc != null && desc.length > 0) {
             fontSize = this.convertFontSize(12);
@@ -6246,9 +6139,6 @@ class ShuttingStarsCore {
         let desc = [];
         if(songChoosen != null) {
             desc = songChoosen.getDescriptionSplit();
-        } else if(this.songChoosingMode == 'mysong') {
-            desc.push(this.trans('Play with your own music !'));
-            desc.push('(' + this.trans('Scores will not be saved.') + ')');
         }
         if(desc != null && desc.length > 0) {
             fontSize = this.convertFontSize(12);
