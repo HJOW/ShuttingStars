@@ -1296,40 +1296,6 @@ class ShuttingStarsCore {
             this.onDestroyTasks.push(() => { document.removeEventListener('keydown', fKeyDown); });
             this.onDestroyTasks.push(() => { document.removeEventListener('keyup'  , fKeyUp); });
 
-            // 마우스 이벤트 공통사항
-            const fMouseClickConversion = function(event, mouseDown) {
-                let obj = {};
-
-                const rect = canvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
-
-                // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
-                const rx = Math.floor((x * selfs.getFullRenderWidth())  / rect.width );
-                const ry = Math.floor((y * selfs.getFullRenderHeight()) / rect.height);
-
-                if(mouseDown) {
-                    if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
-                } else {
-                    if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
-                }
-
-                // 임시 객체 (충돌여부 판단 위함)
-                const mouseCursorObject = new SSMouseClickHighlighter(selfs);
-                mouseCursorObject.type = 'circle';
-                mouseCursorObject.x    = rx;
-                mouseCursorObject.y    = ry;
-                mouseCursorObject.r    = 3;
-                mouseCursorObject.fill = true;
-                mouseCursorObject.explosing = 1;
-                selfs.objects.push(mouseCursorObject);
-
-                obj.x = rx;
-                obj.y = ry;
-                obj.cursor = mouseCursorObject;
-                return obj;
-            };
-
             // 마우스 클릭 시작 이벤트 부여
             const fMouseDown = (event) => {
                 // 컨텍스트 메뉴 숨김 처리
@@ -1339,7 +1305,7 @@ class ShuttingStarsCore {
                 if(selfs.createMode) return;
 
                 // 기본 마우스 클릭 탑지
-                const obj = fMouseClickConversion(event, true);
+                const obj = selfs.converseMouseClickEvent(selfs.canvas, event, true);
                 // 마우스 클릭 이벤트 처리
                 selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
             };
@@ -1349,7 +1315,7 @@ class ShuttingStarsCore {
             // 마우스 클릭 종료 이벤트 부여
             const fMouseUp = (event) => {
                 if(selfs.createMode) return;
-                const obj = fMouseClickConversion(event, false);
+                const obj = selfs.converseMouseClickEvent(selfs.canvas, event, false);
                 selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
             };
             this.canvas.addEventListener('mouseup', fMouseUp);
@@ -1365,7 +1331,7 @@ class ShuttingStarsCore {
                     if(selfs.createMode) return;
 
                     // 기본 마우스 클릭 탑지
-                    const obj = fMouseClickConversion(event, true);
+                    const obj = selfs.converseMouseClickEvent(selfs.canvas3d, event, true);
                     selfs.handleMouseClick(obj.x, obj.y, obj.cursor);
                 };
                 this.canvas3d.addEventListener('mousedown', f3DMouseDown);
@@ -1374,7 +1340,7 @@ class ShuttingStarsCore {
 
                 const f3DMouseUp = (event) => {
                     if(selfs.createMode) return;
-                    const obj = fMouseClickConversion(event, false);
+                    const obj = selfs.converseMouseClickEvent(selfs.canvas3d, event, false);
                     selfs.handleMouseRelease(obj.x, obj.y, obj.cursor);
                 };
                 this.canvas3d.addEventListener('mouseup', f3DMouseUp);
@@ -4383,6 +4349,13 @@ class ShuttingStarsCore {
             return;
         }
 
+        if(mouseCursorObject == null || typeof(mouseCursorObject) == 'undefined') {
+            const vEvent = {};
+            vEvent.clientX = x;
+            vEvent.clientY = y;
+            mouseCursorObject = selfs.converseMouseClickEvent(selfs.canvas, vEvent, true);
+        }
+
         // 각 영역 별 터치 지점을 mouseEvents 배열에 담아놨음
         for(let mdx=0; mdx<selfs.mouseEvents.length; mdx++) {
             const evOne = selfs.mouseEvents[mdx];
@@ -4597,6 +4570,52 @@ class ShuttingStarsCore {
         } catch(e) {
             console.error(e);
         }
+    }
+
+    /** 
+     * 마우스 이벤트 처리 공통 사항 처리 파트
+     *     마우스 커서 위치에 충돌 여부를 판단하기 위한 임시 객체 생성
+     *     이를 위해 좌표계 변환
+     * 
+     * @param {HTMLCanvasElement} canvas canvas 객체 (마우스 활동 범위 대상)
+     * @param {object} event 마우스 이벤트 (가상의 객체를 넣어도 되나, clientX 와 clientY 멤버변수 필요)
+     * @param {boolean} 마우스 클릭 시작인 경우 true, 클릭 종료인 경우 false 입력
+     * @return {object} 이벤트 정보 객체로, x 와 y 멤버변수에 각각 변환된 좌표값이 탑재되며, 충돌 탐지용 임시 객체가 cursor 멤버변수로 탑재됨
+    */
+    converseMouseClickEvent(canvas, event, mouseDown) {
+        const selfs = this;
+        let obj = {};
+
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
+        const rx = Math.floor((x * selfs.getFullRenderWidth())  / rect.width );
+        const ry = Math.floor((y * selfs.getFullRenderHeight()) / rect.height);
+
+        if(mouseDown) {
+            if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
+        } else {
+            if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
+        }
+
+        // 임시 객체 (충돌여부 판단 위함)
+        const mouseCursorObject = new SSMouseClickHighlighter(selfs);
+        mouseCursorObject.type = 'circle';
+        mouseCursorObject.x    = rx;
+        mouseCursorObject.y    = ry;
+        mouseCursorObject.r    = 3;
+        mouseCursorObject.fill = true;
+        mouseCursorObject.explosing = 1;
+        selfs.objects.push(mouseCursorObject);
+
+        obj.x = rx;
+        obj.y = ry;
+        obj.originalX = event.clientX;
+        obj.originalY = event.clientY;
+        obj.cursor = mouseCursorObject;
+        return obj;
     }
 
     /**

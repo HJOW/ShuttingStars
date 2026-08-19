@@ -180,8 +180,8 @@ class ShuttingStarsUtilityClass {
     }
 
     /**
-     * 모바일 환경인지 감지
-     * @returns {boolean} 처리 결과
+     * 모바일 환경인지 감지 (터치스크린 여부 탐지)
+     * @returns {boolean} 터치스크린 여부
      */
     isTouchScreenPlatform() {
         let val1 = false;
@@ -189,6 +189,16 @@ class ShuttingStarsUtilityClass {
         try { val1 = window.matchMedia('(pointer: coarse)').matches;           } catch(e) {}
         try { val2 = 'ontouchstart' in window || navigator.maxTouchPoints > 0; } catch(e) {}
         return val1 || val2;
+    }
+
+    /**
+     * 마우스 사용 가능여부 탐지
+     * @returns {boolean} 마우스 사용 가능 여부
+     */
+    hasMouse() {
+        let val1 = false;
+        try { val1 = window.matchMedia('(pointer: fine)').matches;           } catch(e) {}
+        return val1;
     }
 
     /**
