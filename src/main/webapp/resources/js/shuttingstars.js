@@ -10691,6 +10691,7 @@ class ShuttingStarsCore {
             sessionStorage.setItem('ss_firsts', 'Y');
 
             if(this.chromeExtensionMode) return true;
+            if(this.state == 'empty') return true;
             this.fGameEvent({ "event" : 'refreshpage', "broker" : selfs.broker });
             this.actionRefreshOnFirstSession();
             return true;
