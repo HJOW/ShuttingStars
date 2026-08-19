@@ -28,6 +28,7 @@ class ShuttingStarsInterface {
     sessionChecked = false;
     logined = false;
     user = null;
+    logging = false;
     openGoogleLogin() { return new Promise((resolve, reject) => { resolve({ success : false }); }) }
     login(json) {
         return new Promise((resolve, reject) => { resolve({ success : false, userJson : null }); })
@@ -90,6 +91,11 @@ class ShuttingStarsInterface {
     }
     perfTraceStart(traceName) { return null; }
     perfTraceStop(traceObj) {}
+    logLocal(msg) {
+        if(this.logging) {
+            ShuttingStarsUtility.log(msg);
+        }
+    }
     logEvent(eventMsg) {}
 }
 
@@ -106,13 +112,13 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             this.usingGoogleLogin = true;
 
             // Firebase 활성화
-            try { this.auth         = firebase.auth();         } catch(e) { console.error(e); }
-            try { this.firestore    = firebase.firestore();    } catch(e) { console.error(e); }
-            try { this.messaging    = firebase.messaging();    } catch(e) { console.error(e); }
-            try { this.remoteConfig = firebase.remoteConfig(); } catch(e) { console.error(e); }
-            try { this.rtdb         = firebase.database();     } catch(e) { console.error(e); }
-            try { this.perf         = firebase.performance();  } catch(e) { console.error(e); }
-            try { this.analytics    = firebase.analytics();    } catch(e) { console.error(e); }
+            try { this.auth         = firebase.auth();         this.logLocal('Firebase auth         initialized.'); } catch(e) { this.logLocal('Firebase auth         not initialized.'); console.error(e); }
+            try { this.firestore    = firebase.firestore();    this.logLocal('Firebase firestore    initialized.'); } catch(e) { this.logLocal('Firebase firestore    not initialized.'); console.error(e); }
+            try { this.messaging    = firebase.messaging();    this.logLocal('Firebase messaging    initialized.'); } catch(e) { this.logLocal('Firebase messaging    not initialized.'); console.error(e); }
+            try { this.remoteConfig = firebase.remoteConfig(); this.logLocal('Firebase remoteConfig initialized.'); } catch(e) { this.logLocal('Firebase remoteConfig not initialized.'); console.error(e); }
+            try { this.rtdb         = firebase.database();     this.logLocal('Firebase database     initialized.'); } catch(e) { this.logLocal('Firebase database     not initialized.'); console.error(e); }
+            try { this.perf         = firebase.performance();  this.logLocal('Firebase performance  initialized.'); } catch(e) { this.logLocal('Firebase performance  not initialized.'); console.error(e); }
+            try { this.analytics    = firebase.analytics();    this.logLocal('Firebase analytics    initialized.'); } catch(e) { this.logLocal('Firebase analytics    not initialized.'); console.error(e); }
 
             // 인증 유지력 지정
             this.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
@@ -120,9 +126,12 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             // 인증 상태 이벤트 부여
             this.auth.onAuthStateChanged((user) => {
                 if(user) {
+                    selfs.logLocal('Firebase Auth StateChanged : User Exists - ' + user.email);
                     selfs.user = user;
                     selfs.logined = true;
+                    if(selfs.analytics != null) { selfs.analytics.setUserId(user.uid); }
                 } else {
+                    selfs.logLocal('Firebase Auth StateChanged : User Not Exists');
                     selfs.logined = false;
                     if(selfs.analytics != null) { selfs.analytics.setUserId(''); }
                 }
@@ -133,18 +142,20 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 }
             });
 
+            /*
             // Remote Config
             this.remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
             this.remoteConfig.defaultConfig = {
                 frameTime              : 10
-            , resumeDelayTime        : 16
-            , songTitleBaseTime      : 120
-            , visualizeBarMultiplier : 2.2
-            , backStarlightCount     : 20
-            , noticeEn : ''
-            , noticeKo : ''
-            , noticeWhen : 0
+              , resumeDelayTime        : 16
+              , songTitleBaseTime      : 120
+              , visualizeBarMultiplier : 2.2
+              , backStarlightCount     : 20
+              , noticeEn : ''
+              , noticeKo : ''
+              , noticeWhen : 0
             };
+            */
         }
         
         this.avail = true;
@@ -156,11 +167,15 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         return new Promise((resolve, reject) => {
             try {
                 if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
+                selfs.logLocal('Google login popup will be opened.');
                 const googles = new firebase.auth.GoogleAuthProvider();
                 selfs.auth.signInWithPopup(googles).then((result) => {
+
                     let credential = result.credential;
                     let token = credential.accessToken;
                     let user = result.user;
+
+                    selfs.logLocal('Google login success, user : ' + user.email);
 
                     // 로그인 처리
                     selfs.user = user;
@@ -188,6 +203,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         return new Promise((resolve, reject) => {
             const userObj = selfs.auth.currentUser;
             const fNotLogined = () => {
+                selfs.logLocal('Firebase auth - login checking - failed');
                 selfs.logined = false;
                 selfs.user = null;
                 resolve({ success : true, loginAvail : selfs.logined });
@@ -195,8 +211,10 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
             if(userObj) {
                 if(typeof(userObj.uid) != 'undefined' && typeof(userObj.email) != 'undefined') {
+                    selfs.logLocal('Firebase auth - login checking - success, user : ' + userObj.email);
                     selfs.user = userObj;
                     selfs.logined = true;
+                    if(selfs.analytics != null) { selfs.analytics.setUserId(selfs.user.uid); }
                     resolve({ success : true, loginAvail : selfs.logined, userJson : selfs.user });
                 } else {
                     fNotLogined();    
@@ -215,7 +233,9 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             selfs.user = null;
             try {
                 if(selfs.auth == null) { resolve({success : false, userJson : null, message : 'Failed to load firebase authentication'}); return; }
+                selfs.logLocal('Firebase auth - Trying logout...');
                 selfs.auth.signOut().then(() => {
+                    selfs.logLocal('Firebase auth - logout complete');
                     setTimeout(() => { selfs.authStateChangedEvents = []; }, 1000);
                     resolve({ success : true });
                 }).catch((e) => { reject(e); });
@@ -230,16 +250,21 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs = this;
         return new Promise((resolve, reject) => {
             try {
+                if(selfs.auth      == null) { resolve({success : false, message : 'Failed to load firebase authentication'}); return; }
                 if(selfs.firestore == null) { resolve({success : false, message : 'Failed to load firebase firestore'}); return; }
-                if(! selfs.logined) { resolve({success : false, message : 'Not logined'}); return; }
+                if(! selfs.logined               ) { resolve({success : false, message : 'Not logined'}); return; }
+                if(selfs.auth.currentUser == null) { resolve({success : false, message : 'Not logined'}); return; }
 
                 // 데이터 조회
+                selfs.logLocal('Firebase Firestore - querying user collection existing...');
                 const collOne = selfs.firestore.collection('user');
                 const query = collOne.where('uid', '==', selfs.user.uid).limit(1);
                 query.get().then((snapshot) => {
                     if(snapshot.empty) {
+                        selfs.logLocal('Firebase Firestore - querying user collection - empty');
                         resolve({success : true, data : null });
                     } else {
+                        selfs.logLocal('Firebase Firestore - querying user collection - already exists, count : ' + snapshot.docs.length);
                         let responsed = false;
                         snapshot.docs.forEach((doc) => { 
                             if(responsed) return;
@@ -272,14 +297,18 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 record.date = new Date().getTime();
                 record.credits = creditJson;
 
+                selfs.logLocal('Firebase Firestore - querying user collection existing...');
                 // Firestore 상에 데이터 존재여부 검사
                 let existsAlready = true;
                 const collOne = selfs.firestore.collection('user');
-                const query = collOne.where('uid', '==', selfs.user.uid).limit(1);
+                const query = collOne.where('uid', '==', selfs.user.uid).limit(500);
                 query.get().then((snapshot) => {
                     if(snapshot.empty) existsAlready = false;
+
                     const fAfter = () => {
+                        selfs.logLocal('Firebase Firestore - adding user data...');
                         selfs.firestore.collection('user').add(record).then((docRef) => {
+                            selfs.logLocal('Firebase Firestore - adding user data complete, docId : ' + docRef.id);
                             resolve({ success : true });
                         }).catch((ex4) => { reject(ex4); });
                     };
@@ -287,8 +316,10 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                     if(existsAlready) { // 데이터 이미 존재 시 삭제하고 다시 넣기 --> 여기선 삭제해야 함
                         const batch = selfs.firestore.batch();
                         snapshot.docs.forEach((doc) => { 
+                            selfs.logLocal('Firebase Firestore - batch-register deleting old user data... docId : ' + doc.id);
                             batch.delete(doc.ref);
                         });
+                        selfs.logLocal('Firebase Firestore - batch-executing...');
                         batch.commit().then(() => {
                             fAfter();
                         }).catch((ex3) => { reject(ex3); });
@@ -331,17 +362,22 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
 
         for(let idx=0; idx<collections.length; idx++) {
             const collName = collections[idx];
+            selfs.logLocal('Firebase Firestore - collection ' + collName + ' deleting start.');
+
             const collOne  = selfs.firestore.collection(collName);
             const query    = collOne.where('uid', '==', selfs.user.uid).limit(500); // 최대 500개까지만 삭제 가능
             const snapshot = await query.get();
 
-            if(snapshot.empty) continue;
+            if(snapshot.empty) { selfs.logLocal('Firebase Firestore - collection ' + collName + ' - empty. Skipping...'); continue; }
             notEmptyDetected = true; // empty 가 아닌 경우 일단 표시 (재귀 호출해 다시 돌려야 함)
 
             const batch = selfs.firestore.batch();
-            snapshot.docs.forEach((doc) => { batch.delete(doc.ref); counts++; });
+            snapshot.docs.forEach((doc) => { selfs.logLocal('Firebase Firestore - collection ' + collName + ' - register-delete ' + doc.id); batch.delete(doc.ref); counts++; });
 
+            selfs.logLocal('Firebase Firestore - batch-executing...');
             await batch.commit();
+
+            selfs.logLocal('Firebase Firestore - batch-executing end for collection ' + collName);
         }
         if(notEmptyDetected) counts += await this.deleteAllMyDataIn(true);
         if(recursives) return counts;
@@ -372,6 +408,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 record.uid = selfs.user.uid;
                 record.email = selfs.user.email;
                 record.date = new Date().getTime();
+
+                selfs.logLocal('Firebase Firestore - adding highscore data...');
                 selfs.firestore.collection('highscore').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
             } catch(exc) {
                 reject(exc);
@@ -383,6 +421,7 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
         const selfs =  this;
         return new Promise((resolve, reject) => {
             if(selfs.firestore == null) { resolve({success : false, list : [], message : 'Failed to load firebase firestore'}); return; }
+            selfs.logLocal('Firebase Firestore - quering highscore collection...');
 
             let arr = [];
             selfs.firestore.collection('highscore').get().then((querySnapshot) => {
@@ -402,6 +441,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
     }
     listPost(boardId, condition) {
         return new Promise((resolve, reject) => {
+            selfs.logLocal('Firebase Firestore - quering board collection...');
+
             let arr = [];
             selfs.firestore.collection('board').get().then((querySnapshot) => {
                 querySnapshot.forEach((doc) => {
@@ -433,6 +474,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
                 record.uid = selfs.user.uid;
                 record.boardName = boardId;
                 record.regdate = new Date().getTime();
+
+                selfs.logLocal('Firebase Firestore - adding board data...');
                 selfs.firestore.collection('board').add(record).then((docRef) => { resolve({ success : true }); }).catch((e) => { reject(e); });
             } catch(exc) {
                 reject(exc);
@@ -452,6 +495,8 @@ class FirebaseHostingImplementation extends ShuttingStarsInterface {
             try {
                 if(selfs.firestore == null) { resolve({success : false, list : [], message : 'Failed to load firebase firestore'}); return; }
                 if(! selfs.logined) { throw ('No logined.'); }
+
+                selfs.logLocal('Firebase Firestore - quering additionals collection...');
 
                 let arr = [];
                 selfs.firestore.collection('additionals').where('uid', '==', selfs.user.uid).get().then((querySnapshot) => {
