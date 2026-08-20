@@ -5500,8 +5500,8 @@ class ShuttingStarsCore {
                 const msText = this.ctx.measureText(label);
                 const textWidth = this.convertX(msText.width);
                 const textHeight = this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false);
-                const textX = this.convertX(this.getStageWidth() / 2);
-                const textY = rows;
+                const textX = this.convertX(this.getStageWidth() / 2) - Math.floor(textWidth / 2);
+                const textY = rows; // - Math.floor(textHeight / 2);
                 if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
                     // 마우스 포인터가 글자 위에 위치함 --> 비동기로 메뉴 호출
                     setTimeout(() => {selfs.handleMenuEnter(menuOne);}, 1);
@@ -5785,14 +5785,15 @@ class ShuttingStarsCore {
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
                     }
 
+                    /*
                     // 마우스 포인터가 글자 위에 위치해 있는지 탐지
                     if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
                         const msText = this.ctx.measureText(label);
                         const textWidth = this.convertX(msText.width);
                         const textHeight = this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false);
-                        const textX = this.convertX(this.getStageWidth() / 4);
-                        let   textY = currentRow + (row1Height / 3);
-                        if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
+                        const textX = this.convertX(this.getStageWidth() / 2) - (textWidth / 2);
+                        let   textY = currentRow + (row1Height / 3); // - (Math.floor(textHeight / 2));
+                        if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3); // - (Math.floor(textHeight / 2));
                         if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
                             // 마우스 포인터가 글자 위에 위치함 --> 비동기로 곡 토글
                             setTimeout(() => {
@@ -5802,6 +5803,7 @@ class ShuttingStarsCore {
                             }, 1);
                         }
                     }
+                    */
 
                     // 다음 미션 위치
                     currentRow += row1Height;
@@ -5884,9 +5886,9 @@ class ShuttingStarsCore {
                         const msText = this.ctx.measureText(label);
                         const textWidth = this.convertX(msText.width);
                         const textHeight = Math.floor(this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false) * 1.5);
-                        const textX = this.convertX(this.getStageWidth() / 4);
-                        let   textY = currentRow + (row1Height / 3);
-                        if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
+                        const textX = this.convertX(this.getStageWidth() / 2) - Math.floor(textWidth / 2);
+                        let   textY = currentRow + (row1Height / 3); // - (Math.floor(textHeight / 2));
+                        if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3); // - (Math.floor(textHeight / 2));
                         if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
                             // 마우스 포인터가 글자 위에 위치함 --> 비동기로 곡 선택 --> 난이도 설정 모드
                             setTimeout(() => {
@@ -5967,8 +5969,8 @@ class ShuttingStarsCore {
                                 const msText = this.ctx.measureText(label);
                                 const textWidth = this.convertX(msText.width);
                                 const textHeight = Math.floor(this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false) * 1.5);
-                                const textX = this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2);
-                                let   textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height);
+                                const textX = this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2) - Math.floor(textWidth / 2);
+                                let   textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height); // - Math.floor(textHeight / 2);
                                 if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
                                     // 마우스 포인터가 글자 위에 위치함 --> 난이도 선택 + 플레이
                                     setTimeout(() => {
@@ -6252,23 +6254,26 @@ class ShuttingStarsCore {
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
                 }
 
+                /*
                 // 마우스 포인터가 글자 위에 위치해 있는지 탐지
                 if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
                     const msText = this.ctx.measureText(label);
                     const textWidth = this.convertX(msText.width);
                     const textHeight = this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false);
-                    const textX = this.convertX(this.getStageWidth() / 4);
-                    let   textY = currentRow + (row1Height / 3);
-                    if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
+                    const textX = this.convertX(this.getStageWidth() / 2) - Math.floor(textWidth / 2);
+                    let   textY = currentRow + (row1Height / 3); // - Math.floor(textHeight / 2);
+                    if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3); // - Math.floor(textHeight / 2);
                     if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
-                        // 마우스 포인터가 글자 위에 위치함 --> 비동기로 곡 토글
+                        // 마우스 포인터가 글자 위에 위치함
                         setTimeout(() => {
-                            if(selfs.listeningSongList.length <= 0) {
+                            if(selfs.listeningSongList.indexOf(selfs.songChoosing) >= 0) { // 현재 곡이 선택된 상황에서 또 클릭 --> 재생
+                                selfs.processListenSongStarts();
+                            } else { // 다른 곡을 선택하고 있는 상황
                                 if(selfs.songChoosing == null) {
                                     ShuttingStarsUtility.toast(selfs.trans('Please select at least one song to listen.'));
                                     return;
                                 } else {
-                                    // 현재 선택된 곡을 바로 재생 목록에 넣고 이어서 진행
+                                    // 현재 선택된 곡을 바로 재생 목록에 넣기
                                     const cdx = selfs.songCanListen.indexOf(selfs.songChoosing);
                                     if(cdx < 0) {
                                         ShuttingStarsUtility.toast(selfs.trans('Please select at least one song to listen.'));
@@ -6277,11 +6282,10 @@ class ShuttingStarsCore {
                                     selfs.listeningSongList.push(selfs.songChoosing);
                                 }
                             }
-
-                            selfs.processListenSongStarts();
                         }, 1);
                     }
                 }
+                */
 
                 // 작곡가, 노트작성자, bpm 출력
                 label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
