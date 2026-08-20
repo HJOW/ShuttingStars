@@ -5497,8 +5497,9 @@ class ShuttingStarsCore {
 
             // 마우스 포인터가 글자 위에 위치해 있는지 탐지
             if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
-                const textWidth = this.ctx.measureText(label).width;
-                const textHeight = this.metricSize1;
+                const msText = this.ctx.measureText(label);
+                const textWidth = this.convertX(msText.width);
+                const textHeight = this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false);
                 const textX = this.convertX(this.getStageWidth() / 2);
                 const textY = rows;
                 if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
@@ -5784,11 +5785,11 @@ class ShuttingStarsCore {
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
                     }
 
-                    /*
                     // 마우스 포인터가 글자 위에 위치해 있는지 탐지
                     if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
-                        const textWidth = this.convertX(this.ctx.measureText(label).width);
-                        const textHeight = this.metricSize1;
+                        const msText = this.ctx.measureText(label);
+                        const textWidth = this.convertX(msText.width);
+                        const textHeight = this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false);
                         const textX = this.convertX(this.getStageWidth() / 4);
                         let   textY = currentRow + (row1Height / 3);
                         if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
@@ -5801,7 +5802,6 @@ class ShuttingStarsCore {
                             }, 1);
                         }
                     }
-                    */
 
                     // 다음 미션 위치
                     currentRow += row1Height;
@@ -5881,8 +5881,9 @@ class ShuttingStarsCore {
                     /*
                     // 마우스 포인터가 글자 위에 위치해 있는지 탐지
                     if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
-                        const textWidth = this.convertX(this.ctx.measureText(label).width);
-                        const textHeight = this.metricSize1;
+                        const msText = this.ctx.measureText(label);
+                        const textWidth = this.convertX(msText.width);
+                        const textHeight = Math.floor(this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false) * 1.5);
                         const textX = this.convertX(this.getStageWidth() / 4);
                         let   textY = currentRow + (row1Height / 3);
                         if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
@@ -5963,18 +5964,27 @@ class ShuttingStarsCore {
                             /*
                             // 마우스 포인터가 글자 위에 위치해 있는지 탐지
                             if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
-                                const textWidth = this.convertX(this.ctx.measureText(label).width);
-                                const textHeight = this.metricSize3;
+                                const msText = this.ctx.measureText(label);
+                                const textWidth = this.convertX(msText.width);
+                                const textHeight = Math.floor(this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false) * 1.5);
                                 const textX = this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2);
                                 let   textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height);
                                 if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
-                                    // 마우스 포인터가 글자 위에 위치함 --> 플레이
+                                    // 마우스 포인터가 글자 위에 위치함 --> 난이도 선택 + 플레이
                                     setTimeout(() => {
-                                        
+                                        if(selfs.difficulty != diffOne) {
+                                            selfs.difficulty = diffOne;
+                                            selfs.difficultyLevel = selfs.difficulty.difficultyLevel;
+                                            selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
+                                            selfs.accessililityLog('Difficulty cursor moved to ' + selfs.difficulty.difficultyLabel + ' (' + selfs.difficulty.difficultyLevel + ')');
+                                        } else {
+                                            selfs.processPlaySongStarts();
+                                        }
                                     }, 1);
                                 }
                             }
                             */
+                            
                         }
                     }
 
@@ -6244,8 +6254,9 @@ class ShuttingStarsCore {
 
                 // 마우스 포인터가 글자 위에 위치해 있는지 탐지
                 if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
-                    const textWidth = this.convertX(this.ctx.measureText(label).width);
-                    const textHeight = this.metricSize1;
+                    const msText = this.ctx.measureText(label);
+                    const textWidth = this.convertX(msText.width);
+                    const textHeight = this.convertY(msText.actualBoundingBoxAscent + msText.actualBoundingBoxDescent, false);
                     const textX = this.convertX(this.getStageWidth() / 4);
                     let   textY = currentRow + (row1Height / 3);
                     if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
