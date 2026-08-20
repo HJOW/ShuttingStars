@@ -3407,6 +3407,7 @@ class ShuttingStarsCore {
     /** 
      * 메뉴 선택 처리 
      * 
+     * @param {string} menuOne 메뉴 고유 키
     */
     handleMenuEnter(menuOne) {
         const selfs = this;
@@ -3547,23 +3548,7 @@ class ShuttingStarsCore {
                 this.accessililityLog('Default Stage Mode');
             } else if(key == this.enterKey) { // ENTER
                 if(this.missionChoosing == null) return;
-                this.playSE('accept2');
-
-                this.missionChoosing.prepare(this); // 미션 객체는 준비작업이 필요
-                
-                this.songTitleTime = this.songTitleBaseTime;
-                this.song = this.missionChoosing;
-                this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
-                this.difficultyLevel = this.difficulty.difficultyLevel;
-                this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
-
-                if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-
-                // 곡 플레이 선택함.
-                this.mode = this.songChoosingMode;
-                this.setState('songtitle');
-                this.difficultyChoosing = false;
-                this.titleDelayTime = this.titleDelayTimeMax;
+                this.processPlayMissionStarts();
             }
         } else {
             // default 모드
@@ -3640,18 +3625,7 @@ class ShuttingStarsCore {
             } else if(key == this.enterKey) {
                 if(this.songChoosing == null) return;
                 if(this.difficultyChoosing) {
-                    this.playSE('accept2');
-                    if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
-                    this.difficultyLevel = this.difficulty.difficultyLevel;
-                    this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
-                    this.songTitleTime = this.songTitleBaseTime;
-                    if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-
-                    // 곡 플레이 선택함.
-                    this.mode = 'default';
-                    this.setState('songtitle');
-                    this.difficultyChoosing = false;
-                    this.titleDelayTime = this.titleDelayTimeMax;
+                    this.processPlaySongStarts();
                 } else {
                     this.playSE('accept1');
                     this.song = this.songChoosing;
@@ -3764,24 +3738,7 @@ class ShuttingStarsCore {
                 }
             }
 
-            this.playSE('accept2');
-
-            // 순서 섞기
-            this.listeningSongList = ShuttingStarsUtility.randomizeArrayElements(this.listeningSongList);
-
-            this.song = this.listeningSongList[0];
-            this.difficultyChoosingList = this.song.getDifficultyList();
-
-            const randomNo = Math.floor(ShuttingStarsUtility.random() * (this.difficultyChoosingList.length - 0.0001));
-            this.difficulty = this.difficultyChoosingList[randomNo];
-            this.difficultyLevel = this.difficulty.difficultyLevel;
-            this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
-
-            this.songTitleTime = this.songTitleBaseTime;
-            if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
-            this.titleDelayTime = this.titleDelayTimeMax;
-
-            this.setState('listentitle');
+            this.processListenSongStarts();
         }
     }
 
@@ -4573,6 +4530,64 @@ class ShuttingStarsCore {
         }
     }
 
+    /** 곡 플레이 시작 처리 */
+    processPlaySongStarts() {
+        this.playSE('accept2');
+        if(this.difficulty == null || typeof(this.difficulty) == 'undefined') this.difficulty = this.difficultyChoosingList[0];
+        this.difficultyLevel = this.difficulty.difficultyLevel;
+        this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+        this.songTitleTime = this.songTitleBaseTime;
+        if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+
+        // 곡 플레이 선택함.
+        this.mode = 'default';
+        this.setState('songtitle');
+        this.difficultyChoosing = false;
+        this.titleDelayTime = this.titleDelayTimeMax;
+    }
+
+    /** 미션 플레이 시작 처리 */
+    processPlayMissionStarts() {
+        this.playSE('accept2');
+
+        this.missionChoosing.prepare(this); // 미션 객체는 준비작업이 필요
+        
+        this.songTitleTime = this.songTitleBaseTime;
+        this.song = this.missionChoosing;
+        this.difficulty = this.song.difficulties[0]; // 미션은 난이도가 하나
+        this.difficultyLevel = this.difficulty.difficultyLevel;
+        this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+
+        if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+
+        // 곡 플레이 선택함.
+        this.mode = this.songChoosingMode;
+        this.setState('songtitle');
+        this.difficultyChoosing = false;
+        this.titleDelayTime = this.titleDelayTimeMax;
+    }
+
+    /** 곡 감상 시작 처리 */
+    processListenSongStarts() {
+        this.playSE('accept2');
+        // 순서 섞기
+        this.listeningSongList = ShuttingStarsUtility.randomizeArrayElements(this.listeningSongList);
+
+        this.song = this.listeningSongList[0];
+        this.difficultyChoosingList = this.song.getDifficultyList();
+
+        const randomNo = Math.floor(ShuttingStarsUtility.random() * (this.difficultyChoosingList.length - 0.0001));
+        this.difficulty = this.difficultyChoosingList[randomNo];
+        this.difficultyLevel = this.difficulty.difficultyLevel;
+        this.difficultyUsingAutoCreate = this.difficulty.autoCreate;
+
+        this.songTitleTime = this.songTitleBaseTime;
+        if(! isNaN(this.song.loadingTime)) this.songTitleTime += this.song.loadingTime;
+        this.titleDelayTime = this.titleDelayTimeMax;
+
+        this.setState('listentitle');
+    }
+
     /** 
      * 마우스 이벤트 처리 공통 사항 처리 파트
      *     마우스 커서 위치에 충돌 여부를 판단하기 위한 임시 객체 생성
@@ -4637,6 +4652,7 @@ class ShuttingStarsCore {
      * @returns {object} 좌표, x 와 y 멤버변수에 각각 좌표값이 탑재됨
      */
     getMousePointerCoordinate() {
+        const selfs = this;
         // 마우스 포인터 객체 찾기
         let mouseCursorObject = null;
         //    이미 등록되어 있는지 찾기
@@ -4647,12 +4663,12 @@ class ShuttingStarsCore {
             }
         }
         if(mouseCursorObject == null) {
-            return { x : -1, y : -1 };
+            return { ox : -1, oy : -1, x : -1, y : -1 };
         }
-        if(mouseCursorObject.hidden) {
-            return { x : -1, y : -1 };
+        if(! mouseCursorObject.mousePressing) {
+            return { ox : -1, oy : -1, x : -1, y : -1 };
         }
-        return { x : mouseCursorObject.x, y : mouseCursorObject.y };
+        return { ox : mouseCursorObject.x, oy : mouseCursorObject.y, x : selfs.convertX(mouseCursorObject.x), y : selfs.convertY(mouseCursorObject.y, false) };
     }
 
     /**
@@ -5427,6 +5443,7 @@ class ShuttingStarsCore {
      */
     renderMenu() {
         const selfs = this;
+        const mousePointLoc = this.getMousePointerCoordinate();
         let idx;
         let rows = 0;
         let fontSize = this.convertFontSize(30);
@@ -5477,7 +5494,20 @@ class ShuttingStarsCore {
                 else          this.ctx.fillStyle = this.convertColor(new SSColor(80, 80, 80), opacity);
                 this.ctx.fillText(label, this.convertX(this.getStageWidth()  / 2), rows);
             }
+
+            // 마우스 포인터가 글자 위에 위치해 있는지 탐지
+            if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
+                const textWidth = this.ctx.measureText(label).width;
+                const textHeight = this.metricSize1;
+                const textX = this.convertX(this.getStageWidth() / 2);
+                const textY = rows;
+                if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
+                    // 마우스 포인터가 글자 위에 위치함 --> 비동기로 메뉴 호출
+                    setTimeout(() => {selfs.handleMenuEnter(menuOne);}, 1);
+                }
+            }
             
+            // 다음 행 위치
             rows += this.metricSize1 + (gap * 2);
         }
 
@@ -5593,6 +5623,7 @@ class ShuttingStarsCore {
      */
     renderSongChoosing() {
         const selfs = this;
+        const mousePointLoc = this.getMousePointerCoordinate();
         let idx, ddx, jdx;
         let rows = 0;
         let cols = 0;
@@ -5753,6 +5784,26 @@ class ShuttingStarsCore {
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 2));
                     }
 
+                    /*
+                    // 마우스 포인터가 글자 위에 위치해 있는지 탐지
+                    if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
+                        const textWidth = this.convertX(this.ctx.measureText(label).width);
+                        const textHeight = this.metricSize1;
+                        const textX = this.convertX(this.getStageWidth() / 4);
+                        let   textY = currentRow + (row1Height / 3);
+                        if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
+                        if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
+                            // 마우스 포인터가 글자 위에 위치함 --> 비동기로 곡 토글
+                            setTimeout(() => {
+                                // 플레이 처리
+                                selfs.missionChoosing = missionOne;
+                                selfs.processPlayMissionStarts();
+                            }, 1);
+                        }
+                    }
+                    */
+
+                    // 다음 미션 위치
                     currentRow += row1Height;
                     if(opacity >= 0.99) opacity = 0.99;
                     if(opacity <= 0) opacity = 0.0;
@@ -5827,6 +5878,34 @@ class ShuttingStarsCore {
                         this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
                     }
 
+                    /*
+                    // 마우스 포인터가 글자 위에 위치해 있는지 탐지
+                    if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
+                        const textWidth = this.convertX(this.ctx.measureText(label).width);
+                        const textHeight = this.metricSize1;
+                        const textX = this.convertX(this.getStageWidth() / 4);
+                        let   textY = currentRow + (row1Height / 3);
+                        if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
+                        if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
+                            // 마우스 포인터가 글자 위에 위치함 --> 비동기로 곡 선택 --> 난이도 설정 모드
+                            setTimeout(() => {
+                                // 곡 선택 및 난이도 선택 처리
+                                selfs.songChoosing = songOne;
+
+                                selfs.playSE('accept1');
+                                selfs.song = selfs.songChoosing;
+                                selfs.difficultyChoosingList = selfs.song.getDifficultyList();
+                                selfs.difficulty = selfs.difficultyChoosingList[0];
+                                selfs.difficultyLevel = selfs.difficulty.difficultyLevel;
+                                selfs.difficultyUsingAutoCreate = selfs.difficulty.autoCreate;
+                                selfs.difficultyChoosing = true;
+                                selfs.accessililityLog('Select difficulty for ' + selfs.song.name);
+                                selfs.accessililityLog('Difficulty cursor is now ' + selfs.difficulty.difficultyLabel + ' (' + selfs.difficulty.difficultyLevel + ')');
+                            }, 1);
+                        }
+                    }
+                    */
+
                     // 작곡가, 노트작성자, bpm 출력
                     label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
                     fontSize = this.convertFontSize(15);
@@ -5880,9 +5959,26 @@ class ShuttingStarsCore {
                             if(ddx == diffIdx) this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height));
                             else               this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2), this.convertY(this.getStageHeight() / 2, false) + (row1Height));
                             cols += (fontSize * label.length) + 20;
+
+                            /*
+                            // 마우스 포인터가 글자 위에 위치해 있는지 탐지
+                            if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
+                                const textWidth = this.convertX(this.ctx.measureText(label).width);
+                                const textHeight = this.metricSize3;
+                                const textX = this.convertX(this.getStageWidth() / 2) + cols - (diffIdx * fontSize * 2);
+                                let   textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height);
+                                if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
+                                    // 마우스 포인터가 글자 위에 위치함 --> 플레이
+                                    setTimeout(() => {
+                                        
+                                    }, 1);
+                                }
+                            }
+                            */
                         }
                     }
 
+                    // 다음 곡 위치
                     currentRow += row1Height;
                     if(opacity >= 0.99) opacity = 0.99;
                     if(opacity <= 0) opacity = 0.0;
@@ -6005,6 +6101,7 @@ class ShuttingStarsCore {
      */
     renderListenChoosing() {
         const selfs = this;
+        const mousePointLoc = this.getMousePointerCoordinate();
         let idx, ddx, jdx;
         let rows = 0;
         let cols = 0;
@@ -6145,6 +6242,36 @@ class ShuttingStarsCore {
                     this.ctx.fillText(label, this.convertX(this.getStageWidth() / 2), currentRow + (row1Height / 3));
                 }
 
+                // 마우스 포인터가 글자 위에 위치해 있는지 탐지
+                if(mousePointLoc != null && mousePointLoc.x >= 0 && mousePointLoc.y >= 0) {
+                    const textWidth = this.convertX(this.ctx.measureText(label).width);
+                    const textHeight = this.metricSize1;
+                    const textX = this.convertX(this.getStageWidth() / 4);
+                    let   textY = currentRow + (row1Height / 3);
+                    if(choosen) textY = this.convertY(this.getStageHeight() / 2, false) + (row1Height / 3);
+                    if(mousePointLoc.x >= textX && mousePointLoc.x <= textX + textWidth && mousePointLoc.y >= textY - textHeight && mousePointLoc.y <= textY) {
+                        // 마우스 포인터가 글자 위에 위치함 --> 비동기로 곡 토글
+                        setTimeout(() => {
+                            if(selfs.listeningSongList.length <= 0) {
+                                if(selfs.songChoosing == null) {
+                                    ShuttingStarsUtility.toast(selfs.trans('Please select at least one song to listen.'));
+                                    return;
+                                } else {
+                                    // 현재 선택된 곡을 바로 재생 목록에 넣고 이어서 진행
+                                    const cdx = selfs.songCanListen.indexOf(selfs.songChoosing);
+                                    if(cdx < 0) {
+                                        ShuttingStarsUtility.toast(selfs.trans('Please select at least one song to listen.'));
+                                        return;
+                                    }
+                                    selfs.listeningSongList.push(selfs.songChoosing);
+                                }
+                            }
+
+                            selfs.processListenSongStarts();
+                        }, 1);
+                    }
+                }
+
                 // 작곡가, 노트작성자, bpm 출력
                 label = ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(ShuttingStarsUtility.replaceString(this.trans('Composed by %1, Notes written by %2, %3 BPM'), '%1', songOne.composer), '%2', songOne.noteWriter), '%3', String(songOne.bpm));
                 fontSize = this.convertFontSize(15);
@@ -6235,6 +6362,7 @@ class ShuttingStarsCore {
      * 화면 출력 - 최초 설정
      */
     renderFirstSet() {
+        const mousePointLoc = this.getMousePointerCoordinate();
         let idx;
         let rows = 0;
         let fontSize = this.convertFontSize(30);
@@ -6369,6 +6497,7 @@ class ShuttingStarsCore {
      * 화면 출력 - 설정 화면
      */
     renderSetting() {
+        const mousePointLoc = this.getMousePointerCoordinate();
         let idx;
         let rows = 0;
         let fontSize = this.convertFontSize(30);
@@ -6685,6 +6814,7 @@ class ShuttingStarsCore {
      */
     renderRecordList() {
         const selfs = this;
+        const mousePointLoc = this.getMousePointerCoordinate();
         let idx, jdx, ddx;
         let rows = 0;
         let cols = 0;
