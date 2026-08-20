@@ -4633,6 +4633,45 @@ class ShuttingStarsCore {
     }
 
     /**
+     * 마우스 포인터 위치 찾기
+     * @returns {object} 좌표, x 와 y 멤버변수에 각각 좌표값이 탑재됨
+     */
+    getMousePointerCoordinate() {
+        // 마우스 포인터 객체 찾기
+        let mouseCursorObject = null;
+        //    이미 등록되어 있는지 찾기
+        for(let idx=0; idx<this.objects.length; idx++) {
+            const objOne = this.objects[idx];
+            if(objOne instanceof SSMouseClickHighlighter) {
+                mouseCursorObject = objOne;
+            }
+        }
+        if(mouseCursorObject == null) {
+            return { x : -1, y : -1 };
+        }
+        if(mouseCursorObject.hidden) {
+            return { x : -1, y : -1 };
+        }
+        return { x : mouseCursorObject.x, y : mouseCursorObject.y };
+    }
+
+    /**
+     * 마우스 포인터 위치 찾기
+     * @returns {number} x 좌표값
+     */
+    getMousePointerX() {
+        return this.getMousePointerCoordinate().x;
+    }
+
+    /**
+     * 마우스 포인터 위치 찾기
+     * @returns {number} y 좌표값
+     */
+    getMousePointerY() {
+        return this.getMousePointerCoordinate().y;
+    }
+
+    /**
      * 플레이 일시정지
      */
     pauseSong() {
@@ -4899,14 +4938,6 @@ class ShuttingStarsCore {
         try {
             // 캔버스 비우기
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-            // 마우스 이벤트 비우기 (virtualkey 타입 제외)
-            for(let msdx=0; msdx<this.mouseEvents.length; msdx++) {
-                const evOne = this.mouseEvents[msdx];
-                if(evOne.source == 'virtualkey') continue; // 가상키 제외
-                this.mouseEvents.splice(msdx, 1);
-                msdx--;
-            }
 
             // 좌표계 디버그 모드 처리
             if(this.coordinate2dDebugMode) {
