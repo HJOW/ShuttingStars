@@ -4592,23 +4592,35 @@ class ShuttingStarsCore {
         const y = event.clientY - rect.top;
 
         // 실제좌표가 canvas 의 해상도와 다르므로 변환이 필요
-        const rx = Math.floor((x * selfs.getFullRenderWidth())  / rect.width );
-        const ry = Math.floor((y * selfs.getFullRenderHeight()) / rect.height);
+        const rx = Math.floor((x * this.getFullRenderWidth())  / rect.width );
+        const ry = Math.floor((y * this.getFullRenderHeight()) / rect.height);
 
         if(mouseDown) {
-            if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
+            if(this.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSECLICKED] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + this.getStageWidth() + ':' + this.getStageHeight());
         } else {
-            if(selfs.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + selfs.getStageWidth() + ':' + selfs.getStageHeight());
+            if(this.mouseClickDebugMode) ShuttingStarsUtility.log('[MOUSERELEASE] ' + x + ', ' + y + " -> " + rx + ', ' + ry + ' in ' + rect.width + ':' + rect.height + ' to ' + this.getStageWidth() + ':' + this.getStageHeight());
         }
 
-        // 임시 객체 (충돌여부 판단 위함)
-        const mouseCursorObject = new SSMouseClickHighlighter(selfs);
+        // 마우스 포인터 객체 준비
+        let mouseCursorObject = null;
+        //    이미 등록되어 있는지 찾기
+        for(let idx=0; idx<this.objects.length; idx++) {
+            const objOne = this.objects[idx];
+            if(objOne instanceof SSMouseClickHighlighter) {
+                mouseCursorObject = objOne;
+            }
+        }
+        if(mouseCursorObject == null) {
+            mouseCursorObject = new SSMouseClickHighlighter(this);
+        }
+        
         mouseCursorObject.type = 'circle';
         mouseCursorObject.x    = rx;
         mouseCursorObject.y    = ry;
         mouseCursorObject.r    = 3;
         mouseCursorObject.fill = true;
         mouseCursorObject.explosing = 1;
+        mouseCursorObject.hidden = false;
         selfs.objects.push(mouseCursorObject);
 
         obj.x = rx;
@@ -7899,6 +7911,9 @@ class ShuttingStarsCore {
                         if(obj.explosing >= obj.explosingMax) {
                             if(obj instanceof SSVirtualKey) {
                                 obj.explosing = 0;
+                            } else if(obj instanceof SSMouseClickHighlighter) { // 마우스 포인터
+                                obj.explosing = 0;
+                                obj.hidden = true;
                             } else {
                                 this.objects.splice(idx, 1);
                                 idx--;
@@ -13788,6 +13803,7 @@ class SSExplosingObject extends SSDecorationObject {
      * @param {ShuttingStarsCore} coreInst
      */
     draw(ctx, coreInst) {
+        if(this.hidden) return;
         ctx.beginPath();
         ctx.arc(coreInst.convertX(this.x), coreInst.convertY(this.y, true), coreInst.convertX(this.modifyExplosiveR()), 0, 2 * Math.PI);
 
