@@ -4612,6 +4612,7 @@ class ShuttingStarsCore {
         }
         if(mouseCursorObject == null) {
             mouseCursorObject = new SSMouseClickHighlighter(this);
+            this.objects.push(mouseCursorObject);
         }
         
         mouseCursorObject.type = 'circle';
@@ -4620,9 +4621,9 @@ class ShuttingStarsCore {
         mouseCursorObject.r    = 3;
         mouseCursorObject.fill = true;
         mouseCursorObject.explosing = 1;
-        mouseCursorObject.hidden = false;
-        selfs.objects.push(mouseCursorObject);
-
+        mouseCursorObject.mousePressing = mouseDown;
+        mouseCursorObject.hidden = (! mouseDown);
+        
         obj.x = rx;
         obj.y = ry;
         obj.originalX = event.clientX;
@@ -7914,6 +7915,7 @@ class ShuttingStarsCore {
                             } else if(obj instanceof SSMouseClickHighlighter) { // 마우스 포인터
                                 obj.explosing = 0;
                                 obj.hidden = true;
+                                obj.mousePressing = false;
                             } else {
                                 this.objects.splice(idx, 1);
                                 idx--;
@@ -13952,6 +13954,8 @@ class SSPlanetExplosing extends SSExplosingObject {
 
 /** 마우스 클릭 표시 */
 class SSMouseClickHighlighter extends SSExplosingObject {
+    mousePressing = false;
+
     /**
      * 인스턴스를 초기화합니다.
      */
