@@ -1,6 +1,55 @@
 /*
 
 추가 수정해줘.
+
+1. 지금 있는 1명의 적 이름은 "단테" 로 하자.
+   적에 대한 설명은 출력하지 말아줘.
+   게임이 시작되면 중앙 영역의 중간영역은 비어있어. (위쪽은 다음 나올 뿌요 예고공간, 아래쪽은 점수 공간)
+   이 곳에 이 적에 대한 그럴싸한 이미지를 그렸으면 좋겠어. 가상의 인간형 몬스터를 상상해보자.
+   
+2. 중앙영역뿐만 아니라, 적 선택 화면에서도 표시했으면 좋겠어.
+   적들을 좌우로 나열하고 중앙에 현재 선택된 적을 표시하자.
+   그리고 이 화면에 게임시작 버튼 (현재 선택된 적과 플레이) 과, 이전 화면으로 돌아가는 버튼을 두자.
+
+3. 이 "단테" 의 플레이 알고리즘을 좀 수정했으면 좋겠어. 
+   처음 10회는 기존과 동일하게 둬.
+   그다음 1회는, 발생할 공격 수치 반환 함수를 각 6지점에 호출하여 그중 가장 큰 곳에 두도록 만들어줘.
+   (수치가 동점인 경우는 가장 오른쪽에 있는 곳을 선택)
+   그다음 10회는 마찬가지로 기존과 동일하게 둬.
+   그다음 1회는 마찬가지로 공격 수치 반환 함수를 쓰고
+   이 과정을 반복하는 거야.
+   예외도 하나 뒀으면 좋겠어. 만약 좌표 2, 9 에 뿌요가 존재한다면, 그다음부터는 쌓는 방향만 왼쪽으로 바꾸고 그외는 동일하게 동작하게 해줘.
+
+
+아래 내용은 4차 수정요청한 내용이야. 참고만 해줘.
+----------------------------------------------------------
+
+
+추가 수정해줘.
+1. 예고뿌요 중 30 단위 예고뿌요는 빨간색 돌 모양인데, 뿌요라서 동그란 빨간 돌 모양으로 바꿔줘.
+2. 500 단위의 예고뿌요를 도입하자. 태양 모양으로 중앙에 동그란 불타는 원형 본체에, 8방향으로 불꽃이 튀는 태양 모양이나 역시 눈이 달린 형태로 귀엽게 표현해줘.
+3. 중앙 영역에 있는, 다음에 나올 뿌요 알려주는 공간이, 뿌요 방향을 반대로 표시하고 있어.
+   이를테면 다음차례에는 빨강(위)과 파랑(아래) 가 나온다고 했는데, 정작 다음차례가 되면 파랑(위)과 빨강(아래) 가 나와.
+   원인을 찾아서 수정해줘.
+
+4. 메인화면에서 게임시작 시 바로 게임을 시작하지 말고, 적 선택 화면을 두자.
+   일단 지금은 알고리즘이 하나밖에 없으니 적을 1명밖에 선택할 수 없도록 해주고 적당히 이름을 지어줘.
+   코딩을 통해 이 적을 추가할 수 있도록 해주고 HOWTO_NEWAI.md 에도 반영해줘.
+5. 알고리즘에서 호출할 수 있는 함수를 만들어줘. 역할은 뿌요를 특정 위치에 두었을 때, 예상 공격 위력을 계산해 숫자로 반환하는거야.
+   각 플레이어가 뿌요 2개 묶음을 조작하므로, 매개변수로 뿌요 2개의 색상과 좌표를 받자.
+   리턴 값은 숫자값으로, 발생할 공격 (ATTACK) 수치를 반환하도록 만들어줘.
+   이 사용법 역시 HOWTO_NEWAI.md 에 추가해줘.
+6. 플레이어 차례가 되서 조작하는 두 개의 뿌요 묶음은, 조작 중이라는 표시로 테두리를 하얗게 강조표시하고 싶어.
+   계속 하얗게만 표시하지 말고, 어느정도 깜빡임이 느껴졌으면 좋겠어.
+
+
+
+   
+
+아래 내용은 3차 수정요청한 내용이야. 참고만 해줘.
+----------------------------------------------------------
+
+추가 수정해줘.
 1. 방해뿌요, 예고뿌요 모두 뿌요라는 설정이라서, 두 눈을 달아서 귀엽게 표현해줘.
 2. 뿌요 폭발 시, 폭발하는 자리에 1연쇄, 2연쇄 와 같이 글자를 띄워서 연쇄 수를 표시해줘.
    이 글자는 그 위치에서 천천히 올라가다 1.5초 뒤에 흐릿해지며 2초 시점에는 사라지게 해줘.
@@ -286,6 +335,8 @@ COMBO : COMBO_POWER
   const canvas = document.getElementById('webpuyo_canvas');
   const context = canvas.getContext('2d');
   let game = null;
+  let menuScreen = 'title';
+  let selectedOpponent = 0;
   let lastTime = 0;
 
   /**
@@ -334,6 +385,16 @@ COMBO : COMBO_POWER
     createPair() {
       return [randomColor(), randomColor()];
     }
+
+    /**
+     * 현재 보드에 지정한 뿌요를 놓았을 때의 예상 공격 수치를 계산한다.
+     * @param {string[]} colors 배치할 두 뿌요의 색상
+     * @param {{x:number, y:number}[]} positions 두 뿌요의 보드 좌표
+     * @returns {number} 연쇄와 인접 방해뿌요 제거까지 반영한 예상 ATTACK 값
+     */
+    estimateAttack(colors, positions) {
+      return estimateAttack(this.board, colors, positions);
+    }
   }
 
   /**
@@ -351,11 +412,53 @@ COMBO : COMBO_POWER
   }
 
   /**
+   * 단테의 배치 목표를 결정한다. 11번째마다 예상 공격이 가장 큰 열을 고른다.
+   */
+  class DanteController extends OpponentController {
+    constructor() {
+      super();
+      this.turnCount = 0;
+    }
+
+    /**
+     * @param {PlayerState} player 자동 조작할 플레이어
+     * @returns {number} 목표 X 좌표
+     */
+    chooseTarget(player) {
+      this.turnCount += 1;
+      const stackDirection = player.board[9][2] ? 0 : COLUMNS - 1;
+      if (this.turnCount % 11 !== 0 || !player.active) return stackDirection;
+
+      let bestColumn = stackDirection;
+      let bestAttack = -1;
+      for (let x = 0; x < COLUMNS; x += 1) {
+        let y = 0;
+        while (y < ROWS && player.board[y][x]) y += 1;
+        if (y > ROWS - 2) continue;
+        const attack = player.estimateAttack(player.active.colors, [{ x, y }, { x, y: y + 1 }]);
+        if (attack >= bestAttack) {
+          bestAttack = attack;
+          bestColumn = x;
+        }
+      }
+      return bestColumn;
+    }
+  }
+
+  const OPPONENTS = [
+    {
+      name: '단테',
+      createController: () => new DanteController()
+    }
+  ];
+
+  /**
    * 대전 상태를 초기화하고 첫 뿌요를 제공한다.
    * @returns {void}
    */
   function startGame() {
-    game = { running: true, winner: null, players: [new PlayerState('PLAYER 1', FIELD_LEFT), new PlayerState('CPU', FIELD_RIGHT, new OpponentController())] };
+    const opponent = OPPONENTS[selectedOpponent];
+    game = { running: true, winner: null, players: [new PlayerState('PLAYER 1', FIELD_LEFT), new PlayerState(opponent.name, FIELD_RIGHT, opponent.createController())] };
     enterControl(game.players[0]);
     enterControl(game.players[1]);
   }
@@ -486,10 +589,19 @@ COMBO : COMBO_POWER
    * @returns {number[][]} 폭발할 [x, y] 좌표 목록
    */
   function findExplosions(player) {
+    return findExplosionsOnBoard(player.board);
+  }
+
+  /**
+   * 보드 복사본에서 상하좌우로 4개 이상 연결된 색 뿌요를 모두 찾는다.
+   * @param {(string|null)[][]} board 탐색할 보드
+   * @returns {number[][]} 폭발할 [x, y] 좌표 목록
+   */
+  function findExplosionsOnBoard(board) {
     const visited = new Set();
     const exploding = [];
     for (let y = 0; y < ROWS; y += 1) for (let x = 0; x < COLUMNS; x += 1) {
-      const color = player.board[y][x];
+      const color = board[y][x];
       const key = `${x},${y}`;
       if (!color || color === 'garbage' || visited.has(key)) continue;
       const group = [];
@@ -502,7 +614,7 @@ COMBO : COMBO_POWER
           const nx = currentX + deltaX;
           const ny = currentY + deltaY;
           const nextKey = `${nx},${ny}`;
-          if (nx >= 0 && nx < COLUMNS && ny >= 0 && ny < ROWS && player.board[ny][nx] === color && !visited.has(nextKey)) {
+          if (nx >= 0 && nx < COLUMNS && ny >= 0 && ny < ROWS && board[ny][nx] === color && !visited.has(nextKey)) {
             visited.add(nextKey);
             queue.push([nx, ny]);
           }
@@ -511,6 +623,63 @@ COMBO : COMBO_POWER
       if (group.length >= 4) exploding.push(...group);
     }
     return exploding;
+  }
+
+  /**
+   * 보드의 모든 뿌요를 열별로 아래로 내린다.
+   * @param {(string|null)[][]} board 중력을 적용할 보드
+   * @returns {(string|null)[][]} 중력 적용 후의 새 보드
+   */
+  function collapseBoard(board) {
+    const collapsed = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
+    for (let x = 0; x < COLUMNS; x += 1) {
+      let targetY = 0;
+      for (let y = 0; y < ROWS; y += 1) {
+        if (board[y][x]) {
+          collapsed[targetY][x] = board[y][x];
+          targetY += 1;
+        }
+      }
+    }
+    return collapsed;
+  }
+
+  /**
+   * 두 뿌요를 가상 배치하여 발생 가능한 ATTACK을 계산한다.
+   * @param {(string|null)[][]} sourceBoard 배치 전 보드
+   * @param {string[]} colors 배치할 두 뿌요 색상
+   * @param {{x:number, y:number}[]} positions 배치할 두 뿌요 좌표
+   * @returns {number} 연쇄 전체의 예상 ATTACK 값
+   */
+  function estimateAttack(sourceBoard, colors, positions) {
+    if (!Array.isArray(colors) || !Array.isArray(positions) || colors.length !== 2 || positions.length !== 2) return 0;
+    let board = sourceBoard.map((row) => [...row]);
+    for (let index = 0; index < 2; index += 1) {
+      const { x, y } = positions[index] || {};
+      if (!COLORS.includes(colors[index]) || !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= ROWS || board[y][x]) return 0;
+      board[y][x] = colors[index];
+    }
+    board = collapseBoard(board);
+    let combo = 0;
+    let attack = 0;
+    while (true) {
+      const exploding = findExplosionsOnBoard(board);
+      if (!exploding.length) return attack;
+      combo += 1;
+      const power = COMBO_POWER[Math.min(combo, 18)] || 999;
+      attack += exploding.length * power / 4;
+      const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
+      exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
+        const nextX = x + deltaX;
+        const nextY = y + deltaY;
+        if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && board[nextY][nextX] === 'garbage') removed.add(`${nextX},${nextY}`);
+      }));
+      removed.forEach((key) => {
+        const [x, y] = key.split(',').map(Number);
+        board[y][x] = null;
+      });
+      board = collapseBoard(board);
+    }
   }
 
   /**
@@ -587,7 +756,7 @@ COMBO : COMBO_POWER
       .map((popup) => ({ ...popup, elapsed: popup.elapsed + delta }))
       .filter((popup) => popup.elapsed < 2000);
     if (player.phase === 'control') {
-      if (player.controller && player.active.x < player.aiTarget) moveActive(player, 1, 0);
+      if (player.controller && player.active.x !== player.aiTarget) moveActive(player, player.active.x < player.aiTarget ? 1 : -1, 0);
       player.fallTimer += delta;
       if (player.fallTimer >= (player.isAi ? 290 : 520)) {
         player.fallTimer = 0;
@@ -637,7 +806,7 @@ COMBO : COMBO_POWER
    */
   function warningUnits(amount) {
     const units = [];
-    [[210, 'star'], [30, 'rock'], [6, 'drop'], [1, 'tiny']].forEach(([value, type]) => {
+    [[500, 'sun'], [210, 'star'], [30, 'rock'], [6, 'drop'], [1, 'tiny']].forEach(([value, type]) => {
       const count = Math.floor(amount / value);
       amount %= value;
       for (let index = 0; index < count && units.length < 6; index += 1) units.push(type);
@@ -696,6 +865,32 @@ COMBO : COMBO_POWER
    */
   function drawWarning(x, y, type) {
     if (type === 'tiny') return drawPuyo(x + CELL * 0.25, y + CELL * 0.25, 'garbage', 0.45);
+    if (type === 'sun') {
+      context.save();
+      context.translate(x + CELL / 2, y + CELL / 2);
+      context.fillStyle = '#ff9f1c';
+      for (let index = 0; index < 8; index += 1) {
+        context.save();
+        context.rotate(index * Math.PI / 4);
+        context.beginPath();
+        context.moveTo(CELL * 0.22, 0);
+        context.lineTo(CELL * 0.48, -CELL * 0.1);
+        context.lineTo(CELL * 0.48, CELL * 0.1);
+        context.closePath();
+        context.fill();
+        context.restore();
+      }
+      context.fillStyle = '#ff6b35';
+      context.beginPath();
+      context.arc(0, 0, CELL * 0.31, 0, Math.PI * 2);
+      context.fill();
+      context.lineWidth = 2;
+      context.strokeStyle = '#ffe082';
+      context.stroke();
+      drawPuyoEyes(CELL * 0.31);
+      context.restore();
+      return;
+    }
     if (type === 'star') {
       context.save(); context.translate(x + CELL / 2, y + CELL / 2); context.fillStyle = '#ffd54f'; context.beginPath();
       for (let index = 0; index < 10; index += 1) {
@@ -706,7 +901,8 @@ COMBO : COMBO_POWER
       context.closePath(); context.fill(); drawPuyoEyes(CELL * 0.34); context.restore(); return;
     }
     if (type === 'rock') {
-      context.save(); context.translate(x + CELL / 2, y + CELL / 2); context.fillStyle = '#ef5350'; context.fillRect(-CELL * 0.36, -CELL * 0.27, CELL * 0.72, CELL * 0.58); drawPuyoEyes(CELL * 0.3); context.restore(); return;
+      drawPuyo(x, y, 'red');
+      return;
     }
     drawPuyo(x, y, 'garbage');
   }
@@ -766,6 +962,94 @@ COMBO : COMBO_POWER
   }
 
   /**
+   * 조작 중인 뿌요에 흰색 점멸 테두리를 그린다.
+   * @param {number} x 셀의 왼쪽 X 좌표
+   * @param {number} y 셀의 위쪽 Y 좌표
+   * @returns {void}
+   */
+  function drawActiveOutline(x, y) {
+    const pulse = 0.35 + (Math.sin(performance.now() / 105) + 1) * 0.325;
+    context.save();
+    context.globalAlpha = pulse;
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(x + CELL / 2, y + CELL / 2, CELL * 0.44, 0, Math.PI * 2);
+    context.stroke();
+    context.restore();
+  }
+
+  /**
+   * 가상의 인간형 몬스터 단테를 캔버스 도형으로 그린다.
+   * @param {number} centerX 캐릭터 중심 X 좌표
+   * @param {number} centerY 캐릭터 중심 Y 좌표
+   * @param {number} scale 기본 크기 대비 배율
+   * @returns {void}
+   */
+  function drawDante(centerX, centerY, scale = 1) {
+    const size = 72 * scale;
+    context.save();
+    context.translate(centerX, centerY);
+    context.lineCap = 'round';
+    context.strokeStyle = '#3d204d';
+    context.lineWidth = 14 * scale;
+    context.beginPath();
+    context.moveTo(-size * 0.33, size * 0.34);
+    context.lineTo(-size * 0.5, size * 0.82);
+    context.moveTo(size * 0.33, size * 0.34);
+    context.lineTo(size * 0.5, size * 0.82);
+    context.stroke();
+    context.fillStyle = '#563068';
+    context.beginPath();
+    context.moveTo(-size * 0.52, size * 0.34);
+    context.lineTo(-size * 0.92, size * 0.04);
+    context.moveTo(size * 0.52, size * 0.34);
+    context.lineTo(size * 0.92, size * 0.04);
+    context.lineWidth = 15 * scale;
+    context.stroke();
+    context.beginPath();
+    context.moveTo(-size * 0.5, size * 0.28);
+    context.quadraticCurveTo(0, -size * 0.02, size * 0.5, size * 0.28);
+    context.lineTo(size * 0.35, size * 0.72);
+    context.quadraticCurveTo(0, size * 0.88, -size * 0.35, size * 0.72);
+    context.closePath();
+    context.fillStyle = '#6e3f8b';
+    context.fill();
+    context.strokeStyle = '#bd87e8';
+    context.lineWidth = 3 * scale;
+    context.stroke();
+    context.fillStyle = '#303752';
+    context.beginPath();
+    context.arc(0, -size * 0.28, size * 0.43, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = '#bd87e8';
+    context.lineWidth = 3 * scale;
+    context.stroke();
+    context.fillStyle = '#ef5350';
+    context.beginPath();
+    context.moveTo(-size * 0.27, -size * 0.6);
+    context.lineTo(-size * 0.08, -size * 0.93);
+    context.lineTo(size * 0.03, -size * 0.55);
+    context.closePath();
+    context.moveTo(size * 0.27, -size * 0.6);
+    context.lineTo(size * 0.08, -size * 0.93);
+    context.lineTo(-size * 0.03, -size * 0.55);
+    context.closePath();
+    context.fill();
+    context.fillStyle = '#f5fbfc';
+    context.beginPath();
+    context.arc(-size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
+    context.arc(size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = '#ef5350';
+    context.beginPath();
+    context.arc(-size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
+    context.arc(size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
+  /**
    * 한 플레이어의 필드, 예고줄, 낙하와 폭발 효과를 그린다.
    * @param {PlayerState} player 그릴 플레이어
    * @param {PlayerState} opponent 예고 공격량을 제공할 상대
@@ -796,7 +1080,12 @@ COMBO : COMBO_POWER
       });
     }
     if (player.active) activeCells(player.active).forEach((cell) => {
-      if (cell.y < VISIBLE_ROWS) drawPuyo(x + cell.x * CELL, FIELD_BOTTOM - (cell.y + 1) * CELL, cell.color);
+      if (cell.y < VISIBLE_ROWS) {
+        const cellX = x + cell.x * CELL;
+        const cellY = FIELD_BOTTOM - (cell.y + 1) * CELL;
+        drawPuyo(cellX, cellY, cell.color);
+        drawActiveOutline(cellX, cellY);
+      }
     });
     for (let index = 0; index < COLUMNS; index += 1) {
       context.fillStyle = '#0a1d29'; context.fillRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
@@ -814,7 +1103,7 @@ COMBO : COMBO_POWER
   }
 
   /**
-   * 양쪽의 다음 2쌍, 조작 안내와 중앙 점수 패널을 그린다.
+  * 양쪽의 다음 2쌍, 단테 이미지와 중앙 점수 패널을 그린다.
    * @returns {void}
    */
   function drawCenter() {
@@ -829,13 +1118,12 @@ COMBO : COMBO_POWER
       context.fillStyle = color; context.font = '13px "Nanum Gothic Coding"'; context.fillText(`${player.name} NEXT`, x + 74, 143);
       player.nextPairs.forEach((pair, pairIndex) => {
         const pairX = x + 21 + pairIndex * 70;
-        drawPuyo(pairX, 163, pair[0], 0.68);
-        drawPuyo(pairX, 208, pair[1], 0.68);
+        drawPuyo(pairX, 163, pair[1], 0.68);
+        drawPuyo(pairX, 208, pair[0], 0.68);
         context.fillStyle = 'rgba(216, 242, 245, 0.4)'; context.fillRect(x + 74, 158, 1, 92);
       });
     });
-    context.fillStyle = '#8bb3bd'; context.font = '14px "Nanum Gothic Coding"';
-    context.fillText('ARROWS: MOVE / DOWN', WIDTH / 2, 406); context.fillText('Z / X: ROTATE     ESC: MENU', WIDTH / 2, 430);
+    drawDante(WIDTH / 2, 380, 0.86);
     const scores = [
       { player: left, x: 488, color: '#ef8aa0' },
       { player: right, x: 646, color: '#6bbce8' }
@@ -854,8 +1142,29 @@ COMBO : COMBO_POWER
    */
   function drawMenu() {
     context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
-    context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = '68px "Black Han Sans"'; context.fillText('WEB PUYO', WIDTH / 2, 260);
-    context.fillStyle = '#4cc9b0'; context.font = '20px "Nanum Gothic Coding"'; context.fillText('2D PUZZLE BATTLE', WIDTH / 2, 300);
+    context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = '68px "Black Han Sans"'; context.fillText('WEB PUYO', WIDTH / 2, menuScreen === 'opponent' ? 100 : 260);
+    context.fillStyle = '#4cc9b0'; context.font = '20px "Nanum Gothic Coding"'; context.fillText('2D PUZZLE BATTLE', WIDTH / 2, menuScreen === 'opponent' ? 138 : 300);
+    if (menuScreen === 'opponent') {
+      context.fillStyle = '#d8f2f5'; context.font = '30px "Black Han Sans"'; context.fillText('적 선택', WIDTH / 2, 190);
+      const opponent = OPPONENTS[selectedOpponent];
+      context.fillStyle = '#0b202c'; context.fillRect(WIDTH / 2 - 170, 215, 340, 258);
+      context.strokeStyle = '#ef8aa0'; context.lineWidth = 3; context.strokeRect(WIDTH / 2 - 170, 215, 340, 258);
+      drawDante(WIDTH / 2, 319, 0.8);
+      context.fillStyle = '#f5fbfc'; context.font = '28px "Black Han Sans"'; context.fillText(opponent.name, WIDTH / 2, 443);
+      OPPONENTS.forEach((entry, index) => {
+        const cardX = WIDTH / 2 - 80 + (index - selectedOpponent) * 180;
+        context.fillStyle = index === selectedOpponent ? '#563068' : '#0b202c';
+        context.fillRect(cardX, 500, 160, 58);
+        context.strokeStyle = index === selectedOpponent ? '#ef8aa0' : '#3b6070'; context.lineWidth = 2;
+        context.strokeRect(cardX, 500, 160, 58);
+        context.fillStyle = '#f5fbfc'; context.font = '17px "Black Han Sans"'; context.fillText(entry.name, cardX + 80, 536);
+      });
+      context.fillStyle = '#ef5350'; context.fillRect(440, 600, 250, 58);
+      context.fillStyle = '#fff'; context.font = '20px "Black Han Sans"'; context.fillText(`${opponent.name}와 게임 시작`, 565, 637);
+      context.fillStyle = '#264b5b'; context.fillRect(710, 600, 130, 58);
+      context.fillStyle = '#d8f2f5'; context.font = '18px "Black Han Sans"'; context.fillText('이전', 775, 637);
+      return;
+    }
     context.fillStyle = '#ef5350'; context.fillRect(WIDTH / 2 - 145, 358, 290, 66);
     context.fillStyle = '#fff'; context.font = '25px "Black Han Sans"'; context.fillText('게임 시작', WIDTH / 2, 402);
     context.fillStyle = '#8bb3bd'; context.font = '16px "Nanum Gothic Coding"'; context.fillText('버튼을 클릭하여 시작', WIDTH / 2, 465);
@@ -898,9 +1207,21 @@ COMBO : COMBO_POWER
     if (['arrowleft', 'arrowright', 'arrowdown', 'z', 'x', 'escape', 'enter', ' '].includes(key)) event.preventDefault();
     if (game && !game.running && key === 'enter') {
       game = null;
+      menuScreen = 'title';
       return;
     }
-    if (!game || !game.running) {
+    if (!game) {
+      if (menuScreen === 'opponent' && key === 'arrowleft') {
+        selectedOpponent = (selectedOpponent + OPPONENTS.length - 1) % OPPONENTS.length;
+      } else if (menuScreen === 'opponent' && key === 'arrowright') {
+        selectedOpponent = (selectedOpponent + 1) % OPPONENTS.length;
+      } else if (key === 'enter' || key === ' ') {
+        if (menuScreen === 'title') menuScreen = 'opponent';
+        else startGame();
+      } else if (key === 'escape' && menuScreen === 'opponent') menuScreen = 'title';
+      return;
+    }
+    if (!game.running) {
       return;
     }
     if (key === 'escape') { game = null; return; }
@@ -921,13 +1242,24 @@ COMBO : COMBO_POWER
   canvas.addEventListener('click', (event) => {
     if (game && !game.running) {
       game = null;
+      menuScreen = 'title';
       return;
     }
     if (game) return;
     const bounds = canvas.getBoundingClientRect();
     const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
     const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
-    if (x >= WIDTH / 2 - 145 && x <= WIDTH / 2 + 145 && y >= 358 && y <= 424) startGame();
+    if (menuScreen === 'title') {
+      if (x >= WIDTH / 2 - 145 && x <= WIDTH / 2 + 145 && y >= 358 && y <= 424) menuScreen = 'opponent';
+    } else {
+      const cardIndex = OPPONENTS.findIndex((entry, index) => {
+        const cardX = WIDTH / 2 - 80 + (index - selectedOpponent) * 180;
+        return x >= cardX && x <= cardX + 160 && y >= 500 && y <= 558;
+      });
+      if (cardIndex >= 0) selectedOpponent = cardIndex;
+      else if (x >= 440 && x <= 690 && y >= 600 && y <= 658) startGame();
+      else if (x >= 710 && x <= 840 && y >= 600 && y <= 658) menuScreen = 'title';
+    }
   });
 
   requestAnimationFrame(frame);
