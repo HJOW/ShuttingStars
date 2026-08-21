@@ -409,6 +409,17 @@ COMBO : COMBO_POWER
     chooseTarget(player) {
       return COLUMNS - 1;
     }
+
+    /**
+     * 적 선택 및 대전 화면에 표시할 적 초상화를 그린다.
+     * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+     * @param {number} centerX 초상화 중심 X 좌표
+     * @param {number} centerY 초상화 중심 Y 좌표
+     * @param {number} scale 기본 크기 대비 배율
+     * @returns {void}
+     */
+    drawPortrait(drawingContext, centerX, centerY, scale = 1) {
+    }
   }
 
   /**
@@ -442,6 +453,77 @@ COMBO : COMBO_POWER
         }
       }
       return bestColumn;
+    }
+
+    /**
+     * 가상의 인간형 몬스터 단테를 캔버스 도형으로 그린다.
+     * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+     * @param {number} centerX 캐릭터 중심 X 좌표
+     * @param {number} centerY 캐릭터 중심 Y 좌표
+     * @param {number} scale 기본 크기 대비 배율
+     * @returns {void}
+     */
+    drawPortrait(drawingContext, centerX, centerY, scale = 1) {
+      const size = 72 * scale;
+      drawingContext.save();
+      drawingContext.translate(centerX, centerY);
+      drawingContext.lineCap = 'round';
+      drawingContext.strokeStyle = '#3d204d';
+      drawingContext.lineWidth = 14 * scale;
+      drawingContext.beginPath();
+      drawingContext.moveTo(-size * 0.33, size * 0.34);
+      drawingContext.lineTo(-size * 0.5, size * 0.82);
+      drawingContext.moveTo(size * 0.33, size * 0.34);
+      drawingContext.lineTo(size * 0.5, size * 0.82);
+      drawingContext.stroke();
+      drawingContext.fillStyle = '#563068';
+      drawingContext.beginPath();
+      drawingContext.moveTo(-size * 0.52, size * 0.34);
+      drawingContext.lineTo(-size * 0.92, size * 0.04);
+      drawingContext.moveTo(size * 0.52, size * 0.34);
+      drawingContext.lineTo(size * 0.92, size * 0.04);
+      drawingContext.lineWidth = 15 * scale;
+      drawingContext.stroke();
+      drawingContext.beginPath();
+      drawingContext.moveTo(-size * 0.5, size * 0.28);
+      drawingContext.quadraticCurveTo(0, -size * 0.02, size * 0.5, size * 0.28);
+      drawingContext.lineTo(size * 0.35, size * 0.72);
+      drawingContext.quadraticCurveTo(0, size * 0.88, -size * 0.35, size * 0.72);
+      drawingContext.closePath();
+      drawingContext.fillStyle = '#6e3f8b';
+      drawingContext.fill();
+      drawingContext.strokeStyle = '#bd87e8';
+      drawingContext.lineWidth = 3 * scale;
+      drawingContext.stroke();
+      drawingContext.fillStyle = '#303752';
+      drawingContext.beginPath();
+      drawingContext.arc(0, -size * 0.28, size * 0.43, 0, Math.PI * 2);
+      drawingContext.fill();
+      drawingContext.strokeStyle = '#bd87e8';
+      drawingContext.lineWidth = 3 * scale;
+      drawingContext.stroke();
+      drawingContext.fillStyle = '#ef5350';
+      drawingContext.beginPath();
+      drawingContext.moveTo(-size * 0.27, -size * 0.6);
+      drawingContext.lineTo(-size * 0.08, -size * 0.93);
+      drawingContext.lineTo(size * 0.03, -size * 0.55);
+      drawingContext.closePath();
+      drawingContext.moveTo(size * 0.27, -size * 0.6);
+      drawingContext.lineTo(size * 0.08, -size * 0.93);
+      drawingContext.lineTo(-size * 0.03, -size * 0.55);
+      drawingContext.closePath();
+      drawingContext.fill();
+      drawingContext.fillStyle = '#f5fbfc';
+      drawingContext.beginPath();
+      drawingContext.arc(-size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
+      drawingContext.arc(size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
+      drawingContext.fill();
+      drawingContext.fillStyle = '#ef5350';
+      drawingContext.beginPath();
+      drawingContext.arc(-size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
+      drawingContext.arc(size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
+      drawingContext.fill();
+      drawingContext.restore();
     }
   }
 
@@ -980,76 +1062,6 @@ COMBO : COMBO_POWER
   }
 
   /**
-   * 가상의 인간형 몬스터 단테를 캔버스 도형으로 그린다.
-   * @param {number} centerX 캐릭터 중심 X 좌표
-   * @param {number} centerY 캐릭터 중심 Y 좌표
-   * @param {number} scale 기본 크기 대비 배율
-   * @returns {void}
-   */
-  function drawDante(centerX, centerY, scale = 1) {
-    const size = 72 * scale;
-    context.save();
-    context.translate(centerX, centerY);
-    context.lineCap = 'round';
-    context.strokeStyle = '#3d204d';
-    context.lineWidth = 14 * scale;
-    context.beginPath();
-    context.moveTo(-size * 0.33, size * 0.34);
-    context.lineTo(-size * 0.5, size * 0.82);
-    context.moveTo(size * 0.33, size * 0.34);
-    context.lineTo(size * 0.5, size * 0.82);
-    context.stroke();
-    context.fillStyle = '#563068';
-    context.beginPath();
-    context.moveTo(-size * 0.52, size * 0.34);
-    context.lineTo(-size * 0.92, size * 0.04);
-    context.moveTo(size * 0.52, size * 0.34);
-    context.lineTo(size * 0.92, size * 0.04);
-    context.lineWidth = 15 * scale;
-    context.stroke();
-    context.beginPath();
-    context.moveTo(-size * 0.5, size * 0.28);
-    context.quadraticCurveTo(0, -size * 0.02, size * 0.5, size * 0.28);
-    context.lineTo(size * 0.35, size * 0.72);
-    context.quadraticCurveTo(0, size * 0.88, -size * 0.35, size * 0.72);
-    context.closePath();
-    context.fillStyle = '#6e3f8b';
-    context.fill();
-    context.strokeStyle = '#bd87e8';
-    context.lineWidth = 3 * scale;
-    context.stroke();
-    context.fillStyle = '#303752';
-    context.beginPath();
-    context.arc(0, -size * 0.28, size * 0.43, 0, Math.PI * 2);
-    context.fill();
-    context.strokeStyle = '#bd87e8';
-    context.lineWidth = 3 * scale;
-    context.stroke();
-    context.fillStyle = '#ef5350';
-    context.beginPath();
-    context.moveTo(-size * 0.27, -size * 0.6);
-    context.lineTo(-size * 0.08, -size * 0.93);
-    context.lineTo(size * 0.03, -size * 0.55);
-    context.closePath();
-    context.moveTo(size * 0.27, -size * 0.6);
-    context.lineTo(size * 0.08, -size * 0.93);
-    context.lineTo(-size * 0.03, -size * 0.55);
-    context.closePath();
-    context.fill();
-    context.fillStyle = '#f5fbfc';
-    context.beginPath();
-    context.arc(-size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
-    context.arc(size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
-    context.fill();
-    context.fillStyle = '#ef5350';
-    context.beginPath();
-    context.arc(-size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
-    context.arc(size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
-  }
-
-  /**
    * 한 플레이어의 필드, 예고줄, 낙하와 폭발 효과를 그린다.
    * @param {PlayerState} player 그릴 플레이어
    * @param {PlayerState} opponent 예고 공격량을 제공할 상대
@@ -1099,7 +1111,6 @@ COMBO : COMBO_POWER
     player.comboPopups.forEach((popup) => drawComboPopup(x, popup));
     context.fillStyle = '#e7f8fa'; context.font = '18px "Black Han Sans"'; context.textAlign = 'left';
     context.fillText(player.name, x, 54);
-    context.fillStyle = '#b3dbe2'; context.font = '14px "Nanum Gothic Coding"'; context.fillText(`DAMAGE ${Math.floor(player.damage)}`, x, 653);
   }
 
   /**
@@ -1123,7 +1134,7 @@ COMBO : COMBO_POWER
         context.fillStyle = 'rgba(216, 242, 245, 0.4)'; context.fillRect(x + 74, 158, 1, 92);
       });
     });
-    drawDante(WIDTH / 2, 380, 0.86);
+    right.controller.drawPortrait(context, WIDTH / 2, 380, 0.86);
     const scores = [
       { player: left, x: 488, color: '#ef8aa0' },
       { player: right, x: 646, color: '#6bbce8' }
@@ -1149,7 +1160,7 @@ COMBO : COMBO_POWER
       const opponent = OPPONENTS[selectedOpponent];
       context.fillStyle = '#0b202c'; context.fillRect(WIDTH / 2 - 170, 215, 340, 258);
       context.strokeStyle = '#ef8aa0'; context.lineWidth = 3; context.strokeRect(WIDTH / 2 - 170, 215, 340, 258);
-      drawDante(WIDTH / 2, 319, 0.8);
+      opponent.createController().drawPortrait(context, WIDTH / 2, 319, 0.8);
       context.fillStyle = '#f5fbfc'; context.font = '28px "Black Han Sans"'; context.fillText(opponent.name, WIDTH / 2, 443);
       OPPONENTS.forEach((entry, index) => {
         const cardX = WIDTH / 2 - 80 + (index - selectedOpponent) * 180;
@@ -1160,7 +1171,7 @@ COMBO : COMBO_POWER
         context.fillStyle = '#f5fbfc'; context.font = '17px "Black Han Sans"'; context.fillText(entry.name, cardX + 80, 536);
       });
       context.fillStyle = '#ef5350'; context.fillRect(440, 600, 250, 58);
-      context.fillStyle = '#fff'; context.font = '20px "Black Han Sans"'; context.fillText(`${opponent.name}와 게임 시작`, 565, 637);
+      context.fillStyle = '#fff'; context.font = '20px "Black Han Sans"'; context.fillText('시작', 565, 637);
       context.fillStyle = '#264b5b'; context.fillRect(710, 600, 130, 58);
       context.fillStyle = '#d8f2f5'; context.font = '18px "Black Han Sans"'; context.fillText('이전', 775, 637);
       return;

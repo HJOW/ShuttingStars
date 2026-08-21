@@ -19,6 +19,34 @@ class CenterOpponentController extends OpponentController {
 }
 ```
 
+## 적 초상화 그리기
+
+`OpponentController`의 `drawPortrait(drawingContext, centerX, centerY, scale)` 메서드를 재정의하면 적 선택 화면과 대전 중 중앙 패널에 표시할 적 이미지를 직접 그릴 수 있습니다. `drawingContext`는 캔버스 2D 컨텍스트이며, `centerX`, `centerY`는 초상화의 중심 좌표, `scale`은 기본 크기 대비 배율입니다.
+
+기본 `OpponentController`의 메서드는 아무것도 그리지 않습니다. 새 적은 필요할 때만 이 메서드를 재정의하면 됩니다.
+
+```js
+class CenterOpponentController extends OpponentController {
+	/**
+	 * 적 선택 화면과 중앙 패널에 초상화를 그린다.
+	 * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+	 * @param {number} centerX 초상화 중심 X 좌표
+	 * @param {number} centerY 초상화 중심 Y 좌표
+	 * @param {number} scale 기본 크기 대비 배율
+	 * @returns {void}
+	 */
+	drawPortrait(drawingContext, centerX, centerY, scale = 1) {
+		drawingContext.save();
+		drawingContext.translate(centerX, centerY);
+		drawingContext.fillStyle = '#42a5f5';
+		drawingContext.beginPath();
+		drawingContext.arc(0, 0, 42 * scale, 0, Math.PI * 2);
+		drawingContext.fill();
+		drawingContext.restore();
+	}
+}
+```
+
 ## 적 등록 방법
 
 새 컨트롤러를 만든 뒤 `webpuyo.js`의 `OPPONENTS` 배열에 항목을 추가합니다. `createController`는 매 게임마다 새 컨트롤러 인스턴스를 반환해야 합니다.
