@@ -69,6 +69,8 @@ Apache 2.0
       this.comboPopups = [];
       this.nextPairs = [this.createPair(), this.createPair()];
       this.aiTarget = 5;
+      this.aiRotation = 0;
+      this.aiSimulations = [];
     }
 
     /**
@@ -95,12 +97,47 @@ Apache 2.0
    */
   class OpponentController {
     /**
+     * 위치와 회전별 가상 착지 결과를 계산하여 AI가 사용할 후보 목록을 준비한다.
+     * @param {PlayerState} player 자동 조작할 플레이어
+     * @returns {void}
+     */
+    prepareTurn(player) {
+      if (!player.active) {
+        player.aiSimulations = [];
+        return;
+      }
+      const simulations = [];
+      for (let rotation = 0; rotation < 4; rotation += 1) {
+        for (let x = 0; x < COLUMNS; x += 1) {
+          const placement = findLandingPlacement(player, x, rotation);
+          if (!placement) continue;
+          simulations.push({
+            x,
+            rotation,
+            positions: activeCells(placement).map(({ x: cellX, y: cellY }) => ({ x: cellX, y: cellY })),
+            attack: player.estimateAttack(player.active.colors, activeCells(placement).map(({ x: cellX, y: cellY }) => ({ x: cellX, y: cellY })) )
+          });
+        }
+      }
+      player.aiSimulations = simulations;
+    }
+
+    /**
      * 현재는 회전 없이 가장 오른쪽 열에 배치한다.
      * @param {PlayerState} player 자동 조작할 플레이어
      * @returns {number} 목표 X 좌표
      */
     chooseTarget(player) {
       return COLUMNS - 1;
+    }
+
+    /**
+     * 현재는 세로 상태를 유지한다. 하위 클래스에서 목표 회전값을 반환해 재정의할 수 있다.
+     * @param {PlayerState} player 자동 조작할 플레이어
+     * @returns {number} 목표 회전값 (0: 위, 1: 오른쪽, 2: 아래, 3: 왼쪽)
+     */
+    chooseRotate(player) {
+      return 0;
     }
 
     /**
@@ -168,16 +205,14 @@ Apache 2.0
 
       let bestColumn = stackDirection;
       let bestAttack = -1;
-      for (let x = 0; x < COLUMNS; x += 1) {
-        let y = 0;
-        while (y < ROWS && player.board[y][x]) y += 1;
-        if (y > ROWS - 2) continue;
-        const attack = player.estimateAttack(player.active.colors, [{ x, y }, { x, y: y + 1 }]);
-        if (attack >= bestAttack) {
-          bestAttack = attack;
-          bestColumn = x;
-        }
-      }
+      player.aiSimulations
+        .filter((simulation) => simulation.rotation === 0)
+        .forEach((simulation) => {
+          if (simulation.attack >= bestAttack) {
+            bestAttack = simulation.attack;
+            bestColumn = simulation.x;
+          }
+        });
       return bestColumn;
     }
 
@@ -283,7 +318,7 @@ Apache 2.0
   function startGame() {
     const opponent = OPPONENTS[selectedOpponent];
     const controller = opponent.createController();
-    game = { running: true, winner: null, themeController: controller, players: [new PlayerState('PLAYER 1', FIELD_LEFT), new PlayerState(opponent.name, FIELD_RIGHT, controller)] };
+    game = { running: true, paused: false, winner: null, themeController: controller, players: [new PlayerState('PLAYER 1', FIELD_LEFT), new PlayerState(opponent.name, FIELD_RIGHT, controller)] };
     enterControl(game.players[0]);
     enterControl(game.players[1]);
   }
@@ -298,7 +333,11 @@ Apache 2.0
     player.fallTimer = 0;
     player.active = { x: 2, y: 12, rotation: 0, colors: player.nextPairs.shift() };
     player.nextPairs.push(player.createPair());
-    player.aiTarget = player.controller ? player.controller.chooseTarget(player) : 0;
+    if (player.controller) {
+      player.controller.prepareTurn(player);
+      player.aiTarget = player.controller.chooseTarget(player);
+      player.aiRotation = ((player.controller.chooseRotate(player) % 4) + 4) % 4;
+    }
   }
 
   /**
@@ -323,6 +362,23 @@ Apache 2.0
    */
   function canPlace(player, active) {
     return activeCells(active).every((cell) => cell.x >= 0 && cell.x < COLUMNS && cell.y >= 0 && cell.y < ROWS && !player.board[cell.y][cell.x]);
+  }
+
+  /**
+   * 지정한 회전과 X 좌표에서 뿌요 쌍이 실제로 착지할 위치를 가상으로 구한다.
+   * @param {PlayerState} player 대상 플레이어
+   * @param {number} x 회전축이 될 X 좌표
+   * @param {number} rotation 목표 회전값
+   * @returns {{x:number, y:number, rotation:number, colors:string[]}|null} 착지 상태 또는 불가능 시 null
+   */
+  function findLandingPlacement(player, x, rotation) {
+    if (!player.active) return null;
+    let placement = { ...player.active, x, rotation };
+    if (!canPlace(player, placement)) return null;
+    while (canPlace(player, { ...placement, y: placement.y - 1 })) {
+      placement = { ...placement, y: placement.y - 1 };
+    }
+    return placement;
   }
 
   /**
@@ -581,7 +637,17 @@ Apache 2.0
       .map((popup) => ({ ...popup, elapsed: popup.elapsed + delta }))
       .filter((popup) => popup.elapsed < 2000);
     if (player.phase === 'control') {
-      if (player.controller && player.active.x !== player.aiTarget) moveActive(player, player.active.x < player.aiTarget ? 1 : -1, 0);
+      if (player.controller) {
+        const rotationDelta = (player.aiRotation - player.active.rotation + 4) % 4;
+        if (rotationDelta) {
+          const direction = rotationDelta === 3 ? -1 : 1;
+          if (!rotateActive(player, direction) && player.active.x !== player.aiTarget) {
+            moveActive(player, player.active.x < player.aiTarget ? 1 : -1, 0);
+          }
+        } else if (player.active.x !== player.aiTarget) {
+          moveActive(player, player.active.x < player.aiTarget ? 1 : -1, 0);
+        }
+      }
       player.fallTimer += delta;
       if (player.fallTimer >= (player.isAi ? 290 : 520)) {
         player.fallTimer = 0;
@@ -925,6 +991,30 @@ Apache 2.0
   }
 
   /**
+   * 진행 중인 화면 위에 일시정지 오버레이와 조작 버튼을 그린다.
+   * @returns {void}
+   */
+  function drawPauseOverlay() {
+    context.fillStyle = 'rgba(3, 11, 19, 0.72)';
+    context.fillRect(0, 0, WIDTH, HEIGHT);
+    context.textAlign = 'center';
+    context.fillStyle = '#f5fbfc';
+    context.font = '48px "Black Han Sans"';
+    context.fillText('일시정지', WIDTH / 2, 322);
+    context.fillStyle = '#4cc9b0';
+    context.fillRect(470, 376, 150, 64);
+    context.fillStyle = '#ef5350';
+    context.fillRect(660, 376, 150, 64);
+    context.fillStyle = '#ffffff';
+    context.font = '23px "Black Han Sans"';
+    context.fillText('재개', 545, 417);
+    context.fillText('종료', 735, 417);
+    context.fillStyle = '#b3dbe2';
+    context.font = '15px "Nanum Gothic Coding"';
+    context.fillText('ESC 키로 재개', WIDTH / 2, 478);
+  }
+
+  /**
    * 현재 메뉴 또는 실행 중인 게임의 한 프레임을 렌더링한다.
    * @returns {void}
    */
@@ -933,7 +1023,9 @@ Apache 2.0
     if (!game) { drawMenu(); return; }
     context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
     drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter();
-    if (!game.running) {
+    if (game.paused) {
+      drawPauseOverlay();
+    } else if (!game.running) {
       context.fillStyle = 'rgba(3, 11, 19, 0.78)'; context.fillRect(0, 0, WIDTH, HEIGHT);
       context.textAlign = 'center'; context.fillStyle = '#f7c843'; context.font = '48px "Black Han Sans"'; context.fillText(`${game.winner.name} 승리!`, WIDTH / 2, 318);
       context.fillStyle = '#d8f2f5'; context.font = '22px "Nanum Gothic Coding"'; context.fillText('ENTER 또는 화면 클릭으로 메인 화면', WIDTH / 2, 376);
@@ -948,7 +1040,7 @@ Apache 2.0
   function frame(time) {
     const delta = Math.min(50, time - lastTime || 0);
     lastTime = time;
-    if (game && game.running) {
+    if (game && game.running && !game.paused) {
       updatePlayer(game.players[0], game.players[1], delta);
       updatePlayer(game.players[1], game.players[0], delta);
     }
@@ -983,7 +1075,11 @@ Apache 2.0
     if (!game.running) {
       return;
     }
-    if (key === 'escape') { game = null; return; }
+    if (key === 'escape') {
+      game.paused = !game.paused;
+      return;
+    }
+    if (game.paused) return;
     const player = game.players[0];
     if (player.phase !== 'control') return;
     if (key === 'arrowleft') moveActive(player, -1, 0);
@@ -1009,10 +1105,19 @@ Apache 2.0
       menuScreen = 'title';
       return;
     }
-    if (game) return;
     const bounds = canvas.getBoundingClientRect();
     const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
     const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+    if (game && game.paused) {
+      if (x >= 470 && x <= 620 && y >= 376 && y <= 440) {
+        game.paused = false;
+      } else if (x >= 660 && x <= 810 && y >= 376 && y <= 440) {
+        game = null;
+        menuScreen = 'title';
+      }
+      return;
+    }
+    if (game) return;
     if (menuScreen === 'title') {
       if (x >= WIDTH / 2 - 145 && x <= WIDTH / 2 + 145 && y >= 358 && y <= 424) menuScreen = 'opponent';
     } else {

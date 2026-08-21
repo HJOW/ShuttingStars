@@ -25,7 +25,7 @@ const { OpponentController, registerOpponent, initialize } = require('./webpuyo.
 
 ## 기본 구조
 
-새 상대는 `WebPuyo.OpponentController`를 상속하는 클래스로 만듭니다. 현재 게임 루프는 CPU 플레이어의 `controller`가 반환한 목표 X 좌표까지 자동으로 이동시킵니다.
+새 상대는 `WebPuyo.OpponentController`를 상속하는 클래스로 만듭니다. 게임 루프는 컨트롤러가 결정한 목표 회전값으로 뿌요 쌍을 돌린 뒤, 목표 X 좌표까지 이동시킵니다.
 
 ```js
 class CenterOpponentController extends WebPuyo.OpponentController {
@@ -117,13 +117,39 @@ class NightOpponentController extends WebPuyo.OpponentController {
 
 ## 알고리즘 작성 방법
 
-`chooseTarget(player)`에서는 현재 CPU 필드를 읽고, 이번 뿌요 쌍을 어느 열에 둘지 결정합니다.
+CPU 한 차례를 시작할 때 게임은 `prepareTurn(player)`, `chooseTarget(player)`, `chooseRotate(player)` 순서로 호출합니다. `prepareTurn()`은 위치와 회전별 가상 착지 결과 및 예상 공격력을 `player.aiSimulations`에 준비합니다. 하위 클래스가 재정의할 때는 `super.prepareTurn(player)`을 먼저 호출해 기본 후보 생성을 유지해야 합니다. 그 다음 두 선택 메서드는 같은 후보 목록을 읽어 서로 일관된 목표 열과 회전을 반환할 수 있습니다.
+
+`chooseTarget(player)`에서는 현재 CPU 필드를 읽고, 이번 뿌요 쌍을 어느 열에 둘지 결정합니다. `chooseRotate(player)`는 목표 회전값을 반환합니다. 기본값은 세로 상태인 `0`이며, `1`은 오른쪽, `2`는 아래, `3`은 왼쪽입니다.
 
 - `player.board[y][x]`에는 해당 칸의 색상 문자열 또는 빈 칸의 `null`이 있습니다.
 - 좌표는 왼쪽 아래가 `(0, 0)`입니다. `x`는 `0`부터 `5`, `y`는 `0`부터 `12`입니다.
 - 현재 떨어지는 쌍은 `player.active`에 있고, 색상은 `player.active.colors` 배열에 있습니다.
+- `player.aiSimulations`의 각 항목에는 `x`, `rotation`, `positions`, `attack`이 있습니다. `positions`는 실제 착지 좌표이고 `attack`은 해당 배치의 예상 공격력입니다.
+- 기본 `prepareTurn()`은 현재 보드에서 실제로 착지할 수 있는 후보만 목록에 넣습니다. 따라서 AI는 존재하지 않는 후보를 별도로 걸러낼 필요가 없습니다.
 - 반환값은 `0`부터 `5` 사이의 목표 X 좌표여야 합니다.
-- 현재 기본 게임 루프는 수평 이동만 수행하므로, 유효한 목표는 세로 상태에서 두 뿌요를 놓을 수 있는 열이어야 합니다.
+- 회전값은 `0`부터 `3` 사이여야 하며, 게임 루프는 회전과 수평 이동을 모두 수행합니다.
+
+예상 공격력이 가장 높은 배치의 열과 회전을 함께 선택하는 예시는 다음과 같습니다.
+
+```js
+class AttackOpponentController extends WebPuyo.OpponentController {
+	prepareTurn(player) {
+		super.prepareTurn(player);
+		this.bestMove = player.aiSimulations.reduce(
+			(best, candidate) => candidate.attack >= best.attack ? candidate : best,
+			{ x: 5, rotation: 0, attack: -1 }
+		);
+	}
+
+	chooseTarget(player) {
+		return this.bestMove.x;
+	}
+
+	chooseRotate(player) {
+		return this.bestMove.rotation;
+	}
+}
+```
 
 간단한 알고리즘은 각 열의 높이를 구한 뒤, 가장 낮은 열을 선택하는 방식입니다.
 
@@ -165,14 +191,5 @@ const attack = player.estimateAttack(
 	[{ x: 2, y: 4 }, { x: 2, y: 5 }]
 );
 ```
-
-## 회전 AI로 확장하기
-
-현재 `OpponentController`는 목표 열만 반환하며, CPU는 회전하지 않습니다. 회전 AI가 필요하면 다음 단계로 확장할 수 있습니다.
-
-1. `OpponentController`에 목표 회전을 반환하는 메서드나 행동 목록 메서드를 추가합니다.
-2. `PlayerState`에 CPU의 회전 목표를 저장합니다.
-3. `updatePlayer()`의 `control` 단계에서 `rotateActive()`를 호출해 목표 회전에 도달시킵니다.
-4. 회전 후보마다 `canPlace()`로 충돌을 검사하고, 벽 밀기와 180도 회전 규칙을 그대로 사용합니다.
 
 AI는 `OpponentController` 내부에 유지하면 플레이어 선택 화면을 추가할 때도 컨트롤러 인스턴스만 교체하면 됩니다.
