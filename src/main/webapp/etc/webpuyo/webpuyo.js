@@ -21,9 +21,9 @@ Apache 2.0
     red: '#ef5350', green: '#66bb6a', yellow: '#f7c843', blue: '#42a5f5', purple: '#ab73e8',
     garbage: '#d3edf4'
   };
-  const COMBO_POWER = [0, 1, 6, 9, 14, 20, 40, 80, 120, 170, 240, 360, 480, 600, 720, 840, 950, 975, 990]; // 연쇄별 공격 위력
+  const COMBO_POWER = [0, 1, 6, 9, 14, 20, 40, 80, 120, 170, 240, 360, 480, 600, 720, 840, 950, 975, 990]; // 연쇄별 공격 위력 지정
   const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  // 싹쓸이 성공 시 상대 DAMAGE에 즉시 더할 수치
+  // 싹쓸이 성공 시 상대방에게 즉시 보낼 방해뿌요 갯수
   const ALL_CLEAR_DAMAGE = 12;
   // 한국어 원문을 키로 사용하는 화면 문구 번역표. 외부 스크립트는 registerLanguage()로 언어별 항목을 추가할 수 있다.
   const stringTable = {
@@ -146,12 +146,26 @@ Apache 2.0
     estimateAttack(colors, positions) {
       return estimateAttack(this.board, colors, positions);
     }
+    
+    /**
+     * 현재 보드에 지정한 뿌요를 놓았을 때의 예상 연쇄 수를 계산한다.
+     * @param {string[]} colors 배치할 두 뿌요의 색상
+     * @param {{x:number, y:number}[]} positions 두 뿌요의 보드 좌표
+     * @returns {number} 인접 방해뿌요 제거까지 반영한 예상 연쇄 수
+     */
+    estimateCombo(colors, positions) {
+      return estimateCombo(this.board, colors, positions);
+    }
   }
 
   /**
    * 자동 플레이어의 이동 목표를 결정하는 확장 지점이다.
    */
   class Enemy {
+    constructor() {
+      this.sortPriority = 1;
+    }
+
     /**
      * 적의 화면 표시 이름을 반환한다.
      * @returns {string} 적 이름
@@ -231,10 +245,11 @@ Apache 2.0
      * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
      * @param {number} centerX 초상화 중심 X 좌표
      * @param {number} centerY 초상화 중심 Y 좌표
-     * @param {number} scale 기본 크기 대비 배율
+    * @param {number} scale 기본 크기 대비 배율
+    * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
      * @returns {void}
      */
-    drawPortrait(drawingContext, centerX, centerY, scale = 1) {
+      drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
     }
 
     /**
@@ -271,6 +286,103 @@ Apache 2.0
     }
   }
 
+    /**
+     * 안드로말리우스는 좌우로 기반을 쌓은 뒤 예상 공격이 큰 위치를 노린다.
+     */
+  class Andromalius extends Enemy {
+      constructor() {
+        super();
+        this.phase = 'initialLeft';
+        this.turnsRemaining = this.randomTurns();
+      }
+
+      /**
+       * 단탈리온과 같은 방식으로 일반 배치 턴 수를 정한다.
+       * @returns {number} 6부터 8 사이의 일반 배치 턴 수
+       */
+      randomTurns() {
+        return 6 + Math.floor(Math.random() * 3);
+      }
+
+      /**
+       * @returns {string} 적 이름
+       */
+      getName() {
+        return '안드로말리우스';
+      }
+
+      /**
+       * @param {PlayerState} player 자동 조작할 플레이어
+       * @returns {number} 목표 X 좌표
+       */
+      chooseTarget(player) {
+        if (player.board[9][2] || this.phase === 'simulation') {
+          const bestColumn = findBestAttackColumn(player, 0);
+          this.phase = 'repeatLeft';
+          if (!player.board[9][2]) this.turnsRemaining = 6;
+          return bestColumn;
+        }
+
+        const target = this.phase === 'initialRight' ? COLUMNS - 1 : 0;
+        this.turnsRemaining -= 1;
+        if (this.turnsRemaining === 0) {
+          if (this.phase === 'initialLeft') {
+            this.phase = 'initialRight';
+            this.turnsRemaining = this.randomTurns();
+          } else {
+            this.phase = 'simulation';
+          }
+        }
+        return target;
+      }
+
+      /**
+       * 단탈리온과 구별되는 갑각형 악마 모습을 그린다.
+       * @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트
+       * @param {number} centerX 캐릭터 중심 X 좌표
+       * @param {number} centerY 캐릭터 중심 Y 좌표
+       * @param {number} scale 기본 크기 대비 배율
+       * @returns {void}
+       */
+      drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+        const size = 72 * scale;
+        drawingContext.save();
+        drawingContext.translate(centerX, centerY);
+        drawingContext.strokeStyle = '#164c50';
+        drawingContext.fillStyle = '#237f79';
+        drawingContext.lineWidth = 9 * scale;
+        for (const direction of [-1, 1]) {
+          drawingContext.beginPath();
+          drawingContext.moveTo(direction * size * 0.32, size * 0.1);
+          drawingContext.quadraticCurveTo(direction * size * 0.9, size * 0.22, direction * size * 0.78, size * 0.68);
+          drawingContext.stroke();
+        }
+        drawingContext.beginPath();
+        drawingContext.ellipse(0, size * 0.18, size * 0.56, size * 0.63, 0, 0, Math.PI * 2);
+        drawingContext.fill();
+        drawingContext.stroke();
+        drawingContext.fillStyle = '#9ad9b8';
+        drawingContext.beginPath();
+        drawingContext.arc(-size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
+        drawingContext.arc(size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
+        drawingContext.fill();
+        drawingContext.fillStyle = '#172535';
+        drawingContext.beginPath();
+        drawingContext.arc(-size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
+        drawingContext.arc(size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
+        drawingContext.fill();
+        drawingContext.fillStyle = '#d6a63a';
+        drawingContext.beginPath();
+        drawingContext.moveTo(0, size * 0.12);
+        drawingContext.lineTo(-size * 0.12, size * 0.42);
+        drawingContext.lineTo(size * 0.12, size * 0.42);
+        drawingContext.closePath();
+        drawingContext.fill();
+        drawPortraitEmotion(drawingContext, size, expression, -size * 0.06, size * 0.19);
+        drawingContext.restore();
+      }
+    }
+
   /**
   * 단탈리온의 배치 목표를 결정한다. 10~15회 일반 배치 후 예상 공격이 가장 큰 열을 고른다.
    */
@@ -284,6 +396,7 @@ Apache 2.0
 
     constructor() {
       super();
+      this.sortPriority = 2;
       this.turnCount = 0;
       this.turnsUntilSimulation = this.randomTurnsUntilSimulation();
     }
@@ -301,20 +414,12 @@ Apache 2.0
      * @returns {number} 목표 X 좌표
      */
     chooseTarget(player) {
+      if (player.board[9][2]) return findBestAttackColumn(player, 0);
       this.turnCount += 1;
-      const stackDirection = player.board[9][2] ? 0 : COLUMNS - 1;
+      const stackDirection = COLUMNS - 1;
       if (this.turnCount <= this.turnsUntilSimulation || !player.active) return stackDirection;
 
-      let bestColumn = stackDirection;
-      let bestAttack = -1;
-      player.aiSimulations
-        .filter((simulation) => simulation.rotation === 0)
-        .forEach((simulation) => {
-          if (simulation.attack >= bestAttack) {
-            bestAttack = simulation.attack;
-            bestColumn = simulation.x;
-          }
-        });
+      const bestColumn = findBestAttackColumn(player, stackDirection);
       this.turnCount = 0;
       this.turnsUntilSimulation = this.randomTurnsUntilSimulation();
       return bestColumn;
@@ -328,7 +433,7 @@ Apache 2.0
      * @param {number} scale 기본 크기 대비 배율
      * @returns {void}
      */
-    drawPortrait(drawingContext, centerX, centerY, scale = 1) {
+    drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
       const size = 72 * scale;
       drawingContext.save();
       drawingContext.translate(centerX, centerY);
@@ -388,7 +493,52 @@ Apache 2.0
       drawingContext.arc(-size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
       drawingContext.arc(size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
       drawingContext.fill();
+      drawPortraitEmotion(drawingContext, size, expression, -size * 0.31, size * 0.16);
       drawingContext.restore();
+    }
+  }
+
+  /**
+   * 적 초상화 위에 위기 또는 패배 표정을 겹쳐 그린다.
+   * @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트
+   * @param {number} size 초상화 기준 크기
+   * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
+   * @param {number} eyeY 눈 중심 Y 좌표
+   * @param {number} eyeSpacing 눈 중심의 X축 거리
+   * @returns {void}
+   */
+  function drawPortraitEmotion(drawingContext, size, expression, eyeY, eyeSpacing) {
+    if (expression === 'crisis') {
+      drawingContext.strokeStyle = '#172535';
+      drawingContext.lineWidth = Math.max(2, size * 0.045);
+      drawingContext.beginPath();
+      drawingContext.moveTo(-eyeSpacing * 1.65, eyeY - size * 0.19);
+      drawingContext.lineTo(-eyeSpacing * 0.35, eyeY - size * 0.13);
+      drawingContext.moveTo(eyeSpacing * 1.65, eyeY - size * 0.19);
+      drawingContext.lineTo(eyeSpacing * 0.35, eyeY - size * 0.13);
+      drawingContext.stroke();
+      drawingContext.fillStyle = '#8dd8ef';
+      drawingContext.beginPath();
+      drawingContext.ellipse(eyeSpacing * 1.85, eyeY + size * 0.18, size * 0.075, size * 0.12, 0.25, 0, Math.PI * 2);
+      drawingContext.fill();
+      drawingContext.strokeStyle = '#d9f8ff';
+      drawingContext.lineWidth = Math.max(1, size * 0.018);
+      drawingContext.stroke();
+    } else if (expression === 'defeated') {
+      drawingContext.fillStyle = '#75c9f0';
+      [-eyeSpacing, eyeSpacing].forEach((eyeX) => {
+        drawingContext.beginPath();
+        drawingContext.ellipse(eyeX, eyeY + size * 0.2, size * 0.09, size * 0.2, 0, 0, Math.PI * 2);
+        drawingContext.fill();
+      });
+      drawingContext.strokeStyle = '#e7f8fa';
+      drawingContext.lineWidth = Math.max(1, size * 0.018);
+      drawingContext.beginPath();
+      drawingContext.moveTo(-eyeSpacing, eyeY + size * 0.04);
+      drawingContext.lineTo(-eyeSpacing, eyeY + size * 0.3);
+      drawingContext.moveTo(eyeSpacing, eyeY + size * 0.04);
+      drawingContext.lineTo(eyeSpacing, eyeY + size * 0.3);
+      drawingContext.stroke();
     }
   }
 
@@ -404,11 +554,44 @@ Apache 2.0
     }
   }
 
+  /**
+   * 세로 배치 후보 중 예상 공격력이 가장 높은 열을 고른다. 동점이면 더 오른쪽 열을 선택한다.
+   * @param {PlayerState} player 자동 조작할 플레이어
+   * @param {number} fallback 유효한 후보가 없을 때 사용할 열
+   * @returns {number} 목표 X 좌표
+   */
+  function findBestAttackColumn(player, fallback) {
+    let bestColumn = fallback;
+    let bestAttack = -1;
+    player.aiSimulations
+      .filter((simulation) => simulation.rotation === 0)
+      .forEach((simulation) => {
+        if (simulation.attack >= bestAttack) {
+          bestAttack = simulation.attack;
+          bestColumn = simulation.x;
+        }
+      });
+    return bestColumn;
+  }
+
   const OPPONENTS = [
     {
+      sortPriority: 1,
+      createController: () => new Andromalius()
+    },
+    {
+      sortPriority: 2,
       createController: () => new Dantalion()
     }
   ];
+
+  /**
+   * 적 선택 화면에 표시할 순서로 적 목록을 정렬한다.
+   * @returns {void}
+   */
+  function sortOpponents() {
+    OPPONENTS.sort((left, right) => left.sortPriority - right.sortPriority);
+  }
 
   /**
    * 외부 스크립트에서 새 적을 등록한다.
@@ -426,7 +609,8 @@ Apache 2.0
     if (typeof controller.getName() !== 'string' || !controller.getName()) {
       throw new TypeError('Enemy의 getName은 비어 있지 않은 문자열을 반환해야 합니다.');
     }
-    OPPONENTS.push({ createController: opponent.createController });
+    OPPONENTS.push({ createController: opponent.createController, sortPriority: controller.sortPriority });
+    sortOpponents();
   }
 
   /**
@@ -715,6 +899,41 @@ Apache 2.0
   }
 
   /**
+   * 두 뿌요를 가상 배치하여 발생 가능한 연쇄 수를 계산한다.
+   * @param {(string|null)[][]} sourceBoard 배치 전 보드
+   * @param {string[]} colors 배치할 두 뿌요 색상
+   * @param {{x:number, y:number}[]} positions 배치할 두 뿌요 좌표
+   * @returns {number} 연쇄 전체의 예상 연쇄 수
+   */
+  function estimateCombo(sourceBoard, colors, positions) {
+    if (!Array.isArray(colors) || !Array.isArray(positions) || colors.length !== 2 || positions.length !== 2) return 0;
+    let board = sourceBoard.map((row) => [...row]);
+    for (let index = 0; index < 2; index += 1) {
+      const { x, y } = positions[index] || {};
+      if (!COLORS.includes(colors[index]) || !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= ROWS || board[y][x]) return 0;
+      board[y][x] = colors[index];
+    }
+    board = collapseBoard(board);
+    let combo = 0;
+    while (true) {
+      const exploding = findExplosionsOnBoard(board);
+      if (!exploding.length) return combo;
+      combo += 1;
+      const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
+      exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
+        const nextX = x + deltaX;
+        const nextY = y + deltaY;
+        if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && board[nextY][nextX] === 'garbage') removed.add(`${nextX},${nextY}`);
+      }));
+      removed.forEach((key) => {
+        const [x, y] = key.split(',').map(Number);
+        board[y][x] = null;
+      });
+      board = collapseBoard(board);
+    }
+  }
+
+  /**
    * 폭발 점수와 공격을 계산하고 인접 방해뿌요까지 제거한다.
    * @param {PlayerState} player 공격한 플레이어
    * @param {PlayerState} opponent 공격받는 플레이어
@@ -737,7 +956,7 @@ Apache 2.0
       const power = COMBO_POWER[Math.min(player.combo, 18)] || 999;
       player.addPoint += exploding.length * power;
       player.attack += exploding.length * power / 4;
-      const cancelledAttack = Math.min(player.attack, opponent.attack);
+      const cancelledAttack = Math.min(Math.floor(player.attack), Math.floor(opponent.attack));
       player.attack -= cancelledAttack;
       opponent.attack -= cancelledAttack;
       const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
@@ -750,10 +969,12 @@ Apache 2.0
     }
     player.point += player.addPoint;
     player.addPoint = 0;
-    const blocked = Math.min(player.damage, player.attack);
+    const blocked = Math.min(Math.floor(player.damage), Math.floor(player.attack));
     player.damage -= blocked;
-    opponent.damage += player.attack - blocked;
-    player.attack = 0;
+    player.attack -= blocked;
+    const deliveredAttack = Math.floor(player.attack);
+    opponent.damage += deliveredAttack;
+    player.attack -= deliveredAttack;
     player.combo = 0;
     player.phase = 'garbage';
   }
@@ -1164,6 +1385,21 @@ Apache 2.0
   }
 
   /**
+   * 적의 현재 필드와 공격 상태에 맞는 중앙 초상화 표정을 결정한다.
+   * @param {PlayerState} enemy 적 플레이어
+   * @param {PlayerState} opponent 적의 상대 플레이어
+   * @returns {'normal'|'crisis'|'defeated'} 중앙 초상화 표정
+   */
+  function getEnemyPortraitExpression(enemy, opponent) {
+    if (game.ending?.loser === enemy) return 'defeated';
+    const occupiedCells = enemy.board
+      .slice(0, VISIBLE_ROWS)
+      .reduce((count, row) => count + row.filter((cell) => cell !== null).length, 0);
+    if (occupiedCells >= COLUMNS * VISIBLE_ROWS / 2 || enemy.damage + opponent.attack >= 30) return 'crisis';
+    return 'normal';
+  }
+
+  /**
   * 양쪽의 다음 2쌍, 단탈리온 이미지와 중앙 점수 패널을 그린다.
    * @returns {void}
    */
@@ -1185,7 +1421,7 @@ Apache 2.0
         context.fillStyle = 'rgba(216, 242, 245, 0.4)'; context.fillRect(x + 74, 158, 1, 92);
       });
     });
-    right.controller.drawPortrait(context, WIDTH / 2, 380, 0.86);
+    right.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, getEnemyPortraitExpression(right, left));
     const scores = [
       { player: left, x: 488, color: '#ef8aa0' },
       { player: right, x: 646, color: '#6bbce8' }
@@ -1252,6 +1488,21 @@ Apache 2.0
       context.strokeStyle = opponentMenuFocus === 1 ? '#f7c843' : '#ef8aa0'; context.lineWidth = opponentMenuFocus === 1 ? 4 : 3; context.strokeRect(WIDTH / 2 - 170, 280, 340, 190);
       opponent.createController().drawPortrait(context, WIDTH / 2, 360, 0.7);
       context.fillStyle = '#f5fbfc'; context.font = '28px "Black Han Sans"'; context.fillText(opponent.createController().getName(), WIDTH / 2, 450);
+      if (opponentMenuFocus === 1) {
+        context.fillStyle = '#f7c843';
+        context.beginPath();
+        context.moveTo(WIDTH / 2 - 205, 375);
+        context.lineTo(WIDTH / 2 - 175, 350);
+        context.lineTo(WIDTH / 2 - 175, 400);
+        context.closePath();
+        context.fill();
+        context.beginPath();
+        context.moveTo(WIDTH / 2 + 205, 375);
+        context.lineTo(WIDTH / 2 + 175, 350);
+        context.lineTo(WIDTH / 2 + 175, 400);
+        context.closePath();
+        context.fill();
+      }
       OPPONENTS.forEach((entry, index) => {
         const cardX = WIDTH / 2 - 80 + (index - selectedOpponent) * 180;
         context.fillStyle = index === selectedOpponent ? '#563068' : '#0b202c'; context.fillRect(cardX, 485, 160, 48);

@@ -1,6 +1,6 @@
 # 새로운 AI 상대 추가하기
 
-`webpuyo.js`는 CommonJS와 브라우저 스크립트 방식 모두에서 사용할 수 있는 라이브러리입니다. `Enemy`는 CPU 조작 알고리즘과 게임 화면 테마를 넣기 위한 기본 클래스입니다. 메인 화면에서 게임 시작을 선택하면 적 선택 화면이 열리며, 외부 파일에서 등록한 상대를 선택해 대전합니다.
+`webpuyo.js`는 CommonJS와 브라우저 스크립트 방식 모두에서 사용할 수 있는 라이브러리입니다. `Enemy`는 CPU 조작 알고리즘과 게임 화면 테마를 넣기 위한 기본 클래스입니다. 메인 화면에서 게임 시작을 선택하면 적 선택 화면이 열리며, 외부 파일에서 등록한 상대를 선택해 대전합니다. `sortPriority` 멤버 변수의 기본값은 `1`이며, 작은 값의 적이 적 선택 화면에서 왼쪽에 표시됩니다.
 
 ## 초기화
 
@@ -66,7 +66,7 @@ class CenterEnemy extends WebPuyo.Enemy {
 
 ## 적 초상화 그리기
 
-`Enemy`의 `drawPortrait(drawingContext, centerX, centerY, scale)` 메서드를 재정의하면 적 선택 화면과 대전 중 중앙 패널에 표시할 적 이미지를 직접 그릴 수 있습니다. `drawingContext`는 캔버스 2D 컨텍스트이며, `centerX`, `centerY`는 초상화의 중심 좌표, `scale`은 기본 크기 대비 배율입니다.
+`Enemy`의 `drawPortrait(drawingContext, centerX, centerY, scale, expression)` 메서드를 재정의하면 적 선택 화면과 대전 중 중앙 패널에 표시할 적 이미지를 직접 그릴 수 있습니다. `drawingContext`는 캔버스 2D 컨텍스트이며, `centerX`, `centerY`는 초상화의 중심 좌표, `scale`은 기본 크기 대비 배율입니다. `expression`은 `'normal'`, `'crisis'`, `'defeated'` 중 하나이며, 대전 중 중앙 패널에서는 적 필드가 절반 이상 차거나 `DAMAGE + 상대 ATTACK`이 30 이상이면 `'crisis'`, 적 패배 연출 중이면 `'defeated'`가 전달됩니다.
 
 기본 `Enemy`의 메서드는 아무것도 그리지 않습니다. 새 적은 필요할 때만 이 메서드를 재정의하면 됩니다.
 
@@ -80,7 +80,7 @@ class CenterEnemy extends WebPuyo.Enemy {
 	 * @param {number} scale 기본 크기 대비 배율
 	 * @returns {void}
 	 */
-	drawPortrait(drawingContext, centerX, centerY, scale = 1) {
+	drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
 		drawingContext.save();
 		drawingContext.translate(centerX, centerY);
 		drawingContext.fillStyle = '#42a5f5';
@@ -232,6 +232,17 @@ AI는 `player.estimateAttack(colors, positions)`으로 특정 두 뿌요를 놓�
 
 ```js
 const attack = player.estimateAttack(
+	[player.active.colors[0], player.active.colors[1]],
+	[{ x: 2, y: 4 }, { x: 2, y: 5 }]
+);
+```
+
+## 예상 연쇄 계산
+
+`player.estimateCombo(colors, positions)`은 `estimateAttack()`과 동일한 인수를 받고, 가상 배치에서 발생할 전체 연쇄 수를 숫자로 반환합니다. 현재 보드는 변경하지 않으며, 유효하지 않은 색상이나 좌표를 전달하면 `0`을 반환합니다.
+
+```js
+const combo = player.estimateCombo(
 	[player.active.colors[0], player.active.colors[1]],
 	[{ x: 2, y: 4 }, { x: 2, y: 5 }]
 );
