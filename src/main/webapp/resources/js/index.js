@@ -187,6 +187,10 @@ window.addEventListener('load', async function() {
             window.open('./exit.html', '_blank');
         });
 
+        homepageDiv.querySelector('.a_ss_webpuyo').addEventListener('click', function() {
+            fStart('./etc/webpuyo.html');
+        });
+
         // 창 크기 변경 이벤트
         const fResize = function() {
             iframeMain.style.height = (window.innerHeight - topbar.offsetHeight - 20) + 'px';
