@@ -1,13 +1,34 @@
 # 새로운 AI 상대 추가하기
 
-`webpuyo.js`의 `OpponentController`는 CPU의 조작 알고리즘을 넣기 위한 기본 클래스입니다. 현재 구현은 회전하지 않고 오른쪽 끝으로 이동하는 가장 단순한 상대입니다. 메인 화면에서 게임 시작을 선택하면 적 선택 화면이 열리며, `OPPONENTS`에 등록된 상대를 선택해 대전합니다.
+`webpuyo.js`는 CommonJS와 브라우저 스크립트 방식 모두에서 사용할 수 있는 라이브러리입니다. `OpponentController`는 CPU 조작 알고리즘과 게임 화면 테마를 넣기 위한 기본 클래스입니다. 메인 화면에서 게임 시작을 선택하면 적 선택 화면이 열리며, 외부 파일에서 등록한 상대를 선택해 대전합니다.
+
+## 초기화
+
+라이브러리를 불러오는 것만으로는 게임이 초기화되지 않습니다. 브라우저에서는 모든 적 등록 스크립트를 불러온 뒤 `WebPuyo.initialize()`를 명시적으로 호출해야 메뉴와 입력 처리가 시작됩니다.
+
+```html
+<script defer src="webpuyo.js"></script>
+<script defer src="my-opponent.js"></script>
+<script defer src="game-bootstrap.js"></script>
+```
+
+```js
+// game-bootstrap.js
+WebPuyo.initialize('webpuyo_canvas');
+```
+
+Node.js CommonJS 환경에서는 아래처럼 라이브러리를 불러올 수 있습니다. DOM이 없는 Node.js에서는 `initialize()`를 호출할 수 없지만, 컨트롤러 클래스와 적 등록 API는 사용할 수 있습니다.
+
+```js
+const { OpponentController, registerOpponent, initialize } = require('./webpuyo.js');
+```
 
 ## 기본 구조
 
-새 상대는 `OpponentController`를 상속하는 클래스로 만듭니다. 현재 게임 루프는 CPU 플레이어의 `controller`가 반환한 목표 X 좌표까지 자동으로 이동시킵니다.
+새 상대는 `WebPuyo.OpponentController`를 상속하는 클래스로 만듭니다. 현재 게임 루프는 CPU 플레이어의 `controller`가 반환한 목표 X 좌표까지 자동으로 이동시킵니다.
 
 ```js
-class CenterOpponentController extends OpponentController {
+class CenterOpponentController extends WebPuyo.OpponentController {
 	/**
 	 * 뿌요 쌍을 중앙 열로 이동시킨다.
 	 * @param {PlayerState} player 자동 조작할 플레이어
@@ -26,7 +47,7 @@ class CenterOpponentController extends OpponentController {
 기본 `OpponentController`의 메서드는 아무것도 그리지 않습니다. 새 적은 필요할 때만 이 메서드를 재정의하면 됩니다.
 
 ```js
-class CenterOpponentController extends OpponentController {
+class CenterOpponentController extends WebPuyo.OpponentController {
 	/**
 	 * 적 선택 화면과 중앙 패널에 초상화를 그린다.
 	 * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
@@ -49,21 +70,49 @@ class CenterOpponentController extends OpponentController {
 
 ## 적 등록 방법
 
-새 컨트롤러를 만든 뒤 `webpuyo.js`의 `OPPONENTS` 배열에 항목을 추가합니다. `createController`는 매 게임마다 새 컨트롤러 인스턴스를 반환해야 합니다.
+새 컨트롤러는 별도 JavaScript 파일에서 `WebPuyo.registerOpponent()`로 등록합니다. 따라서 새 적을 추가할 때 `webpuyo.js`를 수정할 필요가 없습니다. `createController`는 매 게임마다 새 컨트롤러 인스턴스를 반환해야 합니다.
 
 ```js
-const OPPONENTS = [
-	{
-		name: '오른쪽 끝 수비대',
-		description: '회전 없이 오른쪽 끝에 쌓는 기본 알고리즘',
-		createController: () => new OpponentController()
-	},
-	{
-		name: '중앙 수집가',
-		description: '중앙 열을 노리는 실험용 알고리즘',
-		createController: () => new CenterOpponentController()
+// my-opponent.js
+class CenterOpponentController extends WebPuyo.OpponentController {
+	chooseTarget(player) {
+		return 2;
 	}
-];
+}
+
+WebPuyo.registerOpponent({
+	name: '중앙 수집가',
+	createController: () => new CenterOpponentController()
+});
+```
+
+`my-opponent.js`는 `webpuyo.js` 다음, `WebPuyo.initialize()`를 호출하는 스크립트 전의 순서로 불러와야 합니다.
+
+## 게임 화면 테마
+
+선택된 적의 컨트롤러는 게임 시작 시 세 가지 테마 메서드를 재정의할 수 있습니다. 세 메서드 모두 재정의하지 않으면 기존의 청록색 베젤, 사용자 필드 배경, 중앙 영역 배경이 그대로 그려집니다.
+
+- `drawBezelBackground(drawingContext, area)`: 양쪽 필드를 감싸는 베젤 테두리. `area`에는 `x`, `y`, `width`, `height`, `player`가 있습니다.
+- `drawPlayerBackground(drawingContext, area)`: 각 사용자 필드의 뒷배경. `area`에는 `x`, `y`, `width`, `height`, `player`가 있습니다.
+- `drawCenterBackground(drawingContext, area)`: 다음 뿌요, 초상화, 점수 뒤의 중앙 영역. `area`에는 `x`, `y`, `width`, `height`가 있습니다.
+
+```js
+class NightOpponentController extends WebPuyo.OpponentController {
+	drawBezelBackground(drawingContext, area) {
+		drawingContext.fillStyle = '#2b193d';
+		drawingContext.fillRect(area.x, area.y, area.width, area.height);
+	}
+
+	drawPlayerBackground(drawingContext, area) {
+		drawingContext.fillStyle = '#171226';
+		drawingContext.fillRect(area.x, area.y, area.width, area.height);
+	}
+
+	drawCenterBackground(drawingContext, area) {
+		drawingContext.fillStyle = '#100d1a';
+		drawingContext.fillRect(area.x, area.y, area.width, area.height);
+	}
+}
 ```
 
 ## 알고리즘 작성 방법
@@ -79,7 +128,7 @@ const OPPONENTS = [
 간단한 알고리즘은 각 열의 높이를 구한 뒤, 가장 낮은 열을 선택하는 방식입니다.
 
 ```js
-class LowestColumnOpponentController extends OpponentController {
+class LowestColumnOpponentController extends WebPuyo.OpponentController {
 	/**
 	 * 가장 낮은 열을 찾아 뿌요를 쌓는다.
 	 * @param {PlayerState} player 자동 조작할 플레이어
