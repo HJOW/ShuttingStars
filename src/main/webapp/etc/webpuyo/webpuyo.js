@@ -28,6 +28,8 @@
     const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     // 싹쓸이 성공 시 상대방에게 즉시 보낼 방해뿌요 갯수
     const ALL_CLEAR_DAMAGE = 12;
+    // 게임 시작 시 공통 뿌요 쌍 대기열에 미리 생성할 쌍의 수
+    const INITIAL_PAIR_QUEUE_LENGTH = 16;
     const STORE_KEY = 'puyow_store';
     // 한국어 원문을 키로 사용하는 화면 문구 번역표. 외부 스크립트는 registerLanguage()로 언어별 항목을 추가할 수 있다.
     const stringTable = {
@@ -168,7 +170,10 @@
             this.gravityNextPhase = 'explode';
             this.effects = null;
             this.comboPopups = [];
-            this.nextPairs = [this.createPair(), this.createPair()];
+            this.nextPairs = [];
+            this.pairQueuePosition = 0;
+            // 이 플레이어가 실제로 필드에 고정한 뿌요 쌍의 누적 횟수
+            this.placedPairCount = 0;
             this.aiTarget = 5;
             this.aiRotation = 0;
             this.aiFastDown = false;
@@ -177,14 +182,6 @@
             this.receivesPuyos = true;
             this.allClearEnabled = true;
             this.clearsGarbage = false;
-        }
-
-        /**
-         * 다음에 제공할 세로 뿌요 한 쌍을 만든다.
-         * @returns {string[]} 아래와 위 뿌요 색상
-         */
-        createPair() {
-            return [randomColor(this.colors), randomColor(this.colors)];
         }
 
         /**
@@ -216,6 +213,8 @@
             this.sortPriority = 1;
             this.hidden = false;
             this.notAvail = false;
+            // 이 좌표에 뿌요가 있으면 AI는 일반 쌓기 대신 공격력 시뮬레이션을 우선한다.
+            this.attackSimulationTriggerPosition = { x: 2, y: 8 };
         }
 
         /**
@@ -345,101 +344,103 @@
          * 안드로말리우스는 좌우로 기반을 쌓은 뒤 예상 공격이 큰 위치를 노린다.
          */
     class Andromalius extends Enemy {
-            constructor() {
-                super();
-                this.phase = 'initialLeft';
-                this.turnsRemaining = this.randomTurns();
-            }
-
-            /**
-             * 단탈리온과 같은 방식으로 일반 배치 턴 수를 정한다.
-             * @returns {number} 6부터 8 사이의 일반 배치 턴 수
-             */
-            randomTurns() {
-                return 6 + Math.floor(Math.random() * 3);
-            }
-
-            /**
-             * @returns {string} 적 이름
-             */
-            getName() {
-                return '안드로말리우스';
-            }
-
-            /**
-             * @param {PlayerState} player 자동 조작할 플레이어
-             * @returns {number} 목표 X 좌표
-             */
-            chooseTarget(player) {
-                // 중앙이 높이 쌓였거나 시뮬레이션 단계면 최대 공격 위치를 선택한다.
-                if (player.board[9][2] || this.phase === 'simulation') {
-                    const bestColumn = findBestAttackColumn(player, 0);
-                    this.phase = 'repeatLeft';
-                    if (!player.board[9][2]) this.turnsRemaining = 6;
-                    return bestColumn;
-                }
-
-                const target = this.phase === 'initialRight' ? COLUMNS - 1 : 0;
-                this.turnsRemaining -= 1;
-                // 현재 방향으로 충분히 쌓았으면 다음 배치 단계를 준비한다.
-                if (this.turnsRemaining === 0) {
-                    if (this.phase === 'initialLeft') {
-                        this.phase = 'initialRight';
-                        this.turnsRemaining = this.randomTurns();
-                    } else {
-                        this.phase = 'simulation';
-                    }
-                }
-                return target;
-            }
-
-            /**
-             * 단탈리온과 구별되는 갑각형 악마 모습을 그린다.
-             * @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트
-             * @param {number} centerX 캐릭터 중심 X 좌표
-             * @param {number} centerY 캐릭터 중심 Y 좌표
-             * @param {number} scale 기본 크기 대비 배율
-             * @returns {void}
-             */
-            drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-                const size = 72 * scale;
-                drawingContext.save();
-                drawingContext.translate(centerX, centerY);
-                drawingContext.strokeStyle = '#164c50';
-                drawingContext.fillStyle = '#237f79';
-                drawingContext.lineWidth = 9 * scale;
-                // 양쪽 집게를 대칭으로 그려 갑각형 실루엣을 만든다.
-                for (const direction of [-1, 1]) {
-                    drawingContext.beginPath();
-                    drawingContext.moveTo(direction * size * 0.32, size * 0.1);
-                    drawingContext.quadraticCurveTo(direction * size * 0.9, size * 0.22, direction * size * 0.78, size * 0.68);
-                    drawingContext.stroke();
-                }
-                drawingContext.beginPath();
-                drawingContext.ellipse(0, size * 0.18, size * 0.56, size * 0.63, 0, 0, Math.PI * 2);
-                drawingContext.fill();
-                drawingContext.stroke();
-                drawingContext.fillStyle = '#9ad9b8';
-                drawingContext.beginPath();
-                drawingContext.arc(-size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
-                drawingContext.arc(size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
-                drawingContext.fill();
-                drawingContext.fillStyle = '#172535';
-                drawingContext.beginPath();
-                drawingContext.arc(-size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
-                drawingContext.arc(size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
-                drawingContext.fill();
-                drawingContext.fillStyle = '#d6a63a';
-                drawingContext.beginPath();
-                drawingContext.moveTo(0, size * 0.12);
-                drawingContext.lineTo(-size * 0.12, size * 0.42);
-                drawingContext.lineTo(size * 0.12, size * 0.42);
-                drawingContext.closePath();
-                drawingContext.fill();
-                drawPortraitEmotion(drawingContext, size, expression, -size * 0.06, size * 0.19);
-                drawingContext.restore();
-            }
+        constructor() {
+            super();
+            this.phase = 'initialLeft';
+            this.turnsRemaining = this.randomTurns();
         }
+
+        /**
+         * 단탈리온과 같은 방식으로 일반 배치 턴 수를 정한다.
+         * @returns {number} 6부터 8 사이의 일반 배치 턴 수
+         */
+        randomTurns() {
+            return 6 + Math.floor(Math.random() * 3);
+        }
+
+        /**
+         * @returns {string} 적 이름
+         */
+        getName() {
+            return '안드로말리우스';
+        }
+
+        /**
+         * @param {PlayerState} player 자동 조작할 플레이어
+         * @returns {number} 목표 X 좌표
+         */
+        chooseTarget(player) {
+            // 중앙이 높이 쌓였거나 시뮬레이션 단계면 최대 공격 위치를 선택한다.
+            const trigger = this.attackSimulationTriggerPosition;
+            const triggerOccupied = player.board[trigger.y][trigger.x] !== null;
+            if (triggerOccupied || this.phase === 'simulation') {
+                const bestColumn = findBestAttackColumn(player, 0, triggerOccupied ? trigger.x : null);
+                this.phase = 'repeatLeft';
+                if (!triggerOccupied) this.turnsRemaining = 6;
+                return bestColumn;
+            }
+
+            const target = this.phase === 'initialRight' ? COLUMNS - 1 : 0;
+            this.turnsRemaining -= 1;
+            // 현재 방향으로 충분히 쌓았으면 다음 배치 단계를 준비한다.
+            if (this.turnsRemaining === 0) {
+                if (this.phase === 'initialLeft') {
+                    this.phase = 'initialRight';
+                    this.turnsRemaining = this.randomTurns();
+                } else {
+                    this.phase = 'simulation';
+                }
+            }
+            return target;
+        }
+
+        /**
+         * 단탈리온과 구별되는 갑각형 악마 모습을 그린다.
+         * @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트
+         * @param {number} centerX 캐릭터 중심 X 좌표
+         * @param {number} centerY 캐릭터 중심 Y 좌표
+         * @param {number} scale 기본 크기 대비 배율
+         * @returns {void}
+         */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            const size = 72 * scale;
+            drawingContext.save();
+            drawingContext.translate(centerX, centerY);
+            drawingContext.strokeStyle = '#164c50';
+            drawingContext.fillStyle = '#237f79';
+            drawingContext.lineWidth = 9 * scale;
+            // 양쪽 집게를 대칭으로 그려 갑각형 실루엣을 만든다.
+            for (const direction of [-1, 1]) {
+                drawingContext.beginPath();
+                drawingContext.moveTo(direction * size * 0.32, size * 0.1);
+                drawingContext.quadraticCurveTo(direction * size * 0.9, size * 0.22, direction * size * 0.78, size * 0.68);
+                drawingContext.stroke();
+            }
+            drawingContext.beginPath();
+            drawingContext.ellipse(0, size * 0.18, size * 0.56, size * 0.63, 0, 0, Math.PI * 2);
+            drawingContext.fill();
+            drawingContext.stroke();
+            drawingContext.fillStyle = '#9ad9b8';
+            drawingContext.beginPath();
+            drawingContext.arc(-size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
+            drawingContext.arc(size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
+            drawingContext.fill();
+            drawingContext.fillStyle = '#172535';
+            drawingContext.beginPath();
+            drawingContext.arc(-size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
+            drawingContext.arc(size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
+            drawingContext.fill();
+            drawingContext.fillStyle = '#d6a63a';
+            drawingContext.beginPath();
+            drawingContext.moveTo(0, size * 0.12);
+            drawingContext.lineTo(-size * 0.12, size * 0.42);
+            drawingContext.lineTo(size * 0.12, size * 0.42);
+            drawingContext.closePath();
+            drawingContext.fill();
+            drawPortraitEmotion(drawingContext, size, expression, -size * 0.06, size * 0.19);
+            drawingContext.restore();
+        }
+    }
 
     /**
    * 단탈리온의 배치 목표를 결정한다. 10~15회 일반 배치 후 예상 공격이 가장 큰 열을 고른다.
@@ -473,7 +474,8 @@
          */
         chooseTarget(player) {
             // 중앙이 위험 높이에 도달하면 즉시 공격력이 최대인 열을 찾는다.
-            if (player.board[9][2]) return findBestAttackColumn(player, 0);
+            const trigger = this.attackSimulationTriggerPosition;
+            if (player.board[trigger.y][trigger.x]) return findBestAttackColumn(player, 0, trigger.x);
             this.turnCount += 1;
             const stackDirection = COLUMNS - 1;
             if (this.turnCount <= this.turnsUntilSimulation || !player.active) return stackDirection;
@@ -736,18 +738,53 @@
     }
 
     /**
+     * 가상 착지 뒤 폭발 탐지와 중력을 모두 처리한 최종 보드에서 패배 여부를 검사한다.
+     * @param {PlayerState} player 자동 조작할 플레이어
+     * @param {{positions:{x:number, y:number}[]}} simulation 가상 배치 후보
+     * @returns {boolean} 이 후보를 두면 즉시 패배하는지 여부
+     */
+    function causesImmediateDefeat(player, simulation) {
+        let simulatedBoard = player.board.map((row) => [...row]);
+        simulation.positions.forEach(({ x, y }, index) => {
+            simulatedBoard[y][x] = player.active.colors[index];
+        });
+        simulatedBoard = collapseBoard(simulatedBoard);
+        // 실제 폭발 단계처럼 색 뿌요와 인접 방해뿌요를 제거하고 중력을 반복 적용한다.
+        while (true) {
+            const exploding = findExplosionsOnBoard(simulatedBoard);
+            if (!exploding.length) return simulatedBoard[11][2] !== null;
+            const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
+            exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
+                const nextX = x + deltaX;
+                const nextY = y + deltaY;
+                if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && simulatedBoard[nextY][nextX] === 'garbage') {
+                    removed.add(`${nextX},${nextY}`);
+                }
+            }));
+            removed.forEach((key) => {
+                const [x, y] = key.split(',').map(Number);
+                simulatedBoard[y][x] = null;
+            });
+            simulatedBoard = collapseBoard(simulatedBoard);
+        }
+    }
+
+    /**
      * 세로 배치 후보 중 예상 공격력이 가장 높은 열을 고른다. 동점이면 더 오른쪽 열을 선택한다.
+     * 지정 열의 후보가 즉시 패배하면 그 후보를 건너뛰어 차순위를 선택한다.
      * @param {PlayerState} player 자동 조작할 플레이어
      * @param {number} fallback 유효한 후보가 없을 때 사용할 열
+     * @param {number|null} defeatCheckColumn 즉시 패배를 피할 X 좌표. null이면 검사하지 않는다.
      * @returns {number} 목표 X 좌표
      */
-    function findBestAttackColumn(player, fallback) {
+    function findBestAttackColumn(player, fallback, defeatCheckColumn = null) {
         let bestColumn = fallback;
         let bestAttack = -1;
         // 세로 배치 후보만 비교해 가장 큰 예상 공격을 내는 열을 고른다.
         player.aiSimulations
             .filter((simulation) => simulation.rotation === 0)
             .forEach((simulation) => {
+                if (simulation.x === defeatCheckColumn && causesImmediateDefeat(player, simulation)) return;
                 if (simulation.attack >= bestAttack) {
                     bestAttack = simulation.attack;
                     bestColumn = simulation.x;
@@ -873,6 +910,7 @@
         const controller = opponent.createController();
         const colors = practice ? COLORS : DIFFICULTIES[selectedDifficulty].colors;
         const practicePlayer = new PlayerState(controller.getName(), FIELD_RIGHT, controller, colors);
+        const players = [new PlayerState('PLAYER 1', FIELD_LEFT, null, colors), practicePlayer];
         // 연습전 상대는 공격을 받지 않고 뿌요도 생성하지 않도록 설정한다.
         if (practice) {
             practicePlayer.receivesPuyos = false;
@@ -889,8 +927,54 @@
             countdown: 3000,
             practice,
             themeController: controller,
-            players: [new PlayerState('PLAYER 1', FIELD_LEFT, null, colors), practicePlayer]
+            pairQueueColors: colors,
+            pairQueue: Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors)),
+            players
         };
+        players.filter((player) => player.receivesPuyos).forEach(updateNextPairs);
+    }
+
+    /**
+     * 공통 대기열에 넣을 무작위 뿌요 한 쌍을 만든다.
+     * @param {string[]} colors 제공할 색상 목록
+     * @returns {string[]} 아래와 위 뿌요 색상
+     */
+    function createRandomPair(colors) {
+        return [randomColor(colors), randomColor(colors)];
+    }
+
+    /**
+     * 지정 순번까지 공통 뿌요 쌍 대기열을 확장한다.
+     * @param {number} requiredPosition 필요한 마지막 대기열 순번
+     * @returns {void}
+     */
+    function ensurePairQueue(requiredPosition) {
+        while (game.pairQueue.length <= requiredPosition) game.pairQueue.push(createRandomPair(game.pairQueueColors));
+    }
+
+    /**
+     * 플레이어의 현재 대기열 순번 기준으로 다음 두 쌍 표시를 갱신한다.
+     * @param {PlayerState} player 표시를 갱신할 플레이어
+     * @returns {void}
+     */
+    function updateNextPairs(player) {
+        ensurePairQueue(player.pairQueuePosition + 1);
+        player.nextPairs = game.pairQueue
+            .slice(player.pairQueuePosition, player.pairQueuePosition + 2)
+            .map((pair) => [...pair]);
+    }
+
+    /**
+     * 플레이어의 현재 순번에 해당하는 공통 대기열 뿌요 쌍을 지급한다.
+     * @param {PlayerState} player 뿌요를 지급할 플레이어
+     * @returns {string[]} 아래와 위 뿌요 색상
+     */
+    function takeNextPair(player) {
+        ensurePairQueue(player.pairQueuePosition);
+        const pair = [...game.pairQueue[player.pairQueuePosition]];
+        player.pairQueuePosition += 1;
+        updateNextPairs(player);
+        return pair;
     }
 
     /**
@@ -916,8 +1000,7 @@
         }
         player.phase = 'control';
         player.fallTimer = 0;
-        player.active = { x: 2, y: 12, rotation: 0, colors: player.nextPairs.shift() };
-        player.nextPairs.push(player.createPair());
+        player.active = { x: 2, y: 12, rotation: 0, colors: takeNextPair(player) };
         // CPU 플레이어면 이번 뿌요 쌍의 목표 위치와 회전을 미리 결정한다.
         if (player.controller) {
             player.controller.prepareTurn(player);
@@ -1029,6 +1112,7 @@
         activeCells(player.active).forEach((cell) => {
             if (cell.y >= 0 && cell.y < ROWS) player.board[cell.y][cell.x] = cell.color;
         });
+        player.placedPairCount += 1;
         player.hasPlacedPuyoSinceAllClear = true;
         player.active = null;
         startGravity(player, 'explode');
@@ -1695,11 +1779,12 @@
         const x = player.fieldX;
         context.save();
         context.globalAlpha = opacity;
-        game.themeController.drawBezelBackground(context, { x: x - CELL, y: FIELD_BOTTOM + distance, width: CELL * 8, height: CELL, player });
         animation.fallingPuyos.forEach((puyo) => {
             const y = FIELD_BOTTOM - (puyo.y + 1) * CELL + distance;
             if (y < HEIGHT) drawPuyo(x + puyo.x * CELL, y, puyo.color);
         });
+        // 무너지는 베젤은 낙하 중인 숨김 영역 방해뿌요보다 앞에 보인다.
+        game.themeController.drawBezelBackground(context, { x: x - CELL, y: FIELD_BOTTOM + distance, width: CELL * 8, height: CELL, player });
         context.restore();
     }
 
@@ -1731,11 +1816,12 @@
         [
             { player: left, x: 482, color: '#ef8aa0' },
             { player: right, x: 650, color: '#6bbce8' }
-        ].forEach(({ player, x, color }) => {
+        ].forEach(({ player, x, color }, playerIndex) => {
             context.fillStyle = '#0b202c'; context.fillRect(x, 120, 148, 150);
             context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, 120, 148, 150);
             context.fillStyle = color; context.font = '13px "Nanum Gothic Coding"'; context.fillText(`${player.name} NEXT`, x + 74, 143);
-            player.nextPairs.forEach((pair, pairIndex) => {
+            const displayedPairs = playerIndex === 1 ? [...player.nextPairs].reverse() : player.nextPairs;
+            displayedPairs.forEach((pair, pairIndex) => {
                 const pairX = x + 21 + pairIndex * 70;
                 drawPuyo(pairX, 163, pair[1], 0.68);
                 drawPuyo(pairX, 208, pair[0], 0.68);
