@@ -11,7 +11,8 @@
     const WIDTH = 1280;
     const HEIGHT = 720;
     const COLUMNS = 6;
-    const ROWS = 13;
+    // 보이는 12줄과 조작 뿌요 생성 위치 위의 방해뿌요 생성 전용 4줄을 포함한 전체 보드 높이
+    const ROWS = 17;
     const VISIBLE_ROWS = 12;
     const CELL = 38;
     const FIELD_TOP = 102;
@@ -27,14 +28,15 @@
     const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     // 싹쓸이 성공 시 상대방에게 즉시 보낼 방해뿌요 갯수
     const ALL_CLEAR_DAMAGE = 12;
+    const STORE_KEY = 'puyow_store';
     // 한국어 원문을 키로 사용하는 화면 문구 번역표. 외부 스크립트는 registerLanguage()로 언어별 항목을 추가할 수 있다.
     const stringTable = {
         en: {
             '게임 시작': 'Game Start', '연습': 'Practice', '난이도 선택': 'Difficulty', '적 선택': 'Opponent',
             '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '시작': 'Start', '이전': 'Back',
-            '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'ESC 키로 재개': 'Press ESC to resume',
+            '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '%1연쇄': '%1 Chain',
-            '연습 상대': 'Practice Opponent'
+            '연습 상대': 'Practice Opponent', '추후 출시예정': 'Coming soon', '잠김': 'Locked'
         }
     };
 
@@ -48,14 +50,58 @@
     let opponentMenuFocus = 0;
     let selectedOpponentAction = 0;
     let titleMenuFocus = 0;
+    let pauseMenuFocus = 0;
     let lastTime = 0;
     let isDownKeyPressed = false;
     let languageCode = 'ko';
+    let store = createInitialStore();
     const DIFFICULTIES = [
         { name: '쉬움', colors: ['green', 'yellow', 'blue'] },
         { name: '보통', colors: ['red', 'green', 'yellow', 'blue'] },
         { name: '어려움', colors: COLORS }
     ];
+
+    /**
+     * 저장 데이터의 기본 구조를 만든다.
+     * @returns {{clearList:string[]}} 초기 저장 데이터
+     */
+    function createInitialStore() {
+        return { clearList: [] };
+    }
+
+    /**
+     * 현재 저장 데이터를 localStorage에 기록한다. 실패해도 게임 흐름은 계속한다.
+     * @returns {void}
+     */
+    function saveStore() {
+        try {
+            window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
+        } catch (error) {
+            console.error('Puyo W 저장 데이터 기록에 실패했습니다.', error);
+        }
+    }
+
+    /**
+     * localStorage에서 저장 데이터를 불러오고, 없거나 형식이 잘못되었으면 초기화한다.
+     * @returns {void}
+     */
+    function loadStore() {
+        try {
+            const serialized = window.localStorage.getItem(STORE_KEY);
+            if (!serialized) {
+                store = createInitialStore();
+                return;
+            }
+            const parsed = JSON.parse(serialized);
+            if (!parsed || !Array.isArray(parsed.clearList) || !parsed.clearList.every((name) => typeof name === 'string')) {
+                throw new TypeError('clearList 배열이 필요합니다.');
+            }
+            store = { clearList: [...new Set(parsed.clearList)] };
+        } catch (error) {
+            console.error('Puyo W 저장 데이터 불러오기에 실패했습니다.', error);
+            store = createInitialStore();
+        }
+    }
 
     /**
      * 현재 브라우저 언어에 맞춰 한국어 원문을 번역하고 %1, %2 형식의 인수를 채운다.
@@ -168,6 +214,8 @@
     class Enemy {
         constructor() {
             this.sortPriority = 1;
+            this.hidden = false;
+            this.notAvail = false;
         }
 
         /**
@@ -554,6 +602,128 @@
     }
 
     /**
+     * 세레는 현재 자리에 뿌요를 내리는 임시 알고리즘을 사용하는 예지의 악마다.
+     */
+    class Seere extends Enemy {
+        constructor() {
+            super();
+            this.sortPriority = 3;
+            this.notAvail = true;
+        }
+
+        /**
+         * @returns {string} 적 이름
+         */
+        getName() {
+            return '세레';
+        }
+
+        /**
+         * 현재 생성된 열에서 수평 이동 없이 뿌요를 내린다.
+         * @param {PlayerState} player 자동 조작할 플레이어
+         * @returns {number} 목표 X 좌표
+         */
+        chooseTarget(player) {
+            // TODO: 세레 정식 출시 시 고유한 AI 알고리즘을 구현한다.
+            return player.active ? player.active.x : 2;
+        }
+
+        /**
+         * 가면과 수정구를 가진 예지자 모습 및 표정별 얼굴을 그린다.
+         * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+         * @param {number} centerX 캐릭터 중심 X 좌표
+         * @param {number} centerY 캐릭터 중심 Y 좌표
+         * @param {number} scale 기본 크기 대비 배율
+         * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
+         * @returns {void}
+         */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            const size = 72 * scale;
+            drawingContext.save();
+            drawingContext.translate(centerX, centerY);
+            drawingContext.lineJoin = 'round';
+
+            drawingContext.fillStyle = '#1b3046';
+            drawingContext.beginPath();
+            drawingContext.moveTo(-size * 0.55, size * 0.78);
+            drawingContext.quadraticCurveTo(0, size * 0.3, size * 0.55, size * 0.78);
+            drawingContext.closePath();
+            drawingContext.fill();
+            drawingContext.strokeStyle = '#83d5df';
+            drawingContext.lineWidth = 3 * scale;
+            drawingContext.stroke();
+
+            drawingContext.fillStyle = '#d7e8da';
+            drawingContext.beginPath();
+            drawingContext.ellipse(0, -size * 0.1, size * 0.48, size * 0.58, 0, 0, Math.PI * 2);
+            drawingContext.fill();
+            drawingContext.strokeStyle = '#35556a';
+            drawingContext.lineWidth = 4 * scale;
+            drawingContext.stroke();
+
+            drawingContext.fillStyle = '#77cfd5';
+            drawingContext.beginPath();
+            drawingContext.arc(0, size * 0.66, size * 0.23, 0, Math.PI * 2);
+            drawingContext.fill();
+            drawingContext.strokeStyle = '#d7ffff';
+            drawingContext.lineWidth = 2 * scale;
+            drawingContext.stroke();
+            drawingContext.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            drawingContext.beginPath();
+            drawingContext.arc(-size * 0.075, size * 0.58, size * 0.055, 0, Math.PI * 2);
+            drawingContext.fill();
+
+            const eyeY = -size * 0.16;
+            if (expression === 'defeated') {
+                drawingContext.fillStyle = '#6cbce6';
+                [-size * 0.19, size * 0.19].forEach((eyeX) => {
+                    drawingContext.beginPath();
+                    drawingContext.ellipse(eyeX, eyeY + size * 0.13, size * 0.1, size * 0.23, 0, 0, Math.PI * 2);
+                    drawingContext.fill();
+                });
+                drawingContext.strokeStyle = '#35556a';
+                drawingContext.lineWidth = 3 * scale;
+                drawingContext.beginPath();
+                drawingContext.arc(0, size * 0.25, size * 0.13, Math.PI, Math.PI * 2);
+                drawingContext.stroke();
+            } else if (expression === 'crisis') {
+                drawingContext.fillStyle = '#203d56';
+                [-size * 0.19, size * 0.19].forEach((eyeX) => {
+                    drawingContext.beginPath();
+                    drawingContext.arc(eyeX, eyeY, size * 0.08, 0, Math.PI * 2);
+                    drawingContext.fill();
+                });
+                drawingContext.fillStyle = '#87dff1';
+                drawingContext.beginPath();
+                drawingContext.ellipse(size * 0.42, -size * 0.34, size * 0.07, size * 0.13, 0.2, 0, Math.PI * 2);
+                drawingContext.fill();
+                drawingContext.fillStyle = '#35556a';
+                drawingContext.beginPath();
+                drawingContext.ellipse(0, size * 0.25, size * 0.11, size * 0.14, 0, 0, Math.PI * 2);
+                drawingContext.fill();
+            } else {
+                drawingContext.fillStyle = '#203d56';
+                [-size * 0.19, size * 0.19].forEach((eyeX) => {
+                    drawingContext.beginPath();
+                    drawingContext.moveTo(eyeX, eyeY - size * 0.11);
+                    drawingContext.lineTo(eyeX + size * 0.07, eyeY);
+                    drawingContext.lineTo(eyeX, eyeY + size * 0.11);
+                    drawingContext.lineTo(eyeX - size * 0.07, eyeY);
+                    drawingContext.closePath();
+                    drawingContext.fill();
+                });
+                drawingContext.strokeStyle = '#35556a';
+                drawingContext.lineWidth = 3 * scale;
+                drawingContext.beginPath();
+                drawingContext.moveTo(-size * 0.13, size * 0.26);
+                drawingContext.quadraticCurveTo(0, size * 0.34, size * 0.13, size * 0.26);
+                drawingContext.stroke();
+            }
+            drawingContext.restore();
+        }
+    }
+
+    /**
      * 연습 모드에서 조작하거나 뿌요를 받지 않는 상대다.
      */
     class PracticeEnemy extends Enemy {
@@ -587,15 +757,26 @@
     }
 
     const OPPONENTS = [
-        {
-            sortPriority: 1,
-            createController: () => new Andromalius()
-        },
-        {
-            sortPriority: 2,
-            createController: () => new Dantalion()
-        }
+        createOpponentEntry(() => new Andromalius()),
+        createOpponentEntry(() => new Dantalion()),
+        createOpponentEntry(() => new Seere())
     ];
+
+    /**
+     * 적 인스턴스의 선택 화면 표시 설정을 등록 항목으로 만든다.
+     * @param {()=>Enemy} createController 새 적 인스턴스 생성 함수
+     * @returns {{createController:()=>Enemy, className:string, sortPriority:number, hidden:boolean, notAvail:boolean}} 적 등록 항목
+     */
+    function createOpponentEntry(createController) {
+        const controller = createController();
+        return {
+            createController,
+            className: controller.constructor.name,
+            sortPriority: controller.sortPriority,
+            hidden: controller.hidden === true,
+            notAvail: controller.notAvail === true
+        };
+    }
 
     /**
      * 적 선택 화면에 표시할 순서로 적 목록을 정렬한다.
@@ -603,6 +784,58 @@
      */
     function sortOpponents() {
         OPPONENTS.sort((left, right) => left.sortPriority - right.sortPriority);
+    }
+
+    /**
+     * 숨김 처리되지 않아 적 선택 화면에 표시할 적 목록을 반환한다.
+        * @returns {{createController:()=>Enemy, className:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} 표시할 적 목록
+     */
+    function getVisibleOpponents() {
+        return OPPONENTS.filter((opponent) => !opponent.hidden);
+    }
+
+    /**
+     * 이전 유효 적을 클리어해 현재 잠금이 해제된 적인지 판별한다.
+     * @param {{className:string, hidden:boolean, notAvail:boolean}} opponent 판별할 적
+     * @returns {boolean} 선택 가능 여부
+     */
+    function isOpponentUnlocked(opponent) {
+        const progressionOpponents = OPPONENTS.filter((entry) => !entry.hidden && !entry.notAvail);
+        const index = progressionOpponents.indexOf(opponent);
+        if (index <= 0) return index === 0;
+        return store.clearList.includes(progressionOpponents[index - 1].className);
+    }
+
+    /**
+     * 현재 선택할 수 있는 적 목록을 반환한다.
+     * @returns {{createController:()=>Enemy, className:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} 선택할 수 있는 적 목록
+     */
+    function getSelectableOpponents() {
+        return getVisibleOpponents().filter((opponent) => !opponent.notAvail && isOpponentUnlocked(opponent));
+    }
+
+    /**
+     * 현재 선택값이 선택 가능한 적을 가리키도록 보정한다.
+     * @returns {boolean} 선택 가능한 적 존재 여부
+     */
+    function ensureSelectedOpponent() {
+        const selectable = getSelectableOpponents();
+        if (!selectable.length) return false;
+        if (!selectable.includes(OPPONENTS[selectedOpponent])) selectedOpponent = OPPONENTS.indexOf(selectable[0]);
+        return true;
+    }
+
+    /**
+     * 선택 불가 적을 건너뛰어 다음 또는 이전 적을 선택한다.
+     * @param {number} direction 이전 -1 또는 다음 1
+     * @returns {void}
+     */
+    function selectRelativeOpponent(direction) {
+        const selectable = getSelectableOpponents();
+        if (!selectable.length) return;
+        const currentIndex = Math.max(0, selectable.indexOf(OPPONENTS[selectedOpponent]));
+        const nextIndex = (currentIndex + direction + selectable.length) % selectable.length;
+        selectedOpponent = OPPONENTS.indexOf(selectable[nextIndex]);
     }
 
     /**
@@ -624,8 +857,9 @@
         if (typeof controller.getName() !== 'string' || !controller.getName()) {
             throw new TypeError('Enemy의 getName은 비어 있지 않은 문자열을 반환해야 합니다.');
         }
-        OPPONENTS.push({ createController: opponent.createController, sortPriority: controller.sortPriority });
+        OPPONENTS.push(createOpponentEntry(opponent.createController));
         sortOpponents();
+        ensureSelectedOpponent();
     }
 
     /**
@@ -634,6 +868,7 @@
      * @returns {void}
      */
     function startGame(practice = false) {
+        if (!practice && !ensureSelectedOpponent()) return;
         const opponent = practice ? { createController: () => new PracticeEnemy() } : OPPONENTS[selectedOpponent];
         const controller = opponent.createController();
         const colors = practice ? COLORS : DIFFICULTIES[selectedDifficulty].colors;
@@ -999,9 +1234,7 @@
             const power = COMBO_POWER[Math.min(player.combo, 18)] || 999;
             player.addPoint += exploding.length * power;
             player.attack += exploding.length * power / 4;
-            const cancelledAttack = Math.min(Math.floor(player.attack), Math.floor(opponent.attack));
-            player.attack -= cancelledAttack;
-            opponent.attack -= cancelledAttack;
+            cancelPendingAttack(player, opponent);
             const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
             player.comboPopups.push({ x: center.x / exploding.length, y: center.y / exploding.length, combo: player.combo, elapsed: 0 });
             removed.forEach((puyo) => { player.board[puyo.y][puyo.x] = null; });
@@ -1012,14 +1245,28 @@
         }
         player.point += player.addPoint;
         player.addPoint = 0;
-        const blocked = Math.min(Math.floor(player.damage), Math.floor(player.attack));
-        player.damage -= blocked;
-        player.attack -= blocked;
+        cancelPendingAttack(player, opponent);
         const deliveredAttack = Math.floor(player.attack);
         opponent.damage += deliveredAttack;
         player.attack -= deliveredAttack;
         player.combo = 0;
         player.phase = 'garbage';
+    }
+
+    /**
+     * 새 공격으로 상대의 미정산 공격과 자신의 피해를 즉시 상쇄한다.
+     * 정수 부분만 사용해 ATTACK과 DAMAGE의 소수 잔여값은 다음 정산까지 보존한다.
+     * @param {PlayerState} player 새 공격을 발생시킨 플레이어
+     * @param {PlayerState} opponent 상대 플레이어
+     * @returns {void}
+     */
+    function cancelPendingAttack(player, opponent) {
+        const cancelledOpponentAttack = Math.min(Math.floor(player.attack), Math.floor(opponent.attack));
+        player.attack -= cancelledOpponentAttack;
+        opponent.attack -= cancelledOpponentAttack;
+        const cancelledDamage = Math.min(Math.floor(player.attack), Math.floor(player.damage));
+        player.attack -= cancelledDamage;
+        player.damage -= cancelledDamage;
     }
 
     /**
@@ -1069,6 +1316,20 @@
     }
 
     /**
+     * 대전에서 이긴 적의 클래스명을 한 번만 저장한다.
+     * @param {PlayerState} winner 승리한 플레이어
+     * @returns {void}
+     */
+    function recordEnemyClear(winner) {
+        if (game.practice || winner !== game.players[0]) return;
+        const enemyClassName = game.players[1].controller.constructor.name;
+        if (!store.clearList.includes(enemyClassName)) {
+            store.clearList.push(enemyClassName);
+            saveStore();
+        }
+    }
+
+    /**
      * 상대가 연쇄 처리 중인 단계인지 판별한다.
      * @param {string} phase 플레이어 진행 단계
      * @returns {boolean} 중력 또는 폭발 연출 중인지 여부
@@ -1091,6 +1352,7 @@
         }
         // 패배 연출과 남은 연쇄 처리가 끝나면 게임을 종료한다.
         if (ending.elapsed > ending.duration && (!ending.waitForOpponentResolution || !isResolutionPhase(ending.winner.phase))) {
+            recordEnemyClear(ending.winner);
             game.running = false;
             game.winner = ending.winner;
             game.ending = null;
@@ -1520,6 +1782,8 @@
     function drawResultCenter() {
         game.themeController.drawCenterBackground(context, { x: 450, y: 0, width: 380, height: HEIGHT });
         context.fillStyle = '#d8f2f5'; context.textAlign = 'center'; context.font = '42px "Black Han Sans"'; context.fillText('Puyo W', WIDTH / 2, 95);
+        const enemy = game.players[1];
+        if (enemy !== game.winner) enemy.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, 'defeated');
         context.fillStyle = '#ef5350'; context.fillRect(515, 165, 250, 64);
         context.fillStyle = '#ffffff'; context.font = '22px "Black Han Sans"'; context.fillText(translate('종료'), WIDTH / 2, 207);
     }
@@ -1542,11 +1806,14 @@
                 context.fillStyle = '#f5fbfc'; context.font = '17px "Black Han Sans"'; context.fillText(translate(difficulty.name), x + 55, 202);
             });
             context.fillStyle = '#d8f2f5'; context.font = '22px "Black Han Sans"'; context.fillText(translate('적 선택'), WIDTH / 2, 265);
+            ensureSelectedOpponent();
             const opponent = OPPONENTS[selectedOpponent];
             context.fillStyle = '#0b202c'; context.fillRect(WIDTH / 2 - 170, 280, 340, 190);
             context.strokeStyle = opponentMenuFocus === 1 ? '#f7c843' : '#ef8aa0'; context.lineWidth = opponentMenuFocus === 1 ? 4 : 3; context.strokeRect(WIDTH / 2 - 170, 280, 340, 190);
-            opponent.createController().drawPortrait(context, WIDTH / 2, 360, 0.7);
-            context.fillStyle = '#f5fbfc'; context.font = '28px "Black Han Sans"'; context.fillText(opponent.createController().getName(), WIDTH / 2, 450);
+            if (opponent) {
+                opponent.createController().drawPortrait(context, WIDTH / 2, 360, 0.7);
+                context.fillStyle = '#f5fbfc'; context.font = '28px "Black Han Sans"'; context.fillText(opponent.createController().getName(), WIDTH / 2, 450);
+            }
             if (opponentMenuFocus === 1) {
                 context.fillStyle = '#f7c843';
                 context.beginPath();
@@ -1562,11 +1829,25 @@
                 context.closePath();
                 context.fill();
             }
-            OPPONENTS.forEach((entry, index) => {
-                const cardX = WIDTH / 2 - 80 + (index - selectedOpponent) * 180;
-                context.fillStyle = index === selectedOpponent ? '#563068' : '#0b202c'; context.fillRect(cardX, 485, 160, 48);
-                context.strokeStyle = index === selectedOpponent ? '#ef8aa0' : '#3b6070'; context.lineWidth = 2; context.strokeRect(cardX, 485, 160, 48);
-                context.fillStyle = '#f5fbfc'; context.font = '17px "Black Han Sans"'; context.fillText(entry.createController().getName(), cardX + 80, 517);
+            const visibleOpponents = getVisibleOpponents();
+            const selectedVisibleIndex = visibleOpponents.indexOf(opponent);
+            visibleOpponents.forEach((entry, index) => {
+                const cardX = WIDTH / 2 - 80 + (index - selectedVisibleIndex) * 180;
+                const selected = entry === opponent;
+                const locked = !entry.notAvail && !isOpponentUnlocked(entry);
+                const disabled = entry.notAvail || locked;
+                context.fillStyle = disabled ? '#3c4650' : selected ? '#563068' : '#0b202c'; context.fillRect(cardX, 475, 160, 62);
+                context.strokeStyle = disabled ? '#7c8791' : selected ? '#ef8aa0' : '#3b6070'; context.lineWidth = 2; context.strokeRect(cardX, 475, 160, 62);
+                if (disabled) {
+                    context.save();
+                    context.globalAlpha = 0.42;
+                    entry.createController().drawPortrait(context, cardX + 24, 495, 0.14);
+                    context.restore();
+                    context.fillStyle = '#c4cbd0'; context.font = '15px "Black Han Sans"'; context.fillText(entry.createController().getName(), cardX + 94, 500);
+                    context.fillStyle = '#f0c674'; context.font = '13px "Black Han Sans"'; context.fillText(translate(entry.notAvail ? '추후 출시예정' : '잠김'), cardX + 80, 524);
+                } else {
+                    context.fillStyle = '#f5fbfc'; context.font = '17px "Black Han Sans"'; context.fillText(entry.createController().getName(), cardX + 80, 513);
+                }
             });
             context.fillStyle = '#ef5350'; context.fillRect(440, 600, 250, 58);
             context.strokeStyle = opponentMenuFocus === 2 && selectedOpponentAction === 0 ? '#f7c843' : '#ef5350'; context.lineWidth = opponentMenuFocus === 2 && selectedOpponentAction === 0 ? 4 : 2; context.strokeRect(440, 600, 250, 58);
@@ -1582,6 +1863,9 @@
         context.fillStyle = '#264b5b'; context.fillRect(WIDTH / 2 - 145, 442, 290, 66);
         context.strokeStyle = titleMenuFocus === 1 ? '#f7c843' : '#264b5b'; context.lineWidth = titleMenuFocus === 1 ? 4 : 2; context.strokeRect(WIDTH / 2 - 145, 442, 290, 66);
         context.fillStyle = '#d8f2f5'; context.font = '25px "Black Han Sans"'; context.fillText(translate('연습'), WIDTH / 2, 486);
+        context.fillStyle = '#24292f'; context.fillRect(32, 642, 170, 46);
+        context.strokeStyle = titleMenuFocus === 2 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 2 ? 4 : 2; context.strokeRect(32, 642, 170, 46);
+        context.fillStyle = '#ffffff'; context.font = '20px "Nanum Gothic Coding"'; context.fillText(translate('GitHub'), 117, 673);
     }
 
     /**
@@ -1597,15 +1881,18 @@
         context.fillText(translate('일시정지'), WIDTH / 2, 322);
         context.fillStyle = '#4cc9b0';
         context.fillRect(470, 376, 150, 64);
+        context.strokeStyle = pauseMenuFocus === 0 ? '#f7c843' : '#4cc9b0';
+        context.lineWidth = pauseMenuFocus === 0 ? 4 : 2;
+        context.strokeRect(470, 376, 150, 64);
         context.fillStyle = '#ef5350';
         context.fillRect(660, 376, 150, 64);
+        context.strokeStyle = pauseMenuFocus === 1 ? '#f7c843' : '#ef5350';
+        context.lineWidth = pauseMenuFocus === 1 ? 4 : 2;
+        context.strokeRect(660, 376, 150, 64);
         context.fillStyle = '#ffffff';
         context.font = '23px "Black Han Sans"';
         context.fillText(translate('재개'), 545, 417);
         context.fillText(translate('종료'), 735, 417);
-        context.fillStyle = '#b3dbe2';
-        context.font = '15px "Nanum Gothic Coding"';
-        context.fillText(translate('ESC 키로 재개'), WIDTH / 2, 478);
     }
 
     /**
@@ -1675,18 +1962,20 @@
         // 게임이 없으면 키 입력을 제목 또는 상대 선택 메뉴로 전달한다.
         if (!game) {
             if (menuScreen === 'title' && ['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key)) {
-                titleMenuFocus = titleMenuFocus === 0 ? 1 : 0;
+                titleMenuFocus = key === 'arrowleft' || key === 'arrowup'
+                    ? (titleMenuFocus + 2) % 3
+                    : (titleMenuFocus + 1) % 3;
             } else if (menuScreen === 'opponent' && key === 'arrowup') {
                 opponentMenuFocus = Math.max(0, opponentMenuFocus - 1);
             } else if (menuScreen === 'opponent' && key === 'arrowdown') {
                 opponentMenuFocus = Math.min(2, opponentMenuFocus + 1);
             } else if (menuScreen === 'opponent' && key === 'arrowleft') {
                 if (opponentMenuFocus === 0) selectedDifficulty = (selectedDifficulty + DIFFICULTIES.length - 1) % DIFFICULTIES.length;
-                else if (opponentMenuFocus === 1) selectedOpponent = (selectedOpponent + OPPONENTS.length - 1) % OPPONENTS.length;
+                else if (opponentMenuFocus === 1) selectRelativeOpponent(-1);
                 else selectedOpponentAction = 0;
             } else if (menuScreen === 'opponent' && key === 'arrowright') {
                 if (opponentMenuFocus === 0) selectedDifficulty = (selectedDifficulty + 1) % DIFFICULTIES.length;
-                else if (opponentMenuFocus === 1) selectedOpponent = (selectedOpponent + 1) % OPPONENTS.length;
+                else if (opponentMenuFocus === 1) selectRelativeOpponent(1);
                 else selectedOpponentAction = 1;
             } else if (key === 'enter' || key === ' ') {
                 if (menuScreen === 'title') activateTitleMenu();
@@ -1703,13 +1992,21 @@
         if (!game.running) {
             return;
         }
-        // 종료 연출이 아닐 때 ESC로 일시정지 상태를 전환한다.
-        if (key === 'escape' && !game.ending) {
-            game.paused = !game.paused;
+        // 일시정지 중에는 방향키와 Enter로만 오버레이의 버튼을 조작한다.
+        if (game.paused) {
+            if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key)) {
+                pauseMenuFocus = pauseMenuFocus === 0 ? 1 : 0;
+            } else if (key === 'enter' || key === ' ') {
+                activatePauseMenu();
+            }
             return;
         }
-        // 일시정지 중에는 조작 키를 게임 필드에 전달하지 않는다.
-        if (game.paused) return;
+        // 종료 연출이 아닐 때 ESC로 일시정지를 시작한다.
+        if (key === 'escape' && !game.ending) {
+            game.paused = true;
+            pauseMenuFocus = 0;
+            return;
+        }
         const player = game.players[0];
         if (player.phase !== 'control') return;
         if (key === 'arrowleft') moveActive(player, -1, 0);
@@ -1734,7 +2031,24 @@
      */
     function activateTitleMenu() {
         if (titleMenuFocus === 0) openOpponentMenu();
-        else startGame(true);
+        else if (titleMenuFocus === 1) startGame(true);
+        else {
+            const githubWindow = window.open('https://github.com/HJOW/puyow', '_blank');
+            if (githubWindow) githubWindow.opener = null;
+        }
+    }
+
+    /**
+     * 일시정지 오버레이에서 포커스된 명령을 실행한다.
+     * @returns {void}
+     */
+    function activatePauseMenu() {
+        if (pauseMenuFocus === 0) {
+            game.paused = false;
+        } else {
+            game = null;
+            menuScreen = 'title';
+        }
     }
 
     /**
@@ -1743,6 +2057,7 @@
      */
     function openOpponentMenu() {
         selectedDifficulty = 1;
+        ensureSelectedOpponent();
         opponentMenuFocus = 0;
         selectedOpponentAction = 0;
         menuScreen = 'opponent';
@@ -1776,10 +2091,11 @@
         // 일시정지 중에는 재개와 종료 버튼의 클릭만 처리한다.
         if (game && game.paused) {
             if (x >= 470 && x <= 620 && y >= 376 && y <= 440) {
-                game.paused = false;
+                pauseMenuFocus = 0;
+                activatePauseMenu();
             } else if (x >= 660 && x <= 810 && y >= 376 && y <= 440) {
-                game = null;
-                menuScreen = 'title';
+                pauseMenuFocus = 1;
+                activatePauseMenu();
             }
             return;
         }
@@ -1792,6 +2108,9 @@
             } else if (x >= WIDTH / 2 - 145 && x <= WIDTH / 2 + 145 && y >= 442 && y <= 508) {
                 titleMenuFocus = 1;
                 activateTitleMenu();
+            } else if (x >= 32 && x <= 202 && y >= 642 && y <= 688) {
+                titleMenuFocus = 2;
+                activateTitleMenu();
             }
         } else {
             const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => x >= 465 + index * 120 && x <= 575 + index * 120 && y >= 170 && y <= 220);
@@ -1800,13 +2119,19 @@
                 opponentMenuFocus = 0;
                 return;
             }
-            const cardIndex = OPPONENTS.findIndex((entry, index) => {
-                const cardX = WIDTH / 2 - 80 + (index - selectedOpponent) * 180;
-                return x >= cardX && x <= cardX + 160 && y >= 485 && y <= 533;
+            const visibleOpponents = getVisibleOpponents();
+            const selectedEntry = OPPONENTS[selectedOpponent];
+            const selectedVisibleIndex = visibleOpponents.indexOf(selectedEntry);
+            const cardIndex = visibleOpponents.findIndex((entry, index) => {
+                const cardX = WIDTH / 2 - 80 + (index - selectedVisibleIndex) * 180;
+                return x >= cardX && x <= cardX + 160 && y >= 475 && y <= 537;
             });
             if (cardIndex >= 0) {
-                selectedOpponent = cardIndex;
-                opponentMenuFocus = 1;
+                const clickedOpponent = visibleOpponents[cardIndex];
+                if (!clickedOpponent.notAvail && isOpponentUnlocked(clickedOpponent)) {
+                    selectedOpponent = OPPONENTS.indexOf(clickedOpponent);
+                    opponentMenuFocus = 1;
+                }
             } else if (x >= 440 && x <= 690 && y >= 600 && y <= 658) {
                 selectedOpponentAction = 0;
                 startGame();
@@ -1831,6 +2156,7 @@
         }
         languageCode = navigator.language || navigator.userLanguage || 'ko';
         if (languageCode === 'ko-KR') languageCode = 'ko';
+        loadStore();
         const usesDefaultCanvas = target === null || target === undefined || target === '';
         canvas = usesDefaultCanvas ? document.getElementById('webpuyo_canvas') : typeof target === 'string' ? document.getElementById(target) : target;
         // 기본 캔버스가 문서에 없으면 접근 가능한 새 캔버스를 생성한다.
