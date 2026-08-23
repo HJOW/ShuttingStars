@@ -18,6 +18,8 @@
     const ROWS = 17;
     /** 화면에 보이는 필드의 세로 칸 수다. @type {number} */
     const VISIBLE_ROWS = 12;
+    /** 적 선택 화면 UI를 축소해 표시할 배율이다. @type {number} */
+    const OPPONENT_MENU_SCALE = 0.9;
     /** 한 칸의 논리 픽셀 크기다. @type {number} */
     const CELL = 38;
     /** 필드 표시 영역의 위쪽 논리 좌표다. @type {number} */
@@ -85,6 +87,14 @@
     const HORIZONTAL_HOLD_DELAY = 100;
     /** 좌우 방향키 홀드 중 반복 이동 간격(ms)이다. @type {number} */
     const HORIZONTAL_REPEAT_INTERVAL = 80;
+    /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {null} */
+    const AI_FAST_DOWN_DELAY_EASY = null;
+    /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number} */
+    const AI_FAST_DOWN_DELAY_NORMAL = 1000;
+    /** AI 어려움 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number} */
+    const AI_FAST_DOWN_DELAY_HARD = 300;
+    /** 적이 공격 위력 시뮬레이션을 우선할 피해량 기준이다. @type {number} */
+    const AI_ATTACK_SIMULATION_DAMAGE_THRESHOLD = 12;
     /** 공통 뿌요 쌍 대기열의 초기 길이다. @type {number} */
     const INITIAL_PAIR_QUEUE_LENGTH = 16;
     /** 브라우저 저장소에 사용할 키다. @type {string} */
@@ -95,8 +105,8 @@
     /** 한국어 원문을 키로 하는 화면 문구 번역표다. @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
-            '게임 시작': 'Game Start', '연습': 'Practice', '난이도 선택': 'Difficulty', '적 선택': 'Opponent',
-            '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '시작': 'Start', '이전': 'Back',
+            '게임 시작': 'Game Start', '연습': 'Practice', '난이도 선택': 'Difficulty', '난이도': 'Difficulty', '적 선택': 'Opponent',
+            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '시작': 'Start', '이전': 'Back',
             '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '게임 시간 %1초': 'Game time: %1 sec', '%1연쇄': '%1 Chain',
             '연습 상대': 'Practice Opponent', '추후 출시예정': 'Coming soon', '잠김': 'Locked',
@@ -139,9 +149,11 @@
     let simulator = null;
     /** 선택된 적의 OPPONENTS 배열 인덱스다. @type {number} */
     let selectedOpponent = 0;
-    /** 선택된 난이도의 DIFFICULTIES 배열 인덱스다. @type {number} */
+    /** 선택된 색상 수의 DIFFICULTIES 배열 인덱스다. @type {number} */
     let selectedDifficulty = 2;
-    /** 적 선택 메뉴에서 포커스된 행이다. @type {number} */
+    /** 선택된 AI 빠른 하강 난이도의 AI_DIFFICULTIES 배열 인덱스다. @type {number} */
+    let selectedAiDifficulty = 1;
+    /** 적 선택 메뉴에서 포커스된 행이다. 0: 색상, 1: AI 난이도, 2: 적, 3: 동작이다. @type {number} */
     let opponentMenuFocus = 0;
     /** 적 선택 메뉴 하단에서 포커스된 동작이다. @type {number} */
     let selectedOpponentAction = 0;
@@ -161,25 +173,35 @@
     let horizontalRepeatElapsed = 0;
     /** 현재 화면 문구에 적용할 언어 코드다. @type {string} */
     let languageCode = 'ko';
-    /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[]}} */
+    /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>}} */
     let store = createInitialStore();
     /** 난이도별 표시명과 제공 색상 목록이다. @type {{name:string, colors:string[]}[]} */
     const DIFFICULTIES = [
-        { name: '쉬움', colors: ['green', 'yellow', 'blue'] },
-        { name: '보통', colors: ['red', 'green', 'yellow', 'blue'] },
-        { name: '어려움', colors: COLORS }
+        { name: '3색', colors: ['green', 'yellow', 'blue'] },
+        { name: '4색', colors: ['red', 'green', 'yellow', 'blue'] },
+        { name: '5색', colors: COLORS }
+    ];
+    /** AI 빠른 하강 시점별 난이도다. @type {{key:'easy'|'normal'|'hard', name:string, fastDownDelay:number|null}[]} */
+    const AI_DIFFICULTIES = [
+        { key: 'easy', name: '쉬움', fastDownDelay: AI_FAST_DOWN_DELAY_EASY },
+        { key: 'normal', name: '보통', fastDownDelay: AI_FAST_DOWN_DELAY_NORMAL },
+        { key: 'hard', name: '어려움', fastDownDelay: AI_FAST_DOWN_DELAY_HARD }
     ];
     /** 등록된 기본 및 외부 적 목록이다. @type {{createController:()=>Enemy, className:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} */
     const OPPONENTS = [];
-    /** 브라우저 전역 및 CommonJS로 공개할 라이브러리 API다. @type {{Enemy:typeof Enemy, registerOpponent:typeof registerOpponent, registerLanguage:typeof registerLanguage, setNoticeFile:typeof setNoticeFile, initialize:typeof initialize, destroy:typeof destroy}|null} */
+    /** 브라우저 전역 및 CommonJS로 공개할 라이브러리 API다. @type {{Enemy:typeof Enemy, registerOpponent:typeof registerOpponent, registerLanguage:typeof registerLanguage, setNoticeFile:typeof setNoticeFile, getSelectedDifficulty:typeof getSelectedDifficulty, getSelectedColorCount:typeof getSelectedColorCount, initialize:typeof initialize, destroy:typeof destroy}|null} */
     let WebPuyo = null;
 
     /**
      * 저장 데이터의 기본 구조를 만든다.
-     * @returns {{clearList:string[]}} 초기 저장 데이터
+     * @returns {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>}} 초기 저장 데이터
      */
     function createInitialStore() {
-        return { clearList: [], settings: { musicVolume: 100, effectsVolume: 100, aiProvider: 'OpenAI', aiApiKey: '', aiModel: '' } };
+        return {
+            clearList: [],
+            clearListByDifficulty: { easy: [], normal: [], hard: [] },
+            settings: { musicVolume: 100, effectsVolume: 100, aiProvider: 'OpenAI', aiApiKey: '', aiModel: '' }
+        };
     }
 
     /**
@@ -209,14 +231,23 @@
             if (!parsed || !Array.isArray(parsed.clearList) || !parsed.clearList.every((name) => typeof name === 'string')) {
                 throw new TypeError('clearList 배열이 필요합니다.');
             }
+            const storedClearListByDifficulty = parsed.clearListByDifficulty && typeof parsed.clearListByDifficulty === 'object' && !Array.isArray(parsed.clearListByDifficulty)
+                ? parsed.clearListByDifficulty
+                : {};
+            const initial = createInitialStore();
+            const clearListByDifficulty = Object.fromEntries(Object.keys(initial.clearListByDifficulty).map((key) => [
+                key,
+                Array.isArray(storedClearListByDifficulty[key])
+                    ? [...new Set(storedClearListByDifficulty[key].filter((name) => typeof name === 'string'))]
+                    : []
+            ]));
             const settings = parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {};
-            const initial = createInitialStore().settings;
-            store = { clearList: [...new Set(parsed.clearList)], settings: {
-                musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.musicVolume,
-                effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.effectsVolume,
+            store = { clearList: [...new Set(parsed.clearList)], clearListByDifficulty, settings: {
+                musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.settings.musicVolume,
+                effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.settings.effectsVolume,
                 aiProvider: settings.aiProvider === 'Google' ? 'Google' : 'OpenAI',
-                aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.aiApiKey,
-                aiModel: typeof settings.aiModel === 'string' ? settings.aiModel : initial.aiModel
+                aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.settings.aiApiKey,
+                aiModel: typeof settings.aiModel === 'string' ? settings.aiModel : initial.settings.aiModel
             } };
         } catch (error) {
             console.error('Puyo W 저장 데이터 불러오기에 실패했습니다.', error);
@@ -256,6 +287,28 @@
             throw new TypeError('공지사항 경로는 비어 있지 않은 문자열이어야 합니다.');
         }
         NOTICE_FILE = noticeFile;
+    }
+
+    /**
+     * 현재 게임에 적용할 AI 난이도 정보를 반환한다.
+     * 게임 중에는 시작할 때 선택한 값이 반환되고, 메뉴에서는 현재 선택 중인 값이 반환된다.
+     * @returns {{key:'easy'|'normal'|'hard', name:string, fastDownDelay:number|null}} AI 난이도 키, 표시명, 빠른 하강 대기 시간(ms)
+     */
+    function getSelectedDifficulty() {
+        const index = game ? game.aiDifficulty : selectedAiDifficulty;
+        const difficulty = AI_DIFFICULTIES[index] || AI_DIFFICULTIES[1];
+        return { ...difficulty };
+    }
+
+    /**
+     * 현재 게임에 적용할 색상 수 설정을 반환한다.
+     * 게임 중에는 시작할 때 선택한 값이 반환되고, 메뉴에서는 현재 선택 중인 값이 반환된다.
+     * @returns {3|4|5} 사용할 일반 뿌요 색상 수
+     */
+    function getSelectedColorCount() {
+        const index = game ? game.difficulty : selectedDifficulty;
+        const difficulty = DIFFICULTIES[index] || DIFFICULTIES[1];
+        return difficulty.colors.length;
     }
 
     /**
@@ -329,6 +382,7 @@
             this.aiTarget = 5;
             this.aiRotation = 0;
             this.aiFastDown = false;
+            this.aiDecisionElapsed = 0;
             this.aiSimulations = [];
             this.hasPlacedPuyoSinceAllClear = false;
             this.allClearEffectElapsed = 0;
@@ -402,7 +456,9 @@
         const progressionOpponents = OPPONENTS.filter((entry) => !entry.hidden && !entry.notAvail);
         const index = progressionOpponents.indexOf(opponent);
         if (index <= 0) return index === 0;
-        return store.clearList.includes(progressionOpponents[index - 1].className);
+        const difficultyKey = getSelectedDifficulty().key;
+        const clearList = store.clearListByDifficulty?.[difficultyKey] || [];
+        return clearList.includes(progressionOpponents[index - 1].className);
     }
 
     /**
@@ -487,9 +543,11 @@
             winner: null,
             ending: null,
             countdown: 3000,
+            countdownStartsGame: true,
             elapsed: 0,
             practice,
             difficulty: selectedDifficulty,
+            aiDifficulty: selectedAiDifficulty,
             themeController: controller,
             pairQueueColors: colors,
             pairQueue: Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors)),
@@ -574,7 +632,8 @@
             player.controller.prepareTurn(player);
             player.aiTarget = player.controller.chooseTarget(player);
             player.aiRotation = ((player.controller.chooseRotate(player) % 4) + 4) % 4;
-            player.aiFastDown = player.controller.useFastDown(player) === true;
+            player.aiFastDown = false;
+            player.aiDecisionElapsed = 0;
         }
     }
 
@@ -1046,10 +1105,17 @@
     function recordEnemyClear(winner) {
         if (game.practice || winner !== game.players[0]) return;
         const enemyClassName = game.players[1].controller.constructor.name;
+        const difficultyKey = AI_DIFFICULTIES[game.aiDifficulty]?.key || AI_DIFFICULTIES[1].key;
+        let changed = false;
+        if (!store.clearListByDifficulty[difficultyKey].includes(enemyClassName)) {
+            store.clearListByDifficulty[difficultyKey].push(enemyClassName);
+            changed = true;
+        }
         if (!store.clearList.includes(enemyClassName)) {
             store.clearList.push(enemyClassName);
-            saveStore();
+            changed = true;
         }
+        if (changed) saveStore();
     }
 
     /**
@@ -1117,6 +1183,8 @@
                 }
             }
             if (player.controller) {
+                player.aiDecisionElapsed += delta;
+                player.aiFastDown = player.controller.useFastDown(player) === true;
                 const rotationDelta = (player.aiRotation - player.active.rotation + 4) % 4;
                 if (rotationDelta) {
                     const direction = rotationDelta === 3 ? -1 : 1;
@@ -1868,39 +1936,54 @@
      */
     function drawMenu() {
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `54px ${TITLE_FONT}`; context.fillText('Puyo W', WIDTH / 2, menuScreen === 'opponent' ? 112 : 170);
+        const opponentMenuScaled = menuScreen === 'opponent';
+        if (opponentMenuScaled) {
+            context.save();
+            context.translate(WIDTH / 2, HEIGHT / 2);
+            context.scale(OPPONENT_MENU_SCALE, OPPONENT_MENU_SCALE);
+            context.translate(-WIDTH / 2, -HEIGHT / 2);
+        }
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `54px ${TITLE_FONT}`; context.fillText('Puyo W', WIDTH / 2, menuScreen === 'opponent' ? 90 : 170);
         if (menuScreen === 'title') drawNotice();
         if (menuScreen === 'opponent') {
-            context.fillStyle = '#d8f2f5'; context.font = `22px ${TITLE_FONT}`; context.fillText(translate('난이도 선택'), WIDTH / 2, 150);
+            context.fillStyle = '#d8f2f5'; context.font = `22px ${TITLE_FONT}`; context.fillText(translate('난이도'), WIDTH / 2, 130);
             DIFFICULTIES.forEach((difficulty, index) => {
                 const x = 465 + index * 120;
                 const selected = index === selectedDifficulty;
-                context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 170, 110, 50);
+                context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 135, 110, 44);
                 context.strokeStyle = opponentMenuFocus === 0 && selected ? '#f7c843' : '#3b6070'; context.lineWidth = opponentMenuFocus === 0 && selected ? 4 : 2;
-                context.strokeRect(x, 170, 110, 50);
-                context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 202);
+                context.strokeRect(x, 135, 110, 44);
+                context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 163);
             });
-            context.fillStyle = '#d8f2f5'; context.font = `22px ${TITLE_FONT}`; context.fillText(translate('적 선택'), WIDTH / 2, 265);
+            AI_DIFFICULTIES.forEach((difficulty, index) => {
+                const x = 465 + index * 120;
+                const selected = index === selectedAiDifficulty;
+                context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 195, 110, 44);
+                context.strokeStyle = opponentMenuFocus === 1 && selected ? '#f7c843' : '#3b6070'; context.lineWidth = opponentMenuFocus === 1 && selected ? 4 : 2;
+                context.strokeRect(x, 195, 110, 44);
+                context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 223);
+            });
+            context.fillStyle = '#d8f2f5'; context.font = `22px ${TITLE_FONT}`; context.fillText(translate('적 선택'), WIDTH / 2, 285);
             ensureSelectedOpponent();
             const opponent = OPPONENTS[selectedOpponent];
-            context.fillStyle = '#0b202c'; context.fillRect(WIDTH / 2 - 170, 280, 340, 190);
-            context.strokeStyle = opponentMenuFocus === 1 ? '#f7c843' : '#ef8aa0'; context.lineWidth = opponentMenuFocus === 1 ? 4 : 3; context.strokeRect(WIDTH / 2 - 170, 280, 340, 190);
+            context.fillStyle = '#0b202c'; context.fillRect(WIDTH / 2 - 170, 300, 340, 170);
+            context.strokeStyle = opponentMenuFocus === 2 ? '#f7c843' : '#ef8aa0'; context.lineWidth = opponentMenuFocus === 2 ? 4 : 3; context.strokeRect(WIDTH / 2 - 170, 300, 340, 170);
             if (opponent) {
-                opponent.createController().drawPortrait(context, WIDTH / 2, 360, 0.7);
-                context.fillStyle = '#f5fbfc'; context.font = `28px ${BUTTON_FONT}`; context.fillText(opponent.createController().getName(), WIDTH / 2, 450);
+                opponent.createController().drawPortrait(context, WIDTH / 2, 375, 0.62);
+                context.fillStyle = '#f5fbfc'; context.font = `28px ${BUTTON_FONT}`; context.fillText(translate(opponent.createController().getName()), WIDTH / 2, 450);
             }
-            if (opponentMenuFocus === 1) {
+            if (opponentMenuFocus === 2) {
                 context.fillStyle = '#f7c843';
                 context.beginPath();
-                context.moveTo(WIDTH / 2 - 205, 375);
-                context.lineTo(WIDTH / 2 - 175, 350);
-                context.lineTo(WIDTH / 2 - 175, 400);
+                context.moveTo(WIDTH / 2 - 205, 385);
+                context.lineTo(WIDTH / 2 - 175, 360);
+                context.lineTo(WIDTH / 2 - 175, 410);
                 context.closePath();
                 context.fill();
                 context.beginPath();
-                context.moveTo(WIDTH / 2 + 205, 375);
-                context.lineTo(WIDTH / 2 + 175, 350);
-                context.lineTo(WIDTH / 2 + 175, 400);
+                context.moveTo(WIDTH / 2 + 205, 385);
+                context.lineTo(WIDTH / 2 + 175, 360);
+                context.lineTo(WIDTH / 2 + 175, 410);
                 context.closePath();
                 context.fill();
             }
@@ -1918,18 +2001,19 @@
                     context.globalAlpha = 0.42;
                     entry.createController().drawPortrait(context, cardX + 24, 495, 0.14);
                     context.restore();
-                    context.fillStyle = '#c4cbd0'; context.font = `15px ${BUTTON_FONT}`; context.fillText(entry.createController().getName(), cardX + 94, 500);
+                    context.fillStyle = '#c4cbd0'; context.font = `15px ${BUTTON_FONT}`; context.fillText(translate(entry.createController().getName()), cardX + 94, 500);
                     context.fillStyle = '#f0c674'; context.font = `13px ${BUTTON_FONT}`; context.fillText(translate(entry.notAvail ? '추후 출시예정' : '잠김'), cardX + 80, 524);
                 } else {
-                    context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(entry.createController().getName(), cardX + 80, 513);
+                    context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(entry.createController().getName()), cardX + 80, 513);
                 }
             });
             context.fillStyle = '#ef5350'; context.fillRect(440, 600, 250, 58);
-            context.strokeStyle = opponentMenuFocus === 2 && selectedOpponentAction === 0 ? '#f7c843' : '#ef5350'; context.lineWidth = opponentMenuFocus === 2 && selectedOpponentAction === 0 ? 4 : 2; context.strokeRect(440, 600, 250, 58);
+            context.strokeStyle = opponentMenuFocus === 3 && selectedOpponentAction === 0 ? '#f7c843' : '#ef5350'; context.lineWidth = opponentMenuFocus === 3 && selectedOpponentAction === 0 ? 4 : 2; context.strokeRect(440, 600, 250, 58);
             context.fillStyle = '#fff'; context.font = `20px ${BUTTON_FONT}`; context.fillText(translate('시작'), 565, 637);
             context.fillStyle = '#264b5b'; context.fillRect(710, 600, 130, 58);
-            context.strokeStyle = opponentMenuFocus === 2 && selectedOpponentAction === 1 ? '#f7c843' : '#264b5b'; context.lineWidth = opponentMenuFocus === 2 && selectedOpponentAction === 1 ? 4 : 2; context.strokeRect(710, 600, 130, 58);
+            context.strokeStyle = opponentMenuFocus === 3 && selectedOpponentAction === 1 ? '#f7c843' : '#264b5b'; context.lineWidth = opponentMenuFocus === 3 && selectedOpponentAction === 1 ? 4 : 2; context.strokeRect(710, 600, 130, 58);
             context.fillStyle = '#d8f2f5'; context.font = `18px ${BUTTON_FONT}`; context.fillText(translate('이전'), 775, 637);
+            context.restore();
             return;
         }
         const menuX = WIDTH / 2 - 109; const menuWidth = 218; const menuHeight = 50;
@@ -2009,7 +2093,7 @@
             return;
         }
         drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter();
-        // 시작 전에는 카운트다운 오버레이를 최상단에 표시한다.
+        // 시작 또는 재개 카운트다운 중에는 카운트다운 오버레이를 최상단에 표시한다.
         if (game.countdown > 0) {
             context.fillStyle = 'rgba(3, 11, 19, 0.62)'; context.fillRect(0, 0, WIDTH, HEIGHT);
             context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `76px ${TITLE_FONT}`;
@@ -2032,7 +2116,10 @@
             // 카운트다운이 끝나면 양쪽 플레이어의 첫 턴을 시작한다.
             if (game.countdown > 0) {
                 game.countdown = Math.max(0, game.countdown - delta);
-                if (!game.countdown) beginGame();
+                if (!game.countdown && game.countdownStartsGame) {
+                    game.countdownStartsGame = false;
+                    beginGame();
+                }
             } else if (game.ending) {
                 game.elapsed += delta;
                 updateDefeatSequence(delta);
@@ -2142,14 +2229,16 @@
             } else if (menuScreen === 'opponent' && key === 'arrowup') {
                 opponentMenuFocus = Math.max(0, opponentMenuFocus - 1);
             } else if (menuScreen === 'opponent' && key === 'arrowdown') {
-                opponentMenuFocus = Math.min(2, opponentMenuFocus + 1);
+                opponentMenuFocus = Math.min(3, opponentMenuFocus + 1);
             } else if (menuScreen === 'opponent' && key === 'arrowleft') {
                 if (opponentMenuFocus === 0) selectedDifficulty = (selectedDifficulty + DIFFICULTIES.length - 1) % DIFFICULTIES.length;
-                else if (opponentMenuFocus === 1) selectRelativeOpponent(-1);
+                else if (opponentMenuFocus === 1) selectedAiDifficulty = (selectedAiDifficulty + AI_DIFFICULTIES.length - 1) % AI_DIFFICULTIES.length;
+                else if (opponentMenuFocus === 2) selectRelativeOpponent(-1);
                 else selectedOpponentAction = 0;
             } else if (menuScreen === 'opponent' && key === 'arrowright') {
                 if (opponentMenuFocus === 0) selectedDifficulty = (selectedDifficulty + 1) % DIFFICULTIES.length;
-                else if (opponentMenuFocus === 1) selectRelativeOpponent(1);
+                else if (opponentMenuFocus === 1) selectedAiDifficulty = (selectedAiDifficulty + 1) % AI_DIFFICULTIES.length;
+                else if (opponentMenuFocus === 2) selectRelativeOpponent(1);
                 else selectedOpponentAction = 1;
             } else if (menuScreen === 'settings') {
                 handleSettingsKeydown(event, key);
@@ -2157,8 +2246,9 @@
                 if (menuScreen === 'title') activateTitleMenu();
                 else if (menuScreen === 'settings') activateSettingsFocus();
                 else if (opponentMenuFocus === 0) opponentMenuFocus = 1;
-                else if (opponentMenuFocus === 1) {
-                    opponentMenuFocus = 2;
+                else if (opponentMenuFocus === 1) opponentMenuFocus = 2;
+                else if (opponentMenuFocus === 2) {
+                    opponentMenuFocus = 3;
                     selectedOpponentAction = 0;
                 } else if (selectedOpponentAction === 0) startGame();
                 else { menuScreen = 'title'; loadNotice(); }
@@ -2180,6 +2270,10 @@
         }
         // 결과 화면에서는 위에서 처리한 메뉴 복귀 외 입력을 무시한다.
         if (!game.running) {
+            return;
+        }
+        // 시작 또는 재개 카운트다운 중에는 일시정지를 포함한 게임 조작을 받지 않는다.
+        if (game.countdown > 0) {
             return;
         }
         // 일시정지 중에는 방향키와 Enter로만 오버레이의 버튼을 조작한다.
@@ -2253,6 +2347,8 @@
     function activatePauseMenu() {
         if (pauseMenuFocus === 0) {
             game.paused = false;
+            game.countdown = 3000;
+            game.countdownStartsGame = false;
         } else {
             game = null;
             menuScreen = 'title'; loadNotice();
@@ -2260,11 +2356,12 @@
     }
 
     /**
-     * 적 선택 화면을 기본 난이도와 첫 포커스 상태로 연다.
+     * 적 선택 화면을 색상 4색·AI 보통 난이도와 첫 포커스 상태로 연다.
      * @returns {void}
      */
     function openOpponentMenu() {
         selectedDifficulty = 1;
+        selectedAiDifficulty = 1;
         ensureSelectedOpponent();
         opponentMenuFocus = 0;
         selectedOpponentAction = 0;
@@ -2343,7 +2440,7 @@
                 titleMenuFocus = 3;
                 activateTitleMenu();
             } else if (x >= 32 && x <= 202 && y >= 642 && y <= 688) {
-                titleMenuFocus = 3;
+                titleMenuFocus = 4;
                 activateTitleMenu();
             }
         } else if (menuScreen === 'settings') {
@@ -2360,13 +2457,26 @@
                 if (difficultyIndex >= 0) {
                     selectedDifficulty = difficultyIndex;
                     startGame(true);
+                } else {
+                    // 난이도 선택지 바깥을 클릭하면 ESC와 같이 메인 화면으로 돌아간다.
+                    menuScreen = 'title';
+                    loadNotice();
                 }
                 return;
             }
-            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => x >= 465 + index * 120 && x <= 575 + index * 120 && y >= 170 && y <= 220);
+            // 축소해 그린 적 선택 화면의 클릭 좌표를 원래 논리 좌표로 되돌린다.
+            const opponentX = (x - WIDTH / 2) / OPPONENT_MENU_SCALE + WIDTH / 2;
+            const opponentY = (y - HEIGHT / 2) / OPPONENT_MENU_SCALE + HEIGHT / 2;
+            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => opponentX >= 465 + index * 120 && opponentX <= 575 + index * 120 && opponentY >= 135 && opponentY <= 179);
             if (difficultyIndex >= 0) {
                 selectedDifficulty = difficultyIndex;
                 opponentMenuFocus = 0;
+                return;
+            }
+            const aiDifficultyIndex = AI_DIFFICULTIES.findIndex((difficulty, index) => opponentX >= 465 + index * 120 && opponentX <= 575 + index * 120 && opponentY >= 195 && opponentY <= 239);
+            if (aiDifficultyIndex >= 0) {
+                selectedAiDifficulty = aiDifficultyIndex;
+                opponentMenuFocus = 1;
                 return;
             }
             const visibleOpponents = getVisibleOpponents();
@@ -2374,19 +2484,21 @@
             const selectedVisibleIndex = visibleOpponents.indexOf(selectedEntry);
             const cardIndex = visibleOpponents.findIndex((entry, index) => {
                 const cardX = WIDTH / 2 - 80 + (index - selectedVisibleIndex) * 180;
-                return x >= cardX && x <= cardX + 160 && y >= 475 && y <= 537;
+                return opponentX >= cardX && opponentX <= cardX + 160 && opponentY >= 475 && opponentY <= 537;
             });
             if (cardIndex >= 0) {
                 const clickedOpponent = visibleOpponents[cardIndex];
                 if (!clickedOpponent.notAvail && isOpponentUnlocked(clickedOpponent)) {
                     selectedOpponent = OPPONENTS.indexOf(clickedOpponent);
-                    opponentMenuFocus = 1;
+                    opponentMenuFocus = 2;
                 }
-            } else if (x >= 440 && x <= 690 && y >= 600 && y <= 658) {
+            } else if (opponentX >= 440 && opponentX <= 690 && opponentY >= 600 && opponentY <= 658) {
                 selectedOpponentAction = 0;
+                opponentMenuFocus = 3;
                 startGame();
-            } else if (x >= 710 && x <= 840 && y >= 600 && y <= 658) {
+            } else if (opponentX >= 710 && opponentX <= 840 && opponentY >= 600 && opponentY <= 658) {
                 selectedOpponentAction = 1;
+                opponentMenuFocus = 3;
                 menuScreen = 'title'; loadNotice();
             }
         }
@@ -2701,12 +2813,14 @@
         }
 
         /**
-         * 이번 턴에 빠른 하강을 사용할지 결정한다.
+         * 목표 열과 회전을 정한 뒤 현재 AI 난이도에 따라 빠른 하강을 사용할지 결정한다.
+         * 이 메서드는 조작 단계 동안 매 프레임 호출되므로, 대기 시간이 지나기 전에는 false를 반환한다.
          * @param {PlayerState} player 자동 조작할 플레이어
          * @returns {boolean} 빠른 하강 사용 여부
          */
         useFastDown(player) {
-            return false;
+            const delay = getSelectedDifficulty().fastDownDelay;
+            return delay !== null && player.aiDecisionElapsed >= delay;
         }
 
         /**
@@ -2801,7 +2915,7 @@
             // 중앙이 높이 쌓였거나 시뮬레이션 단계면 최대 공격 위치를 선택한다.
             const trigger = this.attackSimulationTriggerPosition;
             const triggerOccupied = player.board[trigger.y][trigger.x] !== null;
-            if (triggerOccupied || this.phase === 'simulation') {
+            if (triggerOccupied || this.phase === 'simulation' || player.damage >= AI_ATTACK_SIMULATION_DAMAGE_THRESHOLD) {
                 const bestColumn = findBestAttackColumn(player, 0, triggerOccupied ? trigger.x : null);
                 this.phase = 'repeatLeft';
                 if (!triggerOccupied) this.turnsRemaining = 6;
@@ -2903,7 +3017,10 @@
         chooseTarget(player) {
             // 중앙이 위험 높이에 도달하면 즉시 공격력이 최대인 열을 찾는다.
             const trigger = this.attackSimulationTriggerPosition;
-            if (player.board[trigger.y][trigger.x]) return findBestAttackColumn(player, 0, trigger.x);
+            const triggerOccupied = player.board[trigger.y][trigger.x] !== null;
+            if (triggerOccupied || player.damage >= AI_ATTACK_SIMULATION_DAMAGE_THRESHOLD) {
+                return findBestAttackColumn(player, 0, triggerOccupied ? trigger.x : null);
+            }
             this.turnCount += 1;
             const stackDirection = COLUMNS - 1;
             if (this.turnCount <= this.turnsUntilSimulation || !player.active) return stackDirection;
@@ -2912,15 +3029,6 @@
             this.turnCount = 0;
             this.turnsUntilSimulation = this.randomTurnsUntilSimulation();
             return bestColumn;
-        }
-
-        /**
-         * 목표 열과 회전을 정한 뒤 아래 방향키를 눌러 빠르게 배치한다.
-         * @param {PlayerState} player 자동 조작할 플레이어
-         * @returns {boolean} 항상 빠른 하강을 사용함
-         */
-        useFastDown(player) {
-            return true;
         }
 
         /**
@@ -3182,7 +3290,7 @@
         createOpponentEntry(() => new Seere())
     );
 
-    WebPuyo = { Enemy, registerOpponent, registerLanguage, setNoticeFile, initialize, destroy };
+    WebPuyo = { Enemy, registerOpponent, registerLanguage, setNoticeFile, getSelectedDifficulty, getSelectedColorCount, initialize, destroy };
     if (typeof module !== 'undefined' && module.exports) module.exports = WebPuyo;
     if (typeof window !== 'undefined') window.WebPuyo = WebPuyo;
 })();
