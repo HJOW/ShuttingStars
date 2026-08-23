@@ -47,24 +47,6 @@
     const MESSAGE_FONT_NAME = 'D2Coding';
     /** 글꼴 지정 시 기본 글꼴 뒤에 대체 글꼴로 붙일 글꼴 이름 목록이다. 배열 내부와 세 글꼴 이름 모두와 중복되지 않도록 자동으로 걸러진다. @type {string[]} */
     const FALLBACK_FONTS = ['Nanum Gothic Coding', 'Nanum Gothic', 'Noto Sans SC', 'Noto Sans JP', 'monospace', 'sans-serif'];
-    /**
-     * 공백이 있어 CSS font 값에서 여러 키워드로 잘못 해석될 수 있는 글꼴 이름에만 쌍따옴표를 붙인다.
-     * @param {string} fontName 원본 글꼴 이름
-     * @returns {string} font 속성에 안전하게 넣을 수 있는 글꼴 이름
-     */
-    function quoteFontNameIfNeeded(fontName) {
-        return fontName.includes(' ') ? `"${fontName}"` : fontName;
-    }
-    /**
-     * 기본 글꼴 뒤에 FALLBACK_FONTS를 자기 자신 및 세 기본 글꼴 이름과 겹치지 않게 이어 붙인 글꼴 목록 문자열을 만든다.
-     * @param {string} primaryFontName 최우선으로 사용할 글꼴 이름
-     * @returns {string} 콤마로 구분된 글꼴 목록 문자열
-     */
-    function buildFontStack(primaryFontName) {
-        const reserved = new Set([primaryFontName, TITLE_FONT_NAME, BUTTON_FONT_NAME, MESSAGE_FONT_NAME]);
-        const uniqueFallbacks = [...new Set(FALLBACK_FONTS)].filter((fontName) => !reserved.has(fontName));
-        return [primaryFontName, ...uniqueFallbacks].map(quoteFontNameIfNeeded).join(', ');
-    }
     /** 화면 제목이나 절 제목처럼 강조가 필요한 큰 헤더에 사용할 글꼴 목록이다. @type {string} */
     const TITLE_FONT = buildFontStack(TITLE_FONT_NAME);
     /** 버튼, 선택 카드 등 클릭 가능한 항목의 라벨에 사용할 글꼴 목록이다. @type {string} */
@@ -90,7 +72,7 @@
     /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {null} */
     const AI_FAST_DOWN_DELAY_EASY = null;
     /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number} */
-    const AI_FAST_DOWN_DELAY_NORMAL = 1000;
+    const AI_FAST_DOWN_DELAY_NORMAL = 1500;
     /** AI 어려움 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number} */
     const AI_FAST_DOWN_DELAY_HARD = 300;
     /** 적이 공격 위력 시뮬레이션을 우선할 피해량 기준이다. @type {number} */
@@ -113,7 +95,8 @@
             '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Play', '그리기': 'Draw', '시뮬레이션': 'Simulation', '지우개': 'Eraser',
             'JSON복사': 'Copy JSON', 'JSON넣기': 'Paste JSON', '배치가 클립보드에 복사됨': 'Layout copied to clipboard',
             '클립보드 복사 실패': 'Clipboard copy failed', 'JSON 파싱 실패': 'JSON parsing failed', '배치 JSON을 입력하세요.': 'Enter layout JSON.',
-            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 및 AI 관련 기능은 추후 제공 예정': 'Sound and AI features will be available in a future update.'
+            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 및 AI 관련 기능은 추후 제공 예정': 'Sound and AI features will be available in a future update.',
+            '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)'
         }
     };
 
@@ -193,6 +176,25 @@
     let WebPuyo = null;
 
     /**
+     * 공백이 있어 CSS font 값에서 여러 키워드로 잘못 해석될 수 있는 글꼴 이름에만 쌍따옴표를 붙인다.
+     * @param {string} fontName 원본 글꼴 이름
+     * @returns {string} font 속성에 안전하게 넣을 수 있는 글꼴 이름
+     */
+    function quoteFontNameIfNeeded(fontName) {
+        return fontName.includes(' ') ? `"${fontName}"` : fontName;
+    }
+    /**
+     * 기본 글꼴 뒤에 FALLBACK_FONTS를 자기 자신 및 세 기본 글꼴 이름과 겹치지 않게 이어 붙인 글꼴 목록 문자열을 만든다.
+     * @param {string} primaryFontName 최우선으로 사용할 글꼴 이름
+     * @returns {string} 콤마로 구분된 글꼴 목록 문자열
+     */
+    function buildFontStack(primaryFontName) {
+        const reserved = new Set([primaryFontName, TITLE_FONT_NAME, BUTTON_FONT_NAME, MESSAGE_FONT_NAME]);
+        const uniqueFallbacks = [...new Set(FALLBACK_FONTS)].filter((fontName) => !reserved.has(fontName));
+        return [primaryFontName, ...uniqueFallbacks].map(quoteFontNameIfNeeded).join(', ');
+    }
+
+    /**
      * 저장 데이터의 기본 구조를 만든다.
      * @returns {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>}} 초기 저장 데이터
      */
@@ -200,7 +202,8 @@
         return {
             clearList: [],
             clearListByDifficulty: { easy: [], normal: [], hard: [] },
-            settings: { musicVolume: 100, effectsVolume: 100, aiProvider: 'OpenAI', aiApiKey: '', aiModel: '' }
+            settings: { musicVolume: 100, effectsVolume: 100, aiProvider: 'OpenAI', aiApiKey: '', aiModel: '' },
+            muted: false
         };
     }
 
@@ -248,7 +251,7 @@
                 aiProvider: settings.aiProvider === 'Google' ? 'Google' : 'OpenAI',
                 aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.settings.aiApiKey,
                 aiModel: typeof settings.aiModel === 'string' ? settings.aiModel : initial.settings.aiModel
-            } };
+            }, muted: parsed.muted === true };
         } catch (error) {
             console.error('Puyo W 저장 데이터 불러오기에 실패했습니다.', error);
             store = createInitialStore();
@@ -1285,7 +1288,7 @@
      * @param {number} scale 셀 대비 크기 비율
      * @returns {void}
      */
-    function drawPuyo(x, y, color, scale = 1) {
+    function drawPuyo(x, y, color, scale = 1, slimeDetails = true) {
         const radius = CELL * 0.42 * scale;
         context.save();
         context.translate(x + CELL / 2, y + CELL / 2);
@@ -1297,7 +1300,75 @@
         context.lineWidth = 2;
         context.strokeStyle = color === 'garbage' ? '#f4fbff' : 'rgba(255,255,255,0.45)';
         context.stroke();
-        drawPuyoEyes(radius);
+        // 일반/방해뿌요는 물방울 같은 슬라임이라는 인상을 주는 작은 반사광을 넣는다.
+        // 예고뿌요(태양, 별, 돌 등)는 이 함수가 아닌 drawWarning에서 별도로 그린다.
+        if (slimeDetails) {
+            context.fillStyle = 'rgba(255, 255, 255, 0.72)';
+            context.beginPath();
+            // 긴 축을 기존 방향에서 90도 돌려 표면을 따라 반사되게 한다.
+            context.ellipse(radius * 0.43, -radius * 0.43, radius * 0.13, radius * 0.22, 0.55 + Math.PI / 2, 0, Math.PI * 2);
+            context.fill();
+        }
+        drawPuyoEyes(radius, slimeDetails ? radius * 0.08 : 0);
+        context.restore();
+    }
+
+    /**
+     * 30 단위 예고뿌요인 빨간돌을 한 칸 안에 울퉁불퉁하게 그린다.
+     * @param {number} x 좌측 X 좌표
+     * @param {number} y 위쪽 Y 좌표
+     * @returns {void}
+     */
+    function drawRockWarning(x, y) {
+        const size = CELL * 0.42;
+        context.save();
+        context.translate(x + CELL / 2, y + CELL / 2);
+        context.lineJoin = 'round';
+        context.lineWidth = 2;
+        context.strokeStyle = '#8e2728';
+        context.fillStyle = '#c83f3d';
+        context.beginPath();
+        context.moveTo(-size * 0.78, -size * 0.2);
+        context.lineTo(-size * 0.52, -size * 0.78);
+        context.lineTo(-size * 0.08, -size * 0.91);
+        context.lineTo(size * 0.38, -size * 0.75);
+        context.lineTo(size * 0.84, -size * 0.26);
+        context.lineTo(size * 0.67, size * 0.48);
+        context.lineTo(size * 0.2, size * 0.84);
+        context.lineTo(-size * 0.43, size * 0.76);
+        context.lineTo(-size * 0.86, size * 0.28);
+        context.closePath();
+        context.fill();
+        context.stroke();
+
+        // 각진 면을 겹쳐 표면이 매끈한 뿌요가 아니라는 점을 강조한다.
+        context.fillStyle = '#e4675a';
+        context.beginPath();
+        context.moveTo(-size * 0.52, -size * 0.78);
+        context.lineTo(-size * 0.08, -size * 0.91);
+        context.lineTo(size * 0.05, -size * 0.2);
+        context.lineTo(-size * 0.4, size * 0.02);
+        context.closePath();
+        context.fill();
+        context.fillStyle = '#9d2d31';
+        context.beginPath();
+        context.moveTo(size * 0.05, -size * 0.2);
+        context.lineTo(size * 0.38, -size * 0.75);
+        context.lineTo(size * 0.84, -size * 0.26);
+        context.lineTo(size * 0.67, size * 0.48);
+        context.lineTo(size * 0.2, size * 0.84);
+        context.lineTo(size * 0.12, size * 0.12);
+        context.closePath();
+        context.fill();
+        context.strokeStyle = 'rgba(255, 170, 150, 0.65)';
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.moveTo(-size * 0.52, -size * 0.78);
+        context.lineTo(-size * 0.08, -size * 0.91);
+        context.lineTo(size * 0.05, -size * 0.2);
+        context.lineTo(size * 0.38, -size * 0.75);
+        context.stroke();
+        drawPuyoEyes(size, size * 0.08);
         context.restore();
     }
 
@@ -1306,16 +1377,16 @@
      * @param {number} radius 뿌요 본체의 반지름
      * @returns {void}
      */
-    function drawPuyoEyes(radius) {
+    function drawPuyoEyes(radius, offsetY = 0) {
         context.fillStyle = '#fff';
         context.beginPath();
-        context.arc(-radius * 0.28, -radius * 0.12, radius * 0.19, 0, Math.PI * 2);
-        context.arc(radius * 0.28, -radius * 0.12, radius * 0.19, 0, Math.PI * 2);
+        context.arc(-radius * 0.28, -radius * 0.12 + offsetY, radius * 0.19, 0, Math.PI * 2);
+        context.arc(radius * 0.28, -radius * 0.12 + offsetY, radius * 0.19, 0, Math.PI * 2);
         context.fill();
         context.fillStyle = '#172031';
         context.beginPath();
-        context.arc(-radius * 0.25, -radius * 0.08, radius * 0.08, 0, Math.PI * 2);
-        context.arc(radius * 0.31, -radius * 0.08, radius * 0.08, 0, Math.PI * 2);
+        context.arc(-radius * 0.25, -radius * 0.08 + offsetY, radius * 0.08, 0, Math.PI * 2);
+        context.arc(radius * 0.31, -radius * 0.08 + offsetY, radius * 0.08, 0, Math.PI * 2);
         context.fill();
     }
 
@@ -1327,7 +1398,7 @@
      * @returns {void}
      */
     function drawWarning(x, y, type) {
-        if (type === 'tiny') return drawPuyo(x + CELL * 0.25, y + CELL * 0.25, 'garbage', 0.45);
+        if (type === 'tiny') return drawPuyo(x + CELL * 0.05, y + CELL * 0.25, 'garbage', 0.45, false);
         if (type === 'sun') {
             context.save();
             context.translate(x + CELL / 2, y + CELL / 2);
@@ -1364,10 +1435,25 @@
             context.closePath(); context.fill(); drawPuyoEyes(CELL * 0.34); context.restore(); return;
         }
         if (type === 'rock') {
-            drawPuyo(x, y, 'red');
+            drawRockWarning(x, y);
             return;
         }
         drawPuyo(x, y, 'garbage');
+    }
+
+    /**
+     * 예고뿌요 목록을 그린다. 1개 단위 예고뿌요끼리는 조금 더 촘촘하게 배치한다.
+     * @param {number} x 좌측 X 좌표
+     * @param {number} y 위쪽 Y 좌표
+     * @param {string[]} units 예고뿌요 단위 목록
+     * @returns {void}
+     */
+    function drawWarningUnits(x, y, units) {
+        let tinyCount = 0;
+        units.forEach((type, index) => {
+            const tinyOffset = type === 'tiny' ? tinyCount++ * 0.35 : 0;
+            drawWarning(x + (index - tinyOffset) * CELL, y, type);
+        });
     }
 
     /**
@@ -1513,7 +1599,7 @@
             context.fillStyle = '#0a1d29'; context.fillRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
             context.strokeStyle = 'rgba(176, 232, 244, 0.25)'; context.strokeRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
         }
-        warningUnits(opponent.attack + player.damage).forEach((type, index) => drawWarning(x + index * CELL, FIELD_TOP - CELL, type));
+        drawWarningUnits(x, FIELD_TOP - CELL, warningUnits(opponent.attack + player.damage));
         if (player.effects) {
             const progress = Math.min(1, player.effects.elapsed / player.effects.duration);
             player.effects.cells.forEach((puyo) => drawExplosionEffect(x + puyo.x * CELL, FIELD_BOTTOM - (puyo.y + 1) * CELL, puyo, progress));
@@ -1678,6 +1764,12 @@
     function cancelSettings() {
         settingsDraft = null; settingsEditing = false;
         menuScreen = 'title'; loadNotice();
+    }
+
+    /** 메인 화면의 음소거 상태를 토글하고 별도 저장한다. @returns {void} */
+    function toggleMuted() {
+        store.muted = !store.muted;
+        saveStore();
     }
 
     /** 설정 화면의 포커스 항목을 실행한다. @returns {void} */
@@ -1894,7 +1986,7 @@
         if (simulator.mode === 'draw' && simulator.focusArea === 'board') { const focus = simulator.boardFocus; context.strokeStyle = '#ffd54f'; context.lineWidth = 4; context.strokeRect(x + focus.x * CELL + 2, FIELD_BOTTOM - (focus.y + 1) * CELL + 2, CELL - 4, CELL - 4); }
         context.fillStyle = '#071621'; context.fillRect(500, FIELD_TOP - CELL, 350, CELL * 14); context.fillStyle = '#0c2433'; context.fillRect(FIELD_RIGHT - CELL, FIELD_TOP - CELL, CELL * 8, CELL * 14);
         for (let i = 0; i < COLUMNS; i += 1) { context.fillStyle = '#0a1d29'; context.fillRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); context.strokeStyle = 'rgba(176,232,244,.25)'; context.strokeRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); }
-        warningUnits(player.attack).forEach((type, index) => drawWarning(FIELD_RIGHT + index * CELL, FIELD_TOP - CELL, type));
+        drawWarningUnits(FIELD_RIGHT, FIELD_TOP - CELL, warningUnits(player.attack));
         context.textAlign = 'center';
         getSimulatorPaletteItems().forEach((item, index) => {
             const focused = simulator.focusArea === 'palette' && simulator.paletteFocus === index;
@@ -2032,6 +2124,9 @@
         context.fillStyle = '#24292f'; context.fillRect(32, 642, 170, 46);
         context.strokeStyle = titleMenuFocus === 4 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 4 ? 4 : 2; context.strokeRect(32, 642, 170, 46);
         context.fillStyle = '#ffffff'; context.font = `20px ${BUTTON_FONT}`; context.fillText(translate('GitHub'), 117, 673);
+        context.fillStyle = store.muted ? '#52606d' : '#264b5b'; context.fillRect(WIDTH - 202, 642, 170, 46);
+        context.strokeStyle = titleMenuFocus === 5 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 5 ? 4 : 2; context.strokeRect(WIDTH - 202, 642, 170, 46);
+        context.fillStyle = '#ffffff'; context.font = `20px ${BUTTON_FONT}`; context.fillText(translate(store.muted ? '음소거(활성)' : '음소거(꺼짐)'), WIDTH - 117, 673);
         context.fillStyle = '#8899a6'; context.font = `14px ${MESSAGE_FONT}`; context.fillText('Copyright (c) HJOW', WIDTH / 2, HEIGHT - 20);
         if (menuScreen === 'practiceDifficulty') {
             context.fillStyle = 'rgba(3, 11, 19, 0.76)'; context.fillRect(0, 0, WIDTH, HEIGHT);
@@ -2224,8 +2319,8 @@
             }
             if (menuScreen === 'title' && ['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key)) {
                 titleMenuFocus = key === 'arrowleft' || key === 'arrowup'
-                    ? (titleMenuFocus + 4) % 5
-                    : (titleMenuFocus + 1) % 5;
+                    ? (titleMenuFocus + 5) % 6
+                    : (titleMenuFocus + 1) % 6;
             } else if (menuScreen === 'opponent' && key === 'arrowup') {
                 opponentMenuFocus = Math.max(0, opponentMenuFocus - 1);
             } else if (menuScreen === 'opponent' && key === 'arrowdown') {
@@ -2334,9 +2429,11 @@
         }
         else if (titleMenuFocus === 2) openSimulator();
         else if (titleMenuFocus === 3) openSettings();
-        else {
+        else if (titleMenuFocus === 4) {
             const githubWindow = window.open('https://github.com/HJOW/puyow', '_blank');
             if (githubWindow) githubWindow.opener = null;
+        } else {
+            toggleMuted();
         }
     }
 
@@ -2437,6 +2534,8 @@
             } else if (x >= WIDTH / 2 - 109 && x <= WIDTH / 2 + 109 && y >= 445 && y <= 495) {
                 titleMenuFocus = 3;
                 activateTitleMenu();
+            } else if (x >= WIDTH - 202 && x <= WIDTH - 32 && y >= 642 && y <= 688) {
+                toggleMuted();
             } else if (x >= 32 && x <= 202 && y >= 642 && y <= 688) {
                 titleMenuFocus = 4;
                 activateTitleMenu();
