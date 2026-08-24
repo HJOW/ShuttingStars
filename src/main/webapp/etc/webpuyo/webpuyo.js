@@ -225,6 +225,16 @@
     let WebPuyo = null;
 
     /**
+     * 0 이상 1 미만의 난수를 반환한다.
+     *     자동 테스트 시 임시로 이 메소드를 수정한 후 테스트할 수 있다.
+     *     테스트를 위해서는 이 게임 내에서 랜덤 수 생성 시 반드시 이 함수를 이용해 생성해야만 한다.
+     * @returns {number}
+     */
+    function randomFloat() {
+        return Math.random();
+    }
+
+    /**
      * 공백이 있어 CSS font 값에서 여러 키워드로 잘못 해석될 수 있는 글꼴 이름에만 쌍따옴표를 붙인다.
      * @param {string} fontName 원본 글꼴 이름
      * @returns {string} font 속성에 안전하게 넣을 수 있는 글꼴 이름
@@ -469,7 +479,7 @@
      * @returns {string} 뿌요 색상 이름
      */
     function randomColor(colors = COLORS) {
-        return colors[Math.floor(Math.random() * colors.length)];
+        return colors[Math.floor(randomFloat() * colors.length)];
     }
 
     /**
@@ -1269,7 +1279,7 @@
             const positions = [];
             // 필요한 행 수만큼 열 순서를 섞어 방해뿌요 위치를 만든다.
             for (let y = 0; y < Math.ceil(amount / COLUMNS); y += 1) {
-                const columns = [...Array(COLUMNS).keys()].sort(() => Math.random() - 0.5);
+                const columns = [...Array(COLUMNS).keys()].sort(() => randomFloat() - 0.5);
                 columns.forEach((x) => positions.push([x, ROWS - 1 - y]));
             }
             positions.slice(0, amount).forEach(([x, y]) => { player.board[y][x] = 'garbage'; });
@@ -3170,13 +3180,28 @@
 
     /**
      * 현재 화면을 AI가 구분할 수 있는 간결한 상태 객체로 만든다.
-     * @returns {{screen:'main_menu'|'opponent_select'|'simulator'|'settings'|'countdown'|'playing'|'paused'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'main_menu'|'practice_difficulty'|'opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getNowScreen() {
-        if (!game) return { screen: menuScreen === 'opponent' ? 'opponent_select' : menuScreen === 'simulator' ? 'simulator' : menuScreen === 'settings' ? 'settings' : 'main_menu', playerCanControl: false };
+        if (!game) {
+            if (menuScreen === 'opponent') return { screen: 'opponent_select', playerCanControl: false };
+            if (menuScreen === 'practiceDifficulty') return { screen: 'practice_difficulty', playerCanControl: false };
+            if (menuScreen === 'simulator') {
+                const screen = simulator?.mode === 'draw' ? 'simulator_draw' : simulator?.mode === 'complete' ? 'simulator_complete' : 'simulator_simulation';
+                return { screen, playerCanControl: false };
+            }
+            if (menuScreen === 'settings') return { screen: 'settings', playerCanControl: false };
+            return { screen: 'main_menu', playerCanControl: false };
+        }
+        if (game.tutorial) {
+            if (game.tutorial.mode === 'complete') return { screen: 'tutorial_complete', playerCanControl: false };
+            if (game.tutorial.mode === 'result' || game.ending || !game.running) return { screen: 'tutorial_result', playerCanControl: false };
+            return { screen: game.tutorial.mode === 'intro' ? 'tutorial_intro' : 'tutorial_demo', playerCanControl: false };
+        }
         if (!game.running) return { screen: 'game_over', playerCanControl: false };
         if (game.countdown > 0) return { screen: 'countdown', playerCanControl: false };
         if (game.paused) return { screen: 'paused', playerCanControl: false };
+        if (game.ending) return { screen: 'ending', playerCanControl: false };
         return { screen: 'playing', playerCanControl: game.players[0].phase === 'control' && game.players[0].active !== null };
     }
 
@@ -3184,7 +3209,7 @@
      * 한 플레이어의 보드와 대기열을 JSON으로 직렬화 가능한 상태로 만든다.
      * @param {PlayerState} player 상태를 읽을 플레이어
      * @param {PlayerState} opponent 상대 플레이어
-     * @returns {{name:string, board:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, nextPairs:string[][], warningPuyos:string[], active:{x:number,y:number,rotation:number,colors:string[],cells:{x:number,y:number,color:string}[]}|null}}
+     * @returns {{name:string, isCpu:boolean, phase:string, point:number, attack:number, damage:number, combo:number, placedPairCount:number, board:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, nextPairs:string[][], warningPuyos:string[], active:{x:number,y:number,rotation:number,colors:string[],cells:{x:number,y:number,color:string}[]}|null}}
      */
     function getPlayerGameStatus(player, opponent) {
         const puyos = [];
@@ -3200,6 +3225,13 @@
         } : null;
         return {
             name: player.name,
+            isCpu: player.controller !== null,
+            phase: player.phase,
+            point: player.point,
+            attack: player.attack,
+            damage: player.damage,
+            combo: player.combo,
+            placedPairCount: player.placedPairCount,
             board: { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, puyos },
             nextPairs: player.nextPairs.map((pair) => [...pair]),
             warningPuyos: warningUnits(opponent.attack + player.damage),
@@ -3213,13 +3245,57 @@
      */
     function getNowGameStatus() {
         const screen = getNowScreen();
-        if (screen.screen !== 'playing' && screen.screen !== 'paused') {
-            throw new Error('now_game_status is available only while playing or paused.');
+        if (!game || game.tutorial || (screen.screen !== 'playing' && screen.screen !== 'paused')) {
+            throw new Error('now_game_status is available only during a normal match while playing or paused.');
         }
         const [player, opponent] = game.players;
         return {
             screen: screen.screen,
             playerCanControl: screen.playerCanControl,
+            player: getPlayerGameStatus(player, opponent),
+            opponent: getPlayerGameStatus(opponent, player),
+            recommendedPoint: recommendedPoint ? { ...recommendedPoint } : null
+        };
+    }
+
+    /**
+     * 현재 표시 중인 화면과 플레이어 조작 가능 여부를 반환한다.
+     * 메뉴, 튜토리얼, 대전 진행 상태 모두에서 사용할 수 있다.
+     * @returns {{screen:'main_menu'|'practice_difficulty'|'opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     */
+    function getScreenState() {
+        return getNowScreen();
+    }
+
+    /**
+     * 현재 일반 대전의 읽기 전용 상태 스냅샷을 반환한다.
+     * 반환된 객체와 그 안의 배열을 변경해도 실제 게임 상태에는 영향을 주지 않는다.
+     * 메뉴, 튜토리얼 또는 초기화 전 상태에서는 null을 반환한다.
+     * @returns {{screen:string, playerCanControl:boolean, running:boolean, paused:boolean, countdown:number, elapsed:number, practice:boolean, colorCount:number, colors:string[], aiDifficulty:{key:string,name:string,fastDownDelay:number|null}, winner:'player'|'opponent'|null, ending:{loser:'player'|'opponent',winner:'player'|'opponent',elapsed:number,duration:number}|null, player:object, opponent:object, recommendedPoint:{x:number,y:number}|null}|null}
+     */
+    function getGameState() {
+        if (!game || game.tutorial) return null;
+        const screen = getNowScreen();
+        const [player, opponent] = game.players;
+        const getRole = (target) => target === player ? 'player' : target === opponent ? 'opponent' : null;
+        return {
+            screen: screen.screen,
+            playerCanControl: screen.playerCanControl,
+            running: game.running,
+            paused: game.paused,
+            countdown: game.countdown,
+            elapsed: game.elapsed,
+            practice: game.practice,
+            colorCount: game.pairQueueColors.length,
+            colors: [...game.pairQueueColors],
+            aiDifficulty: getSelectedDifficulty(),
+            winner: getRole(game.winner),
+            ending: game.ending ? {
+                loser: getRole(game.ending.loser),
+                winner: getRole(game.ending.winner),
+                elapsed: game.ending.elapsed,
+                duration: game.ending.duration
+            } : null,
             player: getPlayerGameStatus(player, opponent),
             opponent: getPlayerGameStatus(opponent, player),
             recommendedPoint: recommendedPoint ? { ...recommendedPoint } : null
@@ -3256,7 +3332,7 @@
         const screenSchema = {
             type: 'object',
             properties: {
-                screen: { type: 'string', enum: ['main_menu', 'opponent_select', 'simulator', 'settings', 'countdown', 'playing', 'paused', 'game_over'] },
+                screen: { type: 'string', enum: ['main_menu', 'practice_difficulty', 'opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible menu, simulator, tutorial, or match screen.' },
                 playerCanControl: { type: 'boolean' }
             },
             required: ['screen', 'playerCanControl']
@@ -3301,11 +3377,11 @@
                 name: 'manual',
                 description: 'Return English instructions for playing Puyo W and using the other available game tools.',
                 inputSchema: emptyInput,
-                execute: () => 'Puyo W is a falling-pair puzzle battle. During your control turn, use left/right to move, Z/X to rotate, and down to fall faster. Match four or more same-color puyos to clear them and send attacks. Use now_screen to learn which screen is visible, now_game_status only while playing or paused to inspect both boards and active pairs, and point_recommend during a controllable player turn to highlight one recommended board coordinate.'
+                execute: () => 'Puyo W is a falling-pair puzzle battle. During a normal match control turn, use left/right to move, Z/X to rotate, and down to fall faster. Match four or more same-color puyos to clear them and send attacks. Use now_screen to identify the exact menu, simulator, tutorial, or match screen. Use now_game_status only during a normal match while playing or paused, and point_recommend only during a controllable normal-match turn.'
             },
             {
                 name: 'now_screen',
-                description: 'Get the currently visible game screen. The JSON result states whether it is the main menu, opponent selection, countdown, play, pause, or game-over screen, and whether the human player can currently control a pair.',
+                description: 'Get the exact visible Puyo W screen, including practice difficulty selection, simulator modes, tutorial phases, match countdown, ending animation, pause, and game-over. playerCanControl is true only when the human can control an active pair in a normal match.',
                 inputSchema: emptyInput,
                 outputSchema: screenSchema,
                 execute: getNowScreen
@@ -3814,7 +3890,7 @@
          * @returns {number} 6부터 8 사이의 일반 배치 턴 수
          */
         randomTurns() {
-            return 6 + Math.floor(Math.random() * 3);
+            return 6 + Math.floor(randomFloat() * 3);
         }
 
         /** @param {PlayerState} player 자동 조작할 플레이어 @param {number} side 목표 측 X 좌표 @returns {boolean} 목표 측 하단 두 칸이 모두 채워졌는지 */
@@ -4264,7 +4340,7 @@
 
         /** @returns {number} 다음 공격 시뮬레이션 전까지의 일반 배치 턴 수 */
         randomTurnsUntilSimulation() {
-            return 10 + Math.floor(Math.random() * 6);
+            return 10 + Math.floor(randomFloat() * 6);
         }
 
         /** @param {PlayerState} player 자동 조작할 플레이어 @returns {boolean} 우측 하단 세 칸이 모두 채워졌는지 */
@@ -4770,8 +4846,11 @@
         registerOpponent,
         registerLanguage,
         setNoticeFile,
+        randomFloat,
         getSelectedDifficulty,
         getSelectedColorCount,
+        getScreenState,
+        getGameState,
         getNextPairs,
         initialize,
         destroy,
