@@ -92,7 +92,7 @@
     /** 한국어 원문을 키로 하는 화면 문구 번역표다. @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
-            '게임 시작': 'Game Start', '연습': 'Practice', '난이도 선택': 'Difficulty', '난이도': 'Difficulty', '적 선택': 'Opponent',
+            '게임 시작': 'Game Start', '기본 룰': 'Standard Rules', '연습': 'Practice', '난이도 선택': 'Difficulty', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER키를 누르거나, 아무 곳이나 클릭해 주세요': 'Press ENTER or click anywhere.',
             '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '시작': 'Start', '이전': 'Back',
             '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '게임 시간 %1초': 'Game time: %1 sec', '%1연쇄': '%1 Chain',
@@ -106,7 +106,7 @@
             '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)'
         },
         ja: {
-            '게임 시작': 'ゲーム開始', '연습': '練習', '난이도 선택': '難易度', '난이도': '難易度', '적 선택': '対戦相手',
+            '게임 시작': 'ゲーム開始', '기본 룰': '基本ルール', '연습': '練習', '난이도 선택': '難易度', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER키를 누르거나, 아무 곳이나 클릭해 주세요': 'ENTERキーを押すか、どこかをクリックしてください。',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '시작': '開始', '이전': '戻る',
             '일시정지': '一時停止', '재개': '再開', '종료': '終了', 'GitHub': 'GitHub',
             '승리': '勝利', '패배': '敗北', '최종 점수 %1': '最終スコア %1', '게임 시간 %1초': 'ゲーム時間: %1秒', '%1연쇄': '%1連鎖',
@@ -120,7 +120,7 @@
             '음소거(꺼짐)' : 'ミュート（オフ）', '음소거(활성)' : 'ミュート（オン）'
         },
         zh: {
-            '게임 시작': '开始游戏', '연습': '练习', '난이도 선택': '难度', '난이도': '难度', '적 선택': '对手',
+            '게임 시작': '开始游戏', '기본 룰': '基本规则', '연습': '练习', '난이도 선택': '难度', '난이도': '难度', '적 선택': '对手', 'ENTER키를 누르거나, 아무 곳이나 클릭해 주세요': '请按 ENTER 键或点击任意位置。',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '简单', '보통': '普通', '어려움': '困难', '안드로말리우스': '安德罗马利乌斯', '단탈리온': '丹塔利昂', '세레': '西瑞', '데카라비亚': '德卡拉比亚', '벨리알': '贝利亚尔', '시작': '开始', '이전': '返回',
             '일시정지': '暂停', '재개': '继续', '종료': '退出', 'GitHub': 'GitHub',
             '승리': '胜利', '패배': '失败', '최종 점수 %1': '最终得分 %1', '게임 시간 %1초': '游戏时间：%1秒', '%1연쇄': '%1连锁',
@@ -149,8 +149,12 @@
     let webMcpAbortController = null;
     /** 현재 실행 중인 게임 상태다. @type {object|null} */
     let game = null;
-    /** 현재 재생 중인 전투 배경음악이다. @type {HTMLAudioElement|null} */
+    /** 현재 재생 중인 배경음악이다. 화면 종류와 상관없이 한 개만 유지한다. @type {HTMLAudioElement|null} */
     let backgroundMusicAudio = null;
+    /** 현재 배경음악 요소가 재생하는 음원 URL이다. @type {string|null} */
+    let backgroundMusicUrl = null;
+    /** 초기 타이틀을 벗어나 브라우저가 재생을 허용하는 사용자 조작이 발생했는지 여부다. @type {boolean} */
+    let hasUserStarted = false;
     /** 메인 화면 왼쪽에 표시할 안내문 원문이다. @type {string} */
     let noticeText = '';
     /** 설정 화면에서 임시로 편집 중인 값이다. @type {object|null} */
@@ -163,8 +167,8 @@
     let settingsCursor = 0;
     /** AI가 강조 표시하도록 지정한 플레이어 필드 좌표다. @type {{x:number, y:number}|null} */
     let recommendedPoint = null;
-    /** 게임이 없을 때 표시할 메뉴 화면 식별자다. @type {'title'|'opponent'|'practiceDifficulty'|'simulator'|'settings'} */
-    let menuScreen = 'title';
+    /** 게임이 없을 때 표시할 메뉴 화면 식별자다. @type {'initialTitle'|'title'|'opponent'|'practiceDifficulty'|'simulator'|'settings'} */
+    let menuScreen = 'initialTitle';
     /** 시뮬레이터의 편집·재생 상태다. @type {object|null} */
     let simulator = null;
     /** 선택된 적의 OPPONENTS 배열 인덱스다. @type {number} */
@@ -179,6 +183,10 @@
     let selectedOpponentAction = 0;
     /** 메인 메뉴에서 포커스된 항목이다. @type {number} */
     let titleMenuFocus = 0;
+    /** 메인 메뉴의 게임 규칙 선택 오버레이가 열려 있는지 여부다. @type {boolean} */
+    let ruleSelectionOpen = false;
+    /** 게임 규칙 선택 오버레이에서 포커스된 항목이다. @type {number} */
+    let ruleSelectionFocus = 0;
     /** 일시정지 메뉴에서 포커스된 항목이다. @type {number} */
     let pauseMenuFocus = 0;
     /** 직전 애니메이션 프레임의 시각이다. @type {number} */
@@ -199,6 +207,12 @@
     let virtualHorizontalHoldElapsed = 0;
     /** 가상 컨트롤러 좌우 방향키 홀드 반복 이동의 누적 시간(ms)이다. @type {number} */
     let virtualHorizontalRepeatElapsed = 0;
+    /** Gamepad API의 스틱 입력을 방향 입력으로 판단하는 최소 절댓값이다. @type {number} */
+    const GAMEPAD_STICK_DEAD_ZONE = 0.5;
+    /** 게임패드에서 현재 누르고 있는 방향키다. 키보드 입력과 별도로 해제하기 위해 보관한다. @type {Set<string>} */
+    let gamepadDirectionKeys = new Set();
+    /** 게임패드의 한 번 누름 동작 버튼 상태다. @type {{z:boolean,x:boolean,enter:boolean,escape:boolean}} */
+    let gamepadActionInput = { z: false, x: false, enter: false, escape: false };
     /** 현재 화면 문구에 적용할 언어 코드다. @type {string} */
     let languageCode = 'ko';
     /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>}} */
@@ -221,6 +235,10 @@
     ];
     /** 등록된 기본 및 외부 적 목록이다. @type {{createController:()=>Enemy, className:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} */
     const OPPONENTS = [];
+    /** 메인 메뉴의 게임 규칙 선택지다. 새 규칙은 이 목록에 추가해 확장한다. @type {{label:string,activate:()=>void}[]} */
+    const GAME_RULE_OPTIONS = [
+        { label: '기본 룰', activate: () => openOpponentMenu() }
+    ];
     /** 브라우저 전역 및 CommonJS로 공개할 라이브러리 API다. @type {object|null} */
     let WebPuyo = null;
 
@@ -406,7 +424,7 @@
         }
     }
 
-    /** 현재 전투 배경음악을 중지하고 재생 위치를 초기화한다. @returns {void} */
+    /** 현재 배경음악을 중지하고 재생 위치를 초기화한다. @returns {void} */
     function stopBackgroundMusic() {
         if (!backgroundMusicAudio) return;
         try {
@@ -416,30 +434,103 @@
             console.error('배경음악 중지에 실패했습니다.', error);
         }
         backgroundMusicAudio = null;
+        backgroundMusicUrl = null;
     }
 
-    /** 적 전용 음원이 없으면 공통 음원을 사용해 전투 배경음악을 반복 재생한다. @param {Enemy|null} controller 현재 적 컨트롤러 @returns {void} */
-    function startBackgroundMusic(controller) {
+    /** 현재 배경음악을 일시정지한다. @returns {void} */
+    function pauseBackgroundMusic() {
+        if (!backgroundMusicAudio) return;
+        try {
+            backgroundMusicAudio.pause();
+        } catch (error) {
+            console.error('배경음악 일시정지에 실패했습니다.', error);
+        }
+    }
+
+    /** 일시정지된 현재 배경음악을 재개한다. @returns {void} */
+    function resumeBackgroundMusic() {
+        if (!backgroundMusicAudio) return;
+        try {
+            backgroundMusicAudio.volume = getAudioVolume('music');
+            if (!backgroundMusicAudio.paused) return;
+            const result = backgroundMusicAudio.play();
+            if (result && typeof result.catch === 'function') result.catch((error) => console.error('배경음악 재개에 실패했습니다.', error));
+        } catch (error) {
+            console.error('배경음악 재개에 실패했습니다.', error);
+        }
+    }
+
+    /** 하나의 배경음악만 반복 재생하도록 음원을 교체한다. @param {string|null|undefined} url 음원 URL @returns {void} */
+    function startBackgroundMusic(url) {
+        if (url === null || url === undefined || url === '' || typeof Audio === 'undefined' || !hasUserStarted) {
+            stopBackgroundMusic();
+            return;
+        }
+        if (backgroundMusicAudio && backgroundMusicUrl === url) {
+            updateBackgroundMusicVolume();
+            return;
+        }
         stopBackgroundMusic();
-        const enemyMusic = controller?.soundPool?.backgroundMusic;
-        const url = enemyMusic !== null && enemyMusic !== undefined ? enemyMusic : commonSoundPool?.backgroundMusic;
-        if (url === null || url === undefined || url === '' || typeof Audio === 'undefined' || getAudioVolume('music') <= 0) return;
         try {
             const audio = new Audio(url);
             audio.loop = true;
             audio.volume = getAudioVolume('music');
             backgroundMusicAudio = audio;
+            backgroundMusicUrl = url;
             const result = audio.play();
             if (result && typeof result.catch === 'function') result.catch((error) => console.error('배경음악 재생에 실패했습니다.', error));
         } catch (error) {
             console.error('배경음악 재생에 실패했습니다.', error);
             backgroundMusicAudio = null;
+            backgroundMusicUrl = null;
+        }
+    }
+
+    /** 게임용 배경음악을 시작한다. 연습·시뮬레이션·플레이 방법은 항상 공통 음원을 사용한다. @param {Enemy|null} controller 현재 적 컨트롤러 @param {boolean} useCommonMusic 공통 음원만 사용할지 여부 @returns {void} */
+    function startGameBackgroundMusic(controller, useCommonMusic = false) {
+        const enemyMusic = useCommonMusic ? null : controller?.soundPool?.backgroundMusic;
+        const url = enemyMusic !== null && enemyMusic !== undefined ? enemyMusic : commonSoundPool?.backgroundMusic;
+        startBackgroundMusic(url);
+    }
+
+    /** 게임 외 화면용 공통 배경음악을 시작한다. @returns {void} */
+    function startOtherBackgroundMusic() {
+        startBackgroundMusic(commonSoundPool?.otherBackgroundMusic);
+    }
+
+    /** 현재 화면에 맞는 단일 배경음악을 재생 또는 일시정지 상태로 맞춘다. @returns {void} */
+    function syncBackgroundMusic() {
+        try {
+            if (!hasUserStarted) {
+                stopBackgroundMusic();
+                return;
+            }
+            if (!game) {
+                if (menuScreen === 'simulator' && simulator?.mode === 'simulation') startGameBackgroundMusic(null, true);
+                else startOtherBackgroundMusic();
+                return;
+            }
+            if (!game.running) {
+                startOtherBackgroundMusic();
+                return;
+            }
+            if (game.tutorial) startGameBackgroundMusic(null, true);
+            else startGameBackgroundMusic(game.practice ? null : game.themeController, game.practice);
+            if (game.paused) pauseBackgroundMusic();
+            else resumeBackgroundMusic();
+        } catch (error) {
+            console.error('배경음악 상태를 동기화하지 못했습니다.', error);
         }
     }
 
     /** 저장된 음소거·배경음악 음량 설정을 현재 재생 중인 음악에 적용한다. @returns {void} */
     function updateBackgroundMusicVolume() {
-        if (backgroundMusicAudio) backgroundMusicAudio.volume = getAudioVolume('music');
+        if (!backgroundMusicAudio) return;
+        try {
+            backgroundMusicAudio.volume = getAudioVolume('music');
+        } catch (error) {
+            console.error('배경음악 음량을 적용하지 못했습니다.', error);
+        }
     }
 
     /** 연쇄 번호에 맞는 사운드 풀 항목을 선택한다. 7 이상은 7번을 사용한다. @param {SoundPool|CommonSoundPool|null|undefined} pool 사운드 풀 @param {string} prefix 속성 접두사 @param {number} combo 연쇄 번호 @returns {string|null} 음원 URL */
@@ -472,6 +563,38 @@
             throw new TypeError('locale과 번역 문구 객체가 필요합니다.');
         }
         stringTable[locale] = { ...(stringTable[locale] || {}), ...entries };
+    }
+
+    /**
+     * 초기화 전에 사용자 정의 예고뿌요 클래스를 등록한다.
+     * 클래스는 WarningPuyo를 상속하고, 양의 정수 static unitCount 및 해당 값과 같은 인스턴스 unitCount,
+     * 비어 있지 않은 type, 그리고 자체 draw 메소드를 제공해야 한다. 등록 뒤에는 단위가 큰 순서로 자동 정렬된다.
+     * @param {new () => WarningPuyo} WarningPuyoType 등록할 예고뿌요 클래스
+     * @returns {void}
+     */
+    function registerWarningPuyo(WarningPuyoType) {
+        if (initialized) throw new Error('예고뿌요 등록은 initialize 호출 전에 해야 합니다.');
+        if (typeof WarningPuyoType !== 'function' || !(WarningPuyoType.prototype instanceof WarningPuyo)) {
+            throw new TypeError('WarningPuyo를 상속한 예고뿌요 클래스가 필요합니다.');
+        }
+        if (!Number.isInteger(WarningPuyoType.unitCount) || WarningPuyoType.unitCount <= 0) {
+            throw new RangeError('예고뿌요 클래스의 static unitCount는 양의 정수여야 합니다.');
+        }
+        let warningPuyo;
+        try {
+            warningPuyo = new WarningPuyoType();
+        } catch (error) {
+            throw new TypeError('예고뿌요 클래스의 인스턴스를 만들 수 없습니다.', { cause: error });
+        }
+        if (warningPuyo.unitCount !== WarningPuyoType.unitCount || typeof warningPuyo.type !== 'string' || !warningPuyo.type) {
+            throw new TypeError('예고뿌요의 unitCount와 비어 있지 않은 type을 올바르게 설정해야 합니다.');
+        }
+        if (WarningPuyoType.prototype.draw === WarningPuyo.prototype.draw) {
+            throw new TypeError('예고뿌요 클래스는 draw 메소드를 구현해야 합니다.');
+        }
+        if (WARNING_PUYO_CLASSES.includes(WarningPuyoType)) throw new Error('이미 등록된 예고뿌요 클래스입니다.');
+        WARNING_PUYO_CLASSES.push(WarningPuyoType);
+        WARNING_PUYO_CLASSES.sort((left, right) => right.unitCount - left.unitCount);
     }
 
     /**
@@ -522,6 +645,14 @@
             this.hasPlacedPuyoSinceAllClear = false;
             this.allClearEffectElapsed = 0;
             this.pendingAllClearDamage = 0;
+            // 실제 수치는 먼저 차감하되, 예고뿌요 표시는 에너지 도착까지 유지한다.
+            this.warningReductionDelay = 0;
+            // 연쇄가 끝나기 전까지 상대에게 보이지 않아야 하는 누적 공격의 정수 부분이다.
+            this.outgoingWarningDelay = 0;
+            // 상대 필드에 에너지 도착으로 이미 알려진 정수 ATTACK이다.
+            this.announcedAttack = 0;
+            this.lastAttackTransfer = null;
+            this.lastAttackEnergySource = null;
             this.receivesPuyos = true;
             this.allClearEnabled = true;
             this.clearsGarbage = false;
@@ -687,10 +818,11 @@
             themeController: controller,
             pairQueueColors: colors,
             pairQueue: Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors)),
+            energyTransfers: [],
             players
         };
         players.filter((player) => player.receivesPuyos).forEach(updateNextPairs);
-        startBackgroundMusic(controller);
+        syncBackgroundMusic();
     }
 
     /**
@@ -1234,8 +1366,8 @@
             const power = COMBO_POWER[Math.min(player.combo, 18)] || 999;
             player.point += exploding.length * power;
             player.attack += exploding.length * power / 4;
-            cancelPendingAttack(player, opponent);
             const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
+            sendAttackEnergy(player, opponent, center.x / exploding.length, center.y / exploding.length);
             player.comboPopups.push({ x: center.x / exploding.length, y: center.y / exploding.length, combo: player.combo, elapsed: 0 });
             removed.forEach((puyo) => { player.board[puyo.y][puyo.x] = null; });
             player.effects = { cells: [...removed.values()], elapsed: 0, duration: 430 };
@@ -1243,10 +1375,7 @@
             player.phaseTimer = 0;
             return;
         }
-        cancelPendingAttack(player, opponent);
-        const deliveredAttack = Math.floor(player.attack);
-        opponent.damage += deliveredAttack;
-        player.attack -= deliveredAttack;
+        deliverFinalAttackEnergy(player, opponent);
         player.combo = 0;
         player.phase = 'garbage';
     }
@@ -1258,13 +1387,115 @@
      * @param {PlayerState} opponent 상대 플레이어
      * @returns {void}
      */
-    function cancelPendingAttack(player, opponent) {
-        const cancelledOpponentAttack = Math.min(Math.floor(player.attack), Math.floor(opponent.attack));
+    function sendAttackEnergy(player, opponent, sourceX, sourceY) {
+        const amount = Math.floor(player.attack);
+        if (amount < 1) return;
+        let remaining = amount;
+        const cancelledOpponentAttack = Math.min(remaining, Math.floor(opponent.attack));
         player.attack -= cancelledOpponentAttack;
         opponent.attack -= cancelledOpponentAttack;
-        const cancelledDamage = Math.min(Math.floor(player.attack), Math.floor(player.damage));
-        player.attack -= cancelledDamage;
+        opponent.outgoingWarningDelay = Math.floor(opponent.attack);
+        remaining -= cancelledOpponentAttack;
+        const cancelledDamage = Math.min(remaining, Math.floor(player.damage));
         player.damage -= cancelledDamage;
+        player.attack -= cancelledDamage;
+        remaining -= cancelledDamage;
+        if (cancelledDamage) player.warningReductionDelay += cancelledDamage;
+        const source = { x: player.fieldX + (sourceX + 0.5) * CELL, y: FIELD_BOTTOM - (sourceY + 0.5) * CELL };
+        player.lastAttackEnergySource = source;
+        player.outgoingWarningDelay = Math.floor(player.attack);
+        // 연쇄 중에는 에너지만 상대 천장까지 보낸다. 도착 시 예고뿌요만 갱신하고 DAMAGE는 정산하지 않는다.
+        if (cancelledOpponentAttack || cancelledDamage || remaining) {
+            const energy = queueEnergyTransfer(player, opponent, source, cancelledDamage, cancelledOpponentAttack, 0, remaining > 0, Math.floor(player.attack), true);
+            if (remaining > 0) player.lastAttackTransfer = energy;
+        }
+    }
+
+    function deliverFinalAttackEnergy(player, opponent) {
+        const amount = Math.floor(player.attack);
+        if (amount < 1) return;
+        player.attack -= amount;
+        player.outgoingWarningDelay = Math.floor(player.attack);
+        const energyTransfers = getEnergyTransfers();
+        const lastEnergy = player.lastAttackTransfer;
+        // 마지막 폭발에서 이미 출발한 에너지를 최종 DAMAGE 정산에 사용한다.
+        // 해당 연출이 끝난 상태라면 지금이 곧 "에너지 완료 후" 시점이다.
+        if (lastEnergy && energyTransfers?.includes(lastEnergy)) {
+            lastEnergy.finalDamageAmount = amount;
+        } else {
+            opponent.damage += amount;
+            player.announcedAttack = 0;
+        }
+        player.lastAttackTransfer = null;
+    }
+
+    function sendAllClearEnergy(player, opponent, amount) {
+        if (amount < 1) return;
+        queueEnergyTransfer(player, opponent, { x: player.fieldX + COLUMNS * CELL / 2, y: FIELD_TOP + VISIBLE_ROWS * CELL / 2 }, 0, 0, amount);
+    }
+
+    function getEnergyTransfers() {
+        if (game?.energyTransfers) return game.energyTransfers;
+        return simulator?.energyTransfers || null;
+    }
+
+    function queueEnergyTransfer(player, opponent, source, cancelledDamage, cancelledAttack, delivered, travelToOpponent = false, previewAmount = null, startsAtExplosion = false) {
+        const energyTransfers = getEnergyTransfers();
+        if (!energyTransfers) return;
+        const ownTarget = { x: player.fieldX + COLUMNS * CELL / 2, y: FIELD_TOP - CELL / 2 };
+        const opponentTarget = { x: opponent.fieldX + COLUMNS * CELL / 2, y: FIELD_TOP - CELL / 2 };
+        const route = [];
+        if (cancelledDamage || cancelledAttack) route.push({ target: ownTarget, kind: 'cancel', amount: cancelledDamage, attackAmount: cancelledAttack, arcDirection: 'up' });
+        if (delivered || travelToOpponent) route.push({ target: opponentTarget, kind: 'damage', amount: delivered, previewAmount, arcDirection: (cancelledDamage || cancelledAttack) ? 'down' : startsAtExplosion ? 'up' : 'down' });
+        if (!route.length) return null;
+        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, finalDamageAmount: 0 };
+        energyTransfers.push(energy);
+        return energy;
+    }
+
+    function warningAmount(player, opponent) {
+        return player.damage + opponent.announcedAttack + player.warningReductionDelay;
+    }
+
+    function updateEnergyTransfers(delta) {
+        const energyTransfers = getEnergyTransfers();
+        if (!energyTransfers?.length) return;
+        const remainingTransfers = energyTransfers.filter((energy) => {
+            if (energy.fading) {
+                energy.elapsed += delta;
+                if (energy.elapsed < 150) return true;
+                if (energy.finalDamageAmount) {
+                    energy.opponent.damage += energy.finalDamageAmount;
+                    energy.player.announcedAttack = 0;
+                }
+                return false;
+            }
+            energy.elapsed += delta;
+            if (energy.elapsed < 250) return true;
+            const segment = energy.route[energy.routeIndex];
+            energy.position = segment.target;
+            if (segment.kind === 'cancel') {
+                energy.player.warningReductionDelay = Math.max(0, energy.player.warningReductionDelay - segment.amount);
+                energy.opponent.announcedAttack = Math.max(0, energy.opponent.announcedAttack - segment.attackAmount);
+            } else {
+                if (segment.previewAmount !== null) energy.player.announcedAttack = segment.previewAmount;
+                if (segment.amount) {
+                    energy.opponent.damage += segment.amount;
+                    energy.player.announcedAttack = 0;
+                }
+            }
+            energy.routeIndex += 1;
+            energy.elapsed = 0;
+            if (energy.routeIndex < energy.route.length) return true;
+            energy.fading = true;
+            return true;
+        });
+        if (game?.energyTransfers === energyTransfers) game.energyTransfers = remainingTransfers;
+        else if (simulator?.energyTransfers === energyTransfers) simulator.energyTransfers = remainingTransfers;
+    }
+
+    function hasPendingEnergyTransfers() {
+        return Boolean(getEnergyTransfers()?.length);
     }
 
     /**
@@ -1309,7 +1540,7 @@
             elapsed: 0,
             duration: 1050,
             fallingPuyos,
-            waitForOpponentResolution: isResolutionPhase(winner.phase)
+            waitForOpponentResolution: isWinnerSettlementPending(winner)
         };
     }
 
@@ -1340,7 +1571,11 @@
      * @returns {boolean} 중력 또는 폭발 연출 중인지 여부
      */
     function isResolutionPhase(phase) {
-        return phase === 'gravity' || phase === 'explode' || phase === 'burst';
+        return phase === 'gravity' || phase === 'explode' || phase === 'burst' || phase === 'garbage' || phase === 'check';
+    }
+
+    function isWinnerSettlementPending(player) {
+        return isResolutionPhase(player.phase) || player.allClearEffectElapsed > 0 || player.pendingAllClearDamage > 0 || hasPendingEnergyTransfers();
     }
 
     /**
@@ -1356,7 +1591,7 @@
             updatePlayer(ending.winner, ending.loser, delta);
         }
         // 패배 연출과 남은 연쇄 처리가 끝나면 게임을 종료한다.
-        if (ending.elapsed > ending.duration && (!ending.waitForOpponentResolution || !isResolutionPhase(ending.winner.phase))) {
+        if (ending.elapsed > ending.duration && (!ending.waitForOpponentResolution || !isWinnerSettlementPending(ending.winner))) {
             recordEnemyClear(ending.winner);
             game.running = false;
             game.winner = ending.winner;
@@ -1379,13 +1614,15 @@
         const wasAllClearEffectActive = player.allClearEffectElapsed > 0;
         player.allClearEffectElapsed = Math.max(0, player.allClearEffectElapsed - delta);
         if (wasAllClearEffectActive && player.allClearEffectElapsed === 0 && player.pendingAllClearDamage > 0) {
-            opponent.damage += player.pendingAllClearDamage;
+            sendAllClearEnergy(player, opponent, player.pendingAllClearDamage);
             player.pendingAllClearDamage = 0;
         }
         // 플레이 방법 시연은 싹쓸이 예고와 방해뿌요 낙하를 보여주는 동안 다음 뿌요의 낙하를 멈춘다.
         if (player.tutorialHold) return;
         // 대기 중인 연습 상대도 예약된 피해가 있으면 방해뿌요 처리는 수행한다.
         if (player.phase === 'idle') {
+            // 연습·플레이 방법에서는 연쇄와 그에 딸린 모든 에너지 이동이 끝난 뒤에만 방해뿌요를 떨어뜨린다.
+            if (game?.practice && (opponent.combo > 0 || isResolutionPhase(opponent.phase) || opponent.allClearEffectElapsed > 0 || opponent.pendingAllClearDamage > 0 || hasPendingEnergyTransfers())) return;
             if (player.damage > 0) dropGarbage(player);
             return;
         }
@@ -1493,21 +1730,6 @@
     }
 
     /**
-     * 공격량을 예고뿌요 단위 목록으로 변환한다.
-     * @param {number} amount 예고할 방해뿌요 수
-     * @returns {string[]} 왼쪽부터 그릴 예고뿌요 종류
-     */
-    function warningUnits(amount) {
-        const units = [];
-        [[500, 'sun'], [210, 'star'], [30, 'rock'], [6, 'drop'], [1, 'tiny']].forEach(([value, type]) => {
-            const count = Math.floor(amount / value);
-            amount %= value;
-            for (let index = 0; index < count && units.length < 6; index += 1) units.push(type);
-        });
-        return units;
-    }
-
-    /**
      * 눈이 있는 색 뿌요 또는 반투명 방해뿌요를 그린다.
      * @param {number} x 셀의 왼쪽 X 좌표
      * @param {number} y 셀의 위쪽 Y 좌표
@@ -1528,7 +1750,7 @@
         context.strokeStyle = color === 'garbage' ? '#f4fbff' : 'rgba(255,255,255,0.45)';
         context.stroke();
         // 일반/방해뿌요는 물방울 같은 슬라임이라는 인상을 주는 작은 반사광을 넣는다.
-        // 예고뿌요(태양, 별, 돌 등)는 이 함수가 아닌 drawWarning에서 별도로 그린다.
+        // 예고뿌요(태양, 별, 돌 등)는 각 WarningPuyo 하위 클래스에서 별도로 그린다.
         if (slimeDetails) {
             context.fillStyle = 'rgba(255, 255, 255, 0.72)';
             context.beginPath();
@@ -1541,67 +1763,113 @@
     }
 
     /**
-     * 30 단위 예고뿌요인 빨간돌을 한 칸 안에 울퉁불퉁하게 그린다.
-     * @param {number} x 좌측 X 좌표
-     * @param {number} y 위쪽 Y 좌표
-     * @returns {void}
+     * 모든 예고뿌요가 공유하는 단위와 렌더링 규약이다.
+     * 하위 클래스는 단위 수와 draw 메소드를 재정의한다.
      */
-    function drawRockWarning(x, y) {
-        const size = CELL * 0.42;
-        context.save();
-        context.translate(x + CELL / 2, y + CELL / 2);
-        context.lineJoin = 'round';
-        context.lineWidth = 2;
-        context.strokeStyle = '#8e2728';
-        context.fillStyle = '#c83f3d';
-        context.beginPath();
-        context.moveTo(-size * 0.78, -size * 0.2);
-        context.lineTo(-size * 0.52, -size * 0.78);
-        context.lineTo(-size * 0.08, -size * 0.91);
-        context.lineTo(size * 0.38, -size * 0.75);
-        context.lineTo(size * 0.84, -size * 0.26);
-        context.lineTo(size * 0.67, size * 0.48);
-        context.lineTo(size * 0.2, size * 0.84);
-        context.lineTo(-size * 0.43, size * 0.76);
-        context.lineTo(-size * 0.86, size * 0.28);
-        context.closePath();
-        context.fill();
-        context.stroke();
+    class WarningPuyo {
+        /** @param {number} unitCount 이 예고뿌요 하나가 나타내는 방해뿌요 수 @param {string} type 외부 상태용 종류 식별자 */
+        constructor(unitCount, type) {
+            /** 이 예고뿌요 하나가 나타내는 방해뿌요 수다. @type {number} */
+            this.unitCount = unitCount;
+            /** WebMCP 등 외부 상태에 공개하는 종류 식별자다. @type {string} */
+            this.type = type;
+        }
 
-        // 각진 면을 겹쳐 표면이 매끈한 뿌요가 아니라는 점을 강조한다.
-        context.fillStyle = '#e4675a';
-        context.beginPath();
-        context.moveTo(-size * 0.52, -size * 0.78);
-        context.lineTo(-size * 0.08, -size * 0.91);
-        context.lineTo(size * 0.05, -size * 0.2);
-        context.lineTo(-size * 0.4, size * 0.02);
-        context.closePath();
-        context.fill();
-        context.fillStyle = '#9d2d31';
-        context.beginPath();
-        context.moveTo(size * 0.05, -size * 0.2);
-        context.lineTo(size * 0.38, -size * 0.75);
-        context.lineTo(size * 0.84, -size * 0.26);
-        context.lineTo(size * 0.67, size * 0.48);
-        context.lineTo(size * 0.2, size * 0.84);
-        context.lineTo(size * 0.12, size * 0.12);
-        context.closePath();
-        context.fill();
-        context.strokeStyle = 'rgba(255, 170, 150, 0.65)';
-        context.lineWidth = 1.5;
-        context.beginPath();
-        context.moveTo(-size * 0.52, -size * 0.78);
-        context.lineTo(-size * 0.08, -size * 0.91);
-        context.lineTo(size * 0.05, -size * 0.2);
-        context.lineTo(size * 0.38, -size * 0.75);
-        context.stroke();
-        drawPuyoEyes(size, size * 0.08);
-        context.restore();
+        /** 표시 목록 내에서 이 예고뿌요를 그릴 X 좌표를 계산한다. 하위 클래스에서 좁은 배치를 위해 재정의할 수 있다. @param {number} startX 시작 X 좌표 @param {number} index 목록 순번 @param {number} sameTypeIndex 같은 종류의 앞선 개수 @returns {number} 그릴 X 좌표 */
+        getDisplayX(startX, index, sameTypeIndex) {
+            return startX + index * CELL;
+        }
+
+        /** 예고뿌요 한 개를 그린다. 하위 클래스에서 각 모양을 구현한다. @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) {}
     }
+
+    /** 1개 단위의 작은 낱개 예고뿌요다. */
+    class TinyWarningPuyo extends WarningPuyo {
+        /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
+        static unitCount = 1;
+        /** 1개 단위 작은 낱개 예고뿌요를 만든다. */
+        constructor() { super(TinyWarningPuyo.unitCount, 'tiny'); }
+        /** 작은 낱개들은 기존처럼 서로 조금 겹치게 배치한다. @override @param {number} startX 시작 X 좌표 @param {number} index 목록 순번 @param {number} sameTypeIndex 앞선 작은 낱개 수 @returns {number} 그릴 X 좌표 */
+        getDisplayX(startX, index, sameTypeIndex) { return startX + (index - sameTypeIndex * 0.35) * CELL; }
+        /** 작은 낱개 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) { drawPuyo(x + cellSize * 0.05, y + cellSize * 0.25, 'garbage', 0.45, false); }
+    }
+
+    /** 6개 단위의 한 칸 크기 예고뿌요다. */
+    class DropWarningPuyo extends WarningPuyo {
+        /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
+        static unitCount = 6;
+        /** 6개 단위 한 칸 예고뿌요를 만든다. */
+        constructor() { super(DropWarningPuyo.unitCount, 'drop'); }
+        /** 한 칸 크기 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) { drawPuyo(x, y, 'garbage'); }
+    }
+
+    /** 30개 단위의 빨간 돌 예고뿌요다. */
+    class RockWarningPuyo extends WarningPuyo {
+        /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
+        static unitCount = 30;
+        /** 30개 단위 빨간 돌 예고뿌요를 만든다. */
+        constructor() { super(RockWarningPuyo.unitCount, 'rock'); }
+        /** 빨간 돌 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) {
+            const size = CELL * 0.42;
+            context.save(); context.translate(x + CELL / 2, y + CELL / 2); context.lineJoin = 'round'; context.lineWidth = 2;
+            context.strokeStyle = '#8e2728'; context.fillStyle = '#c83f3d'; context.beginPath();
+            context.moveTo(-size * 0.78, -size * 0.2); context.lineTo(-size * 0.52, -size * 0.78); context.lineTo(-size * 0.08, -size * 0.91); context.lineTo(size * 0.38, -size * 0.75); context.lineTo(size * 0.84, -size * 0.26); context.lineTo(size * 0.67, size * 0.48); context.lineTo(size * 0.2, size * 0.84); context.lineTo(-size * 0.43, size * 0.76); context.lineTo(-size * 0.86, size * 0.28); context.closePath(); context.fill(); context.stroke();
+            context.fillStyle = '#e4675a'; context.beginPath(); context.moveTo(-size * 0.52, -size * 0.78); context.lineTo(-size * 0.08, -size * 0.91); context.lineTo(size * 0.05, -size * 0.2); context.lineTo(-size * 0.4, size * 0.02); context.closePath(); context.fill();
+            context.fillStyle = '#9d2d31'; context.beginPath(); context.moveTo(size * 0.05, -size * 0.2); context.lineTo(size * 0.38, -size * 0.75); context.lineTo(size * 0.84, -size * 0.26); context.lineTo(size * 0.67, size * 0.48); context.lineTo(size * 0.2, size * 0.84); context.lineTo(size * 0.12, size * 0.12); context.closePath(); context.fill();
+            context.strokeStyle = 'rgba(255, 170, 150, 0.65)'; context.lineWidth = 1.5; context.beginPath(); context.moveTo(-size * 0.52, -size * 0.78); context.lineTo(-size * 0.08, -size * 0.91); context.lineTo(size * 0.05, -size * 0.2); context.lineTo(size * 0.38, -size * 0.75); context.stroke();
+            drawPuyoEyes(size, size * 0.08); context.restore();
+        }
+    }
+
+    /** 210개 단위의 별 모양 예고뿌요다. */
+    class StarWarningPuyo extends WarningPuyo {
+        /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
+        static unitCount = 210;
+        /** 210개 단위 별 예고뿌요를 만든다. */
+        constructor() { super(StarWarningPuyo.unitCount, 'star'); }
+        /** 별 모양 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) {
+            context.save(); context.translate(x + CELL / 2, y + CELL / 2); context.fillStyle = '#ffd54f'; context.beginPath();
+            for (let index = 0; index < 10; index += 1) {
+                const angle = -Math.PI / 2 + index * Math.PI / 5;
+                const radius = index % 2 ? CELL * 0.18 : CELL * 0.42;
+                context[index ? 'lineTo' : 'moveTo'](Math.cos(angle) * radius, Math.sin(angle) * radius);
+            }
+            context.closePath(); context.fill(); drawPuyoEyes(CELL * 0.34); context.restore();
+        }
+    }
+
+    /** 500개 단위의 태양 모양 예고뿌요다. */
+    class SunWarningPuyo extends WarningPuyo {
+        /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
+        static unitCount = 500;
+        /** 500개 단위 태양 예고뿌요를 만든다. */
+        constructor() { super(SunWarningPuyo.unitCount, 'sun'); }
+        /** 태양 모양 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) {
+            context.save(); context.translate(x + CELL / 2, y + CELL / 2); context.fillStyle = '#ff9f1c';
+            for (let index = 0; index < 8; index += 1) {
+                context.save(); context.rotate(index * Math.PI / 4); context.beginPath(); context.moveTo(CELL * 0.22, 0); context.lineTo(CELL * 0.48, -CELL * 0.1); context.lineTo(CELL * 0.48, CELL * 0.1); context.closePath(); context.fill(); context.restore();
+            }
+            context.fillStyle = '#ff6b35'; context.beginPath(); context.arc(0, 0, CELL * 0.31, 0, Math.PI * 2); context.fill(); context.lineWidth = 2; context.strokeStyle = '#ffe082'; context.stroke(); drawPuyoEyes(CELL * 0.31); context.restore();
+        }
+    }
+
+    /**
+     * 등록된 예고뿌요 클래스 목록이다. 큰 단위부터 배치해야 공격량을 기존 규칙대로 분해한다.
+     * 새 예고뿌요는 이 배열에 클래스를 추가해 등록한다.
+     * @type {Array<new () => WarningPuyo>}
+     */
+    const WARNING_PUYO_CLASSES = [SunWarningPuyo, StarWarningPuyo, RockWarningPuyo, DropWarningPuyo, TinyWarningPuyo];
 
     /**
      * 현재 변환 좌표를 기준으로 뿌요의 귀여운 두 눈을 그린다.
      * @param {number} radius 뿌요 본체의 반지름
+     * @param {number} offsetY 눈의 세로 보정값
      * @returns {void}
      */
     function drawPuyoEyes(radius, offsetY = 0) {
@@ -1618,68 +1886,33 @@
     }
 
     /**
-     * 단위별 예고뿌요 모양을 한 칸에 그린다.
-     * @param {number} x 셀의 왼쪽 X 좌표
-     * @param {number} y 셀의 위쪽 Y 좌표
-     * @param {string} type 예고뿌요 단위 종류
-     * @returns {void}
+     * 공격량을 단위별 예고뿌요 객체 목록으로 변환한다.
+     * @param {number} amount 예고할 방해뿌요 수
+     * @returns {WarningPuyo[]} 왼쪽부터 그릴 예고뿌요 객체
      */
-    function drawWarning(x, y, type) {
-        if (type === 'tiny') return drawPuyo(x + CELL * 0.05, y + CELL * 0.25, 'garbage', 0.45, false);
-        if (type === 'sun') {
-            context.save();
-            context.translate(x + CELL / 2, y + CELL / 2);
-            context.fillStyle = '#ff9f1c';
-            for (let index = 0; index < 8; index += 1) {
-                context.save();
-                context.rotate(index * Math.PI / 4);
-                context.beginPath();
-                context.moveTo(CELL * 0.22, 0);
-                context.lineTo(CELL * 0.48, -CELL * 0.1);
-                context.lineTo(CELL * 0.48, CELL * 0.1);
-                context.closePath();
-                context.fill();
-                context.restore();
-            }
-            context.fillStyle = '#ff6b35';
-            context.beginPath();
-            context.arc(0, 0, CELL * 0.31, 0, Math.PI * 2);
-            context.fill();
-            context.lineWidth = 2;
-            context.strokeStyle = '#ffe082';
-            context.stroke();
-            drawPuyoEyes(CELL * 0.31);
-            context.restore();
-            return;
-        }
-        if (type === 'star') {
-            context.save(); context.translate(x + CELL / 2, y + CELL / 2); context.fillStyle = '#ffd54f'; context.beginPath();
-            for (let index = 0; index < 10; index += 1) {
-                const angle = -Math.PI / 2 + index * Math.PI / 5;
-                const radius = index % 2 ? CELL * 0.18 : CELL * 0.42;
-                context[index ? 'lineTo' : 'moveTo'](Math.cos(angle) * radius, Math.sin(angle) * radius);
-            }
-            context.closePath(); context.fill(); drawPuyoEyes(CELL * 0.34); context.restore(); return;
-        }
-        if (type === 'rock') {
-            drawRockWarning(x, y);
-            return;
-        }
-        drawPuyo(x, y, 'garbage');
+    function warningUnits(amount) {
+        const units = [];
+        WARNING_PUYO_CLASSES.forEach((WarningPuyoType) => {
+            const count = Math.floor(amount / WarningPuyoType.unitCount);
+            amount %= WarningPuyoType.unitCount;
+            for (let index = 0; index < count && units.length < 6; index += 1) units.push(new WarningPuyoType());
+        });
+        return units;
     }
 
     /**
-     * 예고뿌요 목록을 그린다. 1개 단위 예고뿌요끼리는 조금 더 촘촘하게 배치한다.
+     * 예고뿌요 객체 목록을 그린다. 작은 낱개는 자신의 배치 메소드를 통해 조금 더 촘촘하게 표시한다.
      * @param {number} x 좌측 X 좌표
      * @param {number} y 위쪽 Y 좌표
-     * @param {string[]} units 예고뿌요 단위 목록
+     * @param {WarningPuyo[]} units 예고뿌요 객체 목록
      * @returns {void}
      */
     function drawWarningUnits(x, y, units) {
-        let tinyCount = 0;
-        units.forEach((type, index) => {
-            const tinyOffset = type === 'tiny' ? tinyCount++ * 0.35 : 0;
-            drawWarning(x + (index - tinyOffset) * CELL, y, type);
+        const sameTypeCounts = new Map();
+        units.forEach((unit, index) => {
+            const sameTypeIndex = sameTypeCounts.get(unit.type) || 0;
+            sameTypeCounts.set(unit.type, sameTypeIndex + 1);
+            unit.draw(context, unit.getDisplayX(x, index, sameTypeIndex), y, CELL);
         });
     }
 
@@ -1712,6 +1945,44 @@
         context.arc(centerX, centerY, CELL * (0.3 + progress * 0.2), 0, Math.PI * 2);
         context.fill();
         context.restore();
+    }
+
+    function drawEnergyTransfers() {
+        const energyTransfers = getEnergyTransfers();
+        if (!energyTransfers) return;
+        energyTransfers.forEach((energy) => {
+            const segment = energy.route[energy.routeIndex] || energy.route[energy.route.length - 1];
+            let x = energy.position.x;
+            let y = energy.position.y;
+            let scale = 1;
+            let alpha = 1;
+            if (energy.fading) {
+                const progress = Math.min(1, energy.elapsed / 150);
+                scale = 1 + progress * 1.8;
+                alpha = 1 - progress;
+            } else {
+                const progress = Math.min(1, energy.elapsed / 250);
+                const start = energy.position;
+                const end = segment.target;
+                // 폭발 지점에서 천장으로 직행할 때는 위쪽, 내 천장 경유 후 상대 천장으로 갈 때는 아래쪽으로 휜다.
+                const arc = segment.arcDirection === 'down' ? CELL * 3 : -CELL * 0.7;
+                const inverse = 1 - progress;
+                x = inverse * start.x + progress * end.x;
+                y = inverse * start.y + progress * end.y + 4 * inverse * progress * arc;
+            }
+            const radius = CELL * 0.17 * scale;
+            const gradient = context.createRadialGradient(x - radius * 0.35, y - radius * 0.35, 1, x, y, radius * 1.9);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.35, '#fff6a7');
+            gradient.addColorStop(1, 'rgba(82, 220, 255, 0)');
+            context.save();
+            context.globalAlpha = alpha;
+            context.fillStyle = gradient;
+            context.beginPath(); context.arc(x, y, radius * 1.9, 0, Math.PI * 2); context.fill();
+            context.fillStyle = '#ffffff';
+            context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill();
+            context.restore();
+        });
     }
 
     /**
@@ -1826,7 +2097,7 @@
             context.fillStyle = '#0a1d29'; context.fillRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
             context.strokeStyle = 'rgba(176, 232, 244, 0.25)'; context.strokeRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
         }
-        drawWarningUnits(x, FIELD_TOP - CELL, warningUnits(opponent.attack + player.damage));
+        drawWarningUnits(x, FIELD_TOP - CELL, warningUnits(warningAmount(player, opponent)));
         if (player.effects) {
             const progress = Math.min(1, player.effects.elapsed / player.effects.duration);
             player.effects.cells.forEach((puyo) => drawExplosionEffect(x + puyo.x * CELL, FIELD_BOTTOM - (puyo.y + 1) * CELL, puyo, progress));
@@ -1973,6 +2244,95 @@
         virtualHorizontalRepeatElapsed = 0;
     }
 
+    /** 게임패드에서 내부 키 입력 처리기로 전달할 최소 키보드 이벤트를 만든다. @param {string} key 키 이름 @returns {{key:string,repeat:boolean,preventDefault:()=>void}} */
+    function createGamepadKeyboardEvent(key) {
+        return { key, repeat: false, preventDefault: () => {} };
+    }
+
+    /** 게임패드 버튼이 눌린 상태인지 확인한다. @param {Gamepad} gamepad 게임패드 @param {number} index 버튼 번호 @returns {boolean} */
+    function isGamepadButtonPressed(gamepad, index) {
+        const button = gamepad.buttons?.[index];
+        return Boolean(button?.pressed || (typeof button?.value === 'number' && button.value >= GAMEPAD_STICK_DEAD_ZONE));
+    }
+
+    /** 현재 화면에서 스틱의 하단 대각선 조합을 함께 처리해야 하는지 확인한다. @returns {boolean} */
+    function canUseGamepadDownDiagonal() {
+        return Boolean(game && game.running && !game.paused && !game.ending && game.countdown <= 0);
+    }
+
+    /** 게임패드 왼쪽 스틱 상태를 게임 내부 방향키 상태로 변환한다. @param {Gamepad} gamepad 게임패드 @returns {Set<string>} */
+    function getGamepadDirectionKeys(gamepad) {
+        const axisX = Number(gamepad.axes?.[0]) || 0;
+        const axisY = Number(gamepad.axes?.[1]) || 0;
+        const horizontal = axisX <= -GAMEPAD_STICK_DEAD_ZONE ? 'arrowleft' : axisX >= GAMEPAD_STICK_DEAD_ZONE ? 'arrowright' : null;
+        const vertical = axisY <= -GAMEPAD_STICK_DEAD_ZONE ? 'arrowup' : axisY >= GAMEPAD_STICK_DEAD_ZONE ? 'arrowdown' : null;
+        if (!horizontal || !vertical) return new Set([horizontal || vertical].filter(Boolean));
+        // 실제 게임에서는 하단 대각선을 빠른 하강과 좌우 이동의 동시 입력으로 처리한다.
+        if (vertical === 'arrowdown' && canUseGamepadDownDiagonal()) return new Set([horizontal, vertical]);
+        // 메뉴와 그 밖의 화면에서는 대각선이 한 번에 둘 이상의 메뉴 동작을 일으키지 않게 큰 축 하나만 사용한다.
+        return new Set([Math.abs(axisX) >= Math.abs(axisY) ? horizontal : vertical]);
+    }
+
+    /** 게임패드가 해제되거나 연결이 끊겼을 때 게임패드가 누르던 방향키만 해제한다. @returns {void} */
+    function resetGamepadInput() {
+        try {
+            gamepadDirectionKeys.forEach((key) => handleKeyup(createGamepadKeyboardEvent(key)));
+            gamepadDirectionKeys.clear();
+            gamepadActionInput = { z: false, x: false, enter: false, escape: false };
+        } catch (error) {
+            console.error('게임패드 입력을 해제하지 못했습니다.', error);
+        }
+    }
+
+    /** 현재 연결된 첫 게임패드의 입력을 키보드 입력으로 반영한다. @param {boolean} suppressActions 초기 인식 시 이미 누르고 있던 버튼은 실행하지 않을지 여부 @returns {void} */
+    function updateGamepadInput(suppressActions = false) {
+        try {
+            if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') {
+                resetGamepadInput();
+                return;
+            }
+            const gamepads = navigator.getGamepads();
+            const gamepad = Array.from(gamepads || []).find((candidate) => candidate && candidate.connected !== false);
+            if (!gamepad) {
+                resetGamepadInput();
+                return;
+            }
+            const nextDirections = getGamepadDirectionKeys(gamepad);
+            gamepadDirectionKeys.forEach((key) => {
+                if (!nextDirections.has(key)) handleKeyup(createGamepadKeyboardEvent(key));
+            });
+            nextDirections.forEach((key) => {
+                if (!gamepadDirectionKeys.has(key)) handleKeydown(createGamepadKeyboardEvent(key));
+            });
+            gamepadDirectionKeys = nextDirections;
+
+            const nextActions = {
+                z: isGamepadButtonPressed(gamepad, 0) || isGamepadButtonPressed(gamepad, 4),
+                x: isGamepadButtonPressed(gamepad, 1) || isGamepadButtonPressed(gamepad, 5),
+                enter: isGamepadButtonPressed(gamepad, 2),
+                escape: isGamepadButtonPressed(gamepad, 3)
+            };
+            if (!suppressActions) {
+                Object.entries(nextActions).forEach(([key, pressed]) => {
+                    if (pressed && !gamepadActionInput[key]) handleKeydown(createGamepadKeyboardEvent(key));
+                });
+            }
+            gamepadActionInput = nextActions;
+        } catch (error) {
+            console.error('게임패드 입력을 처리하지 못했습니다.', error);
+        }
+    }
+
+    /** 초기화 시 Gamepad API 지원 여부와 첫 게임패드 상태를 안전하게 확인한다. @returns {void} */
+    function initializeGamepadInput() {
+        try {
+            if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') return;
+            updateGamepadInput(true);
+        } catch (error) {
+            console.error('Gamepad API를 초기화하지 못했습니다.', error);
+        }
+    }
+
     /** 포인터별 누름 상태를 합쳐 가상 방향 입력을 갱신한다. @returns {void} */
     function refreshVirtualDirectionInput() {
         const previous = virtualDirectionInput;
@@ -2020,6 +2380,7 @@
             resetVirtualControllerInput();
             game.paused = true;
             pauseMenuFocus = 0;
+            pauseBackgroundMusic();
             return;
         }
         const player = game.players[0];
@@ -2104,8 +2465,9 @@
 
     /** 시뮬레이터를 빈 그리기 보드와 첫 팔레트 포커스로 연다. @returns {void} */
     function openSimulator() {
-        simulator = { mode: 'draw', player: new PlayerState('SIMULATOR', FIELD_LEFT, null, COLORS), selected: 'red', paletteFocus: 0, focusArea: 'palette', boardFocus: { x: 0, y: 0 }, backup: null, waitTimer: 0, message: null, messageElapsed: 0 };
+        simulator = { mode: 'draw', player: new PlayerState('SIMULATOR', FIELD_LEFT, null, COLORS), target: new PlayerState('', FIELD_RIGHT, null, COLORS), energyTransfers: [], selected: 'red', paletteFocus: 0, focusArea: 'palette', boardFocus: { x: 0, y: 0 }, backup: null, waitTimer: 0, message: null, messageElapsed: 0 };
         menuScreen = 'simulator';
+        syncBackgroundMusic();
     }
 
     /** 플레이 방법 안내를 연다. @returns {void} */
@@ -2143,10 +2505,11 @@
         game = {
             running: true, paused: false, winner: null, ending: null, countdown: 0, countdownStartsGame: false, elapsed: 0, practice: true,
             difficulty: selectedDifficulty, aiDifficulty: selectedAiDifficulty, themeController, pairQueueColors: COLORS,
-            pairQueue: [...config.pairs, ['blue', 'yellow'], ['red', 'green']], players: [player, opponent],
-            tutorial: { stage, config, mode: 'intro', elapsed: 0, pieceElapsed: 0, placedCount: 0, lastCombo: 0, message: config.intro, messageElapsed: 0, actionFlags: {}, allClearPreviewElapsed: null, allClearGarbageShown: false, resultElapsed: 0, finalFocus: 1 }
+            pairQueue: [...config.pairs, ['blue', 'yellow'], ['red', 'green']], energyTransfers: [], players: [player, opponent],
+            tutorial: { stage, config, mode: 'intro', elapsed: 0, pieceElapsed: 0, placedCount: 0, lastCombo: 0, greenExplosionShown: false, stageThreeGarbageDropped: false, message: config.intro, messageElapsed: 0, actionFlags: {}, allClearPreviewElapsed: null, allClearGarbageShown: false, resultElapsed: 0, finalFocus: 1 }
         };
         updateNextPairs(player);
+        syncBackgroundMusic();
     }
 
     /** 플레이 방법 안내를 끝내고 메인 화면으로 돌아간다. @returns {void} */
@@ -2154,6 +2517,7 @@
         game = null;
         menuScreen = 'title';
         loadNotice();
+        syncBackgroundMusic();
     }
 
     /** 안내 문구를 표시한다. @param {string} message 번역 키 @returns {void} */
@@ -2196,6 +2560,8 @@
             holdAllClearGarbage = tutorial.allClearPreviewElapsed < 2000;
         }
         if (!holdAllClearGarbage) updatePlayer(opponent, player, delta);
+        // 3단계는 예고 표시만으로 끝내지 않고, 적 필드의 실제 방해뿌요 낙하를 한 번 확인한다.
+        if (tutorial.stage === 3 && opponent.phase !== 'idle') tutorial.stageThreeGarbageDropped = true;
         const waitingForGarbage = tutorial.stage >= 2 && opponent.phase !== 'idle' && player.phase === 'control' && player.placedPairCount > 0;
         player.tutorialHold = tutorial.stage === 4 && (player.allClearEffectElapsed > 0 || holdAllClearGarbage);
         if (!waitingForGarbage) updatePlayer(player, opponent, delta);
@@ -2222,15 +2588,24 @@
                 if (tutorial.stage === 1 && currentPiece === 0 && !tutorial.actionFlags.fastDownMessage) { tutorial.actionFlags.fastDownMessage = true; showTutorialMessage('아래 방향키로 빨리 떨어뜨리기'); }
             }
         }
+        if (player.combo === 0) tutorial.lastCombo = 0;
         if (player.combo > tutorial.lastCombo) {
             tutorial.lastCombo = player.combo;
-            if (tutorial.stage === 2) showTutorialMessage(player.placedPairCount <= 1 ? '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어' : '뿌요가 터질 때 인접한 방해뿌요도 같이 터져');
+            if (tutorial.stage === 2) {
+                if (player.placedPairCount <= 1) showTutorialMessage('같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어');
+                else {
+                    tutorial.greenExplosionShown = true;
+                    showTutorialMessage('뿌요가 터질 때 인접한 방해뿌요도 같이 터져');
+                }
+            }
         }
         if (tutorial.stage === 4 && tutorial.allClearPreviewElapsed !== null && tutorial.allClearPreviewElapsed >= 2000 && opponent.phase === 'idle' && opponent.damage <= 0) {
             tutorial.allClearGarbageShown = true;
         }
-        const stageFourComplete = tutorial.stage !== 4 || (tutorial.allClearGarbageShown && player.allClearEffectElapsed <= 0 && player.pendingAllClearDamage <= 0);
-        if (player.placedPairCount >= tutorial.config.pairs.length && player.phase === 'control' && opponent.phase === 'idle' && !tutorial.message && !holdAllClearGarbage && stageFourComplete) {
+        const stageFourComplete = tutorial.stage !== 4 || (tutorial.allClearGarbageShown && player.allClearEffectElapsed <= 0 && player.pendingAllClearDamage <= 0 && !hasPendingEnergyTransfers());
+        const stageTwoComplete = tutorial.stage !== 2 || (tutorial.greenExplosionShown && !hasPendingEnergyTransfers());
+        const stageThreeComplete = tutorial.stage !== 3 || (tutorial.stageThreeGarbageDropped && !hasPendingEnergyTransfers());
+        if (player.placedPairCount >= tutorial.config.pairs.length && player.phase === 'control' && opponent.phase === 'idle' && !tutorial.message && !holdAllClearGarbage && stageFourComplete && stageTwoComplete && stageThreeComplete) {
             if (tutorial.stage < 5) enterTutorialStage(tutorial.stage + 1);
         }
     }
@@ -2246,7 +2621,7 @@
             return;
         }
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
-        drawField(player, opponent); drawField(opponent, player); drawCenter();
+        drawField(player, opponent); drawField(opponent, player); drawCenter(); drawEnergyTransfers();
         if (tutorial.stage === 5 && tutorial.mode === 'intro') {
             const targetX = player.fieldX + 2 * CELL;
             const targetY = FIELD_BOTTOM - 12 * CELL;
@@ -2465,8 +2840,10 @@
     function startSimulatorPlayback() {
         if (!simulator || simulator.mode !== 'draw') return;
         simulator.backup = simulator.player.board.map((row) => [...row]);
-        simulator.mode = 'simulation'; simulator.player.effects = null;
+        simulator.mode = 'simulation'; simulator.player.effects = null; simulator.player.comboPopups = []; simulator.energyTransfers = [];
+        simulator.target.damage = 0; simulator.target.attack = 0; simulator.target.warningReductionDelay = 0; simulator.target.outgoingWarningDelay = 0; simulator.target.announcedAttack = 0;
         startGravity(simulator.player, 'simulatorExplode');
+        syncBackgroundMusic();
     }
 
     /** 시뮬레이션 전 보드 상태로 복원해 그리기 모드로 돌아간다. @returns {void} */
@@ -2474,8 +2851,10 @@
         if (!simulator) return;
         if (simulator.backup) simulator.player.board = simulator.backup.map((row) => [...row]);
         simulator.player.gravityAnimation = null; simulator.player.effects = null; simulator.player.phase = 'idle';
-        simulator.player.point = 0; simulator.player.attack = 0; simulator.player.damage = 0; simulator.player.combo = 0;
+        simulator.player.point = 0; simulator.player.attack = 0; simulator.player.damage = 0; simulator.player.combo = 0; simulator.player.comboPopups = [];
+        simulator.target.damage = 0; simulator.target.attack = 0; simulator.target.warningReductionDelay = 0; simulator.target.outgoingWarningDelay = 0; simulator.target.announcedAttack = 0; simulator.energyTransfers = [];
         simulator.mode = 'draw'; simulator.focusArea = 'palette'; simulator.paletteFocus = 0; simulator.waitTimer = 0;
+        syncBackgroundMusic();
     }
 
     /** 시뮬레이터 보드의 폭발 및 인접 방해뿌요 제거를 처리한다. @returns {boolean} 폭발 여부 */
@@ -2490,9 +2869,12 @@
         }));
         removed.forEach(({ x, y }) => { player.board[y][x] = null; });
         player.combo += 1;
+        const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
+        player.comboPopups.push({ x: center.x / exploding.length, y: center.y / exploding.length, combo: player.combo, elapsed: 0 });
         const power = COMBO_POWER[Math.min(player.combo, 18)] || 999;
         player.point += exploding.length * power;
         player.attack += exploding.length * power / 4;
+        sendAttackEnergy(player, simulator.target, center.x / exploding.length, center.y / exploding.length);
         player.effects = { cells: [...removed.values()], elapsed: 0, duration: 420 }; player.phase = 'simulatorEffect';
         return true;
     }
@@ -2504,12 +2886,24 @@
             simulator.messageElapsed += delta;
             if (simulator.messageElapsed >= 4000) simulator.message = null;
         }
-        if (simulator.mode === 'draw') return;
         const player = simulator.player;
+        if (simulator.mode === 'draw') return;
+        player.comboPopups = player.comboPopups
+            .map((popup) => ({ ...popup, elapsed: popup.elapsed + delta }))
+            .filter((popup) => popup.elapsed < 2000);
         if (simulator.mode === 'complete') return;
+        if (simulator.mode === 'settling') {
+            if (!hasPendingEnergyTransfers()) { simulator.mode = 'complete'; simulator.focusArea = 'complete'; }
+            return;
+        }
         if (player.phase === 'gravity') {
             if (player.gravityAnimation) { player.gravityAnimation.elapsed += delta; if (player.gravityAnimation.elapsed < player.gravityAnimation.duration) return; player.gravityAnimation = null; }
-            if (!explodeSimulatorPuyos()) { player.combo = 0; simulator.mode = 'complete'; simulator.focusArea = 'complete'; }
+            if (!explodeSimulatorPuyos()) {
+                deliverFinalAttackEnergy(player, simulator.target);
+                player.combo = 0;
+                simulator.mode = hasPendingEnergyTransfers() ? 'settling' : 'complete';
+                simulator.focusArea = 'complete';
+            }
         } else if (player.phase === 'simulatorEffect') {
             player.effects.elapsed += delta;
             if (player.effects.elapsed >= player.effects.duration) { player.effects = null; startGravity(player, 'simulatorExplode'); }
@@ -2529,10 +2923,12 @@
         for (let y = 0; y < VISIBLE_ROWS; y += 1) for (let column = 0; column < COLUMNS; column += 1) if (player.board[y][column] && !falling.has(`${column},${y}`)) drawPuyo(x + column * CELL, FIELD_BOTTOM - (y + 1) * CELL, player.board[y][column]);
         if (player.gravityAnimation) { const progress = Math.min(1, player.gravityAnimation.elapsed / player.gravityAnimation.duration) ** 2; player.gravityAnimation.falling.forEach((puyo) => { const y = puyo.fromY + (puyo.toY - puyo.fromY) * progress; if (y < VISIBLE_ROWS) drawPuyo(x + puyo.x * CELL, FIELD_BOTTOM - (y + 1) * CELL, puyo.color); }); }
         if (player.effects) { const progress = Math.min(1, player.effects.elapsed / player.effects.duration); player.effects.cells.forEach((puyo) => drawExplosionEffect(x + puyo.x * CELL, FIELD_BOTTOM - (puyo.y + 1) * CELL, puyo, progress)); }
+        player.comboPopups.forEach((popup) => drawComboPopup(x, popup));
         if (simulator.mode === 'draw' && simulator.focusArea === 'board') { const focus = simulator.boardFocus; context.strokeStyle = '#ffd54f'; context.lineWidth = 4; context.strokeRect(x + focus.x * CELL + 2, FIELD_BOTTOM - (focus.y + 1) * CELL + 2, CELL - 4, CELL - 4); }
         context.fillStyle = '#071621'; context.fillRect(500, FIELD_TOP - CELL, 350, CELL * 14); context.fillStyle = '#0c2433'; context.fillRect(FIELD_RIGHT - CELL, FIELD_TOP - CELL, CELL * 8, CELL * 14);
         for (let i = 0; i < COLUMNS; i += 1) { context.fillStyle = '#0a1d29'; context.fillRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); context.strokeStyle = 'rgba(176,232,244,.25)'; context.strokeRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); }
-        drawWarningUnits(FIELD_RIGHT, FIELD_TOP - CELL, warningUnits(player.attack));
+        drawWarningUnits(FIELD_RIGHT, FIELD_TOP - CELL, warningUnits(warningAmount(simulator.target, player)));
+        drawEnergyTransfers();
         context.textAlign = 'center';
         getSimulatorPaletteItems().forEach((item, index) => {
             const focused = simulator.focusArea === 'palette' && simulator.paletteFocus === index;
@@ -2566,6 +2962,67 @@
             context.fillStyle = '#fff'; context.font = `22px ${BUTTON_FONT}`; context.fillText(translate('그리기'), 675, 183);
         }
         context.fillStyle = '#d8f2f5'; context.font = `18px ${MESSAGE_FONT}`; context.fillText(simulator.mode === 'draw' ? translate('그리기') : translate('시뮬레이션'), 675, 486); context.font = `36px ${MESSAGE_FONT}`; context.fillStyle = '#f7c843'; context.fillText(String(Math.floor(player.point)).padStart(7, '0'), 675, 536); context.font = `17px ${MESSAGE_FONT}`; context.fillStyle = '#a9d9e5'; context.fillText('POINT', 675, 566);
+    }
+
+    /** 초기 타이틀을 그리고 시작 조작을 안내한다. @returns {void} */
+    function drawInitialTitle() {
+        context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `58px ${TITLE_FONT}`;
+        context.fillText('Puyo W', WIDTH / 2, 115);
+        context.fillStyle = '#f5fbfc'; context.font = `22px ${MESSAGE_FONT}`;
+        context.fillText(translate('ENTER키를 누르거나, 아무 곳이나 클릭해 주세요'), WIDTH / 2, HEIGHT - 70);
+    }
+
+    /** 게임 규칙 선택지 하나의 화면 영역을 반환한다. @param {number} index 선택지 순번 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getRuleSelectionButtonBounds(index) {
+        const width = 280;
+        const height = 58;
+        const gap = 16;
+        const totalHeight = GAME_RULE_OPTIONS.length * height + Math.max(0, GAME_RULE_OPTIONS.length - 1) * gap;
+        return { x: (WIDTH - width) / 2, y: (HEIGHT - totalHeight) / 2 + index * (height + gap), width, height };
+    }
+
+    /** 메인 메뉴 위에 게임 규칙 선택 오버레이를 연다. @returns {void} */
+    function openRuleSelection() {
+        ruleSelectionOpen = true;
+        ruleSelectionFocus = 0;
+    }
+
+    /** 게임 규칙 선택 오버레이를 닫고 메인 메뉴로 돌아간다. @returns {void} */
+    function closeRuleSelection() {
+        ruleSelectionOpen = false;
+        ruleSelectionFocus = 0;
+    }
+
+    /** 포커스된 게임 규칙을 선택한다. @returns {void} */
+    function activateRuleSelection() {
+        const option = GAME_RULE_OPTIONS[ruleSelectionFocus];
+        if (!option) return;
+        closeRuleSelection();
+        option.activate();
+    }
+
+    /** 게임 규칙 선택 오버레이의 키보드·게임패드 키 입력을 처리한다. @param {string} key 소문자 키 이름 @returns {void} */
+    function handleRuleSelectionKey(key) {
+        if (key === 'escape') { closeRuleSelection(); return; }
+        if (key === 'enter' || key === ' ') { activateRuleSelection(); return; }
+        if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key) && GAME_RULE_OPTIONS.length) {
+            const direction = key === 'arrowleft' || key === 'arrowup' ? -1 : 1;
+            ruleSelectionFocus = (ruleSelectionFocus + direction + GAME_RULE_OPTIONS.length) % GAME_RULE_OPTIONS.length;
+        }
+    }
+
+    /** 메인 메뉴 위에 게임 규칙 선택 오버레이를 그린다. @returns {void} */
+    function drawRuleSelectionOverlay() {
+        context.fillStyle = 'rgba(3, 11, 19, 0.76)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        GAME_RULE_OPTIONS.forEach((option, index) => {
+            const bounds = getRuleSelectionButtonBounds(index);
+            const focused = index === ruleSelectionFocus;
+            context.fillStyle = '#264b5b'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = focused ? '#f7c843' : '#4f7788'; context.lineWidth = focused ? 4 : 2; context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `22px ${BUTTON_FONT}`;
+            context.fillText(translate(option.label), bounds.x + bounds.width / 2, bounds.y + 37);
+        });
     }
 
     /**
@@ -2688,6 +3145,7 @@
                 context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 371);
             });
         }
+        if (menuScreen === 'title' && ruleSelectionOpen) drawRuleSelectionOverlay();
     }
 
     /**
@@ -2725,7 +3183,8 @@
         context.clearRect(0, 0, WIDTH, HEIGHT);
         // 진행 중인 게임이 없으면 현재 메뉴 화면만 렌더링한다.
         if (!game) {
-            if (menuScreen === 'simulator' && simulator) drawSimulator();
+            if (menuScreen === 'initialTitle') drawInitialTitle();
+            else if (menuScreen === 'simulator' && simulator) drawSimulator();
             else if (menuScreen === 'settings' && settingsDraft) drawSettings();
             else drawMenu();
             return;
@@ -2740,7 +3199,7 @@
             drawResultField(game.players[0]); drawResultField(game.players[1]); drawResultCenter();
             return;
         }
-        drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter();
+        drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter(); drawEnergyTransfers();
         if (shouldShowVirtualController()) drawVirtualController();
         // 시작 또는 재개 카운트다운 중에는 카운트다운 오버레이를 최상단에 표시한다.
         if (game.countdown > 0) {
@@ -2760,6 +3219,7 @@
     function frame(time) {
         const delta = Math.min(50, time - lastTime || 0);
         lastTime = time;
+        updateGamepadInput();
         // 플레이 방법은 결과 화면 표시 시간까지 갱신하고, 일반 게임은 실행 중일 때만 갱신한다.
         if (game?.tutorial && !game.paused) {
             if (game.running) game.elapsed += delta;
@@ -2781,7 +3241,9 @@
                 updatePlayer(game.players[1], game.players[0], delta);
             }
         }
-        if (!game && menuScreen === 'simulator') updateSimulator(delta);
+        if (game?.running && !game.paused) updateEnergyTransfers(delta);
+        if (!game && menuScreen === 'simulator') { updateSimulator(delta); updateEnergyTransfers(delta); }
+        syncBackgroundMusic();
         render();
         animationFrameId = requestAnimationFrame(frame);
     }
@@ -2849,14 +3311,43 @@
         }
     }
 
+    /** 실제 텍스트 입력 중에는 Z 키를 메뉴 확인 키로 바꾸지 않아야 하는지 확인한다. @param {KeyboardEvent|{target?:EventTarget|null}} event 입력 이벤트 @returns {boolean} */
+    function isTextInputInProgress(event) {
+        if (settingsEditing) return true;
+        const target = event.target;
+        if (!target || typeof target !== 'object') return false;
+        if (target.isContentEditable) return true;
+        const tagName = typeof target.tagName === 'string' ? target.tagName.toLowerCase() : '';
+        return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+    }
+
+    /** 게임 플레이 중이 아닐 때 Z 키를 메뉴 확인 키로 처리할지 확인한다. @param {KeyboardEvent|{target?:EventTarget|null}} event 입력 이벤트 @returns {boolean} */
+    function shouldTreatZAsEnter(event) {
+        return !isTextInputInProgress(event) && (!game || !game.running || game.paused);
+    }
+
+    /** 초기 타이틀에서 사용자 조작을 받은 뒤 메인 메뉴와 게임 외 배경음악을 시작한다. @returns {void} */
+    function enterMainMenu() {
+        if (menuScreen !== 'initialTitle') return;
+        hasUserStarted = true;
+        menuScreen = 'title';
+        loadNotice();
+        syncBackgroundMusic();
+    }
+
     /**
      * 키 입력을 현재 메뉴 또는 플레이어 조작에 전달한다.
      * @param {KeyboardEvent} event 키보드 이벤트
      * @returns {void}
      */
     function handleKeydown(event) {
-        const key = event.key.toLowerCase();
+        let key = event.key.toLowerCase();
+        if (key === 'z' && shouldTreatZAsEnter(event)) key = 'enter';
         if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'escape', 'enter', ' '].includes(key)) event.preventDefault();
+        if (!game && menuScreen === 'initialTitle') {
+            if (key === 'enter') enterMainMenu();
+            return;
+        }
         if (!game && menuScreen === 'simulator') { handleSimulatorKeydown(key); return; }
         if (game?.tutorial) {
             const tutorial = game.tutorial;
@@ -2878,6 +3369,10 @@
         }
         // 게임이 없으면 키 입력을 제목 또는 상대 선택 메뉴로 전달한다.
         if (!game) {
+            if (menuScreen === 'title' && ruleSelectionOpen) {
+                handleRuleSelectionKey(key);
+                return;
+            }
             if (menuScreen === 'practiceDifficulty') {
                 if (key === 'arrowleft' || key === 'arrowup') selectedDifficulty = (selectedDifficulty + DIFFICULTIES.length - 1) % DIFFICULTIES.length;
                 else if (key === 'arrowright' || key === 'arrowdown') selectedDifficulty = (selectedDifficulty + 1) % DIFFICULTIES.length;
@@ -2940,6 +3435,7 @@
             resetVirtualControllerInput();
             game.paused = true;
             pauseMenuFocus = 0;
+            pauseBackgroundMusic();
             return;
         }
         const player = game.players[0];
@@ -2979,7 +3475,7 @@
      * @returns {void}
      */
     function activateTitleMenu() {
-        if (titleMenuFocus === 0) openOpponentMenu();
+        if (titleMenuFocus === 0) openRuleSelection();
         else if (titleMenuFocus === 1) {
             selectedDifficulty = 1;
             menuScreen = 'practiceDifficulty';
@@ -3005,11 +3501,13 @@
             game.paused = false;
             game.countdown = 3000;
             game.countdownStartsGame = false;
+            resumeBackgroundMusic();
         } else {
             resetVirtualControllerInput();
             stopBackgroundMusic();
             game = null;
             menuScreen = 'title'; loadNotice();
+            syncBackgroundMusic();
         }
     }
 
@@ -3035,6 +3533,10 @@
      * @returns {void}
      */
     function handleCanvasClick(event) {
+        if (!game && menuScreen === 'initialTitle') {
+            enterMainMenu();
+            return;
+        }
         if (game?.tutorial) {
             const bounds = canvas.getBoundingClientRect();
             const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
@@ -3075,6 +3577,19 @@
         }
         // 실행 중인 게임 화면의 일반 클릭은 메뉴 동작으로 처리하지 않는다.
         if (game) return;
+        if (menuScreen === 'title' && ruleSelectionOpen) {
+            const selectedIndex = GAME_RULE_OPTIONS.findIndex((option, index) => {
+                const bounds = getRuleSelectionButtonBounds(index);
+                return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+            });
+            if (selectedIndex >= 0) {
+                ruleSelectionFocus = selectedIndex;
+                activateRuleSelection();
+            } else {
+                closeRuleSelection();
+            }
+            return;
+        }
         if (menuScreen === 'simulator' && simulator) {
             if (simulator.mode === 'complete') {
                 if (x >= 600 && x <= 750 && y >= 145 && y <= 203) restoreSimulatorDrawing();
@@ -3180,10 +3695,12 @@
 
     /**
      * 현재 화면을 AI가 구분할 수 있는 간결한 상태 객체로 만든다.
-     * @returns {{screen:'main_menu'|'practice_difficulty'|'opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getNowScreen() {
         if (!game) {
+            if (menuScreen === 'initialTitle') return { screen: 'initial_title', playerCanControl: false };
+            if (menuScreen === 'title' && ruleSelectionOpen) return { screen: 'rule_select', playerCanControl: false };
             if (menuScreen === 'opponent') return { screen: 'opponent_select', playerCanControl: false };
             if (menuScreen === 'practiceDifficulty') return { screen: 'practice_difficulty', playerCanControl: false };
             if (menuScreen === 'simulator') {
@@ -3234,7 +3751,7 @@
             placedPairCount: player.placedPairCount,
             board: { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, puyos },
             nextPairs: player.nextPairs.map((pair) => [...pair]),
-            warningPuyos: warningUnits(opponent.attack + player.damage),
+            warningPuyos: warningUnits(warningAmount(player, opponent)).map((unit) => unit.type),
             active
         };
     }
@@ -3261,7 +3778,7 @@
     /**
      * 현재 표시 중인 화면과 플레이어 조작 가능 여부를 반환한다.
      * 메뉴, 튜토리얼, 대전 진행 상태 모두에서 사용할 수 있다.
-     * @returns {{screen:'main_menu'|'practice_difficulty'|'opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getScreenState() {
         return getNowScreen();
@@ -3332,7 +3849,7 @@
         const screenSchema = {
             type: 'object',
             properties: {
-                screen: { type: 'string', enum: ['main_menu', 'practice_difficulty', 'opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible menu, simulator, tutorial, or match screen.' },
+                screen: { type: 'string', enum: ['initial_title', 'main_menu', 'rule_select', 'practice_difficulty', 'opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible title, menu, simulator, tutorial, or match screen.' },
                 playerCanControl: { type: 'boolean' }
             },
             required: ['screen', 'playerCanControl']
@@ -3434,6 +3951,7 @@
         canvas.removeEventListener('pointerup', handleVirtualPointerUp);
         canvas.removeEventListener('pointercancel', handleVirtualPointerUp);
         resetVirtualControllerInput();
+        resetGamepadInput();
         if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
         if (webMcpAbortController) webMcpAbortController.abort();
         if (createdCanvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
@@ -3443,6 +3961,10 @@
         simulator = null;
         settingsDraft = null;
         recommendedPoint = null;
+        menuScreen = 'initialTitle';
+        hasUserStarted = false;
+        ruleSelectionOpen = false;
+        ruleSelectionFocus = 0;
         createdCanvas = false;
         animationFrameId = null;
         webMcpAbortController = null;
@@ -3508,6 +4030,7 @@
         canvas.addEventListener('pointermove', handleVirtualPointerMove);
         canvas.addEventListener('pointerup', handleVirtualPointerUp);
         canvas.addEventListener('pointercancel', handleVirtualPointerUp);
+        initializeGamepadInput();
         prepareSoundPools();
         registerWebMcpTools();
         loadNotice();
@@ -3556,6 +4079,7 @@
         /**  
          * 적의 경우, 해당 적과 게임 시 사용되는 배경 음악. null 인 경우 해당 상황에서 소리가 나지 않는다.
          *     해당 적의 배경 음악이 없으면, 공통 사운드 풀의 backgroundMusic 을 체크해서 있으면 이용한다.
+         *     (연습 모드이거나, 시뮬레이터 화면에서 시뮬레이션 모드이거나, 플레이 방법 화면에서도 공통 사운드 풀의 backgroundMusic 이 있으면 재생해야 한다.)
          *     배경 음악이므로 반복되어야 한다.
          * @type {string|null}
          */
@@ -3610,6 +4134,12 @@
          */
         puyoBurstCombo7 = null;
 
+        /**  
+         * 전투 중이 아닌 상황에서 재생되는 배경 음악, null 인 경우 해당 상황에서 소리가 나지 않는다.
+         *     배경 음악이므로 반복되어야 한다.
+         * @type {string|null}
+         */
+        otherBackgroundMusic = null;
 
         constructor() { super(); }
     }
@@ -3622,6 +4152,123 @@
     function createSoundPool(commons) {
         if (commons) return new CommonSoundPool();
         return new SoundPool();
+    }
+
+    /** 
+     * 퍼즐 및 피버 모드 (추후 구현 예정) 에 쓰일, 
+     *    플레이 영역에 사전에 뿌요들을 배치하는 정보와 그 연쇄 수를 담은 객체를 위한 클래스. 
+     *    "피버 스테이지" 객체 라고 부를 예정.
+     * 
+     * 이 객체의 데이터대로 플레이어의 보드에 뿌요를 배치하고, 플레이어가 특정 위치에 뿌요를 놓으면, 해당 연쇄가 발생한다.
+     *     뿌요 배치 정보와, 연쇄 수, 뿌요 배치 직후에 제공되는 뿌요 색과 구성 정보 포함
+     * 
+    */
+    class FeverStageState {
+        /**
+         * 뿌요 배치 정보, 시뮬레이터 모드의 JSON복사 기능으로 생성된 데이터와 호환된다.
+         *    예: {"puyos":[{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":5,"y":1,"color":"red"}]}
+         * @type {Object}
+         */
+        stageData = {};
+
+        /**
+         * 목표 연쇄 수, 1 ~ 19 사이의 정수가 들어가야 한다. (19연쇄 초과는 논리적으로 불가능하다. 6 * 13 = 78칸, 78칸에 4개씩 뿌요를 배치하면 최대 19연쇄까지 가능.)
+         * @type {number}
+         */
+        targetCombo = 1;
+
+        /**
+         * 이 배치가 끝나자마자 그 다음에 플레이어의 컨트롤 차례가 됐을 때 제공되어야 하는 뿌요 색 목록, 배열로 안에는 색 이름 (red, blue, ...) 의 문자열이 2개가 들어가야 한다.
+         * @type {string[]}
+         */
+        suppliedNextPuyos = [];
+
+        /**
+         * 이 피버 퍼즐의 난이도
+         * @type {number}
+         */
+        difficulty = 1;
+
+        constructor(pStageData, pTargetCombo, pSuppliedNextPuyos, difficulty) {
+            if(typeof(pStageData) != 'undefined') this.stageData = pStageData;
+            if(typeof(pTargetCombo) != 'undefined') this.targetCombo = pTargetCombo;
+            if(typeof(pSuppliedNextPuyos) != 'undefined') this.suppliedNextPuyos = pSuppliedNextPuyos;
+            if(typeof(difficulty) != 'undefined') this.difficulty = difficulty;
+        }
+    }
+
+    /**
+     * "피버 스테이지" 객체들을 담을 배열, 5 ~ 12연쇄 까지만 담을 예정.
+     * 
+     * @type {FeverStageState[]}
+     */
+    const FEVER_STAGES = [
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"red"},{"x":1,"y":5,"color":"green"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"garbage"},{"x":2,"y":6,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"green"},{"x":3,"y":7,"color":"garbage"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":3,"y":8,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
+            12,
+            ['red', 'red'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":2,"y":6,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":2,"y":7,"color":"green"},{"x":3,"y":7,"color":"garbage"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":3,"y":8,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
+            11,
+            ['green', 'green'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
+            10,
+            ['green', 'green'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":5,"y":6,"color":"yellow"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"red"},{"x":5,"y":9,"color":"green"}]},
+            9,
+            ['yellow', 'yellow'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":5,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"}]},
+            8,
+            ['green', 'red'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"}]},
+            7,
+            ['green', 'green'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":2,"y":5,"color":"garbage"}]},
+            6,
+            ['red', 'red'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":0,"y":3,"color":"yellow"},{"x":0,"y":4,"color":"green"}]},
+            5,
+            ['yellow', 'yellow'],
+            1
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"green"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":2,"y":5,"color":"red"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"blue"},{"x":4,"y":6,"color":"green"},{"x":5,"y":6,"color":"red"},{"x":0,"y":7,"color":"blue"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"green"},{"x":5,"y":9,"color":"green"},{"x":5,"y":10,"color":"blue"},{"x":5,"y":11,"color":"blue"}]},
+            12,
+            ['yellow', 'green'],
+            3
+        ),
+    ];
+
+    /**
+     * * "피버 스테이지" 객체를 등록한다.
+     * 
+     * @param {FeverStageState} feverStateObject 
+     */
+    function registerFeverStage(feverStateObject) {
+        if (!(feverStateObject instanceof FeverStageState)) {
+            throw new TypeError('registerFeverStage requires a FeverStageState instance.');
+        }
+        FEVER_STAGES.push(feverStateObject);
     }
 
     // Enemy 계층은 파일 하단에 모아 확장 지점을 한곳에서 확인할 수 있게 한다.
@@ -4841,9 +5488,11 @@
 
     WebPuyo = {
         Enemy,
+        WarningPuyo,
         SoundPool,
         CommonSoundPool,
         registerOpponent,
+        registerWarningPuyo,
         registerLanguage,
         setNoticeFile,
         randomFloat,
