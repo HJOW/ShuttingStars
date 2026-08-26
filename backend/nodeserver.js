@@ -46,6 +46,18 @@ let PORT = 9690;
 // 웹 경로
 const WEB_ROOT = path.join(__dirname, '../src' + path.sep + 'main' + path.sep + 'webapp');
 
+/*
+로컬 게임 테스트를 위한 CORS 응답 헤더. 
+인증 정보를 포함한 요청은 별도 허용 출처가 필요하므로
+이 간이 서버에서는 자격 증명을 사용하지 않는 개발용 요청만 모든 출처에 공개.
+*/
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '600'
+};
+
 // 매개변수 검사
 if(process.argv.length >= 3) { // process.argv 배열 1, 2번은 예약되어 있음, 3번부터 매개변수가 들어오기 시작함
     PORT = parseInt(process.argv[2]); // 첫 번째 매개변수로 포트 입력
@@ -70,6 +82,16 @@ const apis = {
 }
 
 const server = http.createServer((req, res) => {
+    // 모든 정적·동적 응답에 CORS 헤더를 먼저 설정한다.
+    Object.entries(CORS_HEADERS).forEach(([name, value]) => res.setHeader(name, value));
+
+    // JSON POST 등 브라우저 preflight 요청에는 본문 없이 성공을 반환한다.
+    if(req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+    
     // URL 경로 설정 (기본값: index.html)
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const url = req.url;
