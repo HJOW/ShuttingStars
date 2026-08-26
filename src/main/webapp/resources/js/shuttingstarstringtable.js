@@ -133,7 +133,8 @@ const SSStringTable = {
         "Search" : '검색',
         "Play with my own" : '내 곡으로 플레이',
         'Play with youtube URL' : '유튜브 URL로 플레이',
-        'Unavailable' : '사용 불가'
+        'Unavailable' : '사용 불가',
+        'Puyo W' : '뿌요 W'
     }
 };
 export { SSStringTable };
