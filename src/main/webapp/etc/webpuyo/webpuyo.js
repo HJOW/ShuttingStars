@@ -18,10 +18,18 @@
     const ROWS = 17;
     /** 화면에 보이는 필드의 세로 칸 수다. @type {number} */
     const VISIBLE_ROWS = 12;
+    /** 시뮬레이터 그리기 모드에서 편집할 수 있는 줄 수다. 13번째 줄은 실행 중 베젤 뒤에 숨겨진다. @type {number} */
+    const SIMULATOR_EDITABLE_ROWS = VISIBLE_ROWS + 1;
     /** 적 선택 화면 UI를 축소해 표시할 배율이다. @type {number} */
     const OPPONENT_MENU_SCALE = 0.9;
     /** 한 칸의 논리 픽셀 크기다. @type {number} */
     const CELL = 38;
+    /** 패배 연출에서 필드 밖으로 더 떨어뜨릴 줄 수다. @type {number} */
+    const DEFEAT_EXTRA_FALL_ROWS = 5;
+    /** 메인 메뉴에서 갤러리 대상이 떠다니는 최소 개수다. 이 값을 바꾸면 추첨 범위가 함께 바뀐다. @type {number} */
+    const MAIN_MENU_GALLERY_FLOATER_MIN_COUNT = 3;
+    /** 메인 메뉴에서 갤러리 대상이 떠다니는 최대 개수다. 최소 개수 이상으로 설정한다. @type {number} */
+    const MAIN_MENU_GALLERY_FLOATER_MAX_COUNT = 5;
     /** 필드 표시 영역의 위쪽 논리 좌표다. @type {number} */
     const FIELD_TOP = 102;
     /** 필드 표시 영역의 아래쪽 논리 좌표다. @type {number} */
@@ -35,7 +43,9 @@
     /** 색상 이름별 캔버스 색상값이다. @type {Record<string, string>} */
     const PALETTE = {
         red: '#ef5350', green: '#66bb6a', yellow: '#f7c843', blue: '#42a5f5', purple: '#ab73e8',
-        garbage: '#d3edf4'
+        garbage: '#d3edf4',
+        // 예고뿌요 전용 색상이다. 방해뿌요의 투명도·눈·반사선은 그대로 두고 본체 색만 바꾼다.
+        warningInk: '#30363f'
     };
     /** 연쇄 수별 점수 보너스다. 20연쇄 이상은 마지막 값에 연쇄 초과분을 곱해 계산한다. @type {number[]} */
     const CHAIN_BONUS = [0, 0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512];
@@ -69,7 +79,7 @@
     const MESSAGE_FONT = buildFontStack(MESSAGE_FONT_NAME);
     /** 4방향 인접 좌표 계산에 사용할 X, Y 변화량이다. @type {number[][]} */
     const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-    /** 싹쓸이 성공 시 상대방에게 즉시 보낼 방해뿌요 수다. @type {number} */
+    /** 기본 룰·연습의 싹쓸이 성공 시 상대방에게 보낼 방해뿌요 수다. 피버 룰과 연속 피버에는 적용하지 않는다. @type {number} */
     const ALL_CLEAR_DAMAGE = 12;
     /** 싹쓸이 성공 시 즉시 더할 점수다. @type {number} */
     const ALL_CLEAR_POINT = 100;
@@ -111,12 +121,14 @@
     const VIRTUAL_DPAD = { x: 118, y: 610, size: 52 };
     /** 가상 컨트롤러 Z, X, ESC 버튼의 중심 좌표와 크기다. @type {{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number},radius:number}} */
     const VIRTUAL_ACTION_BUTTONS = { z: { x: 1090, y: 590 }, x: { x: 1170, y: 590 }, escape: { x: 1170, y: 500 }, radius: 31 };
-    /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {null} */
+    /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_EASY = null;
-    /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number} */
+    /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_NORMAL = 1500;
-    /** AI 어려움 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number} */
+    /** AI 어려움 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_HARD = 300;
+    /** AI 극한 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
+    const AI_FAST_DOWN_DELAY_EXTREME = 100;
     /** 적이 공격 위력 시뮬레이션을 우선할 피해량 기준이다. @type {number} */
     const AI_ATTACK_SIMULATION_DAMAGE_THRESHOLD = 12;
     /** 공통 뿌요 쌍 대기열의 초기 길이다. @type {number} */
@@ -125,51 +137,71 @@
     const STORE_KEY = 'puyow_store';
     /** 갤러리 잠금 해제 정보를 저장할 브라우저 저장소 키다. @type {string} */
     const GALLERY_STORE_KEY = 'puyow_gallery';
+    /** 설정에서 새로 제안하고 저장값이 비어 있을 때 보정할 기본 OpenAI 모델명이다. @type {string} */
+    const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
+    /** 설정 화면에서 선택할 수 있는 AI 서비스 제공자 목록이다. Google은 현재 제공하지 않는다. @type {string[]} */
+    const AI_SERVICE_PROVIDERS = ['OpenAI'];
+    /** 브라우저에서 직접 호출할 OpenAI Responses API 주소다. @type {string} */
+    const OPENAI_RESPONSES_API_URL = 'https://api.openai.com/v1/responses';
+    /** API 테스트 응답에 요구할 최소 JSON Schema다. @type {object} */
+    const AI_API_TEST_JSON_SCHEMA = {
+        type: 'object',
+        properties: { success: { type: 'boolean' } },
+        required: ['success'],
+        additionalProperties: false
+    };
     /** 한국어 원문을 키로 하는 화면 문구 번역표다. @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
             '초기화': 'Reset', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Reset all settings for this game?', '초기화 중...': 'Resetting...',
-            '게임 시작': 'Game Start', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '난이도 선택': 'Difficulty', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
-            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '시작': 'Start', '이전': 'Back',
+            '게임 시작': 'Game Start', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
+            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '시작': 'Start', '이전': 'Back',
+            '극한': 'Extreme',
             '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '게임 시간 %1초': 'Game time: %1 sec', '%1연쇄': '%1 Chain',
             '연습 상대': 'Practice Opponent', '추후 출시예정': 'Coming soon', '잠김': 'Locked',
             '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Play', '그리기': 'Draw', '시뮬레이션': 'Simulation', '지우개': 'Eraser',
             'JSON복사': 'Copy JSON', 'JSON넣기': 'Paste JSON', '배치가 클립보드에 복사됨': 'Layout copied to clipboard',
             '클립보드 복사 실패': 'Clipboard copy failed', 'JSON 파싱 실패': 'JSON parsing failed', '배치 JSON을 입력하세요.': 'Enter layout JSON.',
-            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '켜기': 'On', '끄기': 'Off', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 및 AI 관련 기능은 추후 제공 예정': 'Sound and AI features will be available in a future update.',
+            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '켜기': 'On', '끄기': 'Off', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
             '플레이 방법': 'How to Play', '갤러리': 'Gallery', '대상 유형': 'Category', '대상': 'Item', '일반뿌요': 'Puyos', '예고뿌요': 'Warning Puyos', '적': 'Enemies', '빨강뿌요': 'Red Puyo', '초록뿌요': 'Green Puyo', '노랑뿌요': 'Yellow Puyo', '파랑뿌요': 'Blue Puyo', '보라뿌요': 'Purple Puyo', '방해뿌요': 'Garbage Puyo', '작은 예고뿌요': 'Small Warning Puyo', '큰 예고뿌요': 'Large Warning Puyo', '빨간 돌': 'Red Rock', '별': 'Star', '태양': 'Sun', '중성자별': 'Neutron Star', '블랙홀': 'Black Hole', '위기': 'Crisis', '다시보기': 'Replay',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Use Left, Right, and Down to move puyos. Rotate them with Z and X.', '좌우 방향키로 뿌요 이동': 'Move puyos with Left and Right.', '아래 방향키로 빨리 떨어뜨리기': 'Use Down to drop faster.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Press Z to rotate left.', 'X 키를 눌러 우측으로 뿌요 회전': 'Press X to rotate right.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Connect four or more puyos of the same color to pop them and attack.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Four puyos of the same color connect to attack the opponent.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Garbage puyos next to popping puyos disappear too.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Chain popping puyos for a stronger attack.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'An all clear gives you a powerful attack.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'You lose when puyos stay at the end of the third row.',
+            '은하': 'Galaxy',
             '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)'
         },
         ja: {
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
-            '게임 시작': 'ゲーム開始', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '난이도 선택': '難易度', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
-            '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '시작': '開始', '이전': '戻る',
+            '게임 시작': 'ゲーム開始', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
+            '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '시작': '開始', '이전': '戻る',
+            '극한': '極限',
             '일시정지': '一時停止', '재개': '再開', '종료': '終了', 'GitHub': 'GitHub',
             '승리': '勝利', '패배': '敗北', '최종 점수 %1': '最終スコア %1', '게임 시간 %1초': 'ゲーム時間: %1秒', '%1연쇄': '%1連鎖',
             '연습 상대': '練習相手', '추후 출시예정': '近日公開予定', '잠김': 'ロック中',
             '시뮬레이터': 'シミュレーター', '팔레트': 'パレット', '재생': '再生', '그리기': '描画', '시뮬레이션': 'シミュレーション', '지우개': '消しゴム',
             'JSON복사': 'JSONをコピー', 'JSON넣기': 'JSONを貼り付け', '배치가 클립보드에 복사됨': '配置をクリップボードにコピーしました',
             '클립보드 복사 실패': 'クリップボードへのコピーに失敗しました', 'JSON 파싱 실패': 'JSONの解析に失敗しました', '배치 JSON을 입력하세요.': '配置JSONを入力してください。',
-            '설정': '設定', '배경음악 볼륨': 'BGM音量', '효과음 볼륨': '効果音量', '가상 컨트롤러 사용': '仮想コントローラーを使用', '켜기': 'オン', '끄기': 'オフ', 'AI 서비스 제공자': 'AIプロバイダー', 'AI API 키': 'AI APIキー', '사용 모델명': 'モデル名', '저장': '保存', '취소': 'キャンセル', '이 API키는 브라우저에만 저장됩니다.': 'このAPIキーはこのブラウザにのみ保存されます。', '사운드 및 AI 관련 기능은 추후 제공 예정': 'サウンドとAI機能は今後のアップデートで提供予定です。',
+            '설정': '設定', '배경음악 볼륨': 'BGM音量', '효과음 볼륨': '効果音量', '가상 컨트롤러 사용': '仮想コントローラーを使用', '켜기': 'オン', '끄기': 'オフ', 'AI 서비스 제공자': 'AIプロバイダー', 'AI API 키': 'AI APIキー', '사용 모델명': 'モデル名', 'AI API 테스트': 'AI APIテスト', '저장': '保存', '취소': 'キャンセル', '이 API키는 브라우저에만 저장됩니다.': 'このAPIキーはこのブラウザにのみ保存されます。', '사운드 관련 기능은 추후 제공 예정': 'サウンド機能は今後のアップデートで提供予定です。', '설정 저장 후 다시 시도해 주세요': '設定を保存してから、もう一度お試しください。', 'AI API 테스트 요청 중...': 'AI APIをテスト中…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI APIテスト成功（JSONスキーマ検証: 合格）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI APIテスト失敗（JSONスキーマ検証: 失敗）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI APIテスト失敗（JSONスキーマ検証: 未実施）',
             '플레이 방법': '遊び方', '갤러리': 'ギャラリー', '대상 유형': '種類', '대상': '対象', '일반뿌요': 'ぷよ', '예고뿌요': '予告ぷよ', '적': '敵', '빨강뿌요': '赤ぷよ', '초록뿌요': '緑ぷよ', '노랑뿌요': '黄ぷよ', '파랑뿌요': '青ぷよ', '보라뿌요': '紫ぷよ', '방해뿌요': 'おじゃまぷよ', '작은 예고뿌요': '小さい予告ぷよ', '큰 예고뿌요': '大きい予告ぷよ', '빨간 돌': '赤い岩', '별': '星', '태양': '太陽', '중성자별': '中性子星', '블랙홀': 'ブラックホール', '위기': 'ピンチ', '다시보기': 'もう一度見る',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '左右・下キーでぷよを動かし、Z・Xキーで回転できます。', '좌우 방향키로 뿌요 이동': '左右キーでぷよを移動', '아래 방향키로 빨리 떨어뜨리기': '下キーで速く落下', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Zキーで左回転', 'X 키를 눌러 우측으로 뿌요 회전': 'Xキーで右回転', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '同じ色のぷよを4個以上つなげると消して攻撃できます。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '同じ色のぷよ4個がつながり、相手を攻撃できます。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'ぷよが消えると、隣接するおじゃまぷよも消えます。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '連鎖でぷよを消すと、より強く攻撃できます。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消しをすると強力な攻撃ができます。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '3段目の端にぷよが残ると負けです。',
+            '은하': '銀河',
             '음소거(꺼짐)' : 'ミュート（オフ）', '음소거(활성)' : 'ミュート（オン）'
         },
         zh: {
             '초기화': '重置', '이 게임의 모든 설정을 초기화하시겠습니까?': '要重置此游戏的所有设置吗？', '초기화 중...': '正在重置…',
-            '게임 시작': '开始游戏', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '난이도 선택': '难度', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
+            '게임 시작': '开始游戏', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '简单', '보통': '普通', '어려움': '困难', '안드로말리우스': '安德罗马利乌斯', '단탈리온': '丹塔利昂', '세레': '西瑞', '데카라비亚': '德卡拉比亚', '벨리알': '贝利亚尔', '시작': '开始', '이전': '返回',
+            '암두시아스': '阿姆杜西亚斯', '키마리스': '基马里斯',
+            '극한': '极限',
             '일시정지': '暂停', '재개': '继续', '종료': '退出', 'GitHub': 'GitHub',
             '승리': '胜利', '패배': '失败', '최종 점수 %1': '最终得分 %1', '게임 시간 %1초': '游戏时间：%1秒', '%1연쇄': '%1连锁',
             '연습 상대': '练习对手', '추후 출시예정': '即将推出', '잠김': '已锁定',
             '시뮬레이터': '模拟器', '팔레트': '调色板', '재생': '播放', '그리기': '绘制', '시뮬레이션': '模拟', '지우개': '橡皮擦',
             'JSON복사': '复制 JSON', 'JSON넣기': '粘贴 JSON', '배치가 클립보드에 복사됨': '布局已复制到剪贴板',
             '클립보드 복사 실패': '复制到剪贴板失败', 'JSON 파싱 실패': 'JSON 解析失败', '배치 JSON을 입력하세요.': '请输入布局 JSON。',
-            '설정': '设置', '배경음악 볼륨': '背景音乐音量', '효과음 볼륨': '音效音量', '가상 컨트롤러 사용': '使用虚拟控制器', '켜기': '开启', '끄기': '关闭', 'AI 서비스 제공자': 'AI 服务提供商', 'AI API 키': 'AI API 密钥', '사용 모델명': '模型名称', '저장': '保存', '취소': '取消', '이 API키는 브라우저에만 저장됩니다.': '此 API 密钥仅存储在此浏览器中。', '사운드 및 AI 관련 기능은 추후 제공 예정': '声音和 AI 功能将在未来更新中提供。',
+            '설정': '设置', '배경음악 볼륨': '背景音乐音量', '효과음 볼륨': '音效音量', '가상 컨트롤러 사용': '使用虚拟控制器', '켜기': '开启', '끄기': '关闭', 'AI 서비스 제공자': 'AI 服务提供商', 'AI API 키': 'AI API 密钥', '사용 모델명': '模型名称', 'AI API 테스트': 'AI API 测试', '저장': '保存', '취소': '取消', '이 API키는 브라우저에만 저장됩니다.': '此 API 密钥仅存储在此浏览器中。', '사운드 관련 기능은 추후 제공 예정': '声音功能将在未来更新中提供。', '설정 저장 후 다시 시도해 주세요': '请先保存设置后再试。', 'AI API 테스트 요청 중...': '正在测试 AI API…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API 测试成功（JSON 架构检查：通过）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API 测试失败（JSON 架构检查：失败）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API 测试失败（JSON 架构检查：未执行）',
             '플레이 방법': '玩法说明', '갤러리': '图鉴', '대상 유형': '类别', '대상': '对象', '일반뿌요': '普通噗哟', '예고뿌요': '预告噗哟', '적': '敌人', '빨강뿌요': '红噗哟', '초록뿌요': '绿噗哟', '노랑뿌요': '黄噗哟', '파랑뿌요': '蓝噗哟', '보라뿌요': '紫噗哟', '방해뿌요': '垃圾噗哟', '작은 예고뿌요': '小型预告噗哟', '큰 예고뿌요': '大型预告噗哟', '빨간 돌': '红色岩石', '별': '星星', '태양': '太阳', '중성자별': '中子星', '블랙홀': '黑洞', '위기': '危机', '다시보기': '再次观看',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '使用左右和下方向键移动噗哟，使用 Z、X 键旋转。', '좌우 방향키로 뿌요 이동': '用左右方向键移动噗哟', '아래 방향키로 빨리 떨어뜨리기': '用下方向键快速落下', 'Z 키를 눌러 좌측으로 뿌요 회전': '按 Z 键向左旋转', 'X 키를 눌러 우측으로 뿌요 회전': '按 X 键向右旋转', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '连接四个或更多相同颜色的噗哟即可消除并攻击对手。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '四个相同颜色的噗哟连接后可以攻击对手。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': '消除噗哟时，相邻的垃圾噗哟也会一起消失。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '连续消除噗哟可以发动更强的攻击。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消时可以发动强力攻击。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '噗哟停留在第 3 行末端时会失败。',
+            '은하': '银河',
             '음소거(꺼짐)' : '静音（关）', '음소거(활성)' : '静音（开）'
         }
     };
@@ -204,6 +236,14 @@
     let settingsEditing = false;
     /** 현재 편집 중인 문자열의 커서 위치다. @type {number} */
     let settingsCursor = 0;
+    /** 화면 최상단에 표시할 외부 메시지다. @type {{message:string,color:string,elapsed:number,duration:number}|null} */
+    let screenMessage = null;
+    /** 외부 메시지가 유지 시간 뒤 사라지는 데 걸리는 시간(ms)이다. @type {number} */
+    const SCREEN_MESSAGE_FADE_DURATION = 500;
+    /** AI API 테스트 요청이 진행 중인지 여부다. @type {boolean} */
+    let settingsApiTestPending = false;
+    /** 종료된 설정 화면의 비동기 응답을 무시하기 위한 요청 식별자다. @type {number} */
+    let settingsApiTestRequestId = 0;
     /** 설정 전체 초기화 확인 후 표시하는 초기화 진행 화면 여부다. @type {boolean} */
     let settingsResetting = false;
     /** 설정 전체 초기화 후 첫 화면으로 돌아가기 위한 타이머다. @type {number|null} */
@@ -212,6 +252,8 @@
     let recommendedPoint = null;
     /** 게임이 없을 때 표시할 메뉴 화면 식별자다. @type {'initialTitle'|'title'|'opponent'|'practiceDifficulty'|'simulator'|'settings'|'gallery'} */
     let menuScreen = 'initialTitle';
+    /** 색상 수 선택 화면이 시작할 단독 모드다. @type {'practice'|'continuousFever'} */
+    let colorSelectionMode = 'practice';
     /** 갤러리의 현재 선택과 포커스 상태다. @type {{typeIndex:number,itemIndex:number,focus:'type'|'target',portraitElapsed:number}|null} */
     let gallery = null;
     /** 초기 타이틀 중앙에 순환 표시할 갤러리 대상 상태다. @type {{loaded:boolean,items:{draw:()=>void}[],startIndex:number,elapsed:number}} */
@@ -236,6 +278,10 @@
     let titleMenuFocus = 0;
     /** 메인 메뉴의 게임 규칙 선택 오버레이가 열려 있는지 여부다. @type {boolean} */
     let ruleSelectionOpen = false;
+    /** 메인 메뉴에서 떠다닐 갤러리 항목의 위치·속도 상태다. @type {{draw:()=>void,x:number,y:number,vx:number,vy:number,radius:number}[]} */
+    let mainMenuGalleryFloaters = [];
+    /** 직전 렌더링 메뉴 화면이다. 메인 메뉴 재진입 시 떠다니는 항목을 다시 추첨하는 데 사용한다. @type {string} */
+    let previousRenderedMenuScreen = 'initialTitle';
     /** 게임 규칙 선택 오버레이에서 포커스된 항목이다. @type {number} */
     let ruleSelectionFocus = 0;
     /** 일시정지 메뉴에서 포커스된 항목이다. @type {number} */
@@ -266,7 +312,7 @@
     let gamepadActionInput = { z: false, x: false, enter: false, escape: false };
     /** 현재 화면 문구에 적용할 언어 코드다. @type {string} */
     let languageCode = 'ko';
-    /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>}} */
+    /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>}} */
     let store = createInitialStore();
     /** 메인 화면 안내문 파일 경로 또는 절대 URL이다. 상대경로는 webpuyo.js 기준으로 해석한다. @type {string} */
     let noticeUrl = 'notice.txt';
@@ -278,22 +324,30 @@
         { name: '4색', colors: ['red', 'green', 'yellow', 'blue'] },
         { name: '5색', colors: COLORS }
     ];
-    /** AI 빠른 하강 시점별 난이도다. @type {{key:'easy'|'normal'|'hard', name:string, fastDownDelay:number|null}[]} */
+    /** AI 빠른 하강 시점별 난이도다. @type {{key:'easy'|'normal'|'hard'|'extreme', name:string, fastDownDelay:number|null}[]} */
     const AI_DIFFICULTIES = [
         { key: 'easy', name: '쉬움', fastDownDelay: AI_FAST_DOWN_DELAY_EASY },
         { key: 'normal', name: '보통', fastDownDelay: AI_FAST_DOWN_DELAY_NORMAL },
-        { key: 'hard', name: '어려움', fastDownDelay: AI_FAST_DOWN_DELAY_HARD }
+        { key: 'hard', name: '어려움', fastDownDelay: AI_FAST_DOWN_DELAY_HARD },
+        { key: 'extreme', name: '극한', fastDownDelay: AI_FAST_DOWN_DELAY_EXTREME }
     ];
     /** 등록된 기본 및 외부 적 목록이다. @type {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} */
     const OPPONENTS = [];
     /** getClassType()별로 외부에서 지정한 적 사운드 풀이다. @type {Map<string, SoundPool>} */
     const enemySoundPools = new Map();
-    /** 메인 메뉴의 게임 규칙 선택지다. 새 규칙은 이 목록에 추가해 확장한다. @type {{label:string,statusLabel?:string,disabled?:boolean,activate?:()=>void}[]} */
+    /** 메인 메뉴 게임 규칙 선택지의 버튼 배경색이다. */
+    const RULE_OPTION_BACKGROUND_COLORS = {
+        standard: '#264b5b',
+        fever: '#b0007a',
+        practice: '#386779',
+        continuousFever: '#cf4bb0'
+    };
+    /** 메인 메뉴의 게임 규칙 선택지다. 새 규칙은 이 목록에 추가해 확장한다. @type {{label:string,statusLabel?:string,backgroundColor:string,disabled?:boolean,activate?:()=>void}[]} */
     const GAME_RULE_OPTIONS = [
-        { label: '기본 룰', activate: () => openOpponentMenu(false) },
-        { label: '피버 룰', activate: () => openOpponentMenu(true) },
-        { label: '연습', activate: () => openPracticeDifficulty() },
-        { label: '연속 피버', activate: () => startContinuousFeverGame() }
+        { label: '기본 룰', backgroundColor: RULE_OPTION_BACKGROUND_COLORS.standard, activate: () => openOpponentMenu(false) },
+        { label: '피버 룰', backgroundColor: RULE_OPTION_BACKGROUND_COLORS.fever, activate: () => openOpponentMenu(true) },
+        { label: '연습', backgroundColor: RULE_OPTION_BACKGROUND_COLORS.practice, activate: () => openPracticeDifficulty() },
+        { label: '연속 피버', backgroundColor: RULE_OPTION_BACKGROUND_COLORS.continuousFever, activate: () => openContinuousFeverDifficulty() }
     ];
     /** 브라우저 전역 및 CommonJS로 공개할 라이브러리 API다. @type {object|null} */
     let WebPuyo = null;
@@ -329,14 +383,14 @@
 
     /**
      * 저장 데이터의 기본 구조를 만든다.
-     * @returns {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard', string[]>}} 초기 저장 데이터
+     * @returns {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>}} 초기 저장 데이터
      */
     function createInitialStore() {
         return {
             clearList: [],
-            clearListByDifficulty: { easy: [], normal: [], hard: [] },
-            feverClearListByDifficulty: { easy: [], normal: [], hard: [] },
-            settings: { musicVolume: 100, effectsVolume: 100, virtualController: false, aiProvider: 'OpenAI', aiApiKey: '', aiModel: '' },
+            clearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
+            feverClearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
+            settings: { musicVolume: 100, effectsVolume: 100, virtualController: false, aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
             muted: false
         };
     }
@@ -387,7 +441,7 @@
         saveGalleryUnlocks();
     }
 
-    /** 일반 룰 대전에서 이긴 적을 갤러리에 공개한다. @param {string} classType 적 종류 식별자 @returns {void} */
+    /** 기본·피버 룰 대전에서 이긴 적을 갤러리에 공개한다. @param {string} classType 적 종류 식별자 @returns {void} */
     function unlockGalleryEnemy(classType) {
         if (galleryUnlocks.enemies.includes(classType)) return;
         galleryUnlocks.enemies.push(classType);
@@ -445,9 +499,88 @@
             } catch (error) {
                 console.error('Puyo W 초기 갤러리 미리보기를 준비하지 못했습니다.', error);
                 galleryUnlocks = createInitialGalleryUnlocks();
-                initialGalleryPreview = { loaded: true, items: getInitialGalleryPreviewItems(), startIndex: 0, elapsed: 0 };
+                try {
+                    initialGalleryPreview = { loaded: true, items: getInitialGalleryPreviewItems(), startIndex: 0, elapsed: 0 };
+                } catch (fallbackError) {
+                    console.error('Puyo W 초기 갤러리 미리보기 복구에 실패했습니다.', fallbackError);
+                    initialGalleryPreview = { loaded: true, items: [], startIndex: 0, elapsed: 0 };
+                }
             }
         }, 1);
+    }
+
+    /** 0 이상 1 미만의 난수로 배열을 섞는다. @param {unknown[]} values 원본 배열 @returns {unknown[]} 섞인 새 배열 */
+    function shuffleGalleryValues(values) {
+        const shuffled = [...values];
+        for (let index = shuffled.length - 1; index > 0; index -= 1) {
+            const swapIndex = Math.floor(randomFloat() * (index + 1));
+            [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+        }
+        return shuffled;
+    }
+
+    /** 메인 메뉴에서 떠다닐 갤러리 일반·방해·예고뿌요를 새로 추첨한다. @returns {void} */
+    function createMainMenuGalleryFloaters() {
+        try {
+            loadGalleryUnlocks();
+            const candidates = [...COLORS, 'garbage'].map((color) => ({
+                radius: CELL * 0.5,
+                draw: () => drawPuyo(-CELL / 2, -CELL / 2, color, 0.82)
+            }));
+            WARNING_PUYO_CLASSES.forEach((WarningPuyoType) => {
+                const unit = new WarningPuyoType();
+                if (galleryUnlocks.warning.includes(unit.type)) candidates.push({
+                    radius: CELL * 0.62,
+                    draw: () => unit.draw(context, -CELL / 2, -CELL / 2, CELL)
+                });
+            });
+            const floaterCount = MAIN_MENU_GALLERY_FLOATER_MIN_COUNT
+                + Math.floor(randomFloat() * (MAIN_MENU_GALLERY_FLOATER_MAX_COUNT - MAIN_MENU_GALLERY_FLOATER_MIN_COUNT + 1));
+            const selected = shuffleGalleryValues(candidates).slice(0, Math.min(candidates.length, floaterCount));
+            mainMenuGalleryFloaters = selected.map((item) => {
+                const radius = item.radius;
+                const speed = 0.012 + randomFloat() * 0.012;
+                return {
+                    ...item,
+                    x: radius + randomFloat() * (WIDTH - radius * 2),
+                    y: radius + randomFloat() * (HEIGHT - radius * 2),
+                    vx: (randomFloat() < 0.5 ? -1 : 1) * speed,
+                    vy: (randomFloat() < 0.5 ? -1 : 1) * speed * (0.75 + randomFloat() * 0.5)
+                };
+            });
+        } catch (error) {
+            // 저장소뿐 아니라 확장 예고뿌요 생성·추첨 오류도 메뉴 렌더링을 중단시키지 않는다.
+            console.error('Puyo W 메인 메뉴 갤러리 항목 준비에 실패했습니다.', error);
+            mainMenuGalleryFloaters = [];
+        }
+    }
+
+    /** 메인 메뉴의 갤러리 항목을 천천히 이동하고 캔버스 경계에서 튕긴다. @param {number} delta 경과 시간(ms) @returns {void} */
+    function updateMainMenuGalleryFloaters(delta) {
+        mainMenuGalleryFloaters.forEach((item) => {
+            item.x += item.vx * delta;
+            item.y += item.vy * delta;
+            if (item.x <= item.radius || item.x >= WIDTH - item.radius) {
+                item.x = Math.max(item.radius, Math.min(WIDTH - item.radius, item.x));
+                item.vx *= -1;
+            }
+            if (item.y <= item.radius || item.y >= HEIGHT - item.radius) {
+                item.y = Math.max(item.radius, Math.min(HEIGHT - item.radius, item.y));
+                item.vy *= -1;
+            }
+        });
+    }
+
+    /** 메인 메뉴의 갤러리 항목을 배경에 그린다. @returns {void} */
+    function drawMainMenuGalleryFloaters() {
+        mainMenuGalleryFloaters.forEach((item) => {
+            try {
+                context.save(); context.translate(item.x, item.y); item.draw(); context.restore();
+            } catch (error) {
+                context.restore();
+                console.error('Puyo W 메인 메뉴 갤러리 항목 렌더링에 실패했습니다.', error);
+            }
+        });
     }
 
     /**
@@ -501,9 +634,10 @@
                 musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.settings.musicVolume,
                 effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.settings.effectsVolume,
                 virtualController: settings.virtualController === true,
-                aiProvider: settings.aiProvider === 'Google' ? 'Google' : 'OpenAI',
+                // 이전 Google 설정값은 더 이상 선택할 수 없으므로 기본 제공자인 OpenAI로 정규화한다.
+                aiProvider: AI_SERVICE_PROVIDERS.includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
                 aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.settings.aiApiKey,
-                aiModel: typeof settings.aiModel === 'string' ? settings.aiModel : initial.settings.aiModel
+                aiModel: typeof settings.aiModel === 'string' && settings.aiModel.trim() ? settings.aiModel : initial.settings.aiModel
             }, muted: parsed.muted === true };
         } catch (error) {
             console.error('Puyo W 저장 데이터 불러오기에 실패했습니다.', error);
@@ -548,7 +682,7 @@
     /**
      * 현재 게임에 적용할 AI 난이도 정보를 반환한다.
      * 게임 중에는 시작할 때 선택한 값이 반환되고, 메뉴에서는 현재 선택 중인 값이 반환된다.
-     * @returns {{key:'easy'|'normal'|'hard', name:string, fastDownDelay:number|null}} AI 난이도 키, 표시명, 빠른 하강 대기 시간(ms)
+     * @returns {{key:'easy'|'normal'|'hard'|'extreme', name:string, fastDownDelay:number|null}} AI 난이도 키, 표시명, 빠른 하강 대기 시간(ms)
      */
     function getSelectedDifficulty() {
         const index = game ? game.aiDifficulty : selectedAiDifficulty;
@@ -1030,7 +1164,8 @@
         resetVirtualControllerInput();
         const opponent = soloMode ? { createController: () => new PracticeEnemy() } : OPPONENTS[selectedOpponent];
         const controller = opponent.createController();
-        const difficulty = continuousFever || feverRule ? DIFFICULTIES.length - 1 : selectedDifficulty;
+        // 피버 룰과 연속 피버는 3색을 지원하지 않는다. 메뉴를 거치지 않는 호출에도 적용한다.
+        const difficulty = (continuousFever || feverRule) ? Math.max(1, selectedDifficulty) : selectedDifficulty;
         const colors = DIFFICULTIES[difficulty].colors;
         const practicePlayer = new PlayerState(controller.getName(), FIELD_RIGHT, controller, colors);
         const players = [new PlayerState('PLAYER 1', FIELD_LEFT, null, colors), practicePlayer];
@@ -1077,7 +1212,7 @@
         syncBackgroundMusic();
     }
 
-    /** 연속 피버 모드를 5색, 목표 5연쇄, 60초 상태로 시작한다. @returns {void} */
+    /** 연속 피버 모드를 선택된 4색 또는 5색, 목표 5연쇄, 60초 상태로 시작한다. @returns {void} */
     function startContinuousFeverGame() {
         startGame(false, true);
     }
@@ -1141,12 +1276,13 @@
         return result;
     }
 
-    /** 목표 연쇄와 다음 뿌요의 동색 여부가 일치하는 피버 스테이지를 무작위로 고른다. @param {number} targetCombo 목표 연쇄 @param {string[]} nextPair 바로 지급할 뿌요 @returns {FeverStageState} 선택된 피버 스테이지 */
-    function selectContinuousFeverStage(targetCombo, nextPair) {
+    /** 사용 가능한 색 수, 목표 연쇄, 다음 뿌요의 동색 여부가 일치하는 피버 스테이지를 무작위로 고른다. 색 수 필터는 목표 연쇄 필터보다 먼저 적용한다. @param {number} targetCombo 목표 연쇄 @param {string[]} nextPair 바로 지급할 뿌요 @param {string[]} availableColors 게임 색상 목록 @returns {FeverStageState} 선택된 피버 스테이지 */
+    function selectContinuousFeverStage(targetCombo, nextPair, availableColors) {
         const nextPairIsSameColor = nextPair[0] === nextPair[1];
-        const candidates = FEVER_STAGES.filter((stage) => stage.targetCombo === targetCombo
+        const colorCandidates = FEVER_STAGES.filter((stage) => stage.usingColors.length <= availableColors.length);
+        const candidates = colorCandidates.filter((stage) => stage.targetCombo === targetCombo
             && (stage.suppliedNextPuyos[0] === stage.suppliedNextPuyos[1]) === nextPairIsSameColor);
-        if (!candidates.length) throw new Error(`목표 ${targetCombo}연쇄와 다음 뿌요 구성에 맞는 피버 스테이지가 없습니다.`);
+        if (!candidates.length) throw new Error(`사용 색상 수와 목표 ${targetCombo}연쇄, 다음 뿌요 구성에 맞는 피버 스테이지가 없습니다.`);
         return candidates[Math.floor(randomFloat() * candidates.length)];
     }
 
@@ -1154,6 +1290,7 @@
     function createContinuousFeverColorMap(stage, nextPair, availableColors) {
         const colorMap = new Map();
         const usedTargets = new Set();
+        const canUseOriginalColors = stage.usingColors.every((color) => availableColors.includes(color));
         const assign = (source, target) => {
             if (source === 'garbage') return;
             if (colorMap.has(source) && colorMap.get(source) !== target) throw new Error('피버 스테이지의 suppliedNextPuyos 색상 구성이 올바르지 않습니다.');
@@ -1161,12 +1298,17 @@
             colorMap.set(source, target);
             usedTargets.add(target);
         };
-        assign(stage.suppliedNextPuyos[0], nextPair[0]);
-        assign(stage.suppliedNextPuyos[1], nextPair[1]);
         const sourceColors = [...new Set([
             ...stage.suppliedNextPuyos,
             ...(stage.stageData.puyos || []).map((puyo) => puyo.color)
         ].filter((color) => color && color !== 'garbage'))];
+        // 스테이지의 색 목록이 현재 모드에 모두 포함되면 원본 패턴을 유지한다.
+        if (canUseOriginalColors) {
+            sourceColors.forEach((color) => assign(color, color));
+            return colorMap;
+        }
+        assign(stage.suppliedNextPuyos[0], nextPair[0]);
+        assign(stage.suppliedNextPuyos[1], nextPair[1]);
         const remainingTargets = shuffledCopy(availableColors.filter((color) => !usedTargets.has(color)));
         sourceColors.filter((color) => !colorMap.has(color)).forEach((source) => {
             const target = remainingTargets.shift();
@@ -1179,7 +1321,7 @@
     /** 다음 뿌요에 맞춰 피버 스테이지를 복사·변환하고 지정 플레이어 필드를 초기화한다. @param {PlayerState} player 대상 플레이어 @param {object} feverState 갱신할 피버 상태 @param {number} targetCombo 스테이지 목표 연쇄 @param {boolean} countTurn 피버 턴 수 증가 여부 @returns {void} */
     function prepareFeverTurn(player, feverState, targetCombo = feverState.targetCombo, countTurn = true) {
         const nextPair = peekNextPair(player);
-        const stage = selectContinuousFeverStage(targetCombo, nextPair);
+        const stage = selectContinuousFeverStage(targetCombo, nextPair, player.colors);
         const colorMap = createContinuousFeverColorMap(stage, nextPair, player.colors);
         const transformedSupplied = stage.suppliedNextPuyos.map((color) => colorMap.get(color));
         game.pairQueue[player.pairQueuePosition] = transformedSupplied;
@@ -1320,7 +1462,7 @@
             // 기본 제공 적에 한해서만 플레이어 연쇄 대응 같은 엔진 공통 특수 규칙을 적용한다.
             // 외부 등록 적은 자신의 chooseTarget·chooseRotate 결정만 사용한다.
             // findBestAttackPlacement가 즉시 패배 후보를 먼저 제외하므로 생존 조건만 이 우선순위보다 앞선다.
-            if (player.controller instanceof BundledEnemy && game?.feverRule && player.fever?.active) {
+            if (player.controller instanceof BundledEnemy && game?.feverRule && player.fever?.active && !(player.controller instanceof Amdusias)) {
                 const feverPlacement = findBestFeverComboPlacement(player) || findBestAttackPlacement(player, player.active.x, null, true);
                 player.aiTarget = feverPlacement.x;
                 player.aiRotation = ((feverPlacement.rotation % 4) + 4) % 4;
@@ -1337,7 +1479,8 @@
             // 포함한 실제 폭발·중력 결과로 재검증한 뒤 위험하면 안전한 후보로 교체한다.
             if (player.controller instanceof BundledEnemy) {
                 const selectedPlacement = player.aiSimulations.find((simulation) => simulation.x === player.aiTarget && simulation.rotation === player.aiRotation);
-                if (selectedPlacement && causesImmediateDefeat(player, selectedPlacement)) {
+                const amdusiasFeverAttack = player.controller instanceof Amdusias && game?.feverRule && player.fever?.active;
+                if (!amdusiasFeverAttack && selectedPlacement && causesImmediateDefeat(player, selectedPlacement)) {
                     const safePlacement = findBestAttackPlacement(player, player.active.x, null, true);
                     if (safePlacement.positions.length) {
                         player.aiTarget = safePlacement.x;
@@ -1529,15 +1672,15 @@
     }
 
     /**
-     * 보드 복사본에서 폭발하는 같은 색 뿌요 연결 그룹을 찾는다.
+     * 보드 복사본에서 폭발하는 같은 색 뿌요 연결 그룹을 찾는다. 숨김 행은 중력 완료 전까지 인접 판정에서 제외한다.
      * @param {(string|null)[][]} board 탐색할 보드
      * @returns {{color:string, cells:number[][]}[]} 폭발할 색상과 [x, y] 좌표 그룹 목록
      */
     function findExplosionGroupsOnBoard(board) {
         const visited = new Set();
         const explosionGroups = [];
-        // 모든 셀을 시작점으로 삼아 아직 방문하지 않은 색 그룹을 탐색한다.
-        for (let y = 0; y < ROWS; y += 1) for (let x = 0; x < COLUMNS; x += 1) {
+        // 화면에 보이는 셀만 시작점으로 삼는다. 숨김 행은 중력으로 내려온 다음 폭발 단계부터 참여한다.
+        for (let y = 0; y < VISIBLE_ROWS; y += 1) for (let x = 0; x < COLUMNS; x += 1) {
             const color = board[y][x];
             const key = `${x},${y}`;
             // 빈칸, 방해뿌요, 이미 조사한 색 뿌요는 탐색 대상에서 제외한다.
@@ -1553,7 +1696,7 @@
                     const nx = currentX + deltaX;
                     const ny = currentY + deltaY;
                     const nextKey = `${nx},${ny}`;
-                    if (nx >= 0 && nx < COLUMNS && ny >= 0 && ny < ROWS && board[ny][nx] === color && !visited.has(nextKey)) {
+                    if (nx >= 0 && nx < COLUMNS && ny >= 0 && ny < VISIBLE_ROWS && board[ny][nx] === color && !visited.has(nextKey)) {
                         visited.add(nextKey);
                         queue.push([nx, ny]);
                     }
@@ -1930,22 +2073,41 @@
         const amount = Math.floor(player.attack);
         if (amount < 1) return;
         let remaining = amount;
-        const cancelledOpponentAttack = Math.min(remaining, Math.floor(opponent.attack));
-        player.attack -= cancelledOpponentAttack;
-        opponent.attack -= cancelledOpponentAttack;
+        let cancelledOpponentAttack = 0;
+        let cancelledDamage = 0;
+        let cancelledNormalDamage = 0;
+        if (game?.feverRule && player.fever?.active) {
+            // 피버 공격은 피버 DAMAGE와 보존된 일반 DAMAGE를 모두 상쇄한 뒤 상대 ATTACK을 상쇄한다.
+            cancelledDamage = Math.min(remaining, Math.floor(player.fever.damage));
+            player.fever.damage -= cancelledDamage;
+            player.attack -= cancelledDamage;
+            remaining -= cancelledDamage;
+            cancelledNormalDamage = Math.min(remaining, Math.floor(player.normalDamage));
+            player.normalDamage -= cancelledNormalDamage;
+            player.attack -= cancelledNormalDamage;
+            remaining -= cancelledNormalDamage;
+            cancelledOpponentAttack = Math.min(remaining, Math.floor(opponent.attack));
+            player.attack -= cancelledOpponentAttack;
+            opponent.attack -= cancelledOpponentAttack;
+            remaining -= cancelledOpponentAttack;
+        } else {
+            cancelledOpponentAttack = Math.min(remaining, Math.floor(opponent.attack));
+            player.attack -= cancelledOpponentAttack;
+            opponent.attack -= cancelledOpponentAttack;
+            remaining -= cancelledOpponentAttack;
+            cancelledDamage = Math.min(remaining, Math.floor(player.damage));
+            player.damage -= cancelledDamage;
+            player.attack -= cancelledDamage;
+            remaining -= cancelledDamage;
+        }
         opponent.outgoingWarningDelay = Math.floor(opponent.attack);
-        remaining -= cancelledOpponentAttack;
-        const cancelledDamage = Math.min(remaining, Math.floor(player.damage));
-        player.damage -= cancelledDamage;
-        player.attack -= cancelledDamage;
-        remaining -= cancelledDamage;
         if (cancelledDamage) player.warningReductionDelay += cancelledDamage;
-        if (cancelledOpponentAttack || cancelledDamage) registerFeverOffset(player, opponent);
+        if (cancelledOpponentAttack || cancelledDamage || cancelledNormalDamage) registerFeverOffset(player, opponent);
         const source = { x: player.fieldX + (sourceX + 0.5) * CELL, y: FIELD_BOTTOM - (sourceY + 0.5) * CELL };
         player.lastAttackEnergySource = source;
         player.outgoingWarningDelay = Math.floor(player.attack);
         // 연쇄 중에는 에너지만 상대 천장까지 보낸다. 도착 시 예고뿌요만 갱신하고 DAMAGE는 정산하지 않는다.
-        if (cancelledOpponentAttack || cancelledDamage || remaining) {
+        if (cancelledOpponentAttack || cancelledDamage || cancelledNormalDamage || remaining) {
             const energy = queueEnergyTransfer(player, opponent, source, cancelledDamage, cancelledOpponentAttack, 0, remaining > 0, Math.floor(player.attack), true);
             if (remaining > 0) player.lastAttackTransfer = energy;
         }
@@ -2095,7 +2257,7 @@
         if (game.practice || winner !== game.players[0]) return;
         const enemyController = game.players[1].controller;
         const enemyClassName = enemyController.constructor.name;
-        if (!game.feverRule) unlockGalleryEnemy(enemyController.getClassType());
+        unlockGalleryEnemy(enemyController.getClassType());
         const difficultyKey = AI_DIFFICULTIES[game.aiDifficulty]?.key || AI_DIFFICULTIES[1].key;
         const progressStore = game.feverRule ? store.feverClearListByDifficulty : store.clearListByDifficulty;
         let changed = false;
@@ -2124,7 +2286,7 @@
     }
 
     /**
-     * 싹쓸이 표시 시간을 진행하고 효과가 끝나면 예약된 공격 에너지를 보낸다.
+     * 싹쓸이 표시 시간을 진행하고 효과가 끝나면 예약된 기본 룰 공격 에너지를 보낸다.
      * 패배 연출 중에도 호출할 수 있도록 일반 플레이어 단계 갱신과 분리한다.
      * @param {PlayerState} player 싹쓸이를 발생시킨 플레이어
      * @param {PlayerState} opponent 공격을 받을 상대
@@ -2185,6 +2347,7 @@
 
     /** 피버 룰 연쇄의 에너지·싹쓸이·상대 방해뿌요 처리가 끝났는지 확인한다. @param {PlayerState} player 연쇄 플레이어 @param {PlayerState} opponent 상대 플레이어 @returns {boolean} 대기 필요 여부 */
     function isFeverRuleSettlementPending(player, opponent) {
+        const feverExpired = isFeverTimeExpired(player.fever);
         const opponentDroppingGarbage = opponent.phase === 'garbage'
             || (opponent.phase === 'gravity' && opponent.gravityNextPhase === 'check');
         const waitingForOpponentGarbage = player.fever?.opponentGarbageDropBaseline !== null
@@ -2194,22 +2357,22 @@
         return player.allClearEffectElapsed > 0
             || player.pendingAllClearDamage > 0
             || hasPendingEnergyTransfers()
-            || waitingForOpponentGarbage
-            || opponentDroppingGarbage;
+            // 피버 룰의 시간 만료 연쇄는 ATTACK·DAMAGE 정산 후 즉시 끝나며 상대 방해뿌요 낙하는 기다리지 않는다.
+            || (!feverExpired && (waitingForOpponentGarbage || opponentDroppingGarbage));
     }
 
     /** 피버 룰의 한 피버 턴을 정산하고 다음 턴 또는 피버 종료로 전환한다. @param {PlayerState} player 대상 플레이어 @returns {void} */
     function finishFeverRuleResolution(player) {
         const state = player.fever;
         if (!game?.feverRule || !state?.active) return;
-        if (isFeverTimeExpired(state)) {
-            finishPlayerFever(player, 'B');
-            return;
-        }
         const combo = state.pendingCombo;
         state.opponentGarbageDropBaseline = null;
         const previousTarget = state.targetCombo;
         state.targetCombo = calculateContinuousFeverTarget(previousTarget, combo, state.pendingAllClear);
+        if (isFeverTimeExpired(state)) {
+            finishPlayerFever(player, 'B');
+            return;
+        }
         if (state.targetCombo !== previousTarget) state.leftTime += Math.floor(combo / 2) * 1000;
         prepareFeverTurn(player, state);
         enterControl(player);
@@ -2276,7 +2439,8 @@
         }
         // 조작 단계에서는 CPU 이동과 낙하 타이머를 갱신한다.
         if (player.phase === 'control') {
-            if (!player.controller && player === game?.players[0] && horizontalKeyPressed) {
+            const tutorialAutoplay = game?.tutorial?.stage === 1 && player === game.players[0];
+            if (!tutorialAutoplay && !player.controller && player === game?.players[0] && horizontalKeyPressed) {
                 horizontalHoldElapsed += delta;
                 if (horizontalHoldElapsed >= HORIZONTAL_HOLD_DELAY) {
                     horizontalRepeatElapsed += delta;
@@ -2286,7 +2450,7 @@
                     }
                 }
             }
-            if (!player.controller && player === game?.players[0] && (virtualDirectionInput.arrowleft || virtualDirectionInput.arrowright)) {
+            if (!tutorialAutoplay && !player.controller && player === game?.players[0] && (virtualDirectionInput.arrowleft || virtualDirectionInput.arrowright)) {
                 virtualHorizontalHoldElapsed += delta;
                 if (virtualHorizontalHoldElapsed >= VIRTUAL_HORIZONTAL_HOLD_DELAY) {
                     virtualHorizontalRepeatElapsed += delta;
@@ -2311,7 +2475,7 @@
                 }
             }
             // AI 정책 또는 사용자·가상 컨트롤러·튜토리얼 입력으로 빠른 하강을 적용할지 여부다.
-            const fastDown = player.controller ? player.aiFastDown : isDownKeyPressed || virtualDirectionInput.arrowdown || player.tutorialFastDown === true;
+            const fastDown = player.controller ? player.aiFastDown : tutorialAutoplay ? player.tutorialFastDown === true : isDownKeyPressed || virtualDirectionInput.arrowdown || player.tutorialFastDown === true;
             // 경과 시간 1분마다 0.2씩 증가하며 최대 배율을 넘지 않는 사용자 자동 낙하 속도 배율이다.
             const speedMultiplier = Math.min(MAX_PLAYER_FALL_SPEED_MULTIPLIER, 1 + Math.floor(game.elapsed / 60000) * 0.2);
             // 빠른 하강·AI·사용자 자동 낙하 각각에 적용할 한 칸 낙하 간격(ms)이다.
@@ -2377,10 +2541,12 @@
                 startDefeatSequence(player, opponent);
             } else {
                 const isAllClear = player.board.every((row) => row.every((cell) => cell === null));
-                // 뿌요를 놓은 뒤 필드가 비었을 때만 싹쓸이 공격을 보낸다.
+                // 뿌요를 놓은 뒤 필드가 비었을 때만 싹쓸이를 처리한다.
                 const triggeredAllClear = player.allClearEnabled && isAllClear && player.hasPlacedPuyoSinceAllClear;
                 if (triggeredAllClear) {
-                    if (!(game?.feverRule && player.fever && !player.fever.active)) player.pendingAllClearDamage += ALL_CLEAR_DAMAGE;
+                    // 피버 룰·연속 피버의 싹쓸이는 목표 연쇄 보너스와 황금 연출만 제공한다.
+                    // 뿌요 폭발에서 생긴 ATTACK 에너지는 resolveExplosions()의 기존 경로로 그대로 전달된다.
+                    if (!game?.feverRule && !game?.continuousFever) player.pendingAllClearDamage += ALL_CLEAR_DAMAGE;
                     player.point += ALL_CLEAR_POINT;
                     player.allClearEffectElapsed = ALL_CLEAR_EFFECT_DURATION;
                     player.hasPlacedPuyoSinceAllClear = false;
@@ -2438,12 +2604,13 @@
         context.save();
         context.translate(x + CELL / 2, y + CELL / 2);
         context.fillStyle = PALETTE[color];
-        context.globalAlpha = color === 'garbage' ? 0.75 : 1;
+        const garbageStyle = color === 'garbage' || color === 'warningInk';
+        context.globalAlpha = garbageStyle ? 0.75 : 1;
         context.beginPath();
         context.arc(0, 0, radius, 0, Math.PI * 2);
         context.fill();
         context.lineWidth = 2;
-        context.strokeStyle = color === 'garbage' ? '#f4fbff' : 'rgba(255,255,255,0.45)';
+        context.strokeStyle = garbageStyle ? '#f4fbff' : 'rgba(255,255,255,0.45)';
         context.stroke();
         // 일반/방해뿌요는 물방울 같은 슬라임이라는 인상을 주는 작은 반사광을 넣는다.
         // 예고뿌요(태양, 별, 돌 등)는 각 WarningPuyo 하위 클래스에서 별도로 그린다.
@@ -2496,7 +2663,7 @@
         /** 작은 낱개들은 기존처럼 서로 조금 겹치게 배치한다. @override @param {number} startX 시작 X 좌표 @param {number} index 목록 순번 @param {number} sameTypeIndex 앞선 작은 낱개 수 @returns {number} 그릴 X 좌표 */
         getDisplayX(startX, index, sameTypeIndex) { return startX + (index - sameTypeIndex * 0.35) * CELL; }
         /** 작은 낱개 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
-        draw(drawingContext, x, y, cellSize) { drawPuyo(x + cellSize * 0.05, y + cellSize * 0.25, 'garbage', 0.45, false); }
+        draw(drawingContext, x, y, cellSize) { drawPuyo(x + cellSize * 0.05, y + cellSize * 0.25, 'warningInk', 0.45, false); }
     }
 
     /** 6개 단위의 한 칸 크기 예고뿌요다. */
@@ -2508,7 +2675,7 @@
         /** 예고뿌요 이름을 반환 @return {string} */
         getName() { return '큰 예고뿌요'; }
         /** 한 칸 크기 예고뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
-        draw(drawingContext, x, y, cellSize) { drawPuyo(x, y, 'garbage'); }
+        draw(drawingContext, x, y, cellSize) { drawPuyo(x, y, 'warningInk'); }
     }
 
     /** 30개 단위의 빨간 돌 예고뿌요다. */
@@ -2597,6 +2764,41 @@
         }
     }
 
+    /** 80,000개 단위의 보랏빛 나선 은하 예고뿌요다. */
+    class GalaxyWarningPuyo extends WarningPuyo {
+        /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
+        static unitCount = 80000;
+        /** 80,000개 단위 은하 예고뿌요를 만든다. */
+        constructor() { super(GalaxyWarningPuyo.unitCount, 'galaxy'); }
+        /** 예고뿌요 이름을 반환 @return {string} */
+        getName() { return '은하'; }
+        /** 참고 이미지의 청보라 나선팔과 밝은 중심을 한 칸 크기로 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
+        draw(drawingContext, x, y, cellSize) {
+            const radius = cellSize * 0.3;
+            drawingContext.save();
+            drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
+            drawingContext.rotate(-0.46);
+            // 은하 바깥의 옅은 푸른 광륜과 서로 반대 방향으로 감기는 두 나선팔이다.
+            const halo = drawingContext.createRadialGradient(0, 0, radius * 0.12, 0, 0, radius * 1.56);
+            halo.addColorStop(0, 'rgba(255, 246, 220, 0.96)'); halo.addColorStop(0.28, 'rgba(196, 190, 255, 0.9)'); halo.addColorStop(0.62, 'rgba(104, 110, 214, 0.56)'); halo.addColorStop(1, 'rgba(25, 30, 88, 0)');
+            drawingContext.fillStyle = halo; drawingContext.beginPath(); drawingContext.ellipse(0, 0, radius * 1.55, radius * 0.78, 0, 0, Math.PI * 2); drawingContext.fill();
+            drawingContext.lineCap = 'round'; drawingContext.lineWidth = radius * 0.3;
+            ['rgba(131, 132, 255, 0.72)', 'rgba(92, 204, 255, 0.64)'].forEach((color, index) => {
+                drawingContext.strokeStyle = color; drawingContext.beginPath();
+                const direction = index ? -1 : 1;
+                drawingContext.moveTo(-radius * 1.35, direction * radius * 0.2);
+                drawingContext.bezierCurveTo(-radius * 0.56, -direction * radius * 1.12, radius * 0.92, direction * radius * 0.9, radius * 1.35, -direction * radius * 0.1);
+                drawingContext.stroke();
+            });
+            drawingContext.fillStyle = '#efe6ff'; drawingContext.beginPath(); drawingContext.arc(0, 0, radius * 0.43, 0, Math.PI * 2); drawingContext.fill();
+            drawingContext.fillStyle = '#ffffff'; [[-0.78, -0.42, 0.08], [0.94, 0.26, 0.06], [0.56, -0.6, 0.05]].forEach(([starX, starY, starRadius]) => { drawingContext.beginPath(); drawingContext.arc(radius * starX, radius * starY, radius * starRadius, 0, Math.PI * 2); drawingContext.fill(); });
+            drawingContext.rotate(0.46);
+            // 다른 대형 예고뿌요처럼 눈은 중심에 유지해 게임의 캐릭터성을 보존한다.
+            drawPuyoEyes(radius * 0.74, radius * 0.07);
+            drawingContext.restore();
+        }
+    }
+
     /** 13,000개 단위의 강착 원반을 두른 블랙홀 예고뿌요다. */
     class BlackHoleWarningPuyo extends WarningPuyo {
         /** 이 종류가 나타내는 방해뿌요 수다. @type {number} */
@@ -2628,7 +2830,7 @@
      * 새 예고뿌요는 이 배열에 클래스를 추가해 등록한다.
      * @type {Array<new () => WarningPuyo>}
      */
-    const WARNING_PUYO_CLASSES = [BlackHoleWarningPuyo, NeutronStarWarningPuyo, SunWarningPuyo, StarWarningPuyo, RockWarningPuyo, DropWarningPuyo, TinyWarningPuyo];
+    const WARNING_PUYO_CLASSES = [GalaxyWarningPuyo, BlackHoleWarningPuyo, NeutronStarWarningPuyo, SunWarningPuyo, StarWarningPuyo, RockWarningPuyo, DropWarningPuyo, TinyWarningPuyo];
 
     /**
      * 현재 변환 좌표를 기준으로 뿌요의 귀여운 두 눈을 그린다.
@@ -2829,6 +3031,40 @@
         context.fillText(String(player.fever.nextTime).padStart(2, '0'), centerX, topY + FEVER_GAUGE_MAX * 34 + 4);
     }
 
+    /** 피버 전용 플레이 영역의 주황색 뒷배경 색상이다. @type {string} */
+    const FEVER_PLAYER_BACKGROUND_COLOR = '#e89035';
+    /** 피버 전용 플레이 영역의 뒷배경보다 더 붉은 베젤 색상이다. @type {string} */
+    const FEVER_BEZEL_BACKGROUND_COLOR = '#cf5e38';
+    /** 피버 중 뒤편 일반 영역 예고뿌요를 겹침이 보이도록 옮길 가로 거리다. @type {number} */
+    const FEVER_NORMAL_WARNING_OFFSET_X = -8;
+    /** 피버 중 뒤편 일반 영역 예고뿌요에 적용할 불투명도다. @type {number} */
+    const FEVER_NORMAL_WARNING_ALPHA = 0.3;
+
+    /** 지정 필드가 적 테마보다 우선하는 피버 배경을 써야 하는지 판별한다. @param {PlayerState} player 검사할 플레이어 @returns {boolean} 피버 배경 적용 여부 */
+    function usesFeverFieldTheme(player) {
+        return Boolean(game?.continuousFever || (game?.feverRule && player.fever?.active));
+    }
+
+    /** 적 테마 또는 피버 전용 테마로 필드 베젤을 그린다. @param {PlayerState} player 대상 플레이어 @param {{x:number,y:number,width:number,height:number,player?:PlayerState}} area 베젤 영역 @returns {void} */
+    function drawFieldBezelBackground(player, area) {
+        if (usesFeverFieldTheme(player)) {
+            context.fillStyle = FEVER_BEZEL_BACKGROUND_COLOR;
+            context.fillRect(area.x, area.y, area.width, area.height);
+            return;
+        }
+        game.themeController.drawBezelBackground(context, area);
+    }
+
+    /** 적 테마 또는 피버 전용 테마로 필드 뒷배경을 그린다. @param {PlayerState} player 대상 플레이어 @param {{x:number,y:number,width:number,height:number,player?:PlayerState}} area 필드 영역 @returns {void} */
+    function drawFieldPlayerBackground(player, area) {
+        if (usesFeverFieldTheme(player)) {
+            context.fillStyle = FEVER_PLAYER_BACKGROUND_COLOR;
+            context.fillRect(area.x, area.y, area.width, area.height);
+            return;
+        }
+        game.themeController.drawPlayerBackground(context, area);
+    }
+
     /**
      * 한 플레이어의 필드, 예고줄, 낙하와 폭발 효과를 그린다.
      * @param {PlayerState} player 그릴 플레이어
@@ -2837,10 +3073,9 @@
      */
     function drawField(player, opponent) {
         const x = player.fieldX;
-        const theme = game.themeController;
         const isDefeated = game.ending?.loser === player;
-        theme.drawBezelBackground(context, { x: x - CELL, y: FIELD_TOP - CELL, width: CELL * 8, height: CELL * 14, player });
-        theme.drawPlayerBackground(context, { x, y: FIELD_TOP, width: CELL * 6, height: CELL * 12, player });
+        drawFieldBezelBackground(player, { x: x - CELL, y: FIELD_TOP - CELL, width: CELL * 8, height: CELL * 14, player });
+        drawFieldPlayerBackground(player, { x, y: FIELD_TOP, width: CELL * 6, height: CELL * 12, player });
         if (player.allClearEffectElapsed > 0) {
             context.save();
             context.fillStyle = '#ffd54f';
@@ -2885,6 +3120,13 @@
             context.strokeStyle = 'rgba(176, 232, 244, 0.25)'; context.strokeRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
         }
         const displayedWarnings = warningUnits(warningAmount(player, opponent));
+        // 피버 중에는 보존된 일반 필드의 DAMAGE 예고를 흐리게 뒤에 먼저 그린다. 피버 필드 예고는 현행 불투명도로 앞에 그린다.
+        if (game?.feverRule && player.fever?.active && player.normalDamage > 0) {
+            context.save();
+            context.globalAlpha = FEVER_NORMAL_WARNING_ALPHA;
+            drawWarningUnits(x + FEVER_NORMAL_WARNING_OFFSET_X, FIELD_TOP - CELL, warningUnits(player.normalDamage));
+            context.restore();
+        }
         // 기본 룰·연습·연속 피버의 실제 플레이 중 나타난 예고뿌요만 갤러리에 공개한다.
         if (canUnlockGalleryWarningInCurrentGame()) displayedWarnings.forEach((unit) => unlockGalleryWarning(unit.type));
         drawWarningUnits(x, FIELD_TOP - CELL, displayedWarnings);
@@ -2914,7 +3156,7 @@
         context.rect(x - CELL, FIELD_TOP, CELL, CELL * VISIBLE_ROWS);
         context.rect(x + CELL * COLUMNS, FIELD_TOP, CELL, CELL * VISIBLE_ROWS);
         context.clip();
-        game.themeController.drawBezelBackground(context, bezel);
+        drawFieldBezelBackground(player, bezel);
         context.restore();
     }
 
@@ -2926,7 +3168,8 @@
     function drawDefeatAnimation(player) {
         const animation = game.ending;
         const progress = Math.min(1, animation.elapsed / animation.duration);
-        const distance = progress * progress * (HEIGHT - FIELD_TOP + CELL);
+        // 베젤과 뿌요가 캔버스 밖으로 충분히 빠져나간 것처럼 보이도록 5줄을 더 떨어뜨린다.
+        const distance = progress * progress * (HEIGHT - FIELD_TOP + CELL + CELL * DEFEAT_EXTRA_FALL_ROWS);
         const opacity = 1 - progress * 0.45;
         const x = player.fieldX;
         context.save();
@@ -2936,7 +3179,7 @@
             if (y < HEIGHT) drawPuyo(x + puyo.x * CELL, y, puyo.color);
         });
         // 무너지는 베젤은 낙하 중인 숨김 영역 방해뿌요보다 앞에 보인다.
-        game.themeController.drawBezelBackground(context, { x: x - CELL, y: FIELD_BOTTOM + distance, width: CELL * 8, height: CELL, player });
+        drawFieldBezelBackground(player, { x: x - CELL, y: FIELD_BOTTOM + distance, width: CELL * 8, height: CELL, player });
         context.restore();
     }
 
@@ -3267,7 +3510,7 @@
 
     /** 시뮬레이터를 빈 그리기 보드와 첫 팔레트 포커스로 연다. @returns {void} */
     function openSimulator() {
-        simulator = { mode: 'draw', player: new PlayerState('SIMULATOR', FIELD_LEFT, null, COLORS), target: new PlayerState('', FIELD_RIGHT, null, COLORS), energyTransfers: [], selected: 'red', paletteFocus: 0, focusArea: 'palette', boardFocus: { x: 0, y: 0 }, backup: null, waitTimer: 0, message: null, messageElapsed: 0 };
+        simulator = { mode: 'draw', player: new PlayerState('SIMULATOR', FIELD_LEFT, null, COLORS), target: new PlayerState('', FIELD_RIGHT, null, COLORS), energyTransfers: [], selected: 'red', paletteFocus: 0, focusArea: 'palette', boardFocus: { x: 0, y: 0 }, backup: null, waitTimer: 0 };
         menuScreen = 'simulator';
         syncBackgroundMusic();
     }
@@ -3308,9 +3551,10 @@
             running: true, paused: false, winner: null, ending: null, countdown: 0, countdownStartsGame: false, elapsed: 0, marginRate: MARGIN_RATE_SCHEDULE[0].rate, practice: true,
             difficulty: selectedDifficulty, aiDifficulty: selectedAiDifficulty, themeController, pairQueueColors: COLORS,
             pairQueue: [...config.pairs, ['blue', 'yellow'], ['red', 'green']], energyTransfers: [], players: [player, opponent],
-            tutorial: { stage, config, mode: 'intro', elapsed: 0, pieceElapsed: 0, placedCount: 0, lastCombo: 0, greenExplosionShown: false, stageThreeGarbageDropped: false, message: config.intro, messageElapsed: 0, actionFlags: {}, allClearPreviewElapsed: null, allClearGarbageShown: false, resultElapsed: 0, finalFocus: 1 }
+            tutorial: { stage, config, mode: 'intro', elapsed: 0, pieceElapsed: 0, placedCount: 0, lastCombo: 0, greenExplosionShown: false, stageThreeGarbageDropped: false, message: config.intro, messageElapsed: 0, messageDuration: stage === 1 ? 2000 : 4800, actionFlags: {}, allClearPreviewElapsed: null, allClearGarbageShown: false, resultElapsed: 0, finalFocus: 1, stageOneStep: stage === 1 ? 'intro' : null, stageOneElapsed: 0 }
         };
         updateNextPairs(player);
+        showTutorialMessage(config.intro, game.tutorial.messageDuration);
         syncBackgroundMusic();
     }
 
@@ -3322,11 +3566,87 @@
         syncBackgroundMusic();
     }
 
-    /** 안내 문구를 표시한다. @param {string} message 번역 키 @returns {void} */
-    function showTutorialMessage(message) {
+    /** 안내 문구를 번역한 뒤 공통 화면 메시지로 표시한다. @param {string} message 번역 키 @param {number} [duration=2000] 페이드 아웃 전 유지 시간(ms) @returns {void} */
+    function showTutorialMessage(message, duration = 2000) {
         if (!game?.tutorial) return;
         game.tutorial.message = message;
         game.tutorial.messageElapsed = 0;
+        game.tutorial.messageDuration = duration;
+        showMessage(translate(message), '#f5fbfc', duration);
+    }
+
+    /** 1단계에서 플레이어 입력 없이 이동·빠른 하강·회전을 순서대로 시연한다. @param {PlayerState} player 시연할 플레이어 @param {PlayerState} opponent 상대 플레이어 @param {number} delta 경과 시간(ms) @returns {void} */
+    function updateTutorialStageOne(player, opponent, delta) {
+        const tutorial = game.tutorial;
+        const advanceStep = (step) => { tutorial.stageOneStep = step; tutorial.stageOneElapsed = 0; };
+        const startNextPairPrompt = (step, message, duration = 2000) => {
+            advanceStep(step);
+            showTutorialMessage(message, duration);
+        };
+
+        if (tutorial.stageOneStep === 'firstFalling') {
+            tutorial.stageOneElapsed += delta;
+            if (tutorial.stageOneElapsed >= 800) {
+                startNextPairPrompt('firstMoving', '좌우 방향키로 뿌요 이동', 6000);
+                moveActive(player, -1, 0);
+                tutorial.actionFlags.horizontalMoveCount = 1;
+            }
+        } else if (tutorial.stageOneStep === 'firstMoving') {
+            tutorial.stageOneElapsed += delta;
+            const horizontalMoves = [-1, -1, 1, 1];
+            const horizontalMoveCount = tutorial.actionFlags.horizontalMoveCount || 0;
+            if (horizontalMoveCount < horizontalMoves.length && tutorial.stageOneElapsed >= horizontalMoveCount * 2000) {
+                moveActive(player, horizontalMoves[horizontalMoveCount], 0);
+                tutorial.actionFlags.horizontalMoveCount = horizontalMoveCount + 1;
+            }
+            if (tutorial.actionFlags.horizontalMoveCount === horizontalMoves.length && !tutorial.message) startNextPairPrompt('firstFastDownPrompt', '아래 방향키로 빨리 떨어뜨리기');
+        } else if (tutorial.stageOneStep === 'firstFastDownPrompt') {
+            tutorial.stageOneElapsed += delta;
+            if (tutorial.stageOneElapsed >= 1000) {
+                player.tutorialFastDown = true;
+                advanceStep('firstFastDown');
+            }
+        } else if (tutorial.stageOneStep === 'secondRotatePrompt' && !tutorial.message) {
+            rotateActive(player, -1);
+            advanceStep('secondBetweenRotations');
+        } else if (tutorial.stageOneStep === 'secondBetweenRotations') {
+            tutorial.stageOneElapsed += delta;
+            if (tutorial.stageOneElapsed >= 2000) {
+                rotateActive(player, -1);
+                advanceStep('secondFalling');
+            }
+        } else if (tutorial.stageOneStep === 'thirdRotatePrompt' && !tutorial.message) {
+            rotateActive(player, 1);
+            advanceStep('thirdBetweenRotations');
+        } else if (tutorial.stageOneStep === 'thirdBetweenRotations') {
+            tutorial.stageOneElapsed += delta;
+            if (tutorial.stageOneElapsed >= 2000) {
+                rotateActive(player, 1);
+                advanceStep('thirdFalling');
+            }
+        } else if (tutorial.stageOneStep === 'secondFalling' || tutorial.stageOneStep === 'thirdFalling') {
+            tutorial.stageOneElapsed += delta;
+            if (tutorial.stageOneElapsed >= 1000) player.tutorialFastDown = true;
+        }
+
+        updatePlayer(player, opponent, delta);
+
+        if (player.placedPairCount >= 3) {
+            enterTutorialStage(2);
+            return;
+        }
+        if (player.placedPairCount === 1 && !tutorial.stageOneStep.startsWith('awaitSecondPair') && !tutorial.stageOneStep.startsWith('second')) {
+            player.tutorialFastDown = false;
+            advanceStep('awaitSecondPair');
+        } else if (player.placedPairCount === 2 && !tutorial.stageOneStep.startsWith('awaitThirdPair') && !tutorial.stageOneStep.startsWith('third')) {
+            player.tutorialFastDown = false;
+            advanceStep('awaitThirdPair');
+        }
+        if (player.active && tutorial.stageOneStep === 'awaitSecondPair') {
+            startNextPairPrompt('secondRotatePrompt', 'Z 키를 눌러 좌측으로 뿌요 회전');
+        } else if (player.active && tutorial.stageOneStep === 'awaitThirdPair') {
+            startNextPairPrompt('thirdRotatePrompt', 'X 키를 눌러 우측으로 뿌요 회전');
+        }
     }
 
     /** 안내 시연을 시간에 따라 진행한다. @param {number} delta 경과 시간 @returns {void} */
@@ -3335,8 +3655,7 @@
         const [player, opponent] = game.players;
         tutorial.elapsed += delta;
         tutorial.messageElapsed += delta;
-        const messageDuration = tutorial.mode === 'intro' ? 4800 : 2000;
-        if (tutorial.message && tutorial.messageElapsed >= messageDuration) tutorial.message = null;
+        if (tutorial.message && tutorial.messageElapsed >= tutorial.messageDuration + SCREEN_MESSAGE_FADE_DURATION) tutorial.message = null;
         if (tutorial.mode === 'complete') return;
         if (tutorial.mode === 'result') {
             tutorial.resultElapsed += delta;
@@ -3349,8 +3668,9 @@
             return;
         }
         if (tutorial.mode === 'intro') {
-            if (tutorial.elapsed >= 4800) {
+            if (!tutorial.message) {
                 tutorial.mode = 'demo'; tutorial.elapsed = 0; tutorial.message = null;
+                if (tutorial.stage === 1) tutorial.stageOneStep = 'firstFalling';
                 enterControl(player);
             }
             return;
@@ -3362,6 +3682,10 @@
             holdAllClearGarbage = tutorial.allClearPreviewElapsed < 2000;
         }
         if (!holdAllClearGarbage) updatePlayer(opponent, player, delta);
+        if (tutorial.stage === 1) {
+            updateTutorialStageOne(player, opponent, delta);
+            return;
+        }
         // 3단계는 예고 표시만으로 끝내지 않고, 적 필드의 실제 방해뿌요 낙하를 한 번 확인한다.
         if (tutorial.stage === 3 && opponent.phase !== 'idle') tutorial.stageThreeGarbageDropped = true;
         const waitingForGarbage = tutorial.stage >= 2 && opponent.phase !== 'idle' && player.phase === 'control' && player.placedPairCount > 0;
@@ -3376,19 +3700,8 @@
         if (player.active) {
             tutorial.pieceElapsed += delta;
             const target = tutorial.config.targets[currentPiece];
-            if (tutorial.stage !== 1 && tutorial.pieceElapsed >= 250) player.active.x = target;
-            if (tutorial.stage === 1 && currentPiece === 0 && tutorial.pieceElapsed >= 220 && tutorial.pieceElapsed < 700) {
-                player.active.x = tutorial.pieceElapsed < 460 ? Math.max(0, target - 1) : target;
-                if (tutorial.pieceElapsed < 260) showTutorialMessage('좌우 방향키로 뿌요 이동');
-            }
-            if (tutorial.stage === 1 && currentPiece === 1 && tutorial.pieceElapsed >= 500 && !tutorial.actionFlags.leftRotate) { rotateActive(player, -1); tutorial.actionFlags.leftRotate = true; showTutorialMessage('Z 키를 눌러 좌측으로 뿌요 회전'); }
-            if (tutorial.stage === 1 && currentPiece === 2 && tutorial.pieceElapsed >= 500 && !tutorial.actionFlags.rightRotate1) { rotateActive(player, 1); tutorial.actionFlags.rightRotate1 = true; showTutorialMessage('X 키를 눌러 우측으로 뿌요 회전'); }
-            if (tutorial.stage === 1 && currentPiece === 2 && tutorial.pieceElapsed >= 1500 && !tutorial.actionFlags.rightRotate2) { rotateActive(player, 1); tutorial.actionFlags.rightRotate2 = true; }
-            const fastDownStart = tutorial.stage === 1 && currentPiece === 2 ? 2700 : tutorial.stage === 1 && currentPiece === 1 ? 2600 : tutorial.stage === 1 && currentPiece === 0 ? 2300 : 2050;
-            if (tutorial.pieceElapsed >= fastDownStart) {
-                player.tutorialFastDown = true;
-                if (tutorial.stage === 1 && currentPiece === 0 && !tutorial.actionFlags.fastDownMessage) { tutorial.actionFlags.fastDownMessage = true; showTutorialMessage('아래 방향키로 빨리 떨어뜨리기'); }
-            }
+            if (tutorial.pieceElapsed >= 250) player.active.x = target;
+            if (tutorial.pieceElapsed >= 2050) player.tutorialFastDown = true;
         }
         if (player.combo === 0) tutorial.lastCombo = 0;
         if (player.combo > tutorial.lastCombo) {
@@ -3434,14 +3747,6 @@
         }
         context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `20px ${TITLE_FONT}`;
         context.fillText(`${translate('플레이 방법')} ${tutorial.stage} / 5`, WIDTH / 2, 32);
-        if (tutorial.message) {
-            const duration = tutorial.mode === 'intro' ? 4800 : 2000;
-            const alpha = Math.max(0, Math.min(1, (duration - tutorial.messageElapsed) / 700));
-            context.save(); context.globalAlpha = alpha;
-            context.fillStyle = 'rgba(3, 11, 19, 0.82)'; context.fillRect(160, 42, 960, 52);
-            context.fillStyle = '#f5fbfc'; context.font = `19px ${MESSAGE_FONT}`; context.fillText(translate(tutorial.message), WIDTH / 2, 75);
-            context.restore();
-        }
     }
 
     /** 게임 종료 화면을 유지한 채 안내 완료 선택지를 겹쳐 그린다. @param {object} tutorial 안내 상태 @returns {void} */
@@ -3457,6 +3762,7 @@
 
     /** 설정 화면을 열고 저장된 설정의 임시 복사본을 만든다. @returns {void} */
     function openSettings() {
+        clearSettingsApiTest();
         settingsDraft = { ...store.settings };
         settingsFocus = 0; settingsEditing = false; settingsCursor = 0;
         menuScreen = 'settings';
@@ -3464,6 +3770,7 @@
 
     /** 설정 화면의 변경 사항을 저장한다. @returns {void} */
     function saveSettings() {
+        clearSettingsApiTest();
         store.settings = { ...settingsDraft };
         saveStore();
         updateBackgroundMusicVolume();
@@ -3473,6 +3780,7 @@
 
     /** 설정 화면을 저장하지 않고 닫는다. @returns {void} */
     function cancelSettings() {
+        clearSettingsApiTest();
         settingsDraft = null; settingsEditing = false;
         menuScreen = 'title'; loadNotice();
     }
@@ -3491,6 +3799,7 @@
             console.error('Puyo W 설정 초기화 중 저장 데이터 삭제에 실패했습니다.', error);
         }
         stopBackgroundMusic();
+        clearSettingsApiTest();
         settingsDraft = null;
         settingsEditing = false;
         settingsResetting = true;
@@ -3518,12 +3827,113 @@
         updateBackgroundMusicVolume();
     }
 
+    /** AI API 테스트에 필요한 세 입력값이 모두 채워졌는지 확인한다. @param {object|null} settings 설정값 @returns {boolean} 실행 가능 여부 */
+    function hasCompleteAiApiSettings(settings) {
+        return Boolean(settings && ['aiProvider', 'aiApiKey', 'aiModel'].every((key) => typeof settings[key] === 'string' && settings[key].trim()));
+    }
+
+    /** 편집 중인 AI 설정이 저장된 설정과 같은지 확인한다. @returns {boolean} 저장된 설정 사용 여부 */
+    function hasSavedAiApiSettings() {
+        return Boolean(settingsDraft && store.settings
+            && settingsDraft.aiProvider === store.settings.aiProvider
+            && settingsDraft.aiApiKey === store.settings.aiApiKey
+            && settingsDraft.aiModel === store.settings.aiModel);
+    }
+
+    /** 현재 API 테스트 버튼을 활성화할 수 있는지 확인한다. @returns {boolean} 버튼 활성화 여부 */
+    function canRunAiApiTest() {
+        return !settingsApiTestPending && hasCompleteAiApiSettings(settingsDraft);
+    }
+
+    /** API 테스트 실행 가능 여부를 반영한 설정 화면 포커스 순서를 만든다. @returns {number[]} 포커스 인덱스 목록 */
+    function getSelectableSettingsFocuses() {
+        return [0, 1, 2, 3, 4, 5, ...(canRunAiApiTest() ? [6] : []), 7, 8, 9];
+    }
+
+    /** 설정 화면에서 다음 또는 이전 포커스로 이동한다. @param {number} direction 이동 방향 @returns {void} */
+    function moveSettingsFocus(direction) {
+        const focuses = getSelectableSettingsFocuses();
+        const currentIndex = focuses.indexOf(settingsFocus);
+        const nextIndex = (Math.max(0, currentIndex) + direction + focuses.length) % focuses.length;
+        settingsFocus = focuses[nextIndex];
+    }
+
+    /** API 테스트 안내문을 번역한 뒤 공통 화면 메시지로 표시한다. @param {string} message 번역 키 @returns {void} */
+    function showSettingsApiTestMessage(message) {
+        showMessage(translate(message));
+    }
+
+    /** 화면을 닫거나 초기화할 때 남은 API 테스트 결과를 무효화한다. @returns {void} */
+    function clearSettingsApiTest() {
+        settingsApiTestRequestId += 1;
+        settingsApiTestPending = false;
+    }
+
+    /** Responses API 응답에서 생성된 텍스트를 꺼낸다. @param {object} response API 응답 @returns {string|null} JSON 텍스트 */
+    function getResponsesOutputText(response) {
+        if (typeof response?.output_text === 'string') return response.output_text;
+        for (const outputItem of response?.output || []) {
+            for (const content of outputItem?.content || []) {
+                if (content?.type === 'output_text' && typeof content.text === 'string') return content.text;
+            }
+        }
+        return null;
+    }
+
+    /** API 테스트의 최소 응답 스키마를 브라우저에서도 검사한다. @param {unknown} value 파싱된 응답 @returns {boolean} 스키마 통과 여부 */
+    function isAiApiTestResult(value) {
+        return Boolean(value && typeof value === 'object' && !Array.isArray(value)
+            && Object.keys(value).length === 1 && value.success === true);
+    }
+
+    /** 저장된 OpenAI 설정으로 Responses API를 직접 호출해 연결을 확인한다. @returns {Promise<void>} 완료 시점 */
+    async function runAiApiTest() {
+        if (!hasCompleteAiApiSettings(settingsDraft) || !hasSavedAiApiSettings()) {
+            showSettingsApiTestMessage('설정 저장 후 다시 시도해 주세요');
+            return;
+        }
+        if (settingsApiTestPending) return;
+        const requestId = ++settingsApiTestRequestId;
+        const settings = { ...store.settings };
+        settingsApiTestPending = true;
+        showSettingsApiTestMessage('AI API 테스트 요청 중...');
+        try {
+            const response = await window.fetch(OPENAI_RESPONSES_API_URL, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${settings.aiApiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: settings.aiModel,
+                    reasoning: { effort: 'low' },
+                    input: [{ role: 'user', content: 'Return only JSON matching the supplied schema, with success set to true.' }],
+                    text: { format: { type: 'json_schema', name: 'ai_api_test_result', strict: true, schema: AI_API_TEST_JSON_SCHEMA } },
+                    max_output_tokens: 64
+                })
+            });
+            if (!response.ok) {
+                showSettingsApiTestMessage('AI API 테스트 실패 (JSON 스키마 검사: 미실시)');
+                return;
+            }
+            const outputText = getResponsesOutputText(await response.json());
+            let result;
+            try { result = outputText ? JSON.parse(outputText) : null; } catch (error) { result = null; }
+            showSettingsApiTestMessage(isAiApiTestResult(result)
+                ? 'AI API 테스트 성공 (JSON 스키마 검사: 통과)'
+                : 'AI API 테스트 실패 (JSON 스키마 검사: 실패)');
+        } catch (error) {
+            console.error('Puyo W AI API 테스트 요청에 실패했습니다.', error);
+            showSettingsApiTestMessage('AI API 테스트 실패 (JSON 스키마 검사: 미실시)');
+        } finally {
+            if (requestId === settingsApiTestRequestId) settingsApiTestPending = false;
+        }
+    }
+
     /** 설정 화면의 포커스 항목을 실행한다. @returns {void} */
     function activateSettingsFocus() {
         if (settingsFocus === 2) settingsDraft.virtualController = !settingsDraft.virtualController;
-        else if (settingsFocus === 6) saveSettings();
-        else if (settingsFocus === 7) cancelSettings();
-        else if (settingsFocus === 8) resetAllSettings();
+        else if (settingsFocus === 6 && canRunAiApiTest()) runAiApiTest();
+        else if (settingsFocus === 7) saveSettings();
+        else if (settingsFocus === 8) cancelSettings();
+        else if (settingsFocus === 9) resetAllSettings();
     }
 
     /** 설정 화면을 그린다. @returns {void} */
@@ -3555,7 +3965,7 @@
                     context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(translate(option.label), option.x + 84, row.y + 5);
                 });
             } else if (row.kind === 'provider') {
-                ['OpenAI', 'Google'].forEach((provider, providerIndex) => {
+                AI_SERVICE_PROVIDERS.forEach((provider, providerIndex) => {
                     const x = 530 + providerIndex * 160; const selected = row.value === provider;
                     context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, row.y - 19, 140, 38); context.strokeStyle = focused && selected ? '#ffd54f' : '#426474'; context.lineWidth = focused && selected ? 3 : 2; context.strokeRect(x, row.y - 19, 140, 38); context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(provider, x + 70, row.y + 5);
                 });
@@ -3564,10 +3974,14 @@
                 if (settingsEditing && settingsFocus === index) { const cursorX = 543 + context.measureText(row.value.slice(0, settingsCursor)).width; context.fillStyle = '#ffd54f'; context.fillRect(cursorX, row.y - 13, 2, 21); }
             }
         });
-        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 402);
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `13px ${MESSAGE_FONT}`; context.fillText(translate('사운드 및 AI 관련 기능은 추후 제공 예정'), WIDTH / 2, 430);
-        [{ label: '저장', x: 380, focus: 6, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 7, color: '#ef5350' }, { label: '초기화', x: 740, focus: 8, color: '#7e6bc4' }].forEach((button) => {
-            context.fillStyle = button.color; context.fillRect(button.x, 455, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 455, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 485);
+        const apiTestEnabled = canRunAiApiTest();
+        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(530, 385, 450, 40);
+        context.strokeStyle = settingsFocus === 6 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 6 && apiTestEnabled ? 3 : 2; context.strokeRect(530, 385, 450, 40);
+        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 755, 411);
+        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 455);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `13px ${MESSAGE_FONT}`; context.fillText(translate('사운드 관련 기능은 추후 제공 예정'), WIDTH / 2, 478);
+        [{ label: '저장', x: 380, focus: 7, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 8, color: '#ef5350' }, { label: '초기화', x: 740, focus: 9, color: '#7e6bc4' }].forEach((button) => {
+            context.fillStyle = button.color; context.fillRect(button.x, 505, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 505, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 535);
         });
     }
 
@@ -3770,10 +4184,9 @@
         return JSON.stringify({ puyos });
     }
 
-    /** 시뮬레이터 화면에 4초 동안 표시할 메시지를 설정한다. @param {string} message 표시할 메시지 @returns {void} */
+    /** 시뮬레이터 메시지를 공통 화면 메시지로 표시한다. @param {string} message 이미 번역된 표시문 @returns {void} */
     function showSimulatorMessage(message) {
-        simulator.message = message;
-        simulator.messageElapsed = 0;
+        showMessage(message, '#f7c843', 3500);
     }
 
     /** 클립보드에 시뮬레이터 배치를 복사한다. @returns {void} */
@@ -3801,7 +4214,7 @@
             if (!parsed || !Array.isArray(parsed.puyos)) throw new TypeError('puyos 배열이 필요합니다.');
             const board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
             parsed.puyos.forEach((puyo) => {
-                if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y) || puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= VISIBLE_ROWS || ![...COLORS, 'garbage'].includes(puyo.color)) {
+                if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y) || puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= SIMULATOR_EDITABLE_ROWS || ![...COLORS, 'garbage'].includes(puyo.color)) {
                     throw new TypeError('유효하지 않은 뿌요 좌표 또는 색상입니다.');
                 }
                 if (board[puyo.y][puyo.x]) throw new TypeError('같은 칸에 뿌요가 중복됩니다.');
@@ -3815,7 +4228,7 @@
 
     /** 선택한 항목을 필드 칸에 반영한다. @param {number} x X 좌표 @param {number} y Y 좌표 @returns {void} */
     function placeSimulatorPuyo(x, y) {
-        if (!simulator || simulator.mode !== 'draw' || x < 0 || x >= COLUMNS || y < 0 || y >= VISIBLE_ROWS) return;
+        if (!simulator || simulator.mode !== 'draw' || x < 0 || x >= COLUMNS || y < 0 || y >= SIMULATOR_EDITABLE_ROWS) return;
         simulator.player.board[y][x] = simulator.selected === 'eraser' ? null : simulator.selected;
     }
 
@@ -3878,10 +4291,6 @@
     /** 시뮬레이터 중력·폭발·복원 시간을 갱신한다. @param {number} delta 경과 시간(ms) @returns {void} */
     function updateSimulator(delta) {
         if (!simulator) return;
-        if (simulator.message) {
-            simulator.messageElapsed += delta;
-            if (simulator.messageElapsed >= 4000) simulator.message = null;
-        }
         const player = simulator.player;
         if (simulator.mode === 'draw') return;
         player.comboPopups = player.comboPopups
@@ -3906,6 +4315,15 @@
         }
     }
 
+    /** 시뮬레이션 중 상단·측면 베젤을 전경으로 다시 그려 숨김 행의 낙하 뿌요를 가린다. @returns {void} */
+    function drawSimulatorBezelForeground() {
+        const x = FIELD_LEFT;
+        context.fillStyle = '#0c2433';
+        context.fillRect(x - CELL, FIELD_TOP - CELL, CELL * 8, CELL);
+        context.fillRect(x - CELL, FIELD_TOP, CELL, CELL * VISIBLE_ROWS);
+        context.fillRect(x + CELL * COLUMNS, FIELD_TOP, CELL, CELL * VISIBLE_ROWS);
+    }
+
     /** 시뮬레이터 화면을 그린다. @returns {void} */
     function drawSimulator() {
         const player = simulator.player; const x = FIELD_LEFT;
@@ -3916,10 +4334,14 @@
         for (let i = 0; i <= COLUMNS; i += 1) { context.beginPath(); context.moveTo(x + i * CELL, FIELD_TOP); context.lineTo(x + i * CELL, FIELD_BOTTOM); context.stroke(); }
         for (let i = 0; i <= VISIBLE_ROWS; i += 1) { context.beginPath(); context.moveTo(x, FIELD_TOP + i * CELL); context.lineTo(x + COLUMNS * CELL, FIELD_TOP + i * CELL); context.stroke(); }
         const falling = new Set((player.gravityAnimation?.falling || []).map((puyo) => `${puyo.x},${puyo.toY}`));
-        for (let y = 0; y < VISIBLE_ROWS; y += 1) for (let column = 0; column < COLUMNS; column += 1) if (player.board[y][column] && !falling.has(`${column},${y}`)) drawPuyo(x + column * CELL, FIELD_BOTTOM - (y + 1) * CELL, player.board[y][column]);
+        // 그리기 중에만 13번째 줄을 베젤 위에 표시한다. 시뮬레이션에서는 기존처럼 베젤 뒤에 숨긴다.
+        const renderedRows = simulator.mode === 'draw' ? SIMULATOR_EDITABLE_ROWS : VISIBLE_ROWS;
+        for (let y = 0; y < renderedRows; y += 1) for (let column = 0; column < COLUMNS; column += 1) if (player.board[y][column] && !falling.has(`${column},${y}`)) drawPuyo(x + column * CELL, FIELD_BOTTOM - (y + 1) * CELL, player.board[y][column]);
         if (player.gravityAnimation) { const progress = Math.min(1, player.gravityAnimation.elapsed / player.gravityAnimation.duration) ** 2; player.gravityAnimation.falling.forEach((puyo) => { const y = puyo.fromY + (puyo.toY - puyo.fromY) * progress; if (y < VISIBLE_ROWS) drawPuyo(x + puyo.x * CELL, FIELD_BOTTOM - (y + 1) * CELL, puyo.color); }); }
         if (player.effects) { const progress = Math.min(1, player.effects.elapsed / player.effects.duration); player.effects.cells.forEach((puyo) => drawExplosionEffect(x + puyo.x * CELL, FIELD_BOTTOM - (puyo.y + 1) * CELL, puyo, progress)); }
         player.comboPopups.forEach((popup) => drawComboPopup(x, popup));
+        // 낙하 애니메이션도 베젤보다 먼저 그려지므로, 시뮬레이션에서는 베젤을 전경으로 복원한다.
+        if (simulator.mode !== 'draw') drawSimulatorBezelForeground();
         if (simulator.mode === 'draw' && simulator.focusArea === 'board') { const focus = simulator.boardFocus; context.strokeStyle = '#ffd54f'; context.lineWidth = 4; context.strokeRect(x + focus.x * CELL + 2, FIELD_BOTTOM - (focus.y + 1) * CELL + 2, CELL - 4, CELL - 4); }
         context.fillStyle = '#071621'; context.fillRect(500, FIELD_TOP - CELL, 350, CELL * 14); context.fillStyle = '#0c2433'; context.fillRect(FIELD_RIGHT - CELL, FIELD_TOP - CELL, CELL * 8, CELL * 14);
         for (let i = 0; i < COLUMNS; i += 1) { context.fillStyle = '#0a1d29'; context.fillRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); context.strokeStyle = 'rgba(176,232,244,.25)'; context.strokeRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); }
@@ -3940,14 +4362,6 @@
                 context.fillText(labels[item.kind], item.x + item.width / 2, item.y + 26);
             }
         });
-        if (simulator.message) {
-            const progress = Math.min(1, simulator.messageElapsed / 4000);
-            context.save();
-            context.globalAlpha = progress < 0.75 ? 1 : (1 - progress) / 0.25;
-            context.fillStyle = '#f7c843'; context.font = `18px ${MESSAGE_FONT}`;
-            context.fillText(simulator.message, WIDTH / 2, 635);
-            context.restore();
-        }
         if (simulator.mode !== 'draw') {
             context.fillStyle = 'rgba(3, 11, 19, 0.62)';
             context.fillRect(FIELD_RIGHT, FIELD_TOP, CELL * COLUMNS, CELL * VISIBLE_ROWS);
@@ -4009,9 +4423,42 @@
         opponentMenuRule = 'standard';
     }
 
+    /** 현재 색상 수 선택 화면에서 고를 수 있는 DIFFICULTIES의 인덱스다. @returns {number[]} */
+    function getSelectableColorDifficultyIndices() {
+        return colorSelectionMode === 'continuousFever' ? [1, 2] : [0, 1, 2];
+    }
+
+    /**
+     * 색상 수 선택지의 왼쪽 좌표를 반환한다.
+     * @param {number} difficultyIndex DIFFICULTIES 배열 인덱스
+     * @param {boolean} fourAndFiveOnly 4색·5색만 표시하는지 여부
+     * @returns {number} 버튼의 왼쪽 좌표
+     */
+    function getColorDifficultyButtonX(difficultyIndex, fourAndFiveOnly) {
+        if (!fourAndFiveOnly) return 465 + difficultyIndex * 120;
+        // 3색 출시 시 기존 좌표식(465 + difficultyIndex * 120)으로 되돌려 세 선택지를 배치한다.
+        return 525 + (difficultyIndex - 1) * 120;
+    }
+
+    /** AI 난이도 선택지를 개수와 관계없이 화면 중앙에 수평 정렬한다. @param {number} difficultyIndex AI_DIFFICULTIES 배열 인덱스 @returns {number} 버튼의 왼쪽 좌표 */
+    function getAiDifficultyButtonX(difficultyIndex) {
+        const buttonWidth = 110;
+        const gap = 10;
+        const totalWidth = AI_DIFFICULTIES.length * buttonWidth + (AI_DIFFICULTIES.length - 1) * gap;
+        return (WIDTH - totalWidth) / 2 + difficultyIndex * (buttonWidth + gap);
+    }
+
     /** 게임 규칙 선택지에서 연습을 고른 뒤 색상 수 선택 화면을 연다. @returns {void} */
     function openPracticeDifficulty() {
         selectedDifficulty = 1;
+        colorSelectionMode = 'practice';
+        menuScreen = 'practiceDifficulty';
+    }
+
+    /** 게임 규칙 선택지에서 연속 피버를 고른 뒤 4색 또는 5색 선택 화면을 연다. @returns {void} */
+    function openContinuousFeverDifficulty() {
+        selectedDifficulty = 1;
+        colorSelectionMode = 'continuousFever';
         menuScreen = 'practiceDifficulty';
     }
 
@@ -4047,7 +4494,7 @@
             const bounds = getRuleSelectionButtonBounds(index);
             const disabled = option.disabled === true;
             const focused = !disabled && index === ruleSelectionFocus;
-            context.fillStyle = disabled ? '#3c4650' : '#264b5b'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.fillStyle = disabled ? '#3c4650' : option.backgroundColor; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
             context.strokeStyle = disabled ? '#7c8791' : focused ? '#f7c843' : '#4f7788'; context.lineWidth = focused ? 4 : 2; context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
             context.textAlign = 'center'; context.fillStyle = disabled ? '#c4cbd0' : '#f5fbfc'; context.font = `22px ${BUTTON_FONT}`;
             context.fillText(translate(option.label), bounds.x + bounds.width / 2, bounds.y + (option.statusLabel ? 32 : 47));
@@ -4064,6 +4511,7 @@
      */
     function drawMenu() {
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        if (menuScreen === 'title') drawMainMenuGalleryFloaters();
         const opponentMenuScaled = menuScreen === 'opponent';
         if (opponentMenuScaled) {
             context.save();
@@ -4072,23 +4520,18 @@
             context.translate(-WIDTH / 2, -HEIGHT / 2);
         }
         context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `54px ${TITLE_FONT}`; context.fillText('Puyo W', WIDTH / 2, menuScreen === 'opponent' ? 90 : 110);
-        if (menuScreen === 'title') drawNotice();
         if (menuScreen === 'opponent') {
-            if (opponentMenuRule !== 'fever') {
-                context.fillStyle = '#d8f2f5'; context.font = `22px ${TITLE_FONT}`; context.fillText(translate('난이도'), WIDTH / 2, 130);
-                DIFFICULTIES.forEach((difficulty, index) => {
-                    const x = 465 + index * 120;
+            DIFFICULTIES.forEach((difficulty, index) => {
+                if (opponentMenuRule === 'fever' && index === 0) return;
+                    const x = getColorDifficultyButtonX(index, opponentMenuRule === 'fever');
                     const selected = index === selectedDifficulty;
                     context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 135, 110, 44);
                     context.strokeStyle = opponentMenuFocus === 0 && selected ? '#f7c843' : '#3b6070'; context.lineWidth = opponentMenuFocus === 0 && selected ? 4 : 2;
                     context.strokeRect(x, 135, 110, 44);
                     context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 163);
-                });
-            } else {
-                context.fillStyle = '#ffd54f'; context.font = `24px ${TITLE_FONT}`; context.fillText(translate('피버 룰'), WIDTH / 2, 157);
-            }
+            });
             AI_DIFFICULTIES.forEach((difficulty, index) => {
-                const x = 465 + index * 120;
+                const x = getAiDifficultyButtonX(index);
                 const selected = index === selectedAiDifficulty;
                 context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 195, 110, 44);
                 context.strokeStyle = opponentMenuFocus === 1 && selected ? '#f7c843' : '#3b6070'; context.lineWidth = opponentMenuFocus === 1 && selected ? 4 : 2;
@@ -4171,15 +4614,18 @@
         context.fillStyle = '#8899a6'; context.font = `14px ${MESSAGE_FONT}`; context.fillText('Copyright (c) HJOW', WIDTH / 2, HEIGHT - 20);
         if (menuScreen === 'practiceDifficulty') {
             context.fillStyle = 'rgba(3, 11, 19, 0.76)'; context.fillRect(0, 0, WIDTH, HEIGHT);
-            context.fillStyle = '#d8f2f5'; context.font = `30px ${TITLE_FONT}`; context.fillText(translate('난이도 선택'), WIDTH / 2, 300);
+            context.fillStyle = '#d8f2f5'; context.font = `30px ${TITLE_FONT}`; context.fillText(translate('선택'), WIDTH / 2, 300);
             DIFFICULTIES.forEach((difficulty, index) => {
-                const x = 465 + index * 120;
+                if (!getSelectableColorDifficultyIndices().includes(index)) return;
+                const x = getColorDifficultyButtonX(index, colorSelectionMode === 'continuousFever');
                 const selected = index === selectedDifficulty;
                 context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 335, 110, 58);
                 context.strokeStyle = selected ? '#f7c843' : '#3b6070'; context.lineWidth = selected ? 4 : 2; context.strokeRect(x, 335, 110, 58);
                 context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 371);
             });
         }
+        // 공지사항은 부유하는 뿌요와 모든 메인 메뉴 요소 위에 그린다.
+        if (menuScreen === 'title') drawNotice();
         if (menuScreen === 'title' && ruleSelectionOpen) drawRuleSelectionOverlay();
     }
 
@@ -4218,37 +4664,53 @@
         context.clearRect(0, 0, WIDTH, HEIGHT);
         if (settingsResetting) {
             drawSettingsResetting();
-            return;
-        }
-        // 진행 중인 게임이 없으면 현재 메뉴 화면만 렌더링한다.
-        if (!game) {
+        } else if (!game) {
+            // 진행 중인 게임이 없으면 현재 메뉴 화면만 렌더링한다.
             if (menuScreen === 'initialTitle') drawInitialTitle();
             else if (menuScreen === 'simulator' && simulator) drawSimulator();
             else if (menuScreen === 'settings' && settingsDraft) drawSettings();
             else if (menuScreen === 'gallery' && gallery) drawGallery();
             else drawMenu();
-            return;
-        }
-        if (game.tutorial) {
+        } else if (game.tutorial) {
             drawTutorial();
-            return;
-        }
-        context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
-        // 게임이 끝났으면 결과 화면으로 전환한다.
-        if (!game.running) {
+        } else if (!game.running) {
+            context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+            // 게임이 끝났으면 결과 화면으로 전환한다.
             drawResultField(game.players[0]); drawResultField(game.players[1]); drawResultCenter();
-            return;
+        } else {
+            context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+            drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter(); drawEnergyTransfers();
+            if (shouldShowVirtualController()) drawVirtualController();
+            // 시작 또는 재개 카운트다운 중에는 카운트다운 오버레이를 최상단에 표시한다.
+            if (game.countdown > 0) {
+                context.fillStyle = 'rgba(3, 11, 19, 0.62)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+                context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `76px ${TITLE_FONT}`;
+                context.fillText(String(Math.ceil(game.countdown / 1000)), WIDTH / 2, 390);
+            } else if (game.paused) {
+                drawPauseOverlay();
+            }
         }
-        drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter(); drawEnergyTransfers();
-        if (shouldShowVirtualController()) drawVirtualController();
-        // 시작 또는 재개 카운트다운 중에는 카운트다운 오버레이를 최상단에 표시한다.
-        if (game.countdown > 0) {
-            context.fillStyle = 'rgba(3, 11, 19, 0.62)'; context.fillRect(0, 0, WIDTH, HEIGHT);
-            context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `76px ${TITLE_FONT}`;
-            context.fillText(String(Math.ceil(game.countdown / 1000)), WIDTH / 2, 390);
-        } else if (game.paused) {
-            drawPauseOverlay();
-        }
+        drawScreenMessage();
+    }
+
+    /** 화면 최상단에 표시 중인 외부 메시지를 그린다. @returns {void} */
+    function drawScreenMessage() {
+        if (!screenMessage) return;
+        const fadeProgress = Math.max(0, Math.min(1, (screenMessage.elapsed - screenMessage.duration) / SCREEN_MESSAGE_FADE_DURATION));
+        context.save();
+        context.globalAlpha = 1 - fadeProgress;
+        context.textAlign = 'center';
+        context.fillStyle = screenMessage.color;
+        context.font = `28px ${MESSAGE_FONT}`;
+        context.fillText(screenMessage.message, WIDTH / 2, 70);
+        context.restore();
+    }
+
+    /** 화면 최상단 메시지의 경과 시간을 갱신한다. @param {number} delta 이전 프레임 후 경과한 밀리초 @returns {void} */
+    function updateScreenMessage(delta) {
+        if (!screenMessage) return;
+        screenMessage.elapsed += delta;
+        if (screenMessage.elapsed >= screenMessage.duration + SCREEN_MESSAGE_FADE_DURATION) screenMessage = null;
     }
 
     /** 카운트다운과 일시정지 밖에서 연속 피버 남은 시간을 0까지 감소시킨다. @param {number} delta 이전 프레임 후 경과한 밀리초 @returns {void} */
@@ -4274,6 +4736,7 @@
         const delta = Math.min(50, time - lastTime || 0);
         lastTime = time;
         updateGamepadInput();
+        updateScreenMessage(delta);
         // 플레이 방법은 결과 화면 표시 시간까지 갱신하고, 일반 게임은 실행 중일 때만 갱신한다.
         if (game?.tutorial && !game.paused) {
             if (game.running) {
@@ -4306,6 +4769,11 @@
         if (!game && menuScreen === 'simulator') { updateSimulator(delta); updateEnergyTransfers(delta); }
         if (!game && menuScreen === 'gallery' && gallery) gallery.portraitElapsed += delta;
         if (!game && menuScreen === 'initialTitle' && initialGalleryPreview.loaded) initialGalleryPreview.elapsed += delta;
+        if (!game && menuScreen === 'title') {
+            if (previousRenderedMenuScreen !== 'title') createMainMenuGalleryFloaters();
+            updateMainMenuGalleryFloaters(delta);
+        }
+        previousRenderedMenuScreen = menuScreen;
         syncBackgroundMusic();
         render();
         animationFrameId = requestAnimationFrame(frame);
@@ -4324,7 +4792,7 @@
             if (key === 'arrowleft') simulator.boardFocus.x = Math.max(0, simulator.boardFocus.x - 1);
             if (key === 'arrowright') simulator.boardFocus.x = Math.min(COLUMNS - 1, simulator.boardFocus.x + 1);
             if (key === 'arrowdown') simulator.boardFocus.y = Math.max(0, simulator.boardFocus.y - 1);
-            if (key === 'arrowup') simulator.boardFocus.y = Math.min(VISIBLE_ROWS - 1, simulator.boardFocus.y + 1);
+            if (key === 'arrowup') simulator.boardFocus.y = Math.min(SIMULATOR_EDITABLE_ROWS - 1, simulator.boardFocus.y + 1);
             if (key === 'enter' || key === ' ') placeSimulatorPuyo(simulator.boardFocus.x, simulator.boardFocus.y);
             return;
         }
@@ -4381,14 +4849,13 @@
             if (textField) { settingsEditing = true; settingsCursor = settingsDraft[settingsFocus === 4 ? 'aiApiKey' : 'aiModel'].length; }
             else activateSettingsFocus();
         } else if (key === 'escape') cancelSettings();
-        else if (key === 'arrowup' || key === 'arrowdown') settingsFocus = (settingsFocus + (key === 'arrowup' ? 8 : 1)) % 9;
+        else if (key === 'arrowup' || key === 'arrowdown') moveSettingsFocus(key === 'arrowup' ? -1 : 1);
         else if (key === 'arrowleft' || key === 'arrowright') {
             const direction = key === 'arrowleft' ? -1 : 1;
             if (settingsFocus === 0) settingsDraft.musicVolume = Math.max(0, Math.min(100, settingsDraft.musicVolume + direction));
             else if (settingsFocus === 1) settingsDraft.effectsVolume = Math.max(0, Math.min(100, settingsDraft.effectsVolume + direction));
             else if (settingsFocus === 2) settingsDraft.virtualController = direction < 0;
-            else if (settingsFocus === 3) settingsDraft.aiProvider = settingsDraft.aiProvider === 'OpenAI' ? 'Google' : 'OpenAI';
-            else if (settingsFocus >= 6) settingsFocus = 6 + (settingsFocus - 6 + (direction < 0 ? 2 : 1)) % 3;
+            else if (settingsFocus >= 7) settingsFocus = 7 + (settingsFocus - 7 + (direction < 0 ? 2 : 1)) % 3;
         }
     }
 
@@ -4458,9 +4925,11 @@
                 return;
             }
             if (menuScreen === 'practiceDifficulty') {
-                if (key === 'arrowleft' || key === 'arrowup') selectedDifficulty = (selectedDifficulty + DIFFICULTIES.length - 1) % DIFFICULTIES.length;
-                else if (key === 'arrowright' || key === 'arrowdown') selectedDifficulty = (selectedDifficulty + 1) % DIFFICULTIES.length;
-                else if (key === 'enter' || key === ' ') startGame(true);
+                const choices = getSelectableColorDifficultyIndices();
+                const currentIndex = Math.max(0, choices.indexOf(selectedDifficulty));
+                if (key === 'arrowleft' || key === 'arrowup') selectedDifficulty = choices[(currentIndex + choices.length - 1) % choices.length];
+                else if (key === 'arrowright' || key === 'arrowdown') selectedDifficulty = choices[(currentIndex + 1) % choices.length];
+                else if (key === 'enter' || key === ' ') startGame(colorSelectionMode === 'practice', colorSelectionMode === 'continuousFever');
                 else if (key === 'escape') { menuScreen = 'title'; loadNotice(); }
                 return;
             }
@@ -4469,16 +4938,24 @@
                     ? (titleMenuFocus + 6) % 7
                     : (titleMenuFocus + 1) % 7;
             } else if (menuScreen === 'opponent' && key === 'arrowup') {
-                opponentMenuFocus = Math.max(opponentMenuRule === 'fever' ? 1 : 0, opponentMenuFocus - 1);
+                opponentMenuFocus = Math.max(0, opponentMenuFocus - 1);
             } else if (menuScreen === 'opponent' && key === 'arrowdown') {
                 opponentMenuFocus = Math.min(3, opponentMenuFocus + 1);
             } else if (menuScreen === 'opponent' && key === 'arrowleft') {
-                if (opponentMenuFocus === 0) selectedDifficulty = (selectedDifficulty + DIFFICULTIES.length - 1) % DIFFICULTIES.length;
+                if (opponentMenuFocus === 0) {
+                    const choices = opponentMenuRule === 'fever' ? [1, 2] : [0, 1, 2];
+                    const currentIndex = Math.max(0, choices.indexOf(selectedDifficulty));
+                    selectedDifficulty = choices[(currentIndex + choices.length - 1) % choices.length];
+                }
                 else if (opponentMenuFocus === 1) selectedAiDifficulty = (selectedAiDifficulty + AI_DIFFICULTIES.length - 1) % AI_DIFFICULTIES.length;
                 else if (opponentMenuFocus === 2) selectRelativeOpponent(-1);
                 else selectedOpponentAction = 0;
             } else if (menuScreen === 'opponent' && key === 'arrowright') {
-                if (opponentMenuFocus === 0) selectedDifficulty = (selectedDifficulty + 1) % DIFFICULTIES.length;
+                if (opponentMenuFocus === 0) {
+                    const choices = opponentMenuRule === 'fever' ? [1, 2] : [0, 1, 2];
+                    const currentIndex = Math.max(0, choices.indexOf(selectedDifficulty));
+                    selectedDifficulty = choices[(currentIndex + 1) % choices.length];
+                }
                 else if (opponentMenuFocus === 1) selectedAiDifficulty = (selectedAiDifficulty + 1) % AI_DIFFICULTIES.length;
                 else if (opponentMenuFocus === 2) selectRelativeOpponent(1);
                 else selectedOpponentAction = 1;
@@ -4598,9 +5075,9 @@
      */
     function openOpponentMenu(feverRule = false) {
         opponentMenuRule = feverRule ? 'fever' : 'standard';
-        if (feverRule) selectedDifficulty = DIFFICULTIES.length - 1;
+        if (feverRule && selectedDifficulty < 1) selectedDifficulty = 1;
         ensureSelectedOpponent();
-        opponentMenuFocus = feverRule ? 1 : 0;
+        opponentMenuFocus = 0;
         selectedOpponentAction = 0;
         menuScreen = 'opponent';
     }
@@ -4685,7 +5162,7 @@
             if (simulator.mode !== 'draw') return;
             const boardX = Math.floor((x - FIELD_LEFT) / CELL);
             const boardY = Math.floor((FIELD_BOTTOM - y) / CELL);
-            if (boardX >= 0 && boardX < COLUMNS && boardY >= 0 && boardY < VISIBLE_ROWS) {
+            if (boardX >= 0 && boardX < COLUMNS && boardY >= 0 && boardY < SIMULATOR_EDITABLE_ROWS) {
                 simulator.boardFocus = { x: boardX, y: boardY };
                 simulator.focusArea = 'board';
                 placeSimulatorPuyo(boardX, boardY);
@@ -4741,22 +5218,24 @@
                 activateTitleMenu();
             }
         } else if (menuScreen === 'settings') {
-            if (y >= 455 && y <= 501 && x >= 380 && x <= 540) { settingsFocus = 6; saveSettings(); }
-            else if (y >= 455 && y <= 501 && x >= 560 && x <= 720) { settingsFocus = 7; cancelSettings(); }
-            else if (y >= 455 && y <= 501 && x >= 740 && x <= 900) { settingsFocus = 8; resetAllSettings(); }
+            if (y >= 385 && y <= 425 && x >= 530 && x <= 980 && canRunAiApiTest()) { settingsFocus = 6; runAiApiTest(); }
+            else if (y >= 505 && y <= 551 && x >= 380 && x <= 540) { settingsFocus = 7; saveSettings(); }
+            else if (y >= 505 && y <= 551 && x >= 560 && x <= 720) { settingsFocus = 8; cancelSettings(); }
+            else if (y >= 505 && y <= 551 && x >= 740 && x <= 900) { settingsFocus = 9; resetAllSettings(); }
             else if (y >= 95 && y <= 115) { settingsFocus = 0; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
             else if (y >= 145 && y <= 165) { settingsFocus = 1; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
             else if (y >= 186 && y <= 224 && x >= 530 && x <= 670) { settingsFocus = 2; settingsDraft.virtualController = true; }
             else if (y >= 186 && y <= 224 && x >= 690 && x <= 830) { settingsFocus = 2; settingsDraft.virtualController = false; }
-            else if (y >= 236 && y <= 274) { settingsFocus = 3; settingsDraft.aiProvider = x < 690 ? 'OpenAI' : 'Google'; }
+            else if (y >= 236 && y <= 274 && x >= 530 && x <= 670) { settingsFocus = 3; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
             else if (y >= 286 && y <= 324) { settingsFocus = 4; settingsEditing = true; settingsCursor = settingsDraft.aiApiKey.length; }
             else if (y >= 336 && y <= 374) { settingsFocus = 5; settingsEditing = true; settingsCursor = settingsDraft.aiModel.length; }
         } else {
             if (menuScreen === 'practiceDifficulty') {
-                const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => x >= 465 + index * 120 && x <= 575 + index * 120 && y >= 335 && y <= 393);
-                if (difficultyIndex >= 0) {
+                const fourAndFiveOnly = colorSelectionMode === 'continuousFever';
+                const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => x >= getColorDifficultyButtonX(index, fourAndFiveOnly) && x <= getColorDifficultyButtonX(index, fourAndFiveOnly) + 110 && y >= 335 && y <= 393);
+                if (difficultyIndex >= 0 && getSelectableColorDifficultyIndices().includes(difficultyIndex)) {
                     selectedDifficulty = difficultyIndex;
-                    startGame(true);
+                    startGame(colorSelectionMode === 'practice', colorSelectionMode === 'continuousFever');
                 } else {
                     // 난이도 선택지 바깥을 클릭하면 ESC와 같이 메인 화면으로 돌아간다.
                     menuScreen = 'title';
@@ -4767,13 +5246,14 @@
             // 축소해 그린 적 선택 화면의 클릭 좌표를 원래 논리 좌표로 되돌린다.
             const opponentX = (x - WIDTH / 2) / OPPONENT_MENU_SCALE + WIDTH / 2;
             const opponentY = (y - HEIGHT / 2) / OPPONENT_MENU_SCALE + HEIGHT / 2;
-            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => opponentX >= 465 + index * 120 && opponentX <= 575 + index * 120 && opponentY >= 135 && opponentY <= 179);
-            if (difficultyIndex >= 0 && opponentMenuRule !== 'fever') {
+            const fourAndFiveOnly = opponentMenuRule === 'fever';
+            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => opponentX >= getColorDifficultyButtonX(index, fourAndFiveOnly) && opponentX <= getColorDifficultyButtonX(index, fourAndFiveOnly) + 110 && opponentY >= 135 && opponentY <= 179);
+            if (difficultyIndex >= 0 && (opponentMenuRule !== 'fever' || difficultyIndex >= 1)) {
                 selectedDifficulty = difficultyIndex;
                 opponentMenuFocus = 0;
                 return;
             }
-            const aiDifficultyIndex = AI_DIFFICULTIES.findIndex((difficulty, index) => opponentX >= 465 + index * 120 && opponentX <= 575 + index * 120 && opponentY >= 195 && opponentY <= 239);
+            const aiDifficultyIndex = AI_DIFFICULTIES.findIndex((difficulty, index) => opponentX >= getAiDifficultyButtonX(index) && opponentX <= getAiDifficultyButtonX(index) + 110 && opponentY >= 195 && opponentY <= 239);
             if (aiDifficultyIndex >= 0) {
                 selectedAiDifficulty = aiDifficultyIndex;
                 opponentMenuFocus = 1;
@@ -4839,7 +5319,7 @@
      * 한 플레이어의 보드와 대기열을 JSON으로 직렬화 가능한 상태로 만든다.
      * @param {PlayerState} player 상태를 읽을 플레이어
      * @param {PlayerState} opponent 상대 플레이어
-     * @returns {{name:string, isCpu:boolean, phase:string, point:number, attack:number, damage:number, combo:number, placedPairCount:number, board:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, nextPairs:string[][], warningPuyos:string[], active:{x:number,y:number,rotation:number,colors:string[],cells:{x:number,y:number,color:string}[]}|null}}
+     * @returns {{name:string, isCpu:boolean, phase:string, point:number, attack:number, damage:number, normalDamage:number, combo:number, placedPairCount:number, board:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, nextPairs:string[][], warningPuyos:string[], active:{x:number,y:number,rotation:number,colors:string[],cells:{x:number,y:number,color:string}[]}|null}}
      */
     function getPlayerGameStatus(player, opponent) {
         const puyos = [];
@@ -4860,6 +5340,7 @@
             point: player.point,
             attack: player.attack,
             damage: player.damage,
+            normalDamage: player.normalDamage,
             combo: player.combo,
             placedPairCount: player.placedPairCount,
             board: { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, puyos },
@@ -4916,6 +5397,40 @@
      */
     function getScreenState() {
         return getNowScreen();
+    }
+
+    /**
+     * 현재 화면의 최상단에 원문 메시지를 표시한다. 다국어 변환은 호출 전에 처리해야 한다.
+     * @param {string} message 표시할 메시지
+     * @param {string} [color='white'] 글자 색상(CSS 색상 문자열)
+     * @param {number} [duration=2000] 페이드 아웃 전 유지 시간(밀리초)
+     * @returns {void}
+     */
+    function showMessage(message, color = 'white', duration = 2000) {
+        if (!initialized || !context) throw new Error('메시지를 표시하려면 먼저 WebPuyo.initialize()를 호출해야 합니다.');
+        if (typeof message !== 'string') throw new TypeError('message는 문자열이어야 합니다.');
+        if (typeof color !== 'string') throw new TypeError('color는 문자열이어야 합니다.');
+        if (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0) throw new RangeError('duration은 0 이상의 유한한 숫자여야 합니다.');
+        screenMessage = { message, color, elapsed: 0, duration };
+    }
+
+    /**
+     * 현재 시뮬레이터 편집 상태의 읽기 전용 스냅샷을 반환한다.
+     * @returns {{mode:'draw'|'simulation'|'settling'|'complete', selected:string, focusArea:'palette'|'board'|'complete', boardFocus:{x:number,y:number}, board:{columns:number,rows:number,visibleRows:number,editableRows:number,puyos:{x:number,y:number,color:string}[]}}|null}
+     */
+    function getSimulatorState() {
+        if (!simulator) return null;
+        const puyos = [];
+        simulator.player.board.forEach((row, y) => row.forEach((color, x) => {
+            if (color) puyos.push({ x, y, color });
+        }));
+        return {
+            mode: simulator.mode,
+            selected: simulator.selected,
+            focusArea: simulator.focusArea,
+            boardFocus: { ...simulator.boardFocus },
+            board: { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, editableRows: SIMULATOR_EDITABLE_ROWS, puyos }
+        };
     }
 
     /**
@@ -5064,7 +5579,7 @@
                 name: 'manual',
                 description: 'Return English instructions for playing Puyo W and using the other available game tools.',
                 inputSchema: emptyInput,
-                execute: () => 'Puyo W is a falling-pair puzzle battle. During a match control turn, use left/right to move, Z/X to rotate, and down to fall faster. Match four or more same-color puyos to clear them and send attacks. Fever-rule players have independent gauge, nextTime, targetCombo, leftTime, and fever field state. Use now_screen to identify the exact menu, gallery, simulator, tutorial, or match screen. Use now_game_status while a match is playing or paused, and point_recommend only during a controllable player turn.'
+                execute: () => 'Puyo W is a falling-pair puzzle battle. During a match control turn, use left/right to move, Z/X to rotate, and down to fall faster. Match four or more same-color puyos to clear them and send attacks. Fever-rule players have independent gauge, nextTime, targetCombo, leftTime, and fever field state. Use now_screen to identify the exact menu, gallery, simulator, tutorial, or match screen. Use now_game_status while a match is playing or paused, and point_recommend only during a controllable player turn. Use show_message to display already-localized text at the top of the current screen.'
             },
             {
                 name: 'now_screen',
@@ -5095,6 +5610,21 @@
                     if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= VISIBLE_ROWS) throw new RangeError('x and y must identify a visible board cell.');
                     recommendedPoint = { x, y };
                 }
+            },
+            {
+                name: 'show_message',
+                description: 'Display an already-localized message at the top of the current screen. It remains visible for duration milliseconds (default 2000), then fades out. Do not use this tool for translation.',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        message: { type: 'string', description: 'The already-localized text to display.' },
+                        color: { type: 'string', default: 'white', description: 'CSS text color.' },
+                        duration: { type: 'number', minimum: 0, default: 2000, description: 'Milliseconds to remain fully visible before fading out.' }
+                    },
+                    required: ['message'],
+                    additionalProperties: false
+                },
+                execute: ({ message, color = 'white', duration = 2000 }) => showMessage(message, color, duration)
             }
         ];
         tools.forEach((tool) => {
@@ -5116,6 +5646,7 @@
         if (settingsResetTimer !== null) window.clearTimeout(settingsResetTimer);
         settingsResetTimer = null;
         settingsResetting = false;
+        screenMessage = null;
         window.removeEventListener('keydown', handleKeydown);
         window.removeEventListener('keyup', handleKeyup);
         canvas.removeEventListener('click', handleCanvasClick);
@@ -5374,11 +5905,29 @@
          */
         difficulty = 1;
 
-        constructor(pStageData, pTargetCombo, pSuppliedNextPuyos, difficulty) {
+        /**
+         * 사용하는 색상 목록
+         * @type {string[]}
+         */
+        usingColors = ['red', 'blue', 'green', 'yellow'];
+
+        /**
+         * @param {Object} pStageData 피버 필드 배치
+         * @param {number} pTargetCombo 목표 연쇄 수
+         * @param {string[]} pSuppliedNextPuyos 지급할 다음 뿌요
+         * @param {number} difficulty 패턴 난이도
+         * @param {string[]} [pUsingColors] 패턴에서 사용하는 일반 뿌요 색상 목록
+         */
+        constructor(pStageData, pTargetCombo, pSuppliedNextPuyos, difficulty, pUsingColors) {
             if(typeof(pStageData) != 'undefined') this.stageData = pStageData;
             if(typeof(pTargetCombo) != 'undefined') this.targetCombo = pTargetCombo;
             if(typeof(pSuppliedNextPuyos) != 'undefined') this.suppliedNextPuyos = pSuppliedNextPuyos;
             if(typeof(difficulty) != 'undefined') this.difficulty = difficulty;
+            const patternColors = [...new Set([
+                ...(this.stageData.puyos || []).map((puyo) => puyo.color),
+                ...this.suppliedNextPuyos
+            ].filter((color) => color && color !== 'garbage'))];
+            this.usingColors = Array.isArray(pUsingColors) ? [...new Set(pUsingColors.filter((color) => color && color !== 'garbage'))] : patternColors;
         }
     }
 
@@ -5791,7 +6340,7 @@
         }
 
         /**
-         * 안드로말리우스 외형 - 갑각형 악마 모습을 그린다.
+         * 뱀을 두른 정의의 백작 안드로말리우스의 일반·위기·우는 표정을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -5816,6 +6365,10 @@
             drawingContext.ellipse(0, size * 0.18, size * 0.56, size * 0.63, 0, 0, Math.PI * 2);
             drawingContext.fill();
             drawingContext.stroke();
+            // 도둑을 찾아주는 정의의 백작답게 한 손의 작은 뱀과 별 배지를 더한다.
+            drawingContext.strokeStyle = '#b7d65b'; drawingContext.lineWidth = 5 * scale;
+            drawingContext.beginPath(); drawingContext.arc(size * 0.58, size * 0.22, size * 0.18, 0, Math.PI * 1.8); drawingContext.stroke();
+            drawingContext.fillStyle = '#f3d46b'; drawingContext.beginPath(); drawingContext.arc(-size * 0.3, size * 0.35, size * 0.1, 0, Math.PI * 2); drawingContext.fill();
             drawingContext.fillStyle = '#9ad9b8';
             drawingContext.beginPath();
             drawingContext.arc(-size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
@@ -5939,7 +6492,7 @@
         }
 
         /**
-         * 가상의 인간형 몬스터 단탈리온을 캔버스 도형으로 그린다.
+         * 여러 얼굴과 비밀의 책을 가진 단탈리온의 일반·위기·우는 표정을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -5985,6 +6538,9 @@
             drawingContext.strokeStyle = '#bd87e8';
             drawingContext.lineWidth = 3 * scale;
             drawingContext.stroke();
+            // '서로 다름'의 공작: 옆에 겹친 작은 얼굴들과 미래를 적은 책을 보인다.
+            drawingContext.fillStyle = '#48506d'; [-size * 0.48, size * 0.48].forEach((faceX) => { drawingContext.beginPath(); drawingContext.arc(faceX, -size * 0.21, size * 0.16, 0, Math.PI * 2); drawingContext.fill(); });
+            drawingContext.fillStyle = '#d8a968'; drawingContext.fillRect(-size * 0.34, size * 0.36, size * 0.68, size * 0.2); drawingContext.strokeStyle = '#563068'; drawingContext.strokeRect(-size * 0.34, size * 0.36, size * 0.68, size * 0.2);
             drawingContext.fillStyle = '#ef5350';
             drawingContext.beginPath();
             drawingContext.moveTo(-size * 0.27, -size * 0.6);
@@ -6387,7 +6943,7 @@
             return this.attackPlacement ? this.attackPlacement.rotation : super.chooseRotate(player);
         }
 
-        /** 세레의 기존 초상화 */
+        /** 은빛 말과 그리폰 날개, 차가운 눈을 귀엽게 표현한 세레의 세 표정 */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
             const size = 72 * scale;
             drawingContext.save();
@@ -6401,6 +6957,8 @@
             drawingContext.strokeStyle = '#83d5df'; drawingContext.lineWidth = 3 * scale; drawingContext.stroke();
             drawingContext.fillStyle = '#d7e8da'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.1, size * 0.48, size * 0.58, 0, 0, Math.PI * 2); drawingContext.fill();
             drawingContext.strokeStyle = '#35556a'; drawingContext.lineWidth = 4 * scale; drawingContext.stroke();
+            drawingContext.fillStyle = '#ecd98b'; drawingContext.beginPath(); drawingContext.moveTo(-size * 0.37, -size * 0.37); drawingContext.quadraticCurveTo(0, -size * 0.75, size * 0.37, -size * 0.37); drawingContext.lineTo(0, -size * 0.48); drawingContext.closePath(); drawingContext.fill();
+            drawingContext.fillStyle = '#c7d0dc'; [-1, 1].forEach((direction) => { drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.42, size * 0.15); drawingContext.lineTo(direction * size * 0.82, -size * 0.25); drawingContext.lineTo(direction * size * 0.58, size * 0.45); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke(); });
             drawingContext.fillStyle = '#77cfd5'; drawingContext.beginPath(); drawingContext.arc(0, size * 0.66, size * 0.23, 0, Math.PI * 2); drawingContext.fill();
             drawingContext.strokeStyle = '#d7ffff'; drawingContext.lineWidth = 2 * scale; drawingContext.stroke();
             const eyeY = -size * 0.16;
@@ -6501,7 +7059,7 @@
         }
 
         /**
-         * 박쥐 날개와 별 장식을 가진 데카라비아의 일반·위기·패배 표정을 그린다.
+         * 오망성과 작은 새 사역마를 가진 데카라비아의 일반·위기·우는 표정을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -6545,6 +7103,7 @@
             drawingContext.closePath();
             drawingContext.fill();
             drawingContext.stroke();
+            drawingContext.fillStyle = '#b9d7f0'; drawingContext.beginPath(); drawingContext.arc(size * 0.72, -size * 0.42, size * 0.11, 0, Math.PI * 2); drawingContext.fill(); drawingContext.beginPath(); drawingContext.moveTo(size * 0.75, -size * 0.42); drawingContext.lineTo(size * 0.98, -size * 0.52); drawingContext.lineTo(size * 0.78, -size * 0.3); drawingContext.closePath(); drawingContext.fill();
 
             if (expression === 'defeated') {
                 drawingContext.strokeStyle = '#f3edff';
@@ -6658,7 +7217,7 @@
         }
 
         /**
-         * 왕관과 망토를 두른 벨리알의 일반·위기·패배 표정을 그린다.
+         * 깨진 천사 후광과 망토를 두른 벨리알의 일반·위기·우는 표정을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -6698,6 +7257,7 @@
             drawingContext.closePath();
             drawingContext.fill();
             drawingContext.stroke();
+            drawingContext.strokeStyle = '#f0d88a'; drawingContext.lineWidth = 3 * scale; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.78, size * 0.28, Math.PI * 0.12, Math.PI * 0.88); drawingContext.stroke();
 
             if (expression === 'defeated') {
                 drawingContext.strokeStyle = '#413047';
@@ -6739,13 +7299,14 @@
     }
 
     /**
-     * 암두시아스는 향후 AI를 추가할 출시 예정 적이다.
+     * 암두시아스는 유니콘 작곡가 콘셉트의 기본 제공 적이다. 벨리알의 예고쌍·싹쓸이 평가를
+     * 이어받되 한 단계 높은 5연쇄 목표와 피버 전용 우선순위를 사용한다.
      */
-    class Amdusias extends BundledEnemy {
+    class Amdusias extends Belial {
         constructor() {
             super();
             this.sortPriority = 6;
-            this.notAvail = true;
+            this.notAvail = false;
         }
 
         /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @type {string}  */
@@ -6758,23 +7319,31 @@
             return '암두시아스';
         }
 
-        /**
-         * TODO: 암두시아스 전용 AI를 구현한다. 현재는 처음 생성된 위치·회전을 유지한 채 자연 낙하한다.
-         * @param {PlayerState} player 자동 조작할 플레이어
-         * @returns {number} 목표 X 좌표
-         */
+        /** @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 목표 X 좌표 */
         chooseTarget(player) {
-            return player.active ? player.active.x : 2;
-        }
-
-        /** @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 목표 회전값 */
-        chooseRotate(player) {
-            return 0;
-        }
-
-        /** TODO: 암두시아스 전용 빠른 하강 정책을 구현한다. @returns {boolean} */
-        useFastDown() {
-            return false;
+            const safeSimulations = this.getSafeSimulations(player);
+            const simulations = safeSimulations.length ? safeSimulations : player.aiSimulations;
+            const occupancy = this.getFieldOccupancy(player);
+            const score = (simulation) => simulation.attack + (simulation.previewAttack || 0) + (simulation.previewCombo || 0) * 1000;
+            // 피버 중에는 패배 위치보다 먼저 최고 공격력을 찾는다. enterControl도 이 우선순위를 보존한다.
+            let selected = this.selectSimulation(simulations, (simulation) => simulation.allClear === true, score);
+            if (!selected && game?.feverRule && this.isInFever(player)) {
+                selected = this.selectSimulation(simulations, () => true, score);
+            // 피버 룰에서 피버가 아닐 때 DAMAGE가 있으면 생존 다음 우선순위로 공격력 시뮬레이션을 쓴다.
+            } else if (!selected && game?.feverRule && player.damage > 0) {
+                selected = this.selectSimulation(simulations, () => true, score);
+            } else if (!selected && occupancy >= 0.8) {
+                selected = this.selectSimulation(simulations, (simulation) => simulation.combo >= 1, score);
+            } else if (!selected && occupancy >= 0.5) {
+                selected = this.selectSimulation(simulations, (simulation) => simulation.combo === 2, score);
+                if (!selected) selected = this.selectSimulation(simulations, (simulation) => simulation.combo >= 2, (simulation) => score(simulation) - Math.abs(simulation.combo - 2) * 10000);
+            } else if (!selected) {
+                // 필드가 30% 이하이거나 중간 높이일 때는 5연쇄 기회까지 터뜨리지 않고 쌓는다.
+                selected = this.selectSimulation(simulations, (simulation) => simulation.combo >= 5, score);
+                if (!selected) selected = this.selectBuildSimulation(player, simulations);
+            }
+            this.attackPlacement = selected || findBestAttackPlacement(player, player.active ? player.active.x : 2, null, !this.isInFever(player));
+            return this.attackPlacement.x;
         }
 
         /**
@@ -6791,12 +7360,16 @@
             drawingContext.save();
             drawingContext.translate(centerX, centerY);
             drawingContext.lineJoin = 'round';
+            // 뿔과 음표 리본으로 유니콘 작곡가를 귀엽게 각색한다.
             drawingContext.fillStyle = '#405270'; drawingContext.strokeStyle = '#1a263b'; drawingContext.lineWidth = 4 * scale;
             drawingContext.beginPath();
             drawingContext.moveTo(-size * 0.56, size * 0.72); drawingContext.lineTo(-size * 0.78, -size * 0.12); drawingContext.lineTo(-size * 0.34, size * 0.06);
             drawingContext.lineTo(0, -size * 0.48); drawingContext.lineTo(size * 0.34, size * 0.06); drawingContext.lineTo(size * 0.78, -size * 0.12); drawingContext.lineTo(size * 0.56, size * 0.72);
             drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
             drawingContext.fillStyle = '#c7d7ed'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.06, size * 0.43, size * 0.5, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#f1d77a'; drawingContext.beginPath(); drawingContext.moveTo(0, -size * 0.52); drawingContext.lineTo(size * 0.12, -size * 0.98); drawingContext.lineTo(size * 0.24, -size * 0.46); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.strokeStyle = '#f1d77a'; drawingContext.lineWidth = 3 * scale; drawingContext.beginPath(); drawingContext.arc(-size * 0.62, size * 0.23, size * 0.18, -Math.PI * 0.7, Math.PI * 0.35); drawingContext.stroke();
+            drawingContext.fillStyle = '#f1d77a'; drawingContext.beginPath(); drawingContext.arc(-size * 0.51, size * 0.17, size * 0.05, 0, Math.PI * 2); drawingContext.fill();
             const eyeY = -size * 0.11;
             if (expression === 'defeated') {
                 // 우는 표정
@@ -6810,6 +7383,49 @@
                 if (expression === 'crisis') drawingContext.arc(0, size * 0.28, size * 0.11, Math.PI, Math.PI * 2);
                 else drawingContext.arc(0, size * 0.18, size * 0.12, 0, Math.PI);
                 drawingContext.stroke();
+            }
+            drawingContext.restore();
+        }
+    }
+
+    /**
+     * 키마리스는 검은 말의 용감한 보물 탐험가를 귀엽게 각색한 출시 예정 적이다.
+     * TODO: 전용 AI가 출시될 때까지는 자연 낙하만 유지한다.
+     */
+    class Kimaris extends BundledEnemy {
+        constructor() {
+            super();
+            this.sortPriority = 7;
+            this.notAvail = true;
+        }
+
+        getClassType() { return 'Kimaris'; }
+        getName() { return '키마리스'; }
+
+        /** TODO: 키마리스 전용 탐색·공격 AI를 구현한다. @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 현재 열 */
+        chooseTarget(player) { return player.active ? player.active.x : 2; }
+        /** @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 회전하지 않는 기본값 */
+        chooseRotate() { return 0; }
+        /** TODO: 키마리스 전용 빠른 하강 정책을 구현한다. @returns {boolean} */
+        useFastDown() { return false; }
+
+        /** 검은 말 갈기·보물 지도·용감한 표정의 일반·위기·우는 초상화를 그린다. */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            const size = 72 * scale;
+            drawingContext.save(); drawingContext.translate(centerX, centerY); drawingContext.lineJoin = 'round';
+            drawingContext.fillStyle = '#252332'; drawingContext.strokeStyle = '#10101b'; drawingContext.lineWidth = 4 * scale;
+            drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.18, size * 0.61, size * 0.57, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            [-1, 1].forEach((direction) => { drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.28, -size * 0.2); drawingContext.lineTo(direction * size * 0.53, -size * 0.74); drawingContext.lineTo(direction * size * 0.05, -size * 0.45); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke(); });
+            drawingContext.fillStyle = '#5b473d'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.04, size * 0.43, size * 0.46, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#c89043'; drawingContext.fillRect(size * 0.23, size * 0.27, size * 0.29, size * 0.22); drawingContext.strokeRect(size * 0.23, size * 0.27, size * 0.29, size * 0.22);
+            const eyeY = -size * 0.1;
+            if (expression === 'defeated') {
+                drawingContext.fillStyle = '#72cdeb'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.16, size * 0.075, size * 0.19, 0, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.strokeStyle = '#231c28'; drawingContext.beginPath(); drawingContext.arc(0, size * 0.26, size * 0.12, Math.PI, Math.PI * 2); drawingContext.stroke();
+            } else {
+                drawingContext.fillStyle = expression === 'crisis' ? '#f3dc75' : '#f5f0dc'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.09, expression === 'crisis' ? size * 0.14 : size * 0.1, 0, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.fillStyle = '#161522'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.04, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.strokeStyle = '#231c28'; drawingContext.beginPath(); if (expression === 'crisis') drawingContext.arc(0, size * 0.25, size * 0.12, Math.PI, Math.PI * 2); else drawingContext.arc(0, size * 0.14, size * 0.12, 0, Math.PI); drawingContext.stroke();
             }
             drawingContext.restore();
         }
@@ -6847,7 +7463,8 @@
         createOpponentEntry(() => new Seere()),
         createOpponentEntry(() => new Decarabia()),
         createOpponentEntry(() => new Belial()),
-        createOpponentEntry(() => new Amdusias())
+        createOpponentEntry(() => new Amdusias()),
+        createOpponentEntry(() => new Kimaris())
     );
 
     /**
@@ -6899,8 +7516,10 @@
         getSelectedDifficulty,
         getSelectedColorCount,
         getScreenState,
+        getSimulatorState,
         getGameState,
         getNextPairs,
+        showMessage,
         initialize,
         destroy,
         get commonSoundPool() { return commonSoundPool; }
