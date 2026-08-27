@@ -3,6 +3,13 @@
  * Copyright 2026 HJOW
  * Licensed under the Apache License, Version 2.0.
  * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * 뿌요 W 2D 버전 스크립트
+ *     의존성
+ *         puyow.css  (캔버스 영역이 화면 100%를 차지하게 만들고, 기본 뒷배경 색 변경)
+ *         notice.txt (선택사항으로 공지사항 존재 시 이 곳에 기재)
+ *     html 예제
+ *         puyow.html
  */
 
 (() => {
@@ -27,9 +34,9 @@
     /** 패배 연출에서 필드 밖으로 더 떨어뜨릴 줄 수다. @type {number} */
     const DEFEAT_EXTRA_FALL_ROWS = 5;
     /** 메인 메뉴에서 갤러리 대상이 떠다니는 최소 개수다. 이 값을 바꾸면 추첨 범위가 함께 바뀐다. @type {number} */
-    const MAIN_MENU_GALLERY_FLOATER_MIN_COUNT = 3;
+    const MAIN_MENU_GALLERY_FLOATER_MIN_COUNT = 7;
     /** 메인 메뉴에서 갤러리 대상이 떠다니는 최대 개수다. 최소 개수 이상으로 설정한다. @type {number} */
-    const MAIN_MENU_GALLERY_FLOATER_MAX_COUNT = 5;
+    const MAIN_MENU_GALLERY_FLOATER_MAX_COUNT = 10;
     /** 필드 표시 영역의 위쪽 논리 좌표다. @type {number} */
     const FIELD_TOP = 102;
     /** 필드 표시 영역의 아래쪽 논리 좌표다. @type {number} */
@@ -40,10 +47,16 @@
     const FIELD_RIGHT = 864;
     /** 일반 뿌요에 사용할 색상 이름 목록이다. @type {string[]} */
     const COLORS = ['red', 'green', 'yellow', 'blue', 'purple'];
+    /** 시뮬레이터와 갤러리에서만 사용하는 얼음질 방해뿌요 식별자다. @type {string} */
+    const HARD_GARBAGE = 'hardGarbage';
+    /** 시뮬레이터에서만 사용하는 철구뿌요 식별자다. @type {string} */
+    const IRON_PUYO = 'iron';
+    /** 한 번에 파괴한 딱딱뿌요 한 개당 점수용 일반 뿌요 수에 적용할 배율이다. @type {number} */
+    const HARD_GARBAGE_SCORE_MULTIPLIER = 2;
     /** 색상 이름별 캔버스 색상값이다. @type {Record<string, string>} */
     const PALETTE = {
         red: '#ef5350', green: '#66bb6a', yellow: '#f7c843', blue: '#42a5f5', purple: '#ab73e8',
-        garbage: '#d3edf4',
+        garbage: '#d3edf4', hardGarbage: '#9cdef6', iron: '#000000',
         // 예고뿌요 전용 색상이다. 방해뿌요의 투명도·눈·반사선은 그대로 두고 본체 색만 바꾼다.
         warningInk: '#30363f'
     };
@@ -83,10 +96,14 @@
     const ALL_CLEAR_DAMAGE = 12;
     /** 싹쓸이 성공 시 즉시 더할 점수다. @type {number} */
     const ALL_CLEAR_POINT = 100;
+    /** 싹쓸이 디버깅 시 기본 룰·피버 룰·연습의 첫 두 뿌요 쌍을 같은 색으로 고정할지 여부다. @type {boolean} */
+    const DEBUG_CLEAR_RULE_MODE = false;
     /** 싹쓸이 황금빛 필드 효과의 지속 시간(ms)이다. @type {number} */
     const ALL_CLEAR_EFFECT_DURATION = 1000;
     /** 연속 피버 모드의 시작 목표 연쇄 수다. @type {number} */
     const CONTINUOUS_FEVER_INITIAL_TARGET_COMBO = 5;
+    /** 피버 패턴으로 내려갈 수 있는 목표 연쇄 최솟값이다. 시작 목표는 5연쇄를 유지한다. @type {number} */
+    const FEVER_MIN_TARGET_COMBO = 4;
     /** 연속 피버 모드의 시작 제한 시간(ms)이다. @type {number} */
     const CONTINUOUS_FEVER_INITIAL_TIME = 60000;
     /** 연속 피버 모드의 목표 연쇄 최댓값이다. @type {number} */
@@ -121,6 +138,10 @@
     const VIRTUAL_DPAD = { x: 118, y: 610, size: 52 };
     /** 가상 컨트롤러 Z, X, ESC 버튼의 중심 좌표와 크기다. @type {{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number},radius:number}} */
     const VIRTUAL_ACTION_BUTTONS = { z: { x: 1090, y: 590 }, x: { x: 1170, y: 590 }, escape: { x: 1170, y: 500 }, radius: 31 };
+    /** 크게 표시할 때 방향 패드를 이동할 논리 좌표다. CSS 최대 폭 1280px 화면에서는 화면 픽셀과 같다. @type {{x:number,y:number}} */
+    const VIRTUAL_LARGE_DPAD_OFFSET = { x: 40, y: -40 };
+    /** 크게 표시할 때 버튼끼리 겹치지 않도록 벌린 우측 조작 버튼 중심 좌표다. @type {{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number}}} */
+    const VIRTUAL_LARGE_ACTION_BUTTONS = { z: { x: 1060, y: 590 }, x: { x: 1200, y: 610 }, escape: { x: 1200, y: 480 } };
     /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_EASY = null;
     /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
@@ -149,6 +170,12 @@
     ];
     /** 새 설정 및 잘못된 저장값에 사용할 기본 그래픽 품질이다. @type {'low'} */
     const DEFAULT_GRAPHICS_QUALITY = 'low';
+    /** 가상 컨트롤러 표시 크기 선택지다. 기존 true/false 저장값은 normal/none으로 이관한다. @type {{key:'none'|'normal'|'large', label:string}[]} */
+    const VIRTUAL_CONTROLLER_OPTIONS = [
+        { key: 'none', label: '없음' },
+        { key: 'normal', label: '보통' },
+        { key: 'large', label: '크게' }
+    ];
     /** 브라우저에서 직접 호출할 OpenAI Responses API 주소다. @type {string} */
     const OPENAI_RESPONSES_API_URL = 'https://api.openai.com/v1/responses';
     /** API 테스트 응답에 요구할 최소 JSON Schema다. @type {object} */
@@ -161,6 +188,7 @@
     /** 한국어 원문을 키로 하는 화면 문구 번역표다. @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
+            '뿌요 W': 'Puyo W',
             '초기화': 'Reset', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Reset all settings for this game?', '초기화 중...': 'Resetting...',
             '게임 시작': 'Game Start', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
             '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '시작': 'Start', '이전': 'Back',
@@ -171,13 +199,14 @@
             '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Play', '그리기': 'Draw', '시뮬레이션': 'Simulation', '지우개': 'Eraser',
             'JSON복사': 'Copy JSON', 'JSON넣기': 'Paste JSON', '배치가 클립보드에 복사됨': 'Layout copied to clipboard',
             '클립보드 복사 실패': 'Clipboard copy failed', 'JSON 파싱 실패': 'JSON parsing failed', '배치 JSON을 입력하세요.': 'Enter layout JSON.',
-            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '켜기': 'On', '끄기': 'Off', '그래픽 설정': 'Graphics quality', '낮음': 'Low', '중간': 'Medium', '높음': 'High', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
-            '플레이 방법': 'How to Play', '갤러리': 'Gallery', '대상 유형': 'Category', '대상': 'Item', '일반뿌요': 'Puyos', '예고뿌요': 'Warning Puyos', '적': 'Enemies', '빨강뿌요': 'Red Puyo', '초록뿌요': 'Green Puyo', '노랑뿌요': 'Yellow Puyo', '파랑뿌요': 'Blue Puyo', '보라뿌요': 'Purple Puyo', '방해뿌요': 'Garbage Puyo', '작은 예고뿌요': 'Small Warning Puyo', '큰 예고뿌요': 'Large Warning Puyo', '빨간 돌': 'Red Rock', '별': 'Star', '태양': 'Sun', '중성자별': 'Neutron Star', '블랙홀': 'Black Hole', '위기': 'Crisis', '다시보기': 'Replay',
+            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '없음': 'None', '크게': 'Large', '그래픽 설정': 'Graphics quality', '낮음': 'Low', '중간': 'Medium', '높음': 'High', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
+            '플레이 방법': 'How to Play', '갤러리': 'Gallery', '대상 유형': 'Category', '대상': 'Item', '일반뿌요': 'Puyos', '예고뿌요': 'Warning Puyos', '적': 'Enemies', '빨강뿌요': 'Red Puyo', '초록뿌요': 'Green Puyo', '노랑뿌요': 'Yellow Puyo', '파랑뿌요': 'Blue Puyo', '보라뿌요': 'Purple Puyo', '방해뿌요': 'Garbage Puyo', '딱딱뿌요': 'Hard Puyo', '작은 예고뿌요': 'Small Warning Puyo', '큰 예고뿌요': 'Large Warning Puyo', '빨간 돌': 'Red Rock', '별': 'Star', '태양': 'Sun', '중성자별': 'Neutron Star', '블랙홀': 'Black Hole', '위기': 'Crisis', '다시보기': 'Replay',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Use Left, Right, and Down to move puyos. Rotate them with Z and X.', '좌우 방향키로 뿌요 이동': 'Move puyos with Left and Right.', '아래 방향키로 빨리 떨어뜨리기': 'Use Down to drop faster.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Press Z to rotate left.', 'X 키를 눌러 우측으로 뿌요 회전': 'Press X to rotate right.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Connect four or more puyos of the same color to pop them and attack.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Four puyos of the same color connect to attack the opponent.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Garbage puyos next to popping puyos disappear too.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Chain popping puyos for a stronger attack.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'An all clear gives you a powerful attack.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'You lose when puyos stay at the end of the third row.',
             '은하': 'Galaxy',
             '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)'
         },
         ja: {
+            '뿌요 W': 'Puyo W',
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
             '게임 시작': 'ゲーム開始', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '시작': '開始', '이전': '戻る',
@@ -188,13 +217,14 @@
             '시뮬레이터': 'シミュレーター', '팔레트': 'パレット', '재생': '再生', '그리기': '描画', '시뮬레이션': 'シミュレーション', '지우개': '消しゴム',
             'JSON복사': 'JSONをコピー', 'JSON넣기': 'JSONを貼り付け', '배치가 클립보드에 복사됨': '配置をクリップボードにコピーしました',
             '클립보드 복사 실패': 'クリップボードへのコピーに失敗しました', 'JSON 파싱 실패': 'JSONの解析に失敗しました', '배치 JSON을 입력하세요.': '配置JSONを入力してください。',
-            '설정': '設定', '배경음악 볼륨': 'BGM音量', '효과음 볼륨': '効果音量', '가상 컨트롤러 사용': '仮想コントローラーを使用', '켜기': 'オン', '끄기': 'オフ', '그래픽 설정': 'グラフィック設定', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AIプロバイダー', 'AI API 키': 'AI APIキー', '사용 모델명': 'モデル名', 'AI API 테스트': 'AI APIテスト', '저장': '保存', '취소': 'キャンセル', '이 API키는 브라우저에만 저장됩니다.': 'このAPIキーはこのブラウザにのみ保存されます。', '사운드 관련 기능은 추후 제공 예정': 'サウンド機能は今後のアップデートで提供予定です。', '설정 저장 후 다시 시도해 주세요': '設定を保存してから、もう一度お試しください。', 'AI API 테스트 요청 중...': 'AI APIをテスト中…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI APIテスト成功（JSONスキーマ検証: 合格）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI APIテスト失敗（JSONスキーマ検証: 失敗）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI APIテスト失敗（JSONスキーマ検証: 未実施）',
-            '플레이 방법': '遊び方', '갤러리': 'ギャラリー', '대상 유형': '種類', '대상': '対象', '일반뿌요': 'ぷよ', '예고뿌요': '予告ぷよ', '적': '敵', '빨강뿌요': '赤ぷよ', '초록뿌요': '緑ぷよ', '노랑뿌요': '黄ぷよ', '파랑뿌요': '青ぷよ', '보라뿌요': '紫ぷよ', '방해뿌요': 'おじゃまぷよ', '작은 예고뿌요': '小さい予告ぷよ', '큰 예고뿌요': '大きい予告ぷよ', '빨간 돌': '赤い岩', '별': '星', '태양': '太陽', '중성자별': '中性子星', '블랙홀': 'ブラックホール', '위기': 'ピンチ', '다시보기': 'もう一度見る',
+            '설정': '設定', '배경음악 볼륨': 'BGM音量', '효과음 볼륨': '効果音量', '가상 컨트롤러 사용': '仮想コントローラーを使用', '없음': 'なし', '크게': '大きく', '그래픽 설정': 'グラフィック設定', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AIプロバイダー', 'AI API 키': 'AI APIキー', '사용 모델명': 'モデル名', 'AI API 테스트': 'AI APIテスト', '저장': '保存', '취소': 'キャンセル', '이 API키는 브라우저에만 저장됩니다.': 'このAPIキーはこのブラウザにのみ保存されます。', '사운드 관련 기능은 추후 제공 예정': 'サウンド機能は今後のアップデートで提供予定です。', '설정 저장 후 다시 시도해 주세요': '設定を保存してから、もう一度お試しください。', 'AI API 테스트 요청 중...': 'AI APIをテスト中…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI APIテスト成功（JSONスキーマ検証: 合格）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI APIテスト失敗（JSONスキーマ検証: 失敗）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI APIテスト失敗（JSONスキーマ検証: 未実施）',
+            '플레이 방법': '遊び方', '갤러리': 'ギャラリー', '대상 유형': '種類', '대상': '対象', '일반뿌요': 'ぷよ', '예고뿌요': '予告ぷよ', '적': '敵', '빨강뿌요': '赤ぷよ', '초록뿌요': '緑ぷよ', '노랑뿌요': '黄ぷよ', '파랑뿌요': '青ぷよ', '보라뿌요': '紫ぷよ', '방해뿌요': 'おじゃまぷよ', '딱딱뿌요': 'かたぷよ', '작은 예고뿌요': '小さい予告ぷよ', '큰 예고뿌요': '大きい予告ぷよ', '빨간 돌': '赤い岩', '별': '星', '태양': '太陽', '중성자별': '中性子星', '블랙홀': 'ブラックホール', '위기': 'ピンチ', '다시보기': 'もう一度見る',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '左右・下キーでぷよを動かし、Z・Xキーで回転できます。', '좌우 방향키로 뿌요 이동': '左右キーでぷよを移動', '아래 방향키로 빨리 떨어뜨리기': '下キーで速く落下', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Zキーで左回転', 'X 키를 눌러 우측으로 뿌요 회전': 'Xキーで右回転', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '同じ色のぷよを4個以上つなげると消して攻撃できます。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '同じ色のぷよ4個がつながり、相手を攻撃できます。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'ぷよが消えると、隣接するおじゃまぷよも消えます。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '連鎖でぷよを消すと、より強く攻撃できます。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消しをすると強力な攻撃ができます。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '3段目の端にぷよが残ると負けです。',
             '은하': '銀河',
             '음소거(꺼짐)' : 'ミュート（オフ）', '음소거(활성)' : 'ミュート（オン）'
         },
         zh: {
+            '뿌요 W': 'Puyo W',
             '초기화': '重置', '이 게임의 모든 설정을 초기화하시겠습니까?': '要重置此游戏的所有设置吗？', '초기화 중...': '正在重置…',
             '게임 시작': '开始游戏', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '简单', '보통': '普通', '어려움': '困难', '안드로말리우스': '安德罗马利乌斯', '단탈리온': '丹塔利昂', '세레': '西瑞', '데카라비亚': '德卡拉比亚', '벨리알': '贝利亚尔', '시작': '开始', '이전': '返回',
@@ -206,8 +236,8 @@
             '시뮬레이터': '模拟器', '팔레트': '调色板', '재생': '播放', '그리기': '绘制', '시뮬레이션': '模拟', '지우개': '橡皮擦',
             'JSON복사': '复制 JSON', 'JSON넣기': '粘贴 JSON', '배치가 클립보드에 복사됨': '布局已复制到剪贴板',
             '클립보드 복사 실패': '复制到剪贴板失败', 'JSON 파싱 실패': 'JSON 解析失败', '배치 JSON을 입력하세요.': '请输入布局 JSON。',
-            '설정': '设置', '배경음악 볼륨': '背景音乐音量', '효과음 볼륨': '音效音量', '가상 컨트롤러 사용': '使用虚拟控制器', '켜기': '开启', '끄기': '关闭', '그래픽 설정': '图形设置', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AI 服务提供商', 'AI API 키': 'AI API 密钥', '사용 모델명': '模型名称', 'AI API 테스트': 'AI API 测试', '저장': '保存', '취소': '取消', '이 API키는 브라우저에만 저장됩니다.': '此 API 密钥仅存储在此浏览器中。', '사운드 관련 기능은 추후 제공 예정': '声音功能将在未来更新中提供。', '설정 저장 후 다시 시도해 주세요': '请先保存设置后再试。', 'AI API 테스트 요청 중...': '正在测试 AI API…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API 测试成功（JSON 架构检查：通过）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API 测试失败（JSON 架构检查：失败）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API 测试失败（JSON 架构检查：未执行）',
-            '플레이 방법': '玩法说明', '갤러리': '图鉴', '대상 유형': '类别', '대상': '对象', '일반뿌요': '普通噗哟', '예고뿌요': '预告噗哟', '적': '敌人', '빨강뿌요': '红噗哟', '초록뿌요': '绿噗哟', '노랑뿌요': '黄噗哟', '파랑뿌요': '蓝噗哟', '보라뿌요': '紫噗哟', '방해뿌요': '垃圾噗哟', '작은 예고뿌요': '小型预告噗哟', '큰 예고뿌요': '大型预告噗哟', '빨간 돌': '红色岩石', '별': '星星', '태양': '太阳', '중성자별': '中子星', '블랙홀': '黑洞', '위기': '危机', '다시보기': '再次观看',
+            '설정': '设置', '배경음악 볼륨': '背景音乐音量', '효과음 볼륨': '音效音量', '가상 컨트롤러 사용': '使用虚拟控制器', '없음': '无', '크게': '大', '그래픽 설정': '图形设置', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AI 服务提供商', 'AI API 키': 'AI API 密钥', '사용 모델명': '模型名称', 'AI API 테스트': 'AI API 测试', '저장': '保存', '취소': '取消', '이 API키는 브라우저에만 저장됩니다.': '此 API 密钥仅存储在此浏览器中。', '사운드 관련 기능은 추후 제공 예정': '声音功能将在未来更新中提供。', '설정 저장 후 다시 시도해 주세요': '请先保存设置后再试。', 'AI API 테스트 요청 중...': '正在测试 AI API…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API 测试成功（JSON 架构检查：通过）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API 测试失败（JSON 架构检查：失败）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API 测试失败（JSON 架构检查：未执行）',
+            '플레이 방법': '玩法说明', '갤러리': '图鉴', '대상 유형': '类别', '대상': '对象', '일반뿌요': '普通噗哟', '예고뿌요': '预告噗哟', '적': '敌人', '빨강뿌요': '红噗哟', '초록뿌요': '绿噗哟', '노랑뿌요': '黄噗哟', '파랑뿌요': '蓝噗哟', '보라뿌요': '紫噗哟', '방해뿌요': '垃圾噗哟', '딱딱뿌요': '硬噗哟', '작은 예고뿌요': '小型预告噗哟', '큰 예고뿌요': '大型预告噗哟', '빨간 돌': '红色岩石', '별': '星星', '태양': '太阳', '중성자별': '中子星', '블랙홀': '黑洞', '위기': '危机', '다시보기': '再次观看',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '使用左右和下方向键移动噗哟，使用 Z、X 键旋转。', '좌우 방향키로 뿌요 이동': '用左右方向键移动噗哟', '아래 방향키로 빨리 떨어뜨리기': '用下方向键快速落下', 'Z 키를 눌러 좌측으로 뿌요 회전': '按 Z 键向左旋转', 'X 키를 눌러 우측으로 뿌요 회전': '按 X 键向右旋转', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '连接四个或更多相同颜色的噗哟即可消除并攻击对手。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '四个相同颜色的噗哟连接后可以攻击对手。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': '消除噗哟时，相邻的垃圾噗哟也会一起消失。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '连续消除噗哟可以发动更强的攻击。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消时可以发动强力攻击。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '噗哟停留在第 3 行末端时会失败。',
             '은하': '银河',
             '음소거(꺼짐)' : '静音（关）', '음소거(활성)' : '静音（开）'
@@ -220,6 +250,12 @@
     let context = null;
     /** 라이브러리가 초기화되어 이벤트와 게임 루프가 연결됐는지 여부다. @type {boolean} */
     let initialized = false;
+    /** 초기 타이틀에서 탑재된 피버 스테이지 검증을 마쳤는지 여부다. @type {boolean} */
+    let feverStageValidationComplete = false;
+    /** 피버 스테이지 검증 전에 받은 초기 타이틀 진입 입력을 보관한다. @type {boolean} */
+    let pendingInitialTitleEntry = false;
+    /** 초기 타이틀에서 피버 스테이지 검증을 시작할 타이머다. @type {number|null} */
+    let feverStageValidationTimer = null;
     /** initialize()가 canvas를 직접 만들어 연결했는지 여부다. @type {boolean} */
     let createdCanvas = false;
     /** 다음 게임 프레임 취소에 사용할 요청 식별자다. @type {number|null} */
@@ -244,7 +280,7 @@
     let settingsEditing = false;
     /** 현재 편집 중인 문자열의 커서 위치다. @type {number} */
     let settingsCursor = 0;
-    /** 화면 최상단에 표시할 외부 메시지다. @type {{message:string,color:string,elapsed:number,duration:number}|null} */
+    /** 화면 최상단에 표시할 외부 메시지다. @type {{message:string,color:string,backgroundColor:string|null,elapsed:number,duration:number}|null} */
     let screenMessage = null;
     /** 외부 메시지가 유지 시간 뒤 사라지는 데 걸리는 시간(ms)이다. @type {number} */
     const SCREEN_MESSAGE_FADE_DURATION = 500;
@@ -322,7 +358,7 @@
     let languageCode = 'ko';
     /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>}} */
     let store = createInitialStore();
-    /** 메인 화면 안내문 파일 경로 또는 절대 URL이다. 상대경로는 webpuyo.js 기준으로 해석한다. @type {string} */
+    /** 메인 화면 안내문 파일 경로 또는 절대 URL이다. 상대경로는 puyow.js 기준으로 해석한다. @type {string} */
     let noticeUrl = 'notice.txt';
     /** 공통 사운드 풀 @type {CommonSoundPool} */
     let commonSoundPool = null;
@@ -398,7 +434,7 @@
             clearList: [],
             clearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             feverClearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
-            settings: { musicVolume: 100, effectsVolume: 100, virtualController: false, graphicsQuality: DEFAULT_GRAPHICS_QUALITY, aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
+            settings: { musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
             muted: false
         };
     }
@@ -407,6 +443,13 @@
     function getGraphicsQualityOption(quality) {
         return GRAPHICS_QUALITY_OPTIONS.find((option) => option.key === quality)
             || GRAPHICS_QUALITY_OPTIONS.find((option) => option.key === DEFAULT_GRAPHICS_QUALITY);
+    }
+
+    /** 저장된 가상 컨트롤러 크기값을 유효한 선택지로 정규화한다. @param {unknown} value 저장값 @returns {'none'|'normal'|'large'} */
+    function getVirtualControllerOption(value) {
+        if (value === true) return 'normal';
+        if (value === false) return 'none';
+        return VIRTUAL_CONTROLLER_OPTIONS.some((option) => option.key === value) ? value : 'none';
     }
 
     /**
@@ -518,13 +561,16 @@
     function getInitialGalleryPreviewItems() {
         const centerX = WIDTH / 2;
         const centerY = 380;
-        const puyos = [...COLORS, 'garbage'].map((color) => ({
-            draw: () => {
-                context.save(); context.translate(centerX, centerY); context.scale(5.6, 5.6);
-                drawPuyo(-CELL / 2, -CELL / 2, color);
-                context.restore();
-            }
-        }));
+        const puyos = [...COLORS, 'garbage'].map((color) => {
+            const puyo = getPuyo(color);
+            return {
+                draw: () => {
+                    context.save(); context.translate(centerX, centerY); context.scale(5.6, 5.6);
+                    puyo.draw(context, -CELL / 2, -CELL / 2, CELL);
+                    context.restore();
+                }
+            };
+        });
         const warnings = [...WARNING_PUYO_CLASSES]
             .sort((left, right) => left.unitCount - right.unitCount)
             .map((WarningPuyoType) => new WarningPuyoType())
@@ -579,24 +625,43 @@
         return shuffled;
     }
 
+    /** 메인 메뉴 떠다니는 후보를 추첨한다. 일반 뿌요는 중복하지 않고 방해·예고뿌요는 복원 추첨한다. @param {{allowDuplicate:boolean}[]} candidates 추첨 후보 @param {number} count 떠다닐 개수 @returns {{allowDuplicate:boolean}[]} 선택된 후보 */
+    function selectMainMenuGalleryFloaters(candidates, count) {
+        const uniqueCandidates = shuffleGalleryValues(candidates.filter((candidate) => !candidate.allowDuplicate));
+        const repeatableCandidates = candidates.filter((candidate) => candidate.allowDuplicate);
+        const selected = [];
+        while (selected.length < count && (uniqueCandidates.length || repeatableCandidates.length)) {
+            const pool = [...uniqueCandidates, ...repeatableCandidates];
+            const selectedCandidate = pool[Math.floor(randomFloat() * pool.length)];
+            selected.push(selectedCandidate);
+            if (!selectedCandidate.allowDuplicate) uniqueCandidates.splice(uniqueCandidates.indexOf(selectedCandidate), 1);
+        }
+        return selected;
+    }
+
     /** 메인 메뉴에서 떠다닐 갤러리 일반·방해·예고뿌요를 새로 추첨한다. @returns {void} */
     function createMainMenuGalleryFloaters() {
         try {
             loadGalleryUnlocks();
-            const candidates = [...COLORS, 'garbage'].map((color) => ({
-                radius: CELL * 0.5,
-                draw: () => drawPuyo(-CELL / 2, -CELL / 2, color, 0.82)
-            }));
+            const candidates = [...COLORS, 'garbage'].map((color) => {
+                const puyo = getPuyo(color);
+                return {
+                    radius: CELL * 0.5,
+                    allowDuplicate: color === 'garbage',
+                    draw: () => puyo.draw(context, -CELL / 2, -CELL / 2, CELL, 0.82)
+                };
+            });
             WARNING_PUYO_CLASSES.forEach((WarningPuyoType) => {
                 const unit = new WarningPuyoType();
                 if (galleryUnlocks.warning.includes(unit.type)) candidates.push({
                     radius: CELL * 0.62,
+                    allowDuplicate: true,
                     draw: () => unit.draw(context, -CELL / 2, -CELL / 2, CELL)
                 });
             });
             const floaterCount = MAIN_MENU_GALLERY_FLOATER_MIN_COUNT
                 + Math.floor(randomFloat() * (MAIN_MENU_GALLERY_FLOATER_MAX_COUNT - MAIN_MENU_GALLERY_FLOATER_MIN_COUNT + 1));
-            const selected = shuffleGalleryValues(candidates).slice(0, Math.min(candidates.length, floaterCount));
+            const selected = selectMainMenuGalleryFloaters(candidates, floaterCount);
             mainMenuGalleryFloaters = selected.map((item) => {
                 const radius = item.radius;
                 const speed = 0.012 + randomFloat() * 0.012;
@@ -693,7 +758,8 @@
             store = { clearList: [...new Set(parsed.clearList)], clearListByDifficulty, feverClearListByDifficulty, settings: {
                 musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.settings.musicVolume,
                 effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.settings.effectsVolume,
-                virtualController: settings.virtualController === true,
+                // 이전 켜기/끄기 불리언 저장값도 각각 보통/없음으로 유지한다.
+                virtualController: getVirtualControllerOption(settings.virtualController),
                 graphicsQuality: getGraphicsQualityOption(settings.graphicsQuality).key,
                 // 이전 Google 설정값은 더 이상 선택할 수 없으므로 기본 제공자인 OpenAI로 정규화한다.
                 aiProvider: AI_SERVICE_PROVIDERS.includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
@@ -707,14 +773,14 @@
     }
 
     /**
-     * noticeUrl을 읽는다. 상대경로는 webpuyo.js와 같은 경로를 기준으로 해석하고,
+     * noticeUrl을 읽는다. 상대경로는 puyow.js와 같은 경로를 기준으로 해석하고,
      * 절대 URL은 지정한 주소 그대로 사용한다. 읽기 실패 시 빈 안내문으로 둔다.
      * @returns {Promise<void>}
      */
     async function loadNotice() {
         if (typeof fetch !== 'function' || typeof document === 'undefined') return;
         try {
-            const script = [...(document.scripts || [])].find((element) => /webpuyo(?:\.min)?\.js(?:[?#]|$)/.test(element.src));
+            const script = [...(document.scripts || [])].find((element) => /puyow(?:\.min)?\.js(?:[?#]|$)/.test(element.src));
             const scriptUrl = script?.src ? new URL(script.src, document.baseURI) : new URL(document.baseURI);
             const notiUrl = new URL(noticeUrl, scriptUrl);
             const response = await fetch(notiUrl.href);
@@ -728,7 +794,7 @@
 
     /**
      * 메인 화면에서 읽을 공지사항 파일 경로 또는 URL을 설정한다.
-     * 상대경로는 webpuyo.js와 같은 경로를 기준으로 해석한다.
+     * 상대경로는 puyow.js와 같은 경로를 기준으로 해석한다.
      * @param {string} noticeFile 공지사항 파일명, 상대경로 또는 절대 URL
      * @returns {void}
      */
@@ -1225,9 +1291,15 @@
         resetVirtualControllerInput();
         const opponent = soloMode ? { createController: () => new PracticeEnemy() } : OPPONENTS[selectedOpponent];
         const controller = opponent.createController();
-        // 피버 룰과 연속 피버는 3색을 지원하지 않는다. 메뉴를 거치지 않는 호출에도 적용한다.
-        const difficulty = (continuousFever || feverRule) ? Math.max(1, selectedDifficulty) : selectedDifficulty;
+        const difficulty = selectedDifficulty;
         const colors = DIFFICULTIES[difficulty].colors;
+        const pairQueue = Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors));
+        // 연속 피버는 전용 스테이지에서 시작하므로 싹쓸이 디버그 고정 지급 대상에서 제외한다.
+        if (DEBUG_CLEAR_RULE_MODE && !continuousFever) {
+            const debugColor = randomColor(colors);
+            pairQueue[0] = [debugColor, debugColor];
+            pairQueue[1] = [debugColor, debugColor];
+        }
         const practicePlayer = new PlayerState(controller.getName(), FIELD_RIGHT, controller, colors);
         const players = [new PlayerState('PLAYER 1', FIELD_LEFT, null, colors), practicePlayer];
         if (feverRule) players.forEach((player) => { player.fever = createFeverRuleState(); });
@@ -1265,7 +1337,7 @@
             aiDifficulty: selectedAiDifficulty,
             themeController: controller,
             pairQueueColors: colors,
-            pairQueue: Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors)),
+            pairQueue,
             energyTransfers: [],
             players
         };
@@ -1273,7 +1345,7 @@
         syncBackgroundMusic();
     }
 
-    /** 연속 피버 모드를 선택된 4색 또는 5색, 목표 5연쇄, 60초 상태로 시작한다. @returns {void} */
+    /** 연속 피버 모드를 선택된 3색·4색·5색, 목표 5연쇄, 60초 상태로 시작한다. @returns {void} */
     function startContinuousFeverGame() {
         startGame(false, true);
     }
@@ -1335,6 +1407,73 @@
             [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
         }
         return result;
+    }
+
+    /**
+     * 피버 스테이지의 색상 선언과 실제 패턴·지급 색상이 일치하는지 확인한다.
+     * @param {FeverStageState} stage 검사할 피버 스테이지
+     * @returns {string|null} 잘못된 이유, 올바르면 null
+     */
+    function getFeverStageValidationError(stage) {
+        if (!(stage instanceof FeverStageState)) return 'FeverStageState 인스턴스가 아닙니다.';
+        if (!Array.isArray(stage.usingColors) || stage.usingColors.length === 0) return 'usingColors가 비어 있거나 배열이 아닙니다.';
+        const invalidUsingColorIndex = stage.usingColors.findIndex((color) => !COLORS.includes(color));
+        if (invalidUsingColorIndex >= 0) return `usingColors에 지원하지 않는 색상 "${stage.usingColors[invalidUsingColorIndex]}"이 있습니다.`;
+        const usingColorSet = new Set(stage.usingColors);
+        if (!stage.stageData || !Array.isArray(stage.stageData.puyos)) return 'stageData.puyos가 배열이 아닙니다.';
+        const invalidPuyoIndex = stage.stageData.puyos.findIndex((puyo) => !puyo || typeof puyo.color !== 'string'
+            || (puyo.color !== 'garbage' && !usingColorSet.has(puyo.color)));
+        if (invalidPuyoIndex >= 0) {
+            const invalidColor = stage.stageData.puyos[invalidPuyoIndex]?.color;
+            return typeof invalidColor === 'string'
+                ? `stageData에 usingColors에 없는 색상 "${invalidColor}"이 있습니다.`
+                : `stageData.puyos[${invalidPuyoIndex}]의 색상 정보가 올바르지 않습니다.`;
+        }
+        if (!Array.isArray(stage.suppliedNextPuyos) || stage.suppliedNextPuyos.length !== 2) return 'suppliedNextPuyos에는 색상 두 개가 있어야 합니다.';
+        const invalidSuppliedColorIndex = stage.suppliedNextPuyos.findIndex((color) => !usingColorSet.has(color));
+        if (invalidSuppliedColorIndex >= 0) return `suppliedNextPuyos에 usingColors에 없는 색상 "${stage.suppliedNextPuyos[invalidSuppliedColorIndex]}"이 있습니다.`;
+        return null;
+    }
+
+    /** 잘못된 피버 스테이지와 제외 이유를 개발자 콘솔에 출력한다. @param {FeverStageState} stage 잘못된 객체 @param {number} index 탑재 목록 순번 @param {string} reason 제외 이유 @returns {void} */
+    function reportInvalidFeverStage(stage, index, reason) {
+        console.error(`잘못된 FeverStageState 객체를 탑재 목록에서 제외했습니다. (index: ${index}, 이유: ${reason})`, stage);
+    }
+
+    /** 탑재된 피버 스테이지 전체를 한 번 검사하고 잘못된 객체를 목록에서 제거한다. @returns {void} */
+    function validateLoadedFeverStages() {
+        const invalidStages = [];
+        FEVER_STAGES.forEach((stage, index) => {
+            const reason = getFeverStageValidationError(stage);
+            if (reason) invalidStages.push({ stage, index, reason });
+        });
+        invalidStages.forEach(({ stage, index, reason }) => reportInvalidFeverStage(stage, index, reason));
+        for (let index = invalidStages.length - 1; index >= 0; index -= 1) FEVER_STAGES.splice(invalidStages[index].index, 1);
+    }
+
+    /** 첫 타이틀을 표시한 뒤 피버 스테이지 검사를 예약한다. 검사 전 입력은 완료 뒤 메인 메뉴 진입으로 이어진다. @returns {void} */
+    function scheduleFeverStageValidation() {
+        feverStageValidationComplete = false;
+        if (feverStageValidationTimer !== null) window.clearTimeout(feverStageValidationTimer);
+        feverStageValidationTimer = window.setTimeout(() => {
+            feverStageValidationTimer = null;
+            validateLoadedFeverStages();
+            feverStageValidationComplete = true;
+            if (pendingInitialTitleEntry && menuScreen === 'initialTitle') enterMainMenu();
+        }, 0);
+    }
+
+    /** 피버 스테이지 검사가 끝난 뒤 등록되는 객체도 같은 규칙으로 한 번 검사해 추가한다. @param {FeverStageState} stage 등록할 객체 @returns {boolean} 등록 여부 */
+    function addFeverStageState(stage) {
+        if (feverStageValidationComplete) {
+            const reason = getFeverStageValidationError(stage);
+            if (reason) {
+                reportInvalidFeverStage(stage, FEVER_STAGES.length, reason);
+                return false;
+            }
+        }
+        FEVER_STAGES.push(stage);
+        return true;
     }
 
     /** 사용 가능한 색 수, 목표 연쇄, 다음 뿌요의 동색 여부가 일치하는 피버 스테이지를 무작위로 고른다. 색 수 필터는 목표 연쇄 필터보다 먼저 적용한다. @param {number} targetCombo 목표 연쇄 @param {string[]} nextPair 바로 지급할 뿌요 @param {string[]} availableColors 게임 색상 목록 @returns {FeverStageState} 선택된 피버 스테이지 */
@@ -1745,7 +1884,7 @@
             const color = board[y][x];
             const key = `${x},${y}`;
             // 빈칸, 방해뿌요, 이미 조사한 색 뿌요는 탐색 대상에서 제외한다.
-            if (!color || color === 'garbage' || visited.has(key)) continue;
+            if (!COLORS.includes(color) || visited.has(key)) continue;
             const group = [];
             const queue = [[x, y]];
             visited.add(key);
@@ -1775,9 +1914,9 @@
         return CHAIN_BONUS[CHAIN_BONUS.length - 1] * (combo - 18);
     }
 
-    /** 연결 그룹 크기에 맞는 점수 보너스를 구한다. @param {number} groupSize 연결된 뿌요 수 @returns {number} 연결 보너스 */
-    function getConnectionBonus(groupSize) {
-        return CONNECTION_BONUS[Math.min(Math.max(0, groupSize), CONNECTION_BONUS.length - 1)];
+    /** 한 폭발 단계에서 사라진 일반 뿌요 수에 맞는 점수 보너스를 구한다. @param {number} puyoCount 폭발한 일반 뿌요 수 @returns {number} 연결 보너스 */
+    function getConnectionBonus(puyoCount) {
+        return CONNECTION_BONUS[Math.min(Math.max(0, puyoCount), CONNECTION_BONUS.length - 1)];
     }
 
     /** 동시에 폭발한 색 수에 맞는 점수 보너스를 구한다. @param {number} colorCount 서로 다른 색 수 @returns {number} 색수 보너스 */
@@ -1787,17 +1926,59 @@
     }
 
     /**
-     * 한 폭발 단계의 점수 증가량을 계산한다. 인접 방해뿌요는 점수용 뿌요 수에 포함하지 않는다.
+     * 폭발한 색 뿌요에 인접한 방해뿌요의 제거·약화 결과를 계산한다.
+     * 딱딱뿌요는 인접 폭발이 한 개면 일반 방해뿌요로 약화되고, 두 개 이상이면 즉시 파괴된다.
+     * @param {(string|null)[][]} board 처리 전 보드
+     * @param {number[][]} exploding 이번 단계에 폭발한 색 뿌요 좌표
+     * @returns {{removed:Map<string,{x:number,y:number,color:string}>,degradedHardGarbage:{x:number,y:number}[],brokenHardGarbageCount:number}}
+     */
+    function getExplosionResolution(board, exploding) {
+        const removed = new Map(exploding.map(([x, y]) => [`${x},${y}`, { x, y, color: board[y][x] }]));
+        const hardGarbageHits = new Map();
+        exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
+            const nextX = x + deltaX;
+            const nextY = y + deltaY;
+            if (nextX < 0 || nextX >= COLUMNS || nextY < 0 || nextY >= ROWS) return;
+            const color = board[nextY][nextX];
+            const key = `${nextX},${nextY}`;
+            if (color === 'garbage') removed.set(key, { x: nextX, y: nextY, color });
+            else if (color === HARD_GARBAGE) hardGarbageHits.set(key, (hardGarbageHits.get(key) || 0) + 1);
+        }));
+        const degradedHardGarbage = [];
+        let brokenHardGarbageCount = 0;
+        hardGarbageHits.forEach((hitCount, key) => {
+            const [x, y] = key.split(',').map(Number);
+            if (hitCount >= 2) {
+                removed.set(key, { x, y, color: HARD_GARBAGE });
+                brokenHardGarbageCount += 1;
+            } else {
+                degradedHardGarbage.push({ x, y });
+            }
+        });
+        return { removed, degradedHardGarbage, brokenHardGarbageCount };
+    }
+
+    /** 폭발 영향 계산 결과를 보드에 반영한다. @param {(string|null)[][]} board 대상 보드 @param {{removed:Map<string,{x:number,y:number,color:string}>,degradedHardGarbage:{x:number,y:number}[]}} resolution 폭발 영향 @returns {void} */
+    function applyExplosionResolution(board, resolution) {
+        resolution.degradedHardGarbage.forEach(({ x, y }) => { board[y][x] = 'garbage'; });
+        resolution.removed.forEach(({ x, y }) => { board[y][x] = null; });
+    }
+
+    /**
+     * 한 폭발 단계의 점수 증가량을 계산한다. 동시에 폭발한 일반 뿌요 수 전체로 연결 보너스를 계산하고,
+     * 인접 방해뿌요는 점수용 뿌요 수에 포함하지 않는다.
      * @param {{color:string, cells:number[][]}[]} explosionGroups 이번 단계에 폭발한 색 뿌요 연결 그룹
      * @param {number} combo 현재 연쇄 수
+     * @param {number} [brokenHardGarbageCount=0] 이번 단계에서 한 번에 파괴한 딱딱뿌요 수
      * @returns {number} 이번 폭발 단계의 점수 증가량
      */
-    function calculateExplosionPoint(explosionGroups, combo) {
+    function calculateExplosionPoint(explosionGroups, combo, brokenHardGarbageCount = 0) {
         const puyoCount = explosionGroups.reduce((total, group) => total + group.cells.length, 0);
-        const connectionBonus = explosionGroups.reduce((total, group) => total + getConnectionBonus(group.cells.length), 0);
+        const connectionBonus = getConnectionBonus(puyoCount);
         const colorBonus = getColorBonus(new Set(explosionGroups.map((group) => group.color)).size);
         const bonus = Math.max(1, getChainBonus(combo) + connectionBonus + colorBonus);
-        return puyoCount * bonus * 10;
+        const hardGarbageMultiplier = brokenHardGarbageCount * HARD_GARBAGE_SCORE_MULTIPLIER + 1;
+        return puyoCount * hardGarbageMultiplier * bonus * 10;
     }
 
     /** 게임 경과 시간에 해당하는 마진 레이트를 구한다. @param {number} elapsed 게임 경과 시간(ms) @returns {number} 마진 레이트 */
@@ -1867,25 +2048,14 @@
         while (true) {
             const exploding = findExplosionsOnBoard(simulatedBoard);
             if (!exploding.length) return isDefeatBoard(simulatedBoard);
-            const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
-            exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
-                const nextX = x + deltaX;
-                const nextY = y + deltaY;
-                if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && simulatedBoard[nextY][nextX] === 'garbage') {
-                    removed.add(`${nextX},${nextY}`);
-                }
-            }));
-            removed.forEach((key) => {
-                const [x, y] = key.split(',').map(Number);
-                simulatedBoard[y][x] = null;
-            });
+            applyExplosionResolution(simulatedBoard, getExplosionResolution(simulatedBoard, exploding));
             simulatedBoard = collapseBoard(simulatedBoard);
         }
     }
 
-    /** 현재 규칙의 패배 칸에 뿌요가 있는지 확인한다. @param {(string|null)[][]} board 검사할 필드 @returns {boolean} 패배 여부 */
+    /** 현재 규칙의 패배 칸에 뿌요가 있는지 확인한다. 피버 룰과 연속 피버는 (2, 11) 및 (3, 11)을 검사한다. @param {(string|null)[][]} board 검사할 필드 @returns {boolean} 패배 여부 */
     function isDefeatBoard(board) {
-        return board[11][2] !== null || (game?.feverRule === true && board[11][3] !== null);
+        return board[11][2] !== null || (usesSecondDefeatCell() && board[11][3] !== null);
     }
 
     /**
@@ -1907,16 +2077,7 @@
         while (true) {
             const exploding = findExplosionsOnBoard(board);
             if (!exploding.length) return board;
-            const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
-            exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
-                const nextX = x + deltaX;
-                const nextY = y + deltaY;
-                if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && board[nextY][nextX] === 'garbage') removed.add(`${nextX},${nextY}`);
-            }));
-            removed.forEach((key) => {
-                const [x, y] = key.split(',').map(Number);
-                board[y][x] = null;
-            });
+            applyExplosionResolution(board, getExplosionResolution(board, exploding));
             board = collapseBoard(board);
         }
     }
@@ -2015,18 +2176,10 @@
             const explosionGroups = findExplosionGroupsOnBoard(board);
             if (!explosionGroups.length) return attack;
             const exploding = explosionGroups.flatMap((group) => group.cells);
+            const resolution = getExplosionResolution(board, exploding);
             combo += 1;
-            attack += calculateExplosionAttack(calculateExplosionPoint(explosionGroups, combo));
-            const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
-            exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
-                const nextX = x + deltaX;
-                const nextY = y + deltaY;
-                if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && board[nextY][nextX] === 'garbage') removed.add(`${nextX},${nextY}`);
-            }));
-            removed.forEach((key) => {
-                const [x, y] = key.split(',').map(Number);
-                board[y][x] = null;
-            });
+            attack += calculateExplosionAttack(calculateExplosionPoint(explosionGroups, combo, resolution.brokenHardGarbageCount));
+            applyExplosionResolution(board, resolution);
             board = collapseBoard(board);
         }
     }
@@ -2055,16 +2208,7 @@
             const exploding = findExplosionsOnBoard(board);
             if (!exploding.length) return combo;
             combo += 1;
-            const removed = new Set(exploding.map(([x, y]) => `${x},${y}`));
-            exploding.forEach(([x, y]) => DIRECTIONS.forEach(([deltaX, deltaY]) => {
-                const nextX = x + deltaX;
-                const nextY = y + deltaY;
-                if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && board[nextY][nextX] === 'garbage') removed.add(`${nextX},${nextY}`);
-            }));
-            removed.forEach((key) => {
-                const [x, y] = key.split(',').map(Number);
-                board[y][x] = null;
-            });
+            applyExplosionResolution(board, getExplosionResolution(board, exploding));
             board = collapseBoard(board);
         }
     }
@@ -2080,19 +2224,10 @@
         const exploding = explosionGroups.flatMap((group) => group.cells);
         // 이번 단계에 폭발할 색 뿌요가 있으면 점수와 공격을 처리한다.
         if (exploding.length) {
-            const removed = new Map(exploding.map(([x, y]) => [`${x},${y}`, { x, y, color: player.board[y][x] }]));
-            exploding.forEach(([x, y]) => {
-                DIRECTIONS.forEach(([deltaX, deltaY]) => {
-                    const nextX = x + deltaX;
-                    const nextY = y + deltaY;
-                    if (nextX >= 0 && nextX < COLUMNS && nextY >= 0 && nextY < ROWS && player.board[nextY][nextX] === 'garbage') {
-                        removed.set(`${nextX},${nextY}`, { x: nextX, y: nextY, color: 'garbage' });
-                    }
-                });
-            });
+            const resolution = getExplosionResolution(player.board, exploding);
             player.combo += 1;
             playComboSounds(player);
-            const point = calculateExplosionPoint(explosionGroups, player.combo);
+            const point = calculateExplosionPoint(explosionGroups, player.combo, resolution.brokenHardGarbageCount);
             player.point += point;
             player.attack += calculateExplosionAttack(point);
             // 피버 룰에서는 상쇄할 DAMAGE 또는 상대 ATTACK이 있으면 폭발 공격을 최소 1 이상 보장한다.
@@ -2102,8 +2237,8 @@
             const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
             sendAttackEnergy(player, opponent, center.x / exploding.length, center.y / exploding.length);
             player.comboPopups.push({ x: center.x / exploding.length, y: center.y / exploding.length, combo: player.combo, elapsed: 0 });
-            removed.forEach((puyo) => { player.board[puyo.y][puyo.x] = null; });
-            player.effects = { cells: [...removed.values()], elapsed: 0, duration: 430 };
+            applyExplosionResolution(player.board, resolution);
+            player.effects = { cells: [...resolution.removed.values()], elapsed: 0, duration: 430 };
             player.phase = 'burst';
             player.phaseTimer = 0;
             return;
@@ -2174,6 +2309,12 @@
         }
     }
 
+    /**
+     * 연쇄 및 에너지 연출이 끝난 뒤 남은 정수 공격력을 상대 피해로 확정한다.
+     * @param {PlayerState} player 공격을 보낸 플레이어
+     * @param {PlayerState} opponent 공격을 받을 플레이어
+     * @returns {void}
+     */
     function deliverFinalAttackEnergy(player, opponent) {
         const amount = Math.floor(player.attack);
         if (amount < 1) return;
@@ -2193,17 +2334,41 @@
         player.lastAttackTransfer = null;
     }
 
+    /**
+     * 싹쓸이 보너스 피해를 상대 필드로 전달하는 에너지 연출을 등록한다.
+     * @param {PlayerState} player 싹쓸이를 달성한 플레이어
+     * @param {PlayerState} opponent 보너스를 받을 상대 플레이어
+     * @param {number} amount 전달할 피해량
+     * @returns {void}
+     */
     function sendAllClearEnergy(player, opponent, amount) {
         if (amount < 1) return;
         if (game?.feverRule && player.fever?.active) player.fever.opponentGarbageDropBaseline = opponent.garbageDropCount;
         queueEnergyTransfer(player, opponent, { x: player.fieldX + COLUMNS * CELL / 2, y: FIELD_TOP + VISIBLE_ROWS * CELL / 2 }, 0, 0, amount);
     }
 
+    /**
+     * 현재 게임 또는 시뮬레이터가 관리하는 에너지 전달 목록을 가져온다.
+     * @returns {Array<object>|null} 에너지 전달 목록. 게임과 시뮬레이터가 모두 없으면 null
+     */
     function getEnergyTransfers() {
         if (game?.energyTransfers) return game.energyTransfers;
         return simulator?.energyTransfers || null;
     }
 
+    /**
+     * 공격 상쇄 또는 피해 전달에 사용할 에너지 이동 경로를 생성한다.
+     * @param {PlayerState} player 에너지를 보낸 플레이어
+     * @param {PlayerState} opponent 에너지를 받을 플레이어
+     * @param {{x:number,y:number}} source 에너지 출발 논리 좌표
+     * @param {number} cancelledDamage 상쇄한 내 피해량
+     * @param {number} cancelledAttack 상쇄한 상대 공격력
+     * @param {number} delivered 즉시 전달할 피해량
+     * @param {boolean} [travelToOpponent=false] 피해량이 없어도 상대방까지 이동할지 여부
+     * @param {number|null} [previewAmount=null] 이동 중 표시할 공격 예고량
+     * @param {boolean} [startsAtExplosion=false] 폭발 지점에서 바로 출발하는지 여부
+     * @returns {object|null|undefined} 생성한 에너지 정보. 경로 또는 전달 목록이 없으면 null 또는 undefined
+     */
     function queueEnergyTransfer(player, opponent, source, cancelledDamage, cancelledAttack, delivered, travelToOpponent = false, previewAmount = null, startsAtExplosion = false) {
         const energyTransfers = getEnergyTransfers();
         if (!energyTransfers) return;
@@ -2218,10 +2383,21 @@
         return energy;
     }
 
+    /**
+     * 현재 플레이어 필드에 표시할 방해뿌요 예고 총량을 계산한다.
+     * @param {PlayerState} player 예고를 표시할 플레이어
+     * @param {PlayerState} opponent 상대 플레이어
+     * @returns {number} 표시할 예고 총량
+     */
     function warningAmount(player, opponent) {
         return player.damage + opponent.announcedAttack + player.warningReductionDelay;
     }
 
+    /**
+     * 에너지 전달 애니메이션을 진행하고, 도착한 피해·상쇄 효과를 반영한다.
+     * @param {number} delta 이전 프레임 이후 경과 시간(ms)
+     * @returns {void}
+     */
     function updateEnergyTransfers(delta) {
         const energyTransfers = getEnergyTransfers();
         if (!energyTransfers?.length) return;
@@ -2259,6 +2435,10 @@
         else if (simulator?.energyTransfers === energyTransfers) simulator.energyTransfers = remainingTransfers;
     }
 
+    /**
+     * 아직 재생 중이거나 사라지는 중인 에너지 전달이 있는지 확인한다.
+     * @returns {boolean} 대기 중인 에너지 전달 존재 여부
+     */
     function hasPendingEnergyTransfers() {
         return Boolean(getEnergyTransfers()?.length);
     }
@@ -2364,14 +2544,12 @@
         }
     }
 
-    /** 완료한 연쇄와 싹쓸이 여부로 다음 목표 연쇄를 계산한다. @param {number} target 현재 목표 @param {number} combo 완료 연쇄 @param {boolean} allClear 싹쓸이 여부 @returns {number} 5~12 범위의 다음 목표 */
-    function calculateContinuousFeverTarget(target, combo, allClear) {
-        let nextTarget = target;
-        if (combo <= target - 2) nextTarget = Math.max(CONTINUOUS_FEVER_INITIAL_TARGET_COMBO, target - 1);
-        else if (combo === target) nextTarget = target + 1;
-        else if (combo > target) nextTarget = combo + 1;
+    /** 완료한 연쇄와 싹쓸이 여부로 다음 목표 연쇄를 계산한다. @param {number} combo 완료 연쇄 @param {boolean} allClear 싹쓸이 여부 @returns {number} 4~12 범위의 다음 목표 */
+    function calculateContinuousFeverTarget(combo, allClear) {
+        // 연속 피버와 피버 상태의 다음 목표는 항상 완료 연쇄 + 1부터 계산한다.
+        let nextTarget = combo + 1;
         if (allClear) nextTarget += 2;
-        return Math.min(CONTINUOUS_FEVER_MAX_TARGET_COMBO, nextTarget);
+        return Math.max(FEVER_MIN_TARGET_COMBO, Math.min(CONTINUOUS_FEVER_MAX_TARGET_COMBO, nextTarget));
     }
 
     /** 배치 시작 전 또는 배치·연쇄 처리 도중 피버 시간이 만료되었는지 확인한다. @param {object} feverState 피버 상태 @returns {boolean} 종료 처리 필요 여부 */
@@ -2396,7 +2574,7 @@
             return;
         }
         const combo = game.fever.pendingCombo;
-        game.fever.targetCombo = calculateContinuousFeverTarget(game.fever.targetCombo, combo, game.fever.pendingAllClear);
+        game.fever.targetCombo = calculateContinuousFeverTarget(combo, game.fever.pendingAllClear);
         if (game.fever.leftTime > 0) {
             const comboTimeBonus = Math.floor(combo / 2) * 1000;
             const allClearTimeBonus = game.fever.pendingAllClear ? CONTINUOUS_FEVER_ALL_CLEAR_TIME_BONUS : 0;
@@ -2429,7 +2607,7 @@
         const combo = state.pendingCombo;
         state.opponentGarbageDropBaseline = null;
         const previousTarget = state.targetCombo;
-        state.targetCombo = calculateContinuousFeverTarget(previousTarget, combo, state.pendingAllClear);
+        state.targetCombo = calculateContinuousFeverTarget(combo, state.pendingAllClear);
         if (isFeverTimeExpired(state)) {
             finishPlayerFever(player, 'B');
             return;
@@ -2487,7 +2665,8 @@
         if (player.phase === 'feverAllClearWait') {
             if (player.allClearEffectElapsed > 0 || hasPendingEnergyTransfers()) return;
             player.fever.pendingAllClearStage = false;
-            prepareFeverTurn(player, player.fever, FEVER_INITIAL_TARGET_COMBO, false);
+            // 피버 룰의 일반 필드 싹쓸이는 피버에 진입하지 않았을 때 4연쇄 패턴을 지급한다.
+            prepareFeverTurn(player, player.fever, FEVER_MIN_TARGET_COMBO, false);
             enterControl(player);
             return;
         }
@@ -2597,7 +2776,7 @@
                 player.board = player.board.map((row) => row.map((cell) => cell === 'garbage' ? null : cell));
                 player.damage = 0;
             }
-            // 피버 룰은 두 패배 칸을, 다른 규칙은 기존 중앙 패배 칸을 검사한다.
+            // 피버 룰과 연속 피버는 두 패배 칸을, 다른 규칙은 기존 중앙 패배 칸을 검사한다.
             if (isDefeatBoard(player.board)) {
                 startDefeatSequence(player, opponent);
             } else {
@@ -2637,6 +2816,10 @@
                         }
                     } else {
                         if (state.pendingActivation) {
+                            // 일반 필드 싹쓸이로 마지막 전등이 켜진 경우에는 피버 스테이지를 고르기 전에
+                            // 현재 목표에 2연쇄 보너스를 적용한다. 피버 진입이 새 스테이지를 즉시 준비하므로
+                            // 일반 필드에 별도의 싹쓸이 스테이지를 배치하지 않는다.
+                            if (triggeredAllClear) state.targetCombo = Math.min(CONTINUOUS_FEVER_MAX_TARGET_COMBO, state.targetCombo + 2);
                             activatePlayerFever(player);
                             return;
                         }
@@ -2653,37 +2836,134 @@
     }
 
     /**
-     * 눈이 있는 색 뿌요 또는 반투명 방해뿌요를 그린다.
+     * 일반·방해뿌요가 공유하는 종류 식별자, 이름, 렌더링 규약이다.
+     * 하위 클래스는 고유한 모양을 그리거나 공통 슬라임 렌더링을 상속한다.
+     */
+    class Puyo {
+        /** @param {string} type 보드와 외부 상태에 쓰는 종류 식별자 @param {string} name 표시할 이름 */
+        constructor(type, name) {
+            /** 보드와 외부 상태에 유지하는 종류 식별자다. @type {string} */
+            this.type = type;
+            /** 갤러리 등에 표시할 기본 이름이다. @type {string} */
+            this.name = name;
+        }
+
+        /** 뿌요 이름을 반환한다. @returns {string} */
+        getName() { return this.name; }
+
+        /** 뿌요 하나를 그린다. 하위 클래스에서 모양을 구현한다. @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @param {number} scale 셀 대비 크기 비율 @param {boolean} slimeDetails 반사광과 눈 위치를 기본 슬라임처럼 그릴지 여부 @returns {void} */
+        draw(drawingContext, x, y, cellSize, scale = 1, slimeDetails = true) {}
+    }
+
+    /** 일반 색 뿌요와 둥근 방해뿌요가 공유하는 슬라임 렌더링 클래스다. */
+    class SlimePuyo extends Puyo {
+        /** @param {string} type 종류 식별자 @param {string} name 표시할 이름 @param {string} paletteKey PALETTE 색상 키 @param {boolean} garbageStyle 방해뿌요식 반투명 테두리를 쓸지 여부 */
+        constructor(type, name, paletteKey, garbageStyle = false) {
+            super(type, name);
+            this.paletteKey = paletteKey;
+            this.garbageStyle = garbageStyle;
+        }
+
+        /** 공통 슬라임 모양을 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @param {number} scale 셀 대비 크기 비율 @param {boolean} slimeDetails 반사광과 눈 위치를 기본 슬라임처럼 그릴지 여부 @returns {void} */
+        draw(drawingContext, x, y, cellSize, scale = 1, slimeDetails = true) {
+            const radius = cellSize * 0.42 * scale;
+            drawingContext.save();
+            drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
+            drawingContext.fillStyle = PALETTE[this.paletteKey];
+            drawingContext.globalAlpha = this.garbageStyle ? 0.75 : 1;
+            drawingContext.beginPath();
+            drawingContext.arc(0, 0, radius, 0, Math.PI * 2);
+            drawingContext.fill();
+            drawingContext.lineWidth = 2;
+            drawingContext.strokeStyle = this.garbageStyle ? '#f4fbff' : 'rgba(255,255,255,0.45)';
+            drawingContext.stroke();
+            // 일반/방해뿌요는 물방울 같은 슬라임이라는 인상을 주는 작은 반사광을 넣는다.
+            // 예고뿌요(태양, 별, 돌 등)는 각 WarningPuyo 하위 클래스에서 별도로 그린다.
+            if (slimeDetails) {
+                drawingContext.fillStyle = 'rgba(255, 255, 255, 0.72)';
+                drawingContext.beginPath();
+                // 긴 축을 기존 방향에서 90도 돌려 표면을 따라 반사되게 한다.
+                drawingContext.ellipse(radius * 0.43, -radius * 0.43, radius * 0.13, radius * 0.22, 0.55 + Math.PI / 2, 0, Math.PI * 2);
+                drawingContext.fill();
+            }
+            drawPuyoEyes(drawingContext, radius, slimeDetails ? radius * 0.08 : 0);
+            drawingContext.restore();
+        }
+    }
+
+    /** 빨강 일반뿌요다. */
+    class RedPuyo extends SlimePuyo { constructor() { super('red', '빨강뿌요', 'red'); } }
+    /** 초록 일반뿌요다. */
+    class GreenPuyo extends SlimePuyo { constructor() { super('green', '초록뿌요', 'green'); } }
+    /** 노랑 일반뿌요다. */
+    class YellowPuyo extends SlimePuyo { constructor() { super('yellow', '노랑뿌요', 'yellow'); } }
+    /** 파랑 일반뿌요다. */
+    class BluePuyo extends SlimePuyo { constructor() { super('blue', '파랑뿌요', 'blue'); } }
+    /** 보라 일반뿌요다. */
+    class PurplePuyo extends SlimePuyo { constructor() { super('purple', '보라뿌요', 'purple'); } }
+    /** 둥근 방해뿌요다. */
+    class GarbagePuyo extends SlimePuyo { constructor() { super('garbage', '방해뿌요', 'garbage', true); } }
+    /** 시뮬레이터에서만 사용할 수 있고 폭발하지 않는 철구뿌요다. */
+    class IronPuyo extends SlimePuyo { constructor() { super(IRON_PUYO, '철구뿌요', 'iron'); } }
+
+    /** 딱딱뿌요의 얼음 결정 모양을 그리는 방해뿌요 클래스다. */
+    class HardGarbagePuyo extends Puyo {
+        /** 딱딱뿌요를 만든다. */
+        constructor() { super(HARD_GARBAGE, '딱딱뿌요'); }
+
+        /** 얼음 결정 모양의 딱딱뿌요를 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @param {number} scale 셀 대비 크기 비율 @returns {void} */
+        draw(drawingContext, x, y, cellSize, scale = 1) {
+            const radius = cellSize * 0.42 * scale;
+            const halfWidth = radius * 1.08;
+            const halfHeight = radius * 0.86;
+            const corner = radius * 0.16;
+            drawingContext.save();
+            drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
+            const ice = drawingContext.createLinearGradient(-halfWidth, -halfHeight, halfWidth, halfHeight);
+            ice.addColorStop(0, '#e9fbff'); ice.addColorStop(0.44, '#9cdef6'); ice.addColorStop(1, '#4fa9d2');
+            drawingContext.fillStyle = ice;
+            drawingContext.beginPath();
+            drawingContext.moveTo(-halfWidth + corner, -halfHeight);
+            drawingContext.lineTo(halfWidth - corner, -halfHeight);
+            drawingContext.lineTo(halfWidth, -halfHeight + corner);
+            drawingContext.lineTo(halfWidth, halfHeight - corner);
+            drawingContext.lineTo(halfWidth - corner, halfHeight);
+            drawingContext.lineTo(-halfWidth + corner, halfHeight);
+            drawingContext.lineTo(-halfWidth, halfHeight - corner);
+            drawingContext.lineTo(-halfWidth, -halfHeight + corner);
+            drawingContext.closePath();
+            drawingContext.fill();
+            drawingContext.strokeStyle = '#dff8ff'; drawingContext.lineWidth = 2; drawingContext.stroke();
+            drawingContext.strokeStyle = 'rgba(255, 255, 255, 0.8)'; drawingContext.lineWidth = 1.5;
+            drawingContext.beginPath(); drawingContext.moveTo(-halfWidth + corner * 1.5, -halfHeight + corner * 1.2); drawingContext.lineTo(halfWidth * 0.45, -halfHeight + corner * 1.2); drawingContext.stroke();
+            drawPuyoEyes(drawingContext, radius * 0.86, radius * 0.08);
+            drawingContext.restore();
+        }
+    }
+
+    /** 예고뿌요의 작은 낱개·큰 낱개에만 쓰는 내부 잉크색 슬라임이다. */
+    class WarningInkPuyo extends SlimePuyo { constructor() { super('warningInk', '예고뿌요', 'warningInk', true); } }
+
+    /** 내장 일반·방해뿌요 객체 목록이다. 보드의 기존 문자열 식별자와 연결한다. @type {Puyo[]} */
+    const PUYO_TYPES = [new RedPuyo(), new GreenPuyo(), new YellowPuyo(), new BluePuyo(), new PurplePuyo(), new GarbagePuyo(), new HardGarbagePuyo(), new IronPuyo(), new WarningInkPuyo()];
+    /** 보드 문자열에서 뿌요 렌더링 객체를 찾는다. @type {Map<string, Puyo>} */
+    const PUYO_BY_TYPE = new Map(PUYO_TYPES.map((puyo) => [puyo.type, puyo]));
+
+    /** 보드의 종류 문자열에 해당하는 뿌요 객체를 반환한다. @param {string} type 종류 식별자 @returns {Puyo|null} */
+    function getPuyo(type) { return PUYO_BY_TYPE.get(type) || null; }
+
+    /**
+     * 기존 보드 렌더링 호출을 뿌요 객체의 draw 메소드로 연결한다.
      * @param {number} x 셀의 왼쪽 X 좌표
      * @param {number} y 셀의 위쪽 Y 좌표
      * @param {string} color 뿌요 색상 종류
      * @param {number} scale 셀 대비 크기 비율
+     * @param {boolean} slimeDetails 반사광과 눈 위치를 기본 슬라임처럼 그릴지 여부
      * @returns {void}
      */
     function drawPuyo(x, y, color, scale = 1, slimeDetails = true) {
-        const radius = CELL * 0.42 * scale;
-        context.save();
-        context.translate(x + CELL / 2, y + CELL / 2);
-        context.fillStyle = PALETTE[color];
-        const garbageStyle = color === 'garbage' || color === 'warningInk';
-        context.globalAlpha = garbageStyle ? 0.75 : 1;
-        context.beginPath();
-        context.arc(0, 0, radius, 0, Math.PI * 2);
-        context.fill();
-        context.lineWidth = 2;
-        context.strokeStyle = garbageStyle ? '#f4fbff' : 'rgba(255,255,255,0.45)';
-        context.stroke();
-        // 일반/방해뿌요는 물방울 같은 슬라임이라는 인상을 주는 작은 반사광을 넣는다.
-        // 예고뿌요(태양, 별, 돌 등)는 각 WarningPuyo 하위 클래스에서 별도로 그린다.
-        if (slimeDetails) {
-            context.fillStyle = 'rgba(255, 255, 255, 0.72)';
-            context.beginPath();
-            // 긴 축을 기존 방향에서 90도 돌려 표면을 따라 반사되게 한다.
-            context.ellipse(radius * 0.43, -radius * 0.43, radius * 0.13, radius * 0.22, 0.55 + Math.PI / 2, 0, Math.PI * 2);
-            context.fill();
-        }
-        drawPuyoEyes(radius, slimeDetails ? radius * 0.08 : 0);
-        context.restore();
+        const puyo = getPuyo(color);
+        if (puyo) puyo.draw(context, x, y, CELL, scale, slimeDetails);
     }
 
     /**
@@ -2756,7 +3036,7 @@
             context.fillStyle = '#e4675a'; context.beginPath(); context.moveTo(-size * 0.52, -size * 0.78); context.lineTo(-size * 0.08, -size * 0.91); context.lineTo(size * 0.05, -size * 0.2); context.lineTo(-size * 0.4, size * 0.02); context.closePath(); context.fill();
             context.fillStyle = '#9d2d31'; context.beginPath(); context.moveTo(size * 0.05, -size * 0.2); context.lineTo(size * 0.38, -size * 0.75); context.lineTo(size * 0.84, -size * 0.26); context.lineTo(size * 0.67, size * 0.48); context.lineTo(size * 0.2, size * 0.84); context.lineTo(size * 0.12, size * 0.12); context.closePath(); context.fill();
             context.strokeStyle = 'rgba(255, 170, 150, 0.65)'; context.lineWidth = 1.5; context.beginPath(); context.moveTo(-size * 0.52, -size * 0.78); context.lineTo(-size * 0.08, -size * 0.91); context.lineTo(size * 0.05, -size * 0.2); context.lineTo(size * 0.38, -size * 0.75); context.stroke();
-            drawPuyoEyes(size, size * 0.08); context.restore();
+            drawPuyoEyes(drawingContext, size, size * 0.08); context.restore();
         }
     }
 
@@ -2776,7 +3056,7 @@
                 const radius = index % 2 ? CELL * 0.18 : CELL * 0.42;
                 context[index ? 'lineTo' : 'moveTo'](Math.cos(angle) * radius, Math.sin(angle) * radius);
             }
-            context.closePath(); context.fill(); drawPuyoEyes(CELL * 0.34); context.restore();
+            context.closePath(); context.fill(); drawPuyoEyes(drawingContext, CELL * 0.34); context.restore();
         }
     }
 
@@ -2794,7 +3074,7 @@
             for (let index = 0; index < 8; index += 1) {
                 context.save(); context.rotate(index * Math.PI / 4); context.beginPath(); context.moveTo(CELL * 0.22, 0); context.lineTo(CELL * 0.48, -CELL * 0.1); context.lineTo(CELL * 0.48, CELL * 0.1); context.closePath(); context.fill(); context.restore();
             }
-            context.fillStyle = '#ff6b35'; context.beginPath(); context.arc(0, 0, CELL * 0.31, 0, Math.PI * 2); context.fill(); context.lineWidth = 2; context.strokeStyle = '#ffe082'; context.stroke(); drawPuyoEyes(CELL * 0.31); context.restore();
+            context.fillStyle = '#ff6b35'; context.beginPath(); context.arc(0, 0, CELL * 0.31, 0, Math.PI * 2); context.fill(); context.lineWidth = 2; context.strokeStyle = '#ffe082'; context.stroke(); drawPuyoEyes(drawingContext, CELL * 0.31); context.restore();
         }
     }
 
@@ -2821,7 +3101,7 @@
             drawingContext.fillStyle = glow; drawingContext.beginPath(); drawingContext.arc(0, 0, radius, 0, Math.PI * 2); drawingContext.fill();
             drawingContext.strokeStyle = '#d9f6ff'; drawingContext.lineWidth = cellSize * 0.045; drawingContext.stroke();
             drawingContext.fillStyle = 'rgba(255, 255, 255, 0.8)'; drawingContext.beginPath(); drawingContext.arc(-radius * 0.31, -radius * 0.38, radius * 0.2, 0, Math.PI * 2); drawingContext.fill();
-            drawPuyoEyes(radius, radius * 0.08); drawingContext.restore();
+            drawPuyoEyes(drawingContext, radius, radius * 0.08); drawingContext.restore();
         }
     }
 
@@ -2855,7 +3135,7 @@
             drawingContext.fillStyle = '#ffffff'; [[-0.78, -0.42, 0.08], [0.94, 0.26, 0.06], [0.56, -0.6, 0.05]].forEach(([starX, starY, starRadius]) => { drawingContext.beginPath(); drawingContext.arc(radius * starX, radius * starY, radius * starRadius, 0, Math.PI * 2); drawingContext.fill(); });
             drawingContext.rotate(0.46);
             // 다른 대형 예고뿌요처럼 눈은 중심에 유지해 게임의 캐릭터성을 보존한다.
-            drawPuyoEyes(radius * 0.74, radius * 0.07);
+            drawPuyoEyes(drawingContext, radius * 0.74, radius * 0.07);
             drawingContext.restore();
         }
     }
@@ -2882,7 +3162,7 @@
             rim.addColorStop(0, '#0a0d1b'); rim.addColorStop(0.64, '#05060d'); rim.addColorStop(0.8, '#30205e'); rim.addColorStop(1, '#9a76e8');
             drawingContext.fillStyle = rim; drawingContext.beginPath(); drawingContext.arc(0, 0, radius, 0, Math.PI * 2); drawingContext.fill();
             drawingContext.strokeStyle = '#c2a7ff'; drawingContext.lineWidth = cellSize * 0.04; drawingContext.stroke();
-            drawPuyoEyes(radius * 0.72, radius * 0.08); drawingContext.restore();
+            drawPuyoEyes(drawingContext, radius * 0.72, radius * 0.08); drawingContext.restore();
         }
     }
 
@@ -2895,21 +3175,22 @@
 
     /**
      * 현재 변환 좌표를 기준으로 뿌요의 귀여운 두 눈을 그린다.
+     * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
      * @param {number} radius 뿌요 본체의 반지름
      * @param {number} offsetY 눈의 세로 보정값
      * @returns {void}
      */
-    function drawPuyoEyes(radius, offsetY = 0) {
-        context.fillStyle = '#fff';
-        context.beginPath();
-        context.arc(-radius * 0.28, -radius * 0.12 + offsetY, radius * 0.19, 0, Math.PI * 2);
-        context.arc(radius * 0.28, -radius * 0.12 + offsetY, radius * 0.19, 0, Math.PI * 2);
-        context.fill();
-        context.fillStyle = '#172031';
-        context.beginPath();
-        context.arc(-radius * 0.25, -radius * 0.08 + offsetY, radius * 0.08, 0, Math.PI * 2);
-        context.arc(radius * 0.31, -radius * 0.08 + offsetY, radius * 0.08, 0, Math.PI * 2);
-        context.fill();
+    function drawPuyoEyes(drawingContext, radius, offsetY = 0) {
+        drawingContext.fillStyle = '#fff';
+        drawingContext.beginPath();
+        drawingContext.arc(-radius * 0.28, -radius * 0.12 + offsetY, radius * 0.19, 0, Math.PI * 2);
+        drawingContext.arc(radius * 0.28, -radius * 0.12 + offsetY, radius * 0.19, 0, Math.PI * 2);
+        drawingContext.fill();
+        drawingContext.fillStyle = '#172031';
+        drawingContext.beginPath();
+        drawingContext.arc(-radius * 0.25, -radius * 0.08 + offsetY, radius * 0.08, 0, Math.PI * 2);
+        drawingContext.arc(radius * 0.31, -radius * 0.08 + offsetY, radius * 0.08, 0, Math.PI * 2);
+        drawingContext.fill();
     }
 
     /**
@@ -2974,6 +3255,10 @@
         context.restore();
     }
 
+    /**
+     * 현재 진행 중인 에너지 전달 효과를 캔버스에 그린다.
+     * @returns {void}
+     */
     function drawEnergyTransfers() {
         const energyTransfers = getEnergyTransfers();
         if (!energyTransfers) return;
@@ -3126,6 +3411,25 @@
         game.themeController.drawPlayerBackground(context, area);
     }
 
+    /** 피버 룰 또는 연속 피버가 두 번째 패배 칸을 쓰는지 반환한다. @returns {boolean} 두 번째 패배 칸 사용 여부 */
+    function usesSecondDefeatCell() {
+        return game?.feverRule === true || game?.continuousFever === true;
+    }
+
+    /** 패배 조건 칸에 1칸 크기의 빨간 X 표시를 그린다. 뿌요보다 먼저 그려 점유 시 가려진다. @param {number} fieldX 필드 왼쪽 X 좌표 @param {boolean} [includeSecondCell=false] (3, 11) 칸도 표시할지 여부 @returns {void} */
+    function drawDefeatCellMarkers(fieldX, includeSecondCell = false) {
+        context.save();
+        context.strokeStyle = '#ef5350';
+        context.lineWidth = 5;
+        [2, ...(includeSecondCell ? [3] : [])].forEach((column) => {
+            const x = fieldX + column * CELL;
+            const y = FIELD_BOTTOM - VISIBLE_ROWS * CELL;
+            context.beginPath(); context.moveTo(x + 6, y + 6); context.lineTo(x + CELL - 6, y + CELL - 6); context.stroke();
+            context.beginPath(); context.moveTo(x + CELL - 6, y + 6); context.lineTo(x + 6, y + CELL - 6); context.stroke();
+        });
+        context.restore();
+    }
+
     /**
      * 한 플레이어의 필드, 예고줄, 낙하와 폭발 효과를 그린다.
      * @param {PlayerState} player 그릴 플레이어
@@ -3148,6 +3452,7 @@
         context.lineWidth = 1;
         for (let index = 0; index <= COLUMNS; index += 1) { context.beginPath(); context.moveTo(x + index * CELL, FIELD_TOP); context.lineTo(x + index * CELL, FIELD_BOTTOM); context.stroke(); }
         for (let index = 0; index <= VISIBLE_ROWS; index += 1) { context.beginPath(); context.moveTo(x, FIELD_TOP + index * CELL); context.lineTo(x + CELL * 6, FIELD_TOP + index * CELL); context.stroke(); }
+        drawDefeatCellMarkers(x, usesSecondDefeatCell());
         const fallingTargets = new Set((player.gravityAnimation?.falling || []).map((puyo) => `${puyo.x},${puyo.toY}`));
         // 패배 연출이 아닐 때 보이는 필드의 고정 뿌요를 한 칸씩 그린다.
         for (let y = 0; !isDefeated && y < VISIBLE_ROWS; y += 1) for (let column = 0; column < COLUMNS; column += 1) {
@@ -3267,21 +3572,22 @@
      */
     function drawCenter() {
         game.themeController.drawCenterBackground(context, { x: 450, y: 0, width: 380, height: HEIGHT });
-        context.fillStyle = '#d8f2f5'; context.textAlign = 'center'; context.font = `42px ${TITLE_FONT}`; context.fillText('Puyo W', WIDTH / 2, 95);
+        context.textAlign = 'center';
+        const nextAreaY = 50;
         const left = game.players[0]; const right = game.players[1];
         [
             { player: left, x: 482, color: '#ef8aa0' },
             { player: right, x: 650, color: '#6bbce8' }
         ].forEach(({ player, x, color }, playerIndex) => {
-            context.fillStyle = '#0b202c'; context.fillRect(x, 120, 148, 150);
-            context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, 120, 148, 150);
-            context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(`${player.name} NEXT`, x + 74, 143);
+            context.fillStyle = '#0b202c'; context.fillRect(x, nextAreaY, 148, 150);
+            context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, nextAreaY, 148, 150);
+            context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(`${player.name} NEXT`, x + 74, nextAreaY + 23);
             const displayedPairs = playerIndex === 1 ? [...player.nextPairs].reverse() : player.nextPairs;
             displayedPairs.forEach((pair, pairIndex) => {
                 const pairX = x + 21 + pairIndex * 70;
-                drawPuyo(pairX, 163, pair[1], 0.68);
-                drawPuyo(pairX, 208, pair[0], 0.68);
-                context.fillStyle = 'rgba(216, 242, 245, 0.4)'; context.fillRect(x + 74, 158, 1, 92);
+                drawPuyo(pairX, nextAreaY + 43, pair[1], 0.68);
+                drawPuyo(pairX, nextAreaY + 88, pair[0], 0.68);
+                context.fillStyle = 'rgba(216, 242, 245, 0.4)'; context.fillRect(x + 74, nextAreaY + 38, 1, 92);
             });
         });
         if (game.continuousFever && game.fever) {
@@ -3304,41 +3610,59 @@
 
     /** 가상 컨트롤러를 표시할 수 있는 게임 진행 상태인지 확인한다. @returns {boolean} */
     function shouldShowVirtualController() {
-        return Boolean(game && !game.tutorial && game.running && !game.paused && !game.ending && game.countdown <= 0 && store.settings.virtualController);
+        return Boolean(game && !game.tutorial && game.running && !game.paused && !game.ending && game.countdown <= 0 && store.settings.virtualController !== 'none');
     }
 
-    /** 가상 방향 패드의 한 방향 버튼을 그린다. @param {number} x X 좌표 @param {number} y Y 좌표 @param {string} label 표시 문자 @param {boolean} pressed 눌림 여부 @returns {void} */
-    function drawVirtualDirectionButton(x, y, label, pressed) {
-        const size = VIRTUAL_DPAD.size;
+    /** 선택된 가상 컨트롤러의 렌더링·입력 배율을 반환한다. @returns {number} */
+    function getVirtualControllerScale() { return store.settings.virtualController === 'large' ? 1.5 : 1; }
+
+    /** 선택된 크기에 맞는 가상 컨트롤러의 공통 그리기·입력 배치를 반환한다. @returns {{dpad:{x:number,y:number,size:number},actions:{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number}},scale:number}} */
+    function getVirtualControllerLayout() {
+        const large = store.settings.virtualController === 'large';
+        return {
+            dpad: {
+                x: VIRTUAL_DPAD.x + (large ? VIRTUAL_LARGE_DPAD_OFFSET.x : 0),
+                y: VIRTUAL_DPAD.y + (large ? VIRTUAL_LARGE_DPAD_OFFSET.y : 0),
+                size: VIRTUAL_DPAD.size
+            },
+            actions: large ? VIRTUAL_LARGE_ACTION_BUTTONS : VIRTUAL_ACTION_BUTTONS,
+            scale: getVirtualControllerScale()
+        };
+    }
+
+    /** 가상 방향 패드의 한 방향 버튼을 그린다. @param {number} x X 좌표 @param {number} y Y 좌표 @param {string} label 표시 문자 @param {boolean} pressed 눌림 여부 @param {number} scale 표시 배율 @returns {void} */
+    function drawVirtualDirectionButton(x, y, label, pressed, scale) {
+        const size = VIRTUAL_DPAD.size * scale;
         context.fillStyle = pressed ? 'rgba(247, 200, 67, 0.88)' : 'rgba(11, 32, 44, 0.78)';
         context.fillRect(x, y, size, size);
         context.strokeStyle = pressed ? '#fff6c7' : '#9cc9d2'; context.lineWidth = 2; context.strokeRect(x, y, size, size);
-        context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = pressed ? '#263238' : '#f5fbfc'; context.font = `28px ${BUTTON_FONT}`;
+        context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = pressed ? '#263238' : '#f5fbfc'; context.font = `${28 * scale}px ${BUTTON_FONT}`;
         context.fillText(label, x + size / 2, y + size / 2 + 1);
     }
 
-    /** 가상 조작 버튼을 그린다. @param {number} x 중심 X 좌표 @param {number} y 중심 Y 좌표 @param {string} label 표시 문자 @param {boolean} pressed 눌림 여부 @returns {void} */
-    function drawVirtualActionButton(x, y, label, pressed) {
-        context.beginPath(); context.arc(x, y, VIRTUAL_ACTION_BUTTONS.radius, 0, Math.PI * 2);
+    /** 가상 조작 버튼을 그린다. @param {number} x 중심 X 좌표 @param {number} y 중심 Y 좌표 @param {string} label 표시 문자 @param {boolean} pressed 눌림 여부 @param {number} scale 표시 배율 @returns {void} */
+    function drawVirtualActionButton(x, y, label, pressed, scale) {
+        context.beginPath(); context.arc(x, y, VIRTUAL_ACTION_BUTTONS.radius * scale, 0, Math.PI * 2);
         context.fillStyle = pressed ? 'rgba(247, 200, 67, 0.92)' : 'rgba(86, 48, 104, 0.85)'; context.fill();
         context.strokeStyle = pressed ? '#fff6c7' : '#e5c7f5'; context.lineWidth = 2; context.stroke();
-        context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = '#ffffff'; context.font = `${label === 'ESC' ? 14 : 23}px ${BUTTON_FONT}`;
+        context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = '#ffffff'; context.font = `${(label === 'ESC' ? 14 : 23) * scale}px ${BUTTON_FONT}`;
         context.fillText(label, x, y + 1);
     }
 
     /** 터치 조작이 가능한 가상 컨트롤러를 게임 화면 위에 그린다. @returns {void} */
     function drawVirtualController() {
-        const { x, y, size } = VIRTUAL_DPAD;
-        drawVirtualDirectionButton(x - size / 2, y - size * 1.5, '↑', virtualDirectionInput.arrowup);
-        drawVirtualDirectionButton(x - size * 1.5, y - size / 2, '←', virtualDirectionInput.arrowleft);
-        drawVirtualDirectionButton(x + size / 2, y - size / 2, '→', virtualDirectionInput.arrowright);
-        drawVirtualDirectionButton(x - size / 2, y + size / 2, '↓', virtualDirectionInput.arrowdown);
-        drawVirtualDirectionButton(x - size * 1.5, y + size / 2, '↙', virtualDirectionInput.arrowleft && virtualDirectionInput.arrowdown);
-        drawVirtualDirectionButton(x + size / 2, y + size / 2, '↘', virtualDirectionInput.arrowright && virtualDirectionInput.arrowdown);
+        const { dpad, actions, scale } = getVirtualControllerLayout();
+        const { x, y, size: baseSize } = dpad; const size = baseSize * scale;
+        drawVirtualDirectionButton(x - size / 2, y - size * 1.5, '↑', virtualDirectionInput.arrowup, scale);
+        drawVirtualDirectionButton(x - size * 1.5, y - size / 2, '←', virtualDirectionInput.arrowleft, scale);
+        drawVirtualDirectionButton(x + size / 2, y - size / 2, '→', virtualDirectionInput.arrowright, scale);
+        drawVirtualDirectionButton(x - size / 2, y + size / 2, '↓', virtualDirectionInput.arrowdown, scale);
+        drawVirtualDirectionButton(x - size * 1.5, y + size / 2, '↙', virtualDirectionInput.arrowleft && virtualDirectionInput.arrowdown, scale);
+        drawVirtualDirectionButton(x + size / 2, y + size / 2, '↘', virtualDirectionInput.arrowright && virtualDirectionInput.arrowdown, scale);
         const pressed = new Set([...virtualPointerButtons.values()].flat());
-        drawVirtualActionButton(VIRTUAL_ACTION_BUTTONS.z.x, VIRTUAL_ACTION_BUTTONS.z.y, 'Z', pressed.has('z'));
-        drawVirtualActionButton(VIRTUAL_ACTION_BUTTONS.x.x, VIRTUAL_ACTION_BUTTONS.x.y, 'X', pressed.has('x'));
-        drawVirtualActionButton(VIRTUAL_ACTION_BUTTONS.escape.x, VIRTUAL_ACTION_BUTTONS.escape.y, 'ESC', pressed.has('escape'));
+        drawVirtualActionButton(actions.z.x, actions.z.y, 'Z', pressed.has('z'), scale);
+        drawVirtualActionButton(actions.x.x, actions.x.y, 'X', pressed.has('x'), scale);
+        drawVirtualActionButton(actions.escape.x, actions.escape.y, 'ESC', pressed.has('escape'), scale);
         context.textBaseline = 'alphabetic';
     }
 
@@ -3465,7 +3789,9 @@
     /** 캔버스 좌표에서 눌린 가상 컨트롤러 버튼을 구한다. @param {number} x X 좌표 @param {number} y Y 좌표 @returns {string[]} */
     function getVirtualControllerButtonsAt(x, y) {
         const buttons = [];
-        const { x: centerX, y: centerY, size } = VIRTUAL_DPAD;
+        const { dpad, actions, scale } = getVirtualControllerLayout();
+        const { x: centerX, y: centerY } = dpad;
+        const size = dpad.size * scale;
         const inButton = (left, top) => x >= left && x < left + size && y >= top && y < top + size;
         if (inButton(centerX - size / 2, centerY - size * 1.5)) buttons.push('arrowup');
         if (inButton(centerX - size * 1.5, centerY - size / 2)) buttons.push('arrowleft');
@@ -3473,8 +3799,8 @@
         if (inButton(centerX - size / 2, centerY + size / 2)) buttons.push('arrowdown');
         if (inButton(centerX - size * 1.5, centerY + size / 2)) buttons.push('arrowleft', 'arrowdown');
         if (inButton(centerX + size / 2, centerY + size / 2)) buttons.push('arrowright', 'arrowdown');
-        Object.entries(VIRTUAL_ACTION_BUTTONS).forEach(([button, value]) => {
-            if (button !== 'radius' && (x - value.x) ** 2 + (y - value.y) ** 2 <= VIRTUAL_ACTION_BUTTONS.radius ** 2) buttons.push(button);
+        Object.entries(actions).forEach(([button, value]) => {
+            if ((x - value.x) ** 2 + (y - value.y) ** 2 <= (VIRTUAL_ACTION_BUTTONS.radius * scale) ** 2) buttons.push(button);
         });
         return buttons;
     }
@@ -3558,7 +3884,7 @@
      */
     function drawResultCenter(showExitButton = true) {
         game.themeController.drawCenterBackground(context, { x: 450, y: 0, width: 380, height: HEIGHT });
-        context.fillStyle = '#d8f2f5'; context.textAlign = 'center'; context.font = `42px ${TITLE_FONT}`; context.fillText('Puyo W', WIDTH / 2, 95);
+        context.fillStyle = '#d8f2f5'; context.textAlign = 'center'; context.font = `42px ${TITLE_FONT}`; context.fillText(translate('뿌요 W'), WIDTH / 2, 95);
         const enemy = game.players[1];
         if (enemy !== game.winner) enemy.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, 'defeated');
         context.fillStyle = '#d8f2f5'; context.font = `18px ${MESSAGE_FONT}`;
@@ -3633,7 +3959,7 @@
         game.tutorial.message = message;
         game.tutorial.messageElapsed = 0;
         game.tutorial.messageDuration = duration;
-        showMessage(translate(message), '#f5fbfc', duration);
+        showMessage(translate(message), '#f5fbfc', duration, '#263238');
     }
 
     /** 1단계에서 플레이어 입력 없이 이동·빠른 하강·회전을 순서대로 시연한다. @param {PlayerState} player 시연할 플레이어 @param {PlayerState} opponent 상대 플레이어 @param {number} delta 경과 시간(ms) @returns {void} */
@@ -3992,7 +4318,10 @@
 
     /** 설정 화면의 포커스 항목을 실행한다. @returns {void} */
     function activateSettingsFocus() {
-        if (settingsFocus === 2) settingsDraft.virtualController = !settingsDraft.virtualController;
+        if (settingsFocus === 2) {
+            const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
+            settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + 1) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
+        }
         else if (settingsFocus === 3) {
             const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
             settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + 1) % GRAPHICS_QUALITY_OPTIONS.length].key;
@@ -4009,7 +4338,7 @@
         const rows = [
             { label: '배경음악 볼륨', y: 105, value: settingsDraft.musicVolume, kind: 'slider' },
             { label: '효과음 볼륨', y: 155, value: settingsDraft.effectsVolume, kind: 'slider' },
-            { label: '가상 컨트롤러 사용', y: 205, value: settingsDraft.virtualController, kind: 'radio', options: [{ label: '켜기', value: true, x: 530, width: 140 }, { label: '끄기', value: false, x: 690, width: 140 }] },
+            { label: '가상 컨트롤러 사용', y: 205, value: settingsDraft.virtualController, kind: 'radio', options: VIRTUAL_CONTROLLER_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
             { label: '그래픽 설정', y: 255, value: settingsDraft.graphicsQuality, kind: 'radio', options: GRAPHICS_QUALITY_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
             { label: 'AI 서비스 제공자', y: 305, value: settingsDraft.aiProvider, kind: 'provider' },
             { label: 'AI API 키', y: 355, value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text' },
@@ -4100,15 +4429,17 @@
         if (!gallery) return [];
         const type = getGalleryTypes()[gallery.typeIndex]?.key;
         if (type === 'puyo') {
-            const labels = { red: '빨강뿌요', green: '초록뿌요', yellow: '노랑뿌요', blue: '파랑뿌요', purple: '보라뿌요', garbage: '방해뿌요' };
-            return [...COLORS, 'garbage'].map((color) => ({
-                id: color, label: labels[color], locked: false,
-                draw: () => {
-                    context.save(); context.translate(805, 410); context.scale(5.6, 5.6);
-                    drawPuyo(-CELL / 2, -CELL / 2, color);
-                    context.restore();
-                }
-            }));
+            return [...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO].map((color) => {
+                const puyo = getPuyo(color);
+                return {
+                    id: color, label: puyo.getName(), locked: false,
+                    draw: () => {
+                        context.save(); context.translate(805, 410); context.scale(5.6, 5.6);
+                        puyo.draw(context, -CELL / 2, -CELL / 2, CELL);
+                        context.restore();
+                    }
+                };
+            });
         }
         if (type === 'warning') {
             return [...WARNING_PUYO_CLASSES].sort((left, right) => left.unitCount - right.unitCount).map((WarningPuyoType) => {
@@ -4231,8 +4562,8 @@
 
     /** 시뮬레이터 팔레트와 버튼 영역을 반환한다. @returns {{kind:string,value:string|null,x:number,y:number,width:number,height:number}[]} */
     function getSimulatorPaletteItems() {
-        const items = [...COLORS, 'garbage'].map((color, index) => ({ kind: 'puyo', value: color, x: 906 + (index % 3) * (CELL + 6), y: 184 + Math.floor(index / 3) * (CELL + 6), width: CELL, height: CELL }));
-        items.push({ kind: 'eraser', value: 'eraser', x: 906, y: 272, width: CELL, height: CELL });
+        const items = [...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO].map((color, index) => ({ kind: 'puyo', value: color, x: 906 + (index % 3) * (CELL + 6), y: 184 + Math.floor(index / 3) * (CELL + 6), width: CELL, height: CELL }));
+        items.push({ kind: 'eraser', value: 'eraser', x: 994, y: 272, width: CELL, height: CELL });
         items.push(
             { kind: 'play', value: null, x: 906, y: 332, width: CELL * 3, height: CELL },
             { kind: 'copyJson', value: null, x: 906, y: 378, width: CELL * 3, height: CELL },
@@ -4281,7 +4612,7 @@
             if (!parsed || !Array.isArray(parsed.puyos)) throw new TypeError('puyos 배열이 필요합니다.');
             const board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
             parsed.puyos.forEach((puyo) => {
-                if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y) || puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= SIMULATOR_EDITABLE_ROWS || ![...COLORS, 'garbage'].includes(puyo.color)) {
+                if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y) || puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= SIMULATOR_EDITABLE_ROWS || ![...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO].includes(puyo.color)) {
                     throw new TypeError('유효하지 않은 뿌요 좌표 또는 색상입니다.');
                 }
                 if (board[puyo.y][puyo.x]) throw new TypeError('같은 칸에 뿌요가 중복됩니다.');
@@ -4338,20 +4669,16 @@
         const explosionGroups = findExplosionGroupsOnBoard(player.board);
         const exploding = explosionGroups.flatMap((group) => group.cells);
         if (!exploding.length) return false;
-        const removed = new Map(exploding.map(([x, y]) => [`${x},${y}`, { x, y, color: player.board[y][x] }]));
-        exploding.forEach(([x, y]) => DIRECTIONS.forEach(([dx, dy]) => {
-            const nx = x + dx; const ny = y + dy;
-            if (nx >= 0 && nx < COLUMNS && ny >= 0 && ny < ROWS && player.board[ny][nx] === 'garbage') removed.set(`${nx},${ny}`, { x: nx, y: ny, color: 'garbage' });
-        }));
-        removed.forEach(({ x, y }) => { player.board[y][x] = null; });
+        const resolution = getExplosionResolution(player.board, exploding);
+        applyExplosionResolution(player.board, resolution);
         player.combo += 1;
         const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
         player.comboPopups.push({ x: center.x / exploding.length, y: center.y / exploding.length, combo: player.combo, elapsed: 0 });
-        const point = calculateExplosionPoint(explosionGroups, player.combo);
+        const point = calculateExplosionPoint(explosionGroups, player.combo, resolution.brokenHardGarbageCount);
         player.point += point;
         player.attack += calculateExplosionAttack(point);
         sendAttackEnergy(player, simulator.target, center.x / exploding.length, center.y / exploding.length);
-        player.effects = { cells: [...removed.values()], elapsed: 0, duration: 420 }; player.phase = 'simulatorEffect';
+        player.effects = { cells: [...resolution.removed.values()], elapsed: 0, duration: 420 }; player.phase = 'simulatorEffect';
         return true;
     }
 
@@ -4400,6 +4727,7 @@
         context.strokeStyle = 'rgba(162,220,235,.14)'; context.lineWidth = 1;
         for (let i = 0; i <= COLUMNS; i += 1) { context.beginPath(); context.moveTo(x + i * CELL, FIELD_TOP); context.lineTo(x + i * CELL, FIELD_BOTTOM); context.stroke(); }
         for (let i = 0; i <= VISIBLE_ROWS; i += 1) { context.beginPath(); context.moveTo(x, FIELD_TOP + i * CELL); context.lineTo(x + COLUMNS * CELL, FIELD_TOP + i * CELL); context.stroke(); }
+        drawDefeatCellMarkers(x);
         const falling = new Set((player.gravityAnimation?.falling || []).map((puyo) => `${puyo.x},${puyo.toY}`));
         // 그리기 중에만 13번째 줄을 베젤 위에 표시한다. 시뮬레이션에서는 기존처럼 베젤 뒤에 숨긴다.
         const renderedRows = simulator.mode === 'draw' ? SIMULATOR_EDITABLE_ROWS : VISIBLE_ROWS;
@@ -4411,6 +4739,7 @@
         if (simulator.mode !== 'draw') drawSimulatorBezelForeground();
         if (simulator.mode === 'draw' && simulator.focusArea === 'board') { const focus = simulator.boardFocus; context.strokeStyle = '#ffd54f'; context.lineWidth = 4; context.strokeRect(x + focus.x * CELL + 2, FIELD_BOTTOM - (focus.y + 1) * CELL + 2, CELL - 4, CELL - 4); }
         context.fillStyle = '#071621'; context.fillRect(500, FIELD_TOP - CELL, 350, CELL * 14); context.fillStyle = '#0c2433'; context.fillRect(FIELD_RIGHT - CELL, FIELD_TOP - CELL, CELL * 8, CELL * 14);
+        drawDefeatCellMarkers(FIELD_RIGHT);
         for (let i = 0; i < COLUMNS; i += 1) { context.fillStyle = '#0a1d29'; context.fillRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); context.strokeStyle = 'rgba(176,232,244,.25)'; context.strokeRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); }
         drawWarningUnits(FIELD_RIGHT, FIELD_TOP - CELL, warningUnits(warningAmount(simulator.target, player)));
         drawEnergyTransfers();
@@ -4445,7 +4774,7 @@
     function drawInitialTitle() {
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
         context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `58px ${TITLE_FONT}`;
-        context.fillText('Puyo W', WIDTH / 2, 115);
+        context.fillText(translate('뿌요 W'), WIDTH / 2, 115);
         if (initialGalleryPreview.loaded && initialGalleryPreview.items.length) {
             const offset = Math.floor(initialGalleryPreview.elapsed / 2000);
             const index = (initialGalleryPreview.startIndex + offset) % initialGalleryPreview.items.length;
@@ -4492,19 +4821,19 @@
 
     /** 현재 색상 수 선택 화면에서 고를 수 있는 DIFFICULTIES의 인덱스다. @returns {number[]} */
     function getSelectableColorDifficultyIndices() {
-        return colorSelectionMode === 'continuousFever' ? [1, 2] : [0, 1, 2];
+        return DIFFICULTIES.map((difficulty, index) => index);
     }
 
     /**
-     * 색상 수 선택지의 왼쪽 좌표를 반환한다.
+     * 세 색상 수 선택지를 화면 중앙에 수평 정렬한 왼쪽 좌표를 반환한다.
      * @param {number} difficultyIndex DIFFICULTIES 배열 인덱스
-     * @param {boolean} fourAndFiveOnly 4색·5색만 표시하는지 여부
      * @returns {number} 버튼의 왼쪽 좌표
      */
-    function getColorDifficultyButtonX(difficultyIndex, fourAndFiveOnly) {
-        if (!fourAndFiveOnly) return 465 + difficultyIndex * 120;
-        // 3색 출시 시 기존 좌표식(465 + difficultyIndex * 120)으로 되돌려 세 선택지를 배치한다.
-        return 525 + (difficultyIndex - 1) * 120;
+    function getColorDifficultyButtonX(difficultyIndex) {
+        const buttonWidth = 110;
+        const gap = 10;
+        const totalWidth = DIFFICULTIES.length * buttonWidth + (DIFFICULTIES.length - 1) * gap;
+        return (WIDTH - totalWidth) / 2 + difficultyIndex * (buttonWidth + gap);
     }
 
     /** AI 난이도 선택지를 개수와 관계없이 화면 중앙에 수평 정렬한다. @param {number} difficultyIndex AI_DIFFICULTIES 배열 인덱스 @returns {number} 버튼의 왼쪽 좌표 */
@@ -4522,7 +4851,7 @@
         menuScreen = 'practiceDifficulty';
     }
 
-    /** 게임 규칙 선택지에서 연속 피버를 고른 뒤 4색 또는 5색 선택 화면을 연다. @returns {void} */
+    /** 게임 규칙 선택지에서 연속 피버를 고른 뒤 3색·4색·5색 선택 화면을 연다. @returns {void} */
     function openContinuousFeverDifficulty() {
         selectedDifficulty = 1;
         colorSelectionMode = 'continuousFever';
@@ -4586,16 +4915,15 @@
             context.scale(OPPONENT_MENU_SCALE, OPPONENT_MENU_SCALE);
             context.translate(-WIDTH / 2, -HEIGHT / 2);
         }
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `54px ${TITLE_FONT}`; context.fillText('Puyo W', WIDTH / 2, menuScreen === 'opponent' ? 90 : 110);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `54px ${TITLE_FONT}`; context.fillText(translate('뿌요 W'), WIDTH / 2, menuScreen === 'opponent' ? 90 : 110);
         if (menuScreen === 'opponent') {
             DIFFICULTIES.forEach((difficulty, index) => {
-                if (opponentMenuRule === 'fever' && index === 0) return;
-                    const x = getColorDifficultyButtonX(index, opponentMenuRule === 'fever');
-                    const selected = index === selectedDifficulty;
-                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 135, 110, 44);
-                    context.strokeStyle = opponentMenuFocus === 0 && selected ? '#f7c843' : '#3b6070'; context.lineWidth = opponentMenuFocus === 0 && selected ? 4 : 2;
-                    context.strokeRect(x, 135, 110, 44);
-                    context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 163);
+                const x = getColorDifficultyButtonX(index);
+                const selected = index === selectedDifficulty;
+                context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 135, 110, 44);
+                context.strokeStyle = opponentMenuFocus === 0 && selected ? '#f7c843' : '#3b6070'; context.lineWidth = opponentMenuFocus === 0 && selected ? 4 : 2;
+                context.strokeRect(x, 135, 110, 44);
+                context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 163);
             });
             AI_DIFFICULTIES.forEach((difficulty, index) => {
                 const x = getAiDifficultyButtonX(index);
@@ -4684,7 +5012,7 @@
             context.fillStyle = '#d8f2f5'; context.font = `30px ${TITLE_FONT}`; context.fillText(translate('선택'), WIDTH / 2, 300);
             DIFFICULTIES.forEach((difficulty, index) => {
                 if (!getSelectableColorDifficultyIndices().includes(index)) return;
-                const x = getColorDifficultyButtonX(index, colorSelectionMode === 'continuousFever');
+                const x = getColorDifficultyButtonX(index);
                 const selected = index === selectedDifficulty;
                 context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 335, 110, 58);
                 context.strokeStyle = selected ? '#f7c843' : '#3b6070'; context.lineWidth = selected ? 4 : 2; context.strokeRect(x, 335, 110, 58);
@@ -4768,8 +5096,20 @@
         context.save();
         context.globalAlpha = 1 - fadeProgress;
         context.textAlign = 'center';
-        context.fillStyle = screenMessage.color;
         context.font = `28px ${MESSAGE_FONT}`;
+        if (screenMessage.backgroundColor !== null) {
+            const metrics = context.measureText(screenMessage.message);
+            const textWidth = metrics.width;
+            const textAscent = Number.isFinite(metrics.actualBoundingBoxAscent) ? metrics.actualBoundingBoxAscent : 28;
+            const textDescent = Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : 7;
+            const paddingX = 10;
+            const paddingY = 6;
+            const backgroundWidth = textWidth + paddingX * 2;
+            const backgroundHeight = textAscent + textDescent + paddingY * 2;
+            context.fillStyle = screenMessage.backgroundColor;
+            context.fillRect(WIDTH / 2 - backgroundWidth / 2, 70 - textAscent - paddingY, backgroundWidth, backgroundHeight);
+        }
+        context.fillStyle = screenMessage.color;
         context.fillText(screenMessage.message, WIDTH / 2, 70);
         context.restore();
     }
@@ -4922,7 +5262,10 @@
             const direction = key === 'arrowleft' ? -1 : 1;
             if (settingsFocus === 0) settingsDraft.musicVolume = Math.max(0, Math.min(100, settingsDraft.musicVolume + direction));
             else if (settingsFocus === 1) settingsDraft.effectsVolume = Math.max(0, Math.min(100, settingsDraft.effectsVolume + direction));
-            else if (settingsFocus === 2) settingsDraft.virtualController = direction < 0;
+            else if (settingsFocus === 2) {
+                const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
+                settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + direction + VIRTUAL_CONTROLLER_OPTIONS.length) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
+            }
             else if (settingsFocus === 3) {
                 const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
                 settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + direction + GRAPHICS_QUALITY_OPTIONS.length) % GRAPHICS_QUALITY_OPTIONS.length].key;
@@ -4948,6 +5291,11 @@
     /** 초기 타이틀에서 사용자 조작을 받은 뒤 메인 메뉴와 게임 외 배경음악을 시작한다. @returns {void} */
     function enterMainMenu() {
         if (menuScreen !== 'initialTitle') return;
+        if (!feverStageValidationComplete) {
+            pendingInitialTitleEntry = true;
+            return;
+        }
+        pendingInitialTitleEntry = false;
         hasUserStarted = true;
         menuScreen = 'title';
         loadNotice();
@@ -5014,7 +5362,7 @@
                 opponentMenuFocus = Math.min(3, opponentMenuFocus + 1);
             } else if (menuScreen === 'opponent' && key === 'arrowleft') {
                 if (opponentMenuFocus === 0) {
-                    const choices = opponentMenuRule === 'fever' ? [1, 2] : [0, 1, 2];
+                    const choices = getSelectableColorDifficultyIndices();
                     const currentIndex = Math.max(0, choices.indexOf(selectedDifficulty));
                     selectedDifficulty = choices[(currentIndex + choices.length - 1) % choices.length];
                 }
@@ -5023,7 +5371,7 @@
                 else selectedOpponentAction = 0;
             } else if (menuScreen === 'opponent' && key === 'arrowright') {
                 if (opponentMenuFocus === 0) {
-                    const choices = opponentMenuRule === 'fever' ? [1, 2] : [0, 1, 2];
+                    const choices = getSelectableColorDifficultyIndices();
                     const currentIndex = Math.max(0, choices.indexOf(selectedDifficulty));
                     selectedDifficulty = choices[(currentIndex + 1) % choices.length];
                 }
@@ -5146,7 +5494,6 @@
      */
     function openOpponentMenu(feverRule = false) {
         opponentMenuRule = feverRule ? 'fever' : 'standard';
-        if (feverRule && selectedDifficulty < 1) selectedDifficulty = 1;
         ensureSelectedOpponent();
         opponentMenuFocus = 0;
         selectedOpponentAction = 0;
@@ -5295,8 +5642,9 @@
             else if (y >= 555 && y <= 601 && x >= 740 && x <= 900) { settingsFocus = 10; resetAllSettings(); }
             else if (y >= 95 && y <= 115) { settingsFocus = 0; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
             else if (y >= 145 && y <= 165) { settingsFocus = 1; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
-            else if (y >= 186 && y <= 224 && x >= 530 && x <= 670) { settingsFocus = 2; settingsDraft.virtualController = true; }
-            else if (y >= 186 && y <= 224 && x >= 690 && x <= 830) { settingsFocus = 2; settingsDraft.virtualController = false; }
+            else if (y >= 186 && y <= 224 && x >= 530 && x <= 660) { settingsFocus = 2; settingsDraft.virtualController = 'none'; }
+            else if (y >= 186 && y <= 224 && x >= 680 && x <= 810) { settingsFocus = 2; settingsDraft.virtualController = 'normal'; }
+            else if (y >= 186 && y <= 224 && x >= 830 && x <= 960) { settingsFocus = 2; settingsDraft.virtualController = 'large'; }
             else if (y >= 236 && y <= 274 && x >= 530 && x <= 660) { settingsFocus = 3; settingsDraft.graphicsQuality = 'low'; }
             else if (y >= 236 && y <= 274 && x >= 680 && x <= 810) { settingsFocus = 3; settingsDraft.graphicsQuality = 'medium'; }
             else if (y >= 236 && y <= 274 && x >= 830 && x <= 960) { settingsFocus = 3; settingsDraft.graphicsQuality = 'high'; }
@@ -5305,8 +5653,7 @@
             else if (y >= 386 && y <= 424) { settingsFocus = 6; settingsEditing = true; settingsCursor = settingsDraft.aiModel.length; }
         } else {
             if (menuScreen === 'practiceDifficulty') {
-                const fourAndFiveOnly = colorSelectionMode === 'continuousFever';
-                const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => x >= getColorDifficultyButtonX(index, fourAndFiveOnly) && x <= getColorDifficultyButtonX(index, fourAndFiveOnly) + 110 && y >= 335 && y <= 393);
+                const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => x >= getColorDifficultyButtonX(index) && x <= getColorDifficultyButtonX(index) + 110 && y >= 335 && y <= 393);
                 if (difficultyIndex >= 0 && getSelectableColorDifficultyIndices().includes(difficultyIndex)) {
                     selectedDifficulty = difficultyIndex;
                     startGame(colorSelectionMode === 'practice', colorSelectionMode === 'continuousFever');
@@ -5320,9 +5667,8 @@
             // 축소해 그린 적 선택 화면의 클릭 좌표를 원래 논리 좌표로 되돌린다.
             const opponentX = (x - WIDTH / 2) / OPPONENT_MENU_SCALE + WIDTH / 2;
             const opponentY = (y - HEIGHT / 2) / OPPONENT_MENU_SCALE + HEIGHT / 2;
-            const fourAndFiveOnly = opponentMenuRule === 'fever';
-            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => opponentX >= getColorDifficultyButtonX(index, fourAndFiveOnly) && opponentX <= getColorDifficultyButtonX(index, fourAndFiveOnly) + 110 && opponentY >= 135 && opponentY <= 179);
-            if (difficultyIndex >= 0 && (opponentMenuRule !== 'fever' || difficultyIndex >= 1)) {
+            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => opponentX >= getColorDifficultyButtonX(index) && opponentX <= getColorDifficultyButtonX(index) + 110 && opponentY >= 135 && opponentY <= 179);
+            if (difficultyIndex >= 0) {
                 selectedDifficulty = difficultyIndex;
                 opponentMenuFocus = 0;
                 return;
@@ -5428,6 +5774,8 @@
                 leftTime: player.fever.leftTime,
                 damage: player.fever.damage,
                 turn: player.fever.turn,
+                selectedStageTarget: player.fever.selectedStageTarget,
+                stageSuppliedPair: [...player.fever.stageSuppliedPair],
                 field: player.fever.active ? { columns: COLUMNS, rows: ROWS, cells: player.board.map((row) => [...row]) } : null
             } : null,
             active
@@ -5478,14 +5826,16 @@
      * @param {string} message 표시할 메시지
      * @param {string} [color='white'] 글자 색상(CSS 색상 문자열)
      * @param {number} [duration=2000] 페이드 아웃 전 유지 시간(밀리초)
+     * @param {string|null} [backgroundColor=null] 글자 뒤에 표시할 배경 색상(CSS 색상 문자열)
      * @returns {void}
      */
-    function showMessage(message, color = 'white', duration = 2000) {
+    function showMessage(message, color = 'white', duration = 2000, backgroundColor = null) {
         if (!initialized || !context) throw new Error('메시지를 표시하려면 먼저 WebPuyo.initialize()를 호출해야 합니다.');
         if (typeof message !== 'string') throw new TypeError('message는 문자열이어야 합니다.');
         if (typeof color !== 'string') throw new TypeError('color는 문자열이어야 합니다.');
         if (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0) throw new RangeError('duration은 0 이상의 유한한 숫자여야 합니다.');
-        screenMessage = { message, color, elapsed: 0, duration };
+        if (backgroundColor !== null && typeof backgroundColor !== 'string') throw new TypeError('backgroundColor는 문자열 또는 null이어야 합니다.');
+        screenMessage = { message, color, backgroundColor, elapsed: 0, duration };
     }
 
     /**
@@ -5629,7 +5979,7 @@
                 turn: { type: 'integer', minimum: 0 },
                 pendingCombo: { type: 'integer', minimum: 0 },
                 pendingAllClear: { type: 'boolean' },
-                selectedStageTarget: { type: ['integer', 'null'], minimum: CONTINUOUS_FEVER_INITIAL_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
+                selectedStageTarget: { type: ['integer', 'null'], minimum: FEVER_MIN_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
                 stageSuppliedPair: { type: 'array', items: { type: 'string', enum: COLORS }, minItems: 0, maxItems: 2 }
             },
             required: ['targetCombo', 'leftTime', 'turn', 'pendingCombo', 'pendingAllClear', 'selectedStageTarget', 'stageSuppliedPair']
@@ -5687,18 +6037,19 @@
             },
             {
                 name: 'show_message',
-                description: 'Display an already-localized message at the top of the current screen. It remains visible for duration milliseconds (default 2000), then fades out. Do not use this tool for translation.',
+                description: 'Display an already-localized message at the top of the current screen. It remains visible for duration milliseconds (default 2000), then fades out. An optional backgroundColor draws a rectangle behind the text. Do not use this tool for translation.',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         message: { type: 'string', description: 'The already-localized text to display.' },
                         color: { type: 'string', default: 'white', description: 'CSS text color.' },
-                        duration: { type: 'number', minimum: 0, default: 2000, description: 'Milliseconds to remain fully visible before fading out.' }
+                        duration: { type: 'number', minimum: 0, default: 2000, description: 'Milliseconds to remain fully visible before fading out.' },
+                        backgroundColor: { type: ['string', 'null'], default: null, description: 'Optional CSS background color behind the message text.' }
                     },
                     required: ['message'],
                     additionalProperties: false
                 },
-                execute: ({ message, color = 'white', duration = 2000 }) => showMessage(message, color, duration)
+                execute: ({ message, color = 'white', duration = 2000, backgroundColor = null }) => showMessage(message, color, duration, backgroundColor)
             }
         ];
         tools.forEach((tool) => {
@@ -5718,7 +6069,9 @@
         if (!initialized) return;
         stopBackgroundMusic();
         if (settingsResetTimer !== null) window.clearTimeout(settingsResetTimer);
+        if (feverStageValidationTimer !== null) window.clearTimeout(feverStageValidationTimer);
         settingsResetTimer = null;
+        feverStageValidationTimer = null;
         settingsResetting = false;
         screenMessage = null;
         window.removeEventListener('keydown', handleKeydown);
@@ -5743,6 +6096,8 @@
         recommendedPoint = null;
         menuScreen = 'initialTitle';
         hasUserStarted = false;
+        feverStageValidationComplete = false;
+        pendingInitialTitleEntry = false;
         ruleSelectionOpen = false;
         ruleSelectionFocus = 0;
         createdCanvas = false;
@@ -5752,8 +6107,24 @@
     }
 
     /**
+     * 웹폰트를 import 하는 style 태그를 만들어 head 에 삽입한다.
+     */
+    function prepareFontImportStyle() {
+        // 먼저 기존 style 태그 존재여부 확인 (클래스 puyow_font_import)
+        const existingStyle = document.querySelector('style.puyow_font_import');
+        if (existingStyle) return;
+
+        const style = document.createElement('style');
+        style.className = 'puyow_font_import';
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic+Coding&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Share+Tech+Mono&display=swap');
+        `;
+        document.head.appendChild(style);
+    }
+
+    /**
      * 지정한 캔버스에 게임을 연결하고 메뉴 렌더링을 시작한다.
-   * @param {HTMLCanvasElement|string|null} target 캔버스 요소 또는 요소 id. 생략 시 기본 캔버스를 찾거나 만든다.
+     * @param {HTMLCanvasElement|string|null} target 캔버스 요소 또는 요소 id. 생략 시 기본 캔버스를 찾거나 만든다.
      * @returns {void}
      */
     function initialize(target = null) {
@@ -5763,6 +6134,7 @@
         if (typeof document === 'undefined' || typeof window === 'undefined') {
             throw new Error('Web Puyo 초기화에는 브라우저 DOM 환경이 필요합니다.');
         }
+        prepareFontImportStyle();
         languageCode = navigator.language || navigator.userLanguage || 'ko';
         if (languageCode === 'ko-KR') languageCode = 'ko';
         loadStore();
@@ -5817,6 +6189,7 @@
         loadNotice();
         // 첫 화면은 제목과 시작 문구만 즉시 표시한 뒤 갤러리 미리보기를 비동기로 준비한다.
         render();
+        scheduleFeverStageValidation();
         loadInitialGalleryPreview();
         animationFrameId = requestAnimationFrame(frame);
     }
@@ -6007,156 +6380,265 @@
     }
 
     /**
-     * "피버 스테이지" 객체들을 담을 배열, 5 ~ 12연쇄 까지만 담을 예정.
+     * "피버 스테이지" 객체들을 담을 배열, 4 ~ 12연쇄 까지만 담을 예정. 
+     *     (연속 피버 및 피버 룰에서의 피버 상태에서는 5연쇄부터 사용, 피버 룰에서 피버 상태 아닐 때 싹쓸이 시 4연쇄 패턴 배치)
+     *     (연속 피버 및 피버 룰에서의 피버 상태에서 사용자가 4연쇄 미만을 한 경우, 4연쇄 패턴을 사용해야 함)
      * 
      * @type {FeverStageState[]}
      */
     const FEVER_STAGES = [
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"red"},{"x":1,"y":5,"color":"green"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"garbage"},{"x":2,"y":6,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"green"},{"x":3,"y":7,"color":"garbage"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":3,"y":8,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"red"},{"x":1,"y":5,"color":"yellow"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"garbage"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":1,"y":7,"color":"yellow"},{"x":2,"y":7,"color":"yellow"},{"x":3,"y":7,"color":"garbage"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":2,"y":8,"color":"red"},{"x":3,"y":8,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
             12,
             ['red', 'red'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":2,"y":6,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":2,"y":7,"color":"green"},{"x":3,"y":7,"color":"garbage"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":3,"y":8,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":2,"y":7,"color":"yellow"},{"x":3,"y":7,"color":"garbage"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":2,"y":8,"color":"red"},{"x":3,"y":8,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
             11,
-            ['green', 'green'],
-            2
+            ['yellow', 'yellow'],
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":2,"y":6,"color":"red"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":5,"y":7,"color":"green"},{"x":5,"y":8,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"green"}]},
             10,
             ['green', 'green'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":5,"y":6,"color":"yellow"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"red"},{"x":5,"y":9,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":2,"y":6,"color":"red"},{"x":3,"y":6,"color":"red"},{"x":5,"y":6,"color":"yellow"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"red"},{"x":5,"y":9,"color":"green"}]},
             9,
             ['yellow', 'yellow'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":5,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":5,"y":5,"color":"red"},{"x":2,"y":6,"color":"red"},{"x":3,"y":6,"color":"red"}]},
             8,
             ['green', 'red'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":2,"y":5,"color":"garbage"},{"x":3,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"garbage"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":2,"y":6,"color":"red"},{"x":3,"y":6,"color":"red"}]},
             7,
             ['green', 'green'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":2,"y":5,"color":"garbage"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"garbage"},{"x":2,"y":4,"color":"yellow"},{"x":2,"y":5,"color":"green"},{"x":2,"y":6,"color":"red"}]},
             6,
             ['red', 'red'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":0,"y":3,"color":"yellow"},{"x":0,"y":4,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"garbage"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":0,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"yellow"},{"x":0,"y":4,"color":"green"}]},
             5,
             ['yellow', 'yellow'],
-            2
+            2,
+            ['red', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"green"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":2,"y":5,"color":"red"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"blue"},{"x":4,"y":6,"color":"green"},{"x":5,"y":6,"color":"red"},{"x":0,"y":7,"color":"blue"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"green"},{"x":5,"y":9,"color":"green"},{"x":5,"y":10,"color":"blue"},{"x":5,"y":11,"color":"blue"}]},
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":1,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":4,"y":3,"color":"green"}]},
+            4,
+            ['green', 'green'],
+            1,
+            ['red', 'green']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":1,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"yellow"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"red"},{"x":0,"y":7,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":0,"y":8,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":0,"y":9,"color":"blue"},{"x":5,"y":9,"color":"blue"},{"x":0,"y":10,"color":"yellow"},{"x":5,"y":10,"color":"blue"},{"x":0,"y":11,"color":"red"}]},
             12,
-            ['yellow', 'green'],
-            3
+            ['blue', 'red'],
+            3,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"red"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":3,"y":6,"color":"blue"},{"x":4,"y":6,"color":"green"},{"x":5,"y":6,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"green"},{"x":5,"y":9,"color":"green"},{"x":5,"y":10,"color":"blue"},{"x":5,"y":11,"color":"blue"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":1,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"yellow"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"red"},{"x":0,"y":7,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":0,"y":8,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":0,"y":9,"color":"red"},{"x":5,"y":9,"color":"blue"},{"x":5,"y":10,"color":"blue"}]},
             11,
-            ['yellow', 'blue'],
-            3
+            ['yellow', 'red'],
+            3,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"red"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":4,"y":6,"color":"green"},{"x":5,"y":6,"color":"red"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"green"},{"x":5,"y":9,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"red"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"blue"},{"x":3,"y":5,"color":"blue"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"yellow"},{"x":5,"y":7,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":5,"y":9,"color":"blue"},{"x":5,"y":10,"color":"red"}]},
             10,
             ['yellow', 'blue'],
-            3
+            3,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"red"},{"x":5,"y":7,"color":"red"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"blue"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"yellow"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"yellow"},{"x":5,"y":7,"color":"yellow"},{"x":5,"y":8,"color":"blue"}]},
             9,
             ['red', 'blue'],
-            4
+            4,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"yellow"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"blue"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"yellow"}]},
             8,
             ['red', 'blue'],
-            4
+            4,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":0,"y":6,"color":"yellow"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"blue"},{"x":0,"y":6,"color":"yellow"}]},
             7,
             ['red', 'blue'],
-            4
+            4,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"}]},
             6,
             ['yellow', 'yellow'],
-            3
+            3,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":4,"y":2,"color":"green"},{"x":0,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":0,"y":4,"color":"yellow"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"yellow"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"yellow"},{"x":0,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"}]},
             5,
             ['yellow', 'yellow'],
-            3
+            3,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"blue"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"blue"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"yellow"},{"x":4,"y":7,"color":"red"},{"x":3,"y":8,"color":"yellow"},{"x":4,"y":8,"color":"red"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"yellow"},{"x":4,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"yellow"},{"x":4,"y":2,"color":"yellow"},{"x":0,"y":3,"color":"blue"},{"x":0,"y":4,"color":"yellow"}]},
+            4,
+            ['yellow', 'red'],
+            2,
+            ['red', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"blue"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"blue"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"yellow"},{"x":4,"y":7,"color":"red"},{"x":3,"y":8,"color":"yellow"},{"x":4,"y":8,"color":"red"}]},
             12,
             ['green', 'blue'],
-            2
+            2,
+            ['red', 'blue', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"green"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"yellow"},{"x":3,"y":8,"color":"yellow"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"green"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"red"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"yellow"},{"x":3,"y":8,"color":"yellow"}]},
             11,
             ['red', 'red'],
-            1
+            1,
+            ['red', 'blue', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"yellow"},{"x":2,"y":7,"color":"blue"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"yellow"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"blue"}]},
             10,
             ['yellow', 'yellow'],
-            1
+            1,
+            ['red', 'blue', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":4,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"blue"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"}]},
             9,
             ['red', 'blue'],
-            1
+            1,
+            ['red', 'blue', 'green', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":0,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"green"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"yellow"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"yellow"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"}]},
             8,
             ['red', 'red'],
-            2
+            2,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":0,"y":5,"color":"yellow"}]},
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"yellow"},{"x":0,"y":4,"color":"red"},{"x":1,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"yellow"}]},
             7,
             ['red', 'red'],
-            2
+            2,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"green"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"green"},{"x":4,"y":5,"color":"green"}]},
+            {"puyos":[{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"}]},
             6,
             ['red', 'blue'],
-            2
+            2,
+            ['red', 'blue', 'yellow']
         ),
         new FeverStageState(
-            {"puyos":[{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"}]},
+            {"puyos":[{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"yellow"},{"x":4,"y":4,"color":"yellow"}]},
             5,
             ['red', 'blue'],
-            2
+            2,
+            ['red', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"}]},
+            4,
+            ['red', 'blue'],
+            2,
+            ['red', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"purple"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"purple"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"purple"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"red"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"purple"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"green"},{"x":1,"y":5,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"purple"},{"x":0,"y":6,"color":"purple"},{"x":1,"y":6,"color":"green"},{"x":2,"y":6,"color":"red"},{"x":3,"y":6,"color":"green"},{"x":5,"y":6,"color":"purple"},{"x":0,"y":7,"color":"green"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"red"},{"x":3,"y":7,"color":"green"},{"x":5,"y":7,"color":"purple"},{"x":2,"y":8,"color":"purple"}]},
+            12,
+            ['red', 'red'],
+            2,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"purple"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"purple"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"purple"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"red"},{"x":3,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"green"},{"x":1,"y":5,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":5,"y":5,"color":"purple"},{"x":0,"y":6,"color":"purple"},{"x":1,"y":6,"color":"green"},{"x":2,"y":6,"color":"red"},{"x":5,"y":6,"color":"purple"},{"x":0,"y":7,"color":"green"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"red"},{"x":5,"y":7,"color":"purple"},{"x":2,"y":8,"color":"purple"}]},
+            11,
+            ['green', 'purple'],
+            4,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"purple"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"purple"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"purple"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"red"},{"x":3,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"green"},{"x":1,"y":5,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":5,"y":5,"color":"purple"},{"x":0,"y":6,"color":"purple"},{"x":1,"y":6,"color":"green"},{"x":2,"y":6,"color":"red"},{"x":5,"y":6,"color":"purple"},{"x":0,"y":7,"color":"green"},{"x":1,"y":7,"color":"green"}]},
+            10,
+            ['green', 'red'],
+            3,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"purple"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"purple"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"purple"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"green"},{"x":1,"y":5,"color":"red"},{"x":5,"y":5,"color":"purple"},{"x":0,"y":6,"color":"purple"},{"x":1,"y":6,"color":"green"},{"x":5,"y":6,"color":"purple"},{"x":0,"y":7,"color":"green"},{"x":1,"y":7,"color":"green"}]},
+            9,
+            ['red', 'red'],
+            1,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"purple"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"purple"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"purple"},{"x":1,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"green"},{"x":5,"y":5,"color":"purple"},{"x":0,"y":6,"color":"purple"},{"x":5,"y":6,"color":"purple"},{"x":0,"y":7,"color":"green"}]},
+            8,
+            ['green', 'green'],
+            1,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"purple"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"purple"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"purple"},{"x":5,"y":4,"color":"red"},{"x":5,"y":5,"color":"purple"},{"x":5,"y":6,"color":"purple"}]},
+            7,
+            ['green', 'purple'],
+            2,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":5,"y":5,"color":"purple"},{"x":5,"y":6,"color":"purple"}]},
+            6,
+            ['green', 'red'],
+            2,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":5,"y":5,"color":"purple"},{"x":5,"y":6,"color":"purple"}]},
+            5,
+            ['green', 'red'],
+            2,
+            ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":5,"y":5,"color":"purple"},{"x":5,"y":6,"color":"purple"}]},
+            4,
+            ['green', 'green'],
+            1,
+            ['red', 'green', 'purple']
         )
-        
     ];
 
     /**
@@ -6168,7 +6650,7 @@
         if (!(feverStateObject instanceof FeverStageState)) {
             throw new TypeError('registerFeverStage requires a FeverStageState instance.');
         }
-        FEVER_STAGES.push(feverStateObject);
+        addFeverStageState(feverStateObject);
     }
 
     // Enemy 계층은 파일 하단에 모아 확장 지점을 한곳에서 확인할 수 있게 한다.
@@ -7570,11 +8052,20 @@
      */
     function registerFeverStageState(feverStageState) {
         if (!(feverStageState instanceof FeverStageState)) throw new TypeError('feverStageState는 FeverStageState 인스턴스여야 합니다.');
-        FEVER_STAGES.push(feverStageState);
+        addFeverStageState(feverStageState);
     }
 
     WebPuyo = {
         Enemy,
+        Puyo,
+        RedPuyo,
+        GreenPuyo,
+        YellowPuyo,
+        BluePuyo,
+        PurplePuyo,
+        GarbagePuyo,
+        HardGarbagePuyo,
+        IronPuyo,
         WarningPuyo,
         SoundPool,
         CommonSoundPool,
