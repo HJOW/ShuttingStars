@@ -186,6 +186,10 @@
     ];
     /** 새 설정 및 잘못된 저장값에 사용할 기본 그래픽 품질이다. @type {'low'} */
     const DEFAULT_GRAPHICS_QUALITY = 'low';
+    /** 플레이어 이름으로 허용할 최대 글자 수다. */
+    const PLAYER_NAME_MAX_LENGTH = 10;
+    /** 새 설정 및 비어 있거나 잘못된 이름에 사용할 기본 플레이어 이름이다. */
+    const DEFAULT_PLAYER_NAME = 'PLAYER 1';
     /** 가상 컨트롤러 표시 크기 선택지다. 기존 true/false 저장값은 normal/none으로 이관한다. @type {{key:'none'|'normal'|'large', label:string}[]} */
     const VIRTUAL_CONTROLLER_OPTIONS = [
         { key: 'none', label: '없음' },
@@ -215,13 +219,14 @@
             '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Play', '그리기': 'Draw', '시뮬레이션': 'Simulation', '지우개': 'Eraser',
             'JSON복사': 'Copy JSON', 'JSON넣기': 'Paste JSON', '배치가 클립보드에 복사됨': 'Layout copied to clipboard',
             '클립보드 복사 실패': 'Clipboard copy failed', 'JSON 파싱 실패': 'JSON parsing failed', '배치 JSON을 입력하세요.': 'Enter layout JSON.',
-            '설정': 'Settings', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '없음': 'None', '크게': 'Large', '그래픽 설정': 'Graphics quality', '낮음': 'Low', '중간': 'Medium', '높음': 'High', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
+            '설정': 'Settings', '이름': 'Name', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '없음': 'None', '크게': 'Large', '그래픽 설정': 'Graphics quality', '낮음': 'Low', '중간': 'Medium', '높음': 'High', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
             '플레이 방법': 'How to Play', '갤러리': 'Gallery', '대상 유형': 'Category', '대상': 'Item', '일반뿌요': 'Puyos', '예고뿌요': 'Warning Puyos', '적': 'Enemies', '빨강뿌요': 'Red Puyo', '초록뿌요': 'Green Puyo', '노랑뿌요': 'Yellow Puyo', '파랑뿌요': 'Blue Puyo', '보라뿌요': 'Purple Puyo', '방해뿌요': 'Garbage Puyo', '딱딱뿌요': 'Hard Puyo', '작은 예고뿌요': 'Small Warning Puyo', '큰 예고뿌요': 'Large Warning Puyo', '빨간 돌': 'Red Rock', '별': 'Star', '태양': 'Sun', '중성자별': 'Neutron Star', '블랙홀': 'Black Hole', '위기': 'Crisis', '다시보기': 'Replay',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Use Left, Right, and Down to move puyos. Rotate them with Z and X.', '좌우 방향키로 뿌요 이동': 'Move puyos with Left and Right.', '아래 방향키로 빨리 떨어뜨리기': 'Use Down to drop faster.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Press Z to rotate left.', 'X 키를 눌러 우측으로 뿌요 회전': 'Press X to rotate right.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Connect four or more puyos of the same color to pop them and attack.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Four puyos of the same color connect to attack the opponent.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Garbage puyos next to popping puyos disappear too.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Chain popping puyos for a stronger attack.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'An all clear gives you a powerful attack.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'You lose when puyos stay at the end of the third row.',
             '은하': 'Galaxy',
             '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)'
         },
         ja: {
+            '이름': '名前',
             '뿌요 W': 'Puyo W',
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
             '게임 시작': 'ゲーム開始', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '퍼즐뿌요': 'パズルぷよ', '퍼즐뿌요 스테이지': 'パズルぷよステージ', '스테이지 %1': 'ステージ %1', '권장 턴 수 %1': '推奨ターン数: %1', '현재 턴 %1': 'ターン %1', '현재 턴 %1 / %2': 'ターン %1 / %2', '%1 연쇄 해봐': '%1連鎖してみよう！', '싹쓸이 해봐': '全消ししてみよう！', '한 번에 %1개 뿌요를 터뜨려봐': '一度に%1個のぷよを消そう！', '방해뿌요 %1개를 발생 시켜봐': 'おじゃまぷよを%1個送ろう！', '스테이지 클리어': 'ステージクリア', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
@@ -240,6 +245,7 @@
             '음소거(꺼짐)' : 'ミュート（オフ）', '음소거(활성)' : 'ミュート（オン）'
         },
         zh: {
+            '이름': '名称',
             '뿌요 W': 'Puyo W',
             '초기화': '重置', '이 게임의 모든 설정을 초기화하시겠습니까?': '要重置此游戏的所有设置吗？', '초기화 중...': '正在重置…',
             '게임 시작': '开始游戏', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '퍼즐뿌요': '益智魔法气泡', '퍼즐뿌요 스테이지': '益智魔法气泡关卡', '스테이지 %1': '关卡 %1', '권장 턴 수 %1': '推荐回合数: %1', '현재 턴 %1': '第 %1 回合', '현재 턴 %1 / %2': '第 %1 / %2 回合', '%1 연쇄 해봐': '试试 %1 连锁！', '싹쓸이 해봐': '试试全消！', '한 번에 %1개 뿌요를 터뜨려봐': '一次消除 %1 个魔法气泡！', '방해뿌요 %1개를 발생 시켜봐': '发送 %1 个垃圾魔法气泡！', '스테이지 클리어': '关卡完成', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
@@ -439,6 +445,58 @@
     }
 
     /**
+     * 설정 등을 저장할 때 사용하는 대리 객체
+     */
+    class StorageManager {
+        /**
+         * 스토리지에 저장된 데이터를 읽어 반환, 해당 데이터가 존재하지 않으면 null 반환
+         * 
+         * @param {string} key 데이터의 키
+         * @returns {string|null} 데이터
+         */
+        getItem(key) {
+            return window.localStorage.getItem(key);
+        }
+
+        /**
+         * 스토리지에 데이터 저장 (단, null 입력 시 데이터 삭제)
+         * 
+         * @param {string} key 데이터의 키
+         * @param {string|null} value 저장할 데이터 (삭제 시 null 입력)
+         */
+        setItem(key, value) {
+            if(value == null) window.localStorage.removeItem(key);
+            else window.localStorage.setItem(key, value);
+        }
+
+        /**
+         * 스토리지의 모든 데이터를 삭제
+         */
+        clear() {
+            window.localStorage.clear();
+        }
+    }
+
+    /** 
+     * 스토리지 저장 시 사용하는 공통 객체 
+     *     다른 플랫폼 용으로 사용할 때 해당 플랫폼 제공 저장수단으로 교체하여 사용한다.
+     * 
+     * @type {StorageManager} 
+     * 
+    */
+    let storageManager = new StorageManager();
+
+    /**
+     * 공통 스토리지 매니저 교체
+     * 
+     * @param {StorageManager} storageManagerObject 
+     */
+    function setStorageManager(storageManagerObject) {
+        if(! (storageManagerObject instanceof StorageManager)) throw new TypeError('storageManagerObject는 StorageManager 인스턴스여야 합니다.');
+        storageManager = storageManagerObject;
+    }
+
+    /**
      * 공백이 있어 CSS font 값에서 여러 키워드로 잘못 해석될 수 있는 글꼴 이름에만 쌍따옴표를 붙인다.
      * @param {string} fontName 원본 글꼴 이름
      * @returns {string} font 속성에 안전하게 넣을 수 있는 글꼴 이름
@@ -467,9 +525,21 @@
             clearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             feverClearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             puzzleClearStages: [],
-            settings: { musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
+            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
             muted: false
         };
+    }
+
+    /** 저장된 플레이어 이름을 표시 가능한 기본값과 최대 길이로 정규화한다. @param {unknown} value 저장값 @returns {string} 플레이어 이름 */
+    function normalizePlayerName(value) {
+        if (typeof value !== 'string') return DEFAULT_PLAYER_NAME;
+        const name = Array.from(value).slice(0, PLAYER_NAME_MAX_LENGTH).join('');
+        return name.trim() ? name : DEFAULT_PLAYER_NAME;
+    }
+
+    /** 현재 설정된 플레이어 이름을 반환한다. @returns {string} 플레이어 이름 */
+    function getPlayerName() {
+        return normalizePlayerName(store?.settings?.playerName);
     }
 
     /** 그래픽 품질 키에 맞는 출력 해상도 항목을 반환한다. @param {unknown} quality 그래픽 품질 키 @returns {{key:'low'|'medium'|'high', label:string, width:number, height:number}} */
@@ -540,7 +610,7 @@
     function loadGalleryUnlocks() {
         const initial = createInitialGalleryUnlocks();
         try {
-            const serialized = window.localStorage.getItem(GALLERY_STORE_KEY);
+            const serialized = storageManager.getItem(GALLERY_STORE_KEY);
             if (!serialized) {
                 galleryUnlocks = initial;
                 return;
@@ -563,7 +633,7 @@
     function saveGalleryUnlocks() {
         setTimeout(() => {
             try {
-                window.localStorage.setItem(GALLERY_STORE_KEY, JSON.stringify(galleryUnlocks));
+                storageManager.setItem(GALLERY_STORE_KEY, JSON.stringify(galleryUnlocks));
             } catch (error) {
                 console.error('Puyo W 갤러리 저장 데이터 기록에 실패했습니다.', error);
             }
@@ -780,7 +850,7 @@
      */
     function saveStore() {
         try {
-            window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
+            storageManager.setItem(STORE_KEY, JSON.stringify(store));
         } catch (error) {
             console.error('Puyo W 저장 데이터 기록에 실패했습니다.', error);
         }
@@ -792,7 +862,7 @@
      */
     function loadStore() {
         try {
-            const serialized = window.localStorage.getItem(STORE_KEY);
+            const serialized = storageManager.getItem(STORE_KEY);
             if (!serialized) {
                 store = createInitialStore();
                 return;
@@ -825,6 +895,7 @@
                 ? [...new Set(parsed.puzzleClearStages.filter((index) => Number.isInteger(index) && index >= 0))]
                 : [];
             store = { clearList: [...new Set(parsed.clearList)], clearListByDifficulty, feverClearListByDifficulty, puzzleClearStages, settings: {
+                playerName: normalizePlayerName(settings.playerName),
                 musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.settings.musicVolume,
                 effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.settings.effectsVolume,
                 // 이전 켜기/끄기 불리언 저장값도 각각 보통/없음으로 유지한다.
@@ -1403,7 +1474,7 @@
             pairQueue[1] = [debugColor, debugColor];
         }
         const practicePlayer = new PlayerState(controller.getName(), FIELD_RIGHT, controller, colors);
-        const players = [new PlayerState('PLAYER 1', FIELD_LEFT, null, colors), practicePlayer];
+        const players = [new PlayerState(getPlayerName(), FIELD_LEFT, null, colors), practicePlayer];
         if (feverRule) players.forEach((player) => { player.fever = createFeverRuleState(); });
         // 연습과 연속 피버의 상대는 공격만 받아 방해뿌요 연출을 보여주고 일반 뿌요는 생성하지 않는다.
         if (soloMode) {
@@ -1488,7 +1559,7 @@
         resetVirtualControllerInput();
         const colors = [...COLORS];
         const controller = new PracticeEnemy();
-        const player = new PlayerState('PLAYER 1', FIELD_LEFT, null, colors);
+        const player = new PlayerState(getPlayerName(), FIELD_LEFT, null, colors);
         const target = new PlayerState(controller.getName(), FIELD_RIGHT, controller, colors);
         target.receivesPuyos = false;
         target.allClearEnabled = false;
@@ -3709,6 +3780,11 @@
         return Boolean(game && !game.tutorial && (game.practice || game.continuousFever || game.puzzle));
     }
 
+    /** 연습·연속 피버의 중앙 점수 패널을 단독 배치로 사용할지 반환한다. @returns {boolean} 단독 점수 패널 사용 여부 */
+    function usesSoloScoreLayout() {
+        return Boolean(game && !game.tutorial && (game.practice || game.continuousFever));
+    }
+
     /** 퍼즐뿌요의 오른쪽 안내 전용 영역인지 반환한다. @param {PlayerState} player 검사할 플레이어 @returns {boolean} 안내 영역 여부 */
     function isPuzzleTargetField(player) {
         return Boolean(game?.puzzle && player === game.players[1]);
@@ -3940,15 +4016,17 @@
         } else {
             right.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, getEnemyPortraitExpression(right, left));
         }
-        const scores = [
-            { player: left, x: 488, color: '#ef8aa0' },
-            { player: right, x: 646, color: '#6bbce8' }
-        ];
-        scores.forEach(({ player, x, color }) => {
-            context.fillStyle = '#0b202c'; context.fillRect(x, 492, 146, 92);
-            context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, 492, 146, 92);
-            context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(player.name, x + 73, 516);
-            context.fillStyle = '#f5fbfc'; context.font = `22px ${MESSAGE_FONT}`; context.fillText(formatPoint(player.point), x + 73, 557);
+        const scores = usesSoloScoreLayout()
+            ? [{ player: left, x: 488, width: 304, color: '#ef8aa0' }]
+            : [
+                { player: left, x: 488, width: 146, color: '#ef8aa0' },
+                { player: right, x: 646, width: 146, color: '#6bbce8' }
+            ];
+        scores.forEach(({ player, x, width, color }) => {
+            context.fillStyle = '#0b202c'; context.fillRect(x, 492, width, 92);
+            context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, 492, width, 92);
+            context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(player.name, x + width / 2, 516);
+            context.fillStyle = '#f5fbfc'; context.font = `22px ${MESSAGE_FONT}`; context.fillText(formatPoint(player.point), x + width / 2, 557);
         });
     }
 
@@ -4288,7 +4366,7 @@
     function enterTutorialStage(stage) {
         const config = getTutorialStageConfig(stage);
         const themeController = new PracticeEnemy();
-        const player = new PlayerState('PLAYER 1', FIELD_LEFT, null, COLORS);
+        const player = new PlayerState(getPlayerName(), FIELD_LEFT, null, COLORS);
         const opponent = new PlayerState('', FIELD_RIGHT, themeController, COLORS);
         opponent.receivesPuyos = false;
         opponent.phase = 'idle';
@@ -4517,6 +4595,7 @@
     /** 설정 화면의 변경 사항을 저장한다. @returns {void} */
     function saveSettings() {
         clearSettingsApiTest();
+        settingsDraft.playerName = normalizePlayerName(settingsDraft.playerName);
         store.settings = { ...settingsDraft };
         saveStore();
         applyCanvasOutputResolution();
@@ -4541,7 +4620,7 @@
             return;
         }
         try {
-            window.localStorage.clear();
+            storageManager.clear();
         } catch (error) {
             console.error('Puyo W 설정 초기화 중 저장 데이터 삭제에 실패했습니다.', error);
         }
@@ -4595,7 +4674,7 @@
 
     /** API 테스트 실행 가능 여부를 반영한 설정 화면 포커스 순서를 만든다. @returns {number[]} 포커스 인덱스 목록 */
     function getSelectableSettingsFocuses() {
-        return [0, 1, 2, 3, 4, 5, 6, ...(canRunAiApiTest() ? [7] : []), 8, 9, 10];
+        return [0, 1, 2, 3, 4, 5, 6, 7, ...(canRunAiApiTest() ? [8] : []), 9, 10, 11];
     }
 
     /** 설정 화면에서 다음 또는 이전 포커스로 이동한다. @param {number} direction 이동 방향 @returns {void} */
@@ -4677,17 +4756,17 @@
 
     /** 설정 화면의 포커스 항목을 실행한다. @returns {void} */
     function activateSettingsFocus() {
-        if (settingsFocus === 2) {
+        if (settingsFocus === 3) {
             const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
             settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + 1) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
         }
-        else if (settingsFocus === 3) {
+        else if (settingsFocus === 4) {
             const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
             settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + 1) % GRAPHICS_QUALITY_OPTIONS.length].key;
-        } else if (settingsFocus === 7 && canRunAiApiTest()) runAiApiTest();
-        else if (settingsFocus === 8) saveSettings();
-        else if (settingsFocus === 9) cancelSettings();
-        else if (settingsFocus === 10) resetAllSettings();
+        } else if (settingsFocus === 8 && canRunAiApiTest()) runAiApiTest();
+        else if (settingsFocus === 9) saveSettings();
+        else if (settingsFocus === 10) cancelSettings();
+        else if (settingsFocus === 11) resetAllSettings();
     }
 
     /** 설정 화면을 그린다. @returns {void} */
@@ -4695,6 +4774,7 @@
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
         context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `38px ${TITLE_FONT}`; context.fillText(translate('설정'), WIDTH / 2, 56);
         const rows = [
+            { label: '이름', y: 95, value: settingsDraft.playerName, kind: 'text' },
             { label: '배경음악 볼륨', y: 105, value: settingsDraft.musicVolume, kind: 'slider' },
             { label: '효과음 볼륨', y: 155, value: settingsDraft.effectsVolume, kind: 'slider' },
             { label: '가상 컨트롤러 사용', y: 205, value: settingsDraft.virtualController, kind: 'radio', options: VIRTUAL_CONTROLLER_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
@@ -4703,6 +4783,7 @@
             { label: 'AI API 키', y: 355, value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text' },
             { label: '사용 모델명', y: 405, value: settingsDraft.aiModel, kind: 'text' }
         ];
+        rows.slice(1).forEach((row) => { row.y += 40; });
         rows.forEach((row, index) => {
             context.textAlign = 'left'; context.fillStyle = '#d8f2f5'; context.font = `15px ${BUTTON_FONT}`; context.fillText(translate(row.label), 270, row.y + 5);
             const focused = settingsFocus === index;
@@ -4730,13 +4811,13 @@
             }
         });
         const apiTestEnabled = canRunAiApiTest();
-        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(530, 435, 450, 40);
-        context.strokeStyle = settingsFocus === 7 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 7 && apiTestEnabled ? 3 : 2; context.strokeRect(530, 435, 450, 40);
-        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 755, 461);
-        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 500);
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `13px ${MESSAGE_FONT}`; context.fillText(translate('사운드 관련 기능은 추후 제공 예정'), WIDTH / 2, 523);
-        [{ label: '저장', x: 380, focus: 8, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 9, color: '#ef5350' }, { label: '초기화', x: 740, focus: 10, color: '#7e6bc4' }].forEach((button) => {
-            context.fillStyle = button.color; context.fillRect(button.x, 555, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 555, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 585);
+        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(530, 475, 450, 40);
+        context.strokeStyle = settingsFocus === 8 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 8 && apiTestEnabled ? 3 : 2; context.strokeRect(530, 475, 450, 40);
+        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 755, 501);
+        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 540);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `13px ${MESSAGE_FONT}`; context.fillText(translate('사운드 관련 기능은 추후 제공 예정'), WIDTH / 2, 563);
+        [{ label: '저장', x: 380, focus: 9, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 10, color: '#ef5350' }, { label: '초기화', x: 740, focus: 11, color: '#7e6bc4' }].forEach((button) => {
+            context.fillStyle = button.color; context.fillRect(button.x, 595, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 595, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 625);
         });
     }
 
@@ -5709,33 +5790,36 @@
 
     /** 설정 화면에서 포커스 이동과 문자열 편집을 처리한다. @param {KeyboardEvent} event 키보드 이벤트 @param {string} key 소문자 키 @returns {void} */
     function handleSettingsKeydown(event, key) {
-        const textField = settingsFocus === 5 || settingsFocus === 6;
+        const textField = settingsFocus === 0 ? 'playerName' : (settingsFocus === 6 ? 'aiApiKey' : (settingsFocus === 7 ? 'aiModel' : null));
         if (settingsEditing && textField) {
-            const field = settingsFocus === 5 ? 'aiApiKey' : 'aiModel';
+            const field = textField;
             if (key === 'enter' || key === 'escape') { settingsEditing = false; return; }
             if (key === 'arrowleft') { settingsCursor = Math.max(0, settingsCursor - 1); return; }
             if (key === 'arrowright') { settingsCursor = Math.min(settingsDraft[field].length, settingsCursor + 1); return; }
             if (key === 'backspace') { if (settingsCursor > 0) { settingsDraft[field] = settingsDraft[field].slice(0, settingsCursor - 1) + settingsDraft[field].slice(settingsCursor); settingsCursor -= 1; } return; }
-            if (key.length === 1) { settingsDraft[field] = settingsDraft[field].slice(0, settingsCursor) + event.key + settingsDraft[field].slice(settingsCursor); settingsCursor += event.key.length; }
+            if (key.length === 1) {
+                const nextValue = settingsDraft[field].slice(0, settingsCursor) + event.key + settingsDraft[field].slice(settingsCursor);
+                if (field !== 'playerName' || Array.from(nextValue).length <= PLAYER_NAME_MAX_LENGTH) { settingsDraft[field] = nextValue; settingsCursor += event.key.length; }
+            }
             return;
         }
         if (key === 'enter' || key === ' ') {
-            if (textField) { settingsEditing = true; settingsCursor = settingsDraft[settingsFocus === 5 ? 'aiApiKey' : 'aiModel'].length; }
+            if (textField) { settingsEditing = true; settingsCursor = settingsDraft[textField].length; }
             else activateSettingsFocus();
         } else if (key === 'escape') cancelSettings();
         else if (key === 'arrowup' || key === 'arrowdown') moveSettingsFocus(key === 'arrowup' ? -1 : 1);
         else if (key === 'arrowleft' || key === 'arrowright') {
             const direction = key === 'arrowleft' ? -1 : 1;
-            if (settingsFocus === 0) settingsDraft.musicVolume = Math.max(0, Math.min(100, settingsDraft.musicVolume + direction));
-            else if (settingsFocus === 1) settingsDraft.effectsVolume = Math.max(0, Math.min(100, settingsDraft.effectsVolume + direction));
-            else if (settingsFocus === 2) {
+            if (settingsFocus === 1) settingsDraft.musicVolume = Math.max(0, Math.min(100, settingsDraft.musicVolume + direction));
+            else if (settingsFocus === 2) settingsDraft.effectsVolume = Math.max(0, Math.min(100, settingsDraft.effectsVolume + direction));
+            else if (settingsFocus === 3) {
                 const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
                 settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + direction + VIRTUAL_CONTROLLER_OPTIONS.length) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
             }
-            else if (settingsFocus === 3) {
+            else if (settingsFocus === 4) {
                 const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
                 settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + direction + GRAPHICS_QUALITY_OPTIONS.length) % GRAPHICS_QUALITY_OPTIONS.length].key;
-            } else if (settingsFocus >= 8) settingsFocus = 8 + (settingsFocus - 8 + (direction < 0 ? 2 : 1)) % 3;
+            } else if (settingsFocus >= 9) settingsFocus = 9 + (settingsFocus - 9 + (direction < 0 ? 2 : 1)) % 3;
         }
     }
 
@@ -6178,21 +6262,22 @@
                 activateTitleMenu();
             }
         } else if (menuScreen === 'settings') {
-            if (y >= 435 && y <= 475 && x >= 530 && x <= 980 && canRunAiApiTest()) { settingsFocus = 7; runAiApiTest(); }
-            else if (y >= 555 && y <= 601 && x >= 380 && x <= 540) { settingsFocus = 8; saveSettings(); }
-            else if (y >= 555 && y <= 601 && x >= 560 && x <= 720) { settingsFocus = 9; cancelSettings(); }
-            else if (y >= 555 && y <= 601 && x >= 740 && x <= 900) { settingsFocus = 10; resetAllSettings(); }
-            else if (y >= 95 && y <= 115) { settingsFocus = 0; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
-            else if (y >= 145 && y <= 165) { settingsFocus = 1; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
-            else if (y >= 186 && y <= 224 && x >= 530 && x <= 660) { settingsFocus = 2; settingsDraft.virtualController = 'none'; }
-            else if (y >= 186 && y <= 224 && x >= 680 && x <= 810) { settingsFocus = 2; settingsDraft.virtualController = 'normal'; }
-            else if (y >= 186 && y <= 224 && x >= 830 && x <= 960) { settingsFocus = 2; settingsDraft.virtualController = 'large'; }
-            else if (y >= 236 && y <= 274 && x >= 530 && x <= 660) { settingsFocus = 3; settingsDraft.graphicsQuality = 'low'; }
-            else if (y >= 236 && y <= 274 && x >= 680 && x <= 810) { settingsFocus = 3; settingsDraft.graphicsQuality = 'medium'; }
-            else if (y >= 236 && y <= 274 && x >= 830 && x <= 960) { settingsFocus = 3; settingsDraft.graphicsQuality = 'high'; }
-            else if (y >= 286 && y <= 324 && x >= 530 && x <= 670) { settingsFocus = 4; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
-            else if (y >= 336 && y <= 374) { settingsFocus = 5; settingsEditing = true; settingsCursor = settingsDraft.aiApiKey.length; }
-            else if (y >= 386 && y <= 424) { settingsFocus = 6; settingsEditing = true; settingsCursor = settingsDraft.aiModel.length; }
+            if (y >= 475 && y <= 515 && x >= 530 && x <= 980 && canRunAiApiTest()) { settingsFocus = 8; runAiApiTest(); }
+            else if (y >= 595 && y <= 641 && x >= 380 && x <= 540) { settingsFocus = 9; saveSettings(); }
+            else if (y >= 595 && y <= 641 && x >= 560 && x <= 720) { settingsFocus = 10; cancelSettings(); }
+            else if (y >= 595 && y <= 641 && x >= 740 && x <= 900) { settingsFocus = 11; resetAllSettings(); }
+            else if (y >= 76 && y <= 114) { settingsFocus = 0; settingsEditing = true; settingsCursor = settingsDraft.playerName.length; }
+            else if (y >= 135 && y <= 155) { settingsFocus = 1; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
+            else if (y >= 185 && y <= 205) { settingsFocus = 2; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
+            else if (y >= 226 && y <= 264 && x >= 530 && x <= 660) { settingsFocus = 3; settingsDraft.virtualController = 'none'; }
+            else if (y >= 226 && y <= 264 && x >= 680 && x <= 810) { settingsFocus = 3; settingsDraft.virtualController = 'normal'; }
+            else if (y >= 226 && y <= 264 && x >= 830 && x <= 960) { settingsFocus = 3; settingsDraft.virtualController = 'large'; }
+            else if (y >= 276 && y <= 314 && x >= 530 && x <= 660) { settingsFocus = 4; settingsDraft.graphicsQuality = 'low'; }
+            else if (y >= 276 && y <= 314 && x >= 680 && x <= 810) { settingsFocus = 4; settingsDraft.graphicsQuality = 'medium'; }
+            else if (y >= 276 && y <= 314 && x >= 830 && x <= 960) { settingsFocus = 4; settingsDraft.graphicsQuality = 'high'; }
+            else if (y >= 326 && y <= 364 && x >= 530 && x <= 670) { settingsFocus = 5; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
+            else if (y >= 376 && y <= 414) { settingsFocus = 6; settingsEditing = true; settingsCursor = settingsDraft.aiApiKey.length; }
+            else if (y >= 426 && y <= 464) { settingsFocus = 7; settingsEditing = true; settingsCursor = settingsDraft.aiModel.length; }
         } else {
             if (menuScreen === 'practiceDifficulty') {
                 const cancelBounds = getColorSelectionCancelButtonBounds();
@@ -6255,7 +6340,7 @@
 
     /**
      * 현재 화면을 AI가 구분할 수 있는 간결한 상태 객체로 만든다.
-     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getNowScreen() {
         if (settingsResetting) return { screen: 'settings_resetting', playerCanControl: false };
@@ -6374,7 +6459,7 @@
     /**
      * 현재 표시 중인 화면과 플레이어 조작 가능 여부를 반환한다.
      * 메뉴, 튜토리얼, 대전 진행 상태 모두에서 사용할 수 있다.
-     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getScreenState() {
         return getNowScreen();
@@ -6502,28 +6587,33 @@
         const screenSchema = {
             type: 'object',
             properties: {
-                screen: { type: 'string', enum: ['initial_title', 'main_menu', 'rule_select', 'practice_difficulty', 'opponent_select', 'fever_opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'settings_resetting', 'gallery', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible title, menu, gallery, simulator, tutorial, or match screen.' },
+                screen: { type: 'string', enum: ['initial_title', 'main_menu', 'rule_select', 'practice_difficulty', 'puzzle_stage_select', 'opponent_select', 'fever_opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'settings_resetting', 'gallery', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible title, puzzle-stage selection, menu, gallery, simulator, tutorial, or match screen.' },
                 playerCanControl: { type: 'boolean' }
             },
             required: ['screen', 'playerCanControl']
         };
+        const boardColors = [...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO];
         const puyoSchema = {
             type: 'object', properties: {
-                x: { type: 'integer', description: 'Column from the left.' },
-                y: { type: 'integer', description: 'Row from the bottom.' },
-                color: { type: 'string', enum: [...COLORS, 'garbage'] }
+                x: { type: 'integer', minimum: 0, maximum: COLUMNS - 1, description: 'Column from the left.' },
+                y: { type: 'number', minimum: 0, maximum: ROWS - 1, description: 'Row from the bottom; active puyos may be fractional while falling.' },
+                color: { type: 'string', enum: boardColors }
             }, required: ['x', 'y', 'color']
         };
+        const boardCellSchema = { type: ['string', 'null'], enum: [...boardColors, null] };
         const activeSchema = {
             type: ['object', 'null'], properties: {
-                x: { type: 'integer' }, y: { type: 'integer' }, rotation: { type: 'integer', minimum: 0, maximum: 3 },
+                x: { type: 'integer', minimum: 0, maximum: COLUMNS - 1 }, y: { type: 'number', minimum: 0, maximum: ROWS - 1 }, rotation: { type: 'integer', minimum: 0, maximum: 3 },
                 colors: { type: 'array', items: { type: 'string', enum: COLORS }, minItems: 2, maxItems: 2 },
                 cells: { type: 'array', items: puyoSchema, minItems: 2, maxItems: 2 }
-            }
+            }, required: ['x', 'y', 'rotation', 'colors', 'cells']
         };
         const playerSchema = {
             type: 'object', properties: {
-                name: { type: 'string' },
+                name: { type: 'string' }, isCpu: { type: 'boolean' }, phase: { type: 'string' },
+                point: { type: 'number', minimum: 0 }, attack: { type: 'number', minimum: 0 },
+                damage: { type: 'number', minimum: 0 }, normalDamage: { type: 'number', minimum: 0 },
+                combo: { type: 'integer', minimum: 0 }, placedPairCount: { type: 'integer', minimum: 0 },
                 board: { type: 'object', properties: {
                     columns: { type: 'integer', const: COLUMNS }, rows: { type: 'integer', const: ROWS }, visibleRows: { type: 'integer', const: VISIBLE_ROWS },
                     puyos: { type: 'array', items: puyoSchema, description: 'All fixed puyos, including hidden rows.' }
@@ -6533,16 +6623,29 @@
                 fever: { type: ['object', 'null'], properties: {
                     active: { type: 'boolean' }, gauge: { type: 'integer', minimum: 0, maximum: FEVER_GAUGE_MAX },
                     nextTime: { type: 'integer', minimum: FEVER_INITIAL_TIME, maximum: FEVER_MAX_TIME },
-                    targetCombo: { type: 'integer', minimum: FEVER_INITIAL_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
+                    targetCombo: { type: 'integer', minimum: FEVER_MIN_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
                     leftTime: { type: 'number', minimum: 0 }, damage: { type: 'number', minimum: 0 }, turn: { type: 'integer', minimum: 0 },
-                    field: { type: ['object', 'null'] }
-                } }, active: activeSchema
-            }, required: ['name', 'board', 'nextPairs', 'warningPuyos', 'fever', 'active']
+                    selectedStageTarget: { type: ['integer', 'null'], minimum: FEVER_MIN_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
+                    stageSuppliedPair: { type: 'array', items: { type: 'string', enum: COLORS }, minItems: 0, maxItems: 2 },
+                    field: { type: ['object', 'null'], properties: {
+                        columns: { type: 'integer', const: COLUMNS }, rows: { type: 'integer', const: ROWS },
+                        cells: { type: 'array', items: { type: 'array', items: boardCellSchema, minItems: COLUMNS, maxItems: COLUMNS }, minItems: ROWS, maxItems: ROWS }
+                    }, required: ['columns', 'rows', 'cells'] }
+                }, required: ['active', 'gauge', 'nextTime', 'targetCombo', 'leftTime', 'damage', 'turn', 'selectedStageTarget', 'stageSuppliedPair', 'field'] }, active: activeSchema
+            }, required: ['name', 'isCpu', 'phase', 'point', 'attack', 'damage', 'normalDamage', 'combo', 'placedPairCount', 'board', 'nextPairs', 'warningPuyos', 'fever', 'active']
+        };
+        const puzzleSchema = {
+            type: ['object', 'null'], properties: {
+                stageIndex: { type: 'integer', minimum: 0 }, turn: { type: 'integer', minimum: 1 },
+                winConditionType: { type: 'string', enum: ['combo', 'clear', 'multiple', 'attack'] },
+                winConditionValue: { type: 'number', minimum: 0 }, recommendedTurns: { type: 'number', minimum: 0 },
+                condition: { type: 'string' }, starEarned: { type: 'boolean' }
+            }, required: ['stageIndex', 'turn', 'winConditionType', 'winConditionValue', 'recommendedTurns', 'condition', 'starEarned']
         };
         const feverSchema = {
             type: ['object', 'null'],
             properties: {
-                targetCombo: { type: 'integer', minimum: CONTINUOUS_FEVER_INITIAL_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
+                targetCombo: { type: 'integer', minimum: FEVER_MIN_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
                 leftTime: { type: 'number', minimum: 0, description: 'Remaining continuous-fever time in milliseconds.' },
                 turn: { type: 'integer', minimum: 0 },
                 pendingCombo: { type: 'integer', minimum: 0 },
@@ -6554,35 +6657,38 @@
         };
         const statusSchema = {
             type: 'object',
-            description: 'Both game fields, upcoming pairs, warning puyos, and the currently controlled pair. Board coordinates start at the bottom-left.',
+            description: 'Both game fields, score and attack state, upcoming pairs, warning puyos, fever or puzzle state, and the currently controlled pair. Board coordinates start at the bottom-left.',
             properties: {
                 screen: { type: 'string', enum: ['playing', 'paused'] },
                 playerCanControl: { type: 'boolean' },
                 continuousFever: { type: 'boolean' },
                 feverRule: { type: 'boolean' },
+                puzzle: puzzleSchema,
                 fever: feverSchema,
                 player: playerSchema, opponent: playerSchema,
-                recommendedPoint: { type: ['object', 'null'], properties: { x: { type: 'integer' }, y: { type: 'integer' } } }
+                recommendedPoint: { type: ['object', 'null'], properties: {
+                    x: { type: 'integer', minimum: 0, maximum: COLUMNS - 1 }, y: { type: 'integer', minimum: 0, maximum: VISIBLE_ROWS - 1 }
+                }, required: ['x', 'y'] }
             },
-            required: ['screen', 'playerCanControl', 'continuousFever', 'feverRule', 'fever', 'player', 'opponent', 'recommendedPoint']
+            required: ['screen', 'playerCanControl', 'continuousFever', 'feverRule', 'puzzle', 'fever', 'player', 'opponent', 'recommendedPoint']
         };
         const tools = [
             {
                 name: 'manual',
                 description: 'Return English instructions for playing Puyo W and using the other available game tools.',
                 inputSchema: emptyInput,
-                execute: () => 'Puyo W is a falling-pair puzzle battle. During a match control turn, use left/right to move, Z/X to rotate, and down to fall faster. Match four or more same-color puyos to clear them and send attacks. Fever-rule players have independent gauge, nextTime, targetCombo, leftTime, and fever field state. Use now_screen to identify the exact menu, gallery, simulator, tutorial, or match screen. Use now_game_status while a match is playing or paused, and point_recommend only during a controllable player turn. Use show_message to display already-localized text at the top of the current screen.'
+                execute: () => 'Puyo W is a falling-pair puzzle battle. During a match control turn, use left/right to move, Z/X to rotate, and down to fall faster. Match four or more same-color puyos to clear them and send attacks. Practice and continuous-fever modes use a solo opponent; continuous fever starts with a 60-second timer and advances through selected fever stages. Puzzle Puyo uses stage objectives and turn limits. Fever-rule players have independent gauge, nextTime, targetCombo, leftTime, and fever field state. Use now_screen to identify the exact menu, puzzle-stage selection, gallery, simulator, tutorial, or match screen. Use now_game_status while a match is playing or paused, and point_recommend only during a controllable player turn. Use show_message to display already-localized text at the top of the current screen.'
             },
             {
                 name: 'now_screen',
-                description: 'Get the exact visible Puyo W screen, including gallery, standard or fever opponent selection, practice difficulty selection, simulator modes, tutorial phases, match countdown, ending animation, pause, and game-over. playerCanControl is true only when the human can control an active pair in a match.',
+                description: 'Get the exact visible Puyo W screen, including gallery, standard or fever opponent selection, practice or puzzle-stage selection, simulator modes, tutorial phases, match countdown, ending animation, pause, and game-over. playerCanControl is true only when the human can control an active pair in a match.',
                 inputSchema: emptyInput,
                 outputSchema: screenSchema,
                 execute: getNowScreen
             },
             {
                 name: 'now_game_status',
-                description: 'Get complete JSON game state only while the match is playing or paused: both boards, upcoming pairs, warning puyos, per-player fever state and fields, and both active pairs with coordinates.',
+                description: 'Get complete JSON game state only while a normal match is playing or paused: both boards, scores, ATTACK and DAMAGE, upcoming pairs, warning puyos, per-player fever state and fields, optional Puzzle Puyo objective state, and both active pairs with coordinates.',
                 inputSchema: emptyInput,
                 outputSchema: statusSchema,
                 execute: getNowGameStatus
@@ -8751,7 +8857,7 @@
      */
     function setEnemySoundPool(enemyClassType, soundPoolObject) {
         if (typeof enemyClassType !== 'string' || !enemyClassType) throw new TypeError('enemyClassType은 비어 있지 않은 getClassType() 반환 문자열이어야 합니다.');
-        if (!(soundPoolObject instanceof SoundPool)) throw new TypeError('soundPoolObject는 WebPuyo.createSoundPool(false)로 만든 SoundPool이어야 합니다.');
+        if (!(soundPoolObject instanceof SoundPool)) throw new TypeError('soundPoolObject는 PuyoW.createSoundPool(false)로 만든 SoundPool이어야 합니다.');
         const enemyEntry = OPPONENTS.find((entry) => entry.classType === enemyClassType);
         if (!enemyEntry) {
             console.warn(`setEnemySoundPool: Enemy class type "${enemyClassType}" not found.`);
@@ -8762,6 +8868,16 @@
         game?.players.forEach((player) => {
             if (player.controller?.getClassType?.() === enemyClassType) player.controller.soundPool = soundPoolObject;
         });
+    }
+
+    /**
+     * 공통 사운드 풀을 변경한다.
+     * 
+     * @param {CommonSoundPool} commonSoundPoolObject 
+     */
+    function setCommonSoundPool(commonSoundPoolObject) {
+        if (!(commonSoundPoolObject instanceof CommonSoundPool)) throw new TypeError('commonSoundPoolObject PuyoW.createSoundPool(true)로 만든 SoundPool이어야 합니다.');
+        commonSoundPool = commonSoundPoolObject;
     }
 
     /**
@@ -8833,12 +8949,15 @@
         SoundPool,
         CommonSoundPool,
         EnemySoundPool,
+        StorageManager,
         FeverStageState,
         PuzzlePuyoStage,
         PUZZLE_STAGES,
         BUILDNO,
         createSoundPool,
         setEnemySoundPool,
+        setCommonSoundPool,
+        setStorageManager,
         registerFeverStageState,
         registerPuzzleStage,
         registerOpponent,
