@@ -95,7 +95,7 @@
     /** 메시지용 기본 글꼴 이름이다. @type {string} */
     const MESSAGE_FONT_NAME = 'D2Coding';
     /** 글꼴 지정 시 기본 글꼴 뒤에 대체 글꼴로 붙일 글꼴 이름 목록이다. 배열 내부와 세 글꼴 이름 모두와 중복되지 않도록 자동으로 걸러진다. @type {string[]} */
-    const FALLBACK_FONTS = ['Nanum Gothic Coding', 'Nanum Gothic', 'Noto Sans SC', 'Noto Sans JP', 'Black Han Sans', 'monospace', 'sans-serif'];
+    const FALLBACK_FONTS = ['Nanum Gothic Coding', 'Nanum Gothic', 'Noto Sans Mono', 'Noto Sans SC', 'Noto Sans JP', 'Black Han Sans', 'monospace', 'sans-serif'];
     /** 화면 제목이나 절 제목처럼 강조가 필요한 큰 헤더에 사용할 글꼴 목록이다. @type {string} */
     const TITLE_FONT = buildFontStack(TITLE_FONT_NAME);
     /** 버튼, 선택 카드 등 클릭 가능한 항목의 라벨에 사용할 글꼴 목록이다. @type {string} */
@@ -188,6 +188,8 @@
     const DEFAULT_GRAPHICS_QUALITY = 'low';
     /** 플레이어 이름으로 허용할 최대 글자 수다. */
     const PLAYER_NAME_MAX_LENGTH = 10;
+    /** 사운드 데이터 URL로 허용할 최대 글자 수다. */
+    const SOUND_DATA_URL_MAX_LENGTH = 200;
     /** 새 설정 및 비어 있거나 잘못된 이름에 사용할 기본 플레이어 이름이다. */
     const DEFAULT_PLAYER_NAME = 'PLAYER 1';
     /** 가상 컨트롤러 표시 크기 선택지다. 기존 true/false 저장값은 normal/none으로 이관한다. @type {{key:'none'|'normal'|'large', label:string}[]} */
@@ -219,7 +221,7 @@
             '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Play', '그리기': 'Draw', '시뮬레이션': 'Simulation', '지우개': 'Eraser',
             'JSON복사': 'Copy JSON', 'JSON넣기': 'Paste JSON', '배치가 클립보드에 복사됨': 'Layout copied to clipboard',
             '클립보드 복사 실패': 'Clipboard copy failed', 'JSON 파싱 실패': 'JSON parsing failed', '배치 JSON을 입력하세요.': 'Enter layout JSON.',
-            '설정': 'Settings', '이름': 'Name', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '없음': 'None', '크게': 'Large', '그래픽 설정': 'Graphics quality', '낮음': 'Low', '중간': 'Medium', '높음': 'High', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
+            '설정': 'Settings', '이름': 'Name', '배경음악 볼륨': 'Music volume', '효과음 볼륨': 'Effects volume', '가상 컨트롤러 사용': 'Use virtual controller', '없음': 'None', '크게': 'Large', '그래픽 설정': 'Graphics quality', '사운드 데이터 URL': 'Sound data URL', '낮음': 'Low', '중간': 'Medium', '높음': 'High', 'AI 서비스 제공자': 'AI provider', 'AI API 키': 'AI API key', '사용 모델명': 'Model name', 'AI API 테스트': 'Test AI API', '저장': 'Save', '취소': 'Cancel', '이 API키는 브라우저에만 저장됩니다.': 'This API key is stored only in this browser.', '사운드 관련 기능은 추후 제공 예정': 'Sound features will be available in a future update.', '설정 저장 후 다시 시도해 주세요': 'Save your settings and try again.', 'AI API 테스트 요청 중...': 'Testing AI API...', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API test succeeded (JSON schema: passed).', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API test failed (JSON schema: failed).', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API test failed (JSON schema: not run).',
             '플레이 방법': 'How to Play', '갤러리': 'Gallery', '대상 유형': 'Category', '대상': 'Item', '일반뿌요': 'Puyos', '예고뿌요': 'Warning Puyos', '적': 'Enemies', '빨강뿌요': 'Red Puyo', '초록뿌요': 'Green Puyo', '노랑뿌요': 'Yellow Puyo', '파랑뿌요': 'Blue Puyo', '보라뿌요': 'Purple Puyo', '방해뿌요': 'Garbage Puyo', '딱딱뿌요': 'Hard Puyo', '작은 예고뿌요': 'Small Warning Puyo', '큰 예고뿌요': 'Large Warning Puyo', '빨간 돌': 'Red Rock', '별': 'Star', '태양': 'Sun', '중성자별': 'Neutron Star', '블랙홀': 'Black Hole', '위기': 'Crisis', '다시보기': 'Replay',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Use Left, Right, and Down to move puyos. Rotate them with Z and X.', '좌우 방향키로 뿌요 이동': 'Move puyos with Left and Right.', '아래 방향키로 빨리 떨어뜨리기': 'Use Down to drop faster.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Press Z to rotate left.', 'X 키를 눌러 우측으로 뿌요 회전': 'Press X to rotate right.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Connect four or more puyos of the same color to pop them and attack.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Four puyos of the same color connect to attack the opponent.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Garbage puyos next to popping puyos disappear too.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Chain popping puyos for a stronger attack.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'An all clear gives you a powerful attack.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'You lose when puyos stay at the end of the third row.',
             '은하': 'Galaxy',
@@ -238,7 +240,7 @@
             '시뮬레이터': 'シミュレーター', '팔레트': 'パレット', '재생': '再生', '그리기': '描画', '시뮬레이션': 'シミュレーション', '지우개': '消しゴム',
             'JSON복사': 'JSONをコピー', 'JSON넣기': 'JSONを貼り付け', '배치가 클립보드에 복사됨': '配置をクリップボードにコピーしました',
             '클립보드 복사 실패': 'クリップボードへのコピーに失敗しました', 'JSON 파싱 실패': 'JSONの解析に失敗しました', '배치 JSON을 입력하세요.': '配置JSONを入力してください。',
-            '설정': '設定', '배경음악 볼륨': 'BGM音量', '효과음 볼륨': '効果音量', '가상 컨트롤러 사용': '仮想コントローラーを使用', '없음': 'なし', '크게': '大きく', '그래픽 설정': 'グラフィック設定', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AIプロバイダー', 'AI API 키': 'AI APIキー', '사용 모델명': 'モデル名', 'AI API 테스트': 'AI APIテスト', '저장': '保存', '취소': 'キャンセル', '이 API키는 브라우저에만 저장됩니다.': 'このAPIキーはこのブラウザにのみ保存されます。', '사운드 관련 기능은 추후 제공 예정': 'サウンド機能は今後のアップデートで提供予定です。', '설정 저장 후 다시 시도해 주세요': '設定を保存してから、もう一度お試しください。', 'AI API 테스트 요청 중...': 'AI APIをテスト中…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI APIテスト成功（JSONスキーマ検証: 合格）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI APIテスト失敗（JSONスキーマ検証: 失敗）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI APIテスト失敗（JSONスキーマ検証: 未実施）',
+            '설정': '設定', '배경음악 볼륨': 'BGM音量', '효과음 볼륨': '効果音量', '가상 컨트롤러 사용': '仮想コントローラーを使用', '없음': 'なし', '크게': '大きく', '그래픽 설정': 'グラフィック設定', '사운드 데이터 URL': 'サウンドデータURL', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AIプロバイダー', 'AI API 키': 'AI APIキー', '사용 모델명': 'モデル名', 'AI API 테스트': 'AI APIテスト', '저장': '保存', '취소': 'キャンセル', '이 API키는 브라우저에만 저장됩니다.': 'このAPIキーはこのブラウザにのみ保存されます。', '사운드 관련 기능은 추후 제공 예정': 'サウンド機能は今後のアップデートで提供予定です。', '설정 저장 후 다시 시도해 주세요': '設定を保存してから、もう一度お試しください。', 'AI API 테스트 요청 중...': 'AI APIをテスト中…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI APIテスト成功（JSONスキーマ検証: 合格）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI APIテスト失敗（JSONスキーマ検証: 失敗）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI APIテスト失敗（JSONスキーマ検証: 未実施）',
             '플레이 방법': '遊び方', '갤러리': 'ギャラリー', '대상 유형': '種類', '대상': '対象', '일반뿌요': 'ぷよ', '예고뿌요': '予告ぷよ', '적': '敵', '빨강뿌요': '赤ぷよ', '초록뿌요': '緑ぷよ', '노랑뿌요': '黄ぷよ', '파랑뿌요': '青ぷよ', '보라뿌요': '紫ぷよ', '방해뿌요': 'おじゃまぷよ', '딱딱뿌요': 'かたぷよ', '작은 예고뿌요': '小さい予告ぷよ', '큰 예고뿌요': '大きい予告ぷよ', '빨간 돌': '赤い岩', '별': '星', '태양': '太陽', '중성자별': '中性子星', '블랙홀': 'ブラックホール', '위기': 'ピンチ', '다시보기': 'もう一度見る',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '左右・下キーでぷよを動かし、Z・Xキーで回転できます。', '좌우 방향키로 뿌요 이동': '左右キーでぷよを移動', '아래 방향키로 빨리 떨어뜨리기': '下キーで速く落下', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Zキーで左回転', 'X 키를 눌러 우측으로 뿌요 회전': 'Xキーで右回転', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '同じ色のぷよを4個以上つなげると消して攻撃できます。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '同じ色のぷよ4個がつながり、相手を攻撃できます。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'ぷよが消えると、隣接するおじゃまぷよも消えます。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '連鎖でぷよを消すと、より強く攻撃できます。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消しをすると強力な攻撃ができます。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '3段目の端にぷよが残ると負けです。',
             '은하': '銀河',
@@ -258,7 +260,7 @@
             '시뮬레이터': '模拟器', '팔레트': '调色板', '재생': '播放', '그리기': '绘制', '시뮬레이션': '模拟', '지우개': '橡皮擦',
             'JSON복사': '复制 JSON', 'JSON넣기': '粘贴 JSON', '배치가 클립보드에 복사됨': '布局已复制到剪贴板',
             '클립보드 복사 실패': '复制到剪贴板失败', 'JSON 파싱 실패': 'JSON 解析失败', '배치 JSON을 입력하세요.': '请输入布局 JSON。',
-            '설정': '设置', '배경음악 볼륨': '背景音乐音量', '효과음 볼륨': '音效音量', '가상 컨트롤러 사용': '使用虚拟控制器', '없음': '无', '크게': '大', '그래픽 설정': '图形设置', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AI 服务提供商', 'AI API 키': 'AI API 密钥', '사용 모델명': '模型名称', 'AI API 테스트': 'AI API 测试', '저장': '保存', '취소': '取消', '이 API키는 브라우저에만 저장됩니다.': '此 API 密钥仅存储在此浏览器中。', '사운드 관련 기능은 추후 제공 예정': '声音功能将在未来更新中提供。', '설정 저장 후 다시 시도해 주세요': '请先保存设置后再试。', 'AI API 테스트 요청 중...': '正在测试 AI API…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API 测试成功（JSON 架构检查：通过）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API 测试失败（JSON 架构检查：失败）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API 测试失败（JSON 架构检查：未执行）',
+            '설정': '设置', '배경음악 볼륨': '背景音乐音量', '효과음 볼륨': '音效音量', '가상 컨트롤러 사용': '使用虚拟控制器', '없음': '无', '크게': '大', '그래픽 설정': '图形设置', '사운드 데이터 URL': '声音数据 URL', '낮음': '低', '중간': '中', '높음': '高', 'AI 서비스 제공자': 'AI 服务提供商', 'AI API 키': 'AI API 密钥', '사용 모델명': '模型名称', 'AI API 테스트': 'AI API 测试', '저장': '保存', '취소': '取消', '이 API키는 브라우저에만 저장됩니다.': '此 API 密钥仅存储在此浏览器中。', '사운드 관련 기능은 추후 제공 예정': '声音功能将在未来更新中提供。', '설정 저장 후 다시 시도해 주세요': '请先保存设置后再试。', 'AI API 테스트 요청 중...': '正在测试 AI API…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'AI API 测试成功（JSON 架构检查：通过）', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'AI API 测试失败（JSON 架构检查：失败）', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'AI API 测试失败（JSON 架构检查：未执行）',
             '플레이 방법': '玩法说明', '갤러리': '图鉴', '대상 유형': '类别', '대상': '对象', '일반뿌요': '普通噗哟', '예고뿌요': '预告噗哟', '적': '敌人', '빨강뿌요': '红噗哟', '초록뿌요': '绿噗哟', '노랑뿌요': '黄噗哟', '파랑뿌요': '蓝噗哟', '보라뿌요': '紫噗哟', '방해뿌요': '垃圾噗哟', '딱딱뿌요': '硬噗哟', '작은 예고뿌요': '小型预告噗哟', '큰 예고뿌요': '大型预告噗哟', '빨간 돌': '红色岩石', '별': '星星', '태양': '太阳', '중성자별': '中子星', '블랙홀': '黑洞', '위기': '危机', '다시보기': '再次观看',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '使用左右和下方向键移动噗哟，使用 Z、X 键旋转。', '좌우 방향키로 뿌요 이동': '用左右方向键移动噗哟', '아래 방향키로 빨리 떨어뜨리기': '用下方向键快速落下', 'Z 키를 눌러 좌측으로 뿌요 회전': '按 Z 键向左旋转', 'X 키를 눌러 우측으로 뿌요 회전': '按 X 键向右旋转', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '连接四个或更多相同颜色的噗哟即可消除并攻击对手。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '四个相同颜色的噗哟连接后可以攻击对手。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': '消除噗哟时，相邻的垃圾噗哟也会一起消失。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '连续消除噗哟可以发动更强的攻击。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消时可以发动强力攻击。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '噗哟停留在第 3 行末端时会失败。',
             '은하': '银河',
@@ -290,10 +292,18 @@
     let backgroundMusicAudio = null;
     /** 현재 배경음악 요소가 재생하는 음원 URL이다. @type {string|null} */
     let backgroundMusicUrl = null;
+    /** 대량 방해뿌요 착지음의 중복 재생을 막기 위해 보관하는 오디오다. @type {HTMLAudioElement|null} */
+    let garbageFallLotAudio = null;
+    /** 마지막 일반 뿌요 착지음 재생 시각(ms) @type {number} */
+    let puyoFallLastPlayedAt = -Infinity;
+    /** 일반 뿌요 착지음의 최소 재생 간격(ms) */
+    const PUYO_FALL_SOUND_COOLDOWN = 250;
     /** 초기 타이틀을 벗어나 브라우저가 재생을 허용하는 사용자 조작이 발생했는지 여부다. @type {boolean} */
     let hasUserStarted = false;
     /** 메인 화면 왼쪽에 표시할 안내문 원문이다. @type {string} */
     let noticeText = '';
+    /** 설정에서 불러온 사운드 데이터 JSON의 주소다. @type {string|null} */
+    let soundDataURL = null;
     /** 설정 화면에서 임시로 편집 중인 값이다. @type {object|null} */
     let settingsDraft = null;
     /** 설정 화면의 포커스 항목 인덱스다. @type {number} */
@@ -525,7 +535,7 @@
             clearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             feverClearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             puzzleClearStages: [],
-            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
+            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, soundDataURL: '', aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
             muted: false
         };
     }
@@ -535,6 +545,11 @@
         if (typeof value !== 'string') return DEFAULT_PLAYER_NAME;
         const name = Array.from(value).slice(0, PLAYER_NAME_MAX_LENGTH).join('');
         return name.trim() ? name : DEFAULT_PLAYER_NAME;
+    }
+
+    /** 저장된 사운드 데이터 URL을 최대 길이로 정규화한다. @param {unknown} value 저장값 @returns {string} 사운드 데이터 URL */
+    function normalizeSoundDataURL(value) {
+        return typeof value === 'string' ? Array.from(value).slice(0, SOUND_DATA_URL_MAX_LENGTH).join('') : '';
     }
 
     /** 현재 설정된 플레이어 이름을 반환한다. @returns {string} 플레이어 이름 */
@@ -901,6 +916,7 @@
                 // 이전 켜기/끄기 불리언 저장값도 각각 보통/없음으로 유지한다.
                 virtualController: getVirtualControllerOption(settings.virtualController),
                 graphicsQuality: getGraphicsQualityOption(settings.graphicsQuality).key,
+                soundDataURL: normalizeSoundDataURL(settings.soundDataURL),
                 // 이전 Google 설정값은 더 이상 선택할 수 없으므로 기본 제공자인 OpenAI로 정규화한다.
                 aiProvider: AI_SERVICE_PROVIDERS.includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
                 aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.settings.aiApiKey,
@@ -929,6 +945,73 @@
         } catch (error) {
             console.error(`${noticeUrl}를 불러오지 못했습니다.`, error);
             noticeText = '';
+        }
+    }
+
+    /**
+     * 사운드 정보가 담겨 있는 JSON 을 실제 사운드로 적용한다.
+     */
+    function applySoundDataJson(soundDataJson) {
+        if(soundDataJson == null) return;
+        if(typeof(soundDataJson) == 'string') soundDataJson = JSON.parse(soundDataJson);
+        if(soundDataJson.common) {
+            const commonObj = soundDataJson.common;
+            if(commonObj.gameStarts) commonSoundPool.gameStarts = commonObj.gameStarts;
+            if(commonObj.selects) commonSoundPool.selects = commonObj.selects;
+            if(commonObj.cancels) commonSoundPool.cancels = commonObj.cancels;
+            if(commonObj.focusMoves) commonSoundPool.focusMoves = commonObj.focusMoves;
+            if(commonObj.loose) commonSoundPool.loose = commonObj.loose;
+            if(commonObj.puyoFall) commonSoundPool.puyoFall = commonObj.puyoFall;
+            if(commonObj.garbageFallLittle) commonSoundPool.garbageFallLittle = commonObj.garbageFallLittle;
+            if(commonObj.garbageFallLot) commonSoundPool.garbageFallLot = commonObj.garbageFallLot;
+            if(commonObj.puyoRotate) commonSoundPool.puyoRotate = commonObj.puyoRotate;
+            if(commonObj.combo3SpellEffect) commonSoundPool.combo3SpellEffect = commonObj.combo3SpellEffect;
+            if(commonObj.combo4SpellEffect) commonSoundPool.combo4SpellEffect = commonObj.combo4SpellEffect;
+            if(commonObj.combo5SpellEffect) commonSoundPool.combo5SpellEffect = commonObj.combo5SpellEffect;
+            if(commonObj.combo6SpellEffect) commonSoundPool.combo6SpellEffect = commonObj.combo6SpellEffect;
+            if(commonObj.puyoBurstCombo1) commonSoundPool.puyoBurstCombo1 = commonObj.puyoBurstCombo1;
+            if(commonObj.puyoBurstCombo2) commonSoundPool.puyoBurstCombo2 = commonObj.puyoBurstCombo2;
+            if(commonObj.puyoBurstCombo3) commonSoundPool.puyoBurstCombo3 = commonObj.puyoBurstCombo3;
+            if(commonObj.puyoBurstCombo4) commonSoundPool.puyoBurstCombo4 = commonObj.puyoBurstCombo4;
+            if(commonObj.puyoBurstCombo5) commonSoundPool.puyoBurstCombo5 = commonObj.puyoBurstCombo5;
+            if(commonObj.puyoBurstCombo6) commonSoundPool.puyoBurstCombo6 = commonObj.puyoBurstCombo6;
+            if(commonObj.puyoBurstCombo7) commonSoundPool.puyoBurstCombo7 = commonObj.puyoBurstCombo7;
+        }
+        if(soundDataJson.player) {
+            const playerObj = soundDataJson.player;
+            if(playerObj.spellCombo1) commonSoundPool.spellCombo1 = playerObj.spellCombo1;
+            if(playerObj.spellCombo2) commonSoundPool.spellCombo2 = playerObj.spellCombo2;
+            if(playerObj.spellCombo3) commonSoundPool.spellCombo3 = playerObj.spellCombo3;
+            if(playerObj.spellCombo4) commonSoundPool.spellCombo4 = playerObj.spellCombo4;
+            if(playerObj.spellCombo5) commonSoundPool.spellCombo5 = playerObj.spellCombo5;
+            if(playerObj.spellCombo6) commonSoundPool.spellCombo6 = playerObj.spellCombo6;
+            if(playerObj.spellCombo7) commonSoundPool.spellCombo7 = playerObj.spellCombo7;
+        }
+        if(soundDataJson.enemy) {
+            const enemyObj = soundDataJson.enemy;
+            if(enemyObj.spellCombo1) commonSoundPool.commonEnemySpellCombo1 = enemyObj.spellCombo1;
+            if(enemyObj.spellCombo2) commonSoundPool.commonEnemySpellCombo2 = enemyObj.spellCombo2;
+            if(enemyObj.spellCombo3) commonSoundPool.commonEnemySpellCombo3 = enemyObj.spellCombo3;
+            if(enemyObj.spellCombo4) commonSoundPool.commonEnemySpellCombo4 = enemyObj.spellCombo4;
+            if(enemyObj.spellCombo5) commonSoundPool.commonEnemySpellCombo5 = enemyObj.spellCombo5;
+            if(enemyObj.spellCombo6) commonSoundPool.commonEnemySpellCombo6 = enemyObj.spellCombo6;
+            if(enemyObj.spellCombo7) commonSoundPool.commonEnemySpellCombo7 = enemyObj.spellCombo7;
+        }
+    }
+
+    /** 설정한 사운드 데이터 URL에서 JSON을 비동기로 불러온다. @returns {Promise<void>} 완료 시점 */
+    async function loadSoundDataURL() {
+        if (soundDataURL === null || soundDataURL === '') return;
+        try {
+            const convertedURL = convertURL(soundDataURL);
+
+            // JSONP 로 convertedURL 호출
+            const scriptObj = document.createElement('script');
+            scriptObj.src = convertedURL;
+            scriptObj.classList.add('script_jsonp');
+            document.body.appendChild(scriptObj);
+        } catch (error) {
+            console.error('사운드 데이터 URL을 불러오지 못했습니다.', error);
         }
     }
 
@@ -1033,6 +1116,82 @@
         } catch (error) {
             console.error(`${label} 재생에 실패했습니다.`, error);
         }
+    }
+
+    /** 메뉴 선택·취소 효과음이 재생된 횟수다. 포커스 이동음과 한 입력에서 겹치지 않게 한다. @type {number} */
+    let menuActionSoundCount = 0;
+
+    /** 일반 메뉴 버튼 또는 선택지를 실행한 효과음을 재생한다. @returns {void} */
+    function playMenuSelectSound() {
+        menuActionSoundCount += 1;
+        playSound(commonSoundPool?.selects, 'effects', '메뉴 선택 효과음');
+    }
+
+    /** 메뉴의 취소 또는 종료 동작 효과음을 재생한다. @returns {void} */
+    function playMenuCancelSound() {
+        menuActionSoundCount += 1;
+        playSound(commonSoundPool?.cancels, 'effects', '메뉴 취소 효과음');
+    }
+
+    /** 메뉴 버튼이나 선택지의 포커스가 옮겨졌을 때 효과음을 재생한다. @returns {void} */
+    function playMenuFocusMoveSound() {
+        playSound(commonSoundPool?.focusMoves, 'effects', '메뉴 포커스 이동 효과음');
+    }
+
+    /** 현재 입력 가능한 메뉴 포커스를 비교하기 위한 식별자를 만든다. @returns {string|null} */
+    function getMenuFocusToken() {
+        if (game?.tutorial?.mode === 'complete') return `tutorial:${game.tutorial.finalFocus}`;
+        if (game?.paused) return `pause:${pauseMenuFocus}`;
+        if (game) return null;
+        if (menuScreen === 'title' && ruleSelectionOpen) return `rule:${ruleSelectionFocus}`;
+        if (menuScreen === 'title') return `title:${titleMenuFocus}`;
+        if (menuScreen === 'opponent') return `opponent:${opponentMenuFocus}:${selectedDifficulty}:${selectedAiDifficulty}:${selectedOpponent}:${selectedOpponentAction}`;
+        if (menuScreen === 'practiceDifficulty') return `difficulty:${colorSelectionFocus}:${selectedDifficulty}`;
+        if (menuScreen === 'puzzleStage') return `puzzle:${puzzleStageFocus}`;
+        if (menuScreen === 'settings') return `settings:${settingsFocus}`;
+        if (menuScreen === 'gallery' && gallery) return `gallery:${gallery.focus}:${gallery.typeIndex}:${gallery.itemIndex}`;
+        if (menuScreen === 'simulator' && simulator) return `simulator:${simulator.mode}:${simulator.focusArea}:${simulator.paletteFocus}`;
+        return null;
+    }
+
+    /** 대량 방해뿌요 착지음이 아직 재생 중이면 중복 재생하지 않는다. @param {string|null|undefined} url 음원 URL @returns {void} */
+    function playGarbageFallLotSound(url) {
+        if (url === null || url === undefined || url === '' || typeof Audio === 'undefined' || getAudioVolume('effects') <= 0) return;
+        if (garbageFallLotAudio && !garbageFallLotAudio.paused && !garbageFallLotAudio.ended) return;
+        try {
+            const audio = new Audio(convertURL(url));
+            audio.volume = getAudioVolume('effects');
+            garbageFallLotAudio = audio;
+            const clearAudio = () => { if (garbageFallLotAudio === audio) garbageFallLotAudio = null; };
+            if (typeof audio.addEventListener === 'function') audio.addEventListener('ended', clearAudio, { once: true });
+            const result = audio.play();
+            if (result && typeof result.catch === 'function') result.catch((error) => {
+                clearAudio();
+                console.error('대량 방해뿌요 착지 효과음 재생에 실패했습니다.', error);
+            });
+        } catch (error) {
+            garbageFallLotAudio = null;
+            console.error('대량 방해뿌요 착지 효과음 재생에 실패했습니다.', error);
+        }
+    }
+
+    /** 일반 뿌요 착지음은 너무 짧은 간격으로 반복되지 않게 재생한다. @param {string|null|undefined} url 음원 URL @returns {void} */
+    function playPuyoFallSound(url) {
+        if (url === null || url === undefined || url === '' || typeof Audio === 'undefined' || getAudioVolume('effects') <= 0) return;
+        const now = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
+        if (now - puyoFallLastPlayedAt < PUYO_FALL_SOUND_COOLDOWN) return;
+        puyoFallLastPlayedAt = now;
+        playSound(url, 'effects', '뿌요 착지 효과음');
+    }
+
+    /** 중력 애니메이션으로 떨어진 뿌요들의 착지 효과음을 재생한다. @param {{color:string}[]} falling 착지한 뿌요 목록 @returns {void} */
+    function playGravityLandingSounds(falling) {
+        if (!Array.isArray(falling) || !falling.length) return;
+        const normalPuyoCount = falling.filter((puyo) => COLORS.includes(puyo.color)).length;
+        const garbageCount = falling.filter((puyo) => puyo.color === 'garbage').length;
+        for (let index = 0; index < normalPuyoCount; index += 1) playPuyoFallSound(commonSoundPool?.puyoFall);
+        if (garbageCount >= 6) playGarbageFallLotSound(commonSoundPool?.garbageFallLot);
+        else for (let index = 0; index < garbageCount; index += 1) playSound(commonSoundPool?.garbageFallLittle, 'effects', '방해뿌요 착지 효과음');
     }
 
     /** 현재 배경음악을 중지하고 재생 위치를 초기화한다. @returns {void} */
@@ -1158,7 +1317,16 @@
         const spellPool = player.controller ? player.controller.soundPool : commonSoundPool;
         const combo = player.combo;
         playSound(getComboSoundUrl(commonSoundPool, 'puyoBurstCombo', combo), 'effects', '뿌요 폭발 효과음');
-        playSound(getComboSoundUrl(spellPool, 'spellCombo', combo), 'effects', '연쇄 주문 효과음');
+        const spellUrl = getComboSoundUrl(spellPool, 'spellCombo', combo)
+            || (player.controller ? getComboSoundUrl(commonSoundPool, 'commonEnemySpellCombo', combo) : null);
+        playSound(spellUrl, 'effects', '연쇄 주문 효과음');
+    }
+
+    /** 3연쇄 이상 공격 에너지가 상대 필드에 도착했을 때의 공통 효과음을 재생한다. @param {number|null|undefined} combo 연쇄 번호 @returns {void} */
+    function playComboSpellEffect(combo) {
+        if (!Number.isFinite(combo) || combo < 3) return;
+        const index = Math.max(3, Math.min(6, Math.floor(combo)));
+        playSound(commonSoundPool?.[`combo${index}SpellEffect`], 'effects', `${index}연쇄 공격 도착 효과음`);
     }
 
     /**
@@ -1461,6 +1629,7 @@
     function startGame(practice = false, continuousFever = false, feverRule = false) {
         const soloMode = practice || continuousFever;
         if (!soloMode && !ensureSelectedOpponent()) return;
+        playMenuSelectSound();
         resetVirtualControllerInput();
         const opponent = soloMode ? { createController: () => new PracticeEnemy() } : OPPONENTS[selectedOpponent];
         const controller = opponent.createController();
@@ -1556,6 +1725,7 @@
         if (puzzleStageFocus < 0 || puzzleStageFocus >= openedCount) return;
         const stage = PUZZLE_STAGES[puzzleStageFocus];
         if (!(stage instanceof PuzzlePuyoStage)) return;
+        playMenuSelectSound();
         resetVirtualControllerInput();
         const colors = [...COLORS];
         const controller = new PracticeEnemy();
@@ -2042,6 +2212,7 @@
         // 기본 회전 위치가 비어 있으면 그대로 회전한다.
         if (canPlace(player, candidate)) {
             player.active = candidate;
+            playSound(commonSoundPool?.puyoRotate, 'effects', '뿌요 회전 효과음');
             return true;
         }
         const horizontalKick = candidate.rotation === 1 ? -1 : candidate.rotation === 3 ? 1 : 0;
@@ -2049,12 +2220,14 @@
         // 벽에 막힌 회전은 수평 밀어넣기로 가능한지 검사한다.
         if (horizontalKick && canPlace(player, kicked)) {
             player.active = kicked;
+            playSound(commonSoundPool?.puyoRotate, 'effects', '뿌요 회전 효과음');
             return true;
         }
         const flipped = { ...player.active, rotation: (player.active.rotation + direction * 2 + 4) % 4 };
         // 마지막으로 반대편 회전 위치를 시도한다.
         if (canPlace(player, flipped)) {
             player.active = flipped;
+            playSound(commonSoundPool?.puyoRotate, 'effects', '뿌요 회전 효과음');
             return true;
         }
         return false;
@@ -2086,9 +2259,11 @@
             game.puzzle.pendingWarningAmount = 0;
         }
         // 숨김 행을 포함해 유효한 필드 좌표에만 뿌요를 고정한다.
-        activeCells(player.active).forEach((cell) => {
+        const lockedPuyos = activeCells(player.active).filter((cell) => cell.y >= 0 && cell.y < ROWS);
+        lockedPuyos.forEach((cell) => {
             if (cell.y >= 0 && cell.y < ROWS) player.board[cell.y][cell.x] = cell.color;
         });
+        playGravityLandingSounds(lockedPuyos);
         player.placedPairCount += 1;
         player.hasPlacedPuyoSinceAllClear = true;
         player.active = null;
@@ -2589,7 +2764,10 @@
         // 연쇄 중에는 에너지만 상대 천장까지 보낸다. 도착 시 예고뿌요만 갱신하고 DAMAGE는 정산하지 않는다.
         if (cancelledOpponentAttack || cancelledDamage || cancelledNormalDamage || remaining) {
             const energy = queueEnergyTransfer(player, opponent, source, cancelledDamage, cancelledOpponentAttack, 0, remaining > 0, Math.floor(player.attack), true);
-            if (remaining > 0) player.lastAttackTransfer = energy;
+            if (remaining > 0 && energy) {
+                energy.spellEffectCombo = player.combo;
+                player.lastAttackTransfer = energy;
+            }
         }
     }
 
@@ -2660,7 +2838,7 @@
         if (cancelledDamage || cancelledAttack) route.push({ target: ownTarget, kind: 'cancel', amount: cancelledDamage, attackAmount: cancelledAttack, arcDirection: 'up' });
         if (delivered || travelToOpponent) route.push({ target: opponentTarget, kind: 'damage', amount: delivered, previewAmount, arcDirection: (cancelledDamage || cancelledAttack) ? 'down' : startsAtExplosion ? 'up' : 'down' });
         if (!route.length) return null;
-        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, finalDamageAmount: 0 };
+        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, finalDamageAmount: 0, spellEffectCombo: null, spellEffectPlayed: false };
         energyTransfers.push(energy);
         return energy;
     }
@@ -2705,6 +2883,10 @@
                 if (segment.amount) {
                     energy.opponent.damage += segment.amount;
                     energy.player.announcedAttack = 0;
+                }
+                if (energy.spellEffectCombo !== null && !energy.spellEffectPlayed) {
+                    playComboSpellEffect(energy.spellEffectCombo);
+                    energy.spellEffectPlayed = true;
                 }
             }
             energy.routeIndex += 1;
@@ -2770,6 +2952,7 @@
         }));
         loser.active = null;
         loser.phase = 'defeated';
+        playSound(commonSoundPool?.loose, 'effects', '패배 효과음');
         game.ending = {
             loser,
             winner,
@@ -3087,7 +3270,9 @@
             }
             player.gravityAnimation.elapsed += delta;
             if (player.gravityAnimation.elapsed >= player.gravityAnimation.duration) {
+                const falling = player.gravityAnimation.falling;
                 player.gravityAnimation = null;
+                playGravityLandingSounds(falling);
                 player.phase = player.gravityNextPhase;
             }
             return;
@@ -4384,6 +4569,7 @@
 
     /** 플레이 방법 안내를 끝내고 메인 화면으로 돌아간다. @returns {void} */
     function closeTutorial() {
+        playMenuCancelSound();
         game = null;
         menuScreen = 'title';
         loadNotice();
@@ -4594,8 +4780,10 @@
 
     /** 설정 화면의 변경 사항을 저장한다. @returns {void} */
     function saveSettings() {
+        playMenuSelectSound();
         clearSettingsApiTest();
         settingsDraft.playerName = normalizePlayerName(settingsDraft.playerName);
+        settingsDraft.soundDataURL = normalizeSoundDataURL(settingsDraft.soundDataURL);
         store.settings = { ...settingsDraft };
         saveStore();
         applyCanvasOutputResolution();
@@ -4606,6 +4794,7 @@
 
     /** 설정 화면을 저장하지 않고 닫는다. @returns {void} */
     function cancelSettings() {
+        playMenuCancelSound();
         clearSettingsApiTest();
         settingsDraft = null; settingsEditing = false;
         menuScreen = 'title'; loadNotice();
@@ -4619,6 +4808,7 @@
             console.error('Puyo W 설정 초기화 확인 창을 표시하지 못했습니다.', error);
             return;
         }
+        playMenuSelectSound();
         try {
             storageManager.clear();
         } catch (error) {
@@ -4674,7 +4864,7 @@
 
     /** API 테스트 실행 가능 여부를 반영한 설정 화면 포커스 순서를 만든다. @returns {number[]} 포커스 인덱스 목록 */
     function getSelectableSettingsFocuses() {
-        return [0, 1, 2, 3, 4, 5, 6, 7, ...(canRunAiApiTest() ? [8] : []), 9, 10, 11];
+        return [0, 1, 2, 3, 4, 5, 6, 7, 8, ...(canRunAiApiTest() ? [9] : []), 10, 11, 12];
     }
 
     /** 설정 화면에서 다음 또는 이전 포커스로 이동한다. @param {number} direction 이동 방향 @returns {void} */
@@ -4757,16 +4947,18 @@
     /** 설정 화면의 포커스 항목을 실행한다. @returns {void} */
     function activateSettingsFocus() {
         if (settingsFocus === 3) {
+            playMenuSelectSound();
             const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
             settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + 1) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
         }
         else if (settingsFocus === 4) {
+            playMenuSelectSound();
             const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
             settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + 1) % GRAPHICS_QUALITY_OPTIONS.length].key;
-        } else if (settingsFocus === 8 && canRunAiApiTest()) runAiApiTest();
-        else if (settingsFocus === 9) saveSettings();
-        else if (settingsFocus === 10) cancelSettings();
-        else if (settingsFocus === 11) resetAllSettings();
+        } else if (settingsFocus === 9 && canRunAiApiTest()) { playMenuSelectSound(); runAiApiTest(); }
+        else if (settingsFocus === 10) saveSettings();
+        else if (settingsFocus === 11) cancelSettings();
+        else if (settingsFocus === 12) resetAllSettings();
     }
 
     /** 설정 화면을 그린다. @returns {void} */
@@ -4779,9 +4971,10 @@
             { label: '효과음 볼륨', y: 155, value: settingsDraft.effectsVolume, kind: 'slider' },
             { label: '가상 컨트롤러 사용', y: 205, value: settingsDraft.virtualController, kind: 'radio', options: VIRTUAL_CONTROLLER_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
             { label: '그래픽 설정', y: 255, value: settingsDraft.graphicsQuality, kind: 'radio', options: GRAPHICS_QUALITY_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
-            { label: 'AI 서비스 제공자', y: 305, value: settingsDraft.aiProvider, kind: 'provider' },
-            { label: 'AI API 키', y: 355, value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text' },
-            { label: '사용 모델명', y: 405, value: settingsDraft.aiModel, kind: 'text' }
+            { label: '사운드 데이터 URL', y: 305, value: settingsDraft.soundDataURL, kind: 'text' },
+            { label: 'AI 서비스 제공자', y: 355, value: settingsDraft.aiProvider, kind: 'provider' },
+            { label: 'AI API 키', y: 405, value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text' },
+            { label: '사용 모델명', y: 455, value: settingsDraft.aiModel, kind: 'text' }
         ];
         rows.slice(1).forEach((row) => { row.y += 40; });
         rows.forEach((row, index) => {
@@ -4811,13 +5004,13 @@
             }
         });
         const apiTestEnabled = canRunAiApiTest();
-        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(530, 475, 450, 40);
-        context.strokeStyle = settingsFocus === 8 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 8 && apiTestEnabled ? 3 : 2; context.strokeRect(530, 475, 450, 40);
-        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 755, 501);
-        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 540);
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `13px ${MESSAGE_FONT}`; context.fillText(translate('사운드 관련 기능은 추후 제공 예정'), WIDTH / 2, 563);
-        [{ label: '저장', x: 380, focus: 9, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 10, color: '#ef5350' }, { label: '초기화', x: 740, focus: 11, color: '#7e6bc4' }].forEach((button) => {
-            context.fillStyle = button.color; context.fillRect(button.x, 595, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 595, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 625);
+        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(530, 525, 450, 40);
+        context.strokeStyle = settingsFocus === 9 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 9 && apiTestEnabled ? 3 : 2; context.strokeRect(530, 525, 450, 40);
+        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 755, 551);
+        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 585);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `13px ${MESSAGE_FONT}`; context.fillText(translate('사운드 관련 기능은 추후 제공 예정'), WIDTH / 2, 603);
+        [{ label: '저장', x: 380, focus: 10, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 11, color: '#ef5350' }, { label: '초기화', x: 740, focus: 12, color: '#7e6bc4' }].forEach((button) => {
+            context.fillStyle = button.color; context.fillRect(button.x, 625, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 625, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 655);
         });
     }
 
@@ -4923,6 +5116,7 @@
 
     /** 갤러리를 닫고 메인 메뉴로 돌아간다. @returns {void} */
     function closeGallery() {
+        playMenuCancelSound();
         gallery = null;
         menuScreen = 'title';
         loadNotice();
@@ -5074,6 +5268,8 @@
     function activateSimulatorPaletteItem(index) {
         const item = getSimulatorPaletteItems()[index];
         if (!simulator || !item) return;
+        if (item.kind === 'exit') playMenuCancelSound();
+        else playMenuSelectSound();
         simulator.paletteFocus = index;
         if (item.kind === 'puyo' || item.kind === 'eraser') { simulator.selected = item.value; simulator.focusArea = 'board'; }
         else if (item.kind === 'play') startSimulatorPlayback();
@@ -5112,6 +5308,7 @@
         const resolution = getExplosionResolution(player.board, exploding);
         applyExplosionResolution(player.board, resolution);
         player.combo += 1;
+        playComboSounds(player);
         const center = exploding.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
         player.comboPopups.push({ x: center.x / exploding.length, y: center.y / exploding.length, combo: player.combo, elapsed: 0 });
         const point = calculateExplosionPoint(explosionGroups, player.combo, resolution.brokenHardGarbageCount);
@@ -5136,7 +5333,13 @@
             return;
         }
         if (player.phase === 'gravity') {
-            if (player.gravityAnimation) { player.gravityAnimation.elapsed += delta; if (player.gravityAnimation.elapsed < player.gravityAnimation.duration) return; player.gravityAnimation = null; }
+            if (player.gravityAnimation) {
+                player.gravityAnimation.elapsed += delta;
+                if (player.gravityAnimation.elapsed < player.gravityAnimation.duration) return;
+                const falling = player.gravityAnimation.falling;
+                player.gravityAnimation = null;
+                playGravityLandingSounds(falling);
+            }
             if (!explodeSimulatorPuyos()) {
                 deliverFinalAttackEnergy(player, simulator.target);
                 player.combo = 0;
@@ -5292,6 +5495,7 @@
 
     /** 색상 수 선택을 취소하고 게임 규칙 선택 화면으로 돌아간다. @returns {void} */
     function returnToRuleSelection() {
+        playMenuCancelSound();
         menuScreen = 'title';
         openRuleSelection();
     }
@@ -5323,18 +5527,20 @@
     /** 포커스된 게임 규칙을 선택한다. @returns {void} */
     function activateRuleSelection() {
         if (ruleSelectionFocus === RULE_SELECTION_CANCEL_INDEX) {
+            playMenuCancelSound();
             closeRuleSelection();
             return;
         }
         const option = GAME_RULE_OPTIONS[ruleSelectionFocus];
         if (!option || option.disabled) return;
+        playMenuSelectSound();
         closeRuleSelection();
         option.activate();
     }
 
     /** 게임 규칙 선택 오버레이의 키보드·게임패드 키 입력을 처리한다. @param {string} key 소문자 키 이름 @returns {void} */
     function handleRuleSelectionKey(key) {
-        if (key === 'escape') { closeRuleSelection(); return; }
+        if (key === 'escape') { playMenuCancelSound(); closeRuleSelection(); return; }
         if (key === 'enter' || key === ' ') { activateRuleSelection(); return; }
         if (!['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key)) return;
         if (ruleSelectionFocus === RULE_SELECTION_CANCEL_INDEX) {
@@ -5705,6 +5911,7 @@
                 game.countdown = Math.max(0, game.countdown - delta);
                 if (!game.countdown && game.countdownStartsGame) {
                     game.countdownStartsGame = false;
+                    playSound(commonSoundPool?.gameStarts, 'effects', '게임 시작 효과음');
                     beginGame();
                 }
             } else if (game.ending) {
@@ -5738,10 +5945,14 @@
     function handleSimulatorKeydown(key) {
         if (!simulator) return;
         if (simulator.mode === 'complete') {
-            if (key === 'escape' || key === 'enter' || key === ' ') restoreSimulatorDrawing();
+            if (key === 'escape' || key === 'enter' || key === ' ') {
+                if (key === 'escape') playMenuCancelSound();
+                else playMenuSelectSound();
+                restoreSimulatorDrawing();
+            }
             return;
         }
-        if (simulator.mode !== 'draw') { if (key === 'escape') restoreSimulatorDrawing(); return; }
+        if (simulator.mode !== 'draw') { if (key === 'escape') { playMenuCancelSound(); restoreSimulatorDrawing(); } return; }
         if (simulator.focusArea === 'board') {
             if (key === 'escape') { simulator.focusArea = 'palette'; simulator.paletteFocus = 0; return; }
             if (key === 'arrowleft') simulator.boardFocus.x = Math.max(0, simulator.boardFocus.x - 1);
@@ -5790,7 +6001,7 @@
 
     /** 설정 화면에서 포커스 이동과 문자열 편집을 처리한다. @param {KeyboardEvent} event 키보드 이벤트 @param {string} key 소문자 키 @returns {void} */
     function handleSettingsKeydown(event, key) {
-        const textField = settingsFocus === 0 ? 'playerName' : (settingsFocus === 6 ? 'aiApiKey' : (settingsFocus === 7 ? 'aiModel' : null));
+        const textField = settingsFocus === 0 ? 'playerName' : (settingsFocus === 5 ? 'soundDataURL' : (settingsFocus === 7 ? 'aiApiKey' : (settingsFocus === 8 ? 'aiModel' : null)));
         if (settingsEditing && textField) {
             const field = textField;
             if (key === 'enter' || key === 'escape') { settingsEditing = false; return; }
@@ -5799,7 +6010,8 @@
             if (key === 'backspace') { if (settingsCursor > 0) { settingsDraft[field] = settingsDraft[field].slice(0, settingsCursor - 1) + settingsDraft[field].slice(settingsCursor); settingsCursor -= 1; } return; }
             if (key.length === 1) {
                 const nextValue = settingsDraft[field].slice(0, settingsCursor) + event.key + settingsDraft[field].slice(settingsCursor);
-                if (field !== 'playerName' || Array.from(nextValue).length <= PLAYER_NAME_MAX_LENGTH) { settingsDraft[field] = nextValue; settingsCursor += event.key.length; }
+                const maxLength = field === 'playerName' ? PLAYER_NAME_MAX_LENGTH : (field === 'soundDataURL' ? SOUND_DATA_URL_MAX_LENGTH : Infinity);
+                if (Array.from(nextValue).length <= maxLength) { settingsDraft[field] = nextValue; settingsCursor += event.key.length; }
             }
             return;
         }
@@ -5819,7 +6031,7 @@
             else if (settingsFocus === 4) {
                 const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
                 settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + direction + GRAPHICS_QUALITY_OPTIONS.length) % GRAPHICS_QUALITY_OPTIONS.length].key;
-            } else if (settingsFocus >= 9) settingsFocus = 9 + (settingsFocus - 9 + (direction < 0 ? 2 : 1)) % 3;
+            } else if (settingsFocus >= 10) settingsFocus = 10 + (settingsFocus - 10 + (direction < 0 ? 2 : 1)) % 3;
         }
     }
 
@@ -5846,6 +6058,7 @@
             return;
         }
         pendingInitialTitleEntry = false;
+        playMenuSelectSound();
         hasUserStarted = true;
         menuScreen = 'title';
         loadNotice();
@@ -5872,6 +6085,7 @@
     /** 결과 화면을 닫고 해당 게임의 이전 메뉴로 돌아간다. 퍼즐뿌요를 클리어했다면 시작 시 결정한 다음 또는 현재 스테이지에 포커스를 둔다. @returns {void} */
     function closeResultScreen() {
         if (!game || game.running) return;
+        playMenuCancelSound();
         const finishedGame = game;
         const returnToTitle = finishedGame.practice;
         const returnToPuzzleStages = finishedGame.puzzle !== undefined && finishedGame.puzzle !== null;
@@ -5891,6 +6105,14 @@
      * @returns {void}
      */
     function handleKeydown(event) {
+        const focusBefore = getMenuFocusToken();
+        const actionSoundCountBefore = menuActionSoundCount;
+        handleKeydownCore(event);
+        if (actionSoundCountBefore === menuActionSoundCount && focusBefore !== getMenuFocusToken()) playMenuFocusMoveSound();
+    }
+
+    /** 키 입력의 실제 화면 동작을 처리한다. @param {KeyboardEvent} event 키보드 이벤트 @returns {void} */
+    function handleKeydownCore(event) {
         let key = event.key.toLowerCase();
         if (key === 'z' && shouldTreatZAsEnter(event)) key = 'enter';
         if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'escape', 'enter', ' '].includes(key)) event.preventDefault();
@@ -5906,7 +6128,7 @@
             if (key === 'escape') { closeTutorial(); return; }
             if (tutorial.mode === 'complete') {
                 if (key === 'arrowleft' || key === 'arrowright') tutorial.finalFocus = tutorial.finalFocus === 0 ? 1 : 0;
-                else if (key === 'enter' || key === ' ') { if (tutorial.finalFocus === 0) enterTutorialStage(1); else closeTutorial(); }
+                else if (key === 'enter' || key === ' ') { if (tutorial.finalFocus === 0) { playMenuSelectSound(); enterTutorialStage(1); } else closeTutorial(); }
             }
             return;
         }
@@ -5923,7 +6145,7 @@
             }
             if (menuScreen === 'practiceDifficulty') {
                 const choices = getSelectableColorDifficultyIndices();
-                if (key === 'escape') { menuScreen = 'title'; loadNotice(); }
+                if (key === 'escape') { playMenuCancelSound(); menuScreen = 'title'; loadNotice(); }
                 else if (colorSelectionFocus === COLOR_SELECTION_CANCEL_INDEX) {
                     if (key === 'arrowup') colorSelectionFocus = selectedDifficulty;
                     else if (key === 'arrowleft' || key === 'arrowright') {
@@ -5993,8 +6215,8 @@
                     opponentMenuFocus = 3;
                     selectedOpponentAction = 0;
                 } else if (selectedOpponentAction === 0) startGame(false, false, opponentMenuRule === 'fever');
-                else { menuScreen = 'title'; loadNotice(); }
-            } else if (key === 'escape' && menuScreen === 'opponent') { menuScreen = 'title'; loadNotice(); }
+                else { playMenuCancelSound(); menuScreen = 'title'; loadNotice(); }
+            } else if (key === 'escape' && menuScreen === 'opponent') { playMenuCancelSound(); menuScreen = 'title'; loadNotice(); }
             return;
         }
         // 결과 화면에서는 위에서 처리한 메뉴 복귀 외 입력을 무시한다.
@@ -6059,6 +6281,7 @@
      * @returns {void}
      */
     function activateTitleMenu() {
+        playMenuSelectSound();
         if (titleMenuFocus === 0) openRuleSelection();
         else if (titleMenuFocus === 1) openSimulator();
         else if (titleMenuFocus === 2) openTutorial();
@@ -6078,12 +6301,14 @@
      */
     function activatePauseMenu() {
         if (pauseMenuFocus === 0) {
+            playMenuSelectSound();
             resetVirtualControllerInput();
             game.paused = false;
             game.countdown = 3000;
             game.countdownStartsGame = false;
             resumeBackgroundMusic();
         } else {
+            playMenuCancelSound();
             resetVirtualControllerInput();
             stopBackgroundMusic();
             game = null;
@@ -6115,6 +6340,14 @@
      * @returns {void}
      */
     function handleCanvasClick(event) {
+        const focusBefore = getMenuFocusToken();
+        const actionSoundCountBefore = menuActionSoundCount;
+        handleCanvasClickCore(event);
+        if (actionSoundCountBefore === menuActionSoundCount && focusBefore !== getMenuFocusToken()) playMenuFocusMoveSound();
+    }
+
+    /** 캔버스 클릭의 실제 화면 동작을 처리한다. @param {MouseEvent} event 마우스 이벤트 @returns {void} */
+    function handleCanvasClickCore(event) {
         if (settingsResetting) return;
         if (!game && menuScreen === 'initialTitle') {
             enterMainMenu();
@@ -6125,7 +6358,7 @@
             const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
             const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
             if (game.tutorial.mode === 'complete' && y >= 376 && y <= 440) {
-                if (x >= 470 && x <= 620) enterTutorialStage(1);
+                if (x >= 470 && x <= 620) { playMenuSelectSound(); enterTutorialStage(1); }
                 else if (x >= 660 && x <= 810) closeTutorial();
             }
             return;
@@ -6173,13 +6406,14 @@
                     activateRuleSelection();
                 }
             } else {
+                playMenuCancelSound();
                 closeRuleSelection();
             }
             return;
         }
         if (menuScreen === 'simulator' && simulator) {
             if (simulator.mode === 'complete') {
-                if (x >= 600 && x <= 750 && y >= 145 && y <= 203) restoreSimulatorDrawing();
+                if (x >= 600 && x <= 750 && y >= 145 && y <= 203) { playMenuSelectSound(); restoreSimulatorDrawing(); }
                 return;
             }
             if (simulator.mode !== 'draw') return;
@@ -6208,6 +6442,7 @@
                 return x >= typeX && x <= typeX + typeWidth && y >= typeY && y <= typeY + 54;
             });
             if (typeIndex >= 0) {
+                playMenuSelectSound();
                 gallery.typeIndex = typeIndex;
                 gallery.itemIndex = Math.max(0, getGalleryItems().findIndex((item) => !item.locked));
                 gallery.focus = 'type';
@@ -6220,6 +6455,7 @@
                 return x >= targetBounds.x && x <= targetBounds.x + targetBounds.width && y >= targetBounds.y && y <= targetBounds.y + targetBounds.height;
             });
             if (targetIndex >= 0 && !items[targetIndex].locked) {
+                playMenuSelectSound();
                 gallery.itemIndex = targetIndex;
                 gallery.focus = 'target';
                 gallery.portraitElapsed = 0;
@@ -6241,6 +6477,7 @@
             if (stageIndex >= 0 && stageIndex < getOpenedPuzzleStageCount()) {
                 if (puzzleStageFocus === stageIndex && puzzleStageLastClickedIndex === stageIndex) startSelectedPuzzleStage();
                 else {
+                    playMenuSelectSound();
                     puzzleStageFocus = stageIndex;
                     puzzleStageLastClickedIndex = stageIndex;
                 }
@@ -6256,28 +6493,30 @@
                 titleMenuFocus = titleItemIndex;
                 activateTitleMenu();
             } else if (x >= WIDTH - 117 && x <= WIDTH - 32 && y >= 665 && y <= 688) {
+                playMenuSelectSound();
                 toggleMuted();
             } else if (x >= 32 && x <= 117 && y >= 665 && y <= 688) {
                 titleMenuFocus = 5;
                 activateTitleMenu();
             }
         } else if (menuScreen === 'settings') {
-            if (y >= 475 && y <= 515 && x >= 530 && x <= 980 && canRunAiApiTest()) { settingsFocus = 8; runAiApiTest(); }
-            else if (y >= 595 && y <= 641 && x >= 380 && x <= 540) { settingsFocus = 9; saveSettings(); }
-            else if (y >= 595 && y <= 641 && x >= 560 && x <= 720) { settingsFocus = 10; cancelSettings(); }
-            else if (y >= 595 && y <= 641 && x >= 740 && x <= 900) { settingsFocus = 11; resetAllSettings(); }
+            if (y >= 525 && y <= 565 && x >= 530 && x <= 980 && canRunAiApiTest()) { playMenuSelectSound(); settingsFocus = 9; runAiApiTest(); }
+            else if (y >= 625 && y <= 671 && x >= 380 && x <= 540) { settingsFocus = 10; saveSettings(); }
+            else if (y >= 625 && y <= 671 && x >= 560 && x <= 720) { settingsFocus = 11; cancelSettings(); }
+            else if (y >= 625 && y <= 671 && x >= 740 && x <= 900) { settingsFocus = 12; resetAllSettings(); }
             else if (y >= 76 && y <= 114) { settingsFocus = 0; settingsEditing = true; settingsCursor = settingsDraft.playerName.length; }
             else if (y >= 135 && y <= 155) { settingsFocus = 1; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
             else if (y >= 185 && y <= 205) { settingsFocus = 2; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
-            else if (y >= 226 && y <= 264 && x >= 530 && x <= 660) { settingsFocus = 3; settingsDraft.virtualController = 'none'; }
-            else if (y >= 226 && y <= 264 && x >= 680 && x <= 810) { settingsFocus = 3; settingsDraft.virtualController = 'normal'; }
-            else if (y >= 226 && y <= 264 && x >= 830 && x <= 960) { settingsFocus = 3; settingsDraft.virtualController = 'large'; }
-            else if (y >= 276 && y <= 314 && x >= 530 && x <= 660) { settingsFocus = 4; settingsDraft.graphicsQuality = 'low'; }
-            else if (y >= 276 && y <= 314 && x >= 680 && x <= 810) { settingsFocus = 4; settingsDraft.graphicsQuality = 'medium'; }
-            else if (y >= 276 && y <= 314 && x >= 830 && x <= 960) { settingsFocus = 4; settingsDraft.graphicsQuality = 'high'; }
-            else if (y >= 326 && y <= 364 && x >= 530 && x <= 670) { settingsFocus = 5; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
-            else if (y >= 376 && y <= 414) { settingsFocus = 6; settingsEditing = true; settingsCursor = settingsDraft.aiApiKey.length; }
-            else if (y >= 426 && y <= 464) { settingsFocus = 7; settingsEditing = true; settingsCursor = settingsDraft.aiModel.length; }
+            else if (y >= 226 && y <= 264 && x >= 530 && x <= 660) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'none'; }
+            else if (y >= 226 && y <= 264 && x >= 680 && x <= 810) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'normal'; }
+            else if (y >= 226 && y <= 264 && x >= 830 && x <= 960) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'large'; }
+            else if (y >= 276 && y <= 314 && x >= 530 && x <= 660) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'low'; }
+            else if (y >= 276 && y <= 314 && x >= 680 && x <= 810) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'medium'; }
+            else if (y >= 276 && y <= 314 && x >= 830 && x <= 960) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'high'; }
+            else if (y >= 326 && y <= 364) { settingsFocus = 5; settingsEditing = true; settingsCursor = settingsDraft.soundDataURL.length; }
+            else if (y >= 376 && y <= 414 && x >= 530 && x <= 670) { playMenuSelectSound(); settingsFocus = 6; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
+            else if (y >= 426 && y <= 464) { settingsFocus = 7; settingsEditing = true; settingsCursor = settingsDraft.aiApiKey.length; }
+            else if (y >= 476 && y <= 514) { settingsFocus = 8; settingsEditing = true; settingsCursor = settingsDraft.aiModel.length; }
         } else {
             if (menuScreen === 'practiceDifficulty') {
                 const cancelBounds = getColorSelectionCancelButtonBounds();
@@ -6293,6 +6532,7 @@
                     startGame(colorSelectionMode === 'practice', colorSelectionMode === 'continuousFever');
                 } else {
                     // 난이도 선택지 바깥을 클릭하면 ESC와 같이 메인 화면으로 돌아간다.
+                    playMenuCancelSound();
                     menuScreen = 'title';
                     loadNotice();
                 }
@@ -6303,12 +6543,14 @@
             const opponentY = (y - HEIGHT / 2) / OPPONENT_MENU_SCALE + HEIGHT / 2;
             const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => opponentX >= getColorDifficultyButtonX(index) && opponentX <= getColorDifficultyButtonX(index) + 110 && opponentY >= 135 && opponentY <= 179);
             if (difficultyIndex >= 0) {
+                playMenuSelectSound();
                 selectedDifficulty = difficultyIndex;
                 opponentMenuFocus = 0;
                 return;
             }
             const aiDifficultyIndex = AI_DIFFICULTIES.findIndex((difficulty, index) => opponentX >= getAiDifficultyButtonX(index) && opponentX <= getAiDifficultyButtonX(index) + 110 && opponentY >= 195 && opponentY <= 239);
             if (aiDifficultyIndex >= 0) {
+                playMenuSelectSound();
                 selectedAiDifficulty = aiDifficultyIndex;
                 opponentMenuFocus = 1;
                 return;
@@ -6323,6 +6565,7 @@
             if (cardIndex >= 0) {
                 const clickedOpponent = visibleOpponents[cardIndex];
                 if (!clickedOpponent.notAvail && isOpponentUnlocked(clickedOpponent)) {
+                    playMenuSelectSound();
                     selectedOpponent = OPPONENTS.indexOf(clickedOpponent);
                     opponentMenuFocus = 2;
                 }
@@ -6331,6 +6574,7 @@
                 opponentMenuFocus = 3;
                 startGame(false, false, opponentMenuRule === 'fever');
             } else if (opponentX >= 710 && opponentX <= 840 && opponentY >= 600 && opponentY <= 658) {
+                playMenuCancelSound();
                 selectedOpponentAction = 1;
                 opponentMenuFocus = 3;
                 menuScreen = 'title'; loadNotice();
@@ -6791,7 +7035,7 @@
         const style = document.createElement('style');
         style.className = 'puyow_font_import';
         style.textContent = `
-            @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic+Coding&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Share+Tech+Mono&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic&family=Nanum+Gothic+Coding&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+Mono:wght@100..900&family=Noto+Sans+SC:wght@100..900&display=swap');
         `;
         document.head.appendChild(style);
     }
@@ -6812,6 +7056,8 @@
         languageCode = navigator.language || navigator.userLanguage || 'ko';
         if (languageCode === 'ko-KR') languageCode = 'ko';
         loadStore();
+        soundDataURL = store.settings.soundDataURL;
+        loadSoundDataURL();
         createdCanvas = false;
         const usesDefaultCanvas = target === null || target === undefined || target === '';
         const targetElement = usesDefaultCanvas ? document.getElementById('webpuyo_canvas') : typeof target === 'string' ? document.getElementById(target) : target;
@@ -6964,6 +7210,128 @@
          * @type {string|null}
          */
         puyoBurstCombo7 = null;
+
+        /**  
+         * 패배 조건 발생 시 패배 연출 (베젤 무너지는 효과) 직전 재생
+         * @type {string|null}
+         */
+        loose = null;
+
+        /**  
+         * 뿌요들 (방해뿌요 제외) 낙하가 종료 (땅 혹은 다른 뿌요에 닿아서) 시 재생 - 닿을 때마다 재생 (동시 재생 가능성이 높음에 유의 !)
+         * @type {string|null}
+         */
+        puyoFall = null;
+
+        /**  
+         * 방해뿌요가 낙하가 종료 (땅 혹은 다른 뿌요에 닿아서) 시 재생 (방해뿌요 갯수가 1~5개일 때) - 닿을 때마다 재생 (동시 재생 가능성이 높음에 유의 !)
+         * @type {string|null}
+         */
+        garbageFallLittle = null;
+
+        /**  
+         * 방해뿌요가 낙하가 종료 (땅 혹은 다른 뿌요에 닿아서) 시 재생 (방해뿌요 갯수가 6개 이상일 때) - 닿을 때마다 재생 (단 이 효과음이 이미 재생중인 경우는 건너뛴다.)
+         * @type {string|null}
+         */
+        garbageFallLot = null;
+
+        /**  
+         * 3연쇄 때의 에너지 이동 효과가 최종 목적지에 도착했을 때
+         *     이 연쇄째 공격 ATTACK 수치 차감 계산 시 자신의 피해 DAMAGE 와 상대의 공격 ATTACK 모두를 차감하고도 남았는지 체크하여
+         *     1 이상 남은 경우 재생
+         * @type {string|null}
+         */
+        combo3SpellEffect = null;
+
+        /**  
+         * 4연쇄 때의 에너지 이동 효과가 최종 목적지에 도착했을 때
+         *     이 연쇄째 공격 ATTACK 수치 차감 계산 시 자신의 피해 DAMAGE 와 상대의 공격 ATTACK 모두를 차감하고도 남았는지 체크하여
+         *     1 이상 남은 경우 재생
+         * @type {string|null}
+         */
+        combo4SpellEffect = null;
+
+        /**  
+         * 5연쇄 때의 에너지 이동 효과가 최종 목적지에 도착했을 때
+         *     이 연쇄째 공격 ATTACK 수치 차감 계산 시 자신의 피해 DAMAGE 와 상대의 공격 ATTACK 모두를 차감하고도 남았는지 체크하여
+         *     1 이상 남은 경우 재생
+         * @type {string|null}
+         */
+        combo5SpellEffect = null;
+
+        /**  
+         * 6 이상의 매 연쇄마다, 에너지 이동 효과가 최종 목적지에 도착했을 때
+         *     이 연쇄째 공격 ATTACK 수치 차감 계산 시 자신의 피해 DAMAGE 와 상대의 공격 ATTACK 모두를 차감하고도 남았는지 체크하여
+         *     1 이상 남은 경우 재생
+         * @type {string|null}
+         */
+        combo6SpellEffect = null;
+
+        /**  
+         * 1연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo1 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo1 = null;
+        /**  
+         * 2연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo2 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo2 = null;
+        /**  
+         * 3연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo3 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo3 = null;
+        /**  
+         * 4연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo4 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo4 = null;
+        /**  
+         * 5연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo5 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo5 = null;
+        /**  
+         * 6연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo6 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo6 = null;
+        /**  
+         * 7연쇄 발생 시 적이 말하는 주문 효과음. (해당 적의 SoundPool 의 spellCombo7 이 null일 때 대신 사용, null 인 경우 해당 상황에서 소리가 나지 않는다.)
+         * @type {string|null}
+         */
+        commonEnemySpellCombo7 = null;
+
+        /**
+         * 카운트 다운이 끝나고 게임이 시작될 때 재생되는 효과음
+         * @type {string|null}
+         */
+        gameStarts = null;
+
+        /**
+         * 모든 화면에서, 버튼이나 선택지를 클릭 (엔터 키로 선택해도 마찬가지) 했을 때 재생되는 효과음 (단, 취소나 종료 선택지/버튼은 제외)
+         * @type {string|null}
+         */
+        selects = null;
+
+        /**
+         * 모든 화면에서, 취소/종료 버튼이나 선택지를 클릭 (엔터 키로 선택해도 마찬가지) 했을 때 재생되는 효과음
+         * @type {string|null}
+         */
+        cancels = null;
+
+        /**
+         * 모든 화면에서, 버튼이나 선택지 포커스가 이동할 때 재생되는 효과음
+         * @type {string|null}
+         */
+        focusMoves = null;
+
+        /**
+         * 모든 게임 모드에서, 뿌요를 사용자 혹은 적이 회전시킬 때 재생되는 효과
+         * @type {string|null}
+         */
+        puyoRotate = null;
 
         /**  
          * 전투 중이 아닌 상황에서 재생되는 배경 음악, null 인 경우 해당 상황에서 소리가 나지 않는다.
@@ -8957,6 +9325,7 @@
         createSoundPool,
         setEnemySoundPool,
         setCommonSoundPool,
+        applySoundDataJson,
         setStorageManager,
         registerFeverStageState,
         registerPuzzleStage,
