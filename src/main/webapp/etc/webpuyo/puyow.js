@@ -112,6 +112,12 @@
     const DEBUG_CLEAR_RULE_MODE = false;
     /** 싹쓸이 황금빛 필드 효과의 지속 시간(ms)이다. @type {number} */
     const ALL_CLEAR_EFFECT_DURATION = 1000;
+    /** Game start firework effect duration (ms). */
+    const GAME_START_FIREWORK_DURATION = 1000;
+    /** Game start firework begins fading after this elapsed time (ms). */
+    const GAME_START_FIREWORK_FADE_START = 500;
+    /** Colors used by the game start firework sparks. */
+    const GAME_START_FIREWORK_COLORS = ['#f7c843', '#ef5350', '#66bb6a', '#42a5f5', '#ab73e8', '#f5fbfc'];
     /** 연속 피버 모드의 시작 목표 연쇄 수다. @type {number} */
     const CONTINUOUS_FEVER_INITIAL_TARGET_COMBO = 5;
     /** 피버 패턴으로 내려갈 수 있는 목표 연쇄 최솟값이다. 시작 목표는 5연쇄를 유지한다. @type {number} */
@@ -238,7 +244,8 @@
             '플레이 방법': 'How to Play', '갤러리': 'Gallery', '대상 유형': 'Category', '대상': 'Item', '일반뿌요': 'Puyos', '예고뿌요': 'Warning Puyos', '적': 'Enemies', '빨강뿌요': 'Red Puyo', '초록뿌요': 'Green Puyo', '노랑뿌요': 'Yellow Puyo', '파랑뿌요': 'Blue Puyo', '보라뿌요': 'Purple Puyo', '방해뿌요': 'Garbage Puyo', '딱딱뿌요': 'Hard Puyo', '작은 예고뿌요': 'Small Warning Puyo', '큰 예고뿌요': 'Large Warning Puyo', '빨간 돌': 'Red Rock', '별': 'Star', '태양': 'Sun', '중성자별': 'Neutron Star', '블랙홀': 'Black Hole', '위기': 'Crisis', '다시보기': 'Replay',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Use Left, Right, and Down to move puyos. Rotate them with Z and X.', '좌우 방향키로 뿌요 이동': 'Move puyos with Left and Right.', '아래 방향키로 빨리 떨어뜨리기': 'Use Down to drop faster.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Press Z to rotate left.', 'X 키를 눌러 우측으로 뿌요 회전': 'Press X to rotate right.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Connect four or more puyos of the same color to pop them and attack.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Four puyos of the same color connect to attack the opponent.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Garbage puyos next to popping puyos disappear too.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Chain popping puyos for a stronger attack.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'An all clear gives you a powerful attack.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'You lose when puyos stay at the end of the third row.',
             '은하': 'Galaxy',
-            '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)'
+            '음소거(꺼짐)' : 'Mute (Off)', '음소거(활성)' : 'Mute (On)',
+            '화면 가로방향 고정': 'Lock landscape orientation',
         },
         ja: {
             '솔로몬': 'ソロモン', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'ソロモンAIの応答エラー：代替AIで続行します。',
@@ -258,7 +265,8 @@
             '플레이 방법': '遊び方', '갤러리': 'ギャラリー', '대상 유형': '種類', '대상': '対象', '일반뿌요': 'ぷよ', '예고뿌요': '予告ぷよ', '적': '敵', '빨강뿌요': '赤ぷよ', '초록뿌요': '緑ぷよ', '노랑뿌요': '黄ぷよ', '파랑뿌요': '青ぷよ', '보라뿌요': '紫ぷよ', '방해뿌요': 'おじゃまぷよ', '딱딱뿌요': 'かたぷよ', '작은 예고뿌요': '小さい予告ぷよ', '큰 예고뿌요': '大きい予告ぷよ', '빨간 돌': '赤い岩', '별': '星', '태양': '太陽', '중성자별': '中性子星', '블랙홀': 'ブラックホール', '위기': 'ピンチ', '다시보기': 'もう一度見る',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '左右・下キーでぷよを動かし、Z・Xキーで回転できます。', '좌우 방향키로 뿌요 이동': '左右キーでぷよを移動', '아래 방향키로 빨리 떨어뜨리기': '下キーで速く落下', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Zキーで左回転', 'X 키를 눌러 우측으로 뿌요 회전': 'Xキーで右回転', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '同じ色のぷよを4個以上つなげると消して攻撃できます。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '同じ色のぷよ4個がつながり、相手を攻撃できます。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'ぷよが消えると、隣接するおじゃまぷよも消えます。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '連鎖でぷよを消すと、より強く攻撃できます。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消しをすると強力な攻撃ができます。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '3段目の端にぷよが残ると負けです。',
             '은하': '銀河',
-            '음소거(꺼짐)' : 'ミュート（オフ）', '음소거(활성)' : 'ミュート（オン）'
+            '음소거(꺼짐)' : 'ミュート（オフ）', '음소거(활성)' : 'ミュート（オン）',
+            '화면 가로방향 고정': '画面を横向きに固定',
         },
         zh: {
             '솔로몬': '所罗门', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': '所罗门 AI 响应错误：将使用备用 AI 继续。',
@@ -279,7 +287,8 @@
             '플레이 방법': '玩法说明', '갤러리': '图鉴', '대상 유형': '类别', '대상': '对象', '일반뿌요': '普通噗哟', '예고뿌요': '预告噗哟', '적': '敌人', '빨강뿌요': '红噗哟', '초록뿌요': '绿噗哟', '노랑뿌요': '黄噗哟', '파랑뿌요': '蓝噗哟', '보라뿌요': '紫噗哟', '방해뿌요': '垃圾噗哟', '딱딱뿌요': '硬噗哟', '작은 예고뿌요': '小型预告噗哟', '큰 예고뿌요': '大型预告噗哟', '빨간 돌': '红色岩石', '별': '星星', '태양': '太阳', '중성자별': '中子星', '블랙홀': '黑洞', '위기': '危机', '다시보기': '再次观看',
             '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': '使用左右和下方向键移动噗哟，使用 Z、X 键旋转。', '좌우 방향키로 뿌요 이동': '用左右方向键移动噗哟', '아래 방향키로 빨리 떨어뜨리기': '用下方向键快速落下', 'Z 키를 눌러 좌측으로 뿌요 회전': '按 Z 键向左旋转', 'X 키를 눌러 우측으로 뿌요 회전': '按 X 键向右旋转', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': '连接四个或更多相同颜色的噗哟即可消除并攻击对手。', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': '四个相同颜色的噗哟连接后可以攻击对手。', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': '消除噗哟时，相邻的垃圾噗哟也会一起消失。', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': '连续消除噗哟可以发动更强的攻击。', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': '全消时可以发动强力攻击。', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': '噗哟停留在第 3 行末端时会失败。',
             '은하': '银河',
-            '음소거(꺼짐)' : '静音（关）', '음소거(활성)' : '静音（开）'
+            '음소거(꺼짐)' : '静音（关）', '음소거(활성)' : '静音（开）',
+            '화면 가로방향 고정': '锁定横屏',
         }
     };
 
@@ -331,6 +340,8 @@
     let settingsSelectionAnchor = null;
     /** 화면 최상단에 표시할 외부 메시지다. @type {{message:string,color:string,backgroundColor:string|null,elapsed:number,duration:number}|null} */
     let screenMessage = null;
+    /** Game start firework animation state. @type {{elapsed:number,particles:{angle:number,speed:number,delay:number,size:number,color:string}[]}|null} */
+    let gameStartFirework = null;
     /** 외부 메시지가 유지 시간 뒤 사라지는 데 걸리는 시간(ms)이다. @type {number} */
     const SCREEN_MESSAGE_FADE_DURATION = 500;
     /** AI API 테스트 요청이 진행 중인지 여부다. @type {boolean} */
@@ -355,6 +366,10 @@
     let puzzleStageLastClickedIndex = null;
     /** 퍼즐뿌요 스테이지 선택 화면의 취소 버튼에 사용할 가상 포커스 순번이다. @type {number} */
     const PUZZLE_STAGE_CANCEL_INDEX = -1;
+    /** 퍼즐뿌요 선택 줄에서 동시에 보여 줄 카드 수다. 취소와 스테이지 다섯 개가 기본 배치다. @type {number} */
+    const PUZZLE_STAGE_VISIBLE_CARD_COUNT = 6;
+    /** 퍼즐뿌요 선택 줄의 첫 번째로 보이는 카드 슬롯이다. @type {number} */
+    let puzzleStageScrollOffset = 0;
     /** 갤러리의 현재 선택과 포커스 상태다. @type {{typeIndex:number,itemIndex:number,focus:'type'|'target',portraitElapsed:number}|null} */
     let gallery = null;
     /** 초기 타이틀 중앙에 순환 표시할 갤러리 대상 상태다. @type {{loaded:boolean,items:{draw:()=>void}[],startIndex:number,elapsed:number}} */
@@ -417,7 +432,7 @@
     let languageCode = 'ko';
     /** [CTX] 예약어를 치환할 웹 애플리케이션의 URL 컨텍스트 경로다. @type {string} */
     let urlContextPath = '/';
-    /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, puzzleClearStages:number[]}} */
+    /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, puzzleClearStages:number[], puzzleStarStages:number[]}} */
     let store = createInitialStore();
     /** 메인 화면 안내문 파일 경로 또는 절대 URL이다. 상대경로는 puyow.js 기준으로 해석한다. @type {string} */
     let noticeUrl = 'notice_[LANG].txt';
@@ -546,7 +561,7 @@
 
     /**
      * 저장 데이터의 기본 구조를 만든다.
-     * @returns {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, puzzleClearStages:number[]}} 초기 저장 데이터
+     * @returns {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, puzzleClearStages:number[], puzzleStarStages:number[]}} 초기 저장 데이터
      */
     function createInitialStore() {
         return {
@@ -554,7 +569,8 @@
             clearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             feverClearListByDifficulty: { easy: [], normal: [], hard: [], extreme: [] },
             puzzleClearStages: [],
-            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, soundDataURL: '', aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
+            puzzleStarStages: [],
+            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, landscapeOrientationLocked: false, soundDataURL: '', aiProvider: 'OpenAI', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
             muted: false
         };
     }
@@ -587,6 +603,11 @@
         if (value === true) return 'normal';
         if (value === false) return 'none';
         return VIRTUAL_CONTROLLER_OPTIONS.some((option) => option.key === value) ? value : 'none';
+    }
+
+    /** 가로 방향 고정 저장값을 불리언으로 정규화한다. @param {unknown} value 저장값 @returns {boolean} 가로 방향 고정 여부 */
+    function normalizeLandscapeOrientationLocked(value) {
+        return value === true;
     }
 
     /**
@@ -633,6 +654,31 @@
         context = canvas.getContext('2d');
         if (!context) throw new Error('2D 캔버스 컨텍스트를 만들 수 없습니다.');
         return applyCanvasCoordinateTransform();
+    }
+
+    /** 현재 뷰포트에서 게임 화면을 회전해야 하는지 반환한다. @returns {boolean} 화면 회전 여부 */
+    function shouldRotateCanvasForViewport() {
+        return window.innerWidth < window.innerHeight && !store?.settings?.landscapeOrientationLocked;
+    }
+
+    /** 뷰포트 방향에 맞춰 게임 화면 회전 클래스를 갱신한다. @returns {void} */
+    function updateCanvasOrientation() {
+        document.body?.classList.toggle('puyow-portrait', shouldRotateCanvasForViewport());
+    }
+
+    /** 캔버스 입력 이벤트를 게임의 논리 좌표로 변환한다. @param {MouseEvent|PointerEvent} event 입력 이벤트 @returns {{x:number,y:number}} 게임 논리 좌표 */
+    function getCanvasEventCoordinates(event) {
+        const bounds = canvas.getBoundingClientRect();
+        if (shouldRotateCanvasForViewport()) {
+            return {
+                x: (event.clientY - bounds.top) * WIDTH / bounds.height,
+                y: (bounds.right - event.clientX) * HEIGHT / bounds.width
+            };
+        }
+        return {
+            x: (event.clientX - bounds.left) * WIDTH / bounds.width,
+            y: (event.clientY - bounds.top) * HEIGHT / bounds.height
+        };
     }
 
     /** 갤러리에서 처음부터 공개할 항목을 만든다. @returns {{warning:string[],enemies:string[]}} */
@@ -928,13 +974,17 @@
             const puzzleClearStages = Array.isArray(parsed.puzzleClearStages)
                 ? [...new Set(parsed.puzzleClearStages.filter((index) => Number.isInteger(index) && index >= 0))]
                 : [];
-            store = { clearList: [...new Set(parsed.clearList)], clearListByDifficulty, feverClearListByDifficulty, puzzleClearStages, settings: {
+            const puzzleStarStages = Array.isArray(parsed.puzzleStarStages)
+                ? [...new Set(parsed.puzzleStarStages.filter((index) => Number.isInteger(index) && index >= 0))]
+                : [];
+            store = { clearList: [...new Set(parsed.clearList)], clearListByDifficulty, feverClearListByDifficulty, puzzleClearStages, puzzleStarStages, settings: {
                 playerName: normalizePlayerName(settings.playerName),
                 musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.settings.musicVolume,
                 effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.settings.effectsVolume,
                 // 이전 켜기/끄기 불리언 저장값도 각각 보통/없음으로 유지한다.
                 virtualController: getVirtualControllerOption(settings.virtualController),
                 graphicsQuality: getGraphicsQualityOption(settings.graphicsQuality).key,
+                landscapeOrientationLocked: normalizeLandscapeOrientationLocked(settings.landscapeOrientationLocked),
                 soundDataURL: normalizeSoundDataURL(settings.soundDataURL),
                 // 이전 Google 설정값은 더 이상 선택할 수 없으므로 기본 제공자인 OpenAI로 정규화한다.
                 aiProvider: AI_SERVICE_PROVIDERS.includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
@@ -1172,7 +1222,7 @@
         if (menuScreen === 'title') return `title:${titleMenuFocus}`;
         if (menuScreen === 'opponent') return `opponent:${opponentMenuFocus}:${selectedDifficulty}:${selectedAiDifficulty}:${selectedOpponent}:${selectedOpponentAction}`;
         if (menuScreen === 'practiceDifficulty') return `difficulty:${colorSelectionFocus}:${selectedDifficulty}`;
-        if (menuScreen === 'puzzleStage') return `puzzle:${puzzleStageFocus}`;
+        if (menuScreen === 'puzzleStage') return `puzzle:${puzzleStageFocus}:${puzzleStageScrollOffset}`;
         if (menuScreen === 'settings') return `settings:${settingsFocus}`;
         if (menuScreen === 'gallery' && gallery) return `gallery:${gallery.focus}:${gallery.typeIndex}:${gallery.itemIndex}`;
         if (menuScreen === 'simulator' && simulator) return `simulator:${simulator.mode}:${simulator.focusArea}:${simulator.paletteFocus}`;
@@ -1598,16 +1648,27 @@
     }
 
     /**
+     * 선택 가능한 적 중 현재 적의 이전 또는 다음 적을 반환한다.
+     * @param {number} direction 이전 -1 또는 다음 1
+     * @returns {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean}|null} 이동 대상 적
+     */
+    function getRelativeSelectableOpponent(direction) {
+        const selectable = getSelectableOpponents();
+        const currentIndex = selectable.indexOf(OPPONENTS[selectedOpponent]);
+        if (currentIndex < 0) return null;
+        return selectable[currentIndex + (direction < 0 ? -1 : 1)] || null;
+    }
+
+    /**
      * 선택 불가 적을 건너뛰어 다음 또는 이전 적을 선택한다.
      * @param {number} direction 이전 -1 또는 다음 1
-     * @returns {void}
+     * @returns {boolean} 적 이동 여부
      */
     function selectRelativeOpponent(direction) {
-        const selectable = getSelectableOpponents();
-        if (!selectable.length) return;
-        const currentIndex = Math.max(0, selectable.indexOf(OPPONENTS[selectedOpponent]));
-        const nextIndex = (currentIndex + direction + selectable.length) % selectable.length;
-        selectedOpponent = OPPONENTS.indexOf(selectable[nextIndex]);
+        const target = getRelativeSelectableOpponent(direction);
+        if (!target) return false;
+        selectedOpponent = OPPONENTS.indexOf(target);
+        return true;
     }
 
     /**
@@ -1753,6 +1814,8 @@
         const openedCount = getOpenedPuzzleStageCount();
         puzzleStageFocus = Math.max(0, Math.min(openedCount - 1, preferredFocusIndex));
         puzzleStageLastClickedIndex = null;
+        puzzleStageScrollOffset = 0;
+        scrollPuzzleStageFocusIntoView();
         menuScreen = 'puzzleStage';
     }
 
@@ -3147,10 +3210,17 @@
     /** 퍼즐뿌요 스테이지의 클리어 정보를 저장하고 즉시 결과 화면으로 전환한다. @param {PlayerState} player 사용자 @returns {void} */
     function finishPuzzleStage(player) {
         const stageIndex = game.puzzle.stageIndex;
+        const earnedStar = player === game.players[0] && game.puzzle.turn <= game.puzzle.stage.turnLimit;
+        let progressChanged = false;
         if (!store.puzzleClearStages.includes(stageIndex)) {
             store.puzzleClearStages.push(stageIndex);
-            saveStore();
+            progressChanged = true;
         }
+        if (earnedStar && !store.puzzleStarStages.includes(stageIndex)) {
+            store.puzzleStarStages.push(stageIndex);
+            progressChanged = true;
+        }
+        if (progressChanged) saveStore();
         game.winner = player;
         game.running = false;
         game.ending = null;
@@ -4490,9 +4560,7 @@
     /** 포인터 이벤트를 가상 컨트롤러 입력으로 바꾼다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
     function updateVirtualPointer(event) {
         if (!shouldShowVirtualController()) return;
-        const bounds = canvas.getBoundingClientRect();
-        const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
-        const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+        const { x, y } = getCanvasEventCoordinates(event);
         const pointerId = Number.isFinite(event.pointerId) ? event.pointerId : 0;
         const previous = virtualPointerButtons.get(pointerId) || [];
         const buttons = getVirtualControllerButtonsAt(x, y);
@@ -4843,10 +4911,16 @@
         clearSettingsApiTest();
         settingsDraft.playerName = normalizePlayerName(settingsDraft.playerName);
         settingsDraft.soundDataURL = normalizeSoundDataURL(settingsDraft.soundDataURL);
+        const soundDataURLChanged = soundDataURL !== settingsDraft.soundDataURL;
         store.settings = { ...settingsDraft };
         saveStore();
         applyCanvasOutputResolution();
+        updateCanvasOrientation();
         updateBackgroundMusicVolume();
+        if (soundDataURLChanged) {
+            soundDataURL = settingsDraft.soundDataURL;
+            void loadSoundDataURL();
+        }
         settingsDraft = null; settingsEditing = false; clearSettingsTextSelection();
         menuScreen = 'title'; loadNotice();
     }
@@ -4881,6 +4955,7 @@
         settingsResetting = true;
         store = createInitialStore();
         applyCanvasOutputResolution();
+        updateCanvasOrientation();
         galleryUnlocks = createInitialGalleryUnlocks();
         initialGalleryPreview = { loaded: false, items: [], startIndex: 0, elapsed: 0 };
         game = null;
@@ -4924,7 +4999,7 @@
 
     /** API 테스트 실행 가능 여부를 반영한 설정 화면 포커스 순서를 만든다. @returns {number[]} 포커스 인덱스 목록 */
     function getSelectableSettingsFocuses() {
-        return [0, 1, 2, 3, 4, 5, 6, 7, 8, ...(canRunAiApiTest() ? [9] : []), 10, 11, 12];
+        return [0, 1, 2, 3, 4, 5, 6, 7, 8, ...(canRunAiApiTest() ? [9] : []), 10, 11, 12, 13];
     }
 
     /** 설정 화면에서 다음 또는 이전 포커스로 이동한다. @param {number} direction 이동 방향 @returns {void} */
@@ -5019,60 +5094,60 @@
             const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
             settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + 1) % GRAPHICS_QUALITY_OPTIONS.length].key;
         } else if (settingsFocus === 9 && canRunAiApiTest()) { playMenuSelectSound(); runAiApiTest(); }
-        else if (settingsFocus === 10) saveSettings();
-        else if (settingsFocus === 11) cancelSettings();
-        else if (settingsFocus === 12) resetAllSettings();
+        else if (settingsFocus === 10) { playMenuSelectSound(); settingsDraft.landscapeOrientationLocked = !settingsDraft.landscapeOrientationLocked; }
+        else if (settingsFocus === 11) saveSettings();
+        else if (settingsFocus === 12) cancelSettings();
+        else if (settingsFocus === 13) resetAllSettings();
     }
 
     /** 설정 화면을 그린다. @returns {void} */
     function drawSettings() {
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `38px ${TITLE_FONT}`; context.fillText(translate('설정'), WIDTH / 2, 56);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `34px ${TITLE_FONT}`; context.fillText(translate('설정'), WIDTH / 2, 52);
         const rows = [
             { label: '이름', y: 95, value: settingsDraft.playerName, kind: 'text' },
-            { label: '배경음악 볼륨', y: 105, value: settingsDraft.musicVolume, kind: 'slider' },
-            { label: '효과음 볼륨', y: 155, value: settingsDraft.effectsVolume, kind: 'slider' },
-            { label: '가상 컨트롤러 사용', y: 205, value: settingsDraft.virtualController, kind: 'radio', options: VIRTUAL_CONTROLLER_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
-            { label: '그래픽 설정', y: 255, value: settingsDraft.graphicsQuality, kind: 'radio', options: GRAPHICS_QUALITY_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 150, width: 130 })) },
-            { label: '사운드 데이터 URL', y: 305, value: settingsDraft.soundDataURL, kind: 'text' },
-            { label: 'AI 서비스 제공자', y: 355, value: settingsDraft.aiProvider, kind: 'provider' },
-            { label: 'AI API 키', y: 405, value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text' },
-            { label: '사용 모델명', y: 455, value: settingsDraft.aiModel, kind: 'text' }
+            { label: '배경음악 볼륨', y: 145, value: settingsDraft.musicVolume, kind: 'slider' },
+            { label: '효과음 볼륨', y: 195, value: settingsDraft.effectsVolume, kind: 'slider' },
+            { label: '가상 컨트롤러 사용', y: 245, value: settingsDraft.virtualController, kind: 'radio', options: VIRTUAL_CONTROLLER_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 145, width: 125 })) },
+            { label: '그래픽 설정', y: 295, value: settingsDraft.graphicsQuality, kind: 'radio', options: GRAPHICS_QUALITY_OPTIONS.map((option, optionIndex) => ({ label: option.label, value: option.key, x: 530 + optionIndex * 145, width: 125 })) },
+            { label: '사운드 데이터 URL', y: 345, value: settingsDraft.soundDataURL, kind: 'text' },
+            { label: 'AI 서비스 제공자', y: 395, value: settingsDraft.aiProvider, kind: 'provider' },
+            { label: 'AI API 키', y: 445, value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text' },
+            { label: '사용 모델명', y: 495, value: settingsDraft.aiModel, kind: 'text' }
         ];
-        rows.slice(1).forEach((row) => { row.y += 40; });
         rows.forEach((row, index) => {
-            context.textAlign = 'left'; context.fillStyle = '#d8f2f5'; context.font = `15px ${BUTTON_FONT}`; context.fillText(translate(row.label), 270, row.y + 5);
+            context.textAlign = 'left'; context.fillStyle = '#d8f2f5'; context.font = `13px ${BUTTON_FONT}`; context.fillText(translate(row.label), 280, row.y + 4);
             const focused = settingsFocus === index;
             if (row.kind === 'slider') {
-                context.strokeStyle = focused ? '#ffd54f' : '#426474'; context.lineWidth = focused ? 3 : 2; context.strokeRect(530, row.y - 10, 390, 20);
-                context.fillStyle = '#4cc9b0'; context.fillRect(532, row.y - 8, 386 * row.value / 100, 16);
-                context.fillStyle = '#f5fbfc'; context.textAlign = 'right'; context.fillText(String(row.value), 958, row.y + 5);
+                context.strokeStyle = focused ? '#ffd54f' : '#426474'; context.lineWidth = focused ? 3 : 2; context.strokeRect(540, row.y - 8, 360, 16);
+                context.fillStyle = '#4cc9b0'; context.fillRect(542, row.y - 6, 356 * row.value / 100, 12);
+                context.fillStyle = '#f5fbfc'; context.textAlign = 'right'; context.fillText(String(row.value), 915, row.y + 4);
             } else if (row.kind === 'radio') {
                 row.options.forEach((option) => {
                     const selected = row.value === option.value;
-                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(option.x, row.y - 19, option.width, 38);
-                    context.strokeStyle = focused && selected ? '#ffd54f' : '#426474'; context.lineWidth = focused && selected ? 3 : 2; context.strokeRect(option.x, row.y - 19, option.width, 38);
-                    context.beginPath(); context.arc(option.x + 20, row.y, 7, 0, Math.PI * 2); context.fillStyle = '#d8f2f5'; context.strokeStyle = '#d8f2f5'; context.lineWidth = 2; context.stroke();
-                    if (selected) { context.beginPath(); context.arc(option.x + 20, row.y, 4, 0, Math.PI * 2); context.fill(); }
-                    context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(translate(option.label), option.x + (option.width + 20) / 2, row.y + 5);
+                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(option.x, row.y - 16, option.width, 32);
+                    context.strokeStyle = focused && selected ? '#ffd54f' : '#426474'; context.lineWidth = focused && selected ? 3 : 2; context.strokeRect(option.x, row.y - 16, option.width, 32);
+                    context.beginPath(); context.arc(option.x + 16, row.y, 6, 0, Math.PI * 2); context.fillStyle = '#d8f2f5'; context.strokeStyle = '#d8f2f5'; context.lineWidth = 2; context.stroke();
+                    if (selected) { context.beginPath(); context.arc(option.x + 16, row.y, 3, 0, Math.PI * 2); context.fill(); }
+                    context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(translate(option.label), option.x + (option.width + 16) / 2, row.y + 4);
                 });
             } else if (row.kind === 'provider') {
                 AI_SERVICE_PROVIDERS.forEach((provider, providerIndex) => {
-                    const x = 530 + providerIndex * 160; const selected = row.value === provider;
-                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, row.y - 19, 140, 38); context.strokeStyle = focused && selected ? '#ffd54f' : '#426474'; context.lineWidth = focused && selected ? 3 : 2; context.strokeRect(x, row.y - 19, 140, 38); context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(provider, x + 70, row.y + 5);
+                    const x = 540 + providerIndex * 145; const selected = row.value === provider;
+                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, row.y - 16, 125, 32); context.strokeStyle = focused && selected ? '#ffd54f' : '#426474'; context.lineWidth = focused && selected ? 3 : 2; context.strokeRect(x, row.y - 16, 125, 32); context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(provider, x + 62.5, row.y + 4);
                 });
             } else {
-                context.fillStyle = '#0b202c'; context.fillRect(530, row.y - 19, 450, 38); context.strokeStyle = focused ? '#ffd54f' : '#426474'; context.lineWidth = focused ? 3 : 2; context.strokeRect(530, row.y - 19, 450, 38);
+                context.fillStyle = '#0b202c'; context.fillRect(540, row.y - 16, 420, 32); context.strokeStyle = focused ? '#ffd54f' : '#426474'; context.lineWidth = focused ? 3 : 2; context.strokeRect(540, row.y - 16, 420, 32);
                 const characters = Array.from(row.value);
-                const textFieldX = 543;
-                const textFieldWidth = 424;
+                const textFieldX = 551;
+                const textFieldWidth = 398;
                 const cursorIndex = settingsEditing && settingsFocus === index ? settingsCursor : 0;
                 let visibleStart = 0;
                 while (visibleStart < cursorIndex && context.measureText(characters.slice(visibleStart, cursorIndex).join('')).width > textFieldWidth - 4) visibleStart += 1;
                 let visibleEnd = visibleStart;
                 while (visibleEnd < characters.length && context.measureText(characters.slice(visibleStart, visibleEnd + 1).join('')).width <= textFieldWidth) visibleEnd += 1;
                 context.save();
-                context.beginPath(); context.rect(textFieldX, row.y - 18, textFieldWidth, 36); context.clip();
+                context.beginPath(); context.rect(textFieldX, row.y - 15, textFieldWidth, 30); context.clip();
                 const selection = settingsEditing && settingsFocus === index ? getSettingsTextSelectionRange() : null;
                 if (selection) {
                     const selectionStart = Math.max(selection[0], visibleStart);
@@ -5080,21 +5155,29 @@
                     if (selectionStart < selectionEnd) {
                         const selectionX = textFieldX + context.measureText(characters.slice(visibleStart, selectionStart).join('')).width;
                         const selectionWidth = context.measureText(characters.slice(selectionStart, selectionEnd).join('')).width;
-                        context.fillStyle = '#426f9e'; context.fillRect(selectionX, row.y - 13, selectionWidth, 21);
+                        context.fillStyle = '#426f9e'; context.fillRect(selectionX, row.y - 11, selectionWidth, 18);
                     }
                 }
-                context.fillStyle = '#f5fbfc'; context.textAlign = 'left'; context.fillText(characters.slice(visibleStart, visibleEnd).join('') || ' ', textFieldX, row.y + 5);
-                if (settingsEditing && settingsFocus === index) { const cursorX = textFieldX + context.measureText(characters.slice(visibleStart, settingsCursor).join('')).width; context.fillStyle = '#ffd54f'; context.fillRect(cursorX, row.y - 13, 2, 21); }
+                context.fillStyle = '#f5fbfc'; context.textAlign = 'left'; context.fillText(characters.slice(visibleStart, visibleEnd).join('') || ' ', textFieldX, row.y + 4);
+                if (settingsEditing && settingsFocus === index) { const cursorX = textFieldX + context.measureText(characters.slice(visibleStart, settingsCursor).join('')).width; context.fillStyle = '#ffd54f'; context.fillRect(cursorX, row.y - 11, 2, 18); }
                 context.restore();
             }
         });
         const apiTestEnabled = canRunAiApiTest();
-        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(530, 525, 450, 40);
-        context.strokeStyle = settingsFocus === 9 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 9 && apiTestEnabled ? 3 : 2; context.strokeRect(530, 525, 450, 40);
-        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 755, 551);
-        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `12px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 530, 585);
-        [{ label: '저장', x: 380, focus: 10, color: '#4cc9b0' }, { label: '취소', x: 560, focus: 11, color: '#ef5350' }, { label: '초기화', x: 740, focus: 12, color: '#7e6bc4' }].forEach((button) => {
-            context.fillStyle = button.color; context.fillRect(button.x, 625, 160, 46); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 625, 160, 46); context.fillStyle = '#fff'; context.font = `16px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 80, 655);
+        context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(540, 525, 420, 36);
+        context.strokeStyle = settingsFocus === 9 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 9 && apiTestEnabled ? 3 : 2; context.strokeRect(540, 525, 420, 36);
+        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `14px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), 750, 549);
+        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `11px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), 540, 580);
+        const checkboxX = 540;
+        const checkboxY = 600;
+        context.fillStyle = '#0b202c'; context.fillRect(checkboxX, checkboxY, 20, 20);
+        context.strokeStyle = settingsFocus === 10 ? '#ffd54f' : '#426474'; context.lineWidth = settingsFocus === 10 ? 3 : 2; context.strokeRect(checkboxX, checkboxY, 20, 20);
+        if (settingsDraft.landscapeOrientationLocked) {
+            context.strokeStyle = '#4cc9b0'; context.lineWidth = 3; context.beginPath(); context.moveTo(checkboxX + 4, checkboxY + 10); context.lineTo(checkboxX + 8, checkboxY + 15); context.lineTo(checkboxX + 17, checkboxY + 5); context.stroke();
+        }
+        context.fillStyle = '#f5fbfc'; context.font = `14px ${BUTTON_FONT}`; context.textAlign = 'left'; context.fillText(translate('화면 가로방향 고정'), checkboxX + 30, checkboxY + 16);
+        [{ label: '저장', x: 390, focus: 11, color: '#4cc9b0' }, { label: '취소', x: 565, focus: 12, color: '#ef5350' }, { label: '초기화', x: 740, focus: 13, color: '#7e6bc4' }].forEach((button) => {
+            context.fillStyle = button.color; context.fillRect(button.x, 640, 150, 42); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, 640, 150, 42); context.fillStyle = '#fff'; context.font = `14px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + 75, 666);
         });
     }
 
@@ -5682,14 +5765,112 @@
         context.fillText(translate('취소'), cancelBounds.x + cancelBounds.width / 2, cancelBounds.y + 47);
     }
 
+    /** 퍼즐뿌요 취소 카드와 스테이지 카드 전체 수를 반환한다. @returns {number} 카드 수 */
+    function getPuzzleStageCardCount() {
+        return PUZZLE_STAGES.length + 1;
+    }
+
+    /** 현재 화면에 표시할 퍼즐뿌요 카드 수를 반환한다. @returns {number} 표시 카드 수 */
+    function getVisiblePuzzleStageCardCount() {
+        return Math.min(PUZZLE_STAGE_VISIBLE_CARD_COUNT, getPuzzleStageCardCount());
+    }
+
+    /** 퍼즐뿌요 스테이지 또는 취소 가상 순번을 카드 슬롯으로 바꾼다. @param {number} index 스테이지 순번 또는 취소 가상 순번(-1) @returns {number} 카드 슬롯 */
+    function getPuzzleStageCardSlot(index) {
+        return index === PUZZLE_STAGE_CANCEL_INDEX ? 0 : index + 1;
+    }
+
+    /** 카드 슬롯을 퍼즐뿌요 스테이지 또는 취소 가상 순번으로 바꾼다. @param {number} slot 카드 슬롯 @returns {number} 스테이지 순번 또는 취소 가상 순번 */
+    function getPuzzleStageIndexFromSlot(slot) {
+        return slot === 0 ? PUZZLE_STAGE_CANCEL_INDEX : slot - 1;
+    }
+
+    /** 현재 가능한 퍼즐뿌요 선택 줄의 최대 스크롤 오프셋을 반환한다. @returns {number} 최대 오프셋 */
+    function getPuzzleStageScrollLimit() {
+        return Math.max(0, getPuzzleStageCardCount() - getVisiblePuzzleStageCardCount());
+    }
+
+    /** 퍼즐뿌요 선택 줄의 스크롤 값을 유효 범위로 보정한다. @returns {void} */
+    function normalizePuzzleStageScrollOffset() {
+        puzzleStageScrollOffset = Math.max(0, Math.min(getPuzzleStageScrollLimit(), puzzleStageScrollOffset));
+    }
+
+    /** 지정한 카드가 현재 퍼즐뿌요 선택 줄에 보이는지 반환한다. @param {number} index 스테이지 순번 또는 취소 가상 순번 @returns {boolean} 표시 여부 */
+    function isPuzzleStageCardVisible(index) {
+        normalizePuzzleStageScrollOffset();
+        const slot = getPuzzleStageCardSlot(index);
+        return slot >= puzzleStageScrollOffset && slot < puzzleStageScrollOffset + getVisiblePuzzleStageCardCount();
+    }
+
+    /** 포커스된 퍼즐뿌요 카드가 화면 안에 들어오도록 선택 줄을 스크롤한다. @returns {void} */
+    function scrollPuzzleStageFocusIntoView() {
+        normalizePuzzleStageScrollOffset();
+        const slot = getPuzzleStageCardSlot(puzzleStageFocus);
+        const visibleCount = getVisiblePuzzleStageCardCount();
+        if (slot < puzzleStageScrollOffset) puzzleStageScrollOffset = slot;
+        else if (slot >= puzzleStageScrollOffset + visibleCount) puzzleStageScrollOffset = slot - visibleCount + 1;
+        normalizePuzzleStageScrollOffset();
+    }
+
+    /** 퍼즐뿌요 선택 줄을 한 카드만큼 스크롤한다. @param {number} direction 왼쪽 -1 또는 오른쪽 1 @returns {boolean} 스크롤 여부 */
+    function scrollPuzzleStageSelection(direction) {
+        normalizePuzzleStageScrollOffset();
+        const nextOffset = Math.max(0, Math.min(getPuzzleStageScrollLimit(), puzzleStageScrollOffset + (direction < 0 ? -1 : 1)));
+        if (nextOffset === puzzleStageScrollOffset) return false;
+        puzzleStageScrollOffset = nextOffset;
+        return true;
+    }
+
+    /** 퍼즐뿌요 선택 줄을 지정한 방향으로 스크롤할 수 있는지 반환한다. @param {number} direction 왼쪽 -1 또는 오른쪽 1 @returns {boolean} 스크롤 가능 여부 */
+    function canScrollPuzzleStageSelection(direction) {
+        normalizePuzzleStageScrollOffset();
+        return direction < 0 ? puzzleStageScrollOffset > 0 : puzzleStageScrollOffset < getPuzzleStageScrollLimit();
+    }
+
+    /** 퍼즐뿌요 선택 줄 스크롤 화살표의 화면 영역을 반환한다. @param {number} direction 왼쪽 -1 또는 오른쪽 1 @returns {{x:number,y:number,width:number,height:number}|null} 화살표 영역 */
+    function getPuzzleStageScrollButtonBounds(direction) {
+        if (!canScrollPuzzleStageSelection(direction)) return null;
+        const visibleCount = getVisiblePuzzleStageCardCount();
+        const slot = direction < 0 ? puzzleStageScrollOffset : puzzleStageScrollOffset + visibleCount - 1;
+        const cardBounds = getPuzzleStageButtonBounds(getPuzzleStageIndexFromSlot(slot));
+        return { x: cardBounds.x + cardBounds.width / 2 - 32, y: cardBounds.y + cardBounds.height + 13, width: 64, height: 34 };
+    }
+
     /** 퍼즐뿌요 스테이지 또는 취소 카드의 화면 영역을 반환한다. @param {number} index 스테이지 순번 또는 취소 가상 순번(-1) @returns {{x:number,y:number,width:number,height:number}} 카드 영역 */
     function getPuzzleStageButtonBounds(index) {
+        normalizePuzzleStageScrollOffset();
         const width = 190;
         const height = 110;
         const gap = 14;
-        const totalWidth = (PUZZLE_STAGES.length + 1) * width + PUZZLE_STAGES.length * gap;
-        const slot = index === PUZZLE_STAGE_CANCEL_INDEX ? 0 : index + 1;
-        return { x: (WIDTH - totalWidth) / 2 + slot * (width + gap), y: 500, width, height };
+        const visibleCount = getVisiblePuzzleStageCardCount();
+        const totalWidth = visibleCount * width + Math.max(0, visibleCount - 1) * gap;
+        const slot = getPuzzleStageCardSlot(index);
+        return { x: (WIDTH - totalWidth) / 2 + (slot - puzzleStageScrollOffset) * (width + gap), y: 500, width, height };
+    }
+
+    /** 퍼즐뿌요 스테이지 카드의 클리어 또는 별 달성 표식을 글자보다 먼저 그린다. @param {{x:number,y:number,width:number,height:number}} bounds 카드 영역 @param {number} stageIndex 스테이지 순번 @returns {void} */
+    function drawPuzzleStageCompletionMarker(bounds, stageIndex) {
+        const earnedStar = store.puzzleStarStages.includes(stageIndex);
+        if (!earnedStar && !store.puzzleClearStages.includes(stageIndex)) return;
+        const centerX = bounds.x + bounds.width / 2;
+        const centerY = bounds.y + bounds.height / 2;
+        context.save();
+        context.globalAlpha = 0.72;
+        context.fillStyle = '#f7c843';
+        context.beginPath();
+        if (earnedStar) {
+            for (let point = 0; point < 10; point += 1) {
+                const angle = -Math.PI / 2 + point * Math.PI / 5;
+                const radius = point % 2 === 0 ? 34 : 15;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                if (point === 0) context.moveTo(x, y);
+                else context.lineTo(x, y);
+            }
+            context.closePath();
+        } else context.arc(centerX, centerY, 30, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
     }
 
     /** 퍼즐뿌요 스테이지 선택 화면을 그린다. @returns {void} */
@@ -5710,21 +5891,39 @@
         }
         const openedCount = getOpenedPuzzleStageCount();
         PUZZLE_STAGES.forEach((item, index) => {
+            if (!isPuzzleStageCardVisible(index)) return;
             const bounds = getPuzzleStageButtonBounds(index);
             const opened = index < openedCount;
             const focused = opened && index === puzzleStageFocus;
             context.fillStyle = opened ? '#236a8b' : '#3c4650'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
             context.strokeStyle = focused ? '#f7c843' : opened ? '#65b9d8' : '#7c8791'; context.lineWidth = focused ? 4 : 2; context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            drawPuzzleStageCompletionMarker(bounds, index);
             context.fillStyle = opened ? '#f5fbfc' : '#c4cbd0'; context.font = `24px ${BUTTON_FONT}`;
             context.fillText(translate('스테이지 %1', index + 1), bounds.x + bounds.width / 2, bounds.y + 43);
             context.font = `16px ${MESSAGE_FONT}`;
             context.fillText(opened ? getPuzzleConditionText(item) : translate('잠김'), bounds.x + bounds.width / 2, bounds.y + 78);
         });
-        const cancelBounds = getPuzzleStageButtonBounds(PUZZLE_STAGE_CANCEL_INDEX);
-        const cancelFocused = puzzleStageFocus === PUZZLE_STAGE_CANCEL_INDEX;
-        context.fillStyle = '#455a64'; context.fillRect(cancelBounds.x, cancelBounds.y, cancelBounds.width, cancelBounds.height);
-        context.strokeStyle = cancelFocused ? '#f7c843' : '#607d8b'; context.lineWidth = cancelFocused ? 4 : 2; context.strokeRect(cancelBounds.x, cancelBounds.y, cancelBounds.width, cancelBounds.height);
-        context.fillStyle = '#f5fbfc'; context.font = `24px ${BUTTON_FONT}`; context.fillText(translate('취소'), cancelBounds.x + cancelBounds.width / 2, cancelBounds.y + 62);
+        if (isPuzzleStageCardVisible(PUZZLE_STAGE_CANCEL_INDEX)) {
+            const cancelBounds = getPuzzleStageButtonBounds(PUZZLE_STAGE_CANCEL_INDEX);
+            const cancelFocused = puzzleStageFocus === PUZZLE_STAGE_CANCEL_INDEX;
+            context.fillStyle = '#455a64'; context.fillRect(cancelBounds.x, cancelBounds.y, cancelBounds.width, cancelBounds.height);
+            context.strokeStyle = cancelFocused ? '#f7c843' : '#607d8b'; context.lineWidth = cancelFocused ? 4 : 2; context.strokeRect(cancelBounds.x, cancelBounds.y, cancelBounds.width, cancelBounds.height);
+            context.fillStyle = '#f5fbfc'; context.font = `24px ${BUTTON_FONT}`; context.fillText(translate('취소'), cancelBounds.x + cancelBounds.width / 2, cancelBounds.y + 62);
+        }
+        [-1, 1].forEach((direction) => {
+            const bounds = getPuzzleStageScrollButtonBounds(direction);
+            if (!bounds) return;
+            context.fillStyle = '#264b5b'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = '#6bbce8'; context.lineWidth = 2; context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.fillStyle = '#d8f2f5'; context.beginPath();
+            const centerX = bounds.x + bounds.width / 2;
+            const centerY = bounds.y + bounds.height / 2;
+            context.moveTo(centerX + (direction < 0 ? -10 : 10), centerY);
+            context.lineTo(centerX + (direction < 0 ? 7 : -7), centerY - 9);
+            context.lineTo(centerX + (direction < 0 ? 7 : -7), centerY + 9);
+            context.closePath();
+            context.fill();
+        });
     }
 
     /**
@@ -5772,14 +5971,18 @@
                 opponent.createController().drawPortrait(context, WIDTH / 2, 375, 0.62);
                 context.fillStyle = '#f5fbfc'; context.font = `28px ${BUTTON_FONT}`; context.fillText(translate(opponent.createController().getName()), WIDTH / 2, 450);
             }
-            if (opponentMenuFocus === 2) {
-                context.fillStyle = '#f7c843';
+            const previousOpponent = getRelativeSelectableOpponent(-1);
+            const nextOpponent = getRelativeSelectableOpponent(1);
+            context.fillStyle = opponentMenuFocus === 2 ? '#f7c843' : '#6bbce8';
+            if (previousOpponent) {
                 context.beginPath();
                 context.moveTo(WIDTH / 2 - 205, 385);
                 context.lineTo(WIDTH / 2 - 175, 360);
                 context.lineTo(WIDTH / 2 - 175, 410);
                 context.closePath();
                 context.fill();
+            }
+            if (nextOpponent) {
                 context.beginPath();
                 context.moveTo(WIDTH / 2 + 205, 385);
                 context.lineTo(WIDTH / 2 + 175, 360);
@@ -5924,6 +6127,7 @@
             }
         }
         drawScreenMessage();
+        drawGameStartFirework();
     }
 
     /** 화면 최상단에 표시 중인 외부 메시지를 그린다. @returns {void} */
@@ -5958,6 +6162,84 @@
         if (screenMessage.elapsed >= screenMessage.duration + SCREEN_MESSAGE_FADE_DURATION) screenMessage = null;
     }
 
+    /** Start the centered firework shown when a game begins. @returns {void} */
+    function startGameStartFirework() {
+        const particleCount = 72;
+        gameStartFirework = {
+            elapsed: 0,
+            particles: Array.from({ length: particleCount }, (unused, index) => ({
+                angle: (index / particleCount) * Math.PI * 2 + (randomFloat() - 0.5) * 0.12,
+                speed: 0.2 + randomFloat() * 0.25,
+                delay: randomFloat() * 55,
+                size: 1.5 + randomFloat() * 2.5,
+                color: GAME_START_FIREWORK_COLORS[Math.floor(randomFloat() * GAME_START_FIREWORK_COLORS.length)]
+            }))
+        };
+    }
+
+    /** Advance and expire the game-start firework. @param {number} delta Elapsed milliseconds @returns {void} */
+    function updateGameStartFirework(delta) {
+        if (!gameStartFirework) return;
+        gameStartFirework.elapsed += delta;
+        if (gameStartFirework.elapsed >= GAME_START_FIREWORK_DURATION) gameStartFirework = null;
+    }
+
+    /** Draw the game-start firework above every other canvas element. @returns {void} */
+    function drawGameStartFirework() {
+        if (!gameStartFirework) return;
+        const elapsed = gameStartFirework.elapsed;
+        const fadeAlpha = elapsed <= GAME_START_FIREWORK_FADE_START
+            ? 1
+            : Math.max(0, 1 - (elapsed - GAME_START_FIREWORK_FADE_START) / (GAME_START_FIREWORK_DURATION - GAME_START_FIREWORK_FADE_START));
+        const centerX = WIDTH / 2;
+        const centerY = HEIGHT / 2;
+
+        context.save();
+        context.globalCompositeOperation = 'lighter';
+        context.globalAlpha = fadeAlpha;
+
+        const flashProgress = Math.min(1, elapsed / 220);
+        context.fillStyle = '#ffffff';
+        context.globalAlpha = fadeAlpha * (1 - flashProgress) * 0.8;
+        context.beginPath();
+        context.arc(centerX, centerY, 7 + flashProgress * 16, 0, Math.PI * 2);
+        context.fill();
+
+        context.strokeStyle = '#f7c843';
+        context.lineWidth = 3;
+        context.globalAlpha = fadeAlpha * Math.max(0, 1 - elapsed / 850) * 0.8;
+        context.beginPath();
+        context.arc(centerX, centerY, 16 + elapsed * 0.34, 0, Math.PI * 2);
+        context.stroke();
+
+        gameStartFirework.particles.forEach((particle) => {
+            const particleElapsed = Math.max(0, elapsed - particle.delay);
+            if (!particleElapsed) return;
+            const distance = particle.speed * particleElapsed;
+            const gravity = 0.00016 * particleElapsed * particleElapsed;
+            const x = centerX + Math.cos(particle.angle) * distance;
+            const y = centerY + Math.sin(particle.angle) * distance + gravity;
+            const trailElapsed = Math.max(0, particleElapsed - 85);
+            const trailDistance = particle.speed * trailElapsed;
+            const trailGravity = 0.00016 * trailElapsed * trailElapsed;
+            const trailX = centerX + Math.cos(particle.angle) * trailDistance;
+            const trailY = centerY + Math.sin(particle.angle) * trailDistance + trailGravity;
+
+            context.strokeStyle = particle.color;
+            context.lineWidth = particle.size;
+            context.globalAlpha = fadeAlpha * Math.max(0.25, 1 - particleElapsed / GAME_START_FIREWORK_DURATION);
+            context.beginPath();
+            context.moveTo(trailX, trailY);
+            context.lineTo(x, y);
+            context.stroke();
+            context.fillStyle = particle.color;
+            context.beginPath();
+            context.arc(x, y, particle.size * 0.9, 0, Math.PI * 2);
+            context.fill();
+        });
+        context.restore();
+    }
+
     /** 카운트다운과 일시정지 밖에서 연속 피버 남은 시간을 0까지 감소시킨다. @param {number} delta 이전 프레임 후 경과한 밀리초 @returns {void} */
     function updateContinuousFeverTime(delta) {
         if (!game?.continuousFever || !game.fever || game.countdown > 0 || game.ending) return;
@@ -5982,6 +6264,7 @@
         lastTime = time;
         updateGamepadInput();
         updateScreenMessage(delta);
+        updateGameStartFirework(delta);
         // 플레이 방법은 결과 화면 표시 시간까지 갱신하고, 일반 게임은 실행 중일 때만 갱신한다.
         if (game?.tutorial && !game.paused) {
             if (game.running) {
@@ -5996,6 +6279,7 @@
                 if (!game.countdown && game.countdownStartsGame) {
                     game.countdownStartsGame = false;
                     playSound(commonSoundPool?.gameStarts, 'effects', '게임 시작 효과음');
+                    startGameStartFirework();
                     beginGame();
                 }
             } else if (game.ending) {
@@ -6205,7 +6489,8 @@
             else if (settingsFocus === 4) {
                 const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
                 settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + direction + GRAPHICS_QUALITY_OPTIONS.length) % GRAPHICS_QUALITY_OPTIONS.length].key;
-            } else if (settingsFocus >= 10) settingsFocus = 10 + (settingsFocus - 10 + (direction < 0 ? 2 : 1)) % 3;
+            } else if (settingsFocus === 10) settingsDraft.landscapeOrientationLocked = direction > 0;
+            else if (settingsFocus >= 11) settingsFocus = 11 + (settingsFocus - 11 + (direction < 0 ? 2 : 1)) % 3;
         }
     }
 
@@ -6344,7 +6629,11 @@
                 else if (key === 'arrowleft' || key === 'arrowright') {
                     const currentIndex = Math.max(0, focusChoices.indexOf(puzzleStageFocus));
                     const direction = key === 'arrowleft' ? -1 : 1;
-                    puzzleStageFocus = focusChoices[Math.max(0, Math.min(focusChoices.length - 1, currentIndex + direction))];
+                    const nextFocus = focusChoices[Math.max(0, Math.min(focusChoices.length - 1, currentIndex + direction))];
+                    if (nextFocus !== puzzleStageFocus) {
+                        puzzleStageFocus = nextFocus;
+                        scrollPuzzleStageFocusIntoView();
+                    } else scrollPuzzleStageSelection(direction);
                     puzzleStageLastClickedIndex = null;
                 } else if (key === 'enter' || key === ' ') {
                     if (puzzleStageFocus === PUZZLE_STAGE_CANCEL_INDEX) returnToRuleSelection();
@@ -6528,9 +6817,7 @@
             return;
         }
         if (game?.tutorial) {
-            const bounds = canvas.getBoundingClientRect();
-            const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
-            const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+            const { x, y } = getCanvasEventCoordinates(event);
             if (game.tutorial.mode === 'complete' && y >= 376 && y <= 440) {
                 if (x >= 470 && x <= 620) { playMenuSelectSound(); enterTutorialStage(1); }
                 else if (x >= 660 && x <= 810) closeTutorial();
@@ -6539,17 +6826,13 @@
         }
         // 결과 화면에서는 종료 버튼 영역 클릭만 메뉴 복귀로 처리한다.
         if (game && !game.running) {
-            const bounds = canvas.getBoundingClientRect();
-            const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
-            const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+            const { x, y } = getCanvasEventCoordinates(event);
             if (x >= 515 && x <= 765 && y >= 165 && y <= 229) {
                 closeResultScreen();
             }
             return;
         }
-        const bounds = canvas.getBoundingClientRect();
-        const x = (event.clientX - bounds.left) * WIDTH / bounds.width;
-        const y = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+        const { x, y } = getCanvasEventCoordinates(event);
         // 일시정지 중에는 재개와 종료 버튼의 클릭만 처리한다.
         if (game && game.paused) {
             if (x >= 470 && x <= 620 && y >= 376 && y <= 440) {
@@ -6637,14 +6920,26 @@
             return;
         }
         if (menuScreen === 'puzzleStage') {
+            const scrollDirection = [-1, 1].find((direction) => {
+                const bounds = getPuzzleStageScrollButtonBounds(direction);
+                return bounds && x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+            });
+            if (scrollDirection !== undefined) {
+                if (scrollPuzzleStageSelection(scrollDirection)) {
+                    playMenuFocusMoveSound();
+                    puzzleStageLastClickedIndex = null;
+                }
+                return;
+            }
             const cancelBounds = getPuzzleStageButtonBounds(PUZZLE_STAGE_CANCEL_INDEX);
-            if (x >= cancelBounds.x && x <= cancelBounds.x + cancelBounds.width && y >= cancelBounds.y && y <= cancelBounds.y + cancelBounds.height) {
+            if (isPuzzleStageCardVisible(PUZZLE_STAGE_CANCEL_INDEX) && x >= cancelBounds.x && x <= cancelBounds.x + cancelBounds.width && y >= cancelBounds.y && y <= cancelBounds.y + cancelBounds.height) {
                 puzzleStageFocus = PUZZLE_STAGE_CANCEL_INDEX;
                 puzzleStageLastClickedIndex = null;
                 returnToRuleSelection();
                 return;
             }
             const stageIndex = PUZZLE_STAGES.findIndex((stage, index) => {
+                if (!isPuzzleStageCardVisible(index)) return false;
                 const stageBounds = getPuzzleStageButtonBounds(index);
                 return x >= stageBounds.x && x <= stageBounds.x + stageBounds.width && y >= stageBounds.y && y <= stageBounds.y + stageBounds.height;
             });
@@ -6674,23 +6969,24 @@
                 activateTitleMenu();
             }
         } else if (menuScreen === 'settings') {
-            if (y >= 525 && y <= 565 && x >= 530 && x <= 980 && canRunAiApiTest()) { playMenuSelectSound(); settingsFocus = 9; runAiApiTest(); }
-            else if (y >= 625 && y <= 671 && x >= 380 && x <= 540) { settingsFocus = 10; saveSettings(); }
-            else if (y >= 625 && y <= 671 && x >= 560 && x <= 720) { settingsFocus = 11; cancelSettings(); }
-            else if (y >= 625 && y <= 671 && x >= 740 && x <= 900) { settingsFocus = 12; resetAllSettings(); }
-            else if (y >= 76 && y <= 114) { settingsFocus = 0; settingsEditing = true; settingsCursor = Array.from(settingsDraft.playerName).length; clearSettingsTextSelection(); }
-            else if (y >= 135 && y <= 155) { settingsFocus = 1; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
-            else if (y >= 185 && y <= 205) { settingsFocus = 2; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 530) / 390 * 100))); }
-            else if (y >= 226 && y <= 264 && x >= 530 && x <= 660) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'none'; }
-            else if (y >= 226 && y <= 264 && x >= 680 && x <= 810) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'normal'; }
-            else if (y >= 226 && y <= 264 && x >= 830 && x <= 960) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'large'; }
-            else if (y >= 276 && y <= 314 && x >= 530 && x <= 660) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'low'; }
-            else if (y >= 276 && y <= 314 && x >= 680 && x <= 810) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'medium'; }
-            else if (y >= 276 && y <= 314 && x >= 830 && x <= 960) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'high'; }
-            else if (y >= 326 && y <= 364) { settingsFocus = 5; settingsEditing = true; settingsCursor = Array.from(settingsDraft.soundDataURL).length; clearSettingsTextSelection(); }
-            else if (y >= 376 && y <= 414 && x >= 530 && x <= 670) { playMenuSelectSound(); settingsFocus = 6; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
-            else if (y >= 426 && y <= 464) { settingsFocus = 7; settingsEditing = true; settingsCursor = Array.from(settingsDraft.aiApiKey).length; clearSettingsTextSelection(); }
-            else if (y >= 476 && y <= 514) { settingsFocus = 8; settingsEditing = true; settingsCursor = Array.from(settingsDraft.aiModel).length; clearSettingsTextSelection(); }
+            if (y >= 525 && y <= 561 && x >= 540 && x <= 960 && canRunAiApiTest()) { playMenuSelectSound(); settingsFocus = 9; runAiApiTest(); }
+            else if (y >= 600 && y <= 620 && x >= 540 && x <= 960) { playMenuSelectSound(); settingsFocus = 10; settingsDraft.landscapeOrientationLocked = !settingsDraft.landscapeOrientationLocked; }
+            else if (y >= 640 && y <= 682 && x >= 390 && x <= 540) { settingsFocus = 11; saveSettings(); }
+            else if (y >= 640 && y <= 682 && x >= 565 && x <= 715) { settingsFocus = 12; cancelSettings(); }
+            else if (y >= 640 && y <= 682 && x >= 740 && x <= 890) { settingsFocus = 13; resetAllSettings(); }
+            else if (y >= 79 && y <= 111) { settingsFocus = 0; settingsEditing = true; settingsCursor = Array.from(settingsDraft.playerName).length; clearSettingsTextSelection(); }
+            else if (y >= 137 && y <= 153) { settingsFocus = 1; settingsDraft.musicVolume = Math.round(Math.max(0, Math.min(100, (x - 540) / 360 * 100))); }
+            else if (y >= 187 && y <= 203) { settingsFocus = 2; settingsDraft.effectsVolume = Math.round(Math.max(0, Math.min(100, (x - 540) / 360 * 100))); }
+            else if (y >= 229 && y <= 261 && x >= 530 && x <= 655) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'none'; }
+            else if (y >= 229 && y <= 261 && x >= 675 && x <= 800) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'normal'; }
+            else if (y >= 229 && y <= 261 && x >= 820 && x <= 945) { playMenuSelectSound(); settingsFocus = 3; settingsDraft.virtualController = 'large'; }
+            else if (y >= 279 && y <= 311 && x >= 530 && x <= 655) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'low'; }
+            else if (y >= 279 && y <= 311 && x >= 675 && x <= 800) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'medium'; }
+            else if (y >= 279 && y <= 311 && x >= 820 && x <= 945) { playMenuSelectSound(); settingsFocus = 4; settingsDraft.graphicsQuality = 'high'; }
+            else if (y >= 329 && y <= 361 && x >= 540 && x <= 960) { settingsFocus = 5; settingsEditing = true; settingsCursor = Array.from(settingsDraft.soundDataURL).length; clearSettingsTextSelection(); }
+            else if (y >= 379 && y <= 411 && x >= 540 && x <= 665) { playMenuSelectSound(); settingsFocus = 6; settingsDraft.aiProvider = AI_SERVICE_PROVIDERS[0]; }
+            else if (y >= 429 && y <= 461 && x >= 540 && x <= 960) { settingsFocus = 7; settingsEditing = true; settingsCursor = Array.from(settingsDraft.aiApiKey).length; clearSettingsTextSelection(); }
+            else if (y >= 479 && y <= 511 && x >= 540 && x <= 960) { settingsFocus = 8; settingsEditing = true; settingsCursor = Array.from(settingsDraft.aiModel).length; clearSettingsTextSelection(); }
         } else {
             if (menuScreen === 'practiceDifficulty') {
                 const cancelBounds = getColorSelectionCancelButtonBounds();
@@ -6727,6 +7023,16 @@
                 playMenuSelectSound();
                 selectedAiDifficulty = aiDifficultyIndex;
                 opponentMenuFocus = 1;
+                return;
+            }
+            if (opponentX >= 425 && opponentX <= 470 && opponentY >= 350 && opponentY <= 420 && selectRelativeOpponent(-1)) {
+                playMenuSelectSound();
+                opponentMenuFocus = 2;
+                return;
+            }
+            if (opponentX >= 810 && opponentX <= 855 && opponentY >= 350 && opponentY <= 420 && selectRelativeOpponent(1)) {
+                playMenuSelectSound();
+                opponentMenuFocus = 2;
                 return;
             }
             const visibleOpponents = getVisibleOpponents();
@@ -7166,8 +7472,11 @@
         feverStageValidationTimer = null;
         settingsResetting = false;
         screenMessage = null;
+        gameStartFirework = null;
         window.removeEventListener('keydown', handleKeydown);
         window.removeEventListener('keyup', handleKeyup);
+        window.removeEventListener('resize', updateCanvasOrientation);
+        window.removeEventListener('orientationchange', updateCanvasOrientation);
         canvas.removeEventListener('click', handleCanvasClick);
         canvas.removeEventListener('pointerdown', handleVirtualPointerDown);
         canvas.removeEventListener('pointermove', handleVirtualPointerMove);
@@ -7210,6 +7519,18 @@
         style.className = 'puyow_font_import';
         style.textContent = `
             @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic&family=Nanum+Gothic+Coding&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+KR:wght@100..900&family=Noto+Sans+Mono:wght@100..900&family=Noto+Sans+SC:wght@100..900&display=swap');
+            
+            body.puyow-portrait main {
+                flex-shrink: 0;
+                height: auto;
+                max-width: none;
+                width: min(100vh, 177.7777777778vw);
+            }
+
+            body.puyow-portrait canvas {
+                transform: rotate(90deg);
+                transform-origin: center;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -7269,9 +7590,12 @@
         context = canvas.getContext('2d');
         if (!context) throw new Error('2D 캔버스 컨텍스트를 만들 수 없습니다.');
         applyCanvasOutputResolution();
+        updateCanvasOrientation();
         initialized = true;
         window.addEventListener('keydown', handleKeydown);
         window.addEventListener('keyup', handleKeyup);
+        window.addEventListener('resize', updateCanvasOrientation);
+        window.addEventListener('orientationchange', updateCanvasOrientation);
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('pointerdown', handleVirtualPointerDown);
         canvas.addEventListener('pointermove', handleVirtualPointerMove);
@@ -7707,6 +8031,14 @@
             winConditionType : 'combo',
             winConditionValue : 6,
             hint : '저 위의 빨간 색은 왜 있을까?'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"blue"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"green"},{"x":1,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"green"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"purple"},{"x":1,"y":5,"color":"blue"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"purple"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"blue"},{"x":0,"y":7,"color":"red"},{"x":1,"y":7,"color":"yellow"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"purple"},{"x":5,"y":7,"color":"green"},{"x":0,"y":8,"color":"red"},{"x":1,"y":8,"color":"blue"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"purple"},{"x":5,"y":8,"color":"purple"},{"x":0,"y":9,"color":"green"},{"x":1,"y":9,"color":"green"},{"x":3,"y":9,"color":"yellow"},{"x":4,"y":9,"color":"green"},{"x":5,"y":9,"color":"green"},{"x":0,"y":10,"color":"purple"},{"x":1,"y":10,"color":"red"},{"x":3,"y":10,"color":"purple"},{"x":4,"y":10,"color":"red"},{"x":5,"y":10,"color":"green"},{"x":5,"y":11,"color":"blue"}]},
+            suppliedNextPuyos : [['green', 'yellow'], ['yellow', 'red'], ['green', 'green'], ['purple', 'green'], ['blue', 'green'], ['green', 'blue']],
+            turnLimit : 6,
+            winConditionType : 'clear',
+            winConditionValue : 0,
+            hint : '그냥 내려 봐'
         })
     ];
 
@@ -8032,6 +8364,69 @@
             ['green', 'green'],
             1,
             ['red', 'green', 'purple']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"red"},{"x":1,"y":2,"color":"blue"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"yellow"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":2,"y":4,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"green"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":2,"y":6,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"green"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"yellow"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":3,"y":9,"color":"red"},{"x":4,"y":9,"color":"yellow"},{"x":5,"y":9,"color":"yellow"},{"x":3,"y":10,"color":"yellow"},{"x":4,"y":10,"color":"blue"},{"x":4,"y":11,"color":"green"}]},
+            12,
+            ['yellow', 'yellow'],
+            5,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"red"},{"x":1,"y":2,"color":"blue"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"green"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"green"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"yellow"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":3,"y":9,"color":"red"},{"x":4,"y":9,"color":"yellow"},{"x":5,"y":9,"color":"yellow"},{"x":3,"y":10,"color":"yellow"},{"x":4,"y":10,"color":"blue"},{"x":4,"y":11,"color":"green"}]},
+            11,
+            ['red', 'blue'],
+            4,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"green"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"yellow"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":3,"y":9,"color":"red"},{"x":4,"y":9,"color":"yellow"},{"x":5,"y":9,"color":"yellow"},{"x":3,"y":10,"color":"yellow"},{"x":4,"y":10,"color":"blue"},{"x":4,"y":11,"color":"green"}]},
+            10,
+            ['red', 'yellow'],
+            3,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"green"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"yellow"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"yellow"},{"x":5,"y":8,"color":"blue"},{"x":3,"y":9,"color":"red"},{"x":4,"y":9,"color":"yellow"},{"x":5,"y":9,"color":"yellow"},{"x":4,"y":10,"color":"blue"},{"x":4,"y":11,"color":"green"}]},
+            9,
+            ['yellow', 'yellow'],
+            5,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"green"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"blue"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"green"},{"x":5,"y":8,"color":"blue"},{"x":5,"y":9,"color":"yellow"}]},
+            8,
+            ['yellow', 'red'],
+            5,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"green"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"green"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"green"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"yellow"}]},
+            7,
+            ['yellow', 'red'],
+            5,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"garbage"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":5,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"yellow"}]},
+            6,
+            ['yellow', 'red'],
+            5,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"blue"},{"x":3,"y":4,"color":"blue"},{"x":4,"y":4,"color":"red"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"red"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"}]},
+            5,
+            ['yellow', 'red'],
+            5,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"blue"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"blue"}]},
+            4,
+            ['yellow', 'green'],
+            4,
+            ['red', 'green', 'blue', 'yellow']
         )
     ];
 
