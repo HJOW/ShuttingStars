@@ -172,6 +172,8 @@
     const AI_FAST_DOWN_DELAY_HARD = 300;
     /** AI 극한 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_EXTREME = 100;
+    /** 구경 모드 결과 화면에서 다음 자동 대전을 시작하기까지 기다리는 시간(ms)이다. @type {number} */
+    const WATCH_AUTO_RESTART_DELAY = 5000;
     /** 적이 공격 위력 시뮬레이션을 우선할 피해량 기준이다. @type {number} */
     const AI_ATTACK_SIMULATION_DAMAGE_THRESHOLD = 12;
     /** 공통 뿌요 쌍 대기열의 초기 길이다. @type {number} */
@@ -225,18 +227,18 @@
         required: ['x', 'rotation'],
         additionalProperties: false
     };
-    /** 한국어 원문을 키로 하는 화면 문구 번역표다. @type {Record<string, Record<string, string>>} */
+    /** 한국어 원문을 키로 하는 화면 문구 번역표다. (다국어 데이터) @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
             '솔로몬': 'Solomon', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'Solomon AI response error: continuing with the fallback AI.',
             '뿌요 W': 'Puyo W',
             '초기화': 'Reset', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Reset all settings for this game?', '초기화 중...': 'Resetting...',
-            '게임 시작': 'Game Start', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '퍼즐뿌요': 'Puzzle Puyo', '퍼즐뿌요 스테이지': 'Puzzle Puyo Stage', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Recommended turns: %1', '현재 턴 %1': 'Turn %1', '현재 턴 %1 / %2': 'Turn %1 / %2', '%1 연쇄 해봐': 'Make a %1-chain!', '싹쓸이 해봐': 'Get an all clear!', '한 번에 %1개 뿌요를 터뜨려봐': 'Pop %1 puyos at once!', '방해뿌요 %1개를 발생 시켜봐': 'Send %1 garbage puyos!', '스테이지 클리어': 'Stage Clear', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
-            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '시작': 'Start', '이전': 'Back',
+            '게임 시작': 'Game Start', '구경': 'Watch', '모드': 'Mode', '색상 수': 'Colors', '다음 대전까지 %1초': 'Next match in %1 sec', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '퍼즐뿌요': 'Puzzle Puyo', '퍼즐뿌요 스테이지': 'Puzzle Puyo Stage', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Recommended turns: %1', '현재 턴 %1': 'Turn %1', '현재 턴 %1 / %2': 'Turn %1 / %2', '%1 연쇄 해봐': 'Make a %1-chain!', '싹쓸이 해봐': 'Get an all clear!', '한 번에 %1개 뿌요를 터뜨려봐': 'Pop %1 puyos at once!', '한 번에 %1가지 색 뿌요를 터뜨려봐': 'Pop %1 colors at once!', '방해뿌요 %1개를 발생 시켜봐': 'Send %1 garbage puyos!', '스테이지 클리어': 'Stage Clear', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
+            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '안드레알푸스': 'Andrealphus', '시작': 'Start', '이전': 'Back',
             '극한': 'Extreme',
             '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '게임 시간 %1초': 'Game time: %1 sec', '%1연쇄': '%1 Chain',
-            '연습 상대': 'Practice Opponent', '추후 출시예정': 'Coming soon', '잠김': 'Locked', '한 번만 회전해': 'Rotate only once.', '마지막 폭발은 초록색으로': 'Make the last pop green.', '방해뿌요는 터뜨려야 제맛': 'Pop the garbage puyos too.', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': 'Where should you pop first? The right side?', '저 위의 빨간 색은 왜 있을까?': 'Why is that red puyo up there?',
+            '연습 상대': 'Practice Opponent', '추후 출시예정': 'Coming soon', '잠김': 'Locked', '두 번째에 터뜨려': 'Pop on the second turn.', '한 번만 회전해': 'Rotate only once.', '마지막 폭발은 초록색으로': 'Make the last pop green.', '마지막 파란색 폭발 후를 생각해': 'Think about what comes after the final blue pop.', '3, 4연쇄째에 보충이 필요해': 'You need a refill on the 3rd or 4th chain.', '방해뿌요는 터뜨려야 제맛': 'Pop the garbage puyos too.', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': 'Where should you pop first? The right side?', '저 위의 빨간 색은 왜 있을까?': 'Why is there red up there?', '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해': 'Place four green puyos somewhere in the right three columns.', '그냥 내려 봐': 'Just drop it.',
             '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Play', '그리기': 'Draw', '시뮬레이션': 'Simulation', '지우개': 'Eraser',
             'JSON복사': 'Copy JSON', 'JSON넣기': 'Paste JSON', '배치가 클립보드에 복사됨': 'Layout copied to clipboard',
             '클립보드 복사 실패': 'Clipboard copy failed', 'JSON 파싱 실패': 'JSON parsing failed', '배치 JSON을 입력하세요.': 'Enter layout JSON.',
@@ -252,12 +254,12 @@
             '이름': '名前',
             '뿌요 W': 'Puyo W',
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
-            '게임 시작': 'ゲーム開始', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '퍼즐뿌요': 'パズルぷよ', '퍼즐뿌요 스테이지': 'パズルぷよステージ', '스테이지 %1': 'ステージ %1', '권장 턴 수 %1': '推奨ターン数: %1', '현재 턴 %1': 'ターン %1', '현재 턴 %1 / %2': 'ターン %1 / %2', '%1 연쇄 해봐': '%1連鎖してみよう！', '싹쓸이 해봐': '全消ししてみよう！', '한 번에 %1개 뿌요를 터뜨려봐': '一度に%1個のぷよを消そう！', '방해뿌요 %1개를 발생 시켜봐': 'おじゃまぷよを%1個送ろう！', '스테이지 클리어': 'ステージクリア', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
-            '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '시작': '開始', '이전': '戻る',
+            '게임 시작': 'ゲーム開始', '구경': '観戦', '모드': 'モード', '색상 수': '色数', '다음 대전까지 %1초': '次の対戦まで%1秒', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '퍼즐뿌요': 'パズルぷよ', '퍼즐뿌요 스테이지': 'パズルぷよステージ', '스테이지 %1': 'ステージ %1', '권장 턴 수 %1': '推奨ターン数: %1', '현재 턴 %1': 'ターン %1', '현재 턴 %1 / %2': 'ターン %1 / %2', '%1 연쇄 해봐': '%1連鎖してみよう！', '싹쓸이 해봐': '全消ししてみよう！', '한 번에 %1개 뿌요를 터뜨려봐': '一度に%1個のぷよを消そう！', '한 번에 %1가지 색 뿌요를 터뜨려봐': '一度に%1色のぷよを消そう！', '방해뿌요 %1개를 발생 시켜봐': 'おじゃまぷよを%1個送ろう！', '스테이지 클리어': 'ステージクリア', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
+            '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '안드레알푸스': 'アンドレアルフス', '시작': '開始', '이전': '戻る',
             '극한': '極限',
             '일시정지': '一時停止', '재개': '再開', '종료': '終了', 'GitHub': 'GitHub',
             '승리': '勝利', '패배': '敗北', '최종 점수 %1': '最終スコア %1', '게임 시간 %1초': 'ゲーム時間: %1秒', '%1연쇄': '%1連鎖',
-            '연습 상대': '練習相手', '추후 출시예정': '近日公開予定', '잠김': 'ロック中', '한 번만 회전해': '一度だけ回転しよう。', '마지막 폭발은 초록색으로': '最後は緑で消そう。', '방해뿌요는 터뜨려야 제맛': 'おじゃまぷよも消そう。', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': 'どこから消そう？右側かな？', '저 위의 빨간 색은 왜 있을까?': '上の赤いぷよはなぜあるのかな？',
+            '연습 상대': '練習相手', '추후 출시예정': '近日公開予定', '잠김': 'ロック中', '두 번째에 터뜨려': '2回目で消そう。', '한 번만 회전해': '一度だけ回転しよう。', '마지막 폭발은 초록색으로': '最後は緑で消そう。', '마지막 파란색 폭발 후를 생각해': '最後の青ぷよ消去の後を考えよう。', '3, 4연쇄째에 보충이 필요해': '3・4連鎖目に補充が必要です。', '방해뿌요는 터뜨려야 제맛': 'おじゃまぷよも消そう。', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': 'どこから消そう？右側かな？', '저 위의 빨간 색은 왜 있을까?': '上の赤いぷよはなぜあるのかな？', '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해': '右3列のどこかに緑ぷよ4個を置こう。', '그냥 내려 봐': 'そのまま落としてみよう。',
             '시뮬레이터': 'シミュレーター', '팔레트': 'パレット', '재생': '再生', '그리기': '描画', '시뮬레이션': 'シミュレーション', '지우개': '消しゴム',
             'JSON복사': 'JSONをコピー', 'JSON넣기': 'JSONを貼り付け', '배치가 클립보드에 복사됨': '配置をクリップボードにコピーしました',
             '클립보드 복사 실패': 'クリップボードへのコピーに失敗しました', 'JSON 파싱 실패': 'JSONの解析に失敗しました', '배치 JSON을 입력하세요.': '配置JSONを入力してください。',
@@ -273,13 +275,13 @@
             '이름': '名称',
             '뿌요 W': 'Puyo W',
             '초기화': '重置', '이 게임의 모든 설정을 초기화하시겠습니까?': '要重置此游戏的所有设置吗？', '초기화 중...': '正在重置…',
-            '게임 시작': '开始游戏', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '퍼즐뿌요': '益智魔法气泡', '퍼즐뿌요 스테이지': '益智魔法气泡关卡', '스테이지 %1': '关卡 %1', '권장 턴 수 %1': '推荐回合数: %1', '현재 턴 %1': '第 %1 回合', '현재 턴 %1 / %2': '第 %1 / %2 回合', '%1 연쇄 해봐': '试试 %1 连锁！', '싹쓸이 해봐': '试试全消！', '한 번에 %1개 뿌요를 터뜨려봐': '一次消除 %1 个魔法气泡！', '방해뿌요 %1개를 발생 시켜봐': '发送 %1 个垃圾魔法气泡！', '스테이지 클리어': '关卡完成', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
+            '게임 시작': '开始游戏', '구경': '观战', '모드': '模式', '색상 수': '颜色数', '다음 대전까지 %1초': '距离下一场对战还有%1秒', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '퍼즐뿌요': '益智魔法气泡', '퍼즐뿌요 스테이지': '益智魔法气泡关卡', '스테이지 %1': '关卡 %1', '권장 턴 수 %1': '推荐回合数: %1', '현재 턴 %1': '第 %1 回合', '현재 턴 %1 / %2': '第 %1 / %2 回合', '%1 연쇄 해봐': '试试 %1 连锁！', '싹쓸이 해봐': '试试全消！', '한 번에 %1개 뿌요를 터뜨려봐': '一次消除 %1 个魔法气泡！', '한 번에 %1가지 색 뿌요를 터뜨려봐': '一次消除 %1 种颜色的魔法气泡！', '방해뿌요 %1개를 발생 시켜봐': '发送 %1 个垃圾魔法气泡！', '스테이지 클리어': '关卡完成', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '简单', '보통': '普通', '어려움': '困难', '안드로말리우스': '安德罗马利乌斯', '단탈리온': '丹塔利昂', '세레': '西瑞', '데카라비亚': '德卡拉比亚', '벨리알': '贝利亚尔', '시작': '开始', '이전': '返回',
-            '암두시아스': '阿姆杜西亚斯', '키마리스': '基马里斯',
+            '암두시아스': '阿姆杜西亚斯', '키마리스': '基马里斯', '안드레알푸스': '安德雷阿尔弗斯',
             '극한': '极限',
             '일시정지': '暂停', '재개': '继续', '종료': '退出', 'GitHub': 'GitHub',
             '승리': '胜利', '패배': '失败', '최종 점수 %1': '最终得分 %1', '게임 시간 %1초': '游戏时间：%1秒', '%1연쇄': '%1连锁',
-            '연습 상대': '练习对手', '추후 출시예정': '即将推出', '잠김': '已锁定', '한 번만 회전해': '只旋转一次。', '마지막 폭발은 초록색으로': '最后用绿色消除。', '방해뿌요는 터뜨려야 제맛': '也消除垃圾噗哟吧。', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': '从哪里开始消除？右边？', '저 위의 빨간 색은 왜 있을까?': '上面的红噗哟为什么会在那里？',
+            '연습 상대': '练习对手', '추후 출시예정': '即将推出', '잠김': '已锁定', '두 번째에 터뜨려': '在第二次消除。', '한 번만 회전해': '只旋转一次。', '마지막 폭발은 초록색으로': '最后用绿色消除。', '마지막 파란색 폭발 후를 생각해': '想想最后一次蓝色魔法气泡消除之后。', '3, 4연쇄째에 보충이 필요해': '第3或第4连锁需要补充。', '방해뿌요는 터뜨려야 제맛': '也消除垃圾噗哟吧。', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': '从哪里开始消除？右边？', '저 위의 빨간 색은 왜 있을까?': '上面的红噗哟为什么会在那里？', '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해': '需要把4个绿色魔法气泡放在右侧三列的某处。', '그냥 내려 봐': '直接落下试试。',
             '시뮬레이터': '模拟器', '팔레트': '调色板', '재생': '播放', '그리기': '绘制', '시뮬레이션': '模拟', '지우개': '橡皮擦',
             'JSON복사': '复制 JSON', 'JSON넣기': '粘贴 JSON', '배치가 클립보드에 복사됨': '布局已复制到剪贴板',
             '클립보드 복사 실패': '复制到剪贴板失败', 'JSON 파싱 실패': 'JSON 解析失败', '배치 JSON을 입력하세요.': '请输入布局 JSON。',
@@ -289,8 +291,39 @@
             '은하': '银河',
             '음소거(꺼짐)' : '静音（关）', '음소거(활성)' : '静音（开）',
             '화면 가로방향 고정': '锁定横屏',
-        }
+        },
+        // 독일어·프랑스어는 아래 초기화 구문에서 영어 표를 기본값으로 복사한 뒤 현지화한다. (영어 번역 데이터 일부를 같이 사용하기 위함)
+        de: {},
+        fr: {}
     };
+
+    Object.assign(stringTable.de, stringTable.en, {
+        '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'Solomon-Antwortfehler: Mit der Ersatz-KI wird fortgefahren.',
+        '초기화': 'Zurücksetzen', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Alle Spieleinstellungen zurücksetzen?', '초기화 중...': 'Wird zurückgesetzt…',
+        '게임 시작': 'Spiel starten', '구경': 'Zuschauen', '모드': 'Modus', '색상 수': 'Farben', '다음 대전까지 %1초': 'Nächstes Duell in %1 Sek.', '기본 룰': 'Standardregeln', '피버 룰': 'FEVER-Regeln', '연속 피버': 'Dauer-FEVER', '퍼즐뿌요': 'Puzzle-Puyo', '퍼즐뿌요 스테이지': 'Puzzle-Puyo-Stage', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Empfohlene Züge: %1', '현재 턴 %1': 'Zug %1', '현재 턴 %1 / %2': 'Zug %1 / %2', '%1 연쇄 해봐': 'Mache eine %1er-Kette!', '싹쓸이 해봐': 'Schaffe einen All Clear!', '한 번에 %1개 뿌요를 터뜨려봐': 'Lass %1 Puyos auf einmal platzen!', '한 번에 %1가지 색 뿌요를 터뜨려봐': 'Lass %1 Farben auf einmal platzen!', '방해뿌요 %1개를 발생 시켜봐': 'Sende %1 Müll-Puyos!', '스테이지 클리어': 'Stage geschafft', '(출시 예정)': '(Bald verfügbar)', '목표 연쇄': 'ZIELKETTE', '남은 시간': 'RESTZEIT', '연습': 'Übung', '선택': 'Auswählen', '난이도': 'Schwierigkeit', '적 선택': 'Gegner', 'ENTER 혹은 클릭하여 시작': 'Zum Start ENTER drücken oder klicken',
+        '3색': '3 Farben', '4색': '4 Farben', '5색': '5 Farben', '쉬움': 'Leicht', '보통': 'Normal', '어려움': 'Schwer', '시작': 'Start', '이전': 'Zurück', '극한': 'Extrem',
+        '일시정지': 'Pausiert', '재개': 'Fortsetzen', '종료': 'Beenden', '승리': 'Sieg', '패배': 'Niederlage', '최종 점수 %1': 'Endpunktzahl: %1', '게임 시간 %1초': 'Spielzeit: %1 Sek.', '%1연쇄': '%1-Kette',
+        '연습 상대': 'Übungsgegner', '추후 출시예정': 'Bald verfügbar', '잠김': 'Gesperrt', '두 번째에 터뜨려': 'Lass sie beim zweiten Zug platzen.', '한 번만 회전해': 'Drehe nur einmal.', '마지막 폭발은 초록색으로': 'Die letzte Explosion muss grün sein.', '마지막 파란색 폭발 후를 생각해': 'Denke an das Ende nach der letzten blauen Explosion.', '3, 4연쇄째에 보충이 필요해': 'Bei der 3. oder 4. Kette ist Nachschub nötig.', '방해뿌요는 터뜨려야 제맛': 'Lass auch die Müll-Puyos platzen.', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': 'Wo solltest du anfangen? Rechts?', '저 위의 빨간 색은 왜 있을까?': 'Warum ist dort oben ein roter Puyo?', '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해': 'Platziere vier grüne Puyos irgendwo in den drei rechten Spalten.', '그냥 내려 봐': 'Lass sie einfach fallen.',
+        '시뮬레이터': 'Simulator', '팔레트': 'Palette', '재생': 'Abspielen', '그리기': 'Zeichnen', '시뮬레이션': 'Simulation', '지우개': 'Radierer', 'JSON복사': 'JSON kopieren', 'JSON넣기': 'JSON einfügen', '배치가 클립보드에 복사됨': 'Anordnung in die Zwischenablage kopiert', '클립보드 복사 실패': 'Kopieren in die Zwischenablage fehlgeschlagen', 'JSON 파싱 실패': 'JSON-Analyse fehlgeschlagen', '배치 JSON을 입력하세요.': 'Anordnungs-JSON eingeben',
+        '설정': 'Einstellungen', '이름': 'Name', '배경음악 볼륨': 'Musiklautstärke', '효과음 볼륨': 'Effektlautstärke', '가상 컨트롤러 사용': 'Virtuellen Controller verwenden', '없음': 'Keine', '크게': 'Groß', '그래픽 설정': 'Grafikeinstellungen', '사운드 데이터 URL': 'Audiodaten-URL', '낮음': 'Niedrig', '중간': 'Mittel', '높음': 'Hoch', 'AI 서비스 제공자': 'KI-Anbieter', 'AI API 키': 'KI-API-Schlüssel', '사용 모델명': 'Modellname', 'AI API 테스트': 'KI-API testen', '저장': 'Speichern', '취소': 'Abbrechen', '사운드 관련 기능은 추후 제공 예정': 'Audiofunktionen folgen später.', '설정 저장 후 다시 시도해 주세요': 'Speichere die Einstellungen und versuche es erneut.', 'AI API 테스트 요청 중...': 'KI-API wird getestet…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'KI-API-Test erfolgreich (JSON-Schema: bestanden)', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'KI-API-Test fehlgeschlagen (JSON-Schema: fehlgeschlagen)', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'KI-API-Test fehlgeschlagen (JSON-Schema: nicht geprüft)',
+        '플레이 방법': 'Spielanleitung', '갤러리': 'Galerie', '대상 유형': 'Kategorie', '대상': 'Objekt', '일반뿌요': 'Puyos', '예고뿌요': 'Warn-Puyos', '적': 'Gegner', '빨강뿌요': 'Roter Puyo', '초록뿌요': 'Grüner Puyo', '노랑뿌요': 'Gelber Puyo', '파랑뿌요': 'Blauer Puyo', '보라뿌요': 'Violetter Puyo', '방해뿌요': 'Müll-Puyo', '딱딱뿌요': 'Harter Puyo', '작은 예고뿌요': 'Kleine Warn-Puyo', '큰 예고뿌요': 'Große Warn-Puyo', '빨간 돌': 'Roter Stein', '별': 'Stern', '태양': 'Sonne', '중성자별': 'Neutronenstern', '블랙홀': 'Schwarzes Loch', '위기': 'Krise', '다시보기': 'Wiederholung',
+        '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Bewege Puyos mit Links, Rechts und Unten. Drehe sie mit Z und X.', '좌우 방향키로 뿌요 이동': 'Mit Links und Rechts bewegen.', '아래 방향키로 빨리 떨어뜨리기': 'Mit Unten schneller fallen.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Mit Z nach links drehen.', 'X 키를 눌러 우측으로 뿌요 회전': 'Mit X nach rechts drehen.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Verbinde mindestens vier Puyos derselben Farbe, um sie platzen zu lassen und anzugreifen.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Vier Puyos derselben Farbe greifen den Gegner an.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Angrenzende Müll-Puyos platzen ebenfalls.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Kettenexplosionen verursachen stärkere Angriffe.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'Ein All Clear verursacht einen starken Angriff.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'Du verlierst, wenn Puyos am Ende der dritten Reihe bleiben.',
+        '은하': 'Galaxie', '음소거(꺼짐)': 'Stumm (Aus)', '음소거(활성)': 'Stumm (Ein)', '화면 가로방향 고정': 'Querformat sperren'
+    });
+
+    Object.assign(stringTable.fr, stringTable.en, {
+        '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'Erreur de réponse de Solomon : continuation avec l’IA de secours.',
+        '초기화': 'Réinitialiser', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Réinitialiser tous les réglages du jeu ?', '초기화 중...': 'Réinitialisation…',
+        '게임 시작': 'Commencer', '구경': 'Regarder', '모드': 'Mode', '색상 수': 'Couleurs', '다음 대전까지 %1초': 'Prochain duel dans %1 s', '기본 룰': 'Règles standard', '피버 룰': 'Règles FEVER', '연속 피버': 'FEVER continu', '퍼즐뿌요': 'Puzzle Puyo', '퍼즐뿌요 스테이지': 'Stage Puzzle Puyo', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Tours recommandés : %1', '현재 턴 %1': 'Tour %1', '현재 턴 %1 / %2': 'Tour %1 / %2', '%1 연쇄 해봐': 'Fais une chaîne de %1 !', '싹쓸이 해봐': 'Fais un Tout Effacé !', '한 번에 %1개 뿌요를 터뜨려봐': 'Fais éclater %1 Puyos à la fois !', '한 번에 %1가지 색 뿌요를 터뜨려봐': 'Fais éclater %1 couleurs à la fois !', '방해뿌요 %1개를 발생 시켜봐': 'Envoie %1 Puyos-ordures !', '스테이지 클리어': 'Stage réussi', '(출시 예정)': '(Bientôt disponible)', '목표 연쇄': 'CHAÎNE CIBLE', '남은 시간': 'TEMPS RESTANT', '연습': 'Entraînement', '선택': 'Sélectionner', '난이도': 'Difficulté', '적 선택': 'Adversaire', 'ENTER 혹은 클릭하여 시작': 'Appuie sur ENTRÉE ou clique pour commencer',
+        '3색': '3 couleurs', '4색': '4 couleurs', '5색': '5 couleurs', '쉬움': 'Facile', '보통': 'Normal', '어려움': 'Difficile', '시작': 'Commencer', '이전': 'Retour', '극한': 'Extrême',
+        '일시정지': 'En pause', '재개': 'Reprendre', '종료': 'Quitter', '승리': 'Victoire', '패배': 'Défaite', '최종 점수 %1': 'Score final : %1', '게임 시간 %1초': 'Durée : %1 s', '%1연쇄': 'Chaîne de %1',
+        '연습 상대': 'Adversaire d’entraînement', '추후 출시예정': 'Bientôt disponible', '잠김': 'Verrouillé', '두 번째에 터뜨려': 'Fais-les éclater au deuxième tour.', '한 번만 회전해': 'Ne tourne qu’une fois.', '마지막 폭발은 초록색으로': 'Fais éclater le dernier en vert.', '마지막 파란색 폭발 후를 생각해': 'Pense à ce qui suit la dernière explosion bleue.', '3, 4연쇄째에 보충이 필요해': 'Un ravitaillement est nécessaire à la 3e ou 4e chaîne.', '방해뿌요는 터뜨려야 제맛': 'Fais aussi éclater les Puyos-ordures.', '어디부터 터뜨려야 잘 터뜨렸다고 소문이 날까? 오른쪽?': 'Par où commencer ? À droite ?', '저 위의 빨간 색은 왜 있을까?': 'Pourquoi ce Puyo rouge est-il là-haut ?', '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해': 'Place quatre Puyos verts quelque part dans les trois colonnes de droite.', '그냥 내려 봐': 'Laisse-les simplement tomber.',
+        '시뮬레이터': 'Simulateur', '팔레트': 'Palette', '재생': 'Lire', '그리기': 'Dessiner', '시뮬레이션': 'Simulation', '지우개': 'Gomme', 'JSON복사': 'Copier le JSON', 'JSON넣기': 'Coller le JSON', '배치가 클립보드에 복사됨': 'Disposition copiée dans le presse-papiers', '클립보드 복사 실패': 'Échec de la copie', 'JSON 파싱 실패': 'Échec de l’analyse JSON', '배치 JSON을 입력하세요.': 'Saisis le JSON de disposition',
+        '설정': 'Réglages', '이름': 'Nom', '배경음악 볼륨': 'Volume de la musique', '효과음 볼륨': 'Volume des effets', '가상 컨트롤러 사용': 'Utiliser une manette virtuelle', '없음': 'Aucun', '크게': 'Grand', '그래픽 설정': 'Réglages graphiques', '사운드 데이터 URL': 'URL des données audio', '낮음': 'Bas', '중간': 'Moyen', '높음': 'Élevé', 'AI 서비스 제공자': 'Fournisseur d’IA', 'AI API 키': 'Clé API IA', '사용 모델명': 'Nom du modèle', 'AI API 테스트': 'Tester l’API IA', '저장': 'Enregistrer', '취소': 'Annuler', '사운드 관련 기능은 추후 제공 예정': 'Les fonctions audio seront disponibles plus tard.', '설정 저장 후 다시 시도해 주세요': 'Enregistre les réglages puis réessaie.', 'AI API 테스트 요청 중...': 'Test de l’API IA en cours…', 'AI API 테스트 성공 (JSON 스키마 검사: 통과)': 'Test de l’API IA réussi (schéma JSON valide)', 'AI API 테스트 실패 (JSON 스키마 검사: 실패)': 'Échec du test de l’API IA (schéma JSON invalide)', 'AI API 테스트 실패 (JSON 스키마 검사: 미실시)': 'Échec du test de l’API IA (schéma JSON non vérifié)',
+        '플레이 방법': 'Comment jouer', '갤러리': 'Galerie', '대상 유형': 'Catégorie', '대상': 'Élément', '일반뿌요': 'Puyos', '예고뿌요': 'Puyos d’avertissement', '적': 'Ennemis', '빨강뿌요': 'Puyo rouge', '초록뿌요': 'Puyo vert', '노랑뿌요': 'Puyo jaune', '파랑뿌요': 'Puyo bleu', '보라뿌요': 'Puyo violet', '방해뿌요': 'Puyo-ordure', '딱딱뿌요': 'Puyo dur', '작은 예고뿌요': 'Petit Puyo d’avertissement', '큰 예고뿌요': 'Grand Puyo d’avertissement', '빨간 돌': 'Pierre rouge', '별': 'Étoile', '태양': 'Soleil', '중성자별': 'Étoile à neutrons', '블랙홀': 'Trou noir', '위기': 'Crise', '다시보기': 'Rejouer',
+        '좌우, 아래 키로 뿌요를 이동시킬 수 있고, Z, X 키로 뿌요를 회전시킬 수 있어': 'Déplace les Puyos avec Gauche, Droite et Bas. Tourne-les avec Z et X.', '좌우 방향키로 뿌요 이동': 'Déplace avec Gauche et Droite.', '아래 방향키로 빨리 떨어뜨리기': 'Fais tomber plus vite avec Bas.', 'Z 키를 눌러 좌측으로 뿌요 회전': 'Tourne à gauche avec Z.', 'X 키를 눌러 우측으로 뿌요 회전': 'Tourne à droite avec X.', '같은 색의 뿌요 4개 이상이 붙으면 뿌요를 터뜨려 적을 공격할 수 있어.': 'Relie au moins quatre Puyos de même couleur pour les faire éclater et attaquer.', '같은 색의 뿌요 4개가 붙어, 적을 공격할 수 있어': 'Quatre Puyos de même couleur attaquent l’adversaire.', '뿌요가 터질 때 인접한 방해뿌요도 같이 터져': 'Les Puyos-ordures adjacents éclatent aussi.', '연쇄적으로 뿌요를 폭발시키면 강력한 공격을 할 수 있어.': 'Les chaînes permettent des attaques plus puissantes.', '게임 중 싹쓸이를 하면 강력한 공격을 할 수 있어.': 'Un Tout Effacé lance une attaque puissante.', '3번째 줄 끝에 뿌요가 오래 닿으면 패배해.': 'Tu perds si des Puyos restent au bout de la troisième ligne.',
+        '은하': 'Galaxie', '음소거(꺼짐)': 'Muet (désactivé)', '음소거(활성)': 'Muet (activé)', '화면 가로방향 고정': 'Verrouiller le mode paysage'
+    });
 
     /** 현재 연결된 캔버스 요소다. @type {HTMLCanvasElement|null} */
     let canvas = null;
@@ -396,6 +429,16 @@
     let titleMenuFocus = 0;
     /** 메인 메뉴의 게임 규칙 선택 오버레이가 열려 있는지 여부다. @type {boolean} */
     let ruleSelectionOpen = false;
+    /** 메인 메뉴의 구경 설정 오버레이가 열려 있는지 여부다. @type {boolean} */
+    let watchSelectionOpen = false;
+    /** 구경 설정에서 선택한 색상 수의 DIFFICULTIES 배열 인덱스다. @type {number} */
+    let watchDifficulty = 1;
+    /** 구경 설정에서 선택한 대전 규칙이다. @type {'standard'|'fever'} */
+    let watchRule = 'standard';
+    /** 구경 설정에서 포커스된 행이다. 0: 색상 수, 1: 모드, 2: 동작. @type {number} */
+    let watchSelectionFocus = 0;
+    /** 구경 설정 하단에서 포커스된 동작이다. 0: 시작, 1: 취소. @type {number} */
+    let watchSelectedAction = 0;
     /** 메인 메뉴에서 떠다닐 갤러리 항목의 위치·속도·회전 상태다. @type {{draw:()=>void,x:number,y:number,vx:number,vy:number,radius:number,rotation:number,rotationVelocity:number}[]} */
     let mainMenuGalleryFloaters = [];
     /** 직전 렌더링 메뉴 화면이다. 메인 메뉴 재진입 시 떠다니는 항목을 다시 추첨하는 데 사용한다. @type {string} */
@@ -453,8 +496,12 @@
         { key: 'hard', name: '어려움', fastDownDelay: AI_FAST_DOWN_DELAY_HARD },
         { key: 'extreme', name: '극한', fastDownDelay: AI_FAST_DOWN_DELAY_EXTREME }
     ];
+    /** 구경 모드에서 양쪽 AI에만 적용할 극한 난이도의 인덱스다. @type {number} */
+    const WATCH_AI_DIFFICULTY_INDEX = AI_DIFFICULTIES.findIndex((difficulty) => difficulty.key === 'extreme');
     /** 등록된 기본 및 외부 적 목록이다. @type {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} */
     const OPPONENTS = [];
+    /** 구경 모드의 무작위 대전 후보에서 제외할 적 종류다. @type {Set<string>} */
+    const WATCH_EXCLUDED_OPPONENT_TYPES = new Set(['Solomon', 'Andromalius', 'Dantalion']);
     /** getClassType()별로 외부에서 지정한 적 사운드 풀이다. @type {Map<string, SoundPool>} */
     const enemySoundPools = new Map();
     /** 메인 메뉴 게임 규칙 선택지의 버튼 배경색이다. */
@@ -737,7 +784,7 @@
 
     /** 현재 실제 플레이가 갤러리 해금을 허용하는 기본 룰·연습·연속 피버인지 판별한다. @returns {boolean} 해금 가능 여부 */
     function canUnlockGalleryWarningInCurrentGame() {
-        return Boolean(game && !game.feverRule && game.running && game.countdown <= 0 && !game.paused && !game.ending && !game.tutorial);
+        return Boolean(game && !game.watch && !game.feverRule && game.running && game.countdown <= 0 && !game.paused && !game.ending && !game.tutorial);
     }
 
     /** 초기 타이틀 중앙에 그릴, 잠금 해제된 갤러리 대상 목록을 만든다. @returns {{draw:()=>void}[]} */
@@ -1219,6 +1266,7 @@
         if (game?.paused) return `pause:${pauseMenuFocus}`;
         if (game) return null;
         if (menuScreen === 'title' && ruleSelectionOpen) return `rule:${ruleSelectionFocus}`;
+        if (menuScreen === 'title' && watchSelectionOpen) return `watch:${watchSelectionFocus}:${watchDifficulty}:${watchRule}:${watchSelectedAction}`;
         if (menuScreen === 'title') return `title:${titleMenuFocus}`;
         if (menuScreen === 'opponent') return `opponent:${opponentMenuFocus}:${selectedDifficulty}:${selectedAiDifficulty}:${selectedOpponent}:${selectedOpponentAction}`;
         if (menuScreen === 'practiceDifficulty') return `difficulty:${colorSelectionFocus}:${selectedDifficulty}`;
@@ -1513,6 +1561,8 @@
             this.outgoingWarningDelay = 0;
             // 상대 필드에 에너지 도착으로 이미 알려진 정수 ATTACK이다.
             this.announcedAttack = 0;
+            /** 현재 announcedAttack을 표시 중인 에너지다. 예고 취소 시 다른 에너지의 표시를 지우지 않도록 식별한다. @type {object|null} */
+            this.announcedAttackEnergy = null;
             this.lastAttackTransfer = null;
             this.lastAttackEnergySource = null;
             this.receivesPuyos = true;
@@ -1787,6 +1837,88 @@
         syncBackgroundMusic();
     }
 
+    /** 구경 모드에 사용할 수 있는 출시된 적 목록을 반환한다. 솔로몬·안드로말리우스·단탈리온은 항상 제외한다. @returns {{createController:()=>Enemy,className:string,classType:string,sortPriority:number,hidden:boolean,notAvail:boolean}[]} 후보 적 목록 */
+    function getWatchOpponentCandidates() {
+        return OPPONENTS.filter((entry) => !entry.hidden && !entry.notAvail && !WATCH_EXCLUDED_OPPONENT_TYPES.has(entry.classType));
+    }
+
+    /** 구경 모드 후보 중 종류가 서로 다른 적 두 명을 무작위로 선정한다. @returns {object[]|null} 선정된 두 적 등록 항목 */
+    function selectWatchOpponents() {
+        const candidates = getWatchOpponentCandidates();
+        if (candidates.length < 2) return null;
+        const leftIndex = Math.floor(randomFloat() * candidates.length);
+        const left = candidates[leftIndex];
+        const rightCandidates = candidates.filter((entry, index) => index !== leftIndex && entry.classType !== left.classType);
+        if (!rightCandidates.length) return null;
+        const right = rightCandidates[Math.floor(randomFloat() * rightCandidates.length)];
+        return [left, right];
+    }
+
+    /** 현재 구경 설정으로 서로 다른 적 두 명의 자동 대전을 시작한다. @param {boolean} [playSelectionSound=true] 메뉴 선택음을 재생할지 여부 @returns {boolean} 시작 성공 여부 */
+    function startWatchGame(playSelectionSound = true) {
+        const selectedEntries = selectWatchOpponents();
+        if (!selectedEntries) return false;
+        if (playSelectionSound) playMenuSelectSound();
+        resetVirtualControllerInput();
+        watchSelectionOpen = false;
+        const controllers = selectedEntries.map((entry) => entry.createController());
+        const difficulty = watchDifficulty;
+        const feverRule = watchRule === 'fever';
+        const colors = DIFFICULTIES[difficulty].colors;
+        const pairQueue = Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors));
+        if (DEBUG_CLEAR_RULE_MODE) {
+            const debugColor = randomColor(colors);
+            pairQueue[0] = [debugColor, debugColor];
+            pairQueue[1] = [debugColor, debugColor];
+        }
+        const players = [
+            new PlayerState(controllers[0].getName(), FIELD_LEFT, controllers[0], colors),
+            new PlayerState(controllers[1].getName(), FIELD_RIGHT, controllers[1], colors)
+        ];
+        if (feverRule) players.forEach((player) => { player.fever = createFeverRuleState(); });
+        game = {
+            running: true,
+            paused: false,
+            winner: null,
+            ending: null,
+            countdown: 3000,
+            countdownStartsGame: true,
+            elapsed: 0,
+            marginRate: MARGIN_RATE_SCHEDULE[0].rate,
+            practice: false,
+            continuousFever: false,
+            feverRule,
+            fever: null,
+            watch: {
+                difficulty,
+                feverRule,
+                resultElapsed: 0,
+                opponentTypes: selectedEntries.map((entry) => entry.classType)
+            },
+            difficulty,
+            aiDifficulty: WATCH_AI_DIFFICULTY_INDEX,
+            opponentIndex: null,
+            themeController: controllers[1],
+            pairQueueColors: colors,
+            pairQueue,
+            energyTransfers: [],
+            players
+        };
+        players.forEach(updateNextPairs);
+        syncBackgroundMusic();
+        return true;
+    }
+
+    /** 구경 모드 결과 화면의 대기 시간을 진행하고 5초가 지나면 새 적 두 명으로 다시 시작한다. @param {number} delta 이전 프레임 후 경과한 밀리초 @returns {void} */
+    function updateWatchAutoRestart(delta) {
+        if (!game?.watch || game.running) return;
+        game.watch.resultElapsed += delta;
+        if (game.watch.resultElapsed < WATCH_AUTO_RESTART_DELAY) return;
+        watchDifficulty = game.watch.difficulty;
+        watchRule = game.watch.feverRule ? 'fever' : 'standard';
+        startWatchGame(false);
+    }
+
     /** 연속 피버 모드를 선택된 3색·4색·5색, 목표 5연쇄, 60초 상태로 시작한다. @returns {void} */
     function startContinuousFeverGame() {
         startGame(false, true);
@@ -1804,8 +1936,22 @@
     function getPuzzleConditionText(stage) {
         if (stage.winConditionType === 'clear') return translate('싹쓸이 해봐');
         if (stage.winConditionType === 'multiple') return translate('한 번에 %1개 뿌요를 터뜨려봐', stage.winConditionValue);
+        if (stage.winConditionType === 'color') return translate('한 번에 %1가지 색 뿌요를 터뜨려봐', stage.winConditionValue);
         if (stage.winConditionType === 'attack') return translate('방해뿌요 %1개를 발생 시켜봐', stage.winConditionValue);
         return translate('%1 연쇄 해봐', stage.winConditionValue);
+    }
+
+    /**
+     * 퍼즐뿌요 스테이지 카드 안에 들어갈 수 있도록 긴 클리어 조건을 말줄임표로 줄인다.
+     * 카드 밖의 제목·게임 중 안내에는 전체 조건 문구를 그대로 사용한다.
+     * @param {PuzzlePuyoStage} stage 대상 스테이지
+     * @returns {string} 최대 9글자와 말줄임표로 구성된 카드용 조건 문구
+     */
+    function getPuzzleStageCardConditionText(stage) {
+        const condition = getPuzzleConditionText(stage);
+        const characters = Array.from(condition);
+        if (characters.length <= 9) return condition;
+        return `${characters.slice(0, 9).join('').trimEnd()}...`;
     }
 
     /** 퍼즐뿌요 스테이지 선택 화면을 열고 지정한 열린 스테이지에 포커스를 둔다. @param {number} [preferredFocusIndex=0] 우선 포커스할 스테이지 순번 @returns {void} */
@@ -1852,7 +1998,7 @@
                 // 클리어 전 이미 열려 있던 다음 스테이지가 있을 때만 그쪽으로 이동한다.
                 // 마지막 선택 가능 스테이지를 깨면 새로 열린 항목 대신 현재 스테이지에 둔다.
                 returnFocusIndex: puzzleStageFocus < openedCount - 1 ? puzzleStageFocus + 1 : puzzleStageFocus,
-                turn: 1, pendingCombo: 0, pendingMaxExplosion: 0, pendingAllClear: false, pendingWarningAmount: 0
+                turn: 1, pendingCombo: 0, pendingMaxExplosion: 0, pendingMaxExplosionColorCount: 0, pendingAllClear: false, pendingWarningAmount: 0
             },
             difficulty: DIFFICULTIES.length - 1, aiDifficulty: selectedAiDifficulty, themeController: controller,
             pairQueueColors: colors, pairQueue, energyTransfers: [], players: [player, target]
@@ -2038,6 +2184,7 @@
             state.warningReductionDelay = 0;
             state.outgoingWarningDelay = 0;
             state.announcedAttack = 0;
+            state.announcedAttackEnergy = null;
             state.lastAttackTransfer = null;
             state.lastAttackEnergySource = null;
         });
@@ -2154,7 +2301,36 @@
         enterControl(player);
     }
 
-    /** 기본 제공 적이 피버 중이면 즉시 패배하지 않는 후보 가운데 예상 연쇄가 가장 큰 배치를 고른다. @param {PlayerState} player CPU 플레이어 @returns {object|null} 선택 후보 */
+    /**
+     * 현재 뿌요 쌍의 모든 착지 가능 위치와 회전을 시뮬레이션한다.
+     * 외부 적이 prepareTurn을 재정의했더라도 피버 룰의 공통 연쇄 전략이 후보를 다시 준비할 때 사용한다.
+     * @param {PlayerState} player CPU 플레이어
+     * @returns {void}
+     */
+    function prepareAiPlacementSimulations(player) {
+        if (!player.active) {
+            player.aiSimulations = [];
+            return;
+        }
+        const simulations = [];
+        for (let rotation = 0; rotation < 4; rotation += 1) {
+            for (let x = 0; x < COLUMNS; x += 1) {
+                const placement = findLandingPlacement(player, x, rotation);
+                if (!placement) continue;
+                const positions = activeCells(placement).map(({ x: cellX, y: cellY }) => ({ x: cellX, y: cellY }));
+                simulations.push({
+                    x,
+                    rotation,
+                    positions,
+                    attack: player.estimateAttack(player.active.colors, positions),
+                    combo: player.estimateCombo(player.active.colors, positions)
+                });
+            }
+        }
+        player.aiSimulations = simulations;
+    }
+
+    /** 솔로몬을 제외한 적이 피버 중이면 즉시 패배하지 않는 후보 가운데 예상 연쇄가 가장 큰 배치를 고른다. @param {PlayerState} player CPU 플레이어 @returns {object|null} 선택 후보 */
     function findBestFeverComboPlacement(player) {
         return player.aiSimulations.reduce((best, simulation) => {
             if (causesImmediateDefeat(player, simulation)) return best;
@@ -2163,22 +2339,25 @@
         }, null);
     }
 
-    /** 적의 새 조작 턴에 플레이어가 2연쇄 이상을 진행 중인지 판별한다. @param {PlayerState} player 조작 턴을 시작할 적 @returns {boolean} 즉시 공격 우선 여부 */
+    /** 적의 새 조작 턴에 상대가 2연쇄 이상을 진행 중인지 판별한다. 양쪽 모두 CPU인 구경 모드에서도 자신의 상대를 찾는다. @param {PlayerState} player 조작 턴을 시작할 적 @returns {boolean} 즉시 공격 우선 여부 */
     function shouldCounterPlayerChain(player) {
-        const opponent = game?.players[0];
-        return Boolean(player === game?.players[1] && opponent && opponent.combo >= 2 && isResolutionPhase(opponent.phase));
+        const opponent = game?.players.find((candidate) => candidate !== player);
+        return Boolean(opponent && opponent.combo >= 2 && isResolutionPhase(opponent.phase));
     }
 
     /**
-     * prepareTurn을 마친 컨트롤러의 개별 전략과 기본 제공 적 공통 우선순위를 적용한다.
-     * 솔로몬의 대체 인공지능도 이 함수를 벨리알 인스턴스와 함께 호출해 실제 벨리알과 같은 결정을 얻는다.
+     * prepareTurn을 마친 컨트롤러에 피버 룰 공통 연쇄 전략과 기본 제공 적의 공통 우선순위를 적용한다.
+     * 피버 공통 전략은 솔로몬을 제외한 외부 적에도 적용하며, 솔로몬의 대체 인공지능은 솔로몬 제외 정책을 유지한다.
      * @param {PlayerState} player CPU 플레이어
      * @param {Enemy} controller 결정에 사용할 컨트롤러
      * @param {boolean} appliesBundledEngineStrategy 기본 제공 적 공통 전략 적용 여부
      * @returns {void}
      */
     function applyPreparedControllerDecision(player, controller, appliesBundledEngineStrategy) {
-        if (appliesBundledEngineStrategy && game?.feverRule && player.fever?.active && !(controller instanceof Amdusias)) {
+        const appliesFeverComboStrategy = game?.feverRule && player.fever?.active && !(player.controller instanceof Solomon);
+        if (appliesFeverComboStrategy) {
+            // 외부 적이 기본 prepareTurn을 호출하지 않았더라도 피버에서는 엔진이 모든 후보를 직접 다시 계산한다.
+            prepareAiPlacementSimulations(player);
             const feverPlacement = findBestFeverComboPlacement(player) || findBestAttackPlacement(player, player.active.x, null, true);
             player.aiTarget = feverPlacement.x;
             player.aiRotation = ((feverPlacement.rotation % 4) + 4) % 4;
@@ -2190,10 +2369,9 @@
             player.aiTarget = controller.chooseTarget(player);
             player.aiRotation = ((controller.chooseRotate(player) % 4) + 4) % 4;
         }
-        if (!appliesBundledEngineStrategy) return;
+        if (!appliesBundledEngineStrategy && !appliesFeverComboStrategy) return;
         const selectedPlacement = player.aiSimulations.find((simulation) => simulation.x === player.aiTarget && simulation.rotation === player.aiRotation);
-        const amdusiasFeverAttack = controller instanceof Amdusias && game?.feverRule && player.fever?.active;
-        if (!amdusiasFeverAttack && selectedPlacement && causesImmediateDefeat(player, selectedPlacement)) {
+        if (selectedPlacement && causesImmediateDefeat(player, selectedPlacement)) {
             const safePlacement = findBestAttackPlacement(player, player.active.x, null, true);
             if (safePlacement.positions.length) {
                 player.aiTarget = safePlacement.x;
@@ -2226,8 +2404,8 @@
         // CPU 플레이어면 이번 뿌요 쌍의 목표 위치와 회전을 미리 결정한다.
         if (player.controller) {
             player.controller.prepareTurn(player);
-            // 기본 제공 적에 한해서만 플레이어 연쇄 대응 같은 엔진 공통 특수 규칙을 적용한다.
-            // 외부 등록 적은 자신의 chooseTarget·chooseRotate 결정만 사용한다.
+            // 피버 필드의 연쇄 최적화는 솔로몬을 제외한 모든 적에 적용하고,
+            // 플레이어 연쇄 대응 같은 나머지 엔진 공통 특수 규칙은 기본 제공 적에만 적용한다.
             // findBestAttackPlacement가 즉시 패배 후보를 먼저 제외하므로 생존 조건만 이 우선순위보다 앞선다.
             const appliesBundledEngineStrategy = player.controller instanceof BundledEnemy && !(player.controller instanceof Solomon);
             applyPreparedControllerDecision(player, player.controller, appliesBundledEngineStrategy);
@@ -2373,6 +2551,7 @@
         if (game?.puzzle && player === game.players[0]) {
             game.puzzle.pendingCombo = 0;
             game.puzzle.pendingMaxExplosion = 0;
+            game.puzzle.pendingMaxExplosionColorCount = 0;
             game.puzzle.pendingAllClear = false;
             game.puzzle.pendingWarningAmount = 0;
         }
@@ -2799,6 +2978,8 @@
             player.combo += 1;
             if (game?.puzzle && player === game.players[0]) {
                 game.puzzle.pendingMaxExplosion = Math.max(game.puzzle.pendingMaxExplosion, exploding.length);
+                const colorCount = new Set(explosionGroups.map((group) => group.color)).size;
+                game.puzzle.pendingMaxExplosionColorCount = Math.max(game.puzzle.pendingMaxExplosionColorCount, colorCount);
             }
             playComboSounds(player);
             const point = calculateExplosionPoint(explosionGroups, player.combo, resolution.brokenHardGarbageCount);
@@ -2897,18 +3078,24 @@
      */
     function deliverFinalAttackEnergy(player, opponent) {
         const amount = Math.floor(player.attack);
-        if (amount < 1) return;
-        player.attack -= amount;
-        player.outgoingWarningDelay = Math.floor(player.attack);
         const energyTransfers = getEnergyTransfers();
         const lastEnergy = player.lastAttackTransfer;
+        // 연쇄 중 먼저 출발한 에너지도 이후 ATTACK 상쇄로 최종 전달량이 0이 될 수 있다.
+        // 이때는 남아 있는 예고를 즉시 취소해 상대 필드에 오래 표시되지 않게 한다.
+        if (amount < 1) {
+            cancelEnergyPreview(lastEnergy);
+            player.lastAttackTransfer = null;
+            return;
+        }
+        player.attack -= amount;
+        player.outgoingWarningDelay = Math.floor(player.attack);
         // 마지막 폭발에서 이미 출발한 에너지를 최종 DAMAGE 정산에 사용한다.
         // 해당 연출이 끝난 상태라면 지금이 곧 "에너지 완료 후" 시점이다.
         if (lastEnergy && energyTransfers?.includes(lastEnergy)) {
             lastEnergy.finalDamageAmount = amount;
         } else {
             opponent.damage += amount;
-            player.announcedAttack = 0;
+            clearAnnouncedAttack(player);
         }
         player.lastAttackTransfer = null;
     }
@@ -2956,7 +3143,7 @@
         if (cancelledDamage || cancelledAttack) route.push({ target: ownTarget, kind: 'cancel', amount: cancelledDamage, attackAmount: cancelledAttack, arcDirection: 'up' });
         if (delivered || travelToOpponent) route.push({ target: opponentTarget, kind: 'damage', amount: delivered, previewAmount, arcDirection: (cancelledDamage || cancelledAttack) ? 'down' : startsAtExplosion ? 'up' : 'down' });
         if (!route.length) return null;
-        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, finalDamageAmount: 0, spellEffectCombo: null, spellEffectPlayed: false };
+        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, previewCancelled: false, finalDamageAmount: 0, spellEffectCombo: null, spellEffectPlayed: false };
         energyTransfers.push(energy);
         return energy;
     }
@@ -2969,6 +3156,29 @@
      */
     function warningAmount(player, opponent) {
         return player.damage + opponent.announcedAttack + player.warningReductionDelay;
+    }
+
+    /**
+     * 특정 에너지가 표시한 예고만 지운다. 다른 에너지가 더 최신 예고를 표시 중이면 유지한다.
+     * @param {PlayerState} player 예고 공격력을 보낸 플레이어
+     * @param {object|null} [energy=null] 지울 예고를 표시한 에너지
+     * @returns {void}
+     */
+    function clearAnnouncedAttack(player, energy = null) {
+        if (energy && player.announcedAttackEnergy !== energy) return;
+        player.announcedAttack = 0;
+        player.announcedAttackEnergy = null;
+    }
+
+    /**
+     * 최종 DAMAGE가 상쇄된 에너지가 예고를 새로 표시하거나 기존 예고를 남기지 못하게 한다.
+     * @param {object|null} energy 취소할 공격 에너지
+     * @returns {void}
+     */
+    function cancelEnergyPreview(energy) {
+        if (!energy) return;
+        energy.previewCancelled = true;
+        clearAnnouncedAttack(energy.player, energy);
     }
 
     /**
@@ -2985,7 +3195,7 @@
                 if (energy.elapsed < 150) return true;
                 if (energy.finalDamageAmount) {
                     energy.opponent.damage += energy.finalDamageAmount;
-                    energy.player.announcedAttack = 0;
+                    clearAnnouncedAttack(energy.player, energy);
                 }
                 return false;
             }
@@ -2996,11 +3206,15 @@
             if (segment.kind === 'cancel') {
                 energy.player.warningReductionDelay = Math.max(0, energy.player.warningReductionDelay - segment.amount);
                 energy.opponent.announcedAttack = Math.max(0, energy.opponent.announcedAttack - segment.attackAmount);
+                if (!energy.opponent.announcedAttack) energy.opponent.announcedAttackEnergy = null;
             } else {
-                if (segment.previewAmount !== null) energy.player.announcedAttack = segment.previewAmount;
+                if (segment.previewAmount !== null && !energy.previewCancelled) {
+                    energy.player.announcedAttack = segment.previewAmount;
+                    energy.player.announcedAttackEnergy = energy;
+                }
                 if (segment.amount) {
                     energy.opponent.damage += segment.amount;
-                    energy.player.announcedAttack = 0;
+                    clearAnnouncedAttack(energy.player, energy);
                 }
                 if (energy.spellEffectCombo !== null && !energy.spellEffectPlayed) {
                     playComboSpellEffect(energy.spellEffectCombo);
@@ -3086,7 +3300,7 @@
      * @returns {void}
      */
     function recordEnemyClear(winner) {
-        if (game.practice || winner !== game.players[0]) return;
+        if (game.practice || game.watch || winner !== game.players[0]) return;
         const enemyController = game.players[1].controller;
         const enemyClassName = enemyController.constructor.name;
         unlockGalleryEnemy(enemyController.getClassType());
@@ -3203,6 +3417,7 @@
         const stage = puzzle.stage;
         if (stage.winConditionType === 'clear') return puzzle.pendingAllClear;
         if (stage.winConditionType === 'multiple') return puzzle.pendingMaxExplosion >= stage.winConditionValue;
+        if (stage.winConditionType === 'color') return puzzle.pendingMaxExplosionColorCount >= stage.winConditionValue;
         if (stage.winConditionType === 'attack') return puzzle.pendingWarningAmount >= stage.winConditionValue;
         return puzzle.pendingCombo >= stage.winConditionValue;
     }
@@ -3242,10 +3457,12 @@
         player.damage = 0;
         player.normalDamage = 0;
         player.announcedAttack = 0;
+        player.announcedAttackEnergy = null;
         opponent.attack = 0;
         opponent.damage = 0;
         opponent.normalDamage = 0;
         opponent.announcedAttack = 0;
+        opponent.announcedAttackEnergy = null;
         opponent.warningReductionDelay = 0;
         puzzle.turn += 1;
         enterControl(player);
@@ -4050,6 +4267,11 @@
         return Boolean(game?.continuousFever || (game?.feverRule && player.fever?.active));
     }
 
+    /** 구경 모드에서는 각 필드의 CPU를, 그 밖에서는 대전의 대표 적을 필드 테마 컨트롤러로 반환한다. @param {PlayerState} player 대상 플레이어 @returns {Enemy} 필드 테마 컨트롤러 */
+    function getFieldThemeController(player) {
+        return game?.watch && player.controller ? player.controller : game.themeController;
+    }
+
     /** 적 테마 또는 피버 전용 테마로 필드 베젤을 그린다. @param {PlayerState} player 대상 플레이어 @param {{x:number,y:number,width:number,height:number,player?:PlayerState}} area 베젤 영역 @returns {void} */
     function drawFieldBezelBackground(player, area) {
         if (usesFeverFieldTheme(player)) {
@@ -4057,7 +4279,7 @@
             context.fillRect(area.x, area.y, area.width, area.height);
             return;
         }
-        game.themeController.drawBezelBackground(context, area);
+        getFieldThemeController(player).drawBezelBackground(context, area);
     }
 
     /** 적 테마 또는 피버 전용 테마로 필드 뒷배경을 그린다. @param {PlayerState} player 대상 플레이어 @param {{x:number,y:number,width:number,height:number,player?:PlayerState}} area 필드 영역 @returns {void} */
@@ -4067,7 +4289,7 @@
             context.fillRect(area.x, area.y, area.width, area.height);
             return;
         }
-        game.themeController.drawPlayerBackground(context, area);
+        getFieldThemeController(player).drawPlayerBackground(context, area);
     }
 
     /** 피버 룰 또는 연속 피버가 두 번째 패배 칸을 쓰는지 반환한다. @returns {boolean} 두 번째 패배 칸 사용 여부 */
@@ -4268,6 +4490,19 @@
     }
 
     /**
+     * 적의 현재 필드와 공격 상태가 초상화의 위기 표정 조건에 해당하는지 판별한다.
+     * @param {PlayerState} enemy 적 플레이어
+     * @param {PlayerState|undefined} opponent 적의 상대 플레이어
+     * @returns {boolean} 위기 상태 여부
+     */
+    function isEnemyInCrisis(enemy, opponent) {
+        const occupiedCells = enemy.board
+            .slice(0, VISIBLE_ROWS)
+            .reduce((count, row) => count + row.filter((cell) => cell !== null).length, 0);
+        return occupiedCells >= COLUMNS * VISIBLE_ROWS / 2 || enemy.damage + (opponent?.attack ?? 0) >= 30;
+    }
+
+    /**
      * 적의 현재 필드와 공격 상태에 맞는 중앙 초상화 표정을 결정한다.
      * @param {PlayerState} enemy 적 플레이어
      * @param {PlayerState} opponent 적의 상대 플레이어
@@ -4276,11 +4511,8 @@
     function getEnemyPortraitExpression(enemy, opponent) {
         // 게임 종료 중 패배한 적은 최우선으로 패배 표정을 표시한다.
         if (game.ending?.loser === enemy) return 'defeated';
-        const occupiedCells = enemy.board
-            .slice(0, VISIBLE_ROWS)
-            .reduce((count, row) => count + row.filter((cell) => cell !== null).length, 0);
         // 필드 점유율 또는 예정 공격량이 높으면 위기 표정을 표시한다.
-        if (occupiedCells >= COLUMNS * VISIBLE_ROWS / 2 || enemy.damage + opponent.attack >= 30) return 'crisis';
+        if (isEnemyInCrisis(enemy, opponent)) return 'crisis';
         return 'normal';
     }
 
@@ -4388,6 +4620,12 @@
     /** 터치 조작이 가능한 가상 컨트롤러를 게임 화면 위에 그린다. @returns {void} */
     function drawVirtualController() {
         const { dpad, actions, scale } = getVirtualControllerLayout();
+        if (game?.watch) {
+            const pressed = new Set([...virtualPointerButtons.values()].flat());
+            drawVirtualActionButton(actions.escape.x, actions.escape.y, 'ESC', pressed.has('escape'), scale);
+            context.textBaseline = 'alphabetic';
+            return;
+        }
         const { x, y, size: baseSize } = dpad; const size = baseSize * scale;
         drawVirtualDirectionButton(x - size / 2, y - size * 1.5, '↑', virtualDirectionInput.arrowup, scale);
         drawVirtualDirectionButton(x - size * 1.5, y - size / 2, '←', virtualDirectionInput.arrowleft, scale);
@@ -4526,6 +4764,10 @@
     function getVirtualControllerButtonsAt(x, y) {
         const buttons = [];
         const { dpad, actions, scale } = getVirtualControllerLayout();
+        if (game?.watch) {
+            if ((x - actions.escape.x) ** 2 + (y - actions.escape.y) ** 2 <= (VIRTUAL_ACTION_BUTTONS.radius * scale) ** 2) buttons.push('escape');
+            return buttons;
+        }
         const { x: centerX, y: centerY } = dpad;
         const size = dpad.size * scale;
         const inButton = (left, top) => x >= left && x < left + size && y >= top && y < top + size;
@@ -4596,8 +4838,8 @@
         const won = player === game.winner;
         const puzzleTargetField = isPuzzleTargetField(player);
         const soloTargetField = usesSoloPlayLayout() && player === game.players[1];
-        game.themeController.drawBezelBackground(context, { x: x - CELL, y: FIELD_TOP - CELL, width: CELL * 8, height: CELL * 14, player });
-        game.themeController.drawPlayerBackground(context, { x, y: FIELD_TOP, width: CELL * 6, height: CELL * 12, player });
+        getFieldThemeController(player).drawBezelBackground(context, { x: x - CELL, y: FIELD_TOP - CELL, width: CELL * 8, height: CELL * 14, player });
+        getFieldThemeController(player).drawPlayerBackground(context, { x, y: FIELD_TOP, width: CELL * 6, height: CELL * 12, player });
         context.textAlign = 'center';
         context.font = `36px ${TITLE_FONT}`;
         if (!game.puzzle && (!game.practice || !won)) {
@@ -4633,6 +4875,11 @@
         if (!game.puzzle && enemy !== game.winner) enemy.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, 'defeated');
         context.fillStyle = '#d8f2f5'; context.font = `18px ${MESSAGE_FONT}`;
         context.fillText(translate('게임 시간 %1초', Math.floor(game.elapsed / 1000)), WIDTH / 2, 145);
+        if (game.watch) {
+            const seconds = Math.max(0, Math.ceil((WATCH_AUTO_RESTART_DELAY - game.watch.resultElapsed) / 1000));
+            context.fillStyle = '#b8dbe2'; context.font = `16px ${MESSAGE_FONT}`;
+            context.fillText(translate('다음 대전까지 %1초', seconds), WIDTH / 2, 260);
+        }
         if (game.puzzle) {
             const cleared = game.winner === game.players[0];
             context.fillStyle = cleared ? '#f7c843' : '#ef5350'; context.font = `30px ${TITLE_FONT}`;
@@ -5450,7 +5697,7 @@
         if (!simulator || simulator.mode !== 'draw') return;
         simulator.backup = simulator.player.board.map((row) => [...row]);
         simulator.mode = 'simulation'; simulator.player.effects = null; simulator.player.comboPopups = []; simulator.energyTransfers = [];
-        simulator.target.damage = 0; simulator.target.attack = 0; simulator.target.warningReductionDelay = 0; simulator.target.outgoingWarningDelay = 0; simulator.target.announcedAttack = 0;
+        simulator.target.damage = 0; simulator.target.attack = 0; simulator.target.warningReductionDelay = 0; simulator.target.outgoingWarningDelay = 0; simulator.target.announcedAttack = 0; simulator.target.announcedAttackEnergy = null;
         startGravity(simulator.player, 'simulatorExplode');
         syncBackgroundMusic();
     }
@@ -5461,7 +5708,7 @@
         if (simulator.backup) simulator.player.board = simulator.backup.map((row) => [...row]);
         simulator.player.gravityAnimation = null; simulator.player.effects = null; simulator.player.phase = 'idle';
         simulator.player.point = 0; simulator.player.attack = 0; simulator.player.damage = 0; simulator.player.combo = 0; simulator.player.comboPopups = [];
-        simulator.target.damage = 0; simulator.target.attack = 0; simulator.target.warningReductionDelay = 0; simulator.target.outgoingWarningDelay = 0; simulator.target.announcedAttack = 0; simulator.energyTransfers = [];
+        simulator.target.damage = 0; simulator.target.attack = 0; simulator.target.warningReductionDelay = 0; simulator.target.outgoingWarningDelay = 0; simulator.target.announcedAttack = 0; simulator.target.announcedAttackEnergy = null; simulator.energyTransfers = [];
         simulator.mode = 'draw'; simulator.focusArea = 'palette'; simulator.paletteFocus = 0; simulator.waitTimer = 0;
         syncBackgroundMusic();
     }
@@ -5627,6 +5874,7 @@
 
     /** 메인 메뉴 위에 게임 규칙 선택 오버레이를 연다. @returns {void} */
     function openRuleSelection() {
+        watchSelectionOpen = false;
         ruleSelectionOpen = true;
         ruleSelectionFocus = getSelectableRuleOptionIndices()[0] ?? 0;
     }
@@ -5636,6 +5884,102 @@
         ruleSelectionOpen = false;
         ruleSelectionFocus = 0;
         opponentMenuRule = 'standard';
+    }
+
+    /** 메인 메뉴 위에 구경 모드 설정 오버레이를 연다. @returns {void} */
+    function openWatchSelection() {
+        ruleSelectionOpen = false;
+        watchSelectionOpen = true;
+        watchDifficulty = 1;
+        watchRule = 'standard';
+        watchSelectionFocus = 0;
+        watchSelectedAction = 0;
+    }
+
+    /** 구경 모드 설정 오버레이를 닫고 메인 메뉴로 돌아간다. @returns {void} */
+    function closeWatchSelection() {
+        watchSelectionOpen = false;
+        watchSelectionFocus = 0;
+        watchSelectedAction = 0;
+    }
+
+    /** 구경 모드의 기본 룰·피버 룰 버튼 영역을 반환한다. @param {number} index 0: 기본 룰, 1: 피버 룰 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getWatchRuleButtonBounds(index) {
+        const width = 220;
+        const gap = 20;
+        return { x: WIDTH / 2 - width - gap / 2 + index * (width + gap), y: 390, width, height: 58 };
+    }
+
+    /** 구경 모드의 시작·취소 버튼 영역을 반환한다. @param {number} index 0: 시작, 1: 취소 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getWatchActionButtonBounds(index) {
+        const width = 200;
+        const gap = 20;
+        return { x: WIDTH / 2 - width - gap / 2 + index * (width + gap), y: 510, width, height: 58 };
+    }
+
+    /** 구경 설정에서 현재 포커스된 선택을 실행한다. @returns {void} */
+    function activateWatchSelection() {
+        if (watchSelectionFocus < 2) {
+            watchSelectionFocus += 1;
+            return;
+        }
+        if (watchSelectedAction === 0) startWatchGame();
+        else {
+            playMenuCancelSound();
+            closeWatchSelection();
+        }
+    }
+
+    /** 구경 설정 오버레이의 키보드·게임패드 입력을 처리한다. @param {string} key 소문자 키 이름 @returns {void} */
+    function handleWatchSelectionKey(key) {
+        if (key === 'escape') {
+            playMenuCancelSound();
+            closeWatchSelection();
+            return;
+        }
+        if (key === 'arrowup') watchSelectionFocus = Math.max(0, watchSelectionFocus - 1);
+        else if (key === 'arrowdown') watchSelectionFocus = Math.min(2, watchSelectionFocus + 1);
+        else if (key === 'arrowleft' || key === 'arrowright') {
+            const direction = key === 'arrowleft' ? -1 : 1;
+            if (watchSelectionFocus === 0) watchDifficulty = (watchDifficulty + direction + DIFFICULTIES.length) % DIFFICULTIES.length;
+            else if (watchSelectionFocus === 1) watchRule = watchRule === 'standard' ? 'fever' : 'standard';
+            else watchSelectedAction = watchSelectedAction === 0 ? 1 : 0;
+        } else if (key === 'enter' || key === ' ') activateWatchSelection();
+    }
+
+    /** 메인 메뉴 위에 색상 수·규칙·동작을 고르는 구경 설정 오버레이를 그린다. @returns {void} */
+    function drawWatchSelectionOverlay() {
+        context.fillStyle = 'rgba(3, 11, 19, 0.82)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `38px ${TITLE_FONT}`;
+        context.fillText(translate('구경'), WIDTH / 2, 190);
+        context.fillStyle = '#b8dbe2'; context.font = `18px ${MESSAGE_FONT}`;
+        context.fillText(translate('색상 수'), WIDTH / 2, 248);
+        DIFFICULTIES.forEach((difficulty, index) => {
+            const x = getColorDifficultyButtonX(index);
+            const selected = index === watchDifficulty;
+            const focused = watchSelectionFocus === 0 && selected;
+            context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(x, 265, 110, 58);
+            context.strokeStyle = focused ? '#f7c843' : '#3b6070'; context.lineWidth = focused ? 4 : 2; context.strokeRect(x, 265, 110, 58);
+            context.fillStyle = '#f5fbfc'; context.font = `17px ${BUTTON_FONT}`; context.fillText(translate(difficulty.name), x + 55, 301);
+        });
+        context.fillStyle = '#b8dbe2'; context.font = `18px ${MESSAGE_FONT}`;
+        context.fillText(translate('모드'), WIDTH / 2, 373);
+        ['standard', 'fever'].forEach((rule, index) => {
+            const bounds = getWatchRuleButtonBounds(index);
+            const selected = rule === watchRule;
+            const focused = watchSelectionFocus === 1 && selected;
+            context.fillStyle = selected ? (rule === 'fever' ? RULE_OPTION_BACKGROUND_COLORS.fever : RULE_OPTION_BACKGROUND_COLORS.standard) : '#0b202c';
+            context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = focused ? '#f7c843' : '#3b6070'; context.lineWidth = focused ? 4 : 2; context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.fillStyle = '#f5fbfc'; context.font = `18px ${BUTTON_FONT}`; context.fillText(translate(rule === 'fever' ? '피버 룰' : '기본 룰'), bounds.x + bounds.width / 2, bounds.y + 36);
+        });
+        ['시작', '취소'].forEach((label, index) => {
+            const bounds = getWatchActionButtonBounds(index);
+            const focused = watchSelectionFocus === 2 && watchSelectedAction === index;
+            context.fillStyle = index === 0 ? '#ef5350' : '#455a64'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = focused ? '#f7c843' : index === 0 ? '#ef5350' : '#607d8b'; context.lineWidth = focused ? 4 : 2; context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.fillStyle = '#f5fbfc'; context.font = `20px ${BUTTON_FONT}`; context.fillText(translate(label), bounds.x + bounds.width / 2, bounds.y + 37);
+        });
     }
 
     /** 현재 색상 수 선택 화면에서 고를 수 있는 DIFFICULTIES의 인덱스다. @returns {number[]} */
@@ -5901,7 +6245,7 @@
             context.fillStyle = opened ? '#f5fbfc' : '#c4cbd0'; context.font = `24px ${BUTTON_FONT}`;
             context.fillText(translate('스테이지 %1', index + 1), bounds.x + bounds.width / 2, bounds.y + 43);
             context.font = `16px ${MESSAGE_FONT}`;
-            context.fillText(opened ? getPuzzleConditionText(item) : translate('잠김'), bounds.x + bounds.width / 2, bounds.y + 78);
+            context.fillText(opened ? getPuzzleStageCardConditionText(item) : translate('잠김'), bounds.x + bounds.width / 2, bounds.y + 78);
         });
         if (isPuzzleStageCardVisible(PUZZLE_STAGE_CANCEL_INDEX)) {
             const cancelBounds = getPuzzleStageButtonBounds(PUZZLE_STAGE_CANCEL_INDEX);
@@ -6025,7 +6369,7 @@
         const menuX = WIDTH / 2 - 109; const menuWidth = 218; const menuHeight = 46; const menuStartY = 280; const menuGap = 10;
         const titleOptions = [
             { label: '게임 시작', color: '#ef5350' }, { label: '시뮬레이터', color: '#34556b' }, { label: '플레이 방법', color: '#405c70' },
-            { label: '갤러리', color: '#405c70' }, { label: '설정', color: '#405c70' }
+            { label: '구경', color: '#236a8b' }, { label: '갤러리', color: '#405c70' }, { label: '설정', color: '#405c70' }
         ];
         titleOptions.forEach((option, index) => {
             const y = menuStartY + index * (menuHeight + menuGap);
@@ -6034,10 +6378,10 @@
             context.fillStyle = '#e3f4ff'; context.font = `20px ${BUTTON_FONT}`; context.fillText(translate(option.label), WIDTH / 2, y + 30);
         });
         context.fillStyle = '#24292f'; context.fillRect(32, 665, 85, 23);
-        context.strokeStyle = titleMenuFocus === 5 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 5 ? 2 : 1; context.strokeRect(32, 665, 85, 23);
+        context.strokeStyle = titleMenuFocus === 6 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 6 ? 2 : 1; context.strokeRect(32, 665, 85, 23);
         context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`; context.fillText(translate('GitHub'), 74.5, 681);
         context.fillStyle = store.muted ? '#52606d' : '#264b5b'; context.fillRect(WIDTH - 117, 665, 85, 23);
-        context.strokeStyle = titleMenuFocus === 6 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 6 ? 2 : 1; context.strokeRect(WIDTH - 117, 665, 85, 23);
+        context.strokeStyle = titleMenuFocus === 7 ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === 7 ? 2 : 1; context.strokeRect(WIDTH - 117, 665, 85, 23);
         context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`; context.fillText(translate(store.muted ? '음소거(활성)' : '음소거(꺼짐)'), WIDTH - 74.5, 681);
         context.fillStyle = '#8899a6'; context.font = `14px ${MESSAGE_FONT}`; context.fillText('Copyright (c) HJOW', WIDTH / 2, HEIGHT - 20);
         if (menuScreen === 'practiceDifficulty') {
@@ -6062,6 +6406,7 @@
         // 공지사항은 부유하는 뿌요와 모든 메인 메뉴 요소 위에 그린다.
         if (menuScreen === 'title') drawNotice();
         if (menuScreen === 'title' && ruleSelectionOpen) drawRuleSelectionOverlay();
+        if (menuScreen === 'title' && watchSelectionOpen) drawWatchSelectionOverlay();
     }
 
     /**
@@ -6295,6 +6640,7 @@
                 updatePlayer(game.players[1], game.players[0], delta);
             }
         }
+        if (game?.watch && !game.running) updateWatchAutoRestart(delta);
         if (game?.running && !game.paused) updateEnergyTransfers(delta);
         if (!game && menuScreen === 'simulator') { updateSimulator(delta); updateEnergyTransfers(delta); }
         if (!game && menuScreen === 'gallery' && gallery) gallery.portraitElapsed += delta;
@@ -6546,7 +6892,7 @@
         if (!game || game.running) return;
         playMenuCancelSound();
         const finishedGame = game;
-        const returnToTitle = finishedGame.practice;
+        const returnToTitle = finishedGame.practice || finishedGame.watch;
         const returnToPuzzleStages = finishedGame.puzzle !== undefined && finishedGame.puzzle !== null;
         const puzzleFocusIndex = returnToPuzzleStages && finishedGame.winner === finishedGame.players[0]
             ? finishedGame.puzzle.returnFocusIndex
@@ -6602,6 +6948,10 @@
                 handleRuleSelectionKey(key);
                 return;
             }
+            if (menuScreen === 'title' && watchSelectionOpen) {
+                handleWatchSelectionKey(key);
+                return;
+            }
             if (menuScreen === 'practiceDifficulty') {
                 const choices = getSelectableColorDifficultyIndices();
                 if (key === 'escape') { playMenuCancelSound(); menuScreen = 'title'; loadNotice(); }
@@ -6643,8 +6993,8 @@
             }
             if (menuScreen === 'title' && ['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key)) {
                 titleMenuFocus = key === 'arrowleft' || key === 'arrowup'
-                    ? (titleMenuFocus + 6) % 7
-                    : (titleMenuFocus + 1) % 7;
+                    ? (titleMenuFocus + 7) % 8
+                    : (titleMenuFocus + 1) % 8;
             } else if (menuScreen === 'opponent' && key === 'arrowup') {
                 opponentMenuFocus = Math.max(0, opponentMenuFocus - 1);
             } else if (menuScreen === 'opponent' && key === 'arrowdown') {
@@ -6707,6 +7057,8 @@
             pauseBackgroundMusic();
             return;
         }
+        // 구경 모드는 공통 일시정지 입력을 처리한 뒤 나머지 게임 조작을 모두 무시한다.
+        if (game.watch) return;
         const player = game.players[0];
         if (player.phase !== 'control') return;
         if (key === 'arrowleft' && !event.repeat) moveActive(player, -1, 0);
@@ -6748,9 +7100,10 @@
         if (titleMenuFocus === 0) openRuleSelection();
         else if (titleMenuFocus === 1) openSimulator();
         else if (titleMenuFocus === 2) openTutorial();
-        else if (titleMenuFocus === 3) openGallery();
-        else if (titleMenuFocus === 4) openSettings();
-        else if (titleMenuFocus === 5) {
+        else if (titleMenuFocus === 3) openWatchSelection();
+        else if (titleMenuFocus === 4) openGallery();
+        else if (titleMenuFocus === 5) openSettings();
+        else if (titleMenuFocus === 6) {
             const githubWindow = window.open(convertURL('https://github.com/HJOW/puyow'), '_blank');
             if (githubWindow) githubWindow.opener = null;
         } else {
@@ -6846,6 +7199,41 @@
         }
         // 실행 중인 게임 화면의 일반 클릭은 메뉴 동작으로 처리하지 않는다.
         if (game) return;
+        if (menuScreen === 'title' && watchSelectionOpen) {
+            const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => {
+                const buttonX = getColorDifficultyButtonX(index);
+                return x >= buttonX && x <= buttonX + 110 && y >= 265 && y <= 323;
+            });
+            if (difficultyIndex >= 0) {
+                playMenuSelectSound();
+                watchDifficulty = difficultyIndex;
+                watchSelectionFocus = 0;
+                return;
+            }
+            const ruleIndex = [0, 1].find((index) => {
+                const bounds = getWatchRuleButtonBounds(index);
+                return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+            });
+            if (ruleIndex !== undefined) {
+                playMenuSelectSound();
+                watchRule = ruleIndex === 0 ? 'standard' : 'fever';
+                watchSelectionFocus = 1;
+                return;
+            }
+            const actionIndex = [0, 1].find((index) => {
+                const bounds = getWatchActionButtonBounds(index);
+                return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+            });
+            if (actionIndex !== undefined) {
+                watchSelectionFocus = 2;
+                watchSelectedAction = actionIndex;
+                activateWatchSelection();
+                return;
+            }
+            playMenuCancelSound();
+            closeWatchSelection();
+            return;
+        }
         if (menuScreen === 'title' && ruleSelectionOpen) {
             const cancelBounds = getRuleSelectionCancelButtonBounds();
             if (x >= cancelBounds.x && x <= cancelBounds.x + cancelBounds.width && y >= cancelBounds.y && y <= cancelBounds.y + cancelBounds.height) {
@@ -6954,7 +7342,7 @@
             return;
         }
         if (menuScreen === 'title') {
-            const titleItemIndex = Array.from({ length: 5 }, (unused, index) => index).find((index) => {
+            const titleItemIndex = Array.from({ length: 6 }, (unused, index) => index).find((index) => {
                 const itemY = 280 + index * 56;
                 return x >= WIDTH / 2 - 109 && x <= WIDTH / 2 + 109 && y >= itemY && y <= itemY + 46;
             });
@@ -6965,7 +7353,7 @@
                 playMenuSelectSound();
                 toggleMuted();
             } else if (x >= 32 && x <= 117 && y >= 665 && y <= 688) {
-                titleMenuFocus = 5;
+                titleMenuFocus = 6;
                 activateTitleMenu();
             }
         } else if (menuScreen === 'settings') {
@@ -7064,13 +7452,14 @@
 
     /**
      * 현재 화면을 AI가 구분할 수 있는 간결한 상태 객체로 만든다.
-     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'watch_select'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getNowScreen() {
         if (settingsResetting) return { screen: 'settings_resetting', playerCanControl: false };
         if (!game) {
             if (menuScreen === 'initialTitle') return { screen: 'initial_title', playerCanControl: false };
             if (menuScreen === 'title' && ruleSelectionOpen) return { screen: 'rule_select', playerCanControl: false };
+            if (menuScreen === 'title' && watchSelectionOpen) return { screen: 'watch_select', playerCanControl: false };
             if (menuScreen === 'opponent') return { screen: opponentMenuRule === 'fever' ? 'fever_opponent_select' : 'opponent_select', playerCanControl: false };
             if (menuScreen === 'practiceDifficulty') return { screen: 'practice_difficulty', playerCanControl: false };
             if (menuScreen === 'puzzleStage') return { screen: 'puzzle_stage_select', playerCanControl: false };
@@ -7091,7 +7480,7 @@
         if (game.countdown > 0) return { screen: 'countdown', playerCanControl: false };
         if (game.paused) return { screen: 'paused', playerCanControl: false };
         if (game.ending) return { screen: 'ending', playerCanControl: false };
-        return { screen: 'playing', playerCanControl: game.players[0].phase === 'control' && game.players[0].active !== null };
+        return { screen: 'playing', playerCanControl: !game.watch && game.players[0].controller === null && game.players[0].phase === 'control' && game.players[0].active !== null };
     }
 
     /**
@@ -7154,6 +7543,7 @@
         return {
             screen: screen.screen,
             playerCanControl: screen.playerCanControl,
+            watch: game.watch !== undefined,
             continuousFever: game.continuousFever === true,
             feverRule: game.feverRule === true,
             puzzle: game.puzzle ? {
@@ -7183,7 +7573,7 @@
     /**
      * 현재 표시 중인 화면과 플레이어 조작 가능 여부를 반환한다.
      * 메뉴, 튜토리얼, 대전 진행 상태 모두에서 사용할 수 있다.
-     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'watch_select'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getScreenState() {
         return getNowScreen();
@@ -7229,7 +7619,7 @@
      * 현재 일반 대전의 읽기 전용 상태 스냅샷을 반환한다.
      * 반환된 객체와 그 안의 배열을 변경해도 실제 게임 상태에는 영향을 주지 않는다.
      * 메뉴, 튜토리얼 또는 초기화 전 상태에서는 null을 반환한다.
-     * @returns {{screen:string, playerCanControl:boolean, running:boolean, paused:boolean, countdown:number, elapsed:number, marginRate:number, practice:boolean, continuousFever:boolean, fever:object|null, colorCount:number, colors:string[], aiDifficulty:{key:string,name:string,fastDownDelay:number|null}, winner:'player'|'opponent'|null, ending:{loser:'player'|'opponent',winner:'player'|'opponent',elapsed:number,duration:number}|null, player:object, opponent:object, recommendedPoint:{x:number,y:number}|null}|null}
+     * @returns {{screen:string, playerCanControl:boolean, running:boolean, paused:boolean, countdown:number, elapsed:number, marginRate:number, practice:boolean, watch:boolean, continuousFever:boolean, fever:object|null, colorCount:number, colors:string[], aiDifficulty:{key:string,name:string,fastDownDelay:number|null}, winner:'player'|'opponent'|null, ending:{loser:'player'|'opponent',winner:'player'|'opponent',elapsed:number,duration:number}|null, player:object, opponent:object, recommendedPoint:{x:number,y:number}|null}|null}
      */
     function getGameState() {
         if (!game || game.tutorial) return null;
@@ -7245,6 +7635,7 @@
             elapsed: game.elapsed,
             marginRate: game.marginRate,
             practice: game.practice,
+            watch: game.watch !== undefined,
             continuousFever: game.continuousFever === true,
             feverRule: game.feverRule === true,
             puzzle: game.puzzle ? {
@@ -7311,7 +7702,7 @@
         const screenSchema = {
             type: 'object',
             properties: {
-                screen: { type: 'string', enum: ['initial_title', 'main_menu', 'rule_select', 'practice_difficulty', 'puzzle_stage_select', 'opponent_select', 'fever_opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'settings_resetting', 'gallery', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible title, puzzle-stage selection, menu, gallery, simulator, tutorial, or match screen.' },
+                screen: { type: 'string', enum: ['initial_title', 'main_menu', 'rule_select', 'watch_select', 'practice_difficulty', 'puzzle_stage_select', 'opponent_select', 'fever_opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'settings_resetting', 'gallery', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'], description: 'The exact visible title, puzzle-stage selection, menu, gallery, simulator, tutorial, or match screen.' },
                 playerCanControl: { type: 'boolean' }
             },
             required: ['screen', 'playerCanControl']
@@ -7361,7 +7752,7 @@
         const puzzleSchema = {
             type: ['object', 'null'], properties: {
                 stageIndex: { type: 'integer', minimum: 0 }, turn: { type: 'integer', minimum: 1 },
-                winConditionType: { type: 'string', enum: ['combo', 'clear', 'multiple', 'attack'] },
+                winConditionType: { type: 'string', enum: ['combo', 'clear', 'multiple', 'color', 'attack'] },
                 winConditionValue: { type: 'number', minimum: 0 }, recommendedTurns: { type: 'number', minimum: 0 },
                 condition: { type: 'string' }, starEarned: { type: 'boolean' }
             }, required: ['stageIndex', 'turn', 'winConditionType', 'winConditionValue', 'recommendedTurns', 'condition', 'starEarned']
@@ -7385,6 +7776,7 @@
             properties: {
                 screen: { type: 'string', enum: ['playing', 'paused'] },
                 playerCanControl: { type: 'boolean' },
+                watch: { type: 'boolean' },
                 continuousFever: { type: 'boolean' },
                 feverRule: { type: 'boolean' },
                 puzzle: puzzleSchema,
@@ -7394,7 +7786,7 @@
                     x: { type: 'integer', minimum: 0, maximum: COLUMNS - 1 }, y: { type: 'integer', minimum: 0, maximum: VISIBLE_ROWS - 1 }
                 }, required: ['x', 'y'] }
             },
-            required: ['screen', 'playerCanControl', 'continuousFever', 'feverRule', 'puzzle', 'fever', 'player', 'opponent', 'recommendedPoint']
+            required: ['screen', 'playerCanControl', 'watch', 'continuousFever', 'feverRule', 'puzzle', 'fever', 'player', 'opponent', 'recommendedPoint']
         };
         const tools = [
             {
@@ -7501,6 +7893,9 @@
         pendingInitialTitleEntry = false;
         ruleSelectionOpen = false;
         ruleSelectionFocus = 0;
+        watchSelectionOpen = false;
+        watchSelectionFocus = 0;
+        watchSelectedAction = 0;
         createdCanvas = false;
         animationFrameId = null;
         webMcpAbortController = null;
@@ -7924,11 +8319,12 @@
 
         /**
          * 이 퍼즐 스테이지의 승리 조건 유형
-         *     연쇄 (combo), 싹쓸이 (clear), 동시 폭발 뿌요 수 (multiple) 중 하나가 들어가야 한다.
+         *     연쇄 (combo), 싹쓸이 (clear), 동시 폭발 뿌요 수 (multiple), 동시 폭발 색 수 (color), 공격량 (attack) 중 하나가 들어가야 한다.
          * 
          *     combo : 목표 연쇄 수를 달성하면 승리
          *     clear : 싹쓸이 발생 시 승리
          *     multiple : 한 번의 연쇄에 동시에 터지는 뿌요 수가 한 번이라도 목표 수 이상으로 넘어갔다면 승리
+         *     color : 한 번의 연쇄에 동시에 터지는 뿌요 색상 수가 한 번이라도 목표 수 이상으로 넘어갔다면 승리 (방해뿌요는 색상에서 제외)
          *     attack : 발생시킨 공격 ATTACK + 상대에게 적용한 피해 DAMAGE (즉 예고뿌요가 나타내는 방해뿌요 총 수) 합이 순간적으로 이 목표 수 이상으로 넘어갔다면 승리
          * 
          * 목표 연쇄 수나 동시 폭발 뿌요 수 등의 값은 winConditionValue 에 들어가야 한다.
@@ -7991,6 +8387,15 @@
      */
     const PUZZLE_STAGES = [
         new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":3,"y":0,"color":"blue"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":4,"y":1,"color":"blue"}]},
+            suppliedNextPuyos : [['red', 'red'], ['blue', 'blue']],
+            turnLimit : 2,
+            winConditionType : 'combo',
+            winConditionValue : 2,
+            hint : '두 번째에 터뜨려',
+            opened : true
+        }),
+        new PuzzlePuyoStage({
             stageData : {"puyos":[{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"blue"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":4,"y":2,"color":"red"}]},
             suppliedNextPuyos : [['green', 'blue'], ['green', 'green']],
             turnLimit : 2,
@@ -8007,6 +8412,22 @@
             winConditionValue : 0,
             hint : '마지막 폭발은 초록색으로',
             opened : true
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":1,"y":0,"color":"blue"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"green"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"blue"}]},
+            suppliedNextPuyos : [['green', 'blue'], ['blue', 'blue']],
+            turnLimit : 2,
+            winConditionType : 'color',
+            winConditionValue : 3,
+            hint : '마지막 파란색 폭발 후를 생각해'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"green"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"blue"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"yellow"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"}]},
+            suppliedNextPuyos : [['red', 'blue'], ['green', 'yellow']],
+            turnLimit : 2,
+            winConditionType : 'combo',
+            winConditionValue : 4,
+            hint : '3, 4연쇄째에 보충이 필요해'
         }),
         new PuzzlePuyoStage({
             stageData : {"puyos":[{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"purple"},{"x":5,"y":0,"color":"blue"},{"x":1,"y":1,"color":"garbage"},{"x":2,"y":1,"color":"green"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"purple"},{"x":5,"y":1,"color":"blue"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"blue"},{"x":3,"y":3,"color":"purple"},{"x":3,"y":4,"color":"purple"}]},
@@ -8031,6 +8452,14 @@
             winConditionType : 'combo',
             winConditionValue : 6,
             hint : '저 위의 빨간 색은 왜 있을까?'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"yellow"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"blue"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"green"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":3,"y":3,"color":"green"},{"x":4,"y":3,"color":"red"},{"x":5,"y":3,"color":"yellow"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"blue"},{"x":3,"y":5,"color":"blue"},{"x":4,"y":5,"color":"blue"},{"x":3,"y":6,"color":"blue"}]},
+            suppliedNextPuyos : [['green', 'green'], ['green', 'green'], ['yellow', 'yellow']],
+            turnLimit : 3,
+            winConditionType : 'combo',
+            winConditionValue : 8,
+            hint : '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해'
         }),
         new PuzzlePuyoStage({
             stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"blue"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"green"},{"x":1,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"green"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"purple"},{"x":1,"y":5,"color":"blue"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"purple"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"blue"},{"x":0,"y":7,"color":"red"},{"x":1,"y":7,"color":"yellow"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"purple"},{"x":5,"y":7,"color":"green"},{"x":0,"y":8,"color":"red"},{"x":1,"y":8,"color":"blue"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"purple"},{"x":5,"y":8,"color":"purple"},{"x":0,"y":9,"color":"green"},{"x":1,"y":9,"color":"green"},{"x":3,"y":9,"color":"yellow"},{"x":4,"y":9,"color":"green"},{"x":5,"y":9,"color":"green"},{"x":0,"y":10,"color":"purple"},{"x":1,"y":10,"color":"red"},{"x":3,"y":10,"color":"purple"},{"x":4,"y":10,"color":"red"},{"x":5,"y":10,"color":"green"},{"x":5,"y":11,"color":"blue"}]},
@@ -8449,6 +8878,13 @@
     class Enemy {
         /** 이 적이 연쇄 시 재생되는 효과음들을 담은 사운드풀 @type {SoundPool} */
         soundPool = null;
+
+        /** 일반적인 상황에서, 아래 방향키 이용 딜레이 비율 (목표 결정 후 빠른 하강까지 기다리는 시간 값에 곱셈이 되는 비율) (0~1) @type {number}  */
+        normalFastDownDelayRate = 1;
+
+        /** 위기 상황에서, 아래 방향키 이용 딜레이 비율 (목표 결정 후 빠른 하강까지 기다리는 시간 값에 곱셈이 되는 비율) (0~1) @type {number}  */
+        dangerFastDownDelayRate = 1;
+
         constructor() {
             this.sortPriority = 1;
             this.hidden = false;
@@ -8477,29 +8913,7 @@
          * @returns {void}
          */
         prepareTurn(player) {
-            // 조작 중인 뿌요가 없으면 이번 턴에 평가할 후보도 없다.
-            if (!player.active) {
-                player.aiSimulations = [];
-                return;
-            }
-            const simulations = [];
-            // 모든 회전 상태와 열을 순회하며 실제로 착지 가능한 후보를 만든다.
-            for (let rotation = 0; rotation < 4; rotation += 1) {
-                for (let x = 0; x < COLUMNS; x += 1) {
-                    const placement = findLandingPlacement(player, x, rotation);
-                    // 벽이나 쌓인 뿌요 때문에 놓을 수 없는 후보는 제외한다.
-                    if (!placement) continue;
-                    const positions = activeCells(placement).map(({ x: cellX, y: cellY }) => ({ x: cellX, y: cellY }));
-                    simulations.push({
-                        x,
-                        rotation,
-                        positions,
-                        attack: player.estimateAttack(player.active.colors, positions),
-                        combo: player.estimateCombo(player.active.colors, positions)
-                    });
-                }
-            }
-            player.aiSimulations = simulations;
+            prepareAiPlacementSimulations(player);
         }
 
         /**
@@ -8528,7 +8942,10 @@
          */
         useFastDown(player) {
             const delay = getSelectedDifficulty().fastDownDelay;
-            return delay !== null && player.aiDecisionElapsed >= delay;
+            if (delay === null) return false;
+            const opponent = game?.players.find((candidate) => candidate !== player);
+            const delayRate = isEnemyInCrisis(player, opponent) ? this.dangerFastDownDelayRate : this.normalFastDownDelayRate;
+            return player.aiDecisionElapsed >= delay * delayRate;
         }
 
         /**
@@ -8851,7 +9268,10 @@
             if (this.decisionState === 'fallback') return this.fallbackEnemy.useFastDown(player);
             if (this.decisionState !== 'ready') return false;
             const delay = getSelectedDifficulty().fastDownDelay;
-            return delay !== null && this.fastDownElapsed >= delay;
+            if (delay === null) return false;
+            const opponent = game?.players.find((candidate) => candidate !== player);
+            const delayRate = isEnemyInCrisis(player, opponent) ? this.dangerFastDownDelayRate : this.normalFastDownDelayRate;
+            return this.fastDownElapsed >= delay * delayRate;
         }
 
         /** 착지 또는 턴 교체 시 남아 있는 Responses API 요청을 취소한다. @param {PlayerState|null} player CPU 플레이어 @param {string} reason 취소 사유 @returns {void} */
@@ -8899,6 +9319,8 @@
         constructor() {
             super();
             this.attackPlacement = null;
+            this.normalFastDownDelayRate = 3.0;
+            this.dangerFastDownDelayRate = 1.0;
         }
 
         /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @type {string}  */
@@ -9022,6 +9444,8 @@
             this.phase = 'initialLeft';
             this.turnsRemaining = this.randomTurns();
             this.attackPlacement = null;
+            this.normalFastDownDelayRate = 2.5;
+            this.dangerFastDownDelayRate = 0.9;
         }
 
         /**
@@ -9478,6 +9902,8 @@
             this.turnCount = 0;
             this.turnsUntilSimulation = this.randomTurnsUntilSimulation();
             this.attackPlacement = null;
+            this.normalFastDownDelayRate = 2.0;
+            this.dangerFastDownDelayRate = 0.8;
         }
 
         /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @type {string}  */
@@ -9590,6 +10016,8 @@
             super();
             this.sortPriority = 4;
             this.notAvail = false;
+            this.normalFastDownDelayRate = 1.5;
+            this.dangerFastDownDelayRate = 0.8;
         }
 
         /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @type {string}  */
@@ -9767,6 +10195,8 @@
             super();
             this.sortPriority = 5;
             this.notAvail = false;
+            this.normalFastDownDelayRate = 1.25;
+            this.dangerFastDownDelayRate = 0.75;
         }
 
         /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @type {string}  */
@@ -9909,13 +10339,15 @@
 
     /**
      * 암두시아스는 유니콘 작곡가 콘셉트의 기본 제공 적이다. 벨리알의 예고쌍·싹쓸이 평가를
-     * 이어받되 한 단계 높은 5연쇄 목표와 피버 전용 우선순위를 사용한다.
+     * 이어받되 일반 필드에서 한 단계 높은 5연쇄 목표를 사용한다. 피버 필드에서는 공통 연쇄 최적화 전략을 따른다.
      */
     class Amdusias extends Belial {
         constructor() {
             super();
             this.sortPriority = 6;
             this.notAvail = false;
+            this.normalFastDownDelayRate = 1.0;
+            this.dangerFastDownDelayRate = 0.5;
         }
 
         /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @type {string}  */
@@ -9934,12 +10366,9 @@
             const simulations = safeSimulations.length ? safeSimulations : player.aiSimulations;
             const occupancy = this.getFieldOccupancy(player);
             const score = (simulation) => simulation.attack + (simulation.previewAttack || 0) + (simulation.previewCombo || 0) * 1000;
-            // 피버 중에는 패배 위치보다 먼저 최고 공격력을 찾는다. enterControl도 이 우선순위를 보존한다.
             let selected = this.selectSimulation(simulations, (simulation) => simulation.allClear === true, score);
-            if (!selected && game?.feverRule && this.isInFever(player)) {
-                selected = this.selectSimulation(simulations, () => true, score);
             // 피버 룰에서 피버가 아닐 때 DAMAGE가 있으면 생존 다음 우선순위로 공격력 시뮬레이션을 쓴다.
-            } else if (!selected && game?.feverRule && player.damage > 0) {
+            if (!selected && game?.feverRule && player.damage > 0) {
                 selected = this.selectSimulation(simulations, () => true, score);
             } else if (!selected && occupancy >= 0.8) {
                 selected = this.selectSimulation(simulations, (simulation) => simulation.combo >= 1, score);
@@ -9998,27 +10427,50 @@
     }
 
     /**
-     * 키마리스는 검은 말의 용감한 보물 탐험가를 귀엽게 각색한 출시 예정 적이다.
-     * TODO: 전용 AI가 출시될 때까지는 자연 낙하만 유지한다.
+     * 키마리스는 검은 말의 용감한 보물 탐험가를 귀엽게 각색한 기본 제공 적이다.
+     * 암두시아스의 판단을 따르되 필드 점유율이 30% 이하일 때는 6연쇄 이상만 즉시 공격한다.
      */
-    class Kimaris extends BundledEnemy {
+    class Kimaris extends Amdusias {
         constructor() {
             super();
             this.sortPriority = 7;
-            this.notAvail = true;
+            this.notAvail = false;
         }
 
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
         getClassType() { return 'Kimaris'; }
+
+        /** @returns {string} 적 이름 */
         getName() { return '키마리스'; }
 
-        /** TODO: 키마리스 전용 탐색·공격 AI를 구현한다. @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 현재 열 */
-        chooseTarget(player) { return player.active ? player.active.x : 2; }
-        /** @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 회전하지 않는 기본값 */
-        chooseRotate() { return 0; }
-        /** TODO: 키마리스 전용 빠른 하강 정책을 구현한다. @returns {boolean} */
-        useFastDown() { return false; }
+        /**
+         * 저점유 필드에서는 6연쇄 기회가 생길 때까지 공격하지 않고 연쇄 기반을 쌓는다.
+         * 그 밖의 상태에서는 암두시아스의 판단을 그대로 사용한다.
+         * 피버 중에는 결정 적용 단계의 공통 피버 연쇄 최적화가 이 결과보다 우선한다.
+         * @param {PlayerState} player 자동 조작할 플레이어
+         * @returns {number} 목표 X 좌표
+         */
+        chooseTarget(player) {
+            if (this.getFieldOccupancy(player) > 0.3) return super.chooseTarget(player);
 
-        /** 검은 말 갈기·보물 지도·용감한 표정의 일반·위기·우는 초상화를 그린다. */
+            const safeSimulations = this.getSafeSimulations(player);
+            const simulations = safeSimulations.length ? safeSimulations : player.aiSimulations;
+            const score = (simulation) => simulation.attack + (simulation.previewAttack || 0) + (simulation.previewCombo || 0) * 1000;
+            let selected = this.selectSimulation(simulations, (simulation) => simulation.combo >= 6, score);
+            if (!selected) selected = this.selectBuildSimulation(player, simulations);
+            this.attackPlacement = selected || findBestAttackPlacement(player, player.active ? player.active.x : 2, null, !this.isInFever(player));
+            return this.attackPlacement.x;
+        }
+
+        /**
+         * 검은 말 갈기·보물 지도·용감한 표정의 일반·위기·우는 초상화를 그린다.
+         * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+         * @param {number} centerX 캐릭터 중심 X 좌표
+         * @param {number} centerY 캐릭터 중심 Y 좌표
+         * @param {number} scale 기본 크기 대비 배율
+         * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
+         * @returns {void}
+         */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
             const size = 72 * scale;
             drawingContext.save(); drawingContext.translate(centerX, centerY); drawingContext.lineJoin = 'round';
@@ -10035,6 +10487,113 @@
                 drawingContext.fillStyle = expression === 'crisis' ? '#f3dc75' : '#f5f0dc'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.09, expression === 'crisis' ? size * 0.14 : size * 0.1, 0, 0, Math.PI * 2); drawingContext.fill(); });
                 drawingContext.fillStyle = '#161522'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.04, 0, Math.PI * 2); drawingContext.fill(); });
                 drawingContext.strokeStyle = '#231c28'; drawingContext.beginPath(); if (expression === 'crisis') drawingContext.arc(0, size * 0.25, size * 0.12, Math.PI, Math.PI * 2); else drawingContext.arc(0, size * 0.14, size * 0.12, 0, Math.PI); drawingContext.stroke();
+            }
+            drawingContext.restore();
+        }
+    }
+
+    /**
+     * 안드레알푸스는 수학·기하학·천문학에 능통한 미모후작을 거대한 공작으로 각색한 출시 예정 적이다.
+     * 전용 AI가 구현되기 전까지는 이동·회전·빠른 하강 없이 자연 낙하만 사용한다.
+     */
+    class Andrealphus extends BundledEnemy {
+        constructor() {
+            super();
+            this.sortPriority = 8;
+            this.notAvail = true;
+        }
+
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'Andrealphus'; }
+
+        /** @returns {string} 적 이름 */
+        getName() { return '안드레알푸스'; }
+
+        // TODO: 안드레알푸스 전용 이동·회전·빠른 하강 AI를 구현한다.
+        /**
+         * 전용 AI가 구현될 때까지 현재 열을 유지한다.
+         * @param {PlayerState} player 자동 조작할 플레이어
+         * @returns {number} 현재 X 좌표
+         */
+        chooseTarget(player) { return player.active ? player.active.x : 2; }
+
+        /** @returns {number} 회전하지 않는 기본값 */
+        chooseRotate() { return 0; }
+
+        /** @returns {boolean} 빠른 하강을 사용하지 않으므로 항상 false */
+        useFastDown() { return false; }
+
+        /**
+         * 공작 깃털과 천문 궤도 문양을 갖춘 일반·위기·우는 초상화를 그린다.
+         * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+         * @param {number} centerX 캐릭터 중심 X 좌표
+         * @param {number} centerY 캐릭터 중심 Y 좌표
+         * @param {number} scale 기본 크기 대비 배율
+         * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
+         * @returns {void}
+         */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            const size = 72 * scale;
+            drawingContext.save();
+            drawingContext.translate(centerX, centerY);
+            drawingContext.lineJoin = 'round';
+            drawingContext.lineCap = 'round';
+            drawingContext.strokeStyle = '#123a4b';
+            drawingContext.lineWidth = 3 * scale;
+
+            // 부채처럼 펼친 꼬리와 눈 모양 깃털로 거대한 공작의 실루엣을 만든다.
+            [-0.72, -0.36, 0, 0.36, 0.72].forEach((angle) => {
+                drawingContext.save();
+                drawingContext.rotate(angle);
+                drawingContext.fillStyle = '#237f73';
+                drawingContext.beginPath();
+                drawingContext.ellipse(0, -size * 0.48, size * 0.19, size * 0.54, 0, 0, Math.PI * 2);
+                drawingContext.fill(); drawingContext.stroke();
+                drawingContext.fillStyle = '#e6bd47';
+                drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.69, size * 0.11, size * 0.16, 0, 0, Math.PI * 2); drawingContext.fill();
+                drawingContext.fillStyle = '#3553a4';
+                drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.7, size * 0.06, size * 0.09, 0, 0, Math.PI * 2); drawingContext.fill();
+                drawingContext.restore();
+            });
+
+            drawingContext.fillStyle = '#174f67';
+            drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.27, size * 0.46, size * 0.58, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#55b79d';
+            drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.08, size * 0.34, size * 0.43, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#e6bd47';
+            drawingContext.beginPath(); drawingContext.moveTo(0, size * 0.08); drawingContext.lineTo(size * 0.13, size * 0.2); drawingContext.lineTo(0, size * 0.27); drawingContext.lineTo(-size * 0.13, size * 0.2); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+
+            // 후작의 우아함과 학식을 암시하는 볏, 단안경, 기하 문양을 더한다.
+            drawingContext.strokeStyle = '#e6bd47';
+            drawingContext.fillStyle = '#e6bd47';
+            [-0.16, 0, 0.16].forEach((offset) => {
+                drawingContext.beginPath(); drawingContext.moveTo(offset * size, -size * 0.48); drawingContext.lineTo(offset * size * 1.5, -size * 0.75); drawingContext.stroke();
+                drawingContext.beginPath(); drawingContext.arc(offset * size * 1.5, -size * 0.78, size * 0.045, 0, Math.PI * 2); drawingContext.fill();
+            });
+            drawingContext.beginPath(); drawingContext.arc(size * 0.16, -size * 0.12, size * 0.13, 0, Math.PI * 2); drawingContext.stroke();
+            drawingContext.beginPath(); drawingContext.moveTo(size * 0.27, -size * 0.03); drawingContext.lineTo(size * 0.39, size * 0.15); drawingContext.stroke();
+            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.19, size * 0.43); drawingContext.lineTo(0, size * 0.17); drawingContext.lineTo(size * 0.19, size * 0.43); drawingContext.closePath(); drawingContext.stroke();
+
+            const eyeY = -size * 0.13;
+            if (expression === 'defeated') {
+                drawingContext.strokeStyle = '#18384b';
+                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.07, 0.1, Math.PI - 0.1); drawingContext.stroke(); });
+                drawingContext.fillStyle = '#7adcf4';
+                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.18, size * 0.055, size * 0.14, 0, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.beginPath(); drawingContext.arc(0, size * 0.12, size * 0.11, Math.PI, Math.PI * 2); drawingContext.stroke();
+            } else {
+                drawingContext.fillStyle = '#f8f1d7';
+                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.08, expression === 'crisis' ? size * 0.13 : size * 0.09, 0, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.fillStyle = '#182e52';
+                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.035, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.strokeStyle = '#18384b';
+                drawingContext.beginPath();
+                if (expression === 'crisis') drawingContext.arc(0, size * 0.13, size * 0.1, Math.PI, Math.PI * 2);
+                else drawingContext.arc(0, size * 0.04, size * 0.11, 0, Math.PI);
+                drawingContext.stroke();
+                if (expression === 'crisis') {
+                    drawingContext.fillStyle = '#7adcf4'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.32, -size * 0.01, size * 0.05, size * 0.11, 0.2, 0, Math.PI * 2); drawingContext.fill();
+                }
             }
             drawingContext.restore();
         }
@@ -10074,7 +10633,8 @@
         createOpponentEntry(() => new Decarabia()),
         createOpponentEntry(() => new Belial()),
         createOpponentEntry(() => new Amdusias()),
-        createOpponentEntry(() => new Kimaris())
+        createOpponentEntry(() => new Kimaris()),
+        createOpponentEntry(() => new Andrealphus())
     );
 
     /**
