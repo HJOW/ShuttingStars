@@ -6,7 +6,9 @@
  * 
  * 뿌요 W 2D 버전 스크립트
  *     의존성
- *         puyow.css  (캔버스 영역이 화면 100%를 차지하게 만들고, 기본 뒷배경 색 변경)
+ *         three.min.js (선택사항, 3D 효과를 위해 사용)
+ *         json5.min.js (선택사항, JSON5 형식 사용을 위함)
+ *         puyow.css  (선택사항, 캔버스 영역이 화면 100%를 차지하게 만들고, 기본 뒷배경 색 변경)
  *         notice_ko.txt, notice_en.txt (선택사항으로 공지사항 존재 시 이 곳에 기재)
  *     html 예제
  *         puyow.html
@@ -16,7 +18,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 5;
+    const BUILDNO = 7;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -402,6 +404,14 @@
     let webMcpAbortController = null;
     /** 현재 실행 중인 게임 상태다. @type {object|null} */
     let game = null;
+    /** (머신러닝 관련) 브라우저 게임 전이를 전송할 학습 API 설정이다. @type {{serverUrl:string,token:string}|null} */
+    let learningApiConfig = null;
+    /** (머신러닝 관련) 학습 API 요청을 게임 순서대로 처리하기 위한 Promise 체인이다. @type {Promise<void>} */
+    let learningApiQueue = Promise.resolve();
+    /** (머신러닝 관련) 현재 게임에서 학습 API reset을 보냈는지 여부다. @type {boolean} */
+    let learningEpisodeStarted = false;
+    /** (머신러닝 관련) 현재 게임의 마지막 뿌요 배치 전 관측과 보상 기준값이다. @type {object|null} */
+    let learningPendingTransition = null;
     /** 현재 재생 중인 배경음악이다. 화면 종류와 상관없이 한 개만 유지한다. @type {HTMLAudioElement|null} */
     let backgroundMusicAudio = null;
     /** 현재 배경음악 요소가 재생하는 음원 URL이다. @type {string|null} */
@@ -552,7 +562,7 @@
     /** storageManager의 puyow_cards에서 불러온 개별 카드 인스턴스다. @type {{id:string,type:string}[]} */
     let ownedCards = [];
     /** 메인 화면 안내문 파일 경로 또는 절대 URL이다. 상대경로는 puyow.js 기준으로 해석한다. @type {string} */
-    let noticeUrl = 'notice_[LANG].txt';
+    let noticeUrl = '../notice/notice_[LANG].txt';
     /** 공통 사운드 풀 @type {CommonSoundPool} */
     let commonSoundPool = null;
     /** 사용 가능한 코드들, 키로 코드가 탑재되며, 그 값은 함수로 탑재된다. (코드 적용 시 동작해야 하는 함수) @type {object} */
@@ -625,6 +635,20 @@
      */
     function randomFloat() {
         return Math.random();
+    }
+
+    /**
+     * JSON 문자열을 파싱하여 객체 혹은 배열로 반환한다. JSON5 를 지원한다.
+     * @returns {object|array} 파싱된 객체 혹은 배열, 실패 시 빈 객체 반환
+     */
+    function parseJSON(jsonString) {
+        try {
+            if(typeof(window.JSON5) != 'undefined') return window.JSON5.parse(jsonString);
+            return JSON.parse(jsonString);
+        } catch(e) {
+            console.error('Failed to parse JSON:', e);
+            return {};
+        }
     }
 
     /**
@@ -767,7 +791,7 @@
         try {
             const serialized = storageManager.getItem(CARD_STORE_KEY);
             if (!serialized) { ownedCards = []; return; }
-            const parsed = JSON.parse(serialized);
+            const parsed = parseJSON(serialized);
             if (!Array.isArray(parsed)) throw new TypeError('puyow_cards는 JSON 배열이어야 합니다.');
             const validTypes = new Set(getCardDefinitions().map((definition) => definition.type));
             const usedIds = new Set();
@@ -913,7 +937,7 @@
                 galleryUnlocks = initial;
                 return;
             }
-            const parsed = JSON.parse(serialized);
+            const parsed = parseJSON(serialized);
             if (!parsed || typeof parsed !== 'object') throw new TypeError('갤러리 저장 형식이 올바르지 않습니다.');
             const warning = Array.isArray(parsed.warning) ? parsed.warning.filter((type) => typeof type === 'string') : [];
             const enemies = Array.isArray(parsed.enemies) ? parsed.enemies.filter((type) => typeof type === 'string') : [];
@@ -1165,7 +1189,7 @@
                 store = createInitialStore();
                 return;
             }
-            const parsed = JSON.parse(serialized);
+            const parsed = parseJSON(serialized);
             if (!parsed || !Array.isArray(parsed.clearList) || !parsed.clearList.every((name) => typeof name === 'string')) {
                 throw new TypeError('clearList 배열이 필요합니다.');
             }
@@ -1244,7 +1268,7 @@
                 codeApplied = [];
                 return;
             }
-            const parsed = JSON.parse(serialized);
+            const parsed = parseJSON(serialized);
             if (!Array.isArray(parsed)) throw new TypeError('puyow_code는 JSON 배열이어야 합니다.');
             codeApplied = parsed;
 
@@ -1284,7 +1308,7 @@
      */
     function applySoundDataJson(soundDataJson) {
         if(soundDataJson == null) return;
-        if(typeof(soundDataJson) == 'string') soundDataJson = JSON.parse(soundDataJson);
+        if(typeof(soundDataJson) == 'string') soundDataJson = parseJSON(soundDataJson);
         if(soundDataJson.common) {
             const commonObj = soundDataJson.common;
             if(commonObj.gameStarts) commonSoundPool.gameStarts = commonObj.gameStarts;
@@ -2049,6 +2073,8 @@
         resetVirtualControllerInput();
         const opponent = soloMode ? { createController: () => new PracticeEnemy() } : OPPONENTS[selectedOpponent];
         const controller = opponent.createController();
+        learningEpisodeStarted = false;
+        learningPendingTransition = null;
         const difficulty = selectedDifficulty;
         const colors = DIFFICULTIES[difficulty].colors;
         const pairQueue = Array.from({ length: INITIAL_PAIR_QUEUE_LENGTH }, () => createRandomPair(colors));
@@ -2111,6 +2137,87 @@
         syncBackgroundMusic();
     }
 
+    /**
+     * (머신러닝 관련)
+     * 브라우저 게임의 학습 API 전송 설정을 지정한다.
+     * 토큰은 저장하지 않으며 호출자가 현재 실행 중인 페이지에서 직접 제공해야 한다.
+     * @param {{serverUrl:string, token:string}} config nodeserver.js 주소와 인증 토큰
+     * @returns {void}
+     */
+    function configureLearningApi(config) {
+        if (!config || typeof config.serverUrl !== 'string' || !config.serverUrl.trim() || typeof config.token !== 'string' || !config.token) {
+            throw new TypeError('serverUrl과 token이 필요합니다.');
+        }
+        learningApiConfig = { serverUrl: config.serverUrl.trim().replace(/\/$/, ''), token: config.token };
+    }
+
+    /** 현재 사용자 게임이 API 학습 전송 대상인지 확인한다. @returns {boolean} 전송 대상이면 true */
+    function shouldSendLearningEvent() {
+        return Boolean(learningApiConfig && game && !game.tutorial && !game.watch && game.players?.[0]?.controller === null);
+    }
+
+    /** 실제 게임 보드와 현재 조작 쌍을 learning.py의 관측 벡터로 변환한다. @param {PlayerState} player 관측할 사용자 플레이어 @returns {number[]} 관측 벡터 */
+    function getLearningObservation(player) {
+        const values = [];
+        for (let channel = 0; channel <= COLORS.length; channel += 1) {
+            for (let y = 0; y < VISIBLE_ROWS; y += 1) {
+                for (let x = 0; x < COLUMNS; x += 1) {
+                    const color = player.board[y]?.[x] || null;
+                    values.push(channel === 0 ? Number(!color) : Number(color === COLORS[channel - 1]));
+                }
+            }
+        }
+        const activeColors = player.active?.colors || [];
+        for (const color of activeColors.slice(0, 2)) {
+            for (const candidate of COLORS) values.push(Number(color === candidate));
+        }
+        while (values.length < VISIBLE_ROWS * COLUMNS * (COLORS.length + 1) + COLORS.length * 2) values.push(0);
+        values.push(Math.min(player.attack, 30) / 30, Math.min(player.placedPairCount, 100) / 100);
+        return values;
+    }
+
+    /** 학습 API 요청을 순서대로 비동기 전송한다. @param {object} payload 학습 이벤트 본문 @returns {void} */
+    function queueLearningEvent(payload) {
+        if (!learningApiConfig) return;
+        learningApiQueue = learningApiQueue.then(async () => {
+            const response = await fetch(`${learningApiConfig.serverUrl}/apis/learning`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${learningApiConfig.token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok || !result.ok) throw new Error(result.error || `학습 API 요청 실패: ${response.status}`);
+        }).catch((error) => console.error('학습 API 전송 실패:', error));
+    }
+
+    /** 학습 API 세션을 시작한다. @param {PlayerState} player 사용자 플레이어 @returns {void} */
+    function startLearningEpisode(player) {
+        if (!shouldSendLearningEvent() || learningEpisodeStarted) return;
+        learningEpisodeStarted = true;
+        const sessionId = `browser-${Date.now()}-${randomFloat().toString(36).slice(2, 10)}`;
+        game.learningSessionId = sessionId;
+        queueLearningEvent({ event: 'reset', sessionId, observation: getLearningObservation(player) });
+    }
+
+    /** 마지막 배치의 정산 결과를 학습 API에 전송한다. @param {PlayerState} player 사용자 플레이어 @param {boolean} done 게임 종료 여부 @returns {void} */
+    function sendLearningStep(player, done = false) {
+        if (!shouldSendLearningEvent() || !learningPendingTransition || !game.learningSessionId) return;
+        const pending = learningPendingTransition;
+        learningPendingTransition = null;
+        const nextObservation = getLearningObservation(player);
+        const reward = (player.point - pending.point) + (player.attack - pending.attack);
+        queueLearningEvent({ event: 'step', sessionId: game.learningSessionId, observation: pending.observation, action: pending.action, reward, nextObservation, done });
+    }
+
+    /** (머신러닝 관련) 현재 학습 에피소드를 종료한다. @param {boolean} done 종료 상태 @returns {void} */
+    function finishLearningEpisode(done = true) {
+        if (!learningApiConfig || !learningEpisodeStarted || !game?.learningSessionId) return;
+        if (learningPendingTransition && game.players?.[0]) sendLearningStep(game.players[0], done);
+        queueLearningEvent({ event: 'episode_end', sessionId: game.learningSessionId, done: true });
+        learningEpisodeStarted = false;
+        learningPendingTransition = null;
+    }
+
     /** 데카라비아를 기본 룰 또는 피버 룰의 보통 이상 난이도에서 한 번이라도 이겼는지 확인한다. @returns {boolean} 구경 메뉴 해금 여부 */
     function isWatchModeUnlocked() {
         if (isObservationCodeApplied()) return true;
@@ -2152,6 +2259,8 @@
         resetVirtualControllerInput();
         watchSelectionOpen = false;
         const controllers = selectedEntries.map((entry) => entry.createController());
+        learningEpisodeStarted = false;
+        learningPendingTransition = null;
         const difficulty = watchDifficulty;
         const feverRule = watchRule !== 'standard';
         const relaxedFever = watchRule === 'relaxedFever';
@@ -2744,6 +2853,9 @@
             player.phase = 'idle';
             return;
         }
+        if (player === game?.players?.[0]) {
+            if (learningPendingTransition) sendLearningStep(player);
+        }
         player.phase = 'control';
         player.fallTimer = 0;
         // 플레이 방법 시연은 새 뿌요를 지급할 때마다 빠른 하강 상태를 초기화한다.
@@ -2888,6 +3000,17 @@
         // 비동기 판단을 기다리는 적은 뿌요가 실제 바닥이나 다른 뿌요에 닿는 즉시 요청을 취소한다.
         cancelPendingWorkerSearch(player.controller, player, 'contact');
         player.controller?.cancelPendingRequest?.(player, 'contact');
+        if (player === game?.players?.[0]) {
+            startLearningEpisode(player);
+            if (learningEpisodeStarted && game.learningSessionId) {
+                learningPendingTransition = {
+                    observation: getLearningObservation(player),
+                    action: player.active.x * 4 + player.active.rotation,
+                    point: player.point,
+                    attack: player.attack
+                };
+            }
+        }
         // 피버 룰의 방해뿌요 지연은 배치마다 새로 판정한다. 이번 배치가 폭발에 성공하면
         // resolveExplosions에서 다시 true가 되어 다음 컨트롤까지 DAMAGE 낙하를 미룬다.
         if (game?.feverRule && player.fever) player.fever.deferGarbage = false;
@@ -4627,6 +4750,7 @@
         game.winner = player;
         game.running = false;
         game.ending = null;
+        finishLearningEpisode(true);
         stopBackgroundMusic();
     }
 
@@ -4677,6 +4801,7 @@
             awardCurrentGameGold();
             game.running = false;
             game.ending = null;
+            finishLearningEpisode(true);
             stopBackgroundMusic();
         }
     }
@@ -6597,7 +6722,7 @@
             const outputText = await requestStructuredAiOutput(settings, 'Return only JSON matching the supplied schema, with success set to true.', 'ai_api_test_result', AI_API_TEST_JSON_SCHEMA, 64);
             if (requestId !== settingsApiTestRequestId) return;
             let result;
-            try { result = outputText ? JSON.parse(outputText) : null; } catch (error) { result = null; }
+            try { result = outputText ? parseJSON(outputText) : null; } catch (error) { result = null; }
             const testSucceeded = isAiApiTestResult(result);
             if (testSucceeded) unlockSolomonForSession();
             showSettingsApiTestMessage(testSucceeded
@@ -7217,7 +7342,7 @@
         const serialized = window.prompt(translate('배치 JSON을 입력하세요.'));
         if (serialized === null || serialized.trim() === '') return;
         try {
-            const parsed = JSON.parse(serialized);
+            const parsed = parseJSON(serialized);
             if (!parsed || !Array.isArray(parsed.puyos)) throw new TypeError('puyos 배열이 필요합니다.');
             const board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
             parsed.puyos.forEach((puyo) => {
@@ -9252,23 +9377,28 @@
         return { screen: 'playing', playerCanControl: !game.watch && game.players[0].controller === null && game.players[0].phase === 'control' && game.players[0].active !== null };
     }
 
-    /** @returns {number} 현재 화면·상태 API에 노출할 다음 뿌요 쌍 수 */
+    /** @returns {number} 중앙 NEXT 영역과 getNextPairs() API에 노출할 다음 뿌요 쌍 수 */
     function getExposedNextPairCount() {
         // 기본·피버 대전(구경 포함)은 AI 내부 20쌍과 별개로 두 쌍만 보이며, 단독 모드의 기존 네 쌍 계약은 유지한다.
         return usesSoloPlayLayout() ? 4 : 2;
+    }
+
+    /** 현재·일반·피버 필드에 공통으로 쓰는 보드를 JSON 직렬화 가능한 상태로 만든다. @param {(string|null)[][]} board 복사할 보드 @returns {{columns:number,rows:number,visibleRows:number,puyos:{x:number,y:number,color:string}[]}} 보드 상태 */
+    function getBoardGameStatus(board) {
+        const puyos = [];
+        board.forEach((row, y) => row.forEach((color, x) => {
+            if (color) puyos.push({ x, y, color });
+        }));
+        return { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, puyos };
     }
 
     /**
      * 한 플레이어의 보드와 대기열을 JSON으로 직렬화 가능한 상태로 만든다.
      * @param {PlayerState} player 상태를 읽을 플레이어
      * @param {PlayerState} opponent 상대 플레이어
-     * @returns {{name:string, isCpu:boolean, phase:string, point:number, attack:number, damage:number, normalDamage:number, combo:number, placedPairCount:number, allClearTicket:boolean, board:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, nextPairs:string[][], warningPuyos:string[], active:{x:number,y:number,rotation:number,colors:string[],cells:{x:number,y:number,color:string}[]}|null}}
+     * @returns {{name:string, isCpu:boolean, phase:string, point:number, attack:number, damage:number, normalDamage:number, combo:number, placedPairCount:number, allClearTicket:boolean, board:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, normalBoard:{columns:number, rows:number, visibleRows:number, puyos:{x:number,y:number,color:string}[]}, nextPairs:string[][], warningPuyos:string[], fever:object|null, active:{x:number,y:number,rotation:number,colors:string[],cells:{x:number,y:number,color:string}[]}|null}}
      */
     function getPlayerGameStatus(player, opponent) {
-        const puyos = [];
-        player.board.forEach((row, y) => row.forEach((color, x) => {
-            if (color) puyos.push({ x, y, color });
-        }));
         const active = player.active ? {
             x: player.active.x,
             y: player.active.y,
@@ -9287,8 +9417,12 @@
             combo: player.combo,
             placedPairCount: player.placedPairCount,
             allClearTicket: player.allClearTicket,
-            board: { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, puyos },
-            nextPairs: player.nextPairs.slice(0, getExposedNextPairCount()).map((pair) => [...pair]),
+            // board는 현재 조작 대상이며, 피버 중이면 fever.field와 같은 필드다.
+            board: getBoardGameStatus(player.board),
+            // 피버에 들어가도 일반 필드 진행도를 잃지 않도록 항상 함께 제공한다.
+            normalBoard: getBoardGameStatus(player.normalBoard),
+            // 외부 AI·학습기는 게임 모드와 무관하게 다음 두 쌍까지만 사용한다.
+            nextPairs: player.nextPairs.slice(0, 2).map((pair) => [...pair]),
             warningPuyos: warningUnits(warningAmount(player, opponent)).map((unit) => unit.type),
             fever: player.fever ? {
                 active: player.fever.active,
@@ -9300,7 +9434,11 @@
                 turn: player.fever.turn,
                 selectedStageTarget: player.fever.selectedStageTarget,
                 stageSuppliedPair: [...player.fever.stageSuppliedPair],
-                field: player.fever.active ? { columns: COLUMNS, rows: ROWS, cells: player.board.map((row) => [...row]) } : null
+                // 비활성 중에도 피버 전용 필드의 배치 정보를 보관해 학습 입력을 일정하게 만든다.
+                field: {
+                    ...getBoardGameStatus(player.fever.field),
+                    cells: player.fever.field.map((row) => [...row])
+                }
             } : null,
             active
         };
@@ -9441,19 +9579,26 @@
     }
 
     /**
-     * 현재 일반 대전의 읽기 전용 상태 스냅샷을 반환한다.
+     * 현재 대전의 읽기 전용 상태 스냅샷을 반환한다.
+     * 일반·피버 규칙과 학습·적 AI가 필요한 양측 일반/현재/피버 필드 및 앞 두 NEXT를 함께 제공한다.
      * 반환된 객체와 그 안의 배열을 변경해도 실제 게임 상태에는 영향을 주지 않는다.
      * 메뉴, 튜토리얼 또는 초기화 전 상태에서는 null을 반환한다.
-     * @returns {{screen:string, playerCanControl:boolean, running:boolean, paused:boolean, countdown:number, elapsed:number, marginRate:number, timeProgressMultiplier:number, practice:boolean, watch:boolean, continuousFever:boolean, feverRule:boolean, feverStart:boolean, fever:object|null, colorCount:number, colors:string[], aiDifficulty:{key:string,name:string,fastDownDelay:number|null}, winner:'player'|'opponent'|null, ending:{loser:'player'|'opponent',winner:'player'|'opponent',elapsed:number,duration:number}|null, player:object, opponent:object, recommendedPoint:{x:number,y:number}|null}|null}
+     * @returns {{screen:string, playerCanControl:boolean, mode:'versus'|'practice'|'watch'|'continuous_fever'|'puzzle', rule:'standard'|'fever'|'fever_start'|'continuous_fever', running:boolean, paused:boolean, countdown:number, elapsed:number, marginRate:number, timeProgressMultiplier:number, practice:boolean, watch:boolean, continuousFever:boolean, feverRule:boolean, feverStart:boolean, allClearTicketEnabled:boolean, fever:object|null, colorCount:number, colors:string[], aiDifficulty:{key:string,name:string,fastDownDelay:number|null}, winner:'player'|'opponent'|null, ending:{loser:'player'|'opponent',winner:'player'|'opponent',elapsed:number,duration:number}|null, player:object, opponent:object, recommendedPoint:{x:number,y:number}|null}|null}
      */
     function getGameState() {
         if (!game || game.tutorial) return null;
         const screen = getNowScreen();
         const [player, opponent] = game.players;
         const getRole = (target) => target === player ? 'player' : target === opponent ? 'opponent' : null;
+        const mode = game.watch !== undefined ? 'watch'
+            : (game.continuousFever ? 'continuous_fever' : (game.puzzle ? 'puzzle' : (game.practice ? 'practice' : 'versus')));
+        const rule = game.continuousFever ? 'continuous_fever'
+            : (game.feverStart ? 'fever_start' : (game.feverRule ? 'fever' : 'standard'));
         return {
             screen: screen.screen,
             playerCanControl: screen.playerCanControl,
+            mode,
+            rule,
             running: game.running,
             paused: game.paused,
             countdown: game.countdown,
@@ -9465,6 +9610,8 @@
             continuousFever: game.continuousFever === true,
             feverRule: game.feverRule === true,
             feverStart: game.feverStart === true,
+            // 싹쓸이 티켓은 기본 룰에서만 소비되는 값임을 명시한다.
+            allClearTicketEnabled: rule === 'standard',
             puzzle: game.puzzle ? {
                 stageIndex: game.puzzle.stageIndex,
                 turn: game.puzzle.turn,
@@ -9575,6 +9722,10 @@
                     columns: { type: 'integer', const: COLUMNS }, rows: { type: 'integer', const: ROWS }, visibleRows: { type: 'integer', const: VISIBLE_ROWS },
                     puyos: { type: 'array', items: puyoSchema, description: 'All fixed puyos, including hidden rows.' }
                 }, required: ['columns', 'rows', 'visibleRows', 'puyos'] },
+                normalBoard: { type: 'object', properties: {
+                    columns: { type: 'integer', const: COLUMNS }, rows: { type: 'integer', const: ROWS }, visibleRows: { type: 'integer', const: VISIBLE_ROWS },
+                    puyos: { type: 'array', items: puyoSchema, description: 'Fixed puyos in the normal field, including while FEVER is active.' }
+                }, required: ['columns', 'rows', 'visibleRows', 'puyos'] },
                 nextPairs: { type: 'array', items: { type: 'array', items: { type: 'string', enum: COLORS }, minItems: 2, maxItems: 2 } },
                 warningPuyos: { type: 'array', items: { type: 'string' } },
                 fever: { type: ['object', 'null'], properties: {
@@ -9585,11 +9736,12 @@
                     selectedStageTarget: { type: ['integer', 'null'], minimum: FEVER_MIN_TARGET_COMBO, maximum: CONTINUOUS_FEVER_MAX_TARGET_COMBO },
                     stageSuppliedPair: { type: 'array', items: { type: 'string', enum: COLORS }, minItems: 0, maxItems: 2 },
                     field: { type: ['object', 'null'], properties: {
-                        columns: { type: 'integer', const: COLUMNS }, rows: { type: 'integer', const: ROWS },
-                        cells: { type: 'array', items: { type: 'array', items: boardCellSchema, minItems: COLUMNS, maxItems: COLUMNS }, minItems: ROWS, maxItems: ROWS }
-                    }, required: ['columns', 'rows', 'cells'] }
+                        columns: { type: 'integer', const: COLUMNS }, rows: { type: 'integer', const: ROWS }, visibleRows: { type: 'integer', const: VISIBLE_ROWS },
+                        cells: { type: 'array', items: { type: 'array', items: boardCellSchema, minItems: COLUMNS, maxItems: COLUMNS }, minItems: ROWS, maxItems: ROWS },
+                        puyos: { type: 'array', items: puyoSchema, description: 'Fixed puyos in the dedicated FEVER field.' }
+                    }, required: ['columns', 'rows', 'visibleRows', 'cells', 'puyos'] }
                 }, required: ['active', 'gauge', 'nextTime', 'targetCombo', 'leftTime', 'damage', 'turn', 'selectedStageTarget', 'stageSuppliedPair', 'field'] }, active: activeSchema
-            }, required: ['name', 'isCpu', 'phase', 'point', 'attack', 'damage', 'normalDamage', 'combo', 'placedPairCount', 'allClearTicket', 'board', 'nextPairs', 'warningPuyos', 'fever', 'active']
+            }, required: ['name', 'isCpu', 'phase', 'point', 'attack', 'damage', 'normalDamage', 'combo', 'placedPairCount', 'allClearTicket', 'board', 'normalBoard', 'nextPairs', 'warningPuyos', 'fever', 'active']
         };
         const puzzleSchema = {
             type: ['object', 'null'], properties: {
@@ -11272,7 +11424,7 @@
                 const outputText = await requestStructuredAiOutput(store.settings, this.buildPlacementPrompt(player), 'solomon_puyo_placement', SOLOMON_PLACEMENT_JSON_SCHEMA, 128, abortController.signal);
                 if (!outputText) throw new Error(`${store.settings.aiProvider} API 응답에 구조화 출력 텍스트가 없습니다.`);
                 let result;
-                try { result = JSON.parse(outputText); } catch (error) { throw new Error('솔로몬 배치 JSON을 파싱할 수 없습니다.', { cause: error }); }
+                try { result = parseJSON(outputText); } catch (error) { throw new Error('솔로몬 배치 JSON을 파싱할 수 없습니다.', { cause: error }); }
                 if (!this.isCurrentTurn(player)) return;
                 if (!this.canUsePlacement(player, result)) throw new Error('응답받은 솔로몬 배치를 현재 뿌요에 사용할 수 없습니다.');
                 this.targetX = result.x;
@@ -13184,6 +13336,7 @@
     const commonFunctions = Object.freeze({
         randomFloat,
         randomColor,
+        parseJSON,
         translate,
         getPuyo,
         activeCells,
@@ -13297,6 +13450,7 @@
         getSimulatorState,
         getGameState,
         getNextPairs,
+        configureLearningApi,
         playSound,
         showMessage,
         askConfirm,
