@@ -18,7 +18,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 7;
+    const BUILDNO = 10;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -221,6 +221,19 @@
     const AI_SERVICE_PROVIDERS = ['OpenAI', 'LM Studio'];
     /** 브라우저 내장 AI 기반의 선택적 제공자 이름이다. @type {string} */
     const PROMPT_API_PROVIDER = 'Prompt API';
+    /** Prompt API에서 솔로몬이 사용하는 구조화 JSON 텍스트 출력 옵션이다. @type {object} */
+    const PROMPT_API_LANGUAGE_OPTIONS = {
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
+    };
+    /** 게임을 제공하는 서버가 직접 모델을 서비스할 때만 나타나는 선택적 제공자 이름이다. @type {string} */
+    const LOCAL_AI_PROVIDER = 'Local AI';
+    /** Local AI 선택 시 AI API 키 입력란에 채울 고정값이다. @type {string} */
+    const LOCAL_AI_API_KEY = 'localhost';
+    /** Local AI 선택 시 사용 모델명 입력란에 채울 고정값이다. @type {string} */
+    const LOCAL_AI_MODEL = 'puyow';
+    /** 게임 서버의 로컬 모델 사용 가능 여부를 확인하는 API 경로다. @type {string} */
+    const LOCAL_AI_INFO_API_PATH = 'apis/localmodelinfo';
     /** 그래픽 품질별 캔버스 출력 해상도다. 게임 내부 좌표는 항상 WIDTH x HEIGHT를 사용한다. @type {{key:'low'|'medium'|'high', label:string, width:number, height:number}[]} */
     const GRAPHICS_QUALITY_OPTIONS = [
         { key: 'low', label: '낮음', width: WIDTH, height: HEIGHT },
@@ -454,6 +467,8 @@
     let settingsApiTestPending = false;
     /** 초기화 시 확인한 Prompt API 지원 여부다. @type {boolean} */
     let promptApiSupported = false;
+    /** 초기화 시 게임 서버에 확인한 Local AI 사용 가능 여부다. @type {boolean} */
+    let localAiAvailable = false;
     /** 현재 페이지 접속 중 AI API 테스트를 통과해 솔로몬을 사용할 수 있는지 여부다. 저장하지 않는다. @type {boolean} */
     let solomonSessionUnlocked = false;
     /** 종료된 설정 화면의 비동기 응답을 무시하기 위한 요청 식별자다. @type {number} */
@@ -732,14 +747,102 @@
         return typeof languageModel !== 'undefined' && typeof languageModel.create === 'function';
     }
 
+    /** Prompt API 모델이 다운로드 중이면 초기화와 동시에 모델 준비를 시작한다. @returns {void} */
+    function startPromptApiDownloadIfNeeded() {
+        const languageModel = typeof globalThis !== 'undefined' ? globalThis.LanguageModel : undefined;
+        if (!languageModel || typeof languageModel.availability !== 'function' || typeof languageModel.create !== 'function') return;
+        // availability()와 create()는 초기화 흐름을 막지 않도록 기다리지 않고 실행한다.
+        Promise.resolve().then(() => languageModel.availability(PROMPT_API_LANGUAGE_OPTIONS)).then((availability) => {
+            if (availability !== 'downloading') return;
+            return languageModel.create(PROMPT_API_LANGUAGE_OPTIONS);
+        }).catch((error) => {
+            // 모델 다운로드를 시작하지 못해도 게임 초기화와 다른 AI 제공자는 계속 사용할 수 있다.
+            console.info('Puyo W Prompt API 모델 준비를 시작하지 못했습니다.', error);
+        });
+    }
+
     /** 현재 설정 화면에서 선택할 수 있는 AI 제공자 목록을 반환한다. @returns {string[]} 제공자 목록 */
     function getAiServiceProviders() {
-        return promptApiSupported ? [...AI_SERVICE_PROVIDERS, PROMPT_API_PROVIDER] : [...AI_SERVICE_PROVIDERS];
+        return [...AI_SERVICE_PROVIDERS, ...(promptApiSupported ? [PROMPT_API_PROVIDER] : []), ...(localAiAvailable ? [LOCAL_AI_PROVIDER] : [])];
     }
 
     /** 현재 제공자가 Prompt API인지 확인한다. @param {object|null} settings 설정값 @returns {boolean} Prompt API 여부 */
     function isPromptApiProvider(settings) {
         return settings?.aiProvider === PROMPT_API_PROVIDER;
+    }
+
+    /** 현재 제공자가 게임 서버가 직접 제공하는 Local AI인지 확인한다. @param {object|null} settings 설정값 @returns {boolean} Local AI 여부 */
+    function isLocalAiProvider(settings) {
+        return settings?.aiProvider === LOCAL_AI_PROVIDER;
+    }
+
+    /**
+     * Local AI가 사용할 현재 게임 서버의 주소를 반환한다.
+     * file: 등 HTTP가 아닌 위치에서 열린 경우에는 확인할 서버가 없으므로 빈 문자열을 반환한다.
+     * @returns {string} 서버 주소(예: http://localhost:9891) 또는 빈 문자열
+     */
+    function getLocalAiServerURL() {
+        if (typeof window === 'undefined' || !window.location) return '';
+        if (!/^https?:$/.test(window.location.protocol || '')) return '';
+        const origin = window.location.origin;
+        return typeof origin === 'string' && origin && origin !== 'null' ? origin : '';
+    }
+
+    /**
+     * 게임 서버에 로컬 모델 사용 가능 여부를 물어 Local AI 선택지의 표시 여부를 정한다.
+     * 초기화 중 한 번만 호출하며, 응답이 없거나 사용할 수 없으면 선택지를 숨긴 채로 둔다.
+     * @returns {Promise<void>} 확인 완료 시점
+     */
+    async function refreshLocalAiAvailability() {
+        const serverURL = getLocalAiServerURL();
+        localAiAvailable = false;
+        if (serverURL && typeof fetch === 'function') {
+            try {
+                const response = await fetch(new URL(LOCAL_AI_INFO_API_PATH, `${serverURL}/`).href);
+                if (!response.ok) throw new Error(`${LOCAL_AI_INFO_API_PATH} 요청 실패 (${response.status})`);
+                const info = await response.json();
+                localAiAvailable = info?.available === true;
+            } catch (error) {
+                // 로컬 모델을 제공하지 않는 일반 웹 서버에서는 실패가 정상이므로 게임을 계속 진행한다.
+                console.info('Puyo W 로컬 AI 모델을 사용할 수 없습니다.', error);
+                localAiAvailable = false;
+            }
+        }
+        applyLocalAiAvailability();
+    }
+
+    /**
+     * 확인한 Local AI 사용 가능 여부를 저장된 설정과 편집 중인 설정에 반영한다.
+     * 사용할 수 없는데 저장값이 Local AI이면 Prompt API와 같은 방식으로 LM Studio로 이관한다.
+     * @returns {void}
+     */
+    function applyLocalAiAvailability() {
+        if (!store?.settings) return;
+        if (!localAiAvailable) {
+            if (isLocalAiProvider(store.settings)) {
+                store.settings.aiProvider = 'LM Studio';
+                saveStore();
+            }
+            if (isLocalAiProvider(settingsDraft)) settingsDraft.aiProvider = 'LM Studio';
+            return;
+        }
+        // 저장된 제공자가 이미 Local AI이면 AI API 테스트를 마친 것과 같이 솔로몬을 열어 준다.
+        if (isLocalAiProvider(store.settings)) unlockSolomonForSession();
+    }
+
+    /**
+     * 편집 중인 설정의 AI 제공자를 바꾸고, Local AI이면 서버 주소·고정 키·고정 모델명을 채운다.
+     * @param {string} provider 선택한 AI 제공자
+     * @returns {void}
+     */
+    function setSettingsDraftProvider(provider) {
+        if (!settingsDraft) return;
+        settingsDraft.aiProvider = provider;
+        // Local AI가 아닌 제공자로 되돌아갈 때는 입력값을 그대로 두어 사용자가 적어 둔 설정을 지우지 않는다.
+        if (!isLocalAiProvider(settingsDraft)) return;
+        settingsDraft.aiApiURL = normalizeAiApiURL(getLocalAiServerURL());
+        settingsDraft.aiApiKey = LOCAL_AI_API_KEY;
+        settingsDraft.aiModel = LOCAL_AI_MODEL;
     }
 
     /**
@@ -1246,9 +1349,10 @@
                 landscapeOrientationLocked: normalizeLandscapeOrientationLocked(settings.landscapeOrientationLocked),
                 soundDataURL: normalizeSoundDataURL(settings.soundDataURL),
                 // Prompt API를 지원하지 않는 브라우저에서는 기존 Prompt API 설정을 LM Studio로 이관한다.
+                // Local AI는 서버 확인이 끝나기 전이므로 여기서는 유지하고, 사용할 수 없으면 applyLocalAiAvailability()가 이관한다.
                 aiProvider: settings.aiProvider === PROMPT_API_PROVIDER && !promptApiSupported
                     ? 'LM Studio'
-                    : getAiServiceProviders().includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
+                    : settings.aiProvider === LOCAL_AI_PROVIDER || getAiServiceProviders().includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
                 aiApiURL: normalizeAiApiURL(settings.aiApiURL),
                 aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.settings.aiApiKey,
                 aiModel: typeof settings.aiModel === 'string' && settings.aiModel.trim() ? settings.aiModel : initial.settings.aiModel
@@ -2156,14 +2260,19 @@
         return Boolean(learningApiConfig && game && !game.tutorial && !game.watch && game.players?.[0]?.controller === null);
     }
 
-    /** 실제 게임 보드와 현재 조작 쌍을 learning.py의 관측 벡터로 변환한다. @param {PlayerState} player 관측할 사용자 플레이어 @returns {number[]} 관측 벡터 */
+    /** 실제 게임 보드와 현재 조작 쌍·경과 시간·피버 상태를 learning.py의 관측 벡터로 변환한다. @param {PlayerState} player 관측할 사용자 플레이어 @returns {number[]} 관측 벡터 */
     function getLearningObservation(player) {
         const values = [];
-        for (let channel = 0; channel <= COLORS.length; channel += 1) {
+        // common.py와 동일하게 빈 칸, 방해뿌요, 다섯 색을 독립 채널로 기록한다.
+        for (let channel = 0; channel < COLORS.length + 2; channel += 1) {
             for (let y = 0; y < VISIBLE_ROWS; y += 1) {
                 for (let x = 0; x < COLUMNS; x += 1) {
                     const color = player.board[y]?.[x] || null;
-                    values.push(channel === 0 ? Number(!color) : Number(color === COLORS[channel - 1]));
+                    values.push(channel === 0
+                        ? Number(!color)
+                        : channel === 1
+                            ? Number(Boolean(color) && !COLORS.includes(color))
+                            : Number(color === COLORS[channel - 2]));
                 }
             }
         }
@@ -2171,8 +2280,25 @@
         for (const color of activeColors.slice(0, 2)) {
             for (const candidate of COLORS) values.push(Number(color === candidate));
         }
-        while (values.length < VISIBLE_ROWS * COLUMNS * (COLORS.length + 1) + COLORS.length * 2) values.push(0);
-        values.push(Math.min(player.attack, 30) / 30, Math.min(player.placedPairCount, 100) / 100);
+        while (values.length < VISIBLE_ROWS * COLUMNS * (COLORS.length + 2) + COLORS.length * 2) values.push(0);
+        const clampRatio = (value, maximum) => Math.min(Math.max(Number(value) || 0, 0), maximum) / maximum;
+        const fever = player.fever || {};
+        values.push(
+            clampRatio(player.attack, 30),
+            clampRatio(player.placedPairCount, 100),
+            clampRatio(player.damage, 30),
+            Number(game?.feverRule === true),
+            Number(player.allClearTicket === true),
+            clampRatio(game?.elapsed, 600000),
+            clampRatio(game?.marginRate ?? MARGIN_RATE_SCHEDULE[0].rate, 70),
+            clampRatio(Math.log2(Math.max(1, game?.timeProgressMultiplier || 1)), 10),
+            Number(fever.active === true),
+            clampRatio(fever.gauge, FEVER_GAUGE_MAX),
+            clampRatio(fever.nextTime ?? FEVER_INITIAL_TIME, FEVER_MAX_TIME),
+            clampRatio(fever.targetCombo ?? FEVER_INITIAL_TARGET_COMBO, CONTINUOUS_FEVER_MAX_TARGET_COMBO),
+            clampRatio(fever.leftTime, FEVER_START_INITIAL_TIME),
+            clampRatio(fever.damage, 30)
+        );
         return values;
     }
 
@@ -6476,6 +6602,8 @@
         settingsDraft.aiApiURL = normalizeAiApiURL(settingsDraft.aiApiURL);
         const convertedSoundDataURL = convertURL(settingsDraft.soundDataURL);
         const soundDataURLChanged = soundDataURL !== convertedSoundDataURL;
+        // Local AI는 게임 서버가 직접 모델을 제공하므로 AI API 테스트 없이도 솔로몬을 열어 준다.
+        if (isLocalAiProvider(settingsDraft)) unlockSolomonForSession();
         store.settings = { ...settingsDraft };
         saveStore();
         applyCanvasOutputResolution();
@@ -6565,7 +6693,7 @@
     /** AI API 테스트에 필요한 입력값이 모두 채워졌는지 확인한다. Prompt API는 별도 입력값이 필요 없다. @param {object|null} settings 설정값 @returns {boolean} 실행 가능 여부 */
     function hasCompleteAiApiSettings(settings) {
         if (isPromptApiProvider(settings)) return promptApiSupported;
-        const requiredKeys = ['aiProvider', 'aiApiKey', 'aiModel', ...(isLmStudioProvider(settings) ? ['aiApiURL'] : [])];
+        const requiredKeys = ['aiProvider', 'aiApiKey', 'aiModel', ...(isLmStudioProvider(settings) || isLocalAiProvider(settings) ? ['aiApiURL'] : [])];
         return Boolean(settings && requiredKeys.every((key) => typeof settings[key] === 'string' && settings[key].trim()));
     }
 
@@ -6586,7 +6714,7 @@
 
     /** API 테스트 실행 가능 여부를 반영한 설정 화면 포커스 순서를 만든다. @returns {number[]} 포커스 인덱스 목록 */
     function getSelectableSettingsFocuses() {
-        const aiSettingFocuses = isPromptApiProvider(settingsDraft) ? [] : [
+        const aiSettingFocuses = isPromptApiProvider(settingsDraft) || isLocalAiProvider(settingsDraft) ? [] : [
             ...(isLmStudioProvider(settingsDraft) ? [7] : []), 8, 9
         ];
         return [0, 1, 2, 3, 4, 5, 6, ...aiSettingFocuses, ...(canRunAiApiTest() ? [10] : []), 11, 12, 13, 14];
@@ -6638,7 +6766,8 @@
     /** HTTP 기반 제공자에 맞는 구조화 JSON 생성 요청을 만든다. @param {object} settings 저장 설정 @param {string} prompt 사용자 프롬프트 @param {string} schemaName 스키마 이름 @param {object} schema JSON Schema @param {number} maxTokens 최대 출력 토큰 @returns {{url:string,options:object,readOutputText:(response:object)=>string|null}} 요청 정보 */
     function createStructuredAiRequest(settings, prompt, schemaName, schema, maxTokens) {
         const headers = { Authorization: `Bearer ${settings.aiApiKey}`, 'Content-Type': 'application/json' };
-        if (isLmStudioProvider(settings)) {
+        // Local AI 서버의 /v1/chat/completions는 LM Studio API를 흉내내므로 같은 요청 형식을 쓴다.
+        if (isLmStudioProvider(settings) || isLocalAiProvider(settings)) {
             return {
                 url: getLmStudioChatCompletionsURL(settings.aiApiURL),
                 options: {
@@ -6687,7 +6816,7 @@
         if (isPromptApiProvider(settings)) {
             if (!promptApiSupported) throw new Error('Prompt API를 지원하지 않는 브라우저입니다.');
             const languageModel = globalThis.LanguageModel;
-            const session = await languageModel.create({ signal });
+            const session = await languageModel.create({ ...PROMPT_API_LANGUAGE_OPTIONS, signal });
             try {
                 return await session.prompt(prompt, { responseConstraint: schema, signal });
             } finally {
@@ -6722,14 +6851,37 @@
             const outputText = await requestStructuredAiOutput(settings, 'Return only JSON matching the supplied schema, with success set to true.', 'ai_api_test_result', AI_API_TEST_JSON_SCHEMA, 64);
             if (requestId !== settingsApiTestRequestId) return;
             let result;
-            try { result = outputText ? parseJSON(outputText) : null; } catch (error) { result = null; }
+            let parseError = null;
+            try { result = outputText ? parseJSON(outputText) : null; } catch (error) {
+                result = null;
+                parseError = error instanceof Error ? error.message : String(error);
+            }
             const testSucceeded = isAiApiTestResult(result);
+            console.log('Puyo W AI API 테스트 결과', {
+                provider: settings.aiProvider,
+                model: settings.aiModel,
+                success: testSucceeded,
+                schemaValid: testSucceeded,
+                responseText: outputText,
+                parsedResult: result,
+                parseError
+            });
             if (testSucceeded) unlockSolomonForSession();
             showSettingsApiTestMessage(testSucceeded
                 ? 'AI API 테스트 성공 (JSON 스키마 검사: 통과)'
                 : 'AI API 테스트 실패 (JSON 스키마 검사: 실패)');
         } catch (error) {
             console.error('Puyo W AI API 테스트 요청에 실패했습니다.', error);
+            console.log('Puyo W AI API 테스트 결과', {
+                provider: settings.aiProvider,
+                model: settings.aiModel,
+                success: false,
+                schemaValid: false,
+                responseText: null,
+                parsedResult: null,
+                parseError: null,
+                requestError: error instanceof Error ? error.message : String(error)
+            });
             showSettingsApiTestMessage('AI API 테스트 실패 (JSON 스키마 검사: 미실시)');
         } finally {
             if (requestId === settingsApiTestRequestId) settingsApiTestPending = false;
@@ -6751,7 +6903,7 @@
             playMenuSelectSound();
             const providers = getAiServiceProviders();
             const currentIndex = providers.indexOf(settingsDraft.aiProvider);
-            settingsDraft.aiProvider = providers[(currentIndex + 1) % providers.length];
+            setSettingsDraftProvider(providers[(currentIndex + 1) % providers.length]);
         } else if (settingsFocus === 10 && canRunAiApiTest()) { playMenuSelectSound(); runAiApiTest(); }
         else if (settingsFocus === 11) { playMenuSelectSound(); settingsDraft.landscapeOrientationLocked = !settingsDraft.landscapeOrientationLocked; }
         else if (settingsFocus === 12) saveSettings();
@@ -6791,8 +6943,8 @@
             { label: '사운드 데이터 URL', value: settingsDraft.soundDataURL, kind: 'text' },
             { label: 'AI 서비스 제공자', value: settingsDraft.aiProvider, kind: 'radio', options: getAiServiceProviders().map((provider, index) => ({ label: provider, value: provider, x: x + index * step, translateLabel: false })) },
             { label: 'AI API URL', value: settingsDraft.aiApiURL, kind: 'text', disabled: !isLmStudioProvider(settingsDraft) },
-            { label: 'AI API 키', value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text', disabled: isPromptApiProvider(settingsDraft) },
-            { label: '사용 모델명', value: settingsDraft.aiModel, kind: 'text', disabled: isPromptApiProvider(settingsDraft) }
+            { label: 'AI API 키', value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text', disabled: isPromptApiProvider(settingsDraft) || isLocalAiProvider(settingsDraft) },
+            { label: '사용 모델명', value: settingsDraft.aiModel, kind: 'text', disabled: isPromptApiProvider(settingsDraft) || isLocalAiProvider(settingsDraft) }
         ].map((row, index) => ({ ...row, y: SETTINGS_UI_LAYOUT.rowYs[index] }));
     }
 
@@ -8484,8 +8636,8 @@
         if (settingsFocus === 0) return 'playerName';
         if (settingsFocus === 5) return 'soundDataURL';
         if (settingsFocus === 7 && isLmStudioProvider(settingsDraft)) return 'aiApiURL';
-        if (settingsFocus === 8 && !isPromptApiProvider(settingsDraft)) return 'aiApiKey';
-        if (settingsFocus === 9 && !isPromptApiProvider(settingsDraft)) return 'aiModel';
+        if (settingsFocus === 8 && !isPromptApiProvider(settingsDraft) && !isLocalAiProvider(settingsDraft)) return 'aiApiKey';
+        if (settingsFocus === 9 && !isPromptApiProvider(settingsDraft) && !isLocalAiProvider(settingsDraft)) return 'aiModel';
         return null;
     }
 
@@ -8610,7 +8762,7 @@
             } else if (settingsFocus === 6) {
                 const providers = getAiServiceProviders();
                 const currentIndex = providers.indexOf(settingsDraft.aiProvider);
-                settingsDraft.aiProvider = providers[(currentIndex + direction + providers.length) % providers.length];
+                setSettingsDraftProvider(providers[(currentIndex + direction + providers.length) % providers.length]);
             } else if (settingsFocus === 11) settingsDraft.landscapeOrientationLocked = direction > 0;
             else if (settingsFocus >= 12) settingsFocus = 12 + (settingsFocus - 12 + (direction < 0 ? 2 : 1)) % 3;
         }
@@ -9257,7 +9409,7 @@
                             playMenuSelectSound();
                             if (rowIndex === 3) settingsDraft.virtualController = option.value;
                             else if (rowIndex === 4) settingsDraft.graphicsQuality = option.value;
-                            else settingsDraft.aiProvider = option.value;
+                            else setSettingsDraftProvider(option.value);
                         }
                         settingsEditing = false;
                         clearSettingsTextSelection();
@@ -10025,6 +10177,7 @@
             throw new Error('Web Puyo 초기화에는 브라우저 DOM 환경이 필요합니다.');
         }
         promptApiSupported = checkPromptApiSupport();
+        startPromptApiDownloadIfNeeded();
         prepareFontImportStyle();
         prepareRuntimeLayoutStyle();
         languageCode = navigator.language || navigator.userLanguage || 'ko';
@@ -10072,6 +10225,7 @@
         prepareSoundPools();
         registerWebMcpTools();
         loadNotice();
+        refreshLocalAiAvailability();
         // 첫 화면은 제목과 시작 문구만 즉시 표시한 뒤 갤러리 미리보기를 비동기로 준비한다.
         render();
         scheduleFeverStageValidation();
@@ -11348,7 +11502,17 @@
                     outputCoordinates: 'x is the final column of the first (rotation-axis) puyo. rotation is one of 0,1,2,3 as defined above.'
                 },
                 currentField: { columns: COLUMNS, rows: ROWS, visibleRows: VISIBLE_ROWS, occupiedCells },
-                currentState: { incomingDamage: player.damage, fever: this.getMyFeverStatus(player) },
+                currentState: {
+                    attack: player.attack,
+                    placedPairCount: player.placedPairCount,
+                    incomingDamage: player.damage,
+                    feverRule,
+                    allClearTicket: player.allClearTicket,
+                    elapsedMs: game?.elapsed || 0,
+                    marginRate: game?.marginRate ?? MARGIN_RATE_SCHEDULE[0].rate,
+                    timeProgressMultiplier: game?.timeProgressMultiplier || 1,
+                    fever: this.getMyFeverStatus(player)
+                },
                 suppliedPuyos: [
                     { order: 'current', colors: [...player.active.colors] },
                     ...player.nextPairs.slice(0, 2).map((colors, index) => ({ order: `next_${index + 1}`, colors: [...colors] }))
@@ -13329,6 +13493,17 @@
         PUZZLE_STAGES.push(puzzlePuyoStage);
     }
 
+    /** 실제 게임이 사용하는 피버 패턴을 외부 학습 환경이 안전하게 복제할 수 있는 데이터로 반환한다. @returns {object[]} 피버 스테이지 사본 */
+    function getFeverStageDefinitions() {
+        return FEVER_STAGES.map((stage) => ({
+            stageData: { puyos: (stage.stageData.puyos || []).map((puyo) => ({ ...puyo })) },
+            targetCombo: stage.targetCombo,
+            suppliedNextPuyos: [...stage.suppliedNextPuyos],
+            difficulty: stage.difficulty,
+            usingColors: [...stage.usingColors]
+        }));
+    }
+
     /**
      * 2D 렌더러에 종속되지 않아 선택적 연출·외부 분석 도구도 읽기 전용으로 재사용할 수 있는 공통 함수 모음이다.
      * 모든 함수는 입력 보드를 직접 바꾸지 않으며, 선택적 연출·분석 도구에서 PuyoW.common으로 접근한다.
@@ -13360,6 +13535,7 @@
         formatPoint,
         collapseBoard,
         simulatePlacementBoard,
+        getFeverStageDefinitions,
         isAllClearBoard,
         estimateAttack,
         estimateCombo,
@@ -13436,6 +13612,7 @@
         formatPoint,
         collapseBoard,
         simulatePlacementBoard,
+        getFeverStageDefinitions,
         isAllClearBoard,
         estimateAttack,
         estimateCombo,
