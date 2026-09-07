@@ -8,7 +8,8 @@
  *     의존성
  *         three.min.js (선택사항, 3D 효과를 위해 사용)
  *         json5.min.js (선택사항, JSON5 형식 사용을 위함)
- *         puyow.css  (선택사항, 캔버스 영역이 화면 100%를 차지하게 만들고, 기본 뒷배경 색 변경)
+ *         ort.all.min.js, ort.webgl.min.js, ort.wasm.min.js (선택사항, ONNX Runtime 사용을 위함)
+ *         puyow.css (선택사항, 캔버스 영역이 화면 100%를 차지하게 만들고, 기본 뒷배경 색 변경)
  *         notice_ko.txt, notice_en.txt (선택사항으로 공지사항 존재 시 이 곳에 기재)
  *     html 예제
  *         puyow.html
@@ -18,7 +19,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 21;
+    const BUILDNO = 27;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -215,17 +216,12 @@
     const TEN_CARD_DRAW_PRICE = 9000;
     /** 카드 합성 한 번에 소비할 카드 수다. */
     const CARD_SYNTHESIS_COST = 5;
-    /** 설정에서 새로 제안하고 저장값이 비어 있을 때 보정할 기본 OpenAI 모델명이다. @type {string} */
+    /** 설정에서 새로 제안하고 저장값이 비어 있을 때 보정할 기본 모델명이다. @type {string} */
     const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
+    /** 아무 AI 서비스 제공자도 선택하지 않은 상태를 나타내는 저장값이다. @type {string} */
+    const NO_AI_PROVIDER = '';
     /** 항상 선택할 수 있는 AI 서비스 제공자 목록이다. 브랜드명은 번역하지 않는다. @type {string[]} */
-    const AI_SERVICE_PROVIDERS = ['OpenAI', 'LM Studio'];
-    /** 브라우저 내장 AI 기반의 선택적 제공자 이름이다. @type {string} */
-    const PROMPT_API_PROVIDER = 'Prompt API';
-    /** Prompt API에서 솔로몬이 사용하는 구조화 JSON 텍스트 출력 옵션이다. @type {object} */
-    const PROMPT_API_LANGUAGE_OPTIONS = {
-        expectedInputs: [{ type: 'text', languages: ['en'] }],
-        expectedOutputs: [{ type: 'text', languages: ['en'] }]
-    };
+    const AI_SERVICE_PROVIDERS = ['LM Studio'];
     /** 게임을 제공하는 서버가 직접 모델을 서비스할 때만 나타나는 선택적 제공자 이름이다. @type {string} */
     const LOCAL_AI_PROVIDER = 'Local AI';
     /** Local AI 선택 시 AI API 키 입력란에 채울 고정값이다. @type {string} */
@@ -256,8 +252,6 @@
     ];
     /** AI API URL로 허용할 최대 글자 수다. */
     const AI_API_URL_MAX_LENGTH = 200;
-    /** 브라우저에서 직접 호출할 OpenAI Responses API 주소다. @type {string} */
-    const OPENAI_RESPONSES_API_URL = 'https://api.openai.com/v1/responses';
     /** API 테스트 응답에 요구할 최소 JSON Schema다. @type {object} */
     const AI_API_TEST_JSON_SCHEMA = {
         type: 'object',
@@ -265,7 +259,7 @@
         required: ['success'],
         additionalProperties: false
     };
-    /** 솔로몬이 OpenAI Responses API 응답을 기다리는 최대 시간(ms)이다. @type {number} */
+    /** 솔로몬이 AI API 응답을 기다리는 최대 시간(ms)이다. @type {number} */
     const SOLOMON_API_TIMEOUT = 6000;
     /** 솔로몬의 배치 결정에 요구할 구조화 출력 JSON Schema다. @type {object} */
     const SOLOMON_PLACEMENT_JSON_SCHEMA = {
@@ -277,10 +271,53 @@
         required: ['x', 'rotation'],
         additionalProperties: false
     };
+    /**
+     * ONNX 가치망이 한 수를 고를 때 쓰는 감가율이다. `python/common.py`의 `DISCOUNT_GAMMA`와 같아야
+     * 파이썬 학습기가 배운 기준 그대로 배치를 비교할 수 있다. @type {number}
+     */
+    const ONNX_DISCOUNT_GAMMA = 0.70;
+    /** ONNX 모델이 받는 관측 벡터의 길이다. `python/common.py`의 `OBSERVATION_SIZE`와 같아야 한다. @type {number} */
+    const ONNX_OBSERVATION_SIZE = VISIBLE_ROWS * COLUMNS * (COLORS.length + 2) + COLORS.length * 2 + 14;
+    /** ONNX 모델 입력 텐서의 이름이다. `lngui.py`가 내보낸 그래프의 입력 이름과 같아야 한다. @type {string} */
+    const ONNX_INPUT_NAME = 'observation';
+    /** ONNX 모델 출력 텐서의 이름이다. `lngui.py`가 내보낸 그래프의 출력 이름과 같아야 한다. @type {string} */
+    const ONNX_OUTPUT_NAME = 'value';
+    /** ONNX 세션을 만들 때 사용할 실행 제공자다. WebGL·WebGPU는 이 그래프의 Shape·Slice를 지원하지 않을 수 있어 wasm만 쓴다. @type {string[]} */
+    const ONNX_EXECUTION_PROVIDERS = ['wasm'];
+    /**
+     * ONNX 세션 로그 심각도다. 0=Verbose, 1=Info, 2=Warning(기본), 3=Error.
+     * `lngui.py`가 내보낸 그래프는 `ValueNetwork.forward()`의 마지막 `reshape(-1)` 때문에 출력 축이 1로
+     * 추론되어, 여러 후보를 한 배치로 넣을 때마다 "Expected shape from model of {1}" 경고가 나온다.
+     * 출력 값 자체는 후보 수만큼 정상적으로 나오고 길이도 검증하므로, 매 턴 쌓이는 이 경고만 가린다.
+     * @type {number}
+     */
+    const ONNX_LOG_SEVERITY_LEVEL = 3;
+    /**
+     * ONNX 적이 한 턴의 추론 결과를 기다리는 최대 시간(ms)이다. 이 시간을 넘기면 그 턴은 앞 1수
+     * 시뮬레이션 결과로 확정한다. 한 턴의 자연 낙하 예산(약 24초)보다 훨씬 짧게 잡아, 늦은 추론
+     * 때문에 회전도 이동도 없이 스폰 자리에 떨어뜨리는 턴이 생기지 않게 한다.
+     * @type {number}
+     */
+    const ONNX_INFERENCE_TIMEOUT = 2000;
+    /** ONNX 런타임이 쓰는 wasm 글루 모듈 파일명이다. 46KB로 작아 항상 `src/js/`의 것을 쓴다. @type {string} */
+    const ONNX_WASM_MJS_FILE = 'ort-wasm-simd-threaded.jsep.mjs';
+    /** ONNX 런타임이 쓰는 wasm 바이너리 파일명이다. 27MB로 커서 CDN을 우선한다. @type {string} */
+    const ONNX_WASM_BINARY_FILE = 'ort-wasm-simd-threaded.jsep.wasm';
+    /** wasm 바이너리를 우선 내려받을 CDN 주소를 만드는 틀이다. `%1`에 런타임 버전이 들어간다. @type {string} */
+    const ONNX_WASM_CDN_TEMPLATE = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@%1/dist/';
+    /** `ort.env.versions.web`을 읽지 못했을 때 CDN 주소에 사용할 기본 버전이다. @type {string} */
+    const ONNX_WASM_FALLBACK_VERSION = '1.29.0';
+    /**
+     * wasm 파일 접근 가능 여부를 확인하는 HEAD 요청의 제한 시간(ms)이다.
+     * 응답이 없는 네트워크에서 적 목록이 계속 미확정으로 남지 않도록 짧게 끊는다.
+     * @type {number}
+     */
+    const ONNX_WASM_PROBE_TIMEOUT = 4000;
     /** 한국어 원문을 키로 하는 화면 문구 번역표다. (다국어 데이터) @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
             '솔로몬': 'Solomon', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'Solomon AI response error: continuing with the fallback AI.',
+            '인공지능 모델을 불러오는 중...': 'Loading the AI model…', '인공지능 모델을 불러오지 못했습니다.': 'Failed to load the AI model.',
             '뿌요 W': 'Puyo W',
             '초기화': 'Reset', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Reset all settings for this game?', '초기화 중...': 'Resetting...',
             '게임 시작': 'Game Start', '구경': 'Watch', '모드': 'Mode', '색상 수': 'Colors', '다음 대전까지 %1초': 'Next match in %1 sec', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '퍼즐뿌요': 'Puzzle Puyo', '퍼즐뿌요 스테이지': 'Puzzle Puyo Stage', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Recommended turns: %1', '현재 턴 %1': 'Turn %1', '현재 턴 %1 / %2': 'Turn %1 / %2', '%1 연쇄 해봐': 'Make a %1-chain!', '싹쓸이 해봐': 'Get an all clear!', '한 번에 %1개 뿌요를 터뜨려봐': 'Pop %1 puyos at once!', '한 번에 %1가지 색 뿌요를 터뜨려봐': 'Pop %1 colors at once!', '방해뿌요 %1개를 발생 시켜봐': 'Send %1 garbage puyos!', '스테이지 클리어': 'Stage Clear', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
@@ -303,6 +340,7 @@
         },
         ja: {
             '솔로몬': 'ソロモン', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'ソロモンAIの応答エラー：代替AIで続行します。',
+            '인공지능 모델을 불러오는 중...': 'AIモデルを読み込み中…', '인공지능 모델을 불러오지 못했습니다.': 'AIモデルを読み込めませんでした。',
             '이름': '名前',
             '뿌요 W': 'Puyo W',
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
@@ -326,6 +364,7 @@
         },
         zh: {
             '솔로몬': '所罗门', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': '所罗门 AI 响应错误：将使用备用 AI 继续。',
+            '인공지능 모델을 불러오는 중...': '正在加载 AI 模型…', '인공지능 모델을 불러오지 못했습니다.': '无法加载 AI 模型。',
             '이름': '名称',
             '뿌요 W': 'Puyo W',
             '초기화': '重置', '이 게임의 모든 설정을 초기화하시겠습니까?': '要重置此游戏的所有设置吗？', '초기화 중...': '正在重置…',
@@ -508,12 +547,23 @@
     const SCREEN_MESSAGE_FADE_DURATION = 500;
     /** AI API 테스트 요청이 진행 중인지 여부다. @type {boolean} */
     let settingsApiTestPending = false;
-    /** 초기화 시 확인한 Prompt API 지원 여부다. @type {boolean} */
-    let promptApiSupported = false;
     /** 초기화 시 게임 서버에 확인한 Local AI 사용 가능 여부다. @type {boolean} */
     let localAiAvailable = false;
     /** 현재 페이지 접속 중 AI API 테스트를 통과해 솔로몬을 사용할 수 있는지 여부다. 저장하지 않는다. @type {boolean} */
     let solomonSessionUnlocked = false;
+    /** 초기화 시 확인한 ONNX Runtime for Web(전역 `ort`) 사용 가능 여부다. 저장하지 않는다. @type {boolean} */
+    let onnxRuntimeAvailable = false;
+    /**
+     * ONNX 런타임이 쓸 wasm 파일에 접근할 수 있는지 여부다.
+     * 확인이 끝나기 전에는 사용 가능으로 본다. 정상 환경에서 적 목록이 뒤늦게 바뀌어 카드가 흔들리는 것을
+     * 막기 위한 낙관적 기본값이며, 확인 전에 골라도 모델 로딩 게이트가 실패를 잡아 안내 후 되돌린다.
+     * @type {boolean}
+     */
+    let onnxWasmAvailable = true;
+    /** wasm 파일 경로 결정이 끝났는지 추적하는 약속이다. 세션을 만들기 전에 반드시 기다린다. @type {Promise<boolean>|null} */
+    let onnxWasmPathsPromise = null;
+    /** 이미 만든 ONNX 추론 세션을 모델 경로별로 재사용하기 위한 캐시다. @type {Map<string, Promise<object>>} */
+    const onnxSessionCache = new Map();
     /** 종료된 설정 화면의 비동기 응답을 무시하기 위한 요청 식별자다. @type {number} */
     let settingsApiTestRequestId = 0;
     /** 설정 전체 초기화 확인 후 표시하는 초기화 진행 화면 여부다. @type {boolean} */
@@ -788,43 +838,31 @@
         return [primaryFontName, ...uniqueFallbacks].map(quoteFontNameIfNeeded).join(', ');
     }
 
-    /**
-     * 현재 브라우저가 Prompt API의 세션 생성 기능을 제공하는지 확인한다.
-     * 게임 초기화 시 한 번만 호출해 설정 화면의 선택지를 결정한다.
-     * @returns {boolean} Prompt API 지원 여부
-     */
-    function checkPromptApiSupport() {
-        const languageModel = typeof globalThis !== 'undefined' ? globalThis.LanguageModel : undefined;
-        return typeof languageModel !== 'undefined' && typeof languageModel.create === 'function';
-    }
-
-    /** Prompt API 모델이 다운로드 중이면 초기화와 동시에 모델 준비를 시작한다. @returns {void} */
-    function startPromptApiDownloadIfNeeded() {
-        const languageModel = typeof globalThis !== 'undefined' ? globalThis.LanguageModel : undefined;
-        if (!languageModel || typeof languageModel.availability !== 'function' || typeof languageModel.create !== 'function') return;
-        // availability()와 create()는 초기화 흐름을 막지 않도록 기다리지 않고 실행한다.
-        Promise.resolve().then(() => languageModel.availability(PROMPT_API_LANGUAGE_OPTIONS)).then((availability) => {
-            if (availability !== 'downloading') return;
-            return languageModel.create(PROMPT_API_LANGUAGE_OPTIONS);
-        }).catch((error) => {
-            // 모델 다운로드를 시작하지 못해도 게임 초기화와 다른 AI 제공자는 계속 사용할 수 있다.
-            console.info('Puyo W Prompt API 모델 준비를 시작하지 못했습니다.', error);
-        });
-    }
-
     /** 현재 설정 화면에서 선택할 수 있는 AI 제공자 목록을 반환한다. @returns {string[]} 제공자 목록 */
     function getAiServiceProviders() {
-        return [...AI_SERVICE_PROVIDERS, ...(promptApiSupported ? [PROMPT_API_PROVIDER] : []), ...(localAiAvailable ? [LOCAL_AI_PROVIDER] : [])];
+        return [...AI_SERVICE_PROVIDERS, ...(localAiAvailable ? [LOCAL_AI_PROVIDER] : [])];
     }
 
-    /** 현재 제공자가 Prompt API인지 확인한다. @param {object|null} settings 설정값 @returns {boolean} Prompt API 여부 */
-    function isPromptApiProvider(settings) {
-        return settings?.aiProvider === PROMPT_API_PROVIDER;
+    /** 아무 AI 서비스 제공자도 선택하지 않은 상태인지 확인한다. @param {object|null} settings 설정값 @returns {boolean} 미선택 여부 */
+    function hasNoAiProvider(settings) {
+        return !settings?.aiProvider;
     }
 
     /** 현재 제공자가 게임 서버가 직접 제공하는 Local AI인지 확인한다. @param {object|null} settings 설정값 @returns {boolean} Local AI 여부 */
     function isLocalAiProvider(settings) {
         return settings?.aiProvider === LOCAL_AI_PROVIDER;
+    }
+
+    /**
+     * 저장된 AI 제공자 값을 현재 사용할 수 있는 값으로 보정한다.
+     * 지원을 제거한 OpenAI·Prompt API를 비롯해 알 수 없는 값은 아무것도 선택하지 않은 상태로 되돌린다.
+     * Local AI는 서버 확인이 끝나기 전이므로 여기서는 유지하고, 사용할 수 없으면 `applyLocalAiAvailability()`가 되돌린다.
+     * @param {unknown} provider 저장된 제공자 값
+     * @returns {string} 보정한 제공자 값
+     */
+    function normalizeAiProvider(provider) {
+        if (provider === LOCAL_AI_PROVIDER || getAiServiceProviders().includes(provider)) return provider;
+        return NO_AI_PROVIDER;
     }
 
     /**
@@ -864,21 +902,51 @@
 
     /**
      * 확인한 Local AI 사용 가능 여부를 저장된 설정과 편집 중인 설정에 반영한다.
-     * 사용할 수 없는데 저장값이 Local AI이면 Prompt API와 같은 방식으로 LM Studio로 이관한다.
+     * 사용할 수 없게 된 Local AI는 다른 제공자로 옮기지 않고 아무것도 선택하지 않은 상태로 되돌리며,
+     * 반대로 사용할 수 있는데 아무것도 선택하지 않았다면 기본값인 Local AI를 채운다.
      * @returns {void}
      */
     function applyLocalAiAvailability() {
         if (!store?.settings) return;
         if (!localAiAvailable) {
             if (isLocalAiProvider(store.settings)) {
-                store.settings.aiProvider = 'LM Studio';
+                store.settings.aiProvider = NO_AI_PROVIDER;
                 saveStore();
             }
-            if (isLocalAiProvider(settingsDraft)) settingsDraft.aiProvider = 'LM Studio';
+            if (isLocalAiProvider(settingsDraft)) settingsDraft.aiProvider = NO_AI_PROVIDER;
             return;
+        }
+        if (hasNoAiProvider(store.settings)) {
+            applyLocalAiProviderSettings(store.settings);
+            saveStore();
+            if (hasNoAiProvider(settingsDraft)) applyLocalAiProviderSettings(settingsDraft);
         }
         // 저장된 제공자가 이미 Local AI이면 AI API 테스트를 마친 것과 같이 솔로몬을 열어 준다.
         if (isLocalAiProvider(store.settings)) unlockSolomonForSession();
+    }
+
+    /**
+     * 설정값의 AI 제공자를 Local AI로 바꾸고 서버 주소·고정 키·고정 모델명을 채운다.
+     * @param {object|null} settings 대상 설정값
+     * @returns {void}
+     */
+    function applyLocalAiProviderSettings(settings) {
+        if (!settings) return;
+        settings.aiProvider = LOCAL_AI_PROVIDER;
+        settings.aiApiURL = normalizeAiApiURL(getLocalAiServerURL());
+        settings.aiApiKey = LOCAL_AI_API_KEY;
+        settings.aiModel = LOCAL_AI_MODEL;
+    }
+
+    /**
+     * 새 설정에 사용할 AI 제공자 기본값을 만든다.
+     * Local AI를 사용할 수 있으면 Local AI이고, 사용할 수 없으면 아무것도 선택하지 않은 상태다.
+     * @returns {{aiProvider:string, aiApiURL:string, aiApiKey:string, aiModel:string}} 기본 AI 설정
+     */
+    function createDefaultAiSettings() {
+        const settings = { aiProvider: NO_AI_PROVIDER, aiApiURL: '', aiApiKey: '', aiModel: DEFAULT_AI_MODEL };
+        if (localAiAvailable) applyLocalAiProviderSettings(settings);
+        return settings;
     }
 
     /**
@@ -888,12 +956,12 @@
      */
     function setSettingsDraftProvider(provider) {
         if (!settingsDraft) return;
-        settingsDraft.aiProvider = provider;
+        if (provider === LOCAL_AI_PROVIDER) {
+            applyLocalAiProviderSettings(settingsDraft);
+            return;
+        }
         // Local AI가 아닌 제공자로 되돌아갈 때는 입력값을 그대로 두어 사용자가 적어 둔 설정을 지우지 않는다.
-        if (!isLocalAiProvider(settingsDraft)) return;
-        settingsDraft.aiApiURL = normalizeAiApiURL(getLocalAiServerURL());
-        settingsDraft.aiApiKey = LOCAL_AI_API_KEY;
-        settingsDraft.aiModel = LOCAL_AI_MODEL;
+        settingsDraft.aiProvider = provider;
     }
 
     /**
@@ -911,7 +979,7 @@
             puzzleGoldClearStages: [],
             puzzleGoldStarStages: [],
             gold: 0,
-            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, landscapeOrientationLocked: false, useReplayFeature: false, reverseLearning: false, soundDataURL: '', aiProvider: 'OpenAI', aiApiURL: '', aiApiKey: '', aiModel: DEFAULT_AI_MODEL },
+            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, landscapeOrientationLocked: false, useReplayFeature: false, reverseLearning: false, soundDataURL: '', ...createDefaultAiSettings() },
             muted: false
         };
     }
@@ -1171,7 +1239,7 @@
                     context.restore();
                 }
             }));
-        const enemies = getVisibleOpponents()
+        const enemies = getGalleryOpponents()
             .filter((entry) => galleryUnlocks.enemies.includes(entry.classType))
             .map((entry) => ({ draw: () => entry.createController().drawPortrait(context, centerX, centerY, 2.8, 'normal') }));
         return [...puyos, ...warnings, ...enemies];
@@ -1411,11 +1479,8 @@
                 useReplayFeature: normalizeUseReplayFeature(settings.useReplayFeature),
                 reverseLearning: normalizeReverseLearning(settings.reverseLearning),
                 soundDataURL: normalizeSoundDataURL(settings.soundDataURL),
-                // Prompt API를 지원하지 않는 브라우저에서는 기존 Prompt API 설정을 LM Studio로 이관한다.
-                // Local AI는 서버 확인이 끝나기 전이므로 여기서는 유지하고, 사용할 수 없으면 applyLocalAiAvailability()가 이관한다.
-                aiProvider: settings.aiProvider === PROMPT_API_PROVIDER && !promptApiSupported
-                    ? 'LM Studio'
-                    : settings.aiProvider === LOCAL_AI_PROVIDER || getAiServiceProviders().includes(settings.aiProvider) ? settings.aiProvider : initial.settings.aiProvider,
+                // 지원을 제거한 OpenAI·Prompt API를 저장해 둔 설정은 아무것도 선택하지 않은 상태로 되돌린다.
+                aiProvider: normalizeAiProvider(settings.aiProvider),
                 aiApiURL: normalizeAiApiURL(settings.aiApiURL),
                 aiApiKey: typeof settings.aiApiKey === 'string' ? settings.aiApiKey : initial.settings.aiApiKey,
                 aiModel: typeof settings.aiModel === 'string' && settings.aiModel.trim() ? settings.aiModel : initial.settings.aiModel
@@ -1468,6 +1533,198 @@
             console.error(`${noticeUrl}를 불러오지 못했습니다.`, error);
             noticeText = '';
         }
+    }
+
+    /**
+     * 게임 자원(모델, wasm 등)의 상대 경로를 풀 기준이 되는 `src/` 디렉터리 URL을 만든다.
+     * puyow.js는 `src/js/`, 번들은 `src/bundle/`에 있으므로 어느 쪽이든 스크립트의 상위 디렉터리가 기준이 된다.
+     * 스크립트를 찾지 못하면 문서 주소를 기준으로 삼아, 게임을 다른 페이지에 심었을 때도 최대한 동작하게 한다.
+     * @returns {URL|null} `src/` 디렉터리를 가리키는 URL. 브라우저 환경이 아니면 null이다.
+     */
+    function getGameResourceBaseURL() {
+        if (typeof document === 'undefined') return null;
+        try {
+            const script = [...(document.scripts || [])].find((element) => /puyow(?:\.min|\.bundle)?\.js(?:[?#]|$)/.test(element.src));
+            // 스크립트가 있으면 그 상위 디렉터리(src/)를, 없으면 현재 문서 위치를 기준으로 삼는다.
+            if (script?.src) return new URL('../', convertURL(script.src));
+            return new URL('./', convertURL(document.baseURI));
+        } catch (error) {
+            console.error('게임 자원 기준 경로를 만들지 못했습니다.', error);
+            return null;
+        }
+    }
+
+    /**
+     * `src/` 아래의 상대 경로를 절대 URL 문자열로 바꾼다.
+     * @param {string} relativePath `src/` 기준 상대 경로 (예: `onnx/model01.onnx`)
+     * @returns {string} 절대 URL. 기준 경로를 만들 수 없으면 입력값을 그대로 돌려준다.
+     */
+    function resolveGameResourceURL(relativePath) {
+        const baseURL = getGameResourceBaseURL();
+        if (!baseURL) return relativePath;
+        return new URL(relativePath, baseURL).href;
+    }
+
+    /**
+     * 전역에 올라온 ONNX Runtime for Web 객체를 반환한다.
+     * `ort.all.min.js`를 넣지 않은 페이지에서도 게임이 동작해야 하므로 없으면 null이다.
+     * @returns {object|null} ONNX 런타임 객체 또는 null
+     */
+    function getOnnxRuntime() {
+        // 선택 라이브러리라 선언 자체가 없을 수 있다. ort.all.min.js는 전역 var로 자신을 올리므로
+        // 없을 때 ReferenceError가 나지 않도록 globalThis를 통해서만 읽는다.
+        if (typeof globalThis === 'undefined') return null;
+        return globalThis.ort || null;
+    }
+
+    /**
+     * 게임 초기화 시 ONNX 런타임 사용 가능 여부를 확인하고 wasm 자원 경로와 실행 방식을 지정한다.
+     * wasm 글루(`ort-wasm-simd-threaded.jsep.mjs`)와 바이너리는 puyow.js와 같은 `src/js/`에 둔다.
+     *
+     * 이 설정은 첫 `InferenceSession.create()`보다 먼저 끝나야 하므로 초기화 시점에 한 번만 한다.
+     * @returns {boolean} 사용 가능 여부
+     */
+    function refreshOnnxRuntimeAvailability() {
+        const runtime = getOnnxRuntime();
+        onnxRuntimeAvailable = Boolean(runtime);
+        if (!runtime) return false;
+        try {
+            const wasmEnv = runtime.env?.wasm;
+            if (wasmEnv) {
+                // COOP/COEP 헤더가 없는 정적 호스팅에서는 어차피 단일 스레드로 내려가므로 경고 없이 1로 고정한다.
+                wasmEnv.numThreads = 1;
+                // 세션 생성과 추론을 Web Worker에서 돌린다. wasm 연산은 메인 스레드에서 동기로 실행되므로
+                // 이 설정이 없으면 27MB짜리 wasm을 인스턴스화하는 동안 화면·입력·자연 낙하가 통째로 멈춘다.
+                // 느린 기기에서 그 정지가 수 초에 달해 브라우저가 응답 없음 상태로 보이던 원인이다.
+                wasmEnv.proxy = true;
+            }
+        } catch (error) {
+            console.error('ONNX 런타임 실행 환경을 설정하지 못했습니다.', error);
+        }
+        // wasm 파일 위치는 네트워크 확인이 필요해 비동기로 정한다. 세션은 이 결정을 기다린 뒤에 만든다.
+        onnxWasmPathsPromise = resolveOnnxWasmPaths();
+        return true;
+    }
+
+    /**
+     * 지정한 URL에 접근할 수 있는지 본문 없이 HEAD 요청으로 확인한다.
+     * 27MB짜리 wasm 파일을 실제로 내려받지 않고 존재 여부만 보기 위한 것이다.
+     * @param {string} url 확인할 주소
+     * @returns {Promise<boolean>} 접근 가능 여부
+     */
+    async function canAccessURL(url) {
+        if (typeof fetch !== 'function') return false;
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        // 응답이 없는 네트워크에서 적 목록이 계속 미확정으로 남지 않도록 제한 시간을 둔다.
+        const timeoutId = controller ? setTimeout(() => controller.abort(), ONNX_WASM_PROBE_TIMEOUT) : null;
+        try {
+            const response = await fetch(url, { method: 'HEAD', signal: controller?.signal });
+            return response.ok;
+        } catch (error) {
+            console.warn(`${url}에 접근할 수 없습니다.`, error);
+            return false;
+        } finally {
+            if (timeoutId !== null) clearTimeout(timeoutId);
+        }
+    }
+
+    /**
+     * wasm 바이너리를 우선 내려받을 CDN 디렉터리 주소를 만든다.
+     * 버전은 런타임이 알려 주는 값을 그대로 쓴다. `ort.all.min.js`만 갈아끼워도 글루와 바이너리 버전이
+     * 어긋나지 않게 하기 위해서다.
+     * @param {object} runtime ONNX 런타임 객체
+     * @returns {string} CDN 디렉터리 URL
+     */
+    function getOnnxWasmCdnBase(runtime) {
+        const version = runtime?.env?.versions?.web || ONNX_WASM_FALLBACK_VERSION;
+        return ONNX_WASM_CDN_TEMPLATE.replace('%1', version);
+    }
+
+    /**
+     * ONNX 런타임이 쓸 wasm 파일 경로를 정한다.
+     *
+     * 큰 바이너리는 CDN을 우선 시도하고, 닿지 않으면 `src/js/`의 파일로 되돌린다. 작은 글루 모듈은
+     * 함께 배포되므로 항상 로컬 것을 쓴다. 양쪽 모두 접근할 수 없으면 추론 자체가 불가능하므로,
+     * 적 선택 화면에서 ONNX 적을 감추도록 사용 불가로 기록한다.
+     *
+     * 호스트 페이지가 `ort.env.wasm.wasmPaths`를 직접 지정했다면 그 설정을 존중해 아무것도 바꾸지 않는다.
+     * @returns {Promise<boolean>} wasm 접근 가능 여부
+     */
+    async function resolveOnnxWasmPaths() {
+        const runtime = getOnnxRuntime();
+        const wasmEnv = runtime?.env?.wasm;
+        if (!wasmEnv) {
+            onnxWasmAvailable = false;
+            return false;
+        }
+        // 페이지가 직접 지정한 경로는 그대로 두고 확인도 하지 않는다.
+        if (wasmEnv.wasmPaths) {
+            onnxWasmAvailable = true;
+            return true;
+        }
+        const localBase = resolveGameResourceURL('js/');
+        const localWasmURL = `${localBase}${ONNX_WASM_BINARY_FILE}`;
+        const cdnWasmURL = `${getOnnxWasmCdnBase(runtime)}${ONNX_WASM_BINARY_FILE}`;
+        if (await canAccessURL(cdnWasmURL)) {
+            // 글루는 로컬, 큰 바이너리는 CDN으로 나눠 지정한다. ORT는 이 객체 형식을 그대로 받는다.
+            wasmEnv.wasmPaths = { mjs: `${localBase}${ONNX_WASM_MJS_FILE}`, wasm: cdnWasmURL };
+            onnxWasmAvailable = true;
+            return true;
+        }
+        // CDN에 닿지 않으면 함께 배포한 로컬 파일을 쓴다.
+        wasmEnv.wasmPaths = localBase;
+        onnxWasmAvailable = await canAccessURL(localWasmURL);
+        if (!onnxWasmAvailable) console.error(`${ONNX_WASM_BINARY_FILE}을(를) CDN과 ${localBase} 어느 쪽에서도 불러올 수 없습니다.`);
+        return onnxWasmAvailable;
+    }
+
+    /**
+     * 현재 페이지에서 ONNX 추론을 사용할 수 있는지 확인한다.
+     * 런타임과 wasm 파일이 모두 있어야 하며, wasm 확인이 끝나기 전에는 사용 가능으로 본다.
+     * @returns {boolean} 사용 가능 여부
+     */
+    function isOnnxRuntimeAvailable() {
+        return onnxRuntimeAvailable && onnxWasmAvailable;
+    }
+
+    /**
+     * 모델 경로별 ONNX 추론 세션을 만들고 캐시한다. 같은 모델을 다시 고르면 이미 만든 세션을 재사용한다.
+     * @param {string} modelPath `src/` 기준 모델 상대 경로
+     * @returns {Promise<object>} 추론 세션
+     */
+    function loadOnnxSession(modelPath) {
+        const cached = onnxSessionCache.get(modelPath);
+        if (cached) return cached;
+        const loading = (async () => {
+            const runtime = getOnnxRuntime();
+            if (!runtime) throw new Error('ONNX 런타임(ort)이 없습니다.');
+            // CDN·로컬 중 어디서 wasm을 받을지 정해진 다음에 세션을 만든다. 확인이 끝나기 전에 적을
+            // 골라도 CDN 우선 정책이 그대로 적용되게 하기 위한 대기다.
+            if (!onnxWasmPathsPromise) onnxWasmPathsPromise = resolveOnnxWasmPaths();
+            if (!(await onnxWasmPathsPromise)) throw new Error(`${ONNX_WASM_BINARY_FILE}에 접근할 수 없습니다.`);
+            const modelURL = resolveGameResourceURL(modelPath);
+            const response = await fetch(convertURL(modelURL));
+            if (!response.ok) throw new Error(`${modelPath} 요청 실패 (${response.status})`);
+            const modelBuffer = new Uint8Array(await response.arrayBuffer());
+            const sessionOptions = {
+                executionProviders: ONNX_EXECUTION_PROVIDERS,
+                logSeverityLevel: ONNX_LOG_SEVERITY_LEVEL
+            };
+            try {
+                return await runtime.InferenceSession.create(modelBuffer, sessionOptions);
+            } catch (error) {
+                // Blob 워커를 막는 CSP 등으로 프록시 워커를 띄우지 못하면 예전처럼 메인 스레드에서 실행한다.
+                // 이때는 세션을 만드는 동안 화면이 잠시 멈추지만, 적을 아예 못 쓰게 되는 것보다는 낫다.
+                if (!runtime.env?.wasm?.proxy) throw error;
+                console.error('ONNX 프록시 워커를 시작하지 못해 메인 스레드 추론으로 되돌립니다.', error);
+                runtime.env.wasm.proxy = false;
+                return runtime.InferenceSession.create(modelBuffer, sessionOptions);
+            }
+        })();
+        // 실패한 시도를 캐시에 남기면 다시 시도할 수 없으므로, 실패 시에는 캐시에서 지운다.
+        loading.catch(() => onnxSessionCache.delete(modelPath));
+        onnxSessionCache.set(modelPath, loading);
+        return loading;
     }
 
     /**
@@ -2058,7 +2315,7 @@
     /**
      * 적 인스턴스의 선택 화면 표시 설정을 등록 항목으로 만든다.
      * @param {()=>Enemy} createController 새 적 인스턴스 생성 함수
-     * @returns {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean}} 적 등록 항목
+     * @returns {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean, requiresOnnx:boolean}} 적 등록 항목
      */
     function createOpponentEntry(createController) {
         const controller = createController();
@@ -2074,7 +2331,8 @@
             classType,
             sortPriority: controller.sortPriority,
             hidden: controller.hidden === true,
-            notAvail: controller.notAvail === true
+            notAvail: controller.notAvail === true,
+            requiresOnnx: controller.requiresOnnx === true
         };
     }
 
@@ -2092,11 +2350,23 @@
     }
 
     /**
+     * 갤러리에 표시할 적 목록을 반환한다.
+     * 갤러리 잠금 해제는 실제로 이긴 전적만을 근거로 하므로, ONNX 런타임이 없어 지금은 대전할 수 없는
+     * 적이라도 목록에서 빼지 않는다. 적 선택 화면과 달리 `requiresOnnx`를 보지 않는 이유다.
+     * @returns {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean, requiresOnnx:boolean}[]} 갤러리 표시 대상 적 목록
+     */
+    function getGalleryOpponents() {
+        return OPPONENTS.filter((opponent) => !opponent.hidden);
+    }
+
+    /**
      * 숨김 처리되지 않아 적 선택 화면에 표시할 적 목록을 반환한다.
-     * @returns {{createController:()=>Enemy, className:string, sortPriority:number, hidden:boolean, notAvail:boolean}[]} 표시할 적 목록
+     * ONNX 런타임이 없는 페이지에서는 추론으로 판단하는 적을 이전 적 클리어 여부와 무관하게 감춘다.
+     * 갤러리 목록은 이 제한을 받지 않으므로 `getGalleryOpponents()`를 따로 쓴다.
+     * @returns {{createController:()=>Enemy, className:string, classType:string, sortPriority:number, hidden:boolean, notAvail:boolean, requiresOnnx:boolean}[]} 표시할 적 목록
      */
     function getVisibleOpponents() {
-        return OPPONENTS.filter((opponent) => !opponent.hidden);
+        return getGalleryOpponents().filter((opponent) => !opponent.requiresOnnx || isOnnxRuntimeAvailable());
     }
 
     /** 성공한 AI API 테스트 뒤 현재 접속에 한해 솔로몬을 적 목록에 표시한다. @returns {void} */
@@ -2231,6 +2501,34 @@
     }
 
     /**
+     * 이번 대전에 ONNX 추론이 필요한 적이 있으면 모델을 먼저 불러오고, 그동안 카운트다운을 멈춘다.
+     * 모델 파일이 크기 때문에 게임 화면을 먼저 보여 주고 이 자리에서 로딩 안내를 띄운다.
+     * 로딩에 실패하면 대전을 아예 시작하지 않고 안내 문구와 함께 이전 선택 화면으로 돌려보낸다.
+     * @param {Enemy[]} controllers 이번 대전에 참여하는 적 컨트롤러 목록
+     * @param {()=>void} returnToSelection 로딩 실패 시 돌아갈 선택 화면을 여는 함수
+     * @returns {void}
+     */
+    function prepareGameOnnxModels(controllers, returnToSelection) {
+        const onnxControllers = controllers.filter((controller) => controller?.requiresOnnx && typeof controller.prepareModel === 'function');
+        if (!onnxControllers.length) return;
+        // 로딩이 끝나기 전에 다른 게임이 시작되면 이 결과를 무시하기 위해 시작 시점의 game을 붙잡아 둔다.
+        const startedGame = game;
+        startedGame.onnxLoading = true;
+        Promise.all(onnxControllers.map((controller) => controller.prepareModel())).then(() => {
+            if (game !== startedGame) return;
+            game.onnxLoading = false;
+        }).catch((error) => {
+            console.error('ONNX 모델을 불러오지 못했습니다.', error);
+            if (game !== startedGame) return;
+            stopBackgroundMusic();
+            game = null;
+            returnToSelection();
+            syncBackgroundMusic();
+            showMessage(translate('인공지능 모델을 불러오지 못했습니다.'), '#f5fbfc', 3000, '#7b2636');
+        });
+    }
+
+    /**
      * 대전, 연습, 피버 룰, 피버 룰 (시작) 또는 연속 피버 상태를 초기화한다.
      * @param {boolean} practice 연습 모드 여부
      * @param {boolean} continuousFever 연속 피버 모드 여부
@@ -2310,6 +2608,8 @@
         // 리플레이는 기본 룰·피버 룰·피버 룰 (시작) 대전에서만 기록한다. 연습과 연속 피버는 대상이 아니다.
         if (!soloMode) beginReplayRecording();
         syncBackgroundMusic();
+        // ONNX 적을 골랐으면 모델을 다 불러온 뒤에 카운트다운이 시작된다.
+        prepareGameOnnxModels([controller], () => openOpponentMenu(opponentMenuRule));
     }
 
     /**
@@ -2331,14 +2631,31 @@
         return Boolean(learningApiConfig && game && !game.tutorial && !game.watch && game.players?.[0]?.controller === null);
     }
 
-    /** 실제 게임 보드와 현재 조작 쌍·경과 시간·피버 상태를 learning.py의 관측 벡터로 변환한다. @param {PlayerState} player 관측할 사용자 플레이어 @returns {number[]} 관측 벡터 */
-    function getLearningObservation(player) {
+    /**
+     * 임의의 보드·조작 쌍·상태를 learning.py(`common.py`의 `encode_observation_values`)와 같은
+     * 528개 관측 벡터로 인코딩한다. 실제 플레이어의 현재 상태(`getLearningObservation`)와
+     * ONNX 적이 평가할 애프터스테이트가 같은 계약을 쓰도록 이 함수 하나만 사용한다.
+     * @param {object} state 인코딩할 상태
+     * @param {(string|null)[][]} state.board 아래 행부터의 보드. 화면에 보이는 12행만 사용한다.
+     * @param {(string|null)[]} state.pair 조작 쌍의 두 색
+     * @param {number} state.attack 누적 ATTACK
+     * @param {number} state.turn 지금까지 놓은 쌍 수
+     * @param {number} state.incomingDamage 아직 상쇄되지 않은 피해량
+     * @param {boolean} state.feverRule 피버 룰 대전 여부
+     * @param {boolean} state.allClearTicket 싹쓸이 티켓 보유 여부
+     * @param {number} state.elapsedMs 대전 경과 시간(ms)
+     * @param {number} state.marginRate 현재 마진 레이트
+     * @param {number} state.timeProgressMultiplier 현재 시간 진행 배율
+     * @param {object|null} state.fever 피버 상태. 피버 룰이 아니면 null이다.
+     * @returns {number[]} 관측 벡터
+     */
+    function buildObservationValues(state) {
         const values = [];
         // common.py와 동일하게 빈 칸, 방해뿌요, 다섯 색을 독립 채널로 기록한다.
         for (let channel = 0; channel < COLORS.length + 2; channel += 1) {
             for (let y = 0; y < VISIBLE_ROWS; y += 1) {
                 for (let x = 0; x < COLUMNS; x += 1) {
-                    const color = player.board[y]?.[x] || null;
+                    const color = state.board[y]?.[x] || null;
                     values.push(channel === 0
                         ? Number(!color)
                         : channel === 1
@@ -2347,22 +2664,21 @@
                 }
             }
         }
-        const activeColors = player.active?.colors || [];
-        for (const color of activeColors.slice(0, 2)) {
+        for (const color of (state.pair || []).slice(0, 2)) {
             for (const candidate of COLORS) values.push(Number(color === candidate));
         }
         while (values.length < VISIBLE_ROWS * COLUMNS * (COLORS.length + 2) + COLORS.length * 2) values.push(0);
         const clampRatio = (value, maximum) => Math.min(Math.max(Number(value) || 0, 0), maximum) / maximum;
-        const fever = player.fever || {};
+        const fever = state.fever || {};
         values.push(
-            clampRatio(player.attack, 30),
-            clampRatio(player.placedPairCount, 100),
-            clampRatio(player.damage, 30),
-            Number(game?.feverRule === true),
-            Number(player.allClearTicket === true),
-            clampRatio(game?.elapsed, 600000),
-            clampRatio(game?.marginRate ?? MARGIN_RATE_SCHEDULE[0].rate, 70),
-            clampRatio(Math.log2(Math.max(1, game?.timeProgressMultiplier || 1)), 10),
+            clampRatio(state.attack, 30),
+            clampRatio(state.turn, 100),
+            clampRatio(state.incomingDamage, 30),
+            Number(state.feverRule === true),
+            Number(state.allClearTicket === true),
+            clampRatio(state.elapsedMs, 600000),
+            clampRatio(state.marginRate ?? MARGIN_RATE_SCHEDULE[0].rate, 70),
+            clampRatio(Math.log2(Math.max(1, state.timeProgressMultiplier || 1)), 10),
             Number(fever.active === true),
             clampRatio(fever.gauge, FEVER_GAUGE_MAX),
             clampRatio(fever.nextTime ?? FEVER_INITIAL_TIME, FEVER_MAX_TIME),
@@ -2371,6 +2687,23 @@
             clampRatio(fever.damage, 30)
         );
         return values;
+    }
+
+    /** 실제 게임 보드와 현재 조작 쌍·경과 시간·피버 상태를 learning.py의 관측 벡터로 변환한다. @param {PlayerState} player 관측할 사용자 플레이어 @returns {number[]} 관측 벡터 */
+    function getLearningObservation(player) {
+        return buildObservationValues({
+            board: player.board,
+            pair: player.active?.colors || [],
+            attack: player.attack,
+            turn: player.placedPairCount,
+            incomingDamage: player.damage,
+            feverRule: game?.feverRule === true,
+            allClearTicket: player.allClearTicket === true,
+            elapsedMs: game?.elapsed,
+            marginRate: game?.marginRate,
+            timeProgressMultiplier: game?.timeProgressMultiplier,
+            fever: player.fever || null
+        });
     }
 
     /** 학습 API 요청을 순서대로 비동기 전송한다. @param {object} payload 학습 이벤트 본문 @returns {void} */
@@ -2527,14 +2860,19 @@
         ));
     }
 
-    /** 구경 모드에 사용할 수 있는 적 목록을 반환한다. observation 코드 적용 중에는 표시되는 출시 적 중 솔로몬·안드로말리우스·단탈리온만 제외한다. @returns {{createController:()=>Enemy,className:string,classType:string,sortPriority:number,hidden:boolean,notAvail:boolean}[]} 후보 적 목록 */
+    /** 구경 모드에 사용할 수 있는 적 목록을 반환한다. observation 코드 적용 중에는 표시되는 출시 적 중 솔로몬·안드로말리우스·단탈리온만 제외한다. ONNX 추론으로 판단하는 적은 런타임 유무와 무관하게 항상 빠진다. @returns {{createController:()=>Enemy,className:string,classType:string,sortPriority:number,hidden:boolean,notAvail:boolean,requiresOnnx:boolean}[]} 후보 적 목록 */
     function getWatchOpponentCandidates() {
-        if (isObservationCodeApplied()) return OPPONENTS.filter((entry) => !entry.hidden && !entry.notAvail && !WATCH_EXCLUDED_OPPONENT_TYPES.has(entry.classType));
-        return OPPONENTS.filter((entry) => !entry.hidden && !entry.notAvail
-            && !WATCH_EXCLUDED_OPPONENT_TYPES.has(entry.classType) && hasWatchEligibleClear(entry.className));
+        // ONNX 추론으로 판단하는 적은 구경 대전의 선정 대상에서 아예 제외한다.
+        const usable = getVisibleOpponents().filter((entry) => !entry.notAvail && !entry.requiresOnnx
+            && !WATCH_EXCLUDED_OPPONENT_TYPES.has(entry.classType));
+        if (isObservationCodeApplied()) return usable;
+        return usable.filter((entry) => hasWatchEligibleClear(entry.className));
     }
 
-    /** 구경 모드 후보 중 종류가 서로 다른 적 두 명을 무작위로 선정한다. @returns {object[]|null} 선정된 두 적 등록 항목 */
+    /**
+     * 구경 모드 후보 중 종류가 서로 다른 적 두 명을 무작위로 선정한다.
+     * @returns {object[]|null} 선정된 두 적 등록 항목
+     */
     function selectWatchOpponents() {
         const candidates = getWatchOpponentCandidates();
         if (candidates.length < 2) return null;
@@ -3037,12 +3375,21 @@
                 const placement = findLandingPlacement(player, x, rotation);
                 if (!placement) continue;
                 const positions = activeCells(placement).map(({ x: cellX, y: cellY }) => ({ x: cellX, y: cellY }));
+                // 공격력과 연쇄 수를 따로 구하면 같은 연쇄를 두 번 돌게 되므로 한 번에 받는다.
+                const result = simulatePlacementResult(player.board, player.active.colors, positions);
                 simulations.push({
                     x,
                     rotation,
                     positions,
-                    attack: player.estimateAttack(player.active.colors, positions),
-                    combo: player.estimateCombo(player.active.colors, positions)
+                    attack: result?.attack ?? 0,
+                    combo: result?.combo ?? 0,
+                    /**
+                     * 연쇄가 모두 끝난 뒤의 보드다. 놓을 수 없는 배치면 null이다.
+                     * 이미 계산해 둔 값을 버리지 않고 남겨, 결과 보드까지 필요한 쪽(ONNX 적의
+                     * 애프터스테이트 인코딩)이 같은 연쇄를 다시 돌리지 않게 한다.
+                     * 여러 곳이 같은 배열을 함께 보므로 읽기 전용으로만 사용하고 절대 수정하지 않는다.
+                     */
+                    board: result?.board ?? null
                 });
             }
         }
@@ -3648,20 +3995,7 @@
      * @returns {(string|null)[][]|null} 안정 상태 보드. 유효하지 않은 배치면 null
      */
     function simulatePlacementBoard(sourceBoard, colors, positions) {
-        if (!Array.isArray(colors) || !Array.isArray(positions) || colors.length !== 2 || positions.length !== 2) return null;
-        let board = sourceBoard.map((row) => [...row]);
-        for (let index = 0; index < 2; index += 1) {
-            const { x, y } = positions[index] || {};
-            if (!COLORS.includes(colors[index]) || !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= ROWS || board[y][x]) return null;
-            board[y][x] = colors[index];
-        }
-        board = collapseBoard(board);
-        while (true) {
-            const exploding = findExplosionsOnBoard(board);
-            if (!exploding.length) return board;
-            applyExplosionResolution(board, getExplosionResolution(board, exploding));
-            board = collapseBoard(board);
-        }
+        return simulatePlacementResult(sourceBoard, colors, positions)?.board ?? null;
     }
 
     /**
@@ -4474,29 +4808,7 @@
      * @returns {number} 연쇄 전체의 예상 ATTACK 값
      */
     function estimateAttack(sourceBoard, colors, positions) {
-        // 두 색상과 두 좌표가 모두 제공되지 않으면 유효한 가상 배치가 아니다.
-        if (!Array.isArray(colors) || !Array.isArray(positions) || colors.length !== 2 || positions.length !== 2) return 0;
-        let board = sourceBoard.map((row) => [...row]);
-        // 각 뿌요가 필드 안의 빈칸에 놓이는지 확인하며 복사 보드에 배치한다.
-        for (let index = 0; index < 2; index += 1) {
-            const { x, y } = positions[index] || {};
-            if (!COLORS.includes(colors[index]) || !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= ROWS || board[y][x]) return 0;
-            board[y][x] = colors[index];
-        }
-        board = collapseBoard(board);
-        let combo = 0;
-        let attack = 0;
-        // 폭발과 중력을 반복해 전체 연쇄의 공격력을 누적한다.
-        while (true) {
-            const explosionGroups = findExplosionGroupsOnBoard(board);
-            if (!explosionGroups.length) return attack;
-            const exploding = explosionGroups.flatMap((group) => group.cells);
-            const resolution = getExplosionResolution(board, exploding);
-            combo += 1;
-            attack += calculateExplosionAttack(calculateExplosionPoint(explosionGroups, combo, resolution.brokenHardGarbageCount));
-            applyExplosionResolution(board, resolution);
-            board = collapseBoard(board);
-        }
+        return simulatePlacementResult(sourceBoard, colors, positions)?.attack ?? 0;
     }
 
     /**
@@ -4507,23 +4819,41 @@
      * @returns {number} 연쇄 전체의 예상 연쇄 수
      */
     function estimateCombo(sourceBoard, colors, positions) {
+        return simulatePlacementResult(sourceBoard, colors, positions)?.combo ?? 0;
+    }
+
+    /**
+     * 두 뿌요를 가상 배치하여 연쇄가 모두 끝난 뒤의 보드와 연쇄 수, ATTACK을 한 번에 계산한다.
+     * 결과 보드·연쇄 수·ATTACK을 따로 구하던 `simulatePlacementBoard()`·`estimateCombo()`·
+     * `estimateAttack()`이 모두 이 함수 하나를 거치므로, 같은 배치를 여러 번 시뮬레이션하지 않고
+     * 세 값이 서로 어긋날 일도 없다. 애프터스테이트를 인코딩해야 하는 ONNX 적은 세 값을 함께 쓴다.
+     * @param {(string|null)[][]} sourceBoard 배치 전 보드
+     * @param {string[]} colors 배치할 두 뿌요 색상
+     * @param {{x:number, y:number}[]} positions 배치할 두 뿌요 좌표
+     * @returns {{board:(string|null)[][], combo:number, attack:number}|null} 연쇄 후 보드와 연쇄 수, ATTACK. 유효하지 않은 배치면 null이다.
+     */
+    function simulatePlacementResult(sourceBoard, colors, positions) {
         // 두 색상과 두 좌표가 모두 제공되지 않으면 유효한 가상 배치가 아니다.
-        if (!Array.isArray(colors) || !Array.isArray(positions) || colors.length !== 2 || positions.length !== 2) return 0;
+        if (!Array.isArray(colors) || !Array.isArray(positions) || colors.length !== 2 || positions.length !== 2) return null;
         let board = sourceBoard.map((row) => [...row]);
         // 각 뿌요가 필드 안의 빈칸에 놓이는지 확인하며 복사 보드에 배치한다.
         for (let index = 0; index < 2; index += 1) {
             const { x, y } = positions[index] || {};
-            if (!COLORS.includes(colors[index]) || !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= ROWS || board[y][x]) return 0;
+            if (!COLORS.includes(colors[index]) || !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= ROWS || board[y][x]) return null;
             board[y][x] = colors[index];
         }
         board = collapseBoard(board);
         let combo = 0;
-        // 더 이상 폭발이 없을 때까지 연쇄 횟수를 센다.
+        let attack = 0;
+        // 폭발과 중력을 반복해 전체 연쇄의 공격력을 누적하고, 마지막 보드를 그대로 돌려준다.
         while (true) {
-            const exploding = findExplosionsOnBoard(board);
-            if (!exploding.length) return combo;
+            const explosionGroups = findExplosionGroupsOnBoard(board);
+            if (!explosionGroups.length) return { board, combo, attack };
+            const exploding = explosionGroups.flatMap((group) => group.cells);
+            const resolution = getExplosionResolution(board, exploding);
             combo += 1;
-            applyExplosionResolution(board, getExplosionResolution(board, exploding));
+            attack += calculateExplosionAttack(calculateExplosionPoint(explosionGroups, combo, resolution.brokenHardGarbageCount));
+            applyExplosionResolution(board, resolution);
             board = collapseBoard(board);
         }
     }
@@ -7710,16 +8040,14 @@
         return settings?.aiProvider === 'LM Studio';
     }
 
-    /** AI API 테스트에 필요한 입력값이 모두 채워졌는지 확인한다. Prompt API는 별도 입력값이 필요 없다. @param {object|null} settings 설정값 @returns {boolean} 실행 가능 여부 */
+    /** AI API 테스트에 필요한 입력값이 모두 채워졌는지 확인한다. 제공자를 고르지 않았으면 실행할 수 없다. @param {object|null} settings 설정값 @returns {boolean} 실행 가능 여부 */
     function hasCompleteAiApiSettings(settings) {
-        if (isPromptApiProvider(settings)) return promptApiSupported;
-        const requiredKeys = ['aiProvider', 'aiApiKey', 'aiModel', ...(isLmStudioProvider(settings) || isLocalAiProvider(settings) ? ['aiApiURL'] : [])];
+        const requiredKeys = ['aiProvider', 'aiApiURL', 'aiApiKey', 'aiModel'];
         return Boolean(settings && requiredKeys.every((key) => typeof settings[key] === 'string' && settings[key].trim()));
     }
 
     /** 편집 중인 AI 설정이 저장된 설정과 같은지 확인한다. @returns {boolean} 저장된 설정 사용 여부 */
     function hasSavedAiApiSettings() {
-        if (isPromptApiProvider(settingsDraft)) return Boolean(store.settings && settingsDraft.aiProvider === store.settings.aiProvider);
         return Boolean(settingsDraft && store.settings
             && settingsDraft.aiProvider === store.settings.aiProvider
             && settingsDraft.aiApiURL === store.settings.aiApiURL
@@ -7734,9 +8062,9 @@
 
     /** API 테스트 실행 가능 여부를 반영한 설정 화면 포커스 순서를 만든다. @returns {number[]} 포커스 인덱스 목록 */
     function getSelectableSettingsFocuses() {
-        const aiSettingFocuses = isPromptApiProvider(settingsDraft) || isLocalAiProvider(settingsDraft) ? [] : [
-            ...(isLmStudioProvider(settingsDraft) ? [7] : []), 8, 9
-        ];
+        // URL·키·모델명은 사용자가 직접 입력하는 LM Studio에서만 쓴다. Local AI는 고정값을 채우고,
+        // 아무 제공자도 고르지 않았으면 입력할 대상 자체가 없으므로 세 행을 모두 건너뛴다.
+        const aiSettingFocuses = isLmStudioProvider(settingsDraft) ? [7, 8, 9] : [];
         return [0, 1, 2, 3, 4, 5, 6, ...aiSettingFocuses, ...(canRunAiApiTest() ? [10] : []), 11, 12, 13, 14, 15, 16];
     }
 
@@ -7759,17 +8087,6 @@
         settingsApiTestPending = false;
     }
 
-    /** Responses API 응답에서 생성된 텍스트를 꺼낸다. @param {object} response API 응답 @returns {string|null} JSON 텍스트 */
-    function getResponsesOutputText(response) {
-        if (typeof response?.output_text === 'string') return response.output_text;
-        for (const outputItem of response?.output || []) {
-            for (const content of outputItem?.content || []) {
-                if (content?.type === 'output_text' && typeof content.text === 'string') return content.text;
-            }
-        }
-        return null;
-    }
-
     /** Chat Completions 응답에서 생성된 텍스트를 꺼낸다. @param {object} response API 응답 @returns {string|null} JSON 텍스트 */
     function getChatCompletionsOutputText(response) {
         const content = response?.choices?.[0]?.message?.content;
@@ -7788,47 +8105,28 @@
         return new URL(path, directoryBaseURL).href;
     }
 
-    /** HTTP 기반 제공자에 맞는 구조화 JSON 생성 요청을 만든다. @param {object} settings 저장 설정 @param {string} prompt 사용자 프롬프트 @param {string} schemaName 스키마 이름 @param {object} schema JSON Schema @param {number} maxTokens 최대 출력 토큰 @returns {{url:string,options:object,readOutputText:(response:object)=>string|null}} 요청 정보 */
+    /** 구조화 JSON 생성 요청을 만든다. @param {object} settings 저장 설정 @param {string} prompt 사용자 프롬프트 @param {string} schemaName 스키마 이름 @param {object} schema JSON Schema @param {number} maxTokens 최대 출력 토큰 @returns {{url:string,options:object,readOutputText:(response:object)=>string|null}} 요청 정보 */
     function createStructuredAiRequest(settings, prompt, schemaName, schema, maxTokens) {
-        const headers = { Authorization: `Bearer ${settings.aiApiKey}`, 'Content-Type': 'application/json' };
-        // Local AI 서버의 /v1/chat/completions는 LM Studio API를 흉내내므로 같은 요청 형식을 쓴다.
-        if (isLmStudioProvider(settings) || isLocalAiProvider(settings)) {
-            return {
-                url: getLmStudioChatCompletionsURL(settings.aiApiURL),
-                options: {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({
-                        model: settings.aiModel,
-                        messages: [{ role: 'user', content: prompt }],
-                        response_format: { type: 'json_schema', json_schema: { name: schemaName, strict: true, schema } },
-                        max_tokens: maxTokens,
-                        stream: false
-                    })
-                },
-                readOutputText: getChatCompletionsOutputText
-            };
-        }
+        // Local AI 서버의 /v1/chat/completions는 LM Studio API를 흉내내므로 두 제공자가 같은 요청 형식을 쓴다.
         return {
-            url: convertURL(OPENAI_RESPONSES_API_URL),
+            url: getLmStudioChatCompletionsURL(settings.aiApiURL),
             options: {
                 method: 'POST',
-                headers,
+                headers: { Authorization: `Bearer ${settings.aiApiKey}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: settings.aiModel,
-                    reasoning: { effort: 'low' },
-                    input: [{ role: 'user', content: prompt }],
-                    text: { format: { type: 'json_schema', name: schemaName, strict: true, schema } },
-                    max_output_tokens: maxTokens
+                    messages: [{ role: 'user', content: prompt }],
+                    response_format: { type: 'json_schema', json_schema: { name: schemaName, strict: true, schema } },
+                    max_tokens: maxTokens,
+                    stream: false
                 })
             },
-            readOutputText: getResponsesOutputText
+            readOutputText: getChatCompletionsOutputText
         };
     }
 
     /**
      * 제공자별 구조화 JSON 생성 결과 텍스트를 요청한다.
-     * Prompt API 세션은 한 번의 요청에만 사용하고 항상 해제해 이전 턴의 문맥이 이어지지 않게 한다.
      * @param {object} settings 저장 설정
      * @param {string} prompt 사용자 프롬프트
      * @param {string} schemaName 스키마 이름
@@ -7838,16 +8136,6 @@
      * @returns {Promise<string|null>} 구조화 JSON 텍스트
      */
     async function requestStructuredAiOutput(settings, prompt, schemaName, schema, maxTokens, signal) {
-        if (isPromptApiProvider(settings)) {
-            if (!promptApiSupported) throw new Error('Prompt API를 지원하지 않는 브라우저입니다.');
-            const languageModel = globalThis.LanguageModel;
-            const session = await languageModel.create({ ...PROMPT_API_LANGUAGE_OPTIONS, signal });
-            try {
-                return await session.prompt(prompt, { responseConstraint: schema, signal });
-            } finally {
-                if (typeof session.destroy === 'function') session.destroy();
-            }
-        }
         const request = createStructuredAiRequest(settings, prompt, schemaName, schema, maxTokens);
         if (signal) request.options.signal = signal;
         const response = await window.fetch(request.url, request.options);
@@ -7985,8 +8273,8 @@
             { label: '사운드 데이터 URL', value: settingsDraft.soundDataURL, kind: 'text' },
             { label: 'AI 서비스 제공자', value: settingsDraft.aiProvider, kind: 'radio', options: getAiServiceProviders().map((provider, index) => ({ label: provider, value: provider, x: x + index * step, translateLabel: false })) },
             { label: 'AI API URL', value: settingsDraft.aiApiURL, kind: 'text', disabled: !isLmStudioProvider(settingsDraft) },
-            { label: 'AI API 키', value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text', disabled: isPromptApiProvider(settingsDraft) || isLocalAiProvider(settingsDraft) },
-            { label: '사용 모델명', value: settingsDraft.aiModel, kind: 'text', disabled: isPromptApiProvider(settingsDraft) || isLocalAiProvider(settingsDraft) }
+            { label: 'AI API 키', value: settingsDraft.aiApiKey ? '•'.repeat(Math.min(30, settingsDraft.aiApiKey.length)) : '', kind: 'text', disabled: !isLmStudioProvider(settingsDraft) },
+            { label: '사용 모델명', value: settingsDraft.aiModel, kind: 'text', disabled: !isLmStudioProvider(settingsDraft) }
         ].map((row, index) => ({ ...row, y: SETTINGS_UI_LAYOUT.rowYs[index] }));
     }
 
@@ -8022,10 +8310,13 @@
                 context.fillStyle = '#4cc9b0'; context.fillRect(layout.controlX + 2, row.y - 5, (layout.sliderWidth - 4) * row.value / 100, 10);
                 context.fillStyle = '#f5fbfc'; context.textAlign = 'right'; context.fillText(String(row.value), 920, row.y + 4);
             } else if (row.kind === 'radio') {
+                // 아무 선택지도 고르지 않은 상태에서는 포커스를 표시할 선택지가 없으므로 모든 선택지에 포커스 테두리를 그린다.
+                const noneSelected = !row.options.some((option) => row.value === option.value);
                 row.options.forEach((option) => {
                     const selected = row.value === option.value;
+                    const focusHighlighted = focused && (selected || noneSelected);
                     context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(option.x, row.y - layout.controlHeight / 2, layout.optionWidth, layout.controlHeight);
-                    context.strokeStyle = focused && selected ? '#ffd54f' : '#426474'; context.lineWidth = focused && selected ? 3 : 2; context.strokeRect(option.x, row.y - layout.controlHeight / 2, layout.optionWidth, layout.controlHeight);
+                    context.strokeStyle = focusHighlighted ? '#ffd54f' : '#426474'; context.lineWidth = focusHighlighted ? 3 : 2; context.strokeRect(option.x, row.y - layout.controlHeight / 2, layout.optionWidth, layout.controlHeight);
                     context.beginPath(); context.arc(option.x + 14, row.y, 5, 0, Math.PI * 2); context.fillStyle = '#d8f2f5'; context.strokeStyle = '#d8f2f5'; context.lineWidth = 2; context.stroke();
                     if (selected) { context.beginPath(); context.arc(option.x + 14, row.y, 2.5, 0, Math.PI * 2); context.fill(); }
                     context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(option.translateLabel ? translate(option.label) : option.label, option.x + (layout.optionWidth + 14) / 2, row.y + 4);
@@ -8222,7 +8513,7 @@
         }
         if (type === 'card') return [];
         const expressions = ['normal', 'crisis', 'defeated'];
-        return getVisibleOpponents().map((entry) => {
+        return getGalleryOpponents().map((entry) => {
             const enemy = entry.createController();
             return {
                 id: entry.classType, displayLabel: translate(enemy.getName()),
@@ -9407,8 +9698,13 @@
             context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
             drawField(game.players[0], game.players[1]); drawField(game.players[1], game.players[0]); drawCenter(); drawEnergyTransfers();
             if (shouldShowVirtualController()) drawVirtualController();
+            // ONNX 모델 로딩 중에는 카운트다운 대신 로딩 안내를 최상단에 표시한다.
+            if (game.onnxLoading) {
+                context.fillStyle = 'rgba(3, 11, 19, 0.62)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+                context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `30px ${MESSAGE_FONT}`;
+                context.fillText(translate('인공지능 모델을 불러오는 중...'), WIDTH / 2, 390);
             // 시작 또는 재개 카운트다운 중에는 카운트다운 오버레이를 최상단에 표시한다.
-            if (game.countdown > 0) {
+            } else if (game.countdown > 0) {
                 context.fillStyle = 'rgba(3, 11, 19, 0.62)'; context.fillRect(0, 0, WIDTH, HEIGHT);
                 context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `76px ${TITLE_FONT}`;
                 context.fillText(String(Math.ceil(game.countdown / 1000)), WIDTH / 2, 390);
@@ -9567,8 +9863,10 @@
             // 리플레이 재생은 기록된 프레임만 반영하므로 일반 진행 로직을 사용하지 않는다.
             updateReplayPlayback(delta);
         } else if (game && game.running && !game.paused) {
-            // 카운트다운이 끝나면 양쪽 플레이어의 첫 턴을 시작한다.
-            if (game.countdown > 0) {
+            if (game.onnxLoading) {
+                // ONNX 모델을 다 불러오기 전에는 카운트다운도 대전도 진행하지 않고 로딩 안내만 보여 준다.
+            } else if (game.countdown > 0) {
+                // 카운트다운이 끝나면 양쪽 플레이어의 첫 턴을 시작한다.
                 game.countdown = Math.max(0, game.countdown - delta);
                 if (!game.countdown && game.countdownStartsGame) {
                     game.countdownStartsGame = false;
@@ -9702,8 +10000,8 @@
         if (settingsFocus === 0) return 'playerName';
         if (settingsFocus === 5) return 'soundDataURL';
         if (settingsFocus === 7 && isLmStudioProvider(settingsDraft)) return 'aiApiURL';
-        if (settingsFocus === 8 && !isPromptApiProvider(settingsDraft) && !isLocalAiProvider(settingsDraft)) return 'aiApiKey';
-        if (settingsFocus === 9 && !isPromptApiProvider(settingsDraft) && !isLocalAiProvider(settingsDraft)) return 'aiModel';
+        if (settingsFocus === 8 && isLmStudioProvider(settingsDraft)) return 'aiApiKey';
+        if (settingsFocus === 9 && isLmStudioProvider(settingsDraft)) return 'aiModel';
         return null;
     }
 
@@ -10910,8 +11208,18 @@
     /** 테스트 기능 활성화를 위한 코드를 등록한다. @param {string} code  */
     function addCode(code) {
         if (!code || typeof code !== 'string') throw new TypeError('code는 문자열이어야 합니다.');
+
+        // 예외사항 해당 시 적용
+        if (code.startsWith('sound:')) {
+            // sound: 뒤의 문자열은 사운드 데이터 URL로 처리하고, 일반 코드 목록에는 추가하지 않는다.
+            const soundURL = normalizeSoundDataURL(code.slice('sound:'.length));
+            loadSoundDataURL(soundURL, true);
+            if (settingsDraft) settingsDraft.soundDataURL = soundURL;
+            return;
+        }
+
         
-        // codeArchive 의 키로 존재하는 코드만 입력 가능
+        // 그외의 경우 codeArchive 의 키로 존재하는 코드만 입력 가능
         const fAction = codeArchive[code];
         if (typeof(fAction) != 'function') { alert('유효하지 않은 코드입니다.'); return; }
 
@@ -11265,8 +11573,8 @@
         if (typeof document === 'undefined' || typeof window === 'undefined') {
             throw new Error('Web Puyo 초기화에는 브라우저 DOM 환경이 필요합니다.');
         }
-        promptApiSupported = checkPromptApiSupport();
-        startPromptApiDownloadIfNeeded();
+        // ONNX 런타임은 선택 라이브러리다. 여기서 한 번 확인한 결과로 추론 기반 적의 표시 여부를 정한다.
+        refreshOnnxRuntimeAvailability();
         prepareFontImportStyle();
         prepareRuntimeLayoutStyle();
         languageCode = navigator.language || navigator.userLanguage || 'ko';
@@ -12291,6 +12599,12 @@
             this.sortPriority = 1;
             this.hidden = false;
             this.notAvail = false;
+            /**
+             * 판단에 ONNX 추론이 필요한 적인지 여부다. `hidden`·`notAvail`과 달리 갤러리에는 영향을 주지 않고,
+             * ONNX 런타임이 없는 페이지의 적 선택 화면과 구경 모드 후보에서만 이 적을 감춘다.
+             * @type {boolean}
+             */
+            this.requiresOnnx = false;
             /** 이번 턴에 공통 규칙이 미리 선택한 착지 후보다. 적 구현은 chooseTarget/chooseRotate에서 이를 우선할 수 있다. @type {object|null} */
             this.preparedPlacement = null;
             /** Worker 탐색 또는 적별 공격 판단이 선택한 현재 턴 배치 후보다. @type {object|null} */
@@ -14376,14 +14690,330 @@
     }
 
     /**
-     * 플라우로스는 강하고 무서운 표범 모습으로 나타나며, 삼각형 밖에서는 거짓말로 소환자를 속인다는
-     * 전승을 귀엽지만 위엄 있는 모습으로 각색한 출시 예정 적이다.
+     * ONNX 가치망으로 배치를 고르는 적들의 공통 클래스다.
+     *
+     * `python/learning.py`의 `select_afterstate()`를 그대로 옮겨 왔다. 놓을 수 있는 배치마다 연쇄까지
+     * 끝난 결과 보드(애프터스테이트)를 만들어 `common.py`와 같은 528개 관측 벡터로 인코딩한 뒤, 한 번의
+     * 추론으로 모든 후보의 가치를 받아 `move_reward + DISCOUNT_GAMMA * V(애프터스테이트)`가 가장 큰
+     * 배치를 고른다. 모델은 행동을 직접 내지 않는 가치망이므로 후보 열거와 보상 계산은 이쪽에서 한다.
+     *
+     * 솔로몬과 달리 파이썬 백엔드를 거치지 않고 브라우저의 ONNX Runtime for Web으로 추론한다. 추론은
+     * 비동기라 그동안에도 자연 낙하는 계속되고, 결과가 나오기 전에 뿌요가 닿으면 그 턴은 그대로 넘어간다.
+     *
+     * 하위 클래스는 `modelPath`에 자기 모델을 지정하고 `getClassType()`·`getName()`·`drawPortrait()`만
+     * 재정의하면 된다.
      */
-    class Flauros extends BundledEnemy {
+    class OnnxEnemy extends BundledEnemy {
+        constructor() {
+            super();
+            // 이 적은 ONNX 런타임이 없는 페이지의 적 선택 화면과 구경 후보에서 숨긴다.
+            this.requiresOnnx = true;
+            /**
+             * 이 적이 사용할 ONNX 모델의 `src/` 기준 상대 경로다. 적과 모델은 1:1로 대응하므로
+             * 하위 클래스가 각자 model02.onnx, model03.onnx처럼 다른 값을 지정한다.
+             * @type {string}
+             */
+            this.modelPath = 'onnx/model01.onnx';
+            /** 이미 만들어 둔 추론 세션이다. 대전 시작 전에 `prepareModel()`이 채운다. @type {object|null} */
+            this.session = null;
+            /** @type {'idle'|'pending'|'ready'|'fallback'|'cancelled'} */
+            this.decisionState = 'idle';
+            /** 추론이 끝났을 때 아직 같은 턴인지 확인하기 위한 판별용 플레이어다. @type {PlayerState|null} */
+            this.turnPlayer = null;
+            /** 추론을 시작했던 조작 뿌요다. 턴이 바뀌면 늦게 온 결과를 버리는 근거가 된다. @type {object|null} */
+            this.turnActive = null;
+            /** 늦게 도착한 추론 결과를 버리기 위해 턴마다 올리는 일련번호다. @type {number} */
+            this.inferenceToken = 0;
+            /** 이번 턴 추론의 마감 시한 타이머다. @type {number|null} */
+            this.decisionTimeoutId = null;
+            this.targetX = 2;
+            this.targetRotation = 0;
+            this.fastDownElapsed = 0;
+        }
+
+        getClassType() { return 'OnnxEnemy'; }
+
+        /** 이번 턴의 추론 마감 타이머를 정리한다. @returns {void} */
+        clearDecisionTimeout() {
+            if (this.decisionTimeoutId === null) return;
+            clearTimeout(this.decisionTimeoutId);
+            this.decisionTimeoutId = null;
+        }
+
+        /**
+         * 대전을 시작하기 전에 ONNX 세션을 만들어 둔다.
+         * 실패하면 예외를 그대로 올려서 호출자가 대전을 시작하지 않고 안내 문구를 띄우게 한다.
+         * @returns {Promise<void>}
+         */
+        async prepareModel() {
+            this.session = await loadOnnxSession(this.modelPath);
+        }
+
+        /** 캡처한 뿌요가 아직 이 컨트롤러의 현재 조작 턴인지 확인한다. @param {PlayerState} player CPU 플레이어 @returns {boolean} 같은 턴이면 true */
+        isCurrentTurn(player) {
+            return Boolean(game?.running && player === this.turnPlayer && player.controller === this
+                && player.phase === 'control' && player.active === this.turnActive);
+        }
+
+        /**
+         * 이번 턴에 실제로 사용할 수 있는 배치 후보만 추린다.
+         * 관측값의 높이 조건만 보는 파이썬과 달리, 가로 이동 경로와 회전 킥까지 확인해 실제로 도달할 수
+         * 있는 배치만 남긴다.
+         * @param {PlayerState} player CPU 플레이어
+         * @returns {object[]} 사용 가능한 배치 후보 목록
+         */
+        getUsablePlacements(player) {
+            return player.aiSimulations.filter((simulation) => this.canUsePlacement(player, simulation));
+        }
+
+        /** 실제 뿌요가 목표 X까지 먼저 이동한 뒤 그 회전까지 도달할 수 있는지 검사한다. @param {PlayerState} player CPU 플레이어 @param {{x:number,rotation:number}} result 검사할 배치 @returns {boolean} 사용 가능 여부 */
+        canUsePlacement(player, result) {
+            if (!player.active || !result || !Number.isInteger(result.x) || !Number.isInteger(result.rotation)
+                || result.x < 0 || result.x >= COLUMNS || result.rotation < 0 || result.rotation > 3) return false;
+            if (!player.aiSimulations.some((simulation) => simulation.x === result.x && simulation.rotation === result.rotation)) return false;
+            let simulated = { ...player.active };
+            while (simulated.x !== result.x) {
+                const candidate = { ...simulated, x: simulated.x + (simulated.x < result.x ? 1 : -1) };
+                if (!canPlace(player, candidate)) return false;
+                simulated = candidate;
+            }
+            while (simulated.rotation !== result.rotation) {
+                const rotationDelta = (result.rotation - simulated.rotation + 4) % 4;
+                const direction = rotationDelta === 3 ? -1 : 1;
+                const candidate = { ...simulated, rotation: (simulated.rotation + direction + 4) % 4 };
+                if (canPlace(player, candidate)) {
+                    simulated = candidate;
+                    continue;
+                }
+                const horizontalKick = candidate.rotation === 1 ? -1 : candidate.rotation === 3 ? 1 : 0;
+                const kicked = { ...candidate, x: candidate.x + horizontalKick };
+                if (horizontalKick && canPlace(player, kicked)) {
+                    simulated = kicked;
+                    continue;
+                }
+                const flipped = { ...simulated, rotation: (simulated.rotation + direction * 2 + 4) % 4 };
+                if (!canPlace(player, flipped)) return false;
+                simulated = flipped;
+            }
+            return simulated.x === result.x;
+        }
+
+        /**
+         * 한 배치의 애프터스테이트 관측 벡터와 그 수의 즉시 보상을 만든다.
+         * ATTACK·싹쓸이 티켓·피버 보정은 `learning.py`의 `_build_afterstate()`와 같은 순서로 적용해야
+         * 가치망이 학습 때 본 것과 같은 입력 분포를 받는다. 무작위인 방해뿌요 낙하는 반영하지 않고,
+         * 상쇄하고 남은 피해량만 스칼라로 남긴다.
+         * @param {PlayerState} player CPU 플레이어
+         * @param {object} simulation 착지 후보
+         * @returns {{simulation:object, reward:number, observation:number[]}|null} 후보 평가 정보. 유효하지 않으면 null이다.
+         */
+        buildAfterstate(player, simulation) {
+            // prepareAiPlacementSimulations()가 이미 돌려 둔 결과가 있으면 같은 연쇄를 다시 돌리지 않는다.
+            // 이 보드는 다른 곳과 공유하므로 읽기만 하며, 후보 목록 밖에서 들어온 배치만 직접 계산한다.
+            const result = simulation.board !== undefined
+                ? { board: simulation.board, combo: simulation.combo, attack: simulation.attack }
+                : simulatePlacementResult(player.board, player.active.colors, simulation.positions);
+            if (!result?.board) return null;
+            const feverRule = game?.feverRule === true;
+            const feverActive = feverRule && player.fever?.active === true;
+            // 피버 중에는 피버 필드 전용 미정산 피해가 그 시점의 실제 피해량이다.
+            const damage = feverActive ? (player.fever?.damage || 0) : (player.damage || 0);
+            let attack = result.attack;
+            let ticket = player.allClearTicket === true;
+            if (feverRule && result.combo > 0 && attack < 1 && damage >= 1) attack = 1;
+            if (result.combo > 0 && !feverRule && ticket) {
+                attack += ALL_CLEAR_TICKET_ATTACK;
+                ticket = false;
+            }
+            if (result.combo > 0 && !feverRule && isAllClearBoard(result.board)) ticket = true;
+            const remainingDamage = damage - Math.min(Math.floor(attack), Math.floor(damage));
+            const fever = player.fever ? {
+                active: feverActive,
+                gauge: player.fever.gauge,
+                nextTime: player.fever.nextTime,
+                targetCombo: player.fever.targetCombo,
+                leftTime: player.fever.leftTime,
+                damage: feverActive ? remainingDamage : player.fever.damage
+            } : null;
+            const observation = buildObservationValues({
+                board: result.board,
+                // 애프터스테이트의 조작 쌍 자리에는 이 수 다음에 내려올 쌍을 넣는다.
+                pair: player.nextPairs?.[0] || [],
+                attack,
+                turn: (player.placedPairCount || 0) + 1,
+                incomingDamage: remainingDamage,
+                feverRule,
+                allClearTicket: ticket,
+                elapsedMs: game?.elapsed,
+                marginRate: game?.marginRate,
+                timeProgressMultiplier: game?.timeProgressMultiplier,
+                fever: feverRule ? fever : null
+            });
+            // common.py의 move_reward()와 같은 계약이다. 같은 ATTACK이라도 더 긴 연쇄를 높게 본다.
+            return { simulation, reward: result.attack + result.combo * result.combo, observation };
+        }
+
+        /**
+         * 이번 턴의 모든 후보를 한 번에 추론해 가장 좋은 배치를 고른다.
+         * @param {PlayerState} player CPU 플레이어
+         * @param {number} token 이 추론을 시작한 턴의 일련번호
+         * @returns {Promise<void>}
+         */
+        async decidePlacement(player, token) {
+            try {
+                const runtime = getOnnxRuntime();
+                if (!runtime) throw new Error('ONNX 런타임(ort)이 없습니다.');
+                if (!this.session) throw new Error(`${this.modelPath} 추론 세션이 준비되지 않았습니다.`);
+                const candidates = this.getUsablePlacements(player)
+                    .map((simulation) => this.buildAfterstate(player, simulation))
+                    .filter((candidate) => candidate !== null);
+                if (!candidates.length) throw new Error('추론할 수 있는 배치 후보가 없습니다.');
+                const inputData = new Float32Array(candidates.length * ONNX_OBSERVATION_SIZE);
+                candidates.forEach((candidate, index) => {
+                    if (candidate.observation.length !== ONNX_OBSERVATION_SIZE) {
+                        throw new Error(`관측 벡터 길이 오류: ${candidate.observation.length} != ${ONNX_OBSERVATION_SIZE}`);
+                    }
+                    inputData.set(candidate.observation, index * ONNX_OBSERVATION_SIZE);
+                });
+                const tensor = new runtime.Tensor('float32', inputData, [candidates.length, ONNX_OBSERVATION_SIZE]);
+                const outputs = await this.session.run({ [ONNX_INPUT_NAME]: tensor });
+                // 추론을 기다리는 동안 턴이 넘어갔으면 이 결과는 버린다.
+                if (token !== this.inferenceToken || !this.isCurrentTurn(player)) return;
+                const values = outputs?.[ONNX_OUTPUT_NAME]?.data;
+                if (!values || values.length !== candidates.length) {
+                    throw new Error(`추론 출력 길이 오류: ${values?.length} != ${candidates.length}`);
+                }
+                let best = null;
+                let bestScore = -Infinity;
+                candidates.forEach((candidate, index) => {
+                    const value = Number(values[index]);
+                    if (!Number.isFinite(value)) return;
+                    // learning.py의 score_afterstates()와 같은 기준이다.
+                    const score = candidate.reward + ONNX_DISCOUNT_GAMMA * value;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        best = candidate.simulation;
+                    }
+                });
+                if (!best) throw new Error('추론 결과에서 유효한 가치를 찾지 못했습니다.');
+                this.clearDecisionTimeout();
+                this.targetX = best.x;
+                this.targetRotation = ((best.rotation % 4) + 4) % 4;
+                player.aiTarget = this.targetX;
+                player.aiRotation = this.targetRotation;
+                player.aiDecisionElapsed = 0;
+                this.fastDownElapsed = 0;
+                this.decisionState = 'ready';
+            } catch (error) {
+                if (token !== this.inferenceToken || !this.isCurrentTurn(player)) return;
+                // 추론·출력 검증 실패는 대전을 멈추지 않고 앞 1수 시뮬레이션 결과로 이어 간다.
+                console.error(`${this.getClassType()}의 ONNX 추론에 실패했습니다. 앞 1수 시뮬레이션으로 진행합니다.`, error);
+                this.applyFallback(player);
+            }
+        }
+
+        /** 추론을 쓸 수 없을 때 앞 1수 시뮬레이션의 최적 배치로 이번 턴을 결정한다. @param {PlayerState} player CPU 플레이어 @returns {void} */
+        applyFallback(player) {
+            if (!player.active) return;
+            this.clearDecisionTimeout();
+            prepareAiPlacementSimulations(player);
+            const placement = findBestAttackPlacement(player, player.active.x, null, true);
+            this.targetX = placement.x;
+            this.targetRotation = ((placement.rotation % 4) + 4) % 4;
+            player.aiTarget = this.targetX;
+            player.aiRotation = this.targetRotation;
+            player.aiDecisionElapsed = 0;
+            this.fastDownElapsed = 0;
+            this.decisionState = 'fallback';
+        }
+
+        /** @param {PlayerState} player 자동 조작할 플레이어 @returns {void} */
+        prepareTurn(player) {
+            // 이전 턴의 추론이 아직 돌고 있으면 그 결과를 버리도록 일련번호를 올린다.
+            this.inferenceToken += 1;
+            this.clearDecisionTimeout();
+            super.prepareTurn(player);
+            this.turnPlayer = player;
+            this.turnActive = player.active;
+            this.targetX = player.active?.x ?? 2;
+            this.targetRotation = player.active?.rotation ?? 0;
+            this.fastDownElapsed = 0;
+            if (!player.active) {
+                this.decisionState = 'idle';
+                return;
+            }
+            this.decisionState = 'pending';
+            const token = this.inferenceToken;
+            // 추론이 마감 시한을 넘기면 그 턴은 앞 1수 시뮬레이션으로 확정하고, 늦게 온 결과는 버린다.
+            // 추론은 Web Worker에서 돌아가므로 이 타이머가 실제로 제때 깨어난다.
+            this.decisionTimeoutId = setTimeout(() => {
+                this.decisionTimeoutId = null;
+                if (token !== this.inferenceToken || this.decisionState !== 'pending' || !this.isCurrentTurn(player)) return;
+                this.inferenceToken += 1;
+                this.applyFallback(player);
+            }, ONNX_INFERENCE_TIMEOUT);
+            void this.decidePlacement(player, token);
+        }
+
+        chooseTarget() { return this.targetX; }
+        chooseRotate() { return this.targetRotation; }
+
+        /**
+         * 추론이 끝나기 전에는 좌우 이동·회전을 하지 않고 자연 낙하만 시킨다.
+         * 결과가 나오면 수평 이동을 모두 마친 다음 회전한다.
+         * @param {PlayerState} player CPU 플레이어
+         * @param {number} delta 이전 프레임 후 경과한 밀리초
+         * @returns {boolean} 엔진 기본 이동을 대체했는지 여부
+         */
+        updateControl(player, delta) {
+            if (this.decisionState === 'fallback') return false;
+            if (this.decisionState !== 'ready') return true;
+            if (player.active.x !== player.aiTarget) {
+                this.fastDownElapsed = 0;
+                moveActive(player, player.active.x < player.aiTarget ? 1 : -1, 0);
+                return true;
+            }
+            const rotationDelta = (player.aiRotation - player.active.rotation + 4) % 4;
+            if (rotationDelta) {
+                this.fastDownElapsed = 0;
+                rotateActive(player, rotationDelta === 3 ? -1 : 1);
+                return true;
+            }
+            this.fastDownElapsed += delta;
+            return true;
+        }
+
+        /** 추론이 끝나기 전에는 빠르게 내리기를 미룬다. @param {PlayerState} player CPU 플레이어 @returns {boolean} 빠른 하강 사용 여부 */
+        useFastDown(player) {
+            if (this.decisionState === 'fallback') return super.useFastDown(player);
+            if (this.decisionState !== 'ready') return false;
+            const delay = getSelectedDifficulty().fastDownDelay;
+            if (delay === null) return false;
+            const opponent = game?.players.find((candidate) => candidate !== player);
+            const delayRate = isEnemyInCrisis(player, opponent) ? this.dangerFastDownDelayRate : this.normalFastDownDelayRate;
+            return this.fastDownElapsed >= delay * delayRate;
+        }
+
+        /** 착지 또는 턴 교체 시 진행 중인 추론 결과를 버린다. @param {PlayerState|null} player CPU 플레이어 @param {string} reason 취소 사유 @returns {void} */
+        cancelPendingRequest(player, reason = 'cancelled') {
+            if (player && player !== this.turnPlayer) return;
+            this.inferenceToken += 1;
+            this.clearDecisionTimeout();
+            if (reason === 'contact') this.decisionState = 'cancelled';
+        }
+    }
+
+    /**
+     * 플라우로스는 강하고 무서운 표범 모습으로 나타나며, 삼각형 밖에서는 거짓말로 소환자를 속인다는
+     * 전승을 귀엽지만 위엄 있는 모습으로 각색한 적이다.
+     * 판단은 `src/onnx/model01.onnx` 가치망 추론으로 하며, 추론에 실패한 턴만 앞 1수 시뮬레이션으로 넘어간다.
+     */
+    class Flauros extends OnnxEnemy {
         constructor() {
             super();
             this.sortPriority = 9;
-            this.notAvail = true;
+            // 첫 ONNX 적이라 model01.onnx와 1:1로 대응한다. 이후 적은 model02.onnx처럼 각자 모델을 갖는다.
+            this.modelPath = 'onnx/model01.onnx';
         }
 
         /** @returns {string} 진행 상황에 저장할 클래스 이름 */
@@ -14391,21 +15021,6 @@
 
         /** @returns {string} 적 이름 */
         getName() { return '플라우로스'; }
-
-        /**
-         * TODO: 플라우로스 전용 AI를 구현한다. 출시 전에는 이동·회전·빠른 하강 판단 없이 자연 낙하만 한다.
-         * @returns {void}
-         */
-        prepareTurn() { this.preparedPlacement = null; }
-
-        /** @param {PlayerState} player 자동 조작할 플레이어 @returns {number} 현재 X 좌표 */
-        chooseTarget(player) { return player.active ? player.active.x : 2; }
-
-        /** @returns {number} 회전하지 않는 기본값 */
-        chooseRotate() { return 0; }
-
-        /** @returns {boolean} 빠른 하강을 사용하지 않으므로 항상 false */
-        useFastDown() { return false; }
 
         /**
          * 검은 점무늬, 날카로운 눈, 삼각형 마법진으로 표현한 표범의 일반·위기·우는 초상화를 그린다.
@@ -14645,6 +15260,7 @@
         formatPoint,
         collapseBoard,
         simulatePlacementBoard,
+        simulatePlacementResult,
         getFeverStageDefinitions,
         isAllClearBoard,
         estimateAttack,
@@ -14654,6 +15270,7 @@
 
     WebPuyo = {
         Enemy,
+        OnnxEnemy,
         beginWorkerSearchTurn,
         startWorkerLookaheadSearch,
         cancelPendingWorkerSearch,
@@ -14722,6 +15339,7 @@
         formatPoint,
         collapseBoard,
         simulatePlacementBoard,
+        simulatePlacementResult,
         getFeverStageDefinitions,
         isAllClearBoard,
         estimateAttack,
