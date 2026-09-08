@@ -19,7 +19,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 29;
+    const BUILDNO = 35;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -38,6 +38,10 @@
     const GARBAGE_SPAWN_MIN_ROW = GARBAGE_SPAWN_MAX_ROW - 5;
     /** 시뮬레이터 그리기 모드에서 편집할 수 있는 줄 수다. 13번째 줄은 실행 중 베젤 뒤에 숨겨진다. @type {number} */
     const SIMULATOR_EDITABLE_ROWS = VISIBLE_ROWS + 1;
+    /** 개발용 도구(tools.html)의 "다음에 나올 뿌요" 편집에서 받을 수 있는 최대 턴 수다. @type {number} */
+    const TOOLS_MAX_NEXT_TURNS = 6;
+    /** 개발용 도구 테스트가 끝난 뒤 편집 모드로 돌아가기 전에 결과를 보여 줄 시간(ms)이다. @type {number} */
+    const TOOLS_TEST_FINISH_DELAY = 1500;
     /** 적 선택 화면 UI를 축소해 표시할 배율이다. @type {number} */
     const OPPONENT_MENU_SCALE = 0.9;
     /** 한 칸의 논리 픽셀 크기다. @type {number} */
@@ -169,14 +173,16 @@
     const VIRTUAL_HORIZONTAL_HOLD_DELAY = 100;
     /** 가상 컨트롤러 방향키 홀드 반복 이동 간격(ms)이다. @type {number} */
     const VIRTUAL_HORIZONTAL_REPEAT_INTERVAL = 80;
-    /** 가상 컨트롤러 방향 패드 중심 좌표와 한 방향 버튼의 크기다. @type {{x:number,y:number,size:number}} */
-    const VIRTUAL_DPAD = { x: 118, y: 610, size: 52 };
     /** 가상 컨트롤러 Z, X, ESC 버튼의 중심 좌표와 크기다. @type {{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number},radius:number}} */
     const VIRTUAL_ACTION_BUTTONS = { z: { x: 1090, y: 590 }, x: { x: 1170, y: 590 }, escape: { x: 1170, y: 500 }, radius: 31 };
-    /** 크게 표시할 때 방향 패드를 이동할 논리 좌표다. CSS 최대 폭 1280px 화면에서는 화면 픽셀과 같다. @type {{x:number,y:number}} */
-    const VIRTUAL_LARGE_DPAD_OFFSET = { x: 40, y: -40 };
     /** 크게 표시할 때 버튼끼리 겹치지 않도록 벌린 우측 조작 버튼 중심 좌표다. @type {{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number}}} */
     const VIRTUAL_LARGE_ACTION_BUTTONS = { z: { x: 1060, y: 590 }, x: { x: 1200, y: 610 }, escape: { x: 1200, y: 480 } };
+    /** 가상 조이스틱을 조작으로 인정할 최소 드래그 거리(논리 픽셀)다. CSS 최대 폭 1280px 화면에서는 화면 픽셀과 같다. @type {number} */
+    const VIRTUAL_JOYSTICK_MIN_DRAG = 10;
+    /** 가상 조이스틱 기준점 원과 스틱 원의 반지름이다. 스틱은 기준점 원 안에서만 움직인다. @type {{base:number,stick:number}} */
+    const VIRTUAL_JOYSTICK_RADIUS = { base: 52, stick: 26 };
+    /** 한 방향을 대각선으로도 볼지 판단하는 다른 축 대비 최대 배율이다. 값이 클수록 대각선으로 인정하는 범위가 넓어진다. @type {number} */
+    const VIRTUAL_JOYSTICK_DIAGONAL_RATIO = 2;
     /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_EASY = null;
     /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
@@ -655,10 +661,12 @@
         horizontalHoldElapsed = 0;
         horizontalRepeatElapsed = 0;
     }
-    /** 가상 컨트롤러에서 현재 홀드 중인 방향키 상태다. @type {{arrowleft:boolean,arrowright:boolean,arrowup:boolean,arrowdown:boolean}} */
-    let virtualDirectionInput = { arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
-    /** 터치·포인터별로 누르고 있는 가상 컨트롤러 버튼 목록이다. @type {Map<number,string[]>} */
+    /** 가상 컨트롤러에서 현재 홀드 중인 방향키 상태다. 조이스틱은 좌우 이동과 빠른 하강만 만들므로 위 방향은 없다. @type {{arrowleft:boolean,arrowright:boolean,arrowdown:boolean}} */
+    let virtualDirectionInput = { arrowleft: false, arrowright: false, arrowdown: false };
+    /** 터치·포인터별로 누르고 있는 가상 컨트롤러 버튼 목록이다. 조이스틱이 만든 방향키도 여기에 함께 담는다. @type {Map<number,string[]>} */
     let virtualPointerButtons = new Map();
+    /** 터치·포인터별 가상 조이스틱의 기준점과 현재 좌표다. 손가락을 뗄 때까지 기준점을 유지한다. @type {Map<number,{baseX:number,baseY:number,x:number,y:number}>} */
+    let virtualJoystickPointers = new Map();
     /** 가상 컨트롤러 좌우 방향키를 누른 뒤 경과한 시간(ms)이다. @type {number} */
     let virtualHorizontalHoldElapsed = 0;
     /** 가상 컨트롤러 좌우 방향키 홀드 반복 이동의 누적 시간(ms)이다. @type {number} */
@@ -3011,6 +3019,21 @@
         if (puzzleStageFocus < 0 || puzzleStageFocus >= openedCount) return;
         const stage = PUZZLE_STAGES[puzzleStageFocus];
         if (!(stage instanceof PuzzlePuyoStage)) return;
+        // 클리어 전 이미 열려 있던 다음 스테이지가 있을 때만 그쪽으로 이동한다.
+        // 마지막 선택 가능 스테이지를 깨면 새로 열린 항목 대신 현재 스테이지에 둔다.
+        const returnFocusIndex = puzzleStageFocus < openedCount - 1 ? puzzleStageFocus + 1 : puzzleStageFocus;
+        startPuzzleStageGame(stage, puzzleStageFocus, returnFocusIndex);
+    }
+
+    /**
+     * 지정한 퍼즐뿌요 스테이지로 게임을 시작한다.
+     * 개발용 도구의 퍼즐뿌요 테스트도 이 함수로 등록되지 않은 스테이지를 그대로 실행한다.
+     * @param {PuzzlePuyoStage} stage 실행할 스테이지
+     * @param {number} stageIndex PUZZLE_STAGES 내 순번, 등록되지 않은 스테이지는 -1
+     * @param {number} returnFocusIndex 결과 화면을 닫은 뒤 포커스할 스테이지 순번
+     * @returns {void}
+     */
+    function startPuzzleStageGame(stage, stageIndex, returnFocusIndex) {
         playMenuSelectSound();
         resetVirtualControllerInput();
         const colors = [...COLORS];
@@ -3034,10 +3057,8 @@
             practice: true, continuousFever: false, feverRule: false, fever: null,
             puzzle: {
                 stage,
-                stageIndex: puzzleStageFocus,
-                // 클리어 전 이미 열려 있던 다음 스테이지가 있을 때만 그쪽으로 이동한다.
-                // 마지막 선택 가능 스테이지를 깨면 새로 열린 항목 대신 현재 스테이지에 둔다.
-                returnFocusIndex: puzzleStageFocus < openedCount - 1 ? puzzleStageFocus + 1 : puzzleStageFocus,
+                stageIndex,
+                returnFocusIndex,
                 turn: 1, pendingCombo: 0, pendingMaxExplosion: 0, pendingMaxExplosionColorCount: 0, pendingAllClear: false, pendingWarningAmount: 0
             },
             difficulty: DIFFICULTIES.length - 1, aiDifficulty: selectedAiDifficulty, themeController: controller,
@@ -3244,8 +3265,13 @@
         // 이 값은 패턴의 첫 AI 배치에만 사용하고, 그 뒤부터는 기존 전략을 따른다.
         feverState.randomizeStageOpening = game?.feverRule === true && sourceFieldWasEmpty;
         const nextPair = peekNextPair(player);
-        const stage = selectContinuousFeverStage(targetCombo, nextPair, player.colors);
-        const colorMap = createContinuousFeverColorMap(stage, nextPair, player.colors);
+        // 개발용 도구의 피버 테스트는 편집 중인 패턴을 색 변환 없이 그대로 첫 화면에 올리고,
+        // 그 다음 번 패턴부터는 실제 게임과 같은 방식으로 고른 뒤 배치가 끝나면 편집 모드로 돌아간다.
+        const forcedStage = game?.toolsTest?.pendingStage || null;
+        if (forcedStage) game.toolsTest.pendingStage = null;
+        else if (game?.toolsTest) game.toolsTest.finishAfterStage = true;
+        const stage = forcedStage || selectContinuousFeverStage(targetCombo, nextPair, player.colors);
+        const colorMap = forcedStage ? createToolsIdentityColorMap(stage) : createContinuousFeverColorMap(stage, nextPair, player.colors);
         const transformedSupplied = stage.suppliedNextPuyos.map((color) => colorMap.get(color));
         game.pairQueue[player.pairQueuePosition] = transformedSupplied;
         player.board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
@@ -5376,20 +5402,22 @@
         const earnedStar = player === game.players[0] && game.puzzle.turn <= game.puzzle.stage.turnLimit;
         let progressChanged = false;
         let goldReward = 0;
-        if (!store.puzzleClearStages.includes(stageIndex)) {
+        // 개발용 도구의 테스트는 등록되지 않은 스테이지를 실행하므로 클리어 기록과 골드를 남기지 않는다.
+        const recordsProgress = !game.toolsTest && stageIndex >= 0;
+        if (recordsProgress && !store.puzzleClearStages.includes(stageIndex)) {
             store.puzzleClearStages.push(stageIndex);
             progressChanged = true;
         }
-        if (earnedStar && !store.puzzleStarStages.includes(stageIndex)) {
+        if (recordsProgress && earnedStar && !store.puzzleStarStages.includes(stageIndex)) {
             store.puzzleStarStages.push(stageIndex);
             progressChanged = true;
         }
-        if (!store.puzzleGoldClearStages.includes(stageIndex)) {
+        if (recordsProgress && !store.puzzleGoldClearStages.includes(stageIndex)) {
             store.puzzleGoldClearStages.push(stageIndex);
             goldReward += PUZZLE_GOLD_REWARD;
             progressChanged = true;
         }
-        if (earnedStar && !store.puzzleGoldStarStages.includes(stageIndex)) {
+        if (recordsProgress && earnedStar && !store.puzzleGoldStarStages.includes(stageIndex)) {
             store.puzzleGoldStarStages.push(stageIndex);
             goldReward += PUZZLE_GOLD_REWARD;
             progressChanged = true;
@@ -5495,6 +5523,12 @@
         }
         // 피버 패턴은 숨김 영역에서의 중력 애니메이션이 끝난 뒤에만 조작을 시작한다.
         if (player.phase === 'feverStageControl') {
+            // 개발용 도구의 피버 테스트는 다음 패턴이 배치된 모습까지 보여 준 뒤 편집 모드로 돌아간다.
+            if (game?.toolsTest?.finishAfterStage) {
+                game.toolsTest.finishTimer = TOOLS_TEST_FINISH_DELAY;
+                player.phase = 'idle';
+                return;
+            }
             enterControl(player);
             return;
         }
@@ -6606,28 +6640,12 @@
     /** 선택된 가상 컨트롤러의 렌더링·입력 배율을 반환한다. @returns {number} */
     function getVirtualControllerScale() { return store.settings.virtualController === 'large' ? 1.5 : 1; }
 
-    /** 선택된 크기에 맞는 가상 컨트롤러의 공통 그리기·입력 배치를 반환한다. @returns {{dpad:{x:number,y:number,size:number},actions:{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number}},scale:number}} */
+    /** 선택된 크기에 맞는 가상 컨트롤러의 공통 그리기·입력 배치를 반환한다. @returns {{actions:{z:{x:number,y:number},x:{x:number,y:number},escape:{x:number,y:number}},scale:number}} */
     function getVirtualControllerLayout() {
-        const large = store.settings.virtualController === 'large';
         return {
-            dpad: {
-                x: VIRTUAL_DPAD.x + (large ? VIRTUAL_LARGE_DPAD_OFFSET.x : 0),
-                y: VIRTUAL_DPAD.y + (large ? VIRTUAL_LARGE_DPAD_OFFSET.y : 0),
-                size: VIRTUAL_DPAD.size
-            },
-            actions: large ? VIRTUAL_LARGE_ACTION_BUTTONS : VIRTUAL_ACTION_BUTTONS,
+            actions: store.settings.virtualController === 'large' ? VIRTUAL_LARGE_ACTION_BUTTONS : VIRTUAL_ACTION_BUTTONS,
             scale: getVirtualControllerScale()
         };
-    }
-
-    /** 가상 방향 패드의 한 방향 버튼을 그린다. @param {number} x X 좌표 @param {number} y Y 좌표 @param {string} label 표시 문자 @param {boolean} pressed 눌림 여부 @param {number} scale 표시 배율 @returns {void} */
-    function drawVirtualDirectionButton(x, y, label, pressed, scale) {
-        const size = VIRTUAL_DPAD.size * scale;
-        context.fillStyle = pressed ? 'rgba(247, 200, 67, 0.88)' : 'rgba(11, 32, 44, 0.78)';
-        context.fillRect(x, y, size, size);
-        context.strokeStyle = pressed ? '#fff6c7' : '#9cc9d2'; context.lineWidth = 2; context.strokeRect(x, y, size, size);
-        context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = pressed ? '#263238' : '#f5fbfc'; context.font = `${28 * scale}px ${BUTTON_FONT}`;
-        context.fillText(label, x + size / 2, y + size / 2 + 1);
     }
 
     /** 가상 조작 버튼을 그린다. @param {number} x 중심 X 좌표 @param {number} y 중심 Y 좌표 @param {string} label 표시 문자 @param {boolean} pressed 눌림 여부 @param {number} scale 표시 배율 @returns {void} */
@@ -6639,33 +6657,42 @@
         context.fillText(label, x, y + 1);
     }
 
+    /** 조작 중인 가상 조이스틱의 기준점과 스틱을 그린다. @param {{baseX:number,baseY:number,x:number,y:number}} joystick 조이스틱 상태 @param {number} scale 표시 배율 @returns {void} */
+    function drawVirtualJoystick(joystick, scale) {
+        const baseRadius = VIRTUAL_JOYSTICK_RADIUS.base * scale;
+        const deltaX = joystick.x - joystick.baseX;
+        const deltaY = joystick.y - joystick.baseY;
+        const distance = Math.hypot(deltaX, deltaY);
+        // 방향 판정과 달리 스틱 그림만 기준점 원 안에 붙잡아, 손가락을 멀리 끌어도 화면 밖으로 벗어나지 않게 한다.
+        const limit = distance > baseRadius ? baseRadius / distance : 1;
+        context.strokeStyle = 'rgba(156, 201, 210, 0.85)'; context.lineWidth = 2;
+        context.beginPath(); context.arc(joystick.baseX, joystick.baseY, baseRadius, 0, Math.PI * 2); context.stroke();
+        context.strokeStyle = 'rgba(156, 201, 210, 0.45)';
+        context.beginPath(); context.arc(joystick.baseX, joystick.baseY, baseRadius * 0.62, 0, Math.PI * 2); context.stroke();
+        context.beginPath(); context.arc(joystick.baseX + deltaX * limit, joystick.baseY + deltaY * limit, VIRTUAL_JOYSTICK_RADIUS.stick * scale, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(247, 200, 67, 0.55)'; context.fill();
+        context.strokeStyle = '#fff6c7'; context.lineWidth = 2; context.stroke();
+    }
+
     /** 터치 조작이 가능한 가상 컨트롤러를 게임 화면 위에 그린다. @returns {void} */
     function drawVirtualController() {
-        const { dpad, actions, scale } = getVirtualControllerLayout();
-        if (game?.watch) {
-            const pressed = new Set([...virtualPointerButtons.values()].flat());
-            drawVirtualActionButton(actions.escape.x, actions.escape.y, 'ESC', pressed.has('escape'), scale);
-            context.textBaseline = 'alphabetic';
-            return;
-        }
-        const { x, y, size: baseSize } = dpad; const size = baseSize * scale;
-        drawVirtualDirectionButton(x - size / 2, y - size * 1.5, '↑', virtualDirectionInput.arrowup, scale);
-        drawVirtualDirectionButton(x - size * 1.5, y - size / 2, '←', virtualDirectionInput.arrowleft, scale);
-        drawVirtualDirectionButton(x + size / 2, y - size / 2, '→', virtualDirectionInput.arrowright, scale);
-        drawVirtualDirectionButton(x - size / 2, y + size / 2, '↓', virtualDirectionInput.arrowdown, scale);
-        drawVirtualDirectionButton(x - size * 1.5, y + size / 2, '↙', virtualDirectionInput.arrowleft && virtualDirectionInput.arrowdown, scale);
-        drawVirtualDirectionButton(x + size / 2, y + size / 2, '↘', virtualDirectionInput.arrowright && virtualDirectionInput.arrowdown, scale);
+        const { actions, scale } = getVirtualControllerLayout();
         const pressed = new Set([...virtualPointerButtons.values()].flat());
-        drawVirtualActionButton(actions.z.x, actions.z.y, 'Z', pressed.has('z'), scale);
-        drawVirtualActionButton(actions.x.x, actions.x.y, 'X', pressed.has('x'), scale);
+        // 구경 중에는 방향 조작이 없으므로 ESC 버튼만 남긴다.
+        if (!game?.watch) {
+            virtualJoystickPointers.forEach((joystick) => drawVirtualJoystick(joystick, scale));
+            drawVirtualActionButton(actions.z.x, actions.z.y, 'Z', pressed.has('z'), scale);
+            drawVirtualActionButton(actions.x.x, actions.x.y, 'X', pressed.has('x'), scale);
+        }
         drawVirtualActionButton(actions.escape.x, actions.escape.y, 'ESC', pressed.has('escape'), scale);
         context.textBaseline = 'alphabetic';
     }
 
     /** 가상 컨트롤러의 모든 누름 상태를 해제한다. @returns {void} */
     function resetVirtualControllerInput() {
-        virtualDirectionInput = { arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
+        virtualDirectionInput = { arrowleft: false, arrowright: false, arrowdown: false };
         virtualPointerButtons.clear();
+        virtualJoystickPointers.clear();
         virtualHorizontalHoldElapsed = 0;
         virtualHorizontalRepeatElapsed = 0;
     }
@@ -6762,7 +6789,7 @@
     /** 포인터별 누름 상태를 합쳐 가상 방향 입력을 갱신한다. @returns {void} */
     function refreshVirtualDirectionInput() {
         const previous = virtualDirectionInput;
-        const next = { arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
+        const next = { arrowleft: false, arrowright: false, arrowdown: false };
         virtualPointerButtons.forEach((buttons) => buttons.forEach((button) => {
             if (Object.hasOwn(next, button)) next[button] = true;
         }));
@@ -6782,27 +6809,24 @@
         }
     }
 
-    /** 캔버스 좌표에서 눌린 가상 컨트롤러 버튼을 구한다. @param {number} x X 좌표 @param {number} y Y 좌표 @returns {string[]} */
+    /** 캔버스 좌표에서 눌린 가상 조작 버튼을 구한다. 방향 입력은 조이스틱이 맡으므로 여기서는 다루지 않는다. @param {number} x X 좌표 @param {number} y Y 좌표 @returns {string[]} */
     function getVirtualControllerButtonsAt(x, y) {
-        const buttons = [];
-        const { dpad, actions, scale } = getVirtualControllerLayout();
-        if (game?.watch) {
-            if ((x - actions.escape.x) ** 2 + (y - actions.escape.y) ** 2 <= (VIRTUAL_ACTION_BUTTONS.radius * scale) ** 2) buttons.push('escape');
-            return buttons;
-        }
-        const { x: centerX, y: centerY } = dpad;
-        const size = dpad.size * scale;
-        const inButton = (left, top) => x >= left && x < left + size && y >= top && y < top + size;
-        if (inButton(centerX - size / 2, centerY - size * 1.5)) buttons.push('arrowup');
-        if (inButton(centerX - size * 1.5, centerY - size / 2)) buttons.push('arrowleft');
-        if (inButton(centerX + size / 2, centerY - size / 2)) buttons.push('arrowright');
-        if (inButton(centerX - size / 2, centerY + size / 2)) buttons.push('arrowdown');
-        if (inButton(centerX - size * 1.5, centerY + size / 2)) buttons.push('arrowleft', 'arrowdown');
-        if (inButton(centerX + size / 2, centerY + size / 2)) buttons.push('arrowright', 'arrowdown');
-        Object.entries(actions).forEach(([button, value]) => {
-            if ((x - value.x) ** 2 + (y - value.y) ** 2 <= (VIRTUAL_ACTION_BUTTONS.radius * scale) ** 2) buttons.push(button);
-        });
-        return buttons;
+        const { actions, scale } = getVirtualControllerLayout();
+        const radius = VIRTUAL_ACTION_BUTTONS.radius * scale;
+        // 구경 중에는 ESC만 표시하므로 나머지 버튼은 눌린 것으로 보지 않는다.
+        const names = game?.watch ? ['escape'] : Object.keys(actions);
+        return names.filter((name) => (x - actions[name].x) ** 2 + (y - actions[name].y) ** 2 <= radius ** 2);
+    }
+
+    /** 조이스틱 기준점에서 끌어낸 거리로 눌린 방향키를 구한다. 조이스틱은 좌우 이동과 빠른 하강만 맡고 회전은 Z·X 버튼이 담당하므로, 위로 끄는 동작에는 대응하는 방향키가 없다. @param {number} deltaX 기준점 대비 X 이동량 @param {number} deltaY 기준점 대비 Y 이동량 @returns {string[]} */
+    function getVirtualJoystickDirections(deltaX, deltaY) {
+        // 손가락을 살짝 대거나 미세하게 흔든 것이 조작으로 잡히지 않도록, 최소 거리를 넘겨야 방향을 인정한다.
+        if (Math.hypot(deltaX, deltaY) < VIRTUAL_JOYSTICK_MIN_DRAG) return [];
+        const directions = [];
+        // 다른 축이 이 축의 배율 안쪽이면 두 축을 함께 눌러, 대각선 드래그를 두 방향키 동시 입력으로 처리한다.
+        if (Math.abs(deltaY) <= Math.abs(deltaX) * VIRTUAL_JOYSTICK_DIAGONAL_RATIO) directions.push(deltaX < 0 ? 'arrowleft' : 'arrowright');
+        if (deltaY > 0 && Math.abs(deltaX) <= deltaY * VIRTUAL_JOYSTICK_DIAGONAL_RATIO) directions.push('arrowdown');
+        return directions;
     }
 
     /** 가상 버튼의 한 번 누름 동작을 처리한다. @param {string} button 버튼 식별자 @returns {void} */
@@ -6817,36 +6841,72 @@
         }
         const player = game.players[0];
         if (player.phase !== 'control') return;
-        if (button === 'arrowup' || button === 'x') rotateActive(player, 1);
+        if (button === 'x') rotateActive(player, 1);
         else if (button === 'z') rotateActive(player, -1);
     }
 
-    /** 포인터 이벤트를 가상 컨트롤러 입력으로 바꾼다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
-    function updateVirtualPointer(event) {
+    /** 포인터별 가상 컨트롤러 상태를 구분할 식별자를 얻는다. @param {PointerEvent} event 포인터 이벤트 @returns {number} */
+    function getVirtualPointerId(event) {
+        return Number.isFinite(event.pointerId) ? event.pointerId : 0;
+    }
+
+    /**
+     * 가상 컨트롤러 포인터 누름을 처리한다.
+     *
+     * Z·X·ESC 조작 버튼은 이 시점에만 눌린다. 버튼 위를 지나가거나 다른 곳에서 끌고 들어온 포인터는
+     * 누른 것으로 보지 않으므로, 실제로 버튼을 짚은 손가락만 회전·일시정지를 일으킨다.
+     * @param {PointerEvent} event 포인터 이벤트
+     * @returns {void}
+     */
+    function handleVirtualPointerDown(event) {
+        if (handleToolsPointerDown(event)) return;
         if (!shouldShowVirtualController()) return;
         const { x, y } = getCanvasEventCoordinates(event);
-        const pointerId = Number.isFinite(event.pointerId) ? event.pointerId : 0;
-        const previous = virtualPointerButtons.get(pointerId) || [];
+        const pointerId = getVirtualPointerId(event);
         const buttons = getVirtualControllerButtonsAt(x, y);
-        if (buttons.length) virtualPointerButtons.set(pointerId, buttons);
+        if (buttons.length) {
+            virtualPointerButtons.set(pointerId, buttons);
+            buttons.forEach(triggerVirtualButton);
+        } else if (game?.watch) {
+            // 구경 중에는 ESC 말고 받을 조작이 없다.
+            return;
+        } else {
+            // 조작 버튼 밖을 누른 지점이 이번 조이스틱의 기준점이 된다.
+            virtualJoystickPointers.set(pointerId, { baseX: x, baseY: y, x, y });
+        }
+        if (event.cancelable) event.preventDefault();
+        if (Number.isFinite(event.pointerId) && canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+    }
+
+    /** 조이스틱 드래그를 방향 입력으로 반영한다. 조작 버튼은 누른 순간에만 반응하므로 여기서는 다루지 않는다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
+    function handleVirtualPointerMove(event) {
+        if (handleToolsPointerMove(event)) return;
+        const pointerId = getVirtualPointerId(event);
+        // 터치·펜은 닿아 있는 동안 buttons가 1 이상이고, 마우스는 버튼을 누르지 않고 지나갈 때만 0이다.
+        if (event.buttons === 0) {
+            // 캔버스 밖에서 버튼을 떼 pointerup을 놓친 경우를 대비해 남아 있는 상태만 정리한다.
+            if (virtualPointerButtons.has(pointerId) || virtualJoystickPointers.has(pointerId)) handleVirtualPointerUp(event);
+            return;
+        }
+        const joystick = virtualJoystickPointers.get(pointerId);
+        if (!joystick || !shouldShowVirtualController()) return;
+        const { x, y } = getCanvasEventCoordinates(event);
+        joystick.x = x;
+        joystick.y = y;
+        const directions = getVirtualJoystickDirections(x - joystick.baseX, y - joystick.baseY);
+        if (directions.length) virtualPointerButtons.set(pointerId, directions);
         else virtualPointerButtons.delete(pointerId);
         refreshVirtualDirectionInput();
-        buttons.filter((button) => !previous.includes(button)).forEach(triggerVirtualButton);
-        if (buttons.length && event.cancelable) event.preventDefault();
+        // 최소 거리에 못 미쳐 방향이 없더라도, 드래그가 화면 넘김으로 새지 않게 기본 동작을 막는다.
+        if (event.cancelable) event.preventDefault();
     }
 
-    /** 가상 컨트롤러 포인터 누름을 처리한다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
-    function handleVirtualPointerDown(event) {
-        updateVirtualPointer(event);
-        if (virtualPointerButtons.has(event.pointerId) && canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
-    }
-
-    /** 가상 컨트롤러 포인터 이동을 처리한다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
-    function handleVirtualPointerMove(event) { updateVirtualPointer(event); }
-
-    /** 가상 컨트롤러 포인터 해제를 처리한다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
+    /** 가상 컨트롤러 포인터 해제를 처리한다. 조이스틱 기준점도 함께 지워 조작을 멈춘다. @param {PointerEvent} event 포인터 이벤트 @returns {void} */
     function handleVirtualPointerUp(event) {
-        virtualPointerButtons.delete(event.pointerId);
+        const pointerId = getVirtualPointerId(event);
+        if (toolsPaintingPointerId !== null && pointerId === toolsPaintingPointerId) toolsPaintingPointerId = null;
+        virtualPointerButtons.delete(pointerId);
+        virtualJoystickPointers.delete(pointerId);
         refreshVirtualDirectionInput();
     }
 
@@ -8848,15 +8908,19 @@
 
     /** 시뮬레이터 팔레트와 버튼 영역을 반환한다. @returns {{kind:string,value:string|null,x:number,y:number,width:number,height:number}[]} */
     function getSimulatorPaletteItems() {
-        const items = [...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO].map((color, index) => ({ kind: 'puyo', value: color, x: 906 + (index % 3) * (CELL + 6), y: 184 + Math.floor(index / 3) * (CELL + 6), width: CELL, height: CELL }));
-        items.push({ kind: 'eraser', value: 'eraser', x: 994, y: 272, width: CELL, height: CELL });
+        // 개발용 도구의 편집 모드는 FeverStageState·PuzzlePuyoStage가 다룰 수 있는 색만 배치할 수 있어야 하므로
+        // 시뮬레이터 전용인 딱딱뿌요·철구뿌요를 팔레트에서 제외하고, 화면을 벗어날 "종료" 버튼도 두지 않는다.
+        const toolsMode = Boolean(simulator?.tools);
+        const paletteColors = toolsMode ? [...COLORS, 'garbage'] : [...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO];
+        const items = paletteColors.map((color, index) => ({ kind: 'puyo', value: color, x: 906 + (index % 3) * (CELL + 6), y: 184 + Math.floor(index / 3) * (CELL + 6), width: CELL, height: CELL }));
+        items.push({ kind: 'eraser', value: 'eraser', x: 906 + (paletteColors.length % 3) * (CELL + 6), y: 184 + Math.floor(paletteColors.length / 3) * (CELL + 6), width: CELL, height: CELL });
         items.push(
             { kind: 'play', value: null, x: 906, y: 332, width: CELL * 3, height: CELL },
             { kind: 'copyJson', value: null, x: 906, y: 378, width: CELL * 3, height: CELL },
             { kind: 'pasteJson', value: null, x: 906, y: 424, width: CELL * 3, height: CELL },
-            { kind: 'reset', value: null, x: 906, y: 470, width: CELL * 3, height: CELL },
-            { kind: 'exit', value: null, x: 906, y: 516, width: CELL * 3, height: CELL }
+            { kind: 'reset', value: null, x: 906, y: 470, width: CELL * 3, height: CELL }
         );
+        if (!toolsMode) items.push({ kind: 'exit', value: null, x: 906, y: 516, width: CELL * 3, height: CELL });
         return items;
     }
 
@@ -9067,6 +9131,7 @@
         if (simulator.mode !== 'draw') drawSimulatorBezelForeground();
         if (simulator.mode === 'draw' && simulator.focusArea === 'board') { const focus = simulator.boardFocus; context.strokeStyle = '#ffd54f'; context.lineWidth = 4; context.strokeRect(x + focus.x * CELL + 2, FIELD_BOTTOM - (focus.y + 1) * CELL + 2, CELL - 4, CELL - 4); }
         context.fillStyle = '#071621'; context.fillRect(500, FIELD_TOP - CELL, 350, CELL * 14); context.fillStyle = '#0c2433'; context.fillRect(FIELD_RIGHT - CELL, FIELD_TOP - CELL, CELL * 8, CELL * 14);
+        if (simulator.tools && simulator.mode === 'draw') drawToolsNextArea();
         drawDefeatCellMarkers(FIELD_RIGHT);
         for (let i = 0; i < COLUMNS; i += 1) { context.fillStyle = '#0a1d29'; context.fillRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); context.strokeStyle = 'rgba(176,232,244,.25)'; context.strokeRect(FIELD_RIGHT + i * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6); }
         drawWarningUnits(FIELD_RIGHT, FIELD_TOP - CELL, warningUnits(warningAmount(simulator.target, player)));
@@ -9097,6 +9162,304 @@
         }
         context.fillStyle = '#d8f2f5'; context.font = `18px ${MESSAGE_FONT}`; context.fillText(simulator.mode === 'draw' ? translate('그리기') : translate('시뮬레이션'), 675, 486); context.font = `30px ${MESSAGE_FONT}`; context.fillStyle = '#f7c843'; context.fillText(formatPoint(player.point), 675, 536); context.font = `17px ${MESSAGE_FONT}`; context.fillStyle = '#a9d9e5'; context.fillText('POINT', 675, 566);
     }
+
+    // ------------------------------------------------------------------
+    // 개발용 도구(tools.html, puyow_tools.js) 지원
+    //     편집 화면은 시뮬레이터 그리기 모드를 그대로 재사용하고, 중앙 영역에 "다음에 나올 뿌요"
+    //     편집 칸을 덧붙인다. 테스트는 실제 연속 피버·퍼즐뿌요 진행 코드를 그대로 사용한다.
+    // ------------------------------------------------------------------
+
+    /** 도구 편집 모드에서 뿌요를 이어 배치하는 중인 포인터 식별자다. 배치 중이 아니면 null이다. @type {number|null} */
+    let toolsPaintingPointerId = null;
+
+    /** 도구 편집 모드에서 지금 보여 줄 "다음에 나올 뿌요" 턴 수를 반환한다. 피버 패턴은 1회차만 받는다. @returns {number} 턴 수 */
+    function getToolsNextTurnCount() {
+        return simulator?.tools?.kind === 'fever' ? 1 : TOOLS_MAX_NEXT_TURNS;
+    }
+
+    /**
+     * 도구 편집 모드의 "다음에 나올 뿌요" 한 칸이 차지하는 화면 영역을 반환한다.
+     * @param {number} turnIndex 턴 순번(0부터)
+     * @param {number} slotIndex 배열 순번, 0이 아래쪽 축 뿌요다.
+     * @returns {{x:number,y:number,width:number,height:number}} 칸 영역
+     */
+    function getToolsNextCellBounds(turnIndex, slotIndex) {
+        const baseX = 600 + (turnIndex % 2) * 110;
+        const baseY = 128 + Math.floor(turnIndex / 2) * 104;
+        // 배열의 0번이 실제 조작에서 아래쪽 뿌요이므로 화면에서도 아래 칸에 둔다.
+        return { x: baseX, y: baseY + (slotIndex === 0 ? CELL : 0), width: CELL, height: CELL };
+    }
+
+    /** 도구 편집 모드의 중앙 영역에 "다음에 나올 뿌요" 편집 칸을 그린다. @returns {void} */
+    function drawToolsNextArea() {
+        const turnCount = getToolsNextTurnCount();
+        context.textAlign = 'center';
+        context.fillStyle = '#d8f2f5';
+        context.font = `17px ${MESSAGE_FONT}`;
+        context.fillText(translate('다음에 나올 뿌요'), 675, 100);
+        for (let turnIndex = 0; turnIndex < turnCount; turnIndex += 1) {
+            const pair = simulator.tools.nextPuyos[turnIndex] || [null, null];
+            const labelBounds = getToolsNextCellBounds(turnIndex, 1);
+            context.fillStyle = '#7fb2c4';
+            context.font = `13px ${MESSAGE_FONT}`;
+            // 언어마다 숫자와 단위의 순서가 다르므로 번역 문구 전체를 한 키로 둔다.
+            context.fillText(translate('%1턴', turnIndex + 1), labelBounds.x + CELL / 2, labelBounds.y - 6);
+            [1, 0].forEach((slotIndex) => {
+                const bounds = getToolsNextCellBounds(turnIndex, slotIndex);
+                context.fillStyle = '#0a1d29';
+                context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+                context.strokeStyle = 'rgba(176,232,244,.25)';
+                context.lineWidth = 2;
+                context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+                if (pair[slotIndex]) drawPuyo(bounds.x, bounds.y, pair[slotIndex]);
+            });
+        }
+    }
+
+    /**
+     * 도구 편집 모드에서 "다음에 나올 뿌요" 칸을 클릭했는지 확인하고 선택한 색을 반영한다.
+     * @param {number} x 논리 캔버스 X 좌표
+     * @param {number} y 논리 캔버스 Y 좌표
+     * @returns {boolean} 이 영역이 처리했는지 여부
+     */
+    function handleToolsNextAreaClick(x, y) {
+        if (!simulator?.tools || simulator.mode !== 'draw') return false;
+        const turnCount = getToolsNextTurnCount();
+        for (let turnIndex = 0; turnIndex < turnCount; turnIndex += 1) {
+            for (let slotIndex = 0; slotIndex < 2; slotIndex += 1) {
+                const bounds = getToolsNextCellBounds(turnIndex, slotIndex);
+                if (x < bounds.x || x > bounds.x + bounds.width || y < bounds.y || y > bounds.y + bounds.height) continue;
+                if (simulator.selected === 'eraser') {
+                    simulator.tools.nextPuyos[turnIndex][slotIndex] = null;
+                } else if (COLORS.includes(simulator.selected)) {
+                    simulator.tools.nextPuyos[turnIndex][slotIndex] = simulator.selected;
+                } else {
+                    // 지급 뿌요에는 방해뿌요를 넣을 수 없다.
+                    showSimulatorMessage(translate('다음에 나올 뿌요에는 색 뿌요만 넣을 수 있습니다.'));
+                    return true;
+                }
+                playMenuSelectSound();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 포인터 좌표를 도구 편집 모드의 플레이 영역 칸으로 바꾼다. @param {number} x 논리 X 좌표 @param {number} y 논리 Y 좌표 @returns {{x:number,y:number}|null} 편집 가능한 칸, 영역 밖이면 null */
+    function getToolsBoardCellAt(x, y) {
+        const boardX = Math.floor((x - FIELD_LEFT) / CELL);
+        const boardY = Math.floor((FIELD_BOTTOM - y) / CELL);
+        if (boardX < 0 || boardX >= COLUMNS || boardY < 0 || boardY >= SIMULATOR_EDITABLE_ROWS) return null;
+        return { x: boardX, y: boardY };
+    }
+
+    /** 도구 편집 모드에서 드래그 배치를 시작한다. @param {PointerEvent} event 포인터 이벤트 @returns {boolean} 이 처리기가 소비했는지 여부 */
+    function handleToolsPointerDown(event) {
+        if (game || confirmDialog || menuScreen !== 'simulator' || !simulator?.tools || simulator.mode !== 'draw') return false;
+        const { x, y } = getCanvasEventCoordinates(event);
+        const cell = getToolsBoardCellAt(x, y);
+        if (!cell) return false;
+        toolsPaintingPointerId = getVirtualPointerId(event);
+        simulator.boardFocus = { ...cell };
+        simulator.focusArea = 'board';
+        placeSimulatorPuyo(cell.x, cell.y);
+        if (Number.isFinite(event.pointerId) && canvas?.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+        if (event.cancelable) event.preventDefault();
+        return true;
+    }
+
+    /** 도구 편집 모드에서 끌고 지나간 칸에도 같은 뿌요를 배치한다. @param {PointerEvent} event 포인터 이벤트 @returns {boolean} 이 처리기가 소비했는지 여부 */
+    function handleToolsPointerMove(event) {
+        if (toolsPaintingPointerId === null || getVirtualPointerId(event) !== toolsPaintingPointerId) return false;
+        if (game || !simulator?.tools || simulator.mode !== 'draw' || event.buttons === 0) {
+            toolsPaintingPointerId = null;
+            return false;
+        }
+        const { x, y } = getCanvasEventCoordinates(event);
+        const cell = getToolsBoardCellAt(x, y);
+        if (cell) {
+            simulator.boardFocus = { ...cell };
+            placeSimulatorPuyo(cell.x, cell.y);
+        }
+        if (event.cancelable) event.preventDefault();
+        return true;
+    }
+
+    /**
+     * 도구 편집 화면을 연다. 시뮬레이터 그리기 모드를 그대로 쓰되 도구 전용 상태를 덧붙인다.
+     * @param {{kind?:'fever'|'puzzle', stageData?:object, suppliedNextPuyos?:(string[]|string[][])}} [options] 편집 종류와 초기 데이터
+     * @returns {void}
+     */
+    function openToolsEditor(options = {}) {
+        openSimulator();
+        simulator.tools = {
+            kind: options.kind === 'puzzle' ? 'puzzle' : 'fever',
+            nextPuyos: Array.from({ length: TOOLS_MAX_NEXT_TURNS }, () => [null, null]),
+            onTestFinish: null
+        };
+        simulator.selected = 'red';
+        applyToolsEditorData(options);
+    }
+
+    /** 도구 편집 화면을 닫고 메인 화면으로 돌아간다. @returns {void} */
+    function closeToolsEditor() {
+        if (!simulator?.tools) return;
+        simulator = null;
+        game = null;
+        menuScreen = 'title';
+        loadNotice();
+        syncBackgroundMusic();
+    }
+
+    /**
+     * 도구 편집 화면에 배치와 지급 뿌요를 반영한다.
+     * @param {{stageData?:object, suppliedNextPuyos?:(string[]|string[][])}} [data] 반영할 데이터
+     * @returns {boolean} 반영 여부
+     */
+    function applyToolsEditorData(data = {}) {
+        if (!simulator?.tools) return false;
+        if (data.stageData && Array.isArray(data.stageData.puyos)) {
+            const board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
+            data.stageData.puyos.forEach((puyo) => {
+                if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y)) return;
+                if (puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= SIMULATOR_EDITABLE_ROWS) return;
+                if (!COLORS.includes(puyo.color) && puyo.color !== 'garbage') return;
+                board[puyo.y][puyo.x] = puyo.color;
+            });
+            simulator.player.board = board;
+        }
+        if (Array.isArray(data.suppliedNextPuyos)) {
+            // 피버 패턴은 1회차 색 배열 하나만, 퍼즐뿌요는 턴별 배열을 받는다.
+            const pairs = simulator.tools.kind === 'fever' ? [data.suppliedNextPuyos] : data.suppliedNextPuyos;
+            simulator.tools.nextPuyos = Array.from({ length: TOOLS_MAX_NEXT_TURNS }, (unused, turnIndex) => {
+                const pair = Array.isArray(pairs[turnIndex]) ? pairs[turnIndex] : [];
+                return [0, 1].map((slotIndex) => (COLORS.includes(pair[slotIndex]) ? pair[slotIndex] : null));
+            });
+        }
+        return true;
+    }
+
+    /**
+     * 도구 편집 화면의 현재 배치와 지급 뿌요를 읽어 온다.
+     * @returns {{kind:string, stageData:{puyos:{x:number,y:number,color:string}[]}, nextPuyos:(string|null)[][]}|null} 편집 중이 아니면 null
+     */
+    function readToolsEditorData() {
+        if (!simulator?.tools) return null;
+        const puyos = [];
+        simulator.player.board.forEach((row, y) => {
+            if (y >= SIMULATOR_EDITABLE_ROWS) return;
+            row.forEach((color, x) => { if (color) puyos.push({ x, y, color }); });
+        });
+        return {
+            kind: simulator.tools.kind,
+            stageData: { puyos },
+            nextPuyos: simulator.tools.nextPuyos.slice(0, getToolsNextTurnCount()).map((pair) => [...pair])
+        };
+    }
+
+    /** 도구 테스트에서 색 변환 없이 원본 패턴 색을 그대로 쓰도록 1:1 색상표를 만든다. @param {FeverStageState} stage 원본 스테이지 @returns {Map<string,string>} 자기 자신으로 대응하는 색상표 */
+    function createToolsIdentityColorMap(stage) {
+        const sourceColors = [...new Set([
+            ...stage.suppliedNextPuyos,
+            ...(stage.stageData.puyos || []).map((puyo) => puyo.color)
+        ].filter((color) => color && color !== 'garbage'))];
+        return new Map(sourceColors.map((color) => [color, color]));
+    }
+
+    /** 도구 테스트를 끝내고 편집 모드로 되돌린다. @returns {void} */
+    function returnFromToolsTest() {
+        stopBackgroundMusic();
+        game = null;
+        if (!simulator?.tools) {
+            menuScreen = 'title';
+            loadNotice();
+            syncBackgroundMusic();
+            return;
+        }
+        menuScreen = 'simulator';
+        restoreSimulatorDrawing();
+        const onFinish = simulator.tools.onTestFinish;
+        simulator.tools.onTestFinish = null;
+        if (typeof onFinish === 'function') onFinish();
+    }
+
+    /** 도구 테스트가 끝났는지 확인하고 정해진 시간이 지나면 편집 모드로 돌아간다. @param {number} delta 경과 시간(ms) @returns {void} */
+    function updateToolsTest(delta) {
+        const test = game?.toolsTest;
+        if (!test) return;
+        if (test.finishTimer !== null) {
+            test.finishTimer -= delta;
+            if (test.finishTimer <= 0) returnFromToolsTest();
+            return;
+        }
+        // 승리·패배로 결과 화면에 들어가면 그 화면을 잠시 보여 준 뒤 편집 모드로 돌아간다.
+        if (!game.running) test.finishTimer = TOOLS_TEST_FINISH_DELAY;
+    }
+
+    /** 도구 테스트 시작 전 편집 상태를 보존하고 테스트 종료 콜백을 등록한다. @param {Function} [onFinish] 종료 시 호출할 함수 @returns {void} */
+    function prepareToolsTest(onFinish) {
+        if (!simulator?.tools) throw new Error('도구 편집 모드에서만 테스트할 수 있습니다.');
+        // 테스트 뒤 restoreSimulatorDrawing()이 예전 "재생" 시점의 보드로 되돌리지 않도록 백업을 비운다.
+        simulator.backup = null;
+        simulator.tools.onTestFinish = typeof onFinish === 'function' ? onFinish : null;
+    }
+
+    /**
+     * 편집 중인 피버 패턴을 연속 피버 모드로 테스트한다.
+     * 남은 시간 60초, 목표 연쇄와 지급 뿌요는 이 패턴의 값을 그대로 사용한다.
+     * @param {FeverStageState} feverStage 테스트할 피버 패턴
+     * @param {Function} [onFinish] 테스트가 끝나 편집 모드로 돌아갈 때 호출할 함수
+     * @returns {void}
+     */
+    function startToolsFeverTest(feverStage, onFinish) {
+        if (!(feverStage instanceof FeverStageState)) throw new TypeError('feverStage는 FeverStageState 인스턴스여야 합니다.');
+        prepareToolsTest(onFinish);
+        // 패턴이 쓰는 색이 모두 지급 대상이 되도록 색 수와 색 목록을 맞춘다.
+        const patternColors = feverStage.usingColors.filter((color) => COLORS.includes(color));
+        const colorCount = Math.max(DIFFICULTIES[0].colors.length, patternColors.length);
+        const colors = [...patternColors, ...COLORS.filter((color) => !patternColors.includes(color))].slice(0, colorCount);
+        selectedDifficulty = Math.max(0, DIFFICULTIES.findIndex((difficulty) => difficulty.colors.length >= colorCount));
+        startGame(false, true);
+        if (!game?.fever) throw new Error('연속 피버 테스트를 시작하지 못했습니다.');
+        game.toolsTest = { kind: 'fever', pendingStage: feverStage, finishAfterStage: false, finishTimer: null };
+        game.pairQueueColors = colors;
+        game.players.forEach((player) => { player.colors = colors; });
+        game.fever.targetCombo = feverStage.targetCombo;
+        game.fever.leftTime = CONTINUOUS_FEVER_INITIAL_TIME;
+        // 첫 지급 뿌요를 편집한 색 그대로 고정해야 패턴이 색 변환 없이 그대로 나온다.
+        game.pairQueue[0] = [...feverStage.suppliedNextPuyos];
+        game.players.filter((player) => player.receivesPuyos).forEach(updateNextPairs);
+    }
+
+    /**
+     * 편집 중인 퍼즐뿌요 스테이지를 그대로 테스트한다. 클리어 기록과 골드는 남기지 않는다.
+     * @param {PuzzlePuyoStage} puzzleStage 테스트할 퍼즐뿌요 스테이지
+     * @param {Function} [onFinish] 테스트가 끝나 편집 모드로 돌아갈 때 호출할 함수
+     * @returns {void}
+     */
+    function startToolsPuzzleTest(puzzleStage, onFinish) {
+        if (!(puzzleStage instanceof PuzzlePuyoStage)) throw new TypeError('puzzleStage는 PuzzlePuyoStage 인스턴스여야 합니다.');
+        prepareToolsTest(onFinish);
+        startPuzzleStageGame(puzzleStage, -1, 0);
+        if (!game?.puzzle) throw new Error('퍼즐뿌요 테스트를 시작하지 못했습니다.');
+        game.toolsTest = { kind: 'puzzle', pendingStage: null, finishAfterStage: false, finishTimer: null };
+    }
+
+    /**
+     * 개발용 도구(tools.html)가 사용하는 API 모음이다. 일반 게임 페이지에서는 쓰지 않는다.
+     */
+    const toolsApi = Object.freeze({
+        openEditor: openToolsEditor,
+        closeEditor: closeToolsEditor,
+        getEditorData: readToolsEditorData,
+        setEditorData: applyToolsEditorData,
+        startFeverTest: startToolsFeverTest,
+        startPuzzleTest: startToolsPuzzleTest,
+        stopTest: returnFromToolsTest,
+        isTesting: () => Boolean(game?.toolsTest),
+        getMaxNextTurns: () => TOOLS_MAX_NEXT_TURNS,
+        getColors: () => [...COLORS]
+    });
 
     /** 초기 타이틀을 그리고 시작 조작을 안내한다. @returns {void} */
     function drawInitialTitle() {
@@ -9941,6 +10304,7 @@
                 updatePlayer(game.players[1], game.players[0], delta);
             }
         }
+        if (game?.toolsTest) updateToolsTest(delta);
         if (game?.watch && !game.running && !game.replayPlayback) updateWatchAutoRestart(delta);
         if (game?.running && !game.paused && !game.replayPlayback) updateEnergyTransfers(delta);
         // 카운트다운이 끝난 실제 대전 진행만 리플레이 프레임으로 남긴다.
@@ -10241,6 +10605,8 @@
         if (!game || game.running) return;
         playMenuCancelSound();
         const finishedGame = game;
+        // 개발용 도구의 테스트 결과는 편집 모드로 돌아간다.
+        if (finishedGame.toolsTest) { returnFromToolsTest(); return; }
         // 리플레이 재생 결과는 항상 메인 메뉴로 돌아간다.
         const returnToTitle = finishedGame.practice || finishedGame.watch || finishedGame.replayPlayback;
         const returnToPuzzleStages = finishedGame.puzzle !== undefined && finishedGame.puzzle !== null;
@@ -10524,6 +10890,8 @@
         } else {
             playMenuCancelSound();
             resetVirtualControllerInput();
+            // 개발용 도구의 테스트는 메인 화면 대신 편집 모드로 돌아간다.
+            if (game?.toolsTest) { returnFromToolsTest(); return; }
             stopBackgroundMusic();
             game = null;
             menuScreen = 'title'; loadNotice();
@@ -10688,6 +11056,7 @@
                 return;
             }
             if (simulator.mode !== 'draw') return;
+            if (simulator.tools && handleToolsNextAreaClick(x, y)) return;
             const boardX = Math.floor((x - FIELD_LEFT) / CELL);
             const boardY = Math.floor((FIELD_BOTTOM - y) / CELL);
             if (boardX >= 0 && boardX < COLUMNS && boardY >= 0 && boardY < SIMULATOR_EDITABLE_ROWS) {
@@ -15531,6 +15900,7 @@
         convertURL,
         common: commonFunctions,
         getCommonFunctions: () => commonFunctions,
+        tools: toolsApi,
         randomFloat,
         randomColor,
         translate,
