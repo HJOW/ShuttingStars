@@ -19,7 +19,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 40;
+    const BUILDNO = 41;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -5632,6 +5632,57 @@
     });
     Object.assign(stringTable.fr, {
         '최초 폭발은 빨간색': 'La première explosion est rouge.', '최초 폭발은 초록색': 'La première explosion est verte.', '최초 폭발은 노란색': 'La première explosion est jaune.', '확인': 'Confirmer', '1장 뽑기를 진행할까요?': 'Tirer 1 carte ?', '10장 뽑기를 진행할까요?': 'Tirer 10 cartes ?', '선택한 카드 %1장을 합성할까요?': 'Fusionner les %1 cartes sélectionnées ?'
+    });
+
+    Object.assign(stringTable.en, {
+        '초록색은 위에, 빨강색은 아래에': 'Green on top, red on bottom.',
+        '처음 놓는 뿌요 2개는 2연쇄째에 터져야 해': 'The first two puyos must pop in the second chain.',
+        '이 연쇄는 오른쪽에서 왼쪽으로': 'This chain goes from right to left.',
+        '왼쪽만 신경 써': 'Focus only on the left side.',
+        '오른쪽만 신경 써': 'Focus only on the right side.',
+        '최소 하나는 눞혀': 'Lay at least one pair horizontally.',
+        '노란색으로 시작하나 빨간색에 주의해': 'Start with yellow, but watch out for red.',
+        '보라색은 무조건 위로': 'Purple must always go on top.'
+    });
+    Object.assign(stringTable.ja, {
+        '초록색은 위에, 빨강색은 아래에': '緑は上、赤は下。',
+        '처음 놓는 뿌요 2개는 2연쇄째에 터져야 해': '最初に置く2個のぷよは2連鎖目で消そう。',
+        '이 연쇄는 오른쪽에서 왼쪽으로': 'この連鎖は右から左へ。',
+        '왼쪽만 신경 써': '左側だけに集中しよう。',
+        '오른쪽만 신경 써': '右側だけに集中しよう。',
+        '최소 하나는 눞혀': '少なくとも1組は横に置こう。',
+        '노란색으로 시작하나 빨간색에 주의해': '黄色で始めるけど、赤に注意しよう。',
+        '보라색은 무조건 위로': '紫は必ず上に。'
+    });
+    Object.assign(stringTable.zh, {
+        '초록색은 위에, 빨강색은 아래에': '绿色在上，红色在下。',
+        '처음 놓는 뿌요 2개는 2연쇄째에 터져야 해': '最先放置的两个噗哟必须在第二连锁中消除。',
+        '이 연쇄는 오른쪽에서 왼쪽으로': '这次连锁要从右向左。',
+        '왼쪽만 신경 써': '只关注左边。',
+        '오른쪽만 신경 써': '只关注右边。',
+        '최소 하나는 눞혀': '至少有一组要横着放。',
+        '노란색으로 시작하나 빨간색에 주의해': '从黄色开始，但要注意红色。',
+        '보라색은 무조건 위로': '紫色一定要放在上面。'
+    });
+    Object.assign(stringTable.de, {
+        '초록색은 위에, 빨강색은 아래에': 'Grün nach oben, Rot nach unten.',
+        '처음 놓는 뿌요 2개는 2연쇄째에 터져야 해': 'Die ersten beiden Puyos müssen in der zweiten Kette platzen.',
+        '이 연쇄는 오른쪽에서 왼쪽으로': 'Diese Kette geht von rechts nach links.',
+        '왼쪽만 신경 써': 'Konzentriere dich nur auf die linke Seite.',
+        '오른쪽만 신경 써': 'Konzentriere dich nur auf die rechte Seite.',
+        '최소 하나는 눞혀': 'Lege mindestens ein Paar waagerecht.',
+        '노란색으로 시작하나 빨간색에 주의해': 'Beginne mit Gelb, aber achte auf Rot.',
+        '보라색은 무조건 위로': 'Lila muss immer nach oben.'
+    });
+    Object.assign(stringTable.fr, {
+        '초록색은 위에, 빨강색은 아래에': 'Vert en haut, rouge en bas.',
+        '처음 놓는 뿌요 2개는 2연쇄째에 터져야 해': 'Les deux premiers Puyos doivent éclater dans la deuxième chaîne.',
+        '이 연쇄는 오른쪽에서 왼쪽으로': 'Cette chaîne va de droite à gauche.',
+        '왼쪽만 신경 써': 'Concentre-toi uniquement sur la gauche.',
+        '오른쪽만 신경 써': 'Concentre-toi uniquement sur la droite.',
+        '최소 하나는 눞혀': 'Pose au moins une paire à l’horizontale.',
+        '노란색으로 시작하나 빨간색에 주의해': 'Commence par le jaune, mais attention au rouge.',
+        '보라색은 무조건 위로': 'Le violet doit toujours aller en haut.'
     });
 
     /** 현재 게임의 GOLD 룰 패널티를 반환한다. @returns {number} 룰 패널티 */
@@ -13159,6 +13210,25 @@
             if(typeof(plainObject.uid) != 'undefined') this.uid = plainObject.uid;
             if(typeof(plainObject.opened) != 'undefined') this.opened = plainObject.opened;
         }
+
+        /**
+         * 객체를 JSON 형태로 변환하여 반환한다.
+         * 
+         * @returns {Object} JSON 형태로 변환된 객체
+         */
+        toJSON() {
+            return {
+                stageData: this.stageData,
+                suppliedNextPuyos: this.suppliedNextPuyos,
+                turnLimit: this.turnLimit,
+                winConditionType: this.winConditionType,
+                winConditionValue: this.winConditionValue,
+                hint: this.hint,
+                hidden: this.hidden,
+                uid: this.uid,
+                opened: this.opened
+            };
+        }
     }
 
         /**
@@ -13267,12 +13337,84 @@
             hint : '초록 색 4개를 오른쪽 3줄 어딘가에 두어야 해'
         }),
         new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"green"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":0,"y":2,"color":"red"},{"x":1,"y":2,"color":"green"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"green"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"blue"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"red"},{"x":4,"y":4,"color":"blue"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"blue"},{"x":1,"y":5,"color":"red"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"blue"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"blue"},{"x":0,"y":7,"color":"red"},{"x":1,"y":7,"color":"blue"},{"x":4,"y":7,"color":"red"},{"x":5,"y":7,"color":"blue"},{"x":0,"y":8,"color":"green"},{"x":1,"y":8,"color":"red"},{"x":4,"y":8,"color":"blue"},{"x":5,"y":8,"color":"green"},{"x":0,"y":9,"color":"green"},{"x":1,"y":9,"color":"red"},{"x":4,"y":9,"color":"blue"},{"x":5,"y":9,"color":"green"}]},
+            suppliedNextPuyos : [['green', 'green'], ['green', 'green'], ['red', 'red']],
+            turnLimit : 3,
+            winConditionType : 'multiple',
+            winConditionValue : 40,
+            hint : '초록색은 위에, 빨강색은 아래에'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"garbage"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"red"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"blue"},{"x":0,"y":3,"color":"red"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"yellow"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"blue"},{"x":2,"y":4,"color":"red"},{"x":0,"y":5,"color":"green"},{"x":1,"y":5,"color":"green"},{"x":2,"y":5,"color":"blue"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"green"},{"x":0,"y":7,"color":"blue"},{"x":1,"y":7,"color":"blue"},{"x":0,"y":8,"color":"blue"},{"x":1,"y":8,"color":"red"},{"x":0,"y":9,"color":"green"},{"x":1,"y":9,"color":"yellow"},{"x":0,"y":10,"color":"blue"},{"x":1,"y":10,"color":"blue"},{"x":0,"y":11,"color":"red"},{"x":1,"y":11,"color":"red"}]},
+            suppliedNextPuyos : [['red', 'blue'], ['yellow', 'yellow'], ['yellow', 'yellow']],
+            turnLimit : 3,
+            winConditionType : 'combo',
+            winConditionValue : 9,
+            hint : '처음 놓는 뿌요 2개는 2연쇄째에 터져야 해'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"blue"},{"x":2,"y":0,"color":"red"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"blue"},{"x":0,"y":1,"color":"yellow"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"blue"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"blue"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"green"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"blue"},{"x":1,"y":3,"color":"green"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"green"},{"x":4,"y":3,"color":"yellow"},{"x":1,"y":4,"color":"green"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":4,"y":6,"color":"blue"},{"x":4,"y":7,"color":"blue"},{"x":4,"y":8,"color":"blue"}]},
+            suppliedNextPuyos : [['yellow', 'yellow'], ['green', 'green'], ['blue', 'red']],
+            turnLimit : 3,
+            winConditionType : 'combo',
+            winConditionValue : 9,
+            hint : '이 연쇄는 오른쪽에서 왼쪽으로'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"yellow"},{"x":1,"y":0,"color":"yellow"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"yellow"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"purple"},{"x":3,"y":1,"color":"blue"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"green"},{"x":1,"y":2,"color":"blue"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"purple"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"green"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"yellow"},{"x":1,"y":4,"color":"purple"},{"x":2,"y":4,"color":"green"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"yellow"},{"x":1,"y":5,"color":"purple"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":1,"y":6,"color":"purple"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"green"},{"x":1,"y":7,"color":"red"},{"x":3,"y":7,"color":"purple"},{"x":4,"y":7,"color":"green"},{"x":3,"y":8,"color":"purple"},{"x":4,"y":8,"color":"green"},{"x":3,"y":9,"color":"purple"}]},
+            suppliedNextPuyos : [['red', 'red'], ['yellow', 'yellow']],
+            turnLimit : 2,
+            winConditionType : 'combo',
+            winConditionValue : 10,
+            hint : '왼쪽만 신경 써'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"blue"},{"x":0,"y":2,"color":"blue"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"green"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"green"},{"x":1,"y":3,"color":"green"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"red"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"green"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"blue"},{"x":1,"y":5,"color":"red"},{"x":2,"y":5,"color":"red"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"blue"},{"x":1,"y":6,"color":"green"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":5,"y":8,"color":"red"}]},
+            suppliedNextPuyos : [['blue', 'red'], ['red', 'green']],
+            turnLimit : 2,
+            winConditionType : 'combo',
+            winConditionValue : 11,
+            hint : '오른쪽만 신경 써'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"blue"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"purple"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"yellow"},{"x":3,"y":1,"color":"purple"},{"x":4,"y":1,"color":"green"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"green"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"yellow"},{"x":4,"y":2,"color":"purple"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"green"},{"x":1,"y":3,"color":"red"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"yellow"},{"x":4,"y":3,"color":"purple"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"purple"},{"x":3,"y":4,"color":"red"},{"x":4,"y":4,"color":"blue"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"blue"},{"x":1,"y":5,"color":"yellow"},{"x":2,"y":5,"color":"purple"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"blue"},{"x":1,"y":6,"color":"purple"},{"x":2,"y":6,"color":"red"},{"x":3,"y":6,"color":"blue"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"green"},{"x":0,"y":7,"color":"yellow"},{"x":1,"y":7,"color":"purple"},{"x":2,"y":7,"color":"red"},{"x":3,"y":7,"color":"blue"},{"x":4,"y":7,"color":"yellow"},{"x":5,"y":7,"color":"green"},{"x":0,"y":8,"color":"yellow"},{"x":1,"y":8,"color":"green"},{"x":2,"y":8,"color":"green"},{"x":5,"y":8,"color":"red"},{"x":0,"y":9,"color":"blue"},{"x":1,"y":9,"color":"yellow"},{"x":2,"y":9,"color":"yellow"},{"x":5,"y":9,"color":"red"},{"x":0,"y":10,"color":"yellow"},{"x":0,"y":11,"color":"yellow"}]},
+            suppliedNextPuyos : [['green', 'green'], ['green', 'green'], ['green', 'green']],
+            turnLimit : 3,
+            winConditionType : 'combo',
+            winConditionValue : 16,
+            hint : '최소 하나는 눞혀'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"blue"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"blue"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"blue"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"green"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"green"},{"x":1,"y":3,"color":"green"},{"x":2,"y":3,"color":"yellow"},{"x":3,"y":3,"color":"green"},{"x":4,"y":3,"color":"yellow"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"yellow"},{"x":2,"y":4,"color":"green"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"red"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"green"},{"x":2,"y":5,"color":"yellow"},{"x":3,"y":5,"color":"green"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"yellow"},{"x":1,"y":6,"color":"red"},{"x":2,"y":6,"color":"blue"},{"x":3,"y":6,"color":"green"},{"x":4,"y":6,"color":"yellow"},{"x":5,"y":6,"color":"red"},{"x":0,"y":7,"color":"green"},{"x":1,"y":7,"color":"yellow"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"blue"},{"x":0,"y":8,"color":"green"},{"x":1,"y":8,"color":"red"},{"x":2,"y":8,"color":"red"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"red"},{"x":5,"y":8,"color":"blue"},{"x":0,"y":9,"color":"green"},{"x":1,"y":9,"color":"red"},{"x":2,"y":9,"color":"blue"},{"x":3,"y":9,"color":"red"},{"x":4,"y":9,"color":"blue"},{"x":5,"y":9,"color":"red"},{"x":0,"y":10,"color":"yellow"},{"x":5,"y":10,"color":"green"}]},
+            suppliedNextPuyos : [['yellow', 'yellow'], ['green', 'yellow'], ['yellow', 'red']],
+            turnLimit : 3,
+            winConditionType : 'combo',
+            winConditionValue : 17,
+            hint : '노란색으로 시작하나 빨간색에 주의해'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"blue"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"green"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"purple"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"blue"},{"x":0,"y":2,"color":"yellow"},{"x":1,"y":2,"color":"yellow"},{"x":2,"y":2,"color":"purple"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"blue"},{"x":0,"y":3,"color":"green"},{"x":1,"y":3,"color":"yellow"},{"x":2,"y":3,"color":"purple"},{"x":3,"y":3,"color":"green"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"green"},{"x":1,"y":4,"color":"red"},{"x":2,"y":4,"color":"purple"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"green"},{"x":5,"y":4,"color":"green"},{"x":0,"y":5,"color":"green"},{"x":1,"y":5,"color":"red"},{"x":2,"y":5,"color":"green"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"yellow"},{"x":5,"y":5,"color":"yellow"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"blue"},{"x":2,"y":6,"color":"green"},{"x":3,"y":6,"color":"blue"},{"x":4,"y":6,"color":"red"},{"x":5,"y":6,"color":"yellow"},{"x":0,"y":7,"color":"green"},{"x":1,"y":7,"color":"blue"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"green"},{"x":4,"y":7,"color":"blue"},{"x":5,"y":7,"color":"red"},{"x":0,"y":8,"color":"yellow"},{"x":1,"y":8,"color":"purple"},{"x":2,"y":8,"color":"purple"},{"x":3,"y":8,"color":"green"},{"x":4,"y":8,"color":"green"},{"x":5,"y":8,"color":"red"},{"x":0,"y":9,"color":"red"},{"x":1,"y":9,"color":"red"},{"x":2,"y":9,"color":"purple"},{"x":3,"y":9,"color":"yellow"},{"x":4,"y":9,"color":"yellow"},{"x":5,"y":9,"color":"blue"},{"x":0,"y":10,"color":"red"},{"x":2,"y":10,"color":"blue"},{"x":3,"y":10,"color":"purple"},{"x":0,"y":11,"color":"blue"}]},
+            suppliedNextPuyos : [['blue', 'green'], ['yellow', 'yellow']],
+            turnLimit : 2,
+            winConditionType : 'combo',
+            winConditionValue : 17,
+            hint : '오른쪽만 신경 써'
+        }),
+        new PuzzlePuyoStage({
             stageData : {"puyos":[{"x":0,"y":0,"color":"red"},{"x":1,"y":0,"color":"green"},{"x":3,"y":0,"color":"green"},{"x":4,"y":0,"color":"red"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"red"},{"x":1,"y":1,"color":"red"},{"x":3,"y":1,"color":"blue"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"green"},{"x":1,"y":2,"color":"yellow"},{"x":3,"y":2,"color":"blue"},{"x":4,"y":2,"color":"green"},{"x":5,"y":2,"color":"green"},{"x":0,"y":3,"color":"blue"},{"x":1,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"blue"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"blue"},{"x":1,"y":4,"color":"green"},{"x":3,"y":4,"color":"yellow"},{"x":4,"y":4,"color":"yellow"},{"x":5,"y":4,"color":"yellow"},{"x":0,"y":5,"color":"purple"},{"x":1,"y":5,"color":"blue"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"green"},{"x":0,"y":6,"color":"red"},{"x":1,"y":6,"color":"purple"},{"x":3,"y":6,"color":"red"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"blue"},{"x":0,"y":7,"color":"red"},{"x":1,"y":7,"color":"yellow"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"purple"},{"x":5,"y":7,"color":"green"},{"x":0,"y":8,"color":"red"},{"x":1,"y":8,"color":"blue"},{"x":3,"y":8,"color":"blue"},{"x":4,"y":8,"color":"purple"},{"x":5,"y":8,"color":"purple"},{"x":0,"y":9,"color":"green"},{"x":1,"y":9,"color":"green"},{"x":3,"y":9,"color":"yellow"},{"x":4,"y":9,"color":"green"},{"x":5,"y":9,"color":"green"},{"x":0,"y":10,"color":"purple"},{"x":1,"y":10,"color":"red"},{"x":3,"y":10,"color":"purple"},{"x":4,"y":10,"color":"red"},{"x":5,"y":10,"color":"green"},{"x":5,"y":11,"color":"blue"}]},
             suppliedNextPuyos : [['green', 'yellow'], ['yellow', 'red'], ['green', 'green'], ['purple', 'green'], ['blue', 'green'], ['green', 'blue']],
             turnLimit : 6,
             winConditionType : 'clear',
             winConditionValue : 0,
             hint : '그냥 내려 봐'
+        }),
+        new PuzzlePuyoStage({
+            stageData : {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"red"},{"x":2,"y":0,"color":"blue"},{"x":3,"y":0,"color":"red"},{"x":4,"y":0,"color":"blue"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":1,"y":1,"color":"red"},{"x":2,"y":1,"color":"blue"},{"x":3,"y":1,"color":"red"},{"x":4,"y":1,"color":"blue"},{"x":5,"y":1,"color":"red"},{"x":0,"y":2,"color":"green"},{"x":1,"y":2,"color":"red"},{"x":2,"y":2,"color":"blue"},{"x":3,"y":2,"color":"red"},{"x":4,"y":2,"color":"blue"},{"x":5,"y":2,"color":"red"},{"x":0,"y":3,"color":"yellow"},{"x":1,"y":3,"color":"blue"},{"x":2,"y":3,"color":"red"},{"x":3,"y":3,"color":"blue"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"green"},{"x":0,"y":4,"color":"yellow"},{"x":1,"y":4,"color":"green"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"green"},{"x":0,"y":5,"color":"yellow"},{"x":1,"y":5,"color":"green"},{"x":2,"y":5,"color":"blue"},{"x":3,"y":5,"color":"yellow"},{"x":4,"y":5,"color":"blue"},{"x":5,"y":5,"color":"red"},{"x":0,"y":6,"color":"green"},{"x":1,"y":6,"color":"blue"},{"x":2,"y":6,"color":"yellow"},{"x":3,"y":6,"color":"blue"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"red"},{"x":0,"y":7,"color":"yellow"},{"x":1,"y":7,"color":"green"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"yellow"},{"x":4,"y":7,"color":"yellow"},{"x":5,"y":7,"color":"red"},{"x":0,"y":8,"color":"green"},{"x":1,"y":8,"color":"red"},{"x":2,"y":8,"color":"red"},{"x":3,"y":8,"color":"green"},{"x":4,"y":8,"color":"blue"},{"x":5,"y":8,"color":"blue"},{"x":0,"y":9,"color":"red"},{"x":1,"y":9,"color":"blue"},{"x":3,"y":9,"color":"red"},{"x":4,"y":9,"color":"green"},{"x":5,"y":9,"color":"blue"},{"x":0,"y":10,"color":"blue"},{"x":1,"y":10,"color":"green"},{"x":4,"y":10,"color":"green"},{"x":5,"y":10,"color":"red"},{"x":0,"y":11,"color":"green"}]},
+            suppliedNextPuyos : [['blue', 'red'], ['green', 'blue'], ['blue', 'purple'], ['blue', 'purple'], ['green', 'purple'], ['green', 'purple']],
+            turnLimit : 6,
+            winConditionType : 'combo',
+            winConditionValue : 19,
+            hint : '보라색은 무조건 위로'
         })
     ];
 
@@ -13336,6 +13478,20 @@
                 ...this.suppliedNextPuyos
             ].filter((color) => color && color !== 'garbage'))];
             this.usingColors = Array.isArray(pUsingColors) ? [...new Set(pUsingColors.filter((color) => color && color !== 'garbage'))] : patternColors;
+        }
+
+        /**
+         * 객체를 JSON 형태로 변환하여 반환합니다.
+         * @returns {Object} JSON 형태로 변환된 객체
+         */
+        toJSON() {
+            return {
+                stageData: this.stageData,
+                targetCombo: this.targetCombo,
+                suppliedNextPuyos: this.suppliedNextPuyos,
+                difficulty: this.difficulty,
+                usingColors: this.usingColors
+            }
         }
     }
 
@@ -16728,16 +16884,6 @@
     }
 
     /**
-     * 피버 연쇄 패턴을 추가한다.
-     * 
-     * @param {FeverStageState} feverStageState 피버 연쇄 패턴
-     */
-    function registerFeverStageState(feverStageState) {
-        if (!(feverStageState instanceof FeverStageState)) throw new TypeError('feverStageState는 FeverStageState 인스턴스여야 합니다.');
-        addFeverStageState(feverStageState);
-    }
-    
-    /**
      * 퍼즐 뿌요 스테이지를 추가한다.
      * 
      * @param {PuzzlePuyoStage} puzzlePuyoStage 퍼즐 뿌요 스테이지
@@ -16840,7 +16986,7 @@
         loadSoundDataURL,
         applySoundDataJson,
         setStorageManager,
-        registerFeverStageState,
+        registerFeverStage,
         registerPuzzleStage,
         registerOpponent,
         registerWarningPuyo,
