@@ -19,7 +19,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 36;
+    const BUILDNO = 40;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -305,6 +305,8 @@
      * @type {number}
      */
     const ONNX_INFERENCE_TIMEOUT = 2000;
+    /** 한 대전의 양쪽 적이 동시에 쓸 수 있는 ONNX 모델 수 상한이다. 대전이 끝나면 모두 해제한다. @type {number} */
+    const ONNX_SESSION_CACHE_LIMIT = 2;
     /** ONNX 런타임이 쓰는 wasm 글루 모듈 파일명이다. 46KB로 작아 항상 `src/js/`의 것을 쓴다. @type {string} */
     const ONNX_WASM_MJS_FILE = 'ort-wasm-simd-threaded.jsep.mjs';
     /** ONNX 런타임이 쓰는 wasm 바이너리 파일명이다. 27MB로 커서 CDN을 우선한다. @type {string} */
@@ -323,11 +325,11 @@
     const stringTable = {
         en: {
             '솔로몬': 'Solomon', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'Solomon AI response error: continuing with the fallback AI.',
-            '인공지능 모델을 불러오는 중...': 'Loading the AI model…', '인공지능 모델을 불러오지 못했습니다.': 'Failed to load the AI model.',
+            '인공지능 모델을 불러오는 중...': 'Loading the AI model…', '인공지능 모델을 불러오지 못했습니다.': 'Failed to load the AI model.', 'ONNX 워커를 시작하지 못해 기본 인공지능으로 진행합니다.': 'The ONNX worker could not start; continuing with the standard AI.',
             '뿌요 W': 'Puyo W',
             '초기화': 'Reset', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Reset all settings for this game?', '초기화 중...': 'Resetting...',
             '게임 시작': 'Game Start', '구경': 'Watch', '모드': 'Mode', '규칙': 'Rules', '색상 수': 'Colors', '다음 대전까지 %1초': 'Next match in %1 sec', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '퍼즐뿌요': 'Puzzle Puyo', '퍼즐뿌요 스테이지': 'Puzzle Puyo Stage', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Recommended turns: %1', '현재 턴 %1': 'Turn %1', '현재 턴 %1 / %2': 'Turn %1 / %2', '%1 연쇄 해봐': 'Make a %1-chain!', '싹쓸이 해봐': 'Get an all clear!', '한 번에 %1개 뿌요를 터뜨려봐': 'Pop %1 puyos at once!', '한 번에 %1가지 색 뿌요를 터뜨려봐': 'Pop %1 colors at once!', '방해뿌요 %1개를 발생 시켜봐': 'Send %1 garbage puyos!', '스테이지 클리어': 'Stage Clear', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
-            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '안드레알푸스': 'Andrealphus', '플라우로스': 'Flauros', '안드라스': 'Andras', '시작': 'Start', '이전': 'Back',
+            '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '안드레알푸스': 'Andrealphus', '플라우로스': 'Flauros', '안드라스': 'Andras', '발라크': 'Valak', '자간': 'Zagan', '시작': 'Start', '이전': 'Back',
             '극한': 'Extreme',
             '일시정지': 'Paused', '재개': 'Resume', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '게임 시간 %1초': 'Game time: %1 sec', '%1연쇄': '%1 Chain',
@@ -351,7 +353,7 @@
             '뿌요 W': 'Puyo W',
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
             '게임 시작': 'ゲーム開始', '구경': '観戦', '모드': 'モード', '규칙': 'ルール', '색상 수': '色数', '다음 대전까지 %1초': '次の対戦まで%1秒', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '퍼즐뿌요': 'パズルぷよ', '퍼즐뿌요 스테이지': 'パズルぷよステージ', '스테이지 %1': 'ステージ %1', '권장 턴 수 %1': '推奨ターン数: %1', '현재 턴 %1': 'ターン %1', '현재 턴 %1 / %2': 'ターン %1 / %2', '%1 연쇄 해봐': '%1連鎖してみよう！', '싹쓸이 해봐': '全消ししてみよう！', '한 번에 %1개 뿌요를 터뜨려봐': '一度に%1個のぷよを消そう！', '한 번에 %1가지 색 뿌요를 터뜨려봐': '一度に%1色のぷよを消そう！', '방해뿌요 %1개를 발생 시켜봐': 'おじゃまぷよを%1個送ろう！', '스테이지 클리어': 'ステージクリア', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
-            '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '안드레알푸스': 'アンドレアルフス', '플라우로스': 'フラウロス', '안드라스': 'アンドラス', '시작': '開始', '이전': '戻る',
+            '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '안드레알푸스': 'アンドレアルフス', '플라우로스': 'フラウロス', '안드라스': 'アンドラス', '발라크': 'ヴァラク', '자간': 'ザガン', '시작': '開始', '이전': '戻る',
             '극한': '極限',
             '일시정지': '一時停止', '재개': '再開', '종료': '終了', 'GitHub': 'GitHub',
             '승리': '勝利', '패배': '敗北', '최종 점수 %1': '最終スコア %1', '게임 시간 %1초': 'ゲーム時間: %1秒', '%1연쇄': '%1連鎖',
@@ -376,7 +378,7 @@
             '초기화': '重置', '이 게임의 모든 설정을 초기화하시겠습니까?': '要重置此游戏的所有设置吗？', '초기화 중...': '正在重置…',
             '게임 시작': '开始游戏', '구경': '观战', '모드': '模式', '규칙': '规则', '색상 수': '颜色数', '다음 대전까지 %1초': '距离下一场对战还有%1秒', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '퍼즐뿌요': '益智魔法气泡', '퍼즐뿌요 스테이지': '益智魔法气泡关卡', '스테이지 %1': '关卡 %1', '권장 턴 수 %1': '推荐回合数: %1', '현재 턴 %1': '第 %1 回合', '현재 턴 %1 / %2': '第 %1 / %2 回合', '%1 연쇄 해봐': '试试 %1 连锁！', '싹쓸이 해봐': '试试全消！', '한 번에 %1개 뿌요를 터뜨려봐': '一次消除 %1 个魔法气泡！', '한 번에 %1가지 색 뿌요를 터뜨려봐': '一次消除 %1 种颜色的魔法气泡！', '방해뿌요 %1개를 발생 시켜봐': '发送 %1 个垃圾魔法气泡！', '스테이지 클리어': '关卡完成', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '简单', '보통': '普通', '어려움': '困难', '안드로말리우스': '安德罗马利乌斯', '단탈리온': '丹塔利昂', '세레': '西瑞', '데카라비亚': '德卡拉比亚', '벨리알': '贝利亚尔', '시작': '开始', '이전': '返回',
-            '암두시아스': '阿姆杜西亚斯', '키마리스': '基马里斯', '안드레알푸스': '安德雷阿尔弗斯', '플라우로스': '弗劳洛斯', '안드라스': '安德拉斯',
+            '암두시아스': '阿姆杜西亚斯', '키마리스': '基马里斯', '안드레알푸스': '安德雷阿尔弗斯', '플라우로스': '弗劳洛斯', '안드라스': '安德拉斯', '발라크': '瓦拉克', '자간': '扎甘',
             '극한': '极限',
             '일시정지': '暂停', '재개': '继续', '종료': '退出', 'GitHub': 'GitHub',
             '승리': '胜利', '패배': '失败', '최종 점수 %1': '最终得分 %1', '게임 시간 %1초': '游戏时间：%1秒', '%1연쇄': '%1连锁',
@@ -625,8 +627,10 @@
     let onnxWasmAvailable = true;
     /** wasm 파일 경로 결정이 끝났는지 추적하는 약속이다. 세션을 만들기 전에 반드시 기다린다. @type {Promise<boolean>|null} */
     let onnxWasmPathsPromise = null;
-    /** 이미 만든 ONNX 추론 세션을 모델 경로별로 재사용하기 위한 캐시다. @type {Map<string, Promise<object>>} */
+    /** 현재 대전이 빌린 ONNX 세션을 모델 경로별로 관리한다. 값에는 로딩 약속과 대전 중 사용 수가 들어간다. @type {Map<string, {loading:Promise<object>, leases:number}>} */
     const onnxSessionCache = new Map();
+    /** 같은 세션의 `run()`이 겹치지 않도록 현재 실행 중인 추론 약속을 기억한다. @type {Map<object, Promise<object>>} */
+    const onnxSessionRunPromises = new Map();
     /** 종료된 설정 화면의 비동기 응답을 무시하기 위한 요청 식별자다. @type {number} */
     let settingsApiTestRequestId = 0;
     /** 설정 전체 초기화 확인 후 표시하는 초기화 진행 화면 여부다. @type {boolean} */
@@ -1862,14 +1866,31 @@
         return onnxRuntimeAvailable && onnxWasmAvailable;
     }
 
+    /** ONNX 세션 캐시의 최근 사용 순서를 갱신한다. @param {string} modelPath 모델 상대 경로 @returns {{loading:Promise<object>, leases:number}|null} 캐시 항목 */
+    function touchOnnxSessionCache(modelPath) {
+        const cached = onnxSessionCache.get(modelPath);
+        if (!cached) return null;
+        onnxSessionCache.delete(modelPath);
+        onnxSessionCache.set(modelPath, cached);
+        return cached;
+    }
+
     /**
-     * 모델 경로별 ONNX 추론 세션을 만들고 캐시한다. 같은 모델을 다시 고르면 이미 만든 세션을 재사용한다.
+     * 모델 경로별 ONNX 추론 세션을 만들고 빌린다. 같은 모델의 동시 요청은 하나의 약속으로 합친다.
+     * 대전이 끝날 때 빌린 수만큼 반납해야 세션과 wasm 메모리를 해제할 수 있다.
      * @param {string} modelPath `src/` 기준 모델 상대 경로
      * @returns {Promise<object>} 추론 세션
      */
-    function loadOnnxSession(modelPath) {
-        const cached = onnxSessionCache.get(modelPath);
-        if (cached) return cached;
+    function acquireOnnxSession(modelPath) {
+        const cached = touchOnnxSessionCache(modelPath);
+        if (cached) {
+            cached.leases += 1;
+            return cached.loading;
+        }
+        if (onnxSessionCache.size >= ONNX_SESSION_CACHE_LIMIT) {
+            throw new Error(`동시에 사용할 수 있는 ONNX 모델 수(${ONNX_SESSION_CACHE_LIMIT})를 넘었습니다.`);
+        }
+        const entry = { loading: null, leases: 1 };
         const loading = (async () => {
             const runtime = getOnnxRuntime();
             if (!runtime) throw new Error('ONNX 런타임(ort)이 없습니다.');
@@ -1888,18 +1909,69 @@
             try {
                 return await runtime.InferenceSession.create(modelBuffer, sessionOptions);
             } catch (error) {
-                // Blob 워커를 막는 CSP 등으로 프록시 워커를 띄우지 못하면 예전처럼 메인 스레드에서 실행한다.
-                // 이때는 세션을 만드는 동안 화면이 잠시 멈추지만, 적을 아예 못 쓰게 되는 것보다는 낫다.
-                if (!runtime.env?.wasm?.proxy) throw error;
-                console.error('ONNX 프록시 워커를 시작하지 못해 메인 스레드 추론으로 되돌립니다.', error);
-                runtime.env.wasm.proxy = false;
-                return runtime.InferenceSession.create(modelBuffer, sessionOptions);
+                // Blob Worker/CSP 문제로 워커를 만들지 못한 경우 메인 스레드 재시도는 브라우저를 멈출 수 있다.
+                // 호출자가 이 오류를 받아 해당 대전만 기존 시뮬레이션 AI로 안전하게 전환한다.
+                if (runtime.env?.wasm?.proxy && isOnnxWorkerStartError(error)) {
+                    const workerError = new Error('ONNX 프록시 워커를 시작하지 못했습니다.');
+                    workerError.onnxWorkerUnavailable = true;
+                    throw workerError;
+                }
+                throw error;
             }
         })();
+        entry.loading = loading;
         // 실패한 시도를 캐시에 남기면 다시 시도할 수 없으므로, 실패 시에는 캐시에서 지운다.
-        loading.catch(() => onnxSessionCache.delete(modelPath));
-        onnxSessionCache.set(modelPath, loading);
+        loading.catch(() => {
+            if (onnxSessionCache.get(modelPath) === entry) onnxSessionCache.delete(modelPath);
+        });
+        onnxSessionCache.set(modelPath, entry);
         return loading;
+    }
+
+    /** Blob Worker 또는 CSP 때문에 ONNX 프록시 워커 생성만 실패했는지 확인한다. @param {*} error 생성 오류 @returns {boolean} 워커 생성 실패 여부 */
+    function isOnnxWorkerStartError(error) {
+        const message = String(error?.message || error || '').toLowerCase();
+        return message.includes('worker') && (message.includes('blob') || message.includes('content security') || message.includes('csp') || message.includes('construct'));
+    }
+
+    /** `acquireOnnxSession()`으로 빌린 세션 하나를 반납하고, 마지막 사용자가 떠나면 wasm 리소스를 해제한다. @param {string} modelPath 모델 상대 경로 @returns {void} */
+    function releaseOnnxSession(modelPath) {
+        const entry = onnxSessionCache.get(modelPath);
+        if (!entry) return;
+        entry.leases = Math.max(0, entry.leases - 1);
+        if (entry.leases > 0) return;
+        onnxSessionCache.delete(modelPath);
+        void (async () => {
+            try {
+                const session = await entry.loading;
+                const running = onnxSessionRunPromises.get(session);
+                // 실행 중인 run()을 먼저 끝내야 release()가 아직 쓰는 세션을 해제하지 않는다.
+                if (running) {
+                    try { await running; } catch (error) { /* 추론 실패는 이미 대체 AI가 처리한다. */ }
+                }
+                if (typeof session.release === 'function') await session.release();
+            } catch (error) {
+                // 로딩 실패 세션은 해제할 리소스가 없고, 해제 실패는 화면 진행을 막지 않는다.
+                console.error('ONNX 세션을 해제하지 못했습니다.', error);
+            }
+        })();
+    }
+
+    /** 같은 세션의 추론을 하나만 실행한다. 이미 실행 중이면 null을 돌려 호출자가 즉시 대체 AI를 쓴다. @param {object} session ONNX 세션 @param {object} feeds 입력 텐서 맵 @returns {Promise<object>|null} 출력 맵 또는 실행 불가 표시 */
+    function runOnnxSessionIfIdle(session, feeds) {
+        if (onnxSessionRunPromises.has(session)) return null;
+        let running;
+        try {
+            running = Promise.resolve(session.run(feeds));
+        } catch (error) {
+            return Promise.reject(error);
+        }
+        onnxSessionRunPromises.set(session, running);
+        void running.then(
+            () => { if (onnxSessionRunPromises.get(session) === running) onnxSessionRunPromises.delete(session); },
+            () => { if (onnxSessionRunPromises.get(session) === running) onnxSessionRunPromises.delete(session); }
+        );
+        return running;
     }
 
     /**
@@ -2681,6 +2753,11 @@
         };
     }
 
+    /** 현재 게임이 빌린 ONNX 모델 세션을 모두 반납한다. @param {object|null} targetGame 종료할 게임 상태 @returns {void} */
+    function releaseGameOnnxModels(targetGame) {
+        targetGame?.players?.forEach((player) => player.controller?.releaseModel?.());
+    }
+
     /**
      * 이번 대전에 ONNX 추론이 필요한 적이 있으면 모델을 먼저 불러오고, 그동안 카운트다운을 멈춘다.
      * 모델 파일이 크기 때문에 게임 화면을 먼저 보여 주고 이 자리에서 로딩 안내를 띄운다.
@@ -2699,7 +2776,19 @@
             if (game !== startedGame) return;
             game.onnxLoading = false;
         }).catch((error) => {
+            if (error?.onnxWorkerUnavailable === true) {
+                console.error('ONNX 프록시 워커를 시작하지 못해 기본 인공지능으로 전환합니다.', error);
+                if (game !== startedGame) {
+                    onnxControllers.forEach((controller) => controller.releaseModel?.());
+                    return;
+                }
+                onnxControllers.forEach((controller) => controller.disableOnnx?.());
+                game.onnxLoading = false;
+                showMessage(translate('ONNX 워커를 시작하지 못해 기본 인공지능으로 진행합니다.'), '#f5fbfc', 3000, '#7b2636');
+                return;
+            }
             console.error('ONNX 모델을 불러오지 못했습니다.', error);
+            onnxControllers.forEach((controller) => controller.releaseModel?.());
             if (game !== startedGame) return;
             stopBackgroundMusic();
             game = null;
@@ -5191,6 +5280,10 @@
         const completedCombo = player.combo;
         deliverFinalAttackEnergy(player, opponent);
         if (game?.continuousFever && player === game.players[0] && game.fever) game.fever.pendingCombo = completedCombo;
+        // 개발용 도구의 피버 테스트는 지급받은 첫 쌍으로 만든 연쇄 수만 결과로 남긴다.
+        if (game?.toolsTest?.kind === 'fever' && game.toolsTest.result === null && player === game.players[0]) {
+            game.toolsTest.result = { kind: 'fever', combo: completedCombo };
+        }
         if (game?.feverRule && player.fever?.active) player.fever.pendingCombo = completedCombo;
         if (game?.puzzle && player === game.players[0]) game.puzzle.pendingCombo = completedCombo;
         player.combo = 0;
@@ -5669,6 +5762,10 @@
     /** 퍼즐뿌요 스테이지의 클리어 정보를 저장하고 즉시 결과 화면으로 전환한다. @param {PlayerState} player 사용자 @returns {void} */
     function finishPuzzleStage(player) {
         const stageIndex = game.puzzle.stageIndex;
+        // 개발용 도구의 퍼즐 테스트는 달성한 턴 수와 연쇄 수를 결과로 남긴다.
+        if (game.toolsTest?.kind === 'puzzle' && game.toolsTest.result === null) {
+            game.toolsTest.result = { kind: 'puzzle', cleared: true, turn: game.puzzle.turn, combo: game.puzzle.pendingCombo };
+        }
         const earnedStar = player === game.players[0] && game.puzzle.turn <= game.puzzle.stage.turnLimit;
         let progressChanged = false;
         let goldReward = 0;
@@ -8898,8 +8995,8 @@
         WARNING_PUYO_CLASSES.filter((WarningPuyoType) => WarningPuyoType.unitCount > BigBangWarningPuyo.unitCount)
             .forEach((WarningPuyoType) => definitions.push({ type: `warning:${WarningPuyoType.unitCount}`, kind: 'warning', value: WarningPuyoType.unitCount, weight: 1 }));
         const fixedEnemyTypes = new Set(['Andromalius', 'Dantalion', 'Seere', 'Decarabia', 'Belial', 'Amdusias', 'Kimaris', 'Andrealphus', 'Flauros']);
-        // 솔로몬은 세션 한정 적이고, 안드라스는 아직 카드 출시 대상이 아니므로 제외한다.
-        OPPONENTS.filter((opponent) => !fixedEnemyTypes.has(opponent.classType) && opponent.classType !== 'Solomon' && opponent.classType !== 'Andras')
+        // 솔로몬은 세션 한정 적이고, 출시 예정 적은 출시될 때까지 카드 풀에서 제외한다.
+        OPPONENTS.filter((opponent) => !fixedEnemyTypes.has(opponent.classType) && opponent.classType !== 'Solomon' && !opponent.notAvail)
             .forEach((opponent) => definitions.push({ type: `enemy:${opponent.classType}`, kind: 'enemy', value: opponent.classType, weight: 1 }));
         return definitions;
     }
@@ -9727,6 +9824,8 @@
     /** 도구 테스트를 끝내고 편집 모드로 되돌린다. @returns {void} */
     function returnFromToolsTest() {
         stopBackgroundMusic();
+        // 테스트 결과는 game을 비우기 전에 챙겨 두었다가 종료 콜백으로 넘긴다.
+        const result = game?.toolsTest?.result || null;
         game = null;
         if (!simulator?.tools) {
             menuScreen = 'title';
@@ -9738,7 +9837,7 @@
         restoreSimulatorDrawing();
         const onFinish = simulator.tools.onTestFinish;
         simulator.tools.onTestFinish = null;
-        if (typeof onFinish === 'function') onFinish();
+        if (typeof onFinish === 'function') onFinish(result);
     }
 
     /** 도구 테스트가 끝났는지 확인하고 정해진 시간이 지나면 편집 모드로 돌아간다. @param {number} delta 경과 시간(ms) @returns {void} */
@@ -9754,7 +9853,7 @@
         if (!game.running) test.finishTimer = TOOLS_TEST_FINISH_DELAY;
     }
 
-    /** 도구 테스트 시작 전 편집 상태를 보존하고 테스트 종료 콜백을 등록한다. @param {Function} [onFinish] 종료 시 호출할 함수 @returns {void} */
+    /** 도구 테스트 시작 전 편집 상태를 보존하고 테스트 종료 콜백을 등록한다. @param {Function} [onFinish] 종료 시 테스트 결과를 받아 호출할 함수 @returns {void} */
     function prepareToolsTest(onFinish) {
         if (!simulator?.tools) throw new Error('도구 편집 모드에서만 테스트할 수 있습니다.');
         // 테스트 뒤 restoreSimulatorDrawing()이 예전 "재생" 시점의 보드로 되돌리지 않도록 백업을 비운다.
@@ -9766,7 +9865,7 @@
      * 편집 중인 피버 패턴을 연속 피버 모드로 테스트한다.
      * 남은 시간 60초, 목표 연쇄와 지급 뿌요는 이 패턴의 값을 그대로 사용한다.
      * @param {FeverStageState} feverStage 테스트할 피버 패턴
-     * @param {Function} [onFinish] 테스트가 끝나 편집 모드로 돌아갈 때 호출할 함수
+     * @param {Function} [onFinish] 테스트가 끝나 편집 모드로 돌아갈 때 호출할 함수. 테스트 결과 객체를 받는다.
      * @returns {void}
      */
     function startToolsFeverTest(feverStage, onFinish) {
@@ -9779,7 +9878,7 @@
         selectedDifficulty = Math.max(0, DIFFICULTIES.findIndex((difficulty) => difficulty.colors.length >= colorCount));
         startGame(false, true);
         if (!game?.fever) throw new Error('연속 피버 테스트를 시작하지 못했습니다.');
-        game.toolsTest = { kind: 'fever', pendingStage: feverStage, finishAfterStage: false, finishTimer: null };
+        game.toolsTest = { kind: 'fever', pendingStage: feverStage, finishAfterStage: false, finishTimer: null, result: null };
         game.pairQueueColors = colors;
         game.players.forEach((player) => { player.colors = colors; });
         game.fever.targetCombo = feverStage.targetCombo;
@@ -9792,7 +9891,7 @@
     /**
      * 편집 중인 퍼즐뿌요 스테이지를 그대로 테스트한다. 클리어 기록과 골드는 남기지 않는다.
      * @param {PuzzlePuyoStage} puzzleStage 테스트할 퍼즐뿌요 스테이지
-     * @param {Function} [onFinish] 테스트가 끝나 편집 모드로 돌아갈 때 호출할 함수
+     * @param {Function} [onFinish] 테스트가 끝나 편집 모드로 돌아갈 때 호출할 함수. 테스트 결과 객체를 받는다.
      * @returns {void}
      */
     function startToolsPuzzleTest(puzzleStage, onFinish) {
@@ -9800,7 +9899,7 @@
         prepareToolsTest(onFinish);
         startPuzzleStageGame(puzzleStage, -1, 0);
         if (!game?.puzzle) throw new Error('퍼즐뿌요 테스트를 시작하지 못했습니다.');
-        game.toolsTest = { kind: 'puzzle', pendingStage: null, finishAfterStage: false, finishTimer: null };
+        game.toolsTest = { kind: 'puzzle', pendingStage: null, finishAfterStage: false, finishTimer: null, result: null };
     }
 
     /**
@@ -10995,6 +11094,9 @@
     function handleSettingsKeydown(event, key) {
         const textField = getSettingsTextField();
         if (settingsEditing && textField) {
+            // canvas에 포커스가 있을 때 WebKit은 Backspace를 이전 페이지 이동으로 처리한다.
+            // 이 분기에서 처리하는 입력은 모두 설정 문자열 편집 전용이므로 브라우저 기본 동작을 막는다.
+            event.preventDefault();
             const field = textField;
             if (event.ctrlKey && key === 'a') {
                 event.preventDefault();
@@ -11124,6 +11226,7 @@
             ? finishedGame.puzzle.returnFocusIndex
             : 0;
         stopBackgroundMusic();
+        releaseGameOnnxModels(finishedGame);
         game = null;
         if (returnToPuzzleStages) openPuzzleStageSelection(puzzleFocusIndex);
         else if (returnToTitle) { menuScreen = 'title'; loadNotice(); }
@@ -11482,6 +11585,7 @@
             // 개발용 도구의 테스트는 메인 화면 대신 편집 모드로 돌아간다.
             if (game?.toolsTest) { returnFromToolsTest(); return; }
             stopBackgroundMusic();
+            releaseGameOnnxModels(game);
             game = null;
             menuScreen = 'title'; loadNotice();
             syncBackgroundMusic();
@@ -12449,6 +12553,7 @@
      */
     function destroy() {
         if (!initialized) return;
+        releaseGameOnnxModels(game);
         stopBackgroundMusic();
         if (settingsResetTimer !== null) window.clearTimeout(settingsResetTimer);
         if (feverStageValidationTimer !== null) window.clearTimeout(feverStageValidationTimer);
@@ -13555,6 +13660,20 @@
             4,
             ['yellow', 'green'],
             4,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":1,"y":0,"color":"green"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"yellow"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"blue"},{"x":1,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":0,"y":2,"color":"blue"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"blue"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"blue"},{"x":2,"y":5,"color":"red"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"green"},{"x":5,"y":5,"color":"red"},{"x":2,"y":6,"color":"blue"},{"x":3,"y":6,"color":"green"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"red"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"blue"},{"x":2,"y":8,"color":"red"},{"x":3,"y":8,"color":"red"},{"x":4,"y":8,"color":"green"},{"x":5,"y":8,"color":"blue"},{"x":3,"y":9,"color":"blue"},{"x":4,"y":9,"color":"blue"},{"x":5,"y":9,"color":"red"},{"x":3,"y":10,"color":"yellow"},{"x":4,"y":10,"color":"yellow"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"blue"}]},
+            12,
+            ['yellow', 'green'],
+            3,
+            ['red', 'green', 'blue', 'yellow']
+        ),
+        new FeverStageState(
+            {"puyos":[{"x":0,"y":0,"color":"green"},{"x":2,"y":0,"color":"yellow"},{"x":3,"y":0,"color":"yellow"},{"x":4,"y":0,"color":"yellow"},{"x":5,"y":0,"color":"red"},{"x":0,"y":1,"color":"green"},{"x":2,"y":1,"color":"red"},{"x":3,"y":1,"color":"green"},{"x":4,"y":1,"color":"red"},{"x":5,"y":1,"color":"yellow"},{"x":2,"y":2,"color":"red"},{"x":3,"y":2,"color":"green"},{"x":4,"y":2,"color":"red"},{"x":5,"y":2,"color":"yellow"},{"x":2,"y":3,"color":"blue"},{"x":3,"y":3,"color":"red"},{"x":4,"y":3,"color":"green"},{"x":5,"y":3,"color":"blue"},{"x":2,"y":4,"color":"blue"},{"x":3,"y":4,"color":"green"},{"x":4,"y":4,"color":"red"},{"x":5,"y":4,"color":"blue"},{"x":2,"y":5,"color":"red"},{"x":3,"y":5,"color":"red"},{"x":4,"y":5,"color":"green"},{"x":5,"y":5,"color":"red"},{"x":2,"y":6,"color":"blue"},{"x":3,"y":6,"color":"green"},{"x":4,"y":6,"color":"blue"},{"x":5,"y":6,"color":"red"},{"x":2,"y":7,"color":"blue"},{"x":3,"y":7,"color":"red"},{"x":4,"y":7,"color":"green"},{"x":5,"y":7,"color":"blue"},{"x":3,"y":8,"color":"red"},{"x":4,"y":8,"color":"green"},{"x":5,"y":8,"color":"blue"},{"x":3,"y":9,"color":"blue"},{"x":4,"y":9,"color":"blue"},{"x":5,"y":9,"color":"red"},{"x":3,"y":10,"color":"yellow"},{"x":4,"y":10,"color":"yellow"},{"x":5,"y":10,"color":"red"},{"x":5,"y":11,"color":"blue"}]},
+            11,
+            ['red', 'yellow'],
+            6,
             ['red', 'green', 'blue', 'yellow']
         ),
         new FeverStageState(
@@ -15843,6 +15962,12 @@
             this.modelPath = 'onnx/model01.onnx';
             /** 이미 만들어 둔 추론 세션이다. 대전 시작 전에 `prepareModel()`이 채운다. @type {object|null} */
             this.session = null;
+            /** ONNX 모델 세션을 빌린 상태인지 여부다. 대전 종료 시 반드시 반납한다. @type {boolean} */
+            this.modelLeaseHeld = false;
+            /** 프록시 Worker를 쓸 수 없어 이번 대전에서 기존 시뮬레이션 AI로 전환했는지 여부다. @type {boolean} */
+            this.onnxEnabled = true;
+            /** 중복 모델 준비 요청을 합치기 위한 약속이다. @type {Promise<void>|null} */
+            this.modelLoadPromise = null;
             /** @type {'idle'|'pending'|'ready'|'fallback'|'cancelled'} */
             this.decisionState = 'idle';
             /** 추론이 끝났을 때 아직 같은 턴인지 확인하기 위한 판별용 플레이어다. @type {PlayerState|null} */
@@ -15867,13 +15992,33 @@
             this.decisionTimeoutId = null;
         }
 
-        /**
-         * 대전을 시작하기 전에 ONNX 세션을 만들어 둔다.
-         * 실패하면 예외를 그대로 올려서 호출자가 대전을 시작하지 않고 안내 문구를 띄우게 한다.
-         * @returns {Promise<void>}
-         */
+        /** 대전을 시작하기 전에 ONNX 세션을 빌려 둔다. @returns {Promise<void>} */
         async prepareModel() {
-            this.session = await loadOnnxSession(this.modelPath);
+            if (!this.onnxEnabled || this.modelLoadPromise) return this.modelLoadPromise;
+            this.modelLeaseHeld = true;
+            this.modelLoadPromise = acquireOnnxSession(this.modelPath).then((session) => {
+                // 로딩 중 대전이 끝나 반납했다면 세션 참조를 다시 붙잡지 않는다.
+                if (this.modelLeaseHeld) this.session = session;
+            }).catch((error) => {
+                this.modelLeaseHeld = false;
+                this.modelLoadPromise = null;
+                throw error;
+            });
+            return this.modelLoadPromise;
+        }
+
+        /** 현재 대전에서 빌린 모델 세션을 반납한다. @returns {void} */
+        releaseModel() {
+            if (!this.modelLeaseHeld) return;
+            this.modelLeaseHeld = false;
+            this.session = null;
+            releaseOnnxSession(this.modelPath);
+        }
+
+        /** 프록시 Worker를 만들 수 없을 때 이번 대전만 기존 시뮬레이션 AI로 전환한다. @returns {void} */
+        disableOnnx() {
+            this.onnxEnabled = false;
+            this.releaseModel();
         }
 
         /** 캡처한 뿌요가 아직 이 컨트롤러의 현재 조작 턴인지 확인한다. @param {PlayerState} player CPU 플레이어 @returns {boolean} 같은 턴이면 true */
@@ -15987,6 +16132,8 @@
          * @returns {Promise<void>}
          */
         async decidePlacement(player, token) {
+            let tensor = null;
+            let outputs = null;
             try {
                 const runtime = getOnnxRuntime();
                 if (!runtime) throw new Error('ONNX 런타임(ort)이 없습니다.');
@@ -16002,8 +16149,13 @@
                     }
                     inputData.set(candidate.observation, index * ONNX_OBSERVATION_SIZE);
                 });
-                const tensor = new runtime.Tensor('float32', inputData, [candidates.length, ONNX_OBSERVATION_SIZE]);
-                const outputs = await this.session.run({ [ONNX_INPUT_NAME]: tensor });
+                tensor = new runtime.Tensor('float32', inputData, [candidates.length, ONNX_OBSERVATION_SIZE]);
+                outputs = await runOnnxSessionIfIdle(this.session, { [ONNX_INPUT_NAME]: tensor });
+                // 앞선 턴 또는 다른 ONNX 적이 같은 세션을 쓰고 있으면 요청을 쌓지 않고 즉시 대체 AI를 쓴다.
+                if (outputs === null) {
+                    if (token === this.inferenceToken && this.isCurrentTurn(player)) this.applyFallback(player);
+                    return;
+                }
                 // 추론을 기다리는 동안 턴이 넘어갔으면 이 결과는 버린다.
                 if (token !== this.inferenceToken || !this.isCurrentTurn(player)) return;
                 const values = outputs?.[ONNX_OUTPUT_NAME]?.data;
@@ -16036,6 +16188,10 @@
                 // 추론·출력 검증 실패는 대전을 멈추지 않고 앞 1수 시뮬레이션 결과로 이어 간다.
                 console.error(`${this.getClassType()}의 ONNX 추론에 실패했습니다. 앞 1수 시뮬레이션으로 진행합니다.`, error);
                 this.applyFallback(player);
+            } finally {
+                // CPU wasm 텐서도 내부 버퍼 참조를 끊고, 이후 GPU 실행 제공자로 바뀌어도 리소스를 남기지 않는다.
+                if (typeof tensor?.dispose === 'function') tensor.dispose();
+                if (outputs && typeof outputs === 'object') Object.values(outputs).forEach((output) => output?.dispose?.());
             }
         }
 
@@ -16056,6 +16212,11 @@
 
         /** @param {PlayerState} player 자동 조작할 플레이어 @returns {void} */
         prepareTurn(player) {
+            // 프록시 Worker가 불가능한 대전은 ONNX를 절대 메인 스레드에서 재시도하지 않는다.
+            if (!this.onnxEnabled) {
+                super.prepareTurn(player);
+                return;
+            }
             // 이전 턴의 추론이 아직 돌고 있으면 그 결과를 버리도록 일련번호를 올린다.
             this.inferenceToken += 1;
             this.clearDecisionTimeout();
@@ -16261,16 +16422,15 @@
     }
 
     /**
-     * 안드라스는 날개 달린 천사 몸·새 머리·검은 늑대·불타는 검의 전승을 바탕으로 한 출시 예정 적이다.
-     * TODO: 전용 ONNX 가치망이 준비되면 modelPath를 교체하고 전용 판단 특성을 추가한다.
+     * 안드라스는 날개 달린 천사 몸·새 머리·검은 늑대·불타는 검의 전승을 바탕으로 한 적이다.
+     * 판단은 플라우로스와 같은 ONNX 공통 로직으로 하며 전용 `model02.onnx` 가치망을 사용한다.
      */
     class Andras extends OnnxEnemy {
         constructor() {
             super();
             this.sortPriority = 10;
-            this.notAvail = true;
-            // 전용 모델 출시 전까지 플라우로스와 같은 ONNX 모델을 임시 사용한다.
-            this.modelPath = 'onnx/model01.onnx';
+            this.notAvail = false;
+            this.modelPath = 'onnx/model02.onnx';
         }
 
         /** @returns {string} 진행 상황에 저장할 클래스 이름 */
@@ -16338,6 +16498,163 @@
     }
 
     /**
+     * 발라크는 두 개의 붉은 목을 가진 지옥의 드래곤 위에 탄 날개 달린 소년의 모습으로 나타나는 적이다.
+     * 판단은 플라우로스와 같은 ONNX 공통 로직으로 하며 전용 `model03.onnx` 가치망을 사용한다.
+     */
+    class Valak extends OnnxEnemy {
+        constructor() {
+            super();
+            this.sortPriority = 11;
+            this.modelPath = 'onnx/model03.onnx';
+        }
+
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'Valak'; }
+
+        /** @returns {string} 적 이름 */
+        getName() { return '발라크'; }
+
+        /** @returns {{bezel:string, field:string, center:string}} 베젤·플레이 영역·중앙 영역 배경색 */
+        getFieldThemeColors() {
+            return { bezel: '#431c24', field: '#622936', center: '#210b12' };
+        }
+
+        /**
+         * 두 머리의 붉은 드래곤과 그 위에 탄 작은 날개 달린 소년을 그린다.
+         * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+         * @param {number} centerX 캐릭터 중심 X 좌표
+         * @param {number} centerY 캐릭터 중심 Y 좌표
+         * @param {number} scale 기본 크기 대비 배율
+         * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
+         * @returns {void}
+         */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            const size = 72 * scale;
+            drawingContext.save();
+            drawingContext.translate(centerX, centerY);
+            drawingContext.lineJoin = 'round'; drawingContext.lineCap = 'round';
+            drawingContext.strokeStyle = '#2a0a10'; drawingContext.lineWidth = 4 * scale;
+
+            // 불길처럼 뻗은 날개와 드래곤 몸통이다.
+            drawingContext.fillStyle = '#7d1f2d';
+            [-1, 1].forEach((direction) => {
+                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.2, size * 0.22);
+                drawingContext.lineTo(direction * size * 0.92, -size * 0.26); drawingContext.lineTo(direction * size * 0.67, size * 0.15);
+                drawingContext.lineTo(direction * size * 0.96, size * 0.38); drawingContext.lineTo(direction * size * 0.28, size * 0.46);
+                drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+            });
+            drawingContext.fillStyle = '#a52b37';
+            drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.43, size * 0.65, size * 0.31, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+
+            // 서로 갈라진 두 붉은 목과 뿔 달린 머리다.
+            [-1, 1].forEach((direction) => {
+                drawingContext.strokeStyle = '#a52b37'; drawingContext.lineWidth = 16 * scale;
+                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.18, size * 0.38); drawingContext.quadraticCurveTo(direction * size * 0.28, 0, direction * size * 0.5, -size * 0.28); drawingContext.stroke();
+                drawingContext.fillStyle = '#bb3440'; drawingContext.strokeStyle = '#2a0a10'; drawingContext.lineWidth = 3 * scale;
+                drawingContext.beginPath(); drawingContext.ellipse(direction * size * 0.55, -size * 0.34, size * 0.25, size * 0.18, direction * 0.18, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+                drawingContext.fillStyle = '#e0b75c';
+                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.48, -size * 0.48); drawingContext.lineTo(direction * size * 0.52, -size * 0.72); drawingContext.lineTo(direction * size * 0.66, -size * 0.49); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+                const eyeX = direction * size * 0.59; const eyeY = -size * 0.38;
+                if (expression === 'defeated') {
+                    drawingContext.strokeStyle = '#f4d7ad'; drawingContext.lineWidth = 2.5 * scale;
+                    drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.055, eyeY - size * 0.045); drawingContext.lineTo(eyeX + size * 0.055, eyeY + size * 0.045); drawingContext.moveTo(eyeX + size * 0.055, eyeY - size * 0.045); drawingContext.lineTo(eyeX - size * 0.055, eyeY + size * 0.045); drawingContext.stroke();
+                } else {
+                    drawingContext.fillStyle = expression === 'crisis' ? '#fff176' : '#ffca55'; drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.045, 0, Math.PI * 2); drawingContext.fill();
+                }
+            });
+
+            // 드래곤 위의 아기 천사 모습이다.
+            drawingContext.fillStyle = '#f0d2b2'; drawingContext.strokeStyle = '#5a3441'; drawingContext.lineWidth = 3 * scale;
+            drawingContext.beginPath(); drawingContext.arc(0, -size * 0.28, size * 0.18, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#f2eadf';
+            [-1, 1].forEach((direction) => {
+                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.08, -size * 0.1); drawingContext.quadraticCurveTo(direction * size * 0.48, -size * 0.2, direction * size * 0.38, size * 0.13); drawingContext.quadraticCurveTo(direction * size * 0.18, size * 0.04, direction * size * 0.04, 0); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+            });
+            drawingContext.fillStyle = '#ead8c6'; drawingContext.beginPath(); drawingContext.moveTo(-size * 0.17, -size * 0.13); drawingContext.lineTo(size * 0.17, -size * 0.13); drawingContext.lineTo(size * 0.25, size * 0.31); drawingContext.lineTo(-size * 0.25, size * 0.31); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+            if (expression === 'defeated') {
+                drawingContext.strokeStyle = '#5a3441'; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.21, size * 0.08, Math.PI, Math.PI * 2); drawingContext.stroke();
+                drawingContext.fillStyle = '#78d5ee'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.2, -size * 0.2, size * 0.045, size * 0.09, 0.2, 0, Math.PI * 2); drawingContext.fill();
+            } else {
+                drawingContext.fillStyle = expression === 'crisis' ? '#d32f2f' : '#4d3541';
+                [-size * 0.06, size * 0.06].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, -size * 0.31, size * 0.025, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.strokeStyle = '#5a3441'; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.24, size * 0.055, expression === 'crisis' ? Math.PI : 0, expression === 'crisis' ? Math.PI * 2 : Math.PI); drawingContext.stroke();
+                if (expression === 'crisis') { drawingContext.fillStyle = '#78d5ee'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.2, -size * 0.2, size * 0.04, size * 0.08, 0.2, 0, Math.PI * 2); drawingContext.fill(); }
+            }
+            drawingContext.restore();
+        }
+    }
+
+    /**
+     * 자간은 그리폰의 날개를 가진 숫소의 모습으로 나타나는 출시 예정 적이다.
+     * TODO: 출시 전에 자간 전용 ONNX 가치망으로 modelPath를 교체하고 판단 특성을 검증한다.
+     */
+    class Zagan extends OnnxEnemy {
+        constructor() {
+            super();
+            this.sortPriority = 12;
+            this.notAvail = true;
+            // 전용 모델이 준비되기 전까지 플라우로스의 가치망으로 동작 구조만 미리 연결한다.
+            this.modelPath = 'onnx/model01.onnx';
+        }
+
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'Zagan'; }
+
+        /** @returns {string} 적 이름 */
+        getName() { return '자간'; }
+
+        /** @returns {{bezel:string, field:string, center:string}} 베젤·플레이 영역·중앙 영역 배경색 */
+        getFieldThemeColors() {
+            return { bezel: '#3d3220', field: '#594a2d', center: '#1c160c' };
+        }
+
+        /**
+         * 황금빛 그리폰 날개와 굽은 뿔을 지닌 숫소의 일반·위기·패배 초상화를 그린다.
+         * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
+         * @param {number} centerX 캐릭터 중심 X 좌표
+         * @param {number} centerY 캐릭터 중심 Y 좌표
+         * @param {number} scale 기본 크기 대비 배율
+         * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
+         * @returns {void}
+         */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            const size = 72 * scale;
+            drawingContext.save(); drawingContext.translate(centerX, centerY);
+            drawingContext.lineJoin = 'round'; drawingContext.lineCap = 'round';
+            drawingContext.strokeStyle = '#24180c'; drawingContext.lineWidth = 4 * scale;
+            // 그리폰처럼 층이 진 황금 날개다.
+            drawingContext.fillStyle = '#b88a3b';
+            [-1, 1].forEach((direction) => {
+                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.16, size * 0.14);
+                drawingContext.lineTo(direction * size * 0.62, -size * 0.7); drawingContext.lineTo(direction * size * 0.58, -size * 0.15);
+                drawingContext.lineTo(direction * size * 0.96, -size * 0.48); drawingContext.lineTo(direction * size * 0.7, size * 0.08);
+                drawingContext.lineTo(direction * size, -size * 0.06); drawingContext.lineTo(direction * size * 0.48, size * 0.43);
+                drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+            });
+            // 숫소의 몸과 머리다.
+            drawingContext.fillStyle = '#5a3b25'; drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.34, size * 0.58, size * 0.43, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#795238'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.09, size * 0.43, size * 0.4, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#d7b56a';
+            [-1, 1].forEach((direction) => {
+                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.27, -size * 0.34); drawingContext.quadraticCurveTo(direction * size * 0.75, -size * 0.72, direction * size * 0.64, -size * 0.18); drawingContext.quadraticCurveTo(direction * size * 0.48, -size * 0.39, direction * size * 0.23, -size * 0.21); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
+            });
+            drawingContext.fillStyle = '#b98262'; drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.13, size * 0.3, size * 0.2, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
+            drawingContext.fillStyle = '#2b170f'; [-size * 0.11, size * 0.11].forEach((nostrilX) => { drawingContext.beginPath(); drawingContext.arc(nostrilX, size * 0.14, size * 0.035, 0, Math.PI * 2); drawingContext.fill(); });
+            const eyeY = -size * 0.11;
+            if (expression === 'defeated') {
+                drawingContext.strokeStyle = '#f0dfba'; drawingContext.lineWidth = 3 * scale;
+                [-size * 0.18, size * 0.18].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.06, eyeY - size * 0.055); drawingContext.lineTo(eyeX + size * 0.06, eyeY + size * 0.055); drawingContext.moveTo(eyeX + size * 0.06, eyeY - size * 0.055); drawingContext.lineTo(eyeX - size * 0.06, eyeY + size * 0.055); drawingContext.stroke(); });
+                drawingContext.fillStyle = '#75cce7'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.34, size * 0.04, size * 0.05, size * 0.11, 0.15, 0, Math.PI * 2); drawingContext.fill();
+            } else {
+                drawingContext.fillStyle = '#f5e8bd'; [-size * 0.18, size * 0.18].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.09, expression === 'crisis' ? size * 0.12 : size * 0.08, 0, 0, Math.PI * 2); drawingContext.fill(); });
+                drawingContext.fillStyle = expression === 'crisis' ? '#d32f2f' : '#21140d'; [-size * 0.18, size * 0.18].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.035, 0, Math.PI * 2); drawingContext.fill(); });
+                if (expression === 'crisis') { drawingContext.fillStyle = '#75cce7'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.35, size * 0.02, size * 0.045, size * 0.1, 0.15, 0, Math.PI * 2); drawingContext.fill(); }
+            }
+            drawingContext.restore();
+        }
+    }
+
+    /**
      * 연습 모드에서 조작하거나 뿌요를 받지 않는 상대다.
      */
     class PracticeEnemy extends BundledEnemy {
@@ -16374,7 +16691,9 @@
         createOpponentEntry(() => new Kimaris()),
         createOpponentEntry(() => new Andrealphus()),
         createOpponentEntry(() => new Flauros()),
-        createOpponentEntry(() => new Andras())
+        createOpponentEntry(() => new Andras()),
+        createOpponentEntry(() => new Valak()),
+        createOpponentEntry(() => new Zagan())
     );
 
     /**
@@ -16494,6 +16813,8 @@
         Andrealphus,
         Flauros,
         Andras,
+        Valak,
+        Zagan,
         Puyo,
         RedPuyo,
         GreenPuyo,
