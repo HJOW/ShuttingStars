@@ -6,11 +6,12 @@
  * 
  * 뿌요 W 2D 버전 스크립트
  *     의존성
- *         three.min.js (선택사항, 3D 효과를 위해 사용)
  *         json5.min.js (선택사항, JSON5 형식 사용을 위함)
  *         ort.all.min.js, ort.webgl.min.js, ort.wasm.min.js (선택사항, ONNX Runtime 사용을 위함)
  *         puyow.css (선택사항, 캔버스 영역이 화면 100%를 차지하게 만들고, 기본 뒷배경 색 변경)
  *         notice_ko.txt, notice_en.txt (선택사항으로 공지사항 존재 시 이 곳에 기재)
+ *         three.min.js (선택사항, 3D 효과를 위해 사용)
+ *         puyow_3d.js (선택사항, 3D 효과 실제 구현을 위함)
  *     html 예제
  *         puyow.html
  */
@@ -19,7 +20,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 53;
+    const BUILDNO = 56;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -353,6 +354,13 @@
     /** 한국어 원문을 키로 하는 화면 문구 번역표다. (다국어 데이터) @type {Record<string, Record<string, string>>} */
     const stringTable = {
         en: {
+            '회원가입': 'Sign Up', '아이디': 'ID', '비밀번호': 'Password', '닉네임': 'Nickname', '로그인': 'Log In', '가입': 'Sign Up', '나가기': 'Leave', '방 생성': 'Create Room', '생성': 'Create', '%1색': '%1 Colors', '나': 'You', '상대': 'Opponent', '무승부': 'Draw',
+            '온라인 플레이 대기실': 'Online Lobby', '온라인 플레이 방': 'Online Room', '들어갈 수 있는 방이 없습니다.': 'There are no rooms to join.', '상대를 기다리는 중...': 'Waiting for an opponent...', '곧 게임이 시작됩니다.': 'The match is about to start.', '결과를 기다리는 중...': 'Waiting for the result...',
+            '가입이 완료되었습니다.': 'Your account has been created.', '상대방과의 연결이 끊어졌습니다.': 'The connection to your opponent was lost.', '서버와의 연결이 끊어졌습니다.': 'The connection to the server was lost.', '다른 곳에서 같은 계정으로 로그인했습니다.': 'This account was logged in somewhere else.', '설정 화면의 이름은 온라인 플레이에서 사용하지 않습니다.': 'The name from the settings screen is not used in online play.',
+            '아이디는 영문·숫자·언더바 4~20자여야 합니다.': 'The ID must be 4-20 letters, digits, or underscores.', '닉네임은 영문·숫자·언더바 3~20자여야 합니다.': 'The nickname must be 3-20 letters, digits, or underscores.', '비밀번호는 영문·숫자·언더바와 일부 특수문자 4~30자여야 합니다.': 'The password must be 4-30 letters, digits, underscores, or !@#$%^&*?.',
+            '이미 사용 중인 아이디입니다.': 'That ID is already taken.', '이미 사용 중인 닉네임입니다.': 'That nickname is already taken.', '아이디 또는 비밀번호가 올바르지 않습니다.': 'The ID or password is incorrect.', '비밀번호를 여러 번 틀려 5분 동안 로그인할 수 없습니다.': 'Too many failed attempts. Try again in 5 minutes.', '로그인 정보가 만료되었습니다. 다시 로그인해 주세요.': 'Your session has expired. Please log in again.',
+            '이미 다른 방에 들어가 있습니다.': 'You are already in another room.', '방을 찾을 수 없습니다.': 'The room could not be found.', '이미 다른 사람이 들어간 방입니다.': 'Someone else already joined that room.', '서버에 방이 너무 많습니다. 잠시 후 다시 시도해 주세요.': 'The server has too many rooms. Please try again later.',
+            '방장만 게임을 시작할 수 있습니다.': 'Only the room host can start the match.', '상대가 들어와야 시작할 수 있습니다.': 'You need an opponent to start.', '이미 게임이 시작되었습니다.': 'The match has already started.', '이 서버는 온라인 플레이를 지원하지 않습니다.': 'This server does not support online play.', '서버에서 오류가 발생했습니다.': 'A server error occurred.', '서버와 통신하지 못했습니다.': 'Could not reach the server.',
             '솔로몬': 'Solomon', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'Solomon AI response error: continuing with the fallback AI.',
             '인공지능 모델을 불러오는 중...': 'Loading the AI model…', '인공지능 모델을 불러오지 못했습니다.': 'Failed to load the AI model.', 'ONNX 워커를 시작하지 못해 기본 인공지능으로 진행합니다.': 'The ONNX worker could not start; continuing with the standard AI.',
             '뿌요 W': 'Puyo W',
@@ -377,6 +385,13 @@
             '딥러닝 기반의 고난이도 적으로, 게임 플레이가 불안정할 수 있습니다.': 'This is a high-difficulty opponent powered by deep learning. Gameplay may be unstable.', '계속': 'Continue',
         },
         ja: {
+            '회원가입': '新規登録', '아이디': 'ID', '비밀번호': 'パスワード', '닉네임': 'ニックネーム', '로그인': 'ログイン', '가입': '登録', '나가기': '退出', '방 생성': '部屋作成', '생성': '作成', '%1색': '%1色', '나': '自分', '상대': '相手', '무승부': '引き分け',
+            '온라인 플레이 대기실': 'オンライン待合室', '온라인 플레이 방': 'オンライン部屋', '들어갈 수 있는 방이 없습니다.': '入れる部屋がありません。', '상대를 기다리는 중...': '相手を待っています…', '곧 게임이 시작됩니다.': 'まもなく対戦が始まります。', '결과를 기다리는 중...': '結果を待っています…',
+            '가입이 완료되었습니다.': '登録が完了しました。', '상대방과의 연결이 끊어졌습니다.': '相手との接続が切れました。', '서버와의 연결이 끊어졌습니다.': 'サーバーとの接続が切れました。', '다른 곳에서 같은 계정으로 로그인했습니다.': '別の場所で同じアカウントにログインしました。', '설정 화면의 이름은 온라인 플레이에서 사용하지 않습니다.': '設定画面の名前はオンラインプレイでは使用しません。',
+            '아이디는 영문·숫자·언더바 4~20자여야 합니다.': 'IDは英数字とアンダーバー4~20文字にしてください。', '닉네임은 영문·숫자·언더바 3~20자여야 합니다.': 'ニックネームは英数字とアンダーバー3~20文字にしてください。', '비밀번호는 영문·숫자·언더바와 일부 특수문자 4~30자여야 합니다.': 'パスワードは英数字・アンダーバー・一部の記号4~30文字にしてください。',
+            '이미 사용 중인 아이디입니다.': 'すでに使われているIDです。', '이미 사용 중인 닉네임입니다.': 'すでに使われているニックネームです。', '아이디 또는 비밀번호가 올바르지 않습니다.': 'IDまたはパスワードが正しくありません。', '비밀번호를 여러 번 틀려 5분 동안 로그인할 수 없습니다.': 'パスワードを何度も間違えたため、5分間ログインできません。', '로그인 정보가 만료되었습니다. 다시 로그인해 주세요.': 'ログイン情報の期限が切れました。もう一度ログインしてください。',
+            '이미 다른 방에 들어가 있습니다.': 'すでに別の部屋に入っています。', '방을 찾을 수 없습니다.': '部屋が見つかりません。', '이미 다른 사람이 들어간 방입니다.': 'すでに他の人が入った部屋です。', '서버에 방이 너무 많습니다. 잠시 후 다시 시도해 주세요.': 'サーバーの部屋が多すぎます。しばらくしてからお試しください。',
+            '방장만 게임을 시작할 수 있습니다.': '部屋主だけが対戦を開始できます。', '상대가 들어와야 시작할 수 있습니다.': '相手が入るまで開始できません。', '이미 게임이 시작되었습니다.': 'すでに対戦が始まっています。', '이 서버는 온라인 플레이를 지원하지 않습니다.': 'このサーバーはオンラインプレイに対応していません。', '서버에서 오류가 발생했습니다.': 'サーバーでエラーが発生しました。', '서버와 통신하지 못했습니다.': 'サーバーと通信できませんでした。',
             '솔로몬': 'ソロモン', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': 'ソロモンAIの応答エラー：代替AIで続行します。',
             '인공지능 모델을 불러오는 중...': 'AIモデルを読み込み中…', '인공지능 모델을 불러오지 못했습니다.': 'AIモデルを読み込めませんでした。',
             '이름': '名前', '이름 또는 닉네임을 입력하세요': '名前またはニックネームを入力してください', '이름은 게임에서 표시됩니다.': '名前はゲーム内に表示されます。', '이름 또는 닉네임을 입력해 주세요.': '名前またはニックネームを入力してください。', '이름에 사용할 수 없는 문자가 있습니다.': '名前に使用できない文字が含まれています。',
@@ -402,6 +417,13 @@
             '딥러닝 기반의 고난이도 적으로, 게임 플레이가 불안정할 수 있습니다.': 'ディープラーニングを用いた高難易度の敵のため、ゲームプレイが不安定になる場合があります。', '계속': '続ける',
         },
         zh: {
+            '회원가입': '注册', '아이디': '账号', '비밀번호': '密码', '닉네임': '昵称', '로그인': '登录', '가입': '注册', '나가기': '退出', '방 생성': '创建房间', '생성': '创建', '%1색': '%1色', '나': '我', '상대': '对手', '무승부': '平局',
+            '온라인 플레이 대기실': '在线大厅', '온라인 플레이 방': '在线房间', '들어갈 수 있는 방이 없습니다.': '没有可加入的房间。', '상대를 기다리는 중...': '正在等待对手…', '곧 게임이 시작됩니다.': '对战即将开始。', '결과를 기다리는 중...': '正在等待结果…',
+            '가입이 완료되었습니다.': '注册完成。', '상대방과의 연결이 끊어졌습니다.': '与对手的连接已断开。', '서버와의 연결이 끊어졌습니다.': '与服务器的连接已断开。', '다른 곳에서 같은 계정으로 로그인했습니다.': '该账号已在别处登录。', '설정 화면의 이름은 온라인 플레이에서 사용하지 않습니다.': '设置界面的名称不会用于在线对战。',
+            '아이디는 영문·숫자·언더바 4~20자여야 합니다.': '账号需为4~20位英文、数字或下划线。', '닉네임은 영문·숫자·언더바 3~20자여야 합니다.': '昵称需为3~20位英文、数字或下划线。', '비밀번호는 영문·숫자·언더바와 일부 특수문자 4~30자여야 합니다.': '密码需为4~30位英文、数字、下划线或部分符号。',
+            '이미 사용 중인 아이디입니다.': '该账号已被使用。', '이미 사용 중인 닉네임입니다.': '该昵称已被使用。', '아이디 또는 비밀번호가 올바르지 않습니다.': '账号或密码不正确。', '비밀번호를 여러 번 틀려 5분 동안 로그인할 수 없습니다.': '密码错误次数过多，5分钟内无法登录。', '로그인 정보가 만료되었습니다. 다시 로그인해 주세요.': '登录信息已过期，请重新登录。',
+            '이미 다른 방에 들어가 있습니다.': '您已在其他房间中。', '방을 찾을 수 없습니다.': '找不到该房间。', '이미 다른 사람이 들어간 방입니다.': '该房间已有其他玩家加入。', '서버에 방이 너무 많습니다. 잠시 후 다시 시도해 주세요.': '服务器房间过多，请稍后再试。',
+            '방장만 게임을 시작할 수 있습니다.': '只有房主可以开始对战。', '상대가 들어와야 시작할 수 있습니다.': '需要对手加入后才能开始。', '이미 게임이 시작되었습니다.': '对战已经开始。', '이 서버는 온라인 플레이를 지원하지 않습니다.': '此服务器不支持在线对战。', '서버에서 오류가 발생했습니다.': '服务器发生错误。', '서버와 통신하지 못했습니다.': '无法与服务器通信。',
             '솔로몬': '所罗门', '솔로몬 AI 응답 오류: 대체 인공지능으로 진행합니다.': '所罗门 AI 响应错误：将使用备用 AI 继续。',
             '인공지능 모델을 불러오는 중...': '正在加载 AI 模型…', '인공지능 모델을 불러오지 못했습니다.': '无法加载 AI 模型。',
             '이름': '名称', '이름 또는 닉네임을 입력하세요': '请输入名称或昵称', '이름은 게임에서 표시됩니다.': '名称会显示在游戏中。', '이름 또는 닉네임을 입력해 주세요.': '请输入名称或昵称。', '이름에 사용할 수 없는 문자가 있습니다.': '名称中含有不能使用的字符。',
@@ -660,6 +682,33 @@
     let localAiAvailable = false;
     /** 초기화 시 게임 서버에 확인한 온라인 플레이 사용 가능 여부다. @type {boolean} */
     let onlinePlayAvailable = false;
+    /**
+     * 온라인 플레이 로그인 세션이다. 토큰은 메모리에만 두며 puyow_store 등 저장소에 남기지 않는다.
+     * @type {{token:string, nickname:string, winPoint:number}|null}
+     */
+    let onlineSession = null;
+    /** 대기실·방·대전에 함께 쓰는 WebSocket 연결이다. @type {WebSocket|null} */
+    let onlineSocket = null;
+    /** 서버가 밀어 준 대기실 방 목록이다. 클라이언트가 주기적으로 다시 묻지 않는다. @type {{id:string, rule:string, colorCount:number, hostNickname:string}[]} */
+    let onlineRooms = [];
+    /** 현재 들어가 있는 방 상태다. 방 밖(대기실)에서는 null이다. @type {{room:object, youAreHost:boolean}|null} */
+    let onlineRoom = null;
+    /** 로그인·가입 화면의 입력값과 포커스 상태다. @type {{fields:{key:string, value:string, masked:boolean, label:string}[], focus:number, cursor:number, error:string|null}|null} */
+    let onlineForm = null;
+    /** 대기실 화면에서 포커스된 위치다. 0: 나가기, 1: 방 생성, 2 이상: 방 목록 순번. @type {number} */
+    let onlineLobbyFocus = 0;
+    /** 대기실 방 목록의 세로 스크롤 시작 순번이다. @type {number} */
+    let onlineLobbyScroll = 0;
+    /** 방 생성 팝업 상태다. 열려 있지 않으면 null이다. @type {{rule:string, colorCount:number, focus:number, action:number}|null} */
+    let onlineCreatePopup = null;
+    /** 방 화면에서 포커스된 위치다. 0: 나가기, 1: 시작(방장만). @type {number} */
+    let onlineRoomFocus = 0;
+    /** 게임 시작 전 음영처리 상태다. 서버가 game_prepare를 보내면 켜지고 game_start·game_cancel로 꺼진다. @type {{elapsed:number}|null} */
+    let onlinePrepare = null;
+    /** 서버 응답을 기다리는 동안 같은 버튼을 다시 누르지 못하게 막는 표시다. @type {boolean} */
+    let onlineBusy = false;
+    /** 온라인 대전이 끝난 뒤 결과 화면에 보여 줄 서버 판정 결과다. @type {{result:'win'|'lose'|'draw', delta:number, winPoint:number}|null} */
+    let onlineResult = null;
     /** 현재 페이지 접속 중 AI API 테스트를 통과해 솔로몬을 사용할 수 있는지 여부다. 저장하지 않는다. @type {boolean} */
     let solomonSessionUnlocked = false;
     /** 초기화 시 확인한 ONNX Runtime for Web(전역 `ort`) 사용 가능 여부다. 저장하지 않는다. @type {boolean} */
@@ -721,6 +770,8 @@
     let selectedOpponentAction = 0;
     /** 적 선택 화면에서 시작할 대전 규칙이다. @type {'standard'|'fever'|'feverStart'} */
     let opponentMenuRule = 'standard';
+    /** @type{object|null} 3D 효과를 담당하는 매니저 객체 (puyow_3d.js 에서 정의) */
+    let threeEffectManager = null;
     /** 메인 메뉴에서 포커스된 항목이다. @type {number} */
     let titleMenuFocus = 0;
     /** 메인 메뉴 목록 항목의 라벨과 색이다. 포커스 순번은 이 배열의 순서와 같다. @type {{label:string,color:string}[]} */
@@ -839,7 +890,8 @@
         if (!game || !player || player.controller) return -1;
         const index = game.players ? game.players.indexOf(player) : -1;
         if (index === 0) return 0;
-        return game.together && index === 1 ? 1 : -1;
+        // "너랑 나랑"은 2P가 같은 키보드를 쓰고, 온라인 대전은 중계받은 상대 조작을 같은 자리에 적용한다.
+        return (game.together || game.online) && index === 1 ? 1 : -1;
     }
     /**
      * 사람이 조작하는 플레이어의 방향 입력 상태를 반환한다.
@@ -1172,6 +1224,1259 @@
         }
     }
 
+    /*
+     * 온라인 플레이 통신 계층이다.
+     * 가입·로그인·로그아웃만 HTTP POST로 처리하고, 대기실·방·대전은 WebSocket 하나로 주고받는다.
+     * 서버 구현은 nodeserver/onlineplay.js 와 python/onlineplay.py 이며 메시지 이름과 오류 코드가 셋 다 같아야 한다.
+     */
+
+    /** 대기실에서 방 목록보다 앞에 오는 버튼(나가기·방 생성)의 개수다. 방 목록 포커스는 이 값부터 시작한다. @type {number} */
+    const ONLINE_LOBBY_ROOM_FOCUS_BASE = 2;
+    /** 대기실 화면에 한 번에 보여 주는 방의 개수다. 그보다 많으면 세로로 스크롤한다. @type {number} */
+    const ONLINE_LOBBY_VISIBLE_ROOMS = 7;
+    /** 대기실 방 목록 한 줄의 배치다. 그리기와 클릭 판정이 함께 쓴다. @type {{x:number,y:number,width:number,height:number,gap:number}} */
+    const ONLINE_LOBBY_ROOM_LAYOUT = { x: 240, y: 176, width: 800, height: 56, gap: 8 };
+    /** 방 생성 팝업에서 고를 수 있는 대전 규칙이다. "너랑 나랑"과 같은 선택지를 쓴다. @type {{key:string,label:string}[]} */
+    const ONLINE_ROOM_RULE_OPTIONS = [
+        { key: 'standard', label: '기본 룰' },
+        { key: 'fever', label: '피버 룰' },
+        { key: 'feverStart', label: '피버 룰 (시작)' }
+    ];
+    /** 온라인 플레이 HTTP API의 경로 앞부분이다. @type {string} */
+    const ONLINE_PLAY_API_PATH = 'apis/onlineplay';
+    /** 대기실부터 대전까지 함께 쓰는 WebSocket 경로다. @type {string} */
+    const ONLINE_PLAY_SOCKET_PATH = '/apis/onlineplay/socket';
+    /** 계정 ID 규칙이다. 서버도 같은 기준으로 다시 검사한다. @type {RegExp} */
+    const ONLINE_ID_PATTERN = /^[A-Za-z0-9_]{4,20}$/;
+    /** 닉네임 규칙이다. ID와 달리 대소문자를 가린다. @type {RegExp} */
+    const ONLINE_NICKNAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
+    /** 비밀번호 원문 규칙이다. 서버에는 sha256 해시만 보낸다. @type {RegExp} */
+    const ONLINE_PASSWORD_PATTERN = /^[A-Za-z0-9_!@#$%^&*?]{4,30}$/;
+    /** 서버가 보낸 오류 코드를 화면 문구로 바꾸는 표다. 서버가 함께 보낸 message는 화면에 쓰지 않는다. @type {Record<string,string>} */
+    const ONLINE_ERROR_TEXTS = {
+        invalid_id: '아이디는 영문·숫자·언더바 4~20자여야 합니다.',
+        invalid_nickname: '닉네임은 영문·숫자·언더바 3~20자여야 합니다.',
+        invalid_password: '비밀번호는 영문·숫자·언더바와 일부 특수문자 4~30자여야 합니다.',
+        duplicate_id: '이미 사용 중인 아이디입니다.',
+        duplicate_nickname: '이미 사용 중인 닉네임입니다.',
+        login_failed: '아이디 또는 비밀번호가 올바르지 않습니다.',
+        account_locked: '비밀번호를 여러 번 틀려 5분 동안 로그인할 수 없습니다.',
+        invalid_token: '로그인 정보가 만료되었습니다. 다시 로그인해 주세요.',
+        already_in_room: '이미 다른 방에 들어가 있습니다.',
+        room_not_found: '방을 찾을 수 없습니다.',
+        room_full: '이미 다른 사람이 들어간 방입니다.',
+        room_limit: '서버에 방이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+        not_host: '방장만 게임을 시작할 수 있습니다.',
+        no_guest: '상대가 들어와야 시작할 수 있습니다.',
+        already_playing: '이미 게임이 시작되었습니다.',
+        online_play_disabled: '이 서버는 온라인 플레이를 지원하지 않습니다.',
+        server_error: '서버에서 오류가 발생했습니다.'
+    };
+
+    /**
+     * 서버 오류 코드를 사용자에게 보여 줄 문구로 바꾼다.
+     * @param {string} code 서버가 보낸 오류 코드
+     * @returns {string} 번역된 화면 문구
+     */
+    function getOnlineErrorText(code) {
+        return translate(ONLINE_ERROR_TEXTS[code] || '서버와 통신하지 못했습니다.');
+    }
+
+    /**
+     * 비밀번호를 서버로 보내기 전에 sha256으로 한 번 해시한다.
+     * 서버는 여기에 bcrypt를 한 번 더 적용해 저장하므로 원문 비밀번호는 네트워크에 나가지 않는다.
+     * 브라우저의 Web Crypto(crypto.subtle)는 보안 컨텍스트(https 또는 localhost)에서만 쓸 수 있어,
+     * 평문 http로 접속한 경우를 위해 함께 불러 둔 CryptoJS를 먼저 사용한다.
+     * @param {string} password 사용자가 입력한 비밀번호 원문
+     * @returns {Promise<string>} 64자리 16진수 해시 문자열
+     */
+    async function hashOnlinePassword(password) {
+        const cryptoJs = typeof window !== 'undefined' ? window.CryptoJS : null;
+        if (cryptoJs?.SHA256) return cryptoJs.SHA256(password).toString(cryptoJs.enc.Hex);
+        const subtle = typeof window !== 'undefined' ? window.crypto?.subtle : null;
+        if (!subtle) throw new Error('이 브라우저에서는 비밀번호를 안전하게 전송할 수 없습니다.');
+        const digest = await subtle.digest('SHA-256', new TextEncoder().encode(password));
+        return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    /**
+     * 온라인 플레이 HTTP API를 호출한다.
+     * @param {string} action signup·login·logout 중 하나
+     * @param {object} payload 요청 본문
+     * @returns {Promise<{ok:boolean, code?:string, [key:string]:*}>} 서버 응답 본문
+     */
+    async function requestOnlinePlayApi(action, payload) {
+        const serverURL = getLocalAiServerURL();
+        if (!serverURL) return { ok: false, code: 'online_play_disabled' };
+        try {
+            const response = await fetch(new URL(`${ONLINE_PLAY_API_PATH}/${action}`, `${serverURL}/`).href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            return await response.json();
+        } catch (error) {
+            console.info('온라인 플레이 서버와 통신하지 못했습니다.', error);
+            return { ok: false, code: 'server_error' };
+        }
+    }
+
+    /**
+     * 대기실·대전에 사용할 WebSocket 주소를 만든다. 페이지가 https면 wss가 되어 통신도 함께 암호화된다.
+     * @returns {string} WebSocket 주소. 만들 수 없으면 빈 문자열
+     */
+    function getOnlineSocketURL() {
+        const serverURL = getLocalAiServerURL();
+        if (!serverURL) return '';
+        return `${serverURL.replace(/^http/, 'ws')}${ONLINE_PLAY_SOCKET_PATH}`;
+    }
+
+    /**
+     * 로그인으로 받은 토큰으로 WebSocket을 열고 인증 메시지를 보낸다.
+     * @returns {Promise<boolean>} 연결과 인증 요청까지 성공했는지 여부
+     */
+    function connectOnlineSocket() {
+        return new Promise((resolve) => {
+            const url = getOnlineSocketURL();
+            if (!url || typeof WebSocket !== 'function' || !onlineSession) { resolve(false); return; }
+            closeOnlineSocket();
+            let settled = false;
+            const socket = new WebSocket(url);
+            onlineSocket = socket;
+            socket.addEventListener('open', () => {
+                // 연결 직후 첫 메시지로 인증해야 한다. 서버는 5초 안에 오지 않으면 연결을 끊는다.
+                socket.send(JSON.stringify({ type: 'auth', token: onlineSession.token }));
+                if (!settled) { settled = true; resolve(true); }
+            });
+            socket.addEventListener('message', (event) => {
+                let message = null;
+                try {
+                    message = JSON.parse(event.data);
+                } catch {
+                    return;
+                }
+                handleOnlineMessage(message);
+            });
+            socket.addEventListener('close', () => {
+                if (onlineSocket === socket) handleOnlineDisconnected();
+                if (!settled) { settled = true; resolve(false); }
+            });
+            socket.addEventListener('error', () => {
+                if (!settled) { settled = true; resolve(false); }
+            });
+        });
+    }
+
+    /**
+     * 열려 있는 WebSocket을 닫는다. 닫힘 처리에서 화면을 되돌리지 않도록 참조를 먼저 비운다.
+     * @returns {void}
+     */
+    function closeOnlineSocket() {
+        const socket = onlineSocket;
+        onlineSocket = null;
+        if (!socket) return;
+        try {
+            socket.close();
+        } catch {
+            // 이미 닫힌 연결이면 그대로 둔다.
+        }
+    }
+
+    /**
+     * 서버로 메시지 하나를 보낸다.
+     * @param {object} message 보낼 메시지
+     * @returns {boolean} 실제로 보냈는지 여부
+     */
+    function sendOnlineMessage(message) {
+        if (!onlineSocket || onlineSocket.readyState !== 1) return false;
+        try {
+            onlineSocket.send(JSON.stringify(message));
+            return true;
+        } catch (error) {
+            console.info('온라인 플레이 메시지를 보내지 못했습니다.', error);
+            return false;
+        }
+    }
+
+    /**
+     * 온라인 플레이 상태를 모두 비운다. 연결을 끊고 화면 상태도 함께 지운다.
+     * @returns {void}
+     */
+    function clearOnlineState() {
+        closeOnlineSocket();
+        onlineSession = null;
+        onlineRooms = [];
+        onlineRoom = null;
+        onlineForm = null;
+        onlineCreatePopup = null;
+        onlinePrepare = null;
+        onlineResult = null;
+        onlineBusy = false;
+        onlineLobbyFocus = 0;
+        onlineLobbyScroll = 0;
+        onlineRoomFocus = 0;
+    }
+
+    /**
+     * 서버가 보낸 메시지 하나를 화면 상태에 반영한다.
+     * @param {object} message 서버 메시지
+     * @returns {void}
+     */
+    function handleOnlineMessage(message) {
+        const type = typeof message?.type === 'string' ? message.type : '';
+        if (type === 'auth_ok') {
+            if (onlineSession) {
+                onlineSession.nickname = message.nickname;
+                onlineSession.winPoint = message.winPoint;
+            }
+            openOnlineLobby();
+            return;
+        }
+        if (type === 'room_list') {
+            onlineRooms = Array.isArray(message.rooms) ? message.rooms : [];
+            // 목록이 짧아지면 포커스와 스크롤이 목록 밖을 가리키지 않도록 맞춘다.
+            onlineLobbyFocus = Math.min(onlineLobbyFocus, ONLINE_LOBBY_ROOM_FOCUS_BASE + Math.max(0, onlineRooms.length - 1));
+            onlineLobbyScroll = Math.max(0, Math.min(onlineLobbyScroll, Math.max(0, onlineRooms.length - ONLINE_LOBBY_VISIBLE_ROOMS)));
+            return;
+        }
+        if (type === 'room_state') {
+            onlineRoom = { room: message.room, youAreHost: message.youAreHost === true };
+            onlineCreatePopup = null;
+            // 대전이 끝나 방으로 돌아오는 경우가 아니면 방 화면으로 들어간다.
+            if (!game) {
+                menuScreen = 'onlineRoom';
+                onlineRoomFocus = 0;
+            }
+            return;
+        }
+        if (type === 'room_closed') {
+            onlineRoom = null;
+            if (!game) openOnlineLobby();
+            return;
+        }
+        if (type === 'opponent_left') {
+            // 승패 처리 없이 대기실로 돌아간다. WIN POINT도 바뀌지 않는다.
+            showMessage(translate('상대방과의 연결이 끊어졌습니다.'), '#fff', 3000, '#7d2630');
+            onlineRoom = null;
+            finishOnlineGameLocally();
+            openOnlineLobby();
+            return;
+        }
+        if (type === 'game_prepare') {
+            onlinePrepare = { elapsed: 0 };
+            return;
+        }
+        if (type === 'game_cancel') {
+            onlinePrepare = null;
+            return;
+        }
+        if (type === 'game_start') {
+            startOnlineGame(message);
+            return;
+        }
+        if (type === 'game_result') {
+            applyOnlineGameResult(message);
+            return;
+        }
+        if (type === 'session_closed') {
+            // 같은 계정으로 다른 곳에서 로그인해 이 세션이 무효화된 경우다.
+            showMessage(translate('다른 곳에서 같은 계정으로 로그인했습니다.'), '#fff', 4000, '#7d2630');
+            finishOnlineGameLocally();
+            clearOnlineState();
+            openOnlineLogin();
+            return;
+        }
+        if (type === 'error') {
+            showMessage(getOnlineErrorText(message.code), '#fff', 3000, '#7d2630');
+            onlineBusy = false;
+            return;
+        }
+        handleOnlineGameMessage(message);
+    }
+
+    /**
+     * 연결이 끊겼을 때 메시지를 보여 주고 로그인 화면으로 되돌린다.
+     * @returns {void}
+     */
+    function handleOnlineDisconnected() {
+        onlineSocket = null;
+        if (!onlineSession) return;
+        showMessage(translate('서버와의 연결이 끊어졌습니다.'), '#fff', 3000, '#7d2630');
+        finishOnlineGameLocally();
+        clearOnlineState();
+        openOnlineLogin();
+    }
+
+    /**
+     * 온라인 플레이 로그인 화면을 연다.
+     * @returns {void}
+     */
+    function openOnlineLogin() {
+        togetherModeSelectionOpen = false;
+        onlineForm = {
+            mode: 'login',
+            fields: [
+                { key: 'id', label: '아이디', value: '', masked: false },
+                { key: 'password', label: '비밀번호', value: '', masked: true }
+            ],
+            buttons: [
+                { key: 'login', label: '로그인', color: '#4cc9b0' },
+                { key: 'signup', label: '가입', color: '#7e57c2' },
+                { key: 'cancel', label: '취소', color: '#455a64' }
+            ],
+            focus: 0,
+            cursor: 0,
+            editing: false,
+            error: null
+        };
+        menuScreen = 'onlineLogin';
+    }
+
+    /**
+     * 회원가입 화면을 연다. 비밀번호 입력칸은 마스킹한다.
+     * @returns {void}
+     */
+    function openOnlineSignup() {
+        onlineForm = {
+            mode: 'signup',
+            fields: [
+                { key: 'id', label: '아이디', value: '', masked: false },
+                { key: 'nickname', label: '닉네임', value: '', masked: false },
+                { key: 'password', label: '비밀번호', value: '', masked: true }
+            ],
+            buttons: [
+                { key: 'signup', label: '가입', color: '#4cc9b0' },
+                { key: 'cancel', label: '취소', color: '#455a64' }
+            ],
+            focus: 0,
+            cursor: 0,
+            editing: false,
+            error: null
+        };
+        menuScreen = 'onlineSignup';
+    }
+
+    /**
+     * 대기실 화면을 연다.
+     * @returns {void}
+     */
+    function openOnlineLobby() {
+        onlineRoom = null;
+        onlineCreatePopup = null;
+        onlinePrepare = null;
+        onlineLobbyFocus = 0;
+        onlineLobbyScroll = 0;
+        onlineBusy = false;
+        menuScreen = 'onlineLobby';
+        // 목록은 서버가 밀어 주지만, 화면에 들어올 때 한 번은 직접 요청해 최신 상태로 맞춘다.
+        sendOnlineMessage({ type: 'room_list' });
+    }
+
+    /**
+     * 온라인 플레이를 끝내고 메인 메뉴로 돌아간다. 서버에는 로그아웃을 알린다.
+     * @returns {void}
+     */
+    function exitOnlinePlay() {
+        const token = onlineSession?.token;
+        clearOnlineState();
+        if (token) void requestOnlinePlayApi('logout', { token });
+        menuScreen = 'title';
+        loadNotice();
+    }
+
+    /**
+     * 로그인 화면의 입력값을 검사하고 서버에 로그인을 요청한다.
+     * @returns {Promise<void>} 처리 완료 시점
+     */
+    async function submitOnlineLogin() {
+        if (!onlineForm || onlineBusy) return;
+        const [idField, passwordField] = onlineForm.fields;
+        if (!ONLINE_ID_PATTERN.test(idField.value)) { onlineForm.error = '아이디는 영문·숫자·언더바 4~20자여야 합니다.'; return; }
+        if (!ONLINE_PASSWORD_PATTERN.test(passwordField.value)) { onlineForm.error = '비밀번호는 영문·숫자·언더바와 일부 특수문자 4~30자여야 합니다.'; return; }
+        onlineBusy = true;
+        onlineForm.error = null;
+        try {
+            const password = await hashOnlinePassword(passwordField.value);
+            const result = await requestOnlinePlayApi('login', { id: idField.value, password });
+            if (result?.ok !== true) {
+                onlineForm.error = ONLINE_ERROR_TEXTS[result?.code] || '서버와 통신하지 못했습니다.';
+                return;
+            }
+            onlineSession = { token: result.token, nickname: result.nickname, winPoint: result.winPoint };
+            // 연결에 성공하면 서버가 보내는 auth_ok에서 대기실로 넘어간다.
+            if (!(await connectOnlineSocket())) {
+                onlineSession = null;
+                onlineForm.error = '서버와 통신하지 못했습니다.';
+            }
+        } finally {
+            onlineBusy = false;
+        }
+    }
+
+    /**
+     * 회원가입 화면의 입력값을 검사하고 서버에 가입을 요청한다. 성공하면 로그인 화면으로 돌아간다.
+     * @returns {Promise<void>} 처리 완료 시점
+     */
+    async function submitOnlineSignup() {
+        if (!onlineForm || onlineBusy) return;
+        const [idField, nicknameField, passwordField] = onlineForm.fields;
+        if (!ONLINE_ID_PATTERN.test(idField.value)) { onlineForm.error = '아이디는 영문·숫자·언더바 4~20자여야 합니다.'; return; }
+        if (!ONLINE_NICKNAME_PATTERN.test(nicknameField.value)) { onlineForm.error = '닉네임은 영문·숫자·언더바 3~20자여야 합니다.'; return; }
+        if (!ONLINE_PASSWORD_PATTERN.test(passwordField.value)) { onlineForm.error = '비밀번호는 영문·숫자·언더바와 일부 특수문자 4~30자여야 합니다.'; return; }
+        onlineBusy = true;
+        onlineForm.error = null;
+        try {
+            const password = await hashOnlinePassword(passwordField.value);
+            const result = await requestOnlinePlayApi('signup', { id: idField.value, nickname: nicknameField.value, password });
+            if (result?.ok !== true) {
+                onlineForm.error = ONLINE_ERROR_TEXTS[result?.code] || '서버와 통신하지 못했습니다.';
+                return;
+            }
+            playMenuSelectSound();
+            showMessage(translate('가입이 완료되었습니다.'), '#fff', 2500, '#1d5e4a');
+            openOnlineLogin();
+        } finally {
+            onlineBusy = false;
+        }
+    }
+
+    /**
+     * 서버가 보낸 game_start로 온라인 대전을 시작한다.
+     * 뿌요 지급 덱은 서버가 정한 것을 그대로 쓰고, 좌측이 본인·우측이 상대다.
+     * 진행도·GOLD·AI 학습·리플레이는 "너랑 나랑"과 같게 모두 대상이 아니다.
+     * @param {{rule:string, colorCount:number, deck:string[][], youAreHost:boolean, opponent:object|null}} message 서버가 보낸 시작 메시지
+     * @returns {void}
+     */
+    function startOnlineGame(message) {
+        resetKeyboardDirectionInput();
+        resetVirtualControllerInput();
+        resetGamepadInput();
+        menuScreen = 'title';
+        onlinePrepare = null;
+        onlineResult = null;
+        learningEpisodeStarted = false;
+        learningPendingTransition = null;
+        resultScreenFocus = 0;
+        const rule = ONLINE_ROOM_RULE_OPTIONS.some((option) => option.key === message.rule) ? message.rule : 'standard';
+        const feverStart = rule === 'feverStart';
+        const usesFeverRule = rule !== 'standard';
+        // DIFFICULTIES는 3색·4색·5색 순서이므로 색상 수에서 바로 순번을 구한다.
+        const colorCount = Math.max(3, Math.min(5, Math.floor(Number(message.colorCount)) || 4));
+        const difficultyIndex = colorCount - 3;
+        const colors = DIFFICULTIES[difficultyIndex].colors;
+        // 클라이언트가 자체 난수로 뿌요를 만들지 않고 서버가 보낸 덱을 그대로 소비한다.
+        const pairQueue = (Array.isArray(message.deck) ? message.deck : []).map((pair) => [...pair]);
+        const themeController = new PracticeEnemy();
+        const players = [
+            new PlayerState(onlineSession?.nickname || '1P', FIELD_LEFT, null, colors),
+            new PlayerState(message.opponent?.nickname || '2P', FIELD_RIGHT, null, colors)
+        ];
+        if (usesFeverRule) players.forEach((player) => {
+            player.fever = createFeverRuleState();
+            if (feverStart) player.fever.nextTime = FEVER_START_INITIAL_TIME / 1000;
+        });
+        game = {
+            running: true,
+            paused: false,
+            winner: null,
+            goldAwarded: false,
+            ending: null,
+            countdown: 3000,
+            countdownStartsGame: true,
+            elapsed: 0,
+            marginRate: MARGIN_RATE_SCHEDULE[0].rate,
+            timeProgressMultiplier: 1,
+            practice: false,
+            continuousFever: false,
+            feverRule: usesFeverRule,
+            feverStart,
+            fever: null,
+            together: null,
+            /**
+             * 이 대전이 온라인 플레이임을 나타낸다.
+             * defeatSent는 패배를 서버에 한 번만 보고하기 위한 표시다.
+             */
+            online: {
+                rule,
+                youAreHost: message.youAreHost === true,
+                opponent: message.opponent || null,
+                defeatSent: false
+            },
+            difficulty: difficultyIndex,
+            aiDifficulty: selectedAiDifficulty,
+            opponentIndex: null,
+            themeController,
+            pairQueueColors: colors,
+            pairQueue,
+            energyTransfers: [],
+            players
+        };
+        players.forEach(updateNextPairs);
+        // 온라인 대전은 리플레이를 기록하지 않으므로 beginReplayRecording()을 부르지 않는다.
+        syncBackgroundMusic();
+    }
+
+    /**
+     * 서버가 확정한 대전 결과를 받아 결과 화면으로 넘어간다.
+     * 승패와 WIN POINT는 서버만 계산하므로 받은 값을 그대로 보여 준다.
+     * @param {{result:'win'|'lose'|'draw', delta:number, winPoint:number}} message 서버가 보낸 결과
+     * @returns {void}
+     */
+    function applyOnlineGameResult(message) {
+        onlineResult = { result: message.result, delta: Number(message.delta) || 0, winPoint: Number(message.winPoint) || 0 };
+        if (onlineSession) onlineSession.winPoint = onlineResult.winPoint;
+        if (!game || !game.online) return;
+        // 아직 패배 연출이 끝나지 않았더라도 결과는 서버 판정을 따른다.
+        game.ending = null;
+        game.running = false;
+        game.winner = onlineResult.result === 'win' ? game.players[0] : onlineResult.result === 'lose' ? game.players[1] : null;
+        resultScreenFocus = 0;
+        stopBackgroundMusic();
+    }
+
+    /**
+     * 서버 판정 없이 온라인 대전을 화면에서만 끝낸다.
+     * 상대 이탈·연결 끊김·세션 무효화처럼 승패를 매기지 않는 경우에 사용한다.
+     * @returns {void}
+     */
+    function finishOnlineGameLocally() {
+        if (!game || !game.online) return;
+        stopBackgroundMusic();
+        releaseGameOnnxModels(game);
+        game = null;
+        onlineResult = null;
+    }
+
+    /**
+     * 내 조작을 서버에 보낸다. 화면에는 이미 즉시 반영했으므로 여기서는 전달만 한다.
+     * 서버는 내용을 해석하지 않고 상대에게 그대로 중계한다.
+     * @param {PlayerState} player 조작한 플레이어
+     * @param {string} kind 조작 종류
+     * @param {number} [value=0] 조작 값
+     * @returns {void}
+     */
+    function sendOnlineInput(player, kind, value = 0) {
+        if (!game?.online || player !== game.players[0]) return;
+        sendOnlineMessage({ type: 'input', time: Math.round(game.elapsed), kind, value });
+    }
+
+    /**
+     * 내 패배를 서버에 한 번만 보고한다. 승패 확정은 서버가 한다.
+     * @param {PlayerState} loser 패배한 플레이어
+     * @returns {void}
+     */
+    function reportOnlineDefeat(loser) {
+        if (!game?.online || game.online.defeatSent) return;
+        // 상대의 패배는 상대 클라이언트가 보고한다. 내 쪽 패배만 보낸다.
+        if (loser !== game.players[0]) return;
+        game.online.defeatSent = true;
+        sendOnlineMessage({ type: 'defeat', time: Math.round(game.elapsed) });
+    }
+
+    /**
+     * 대전 중에 오는 메시지를 처리한다.
+     * 상대 조작은 우측 플레이어에 그대로 적용한다. 양쪽이 같은 덱과 같은 조작을 쓰므로 결과도 같아진다.
+     * @param {object} message 서버 메시지
+     * @returns {void}
+     */
+    function handleOnlineGameMessage(message) {
+        if (!game?.online) return;
+        if (message.type === 'opponent_input') {
+            const opponent = game.players[1];
+            const kind = message.kind;
+            // 빠른 하강은 누름과 뗌이 따로 오므로 홀드 상태로 바꿔 준다.
+            if (kind === 'downStart') { pressPlayerDirection(1, 'down'); return; }
+            if (kind === 'downEnd') { releasePlayerDirection(1, 'down'); return; }
+            applyPlayerControlAction(opponent, kind, false);
+            return;
+        }
+        // 연쇄 정산 결과는 내 쪽 시뮬레이션이 같은 값을 이미 만들어 내므로 다시 적용하지 않는다.
+        // 두 번 적용하면 공격이 두 배가 되기 때문이며, 이 메시지는 계약 유지와 이후 검증용으로만 받는다.
+    }
+
+    /*
+     * 온라인 플레이 화면 그리기다.
+     * 로그인·회원가입은 같은 입력 폼을 쓰고, 대기실·방은 각자 전용 화면을 그린다.
+     */
+
+    /** 온라인 화면 상단 "나가기" 버튼의 영역이다. @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineExitButtonBounds() {
+        return { x: 32, y: 36, width: 130, height: 44 };
+    }
+
+    /** 대기실 상단 "방 생성" 버튼의 영역이다. @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineCreateButtonBounds() {
+        return { x: 178, y: 36, width: 150, height: 44 };
+    }
+
+    /** 로그인·회원가입 화면 입력칸의 영역이다. @param {number} index 입력칸 순번 @returns {{x:number,y:number,width:number,height:number}} 입력칸 영역 */
+    function getOnlineFormFieldBounds(index) {
+        return { x: 460, y: 236 + index * 72, width: 420, height: 50 };
+    }
+
+    /** 로그인·회원가입 화면 버튼의 영역이다. @param {number} index 버튼 순번 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineFormButtonBounds(index) {
+        const count = onlineForm ? onlineForm.buttons.length : 1;
+        const width = 160;
+        const gap = 20;
+        const totalWidth = count * width + (count - 1) * gap;
+        return { x: (WIDTH - totalWidth) / 2 + index * (width + gap), y: 520, width, height: 56 };
+    }
+
+    /** 대기실 방 목록 한 줄의 영역이다. @param {number} visibleIndex 화면에 보이는 순번 @returns {{x:number,y:number,width:number,height:number}} 목록 줄 영역 */
+    function getOnlineRoomRowBounds(visibleIndex) {
+        const layout = ONLINE_LOBBY_ROOM_LAYOUT;
+        return { x: layout.x, y: layout.y + visibleIndex * (layout.height + layout.gap), width: layout.width, height: layout.height };
+    }
+
+    /** 방 화면 "시작" 버튼의 영역이다. 방장에게만 보인다. @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineStartButtonBounds() {
+        return { x: WIDTH / 2 - 90, y: 566, width: 180, height: 60 };
+    }
+
+    /** 방 생성 팝업의 "생성"·"취소" 버튼 영역이다. @param {number} index 0이면 생성, 1이면 취소 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineCreatePopupButtonBounds(index) {
+        return { x: WIDTH / 2 - 170 + index * 190, y: 470, width: 150, height: 54 };
+    }
+
+    /** 방 생성 팝업의 색상 수 선택 버튼 영역이다. @param {number} index DIFFICULTIES 순번 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineCreateColorButtonBounds(index) {
+        return { x: WIDTH / 2 - 240 + index * 165, y: 300, width: 150, height: 50 };
+    }
+
+    /** 방 생성 팝업의 규칙 선택 버튼 영역이다. @param {number} index ONLINE_ROOM_RULE_OPTIONS 순번 @returns {{x:number,y:number,width:number,height:number}} 버튼 영역 */
+    function getOnlineCreateRuleButtonBounds(index) {
+        return { x: WIDTH / 2 - 285 + index * 195, y: 392, width: 180, height: 50 };
+    }
+
+    /**
+     * 화면에 표시할 입력칸 내용을 만든다. 비밀번호 입력칸은 마스킹한다.
+     * @param {{value:string, masked:boolean}} field 입력칸
+     * @returns {string} 표시 문자열
+     */
+    function getOnlineFieldDisplayText(field) {
+        return field.masked ? '•'.repeat(Array.from(field.value).length) : field.value;
+    }
+
+    /**
+     * 로그인·회원가입 화면을 그린다.
+     * @returns {void}
+     */
+    function drawOnlineForm() {
+        if (!onlineForm) return;
+        context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `40px ${TITLE_FONT}`;
+        context.fillText(translate(onlineForm.mode === 'signup' ? '회원가입' : '온라인 플레이'), WIDTH / 2, 150);
+
+        onlineForm.fields.forEach((field, index) => {
+            const bounds = getOnlineFormFieldBounds(index);
+            const focused = onlineForm.focus === index;
+            context.textAlign = 'right'; context.fillStyle = '#c9e3ea'; context.font = `18px ${BUTTON_FONT}`;
+            context.fillText(translate(field.label), bounds.x - 24, bounds.y + 32);
+            context.fillStyle = '#0b202c'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = focused ? '#ffd54f' : '#426474'; context.lineWidth = focused ? 3 : 2;
+            context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.save();
+            context.beginPath(); context.rect(bounds.x + 8, bounds.y + 2, bounds.width - 16, bounds.height - 4); context.clip();
+            context.textAlign = 'left'; context.fillStyle = '#f5fbfc'; context.font = `20px ${MESSAGE_FONT}`;
+            const text = getOnlineFieldDisplayText(field);
+            context.fillText(text, bounds.x + 12, bounds.y + 32);
+            // 편집 중인 입력칸에만 커서를 그린다.
+            if (focused && onlineForm.editing) {
+                const cursorX = bounds.x + 12 + context.measureText(Array.from(text).slice(0, onlineForm.cursor).join('')).width;
+                context.fillStyle = '#ffd54f'; context.fillRect(cursorX, bounds.y + 12, 2, 26);
+            }
+            context.restore();
+        });
+
+        if (onlineForm.error) {
+            context.textAlign = 'center'; context.fillStyle = '#ffb4b4'; context.font = `17px ${MESSAGE_FONT}`;
+            context.fillText(translate(onlineForm.error), WIDTH / 2, 486);
+        }
+
+        onlineForm.buttons.forEach((button, index) => {
+            const bounds = getOnlineFormButtonBounds(index);
+            const focused = onlineForm.focus === onlineForm.fields.length + index;
+            context.fillStyle = button.color; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = focused ? '#ffd54f' : button.color; context.lineWidth = focused ? 4 : 2;
+            context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.fillStyle = '#fff'; context.font = `20px ${BUTTON_FONT}`; context.textAlign = 'center';
+            context.fillText(translate(button.label), bounds.x + bounds.width / 2, bounds.y + 36);
+        });
+
+        context.textAlign = 'center'; context.fillStyle = '#8aa6af'; context.font = `13px ${MESSAGE_FONT}`;
+        context.fillText(translate('설정 화면의 이름은 온라인 플레이에서 사용하지 않습니다.'), WIDTH / 2, 640);
+    }
+
+    /**
+     * 대기실·방 화면 위쪽의 공통 정보(닉네임과 WIN POINT)를 그린다.
+     * @returns {void}
+     */
+    function drawOnlineHeaderAccount() {
+        if (!onlineSession) return;
+        context.textAlign = 'right'; context.fillStyle = '#d8f2f5'; context.font = `20px ${BUTTON_FONT}`;
+        context.fillText(onlineSession.nickname, WIDTH - 32, 56);
+        context.fillStyle = '#f7c843'; context.font = `16px ${NUMBER_FONT}`;
+        context.fillText(`WIN POINT ${onlineSession.winPoint.toLocaleString()}`, WIDTH - 32, 80);
+    }
+
+    /**
+     * 버튼 하나를 공통 모양으로 그린다.
+     * @param {{x:number,y:number,width:number,height:number}} bounds 버튼 영역
+     * @param {string} label 버튼 문구
+     * @param {string} color 버튼 배경색
+     * @param {boolean} focused 포커스 여부
+     * @param {number} [fontSize=20] 글자 크기
+     * @returns {void}
+     */
+    function drawOnlineButton(bounds, label, color, focused, fontSize = 20) {
+        context.fillStyle = color; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        context.strokeStyle = focused ? '#ffd54f' : color; context.lineWidth = focused ? 4 : 2;
+        context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        context.fillStyle = '#fff'; context.font = `${fontSize}px ${BUTTON_FONT}`; context.textAlign = 'center';
+        context.fillText(translate(label), bounds.x + bounds.width / 2, bounds.y + bounds.height / 2 + fontSize / 3);
+    }
+
+    /**
+     * 대기실 화면을 그린다. 방 목록에는 한 자리가 남은 방만 나타난다.
+     * @returns {void}
+     */
+    function drawOnlineLobby() {
+        context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `32px ${TITLE_FONT}`;
+        context.fillText(translate('온라인 플레이 대기실'), WIDTH / 2, 62);
+        drawOnlineButton(getOnlineExitButtonBounds(), '나가기', '#455a64', onlineLobbyFocus === 0, 18);
+        drawOnlineButton(getOnlineCreateButtonBounds(), '방 생성', '#4cc9b0', onlineLobbyFocus === 1, 18);
+        drawOnlineHeaderAccount();
+
+        if (onlineRooms.length === 0) {
+            context.textAlign = 'center'; context.fillStyle = '#8aa6af'; context.font = `20px ${MESSAGE_FONT}`;
+            context.fillText(translate('들어갈 수 있는 방이 없습니다.'), WIDTH / 2, 330);
+        }
+        const visibleRooms = onlineRooms.slice(onlineLobbyScroll, onlineLobbyScroll + ONLINE_LOBBY_VISIBLE_ROOMS);
+        visibleRooms.forEach((room, visibleIndex) => {
+            const bounds = getOnlineRoomRowBounds(visibleIndex);
+            const focused = onlineLobbyFocus === ONLINE_LOBBY_ROOM_FOCUS_BASE + onlineLobbyScroll + visibleIndex;
+            context.fillStyle = '#0b202c'; context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context.strokeStyle = focused ? '#ffd54f' : '#3b6070'; context.lineWidth = focused ? 4 : 2;
+            context.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            // 1:1 대결이므로 참여자 수는 표시하지 않고 방장 닉네임과 규칙·색상 수만 보여 준다.
+            context.textAlign = 'left'; context.fillStyle = '#f5fbfc'; context.font = `20px ${BUTTON_FONT}`;
+            context.fillText(room.hostNickname, bounds.x + 20, bounds.y + 35);
+            const ruleOption = ONLINE_ROOM_RULE_OPTIONS.find((option) => option.key === room.rule);
+            context.textAlign = 'right'; context.fillStyle = '#a9d9e5'; context.font = `17px ${MESSAGE_FONT}`;
+            context.fillText(`${translate(ruleOption ? ruleOption.label : room.rule)} / ${translate('%1색', room.colorCount)}`, bounds.x + bounds.width - 20, bounds.y + 35);
+        });
+        // 목록이 화면보다 길면 위아래에 더 있음을 알린다.
+        if (onlineLobbyScroll > 0) {
+            context.textAlign = 'center'; context.fillStyle = '#8aa6af'; context.font = `14px ${MESSAGE_FONT}`;
+            context.fillText('▲', WIDTH / 2, ONLINE_LOBBY_ROOM_LAYOUT.y - 10);
+        }
+        if (onlineLobbyScroll + ONLINE_LOBBY_VISIBLE_ROOMS < onlineRooms.length) {
+            context.textAlign = 'center'; context.fillStyle = '#8aa6af'; context.font = `14px ${MESSAGE_FONT}`;
+            context.fillText('▼', WIDTH / 2, ONLINE_LOBBY_ROOM_LAYOUT.y + ONLINE_LOBBY_VISIBLE_ROOMS * (ONLINE_LOBBY_ROOM_LAYOUT.height + ONLINE_LOBBY_ROOM_LAYOUT.gap) + 8);
+        }
+        if (onlineCreatePopup) drawOnlineCreatePopup();
+    }
+
+    /**
+     * 방 생성 팝업을 대기실 위에 그린다.
+     * @returns {void}
+     */
+    function drawOnlineCreatePopup() {
+        if (!onlineCreatePopup) return;
+        context.fillStyle = 'rgba(3, 11, 19, 0.78)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.fillStyle = '#0b1b26'; context.fillRect(WIDTH / 2 - 330, 180, 660, 380);
+        context.strokeStyle = '#3b6070'; context.lineWidth = 2; context.strokeRect(WIDTH / 2 - 330, 180, 660, 380);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `30px ${TITLE_FONT}`;
+        context.fillText(translate('방 생성'), WIDTH / 2, 238);
+
+        context.textAlign = 'left'; context.fillStyle = '#c9e3ea'; context.font = `16px ${BUTTON_FONT}`;
+        context.fillText(translate('색상 수'), WIDTH / 2 - 300, 282);
+        DIFFICULTIES.forEach((difficulty, index) => {
+            const bounds = getOnlineCreateColorButtonBounds(index);
+            const selected = onlineCreatePopup.colorCount === difficulty.colors.length;
+            const focused = onlineCreatePopup.focus === 0 && selected;
+            drawOnlineButton(bounds, difficulty.name, selected ? '#563068' : '#25323b', focused, 18);
+        });
+
+        context.textAlign = 'left'; context.fillStyle = '#c9e3ea'; context.font = `16px ${BUTTON_FONT}`;
+        context.fillText(translate('규칙'), WIDTH / 2 - 300, 374);
+        ONLINE_ROOM_RULE_OPTIONS.forEach((option, index) => {
+            const bounds = getOnlineCreateRuleButtonBounds(index);
+            const selected = onlineCreatePopup.rule === option.key;
+            const focused = onlineCreatePopup.focus === 1 && selected;
+            const locked = option.key === 'feverStart' && !isFeverStartRuleUnlocked();
+            drawOnlineButton(bounds, locked ? '잠김' : option.label, locked ? '#37474f' : (selected ? '#563068' : '#25323b'), focused, 17);
+        });
+
+        ['생성', '취소'].forEach((label, index) => {
+            const bounds = getOnlineCreatePopupButtonBounds(index);
+            const focused = onlineCreatePopup.focus === 2 && onlineCreatePopup.action === index;
+            drawOnlineButton(bounds, label, index === 0 ? '#4cc9b0' : '#455a64', focused, 19);
+        });
+    }
+
+    /**
+     * 방 화면을 그린다. 좌측이 본인, 우측이 상대이며 방장에게만 "시작" 버튼이 보인다.
+     * @returns {void}
+     */
+    function drawOnlineRoom() {
+        context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `32px ${TITLE_FONT}`;
+        context.fillText(translate('온라인 플레이 방'), WIDTH / 2, 62);
+        drawOnlineButton(getOnlineExitButtonBounds(), '나가기', '#455a64', onlineRoomFocus === 0, 18);
+        drawOnlineHeaderAccount();
+
+        const room = onlineRoom?.room;
+        const me = onlineRoom?.youAreHost ? room?.host : room?.guest;
+        const opponent = onlineRoom?.youAreHost ? room?.guest : room?.host;
+        const ruleOption = ONLINE_ROOM_RULE_OPTIONS.find((option) => option.key === room?.rule);
+        context.textAlign = 'center'; context.fillStyle = '#a9d9e5'; context.font = `18px ${MESSAGE_FONT}`;
+        if (room) context.fillText(`${translate(ruleOption ? ruleOption.label : room.rule)} / ${translate('%1색', room.colorCount)}`, WIDTH / 2, 130);
+
+        [[me, 320, '나'], [opponent, 960, '상대']].forEach(([member, centerX, label]) => {
+            context.fillStyle = '#0b202c'; context.fillRect(centerX - 200, 200, 400, 260);
+            context.strokeStyle = '#3b6070'; context.lineWidth = 2; context.strokeRect(centerX - 200, 200, 400, 260);
+            context.textAlign = 'center'; context.fillStyle = '#8aa6af'; context.font = `16px ${BUTTON_FONT}`;
+            context.fillText(translate(label), centerX, 240);
+            if (member) {
+                context.fillStyle = '#f5fbfc'; context.font = `28px ${BUTTON_FONT}`;
+                context.fillText(member.nickname, centerX, 316);
+                context.fillStyle = '#f7c843'; context.font = `20px ${NUMBER_FONT}`;
+                context.fillText(`WIN POINT ${Number(member.winPoint || 0).toLocaleString()}`, centerX, 372);
+            } else {
+                context.fillStyle = '#6f858e'; context.font = `20px ${MESSAGE_FONT}`;
+                context.fillText(translate('상대를 기다리는 중...'), centerX, 330);
+            }
+        });
+
+        // 참여자가 없는 동안에도 버튼은 보이되 잠긴 상태로 둔다.
+        if (onlineRoom?.youAreHost) {
+            const ready = Boolean(opponent);
+            drawOnlineButton(getOnlineStartButtonBounds(), '시작', ready ? '#ef5350' : '#5d3a3a', ready && onlineRoomFocus === 1, 22);
+        }
+        if (onlinePrepare) drawOnlinePrepareOverlay();
+    }
+
+    /**
+     * 게임 시작 전 3초 동안 화면을 음영 처리한다.
+     * 이 사이에 누군가 나가면 서버가 game_cancel을 보내 음영이 풀린다.
+     * @returns {void}
+     */
+    function drawOnlinePrepareOverlay() {
+        context.fillStyle = 'rgba(3, 11, 19, 0.72)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `36px ${TITLE_FONT}`;
+        context.fillText(translate('곧 게임이 시작됩니다.'), WIDTH / 2, HEIGHT / 2);
+    }
+
+    /**
+     * 온라인 대전 결과 화면 가운데에 서버가 확정한 승패와 WIN POINT 변화를 그린다.
+     * 승패·WIN POINT 계산은 서버만 하므로 받은 값을 그대로 보여 준다.
+     * @param {number} centerY 패널의 세로 중심 좌표
+     * @returns {void}
+     */
+    function drawOnlineMatchPanel(y) {
+        const x = 482;
+        const width = 316;
+        const height = 150;
+        context.fillStyle = 'rgba(7, 22, 33, 0.72)'; context.fillRect(x, y, width, height);
+        context.strokeStyle = '#3b6070'; context.lineWidth = 2; context.strokeRect(x, y, width, height);
+        const rows = [
+            { name: game.players[0].name, winPoint: onlineSession?.winPoint ?? 0, color: '#ef8aa0' },
+            { name: game.players[1].name, winPoint: Number(game.online?.opponent?.winPoint || 0), color: '#7fd3e8' }
+        ];
+        rows.forEach((row, index) => {
+            const rowY = y + 52 + index * 56;
+            context.textAlign = 'left'; context.fillStyle = row.color; context.font = `20px ${BUTTON_FONT}`;
+            context.fillText(row.name, x + 20, rowY);
+            context.textAlign = 'right'; context.fillStyle = '#f7c843'; context.font = `15px ${NUMBER_FONT}`;
+            context.fillText(`WIN POINT ${row.winPoint.toLocaleString()}`, x + width - 20, rowY + 22);
+        });
+    }
+
+    /**
+     * 온라인 대전 결과 화면 가운데에 서버가 확정한 승패와 WIN POINT 변화를 그린다.
+     * @param {number} centerY 패널의 세로 중심 좌표
+     * @returns {void}
+     */
+    function drawOnlineResultPanel(centerY) {
+        context.textAlign = 'center';
+        // 패배 연출이 서버 판정보다 먼저 끝나면 결과가 아직 없을 수 있다.
+        if (!onlineResult) {
+            context.fillStyle = '#b8dbe2'; context.font = `20px ${MESSAGE_FONT}`;
+            context.fillText(translate('결과를 기다리는 중...'), WIDTH / 2, centerY);
+            return;
+        }
+        const resultLabel = onlineResult.result === 'win' ? '승리' : onlineResult.result === 'lose' ? '패배' : '무승부';
+        context.fillStyle = onlineResult.result === 'win' ? '#f7c843' : '#d8f2f5';
+        context.font = `34px ${TITLE_FONT}`;
+        context.fillText(translate(resultLabel), WIDTH / 2, centerY - 40);
+        context.fillStyle = onlineResult.delta > 0 ? '#4cc9b0' : onlineResult.delta < 0 ? '#ef5350' : '#b8dbe2';
+        context.font = `26px ${NUMBER_FONT}`;
+        context.fillText(`${onlineResult.delta > 0 ? '+' : ''}${onlineResult.delta}`, WIDTH / 2, centerY + 10);
+        context.fillStyle = '#f7c843'; context.font = `20px ${NUMBER_FONT}`;
+        context.fillText(`WIN POINT ${onlineResult.winPoint.toLocaleString()}`, WIDTH / 2, centerY + 50);
+    }
+
+    /*
+     * 온라인 플레이 화면의 키보드·마우스 처리다.
+     * 입력칸과 버튼 모두 방향키로 옮기고 엔터로 고르며, 마우스 클릭으로도 같은 동작을 한다. (설정 화면과 같은 방식)
+     */
+
+    /**
+     * 로그인·회원가입 화면에서 포커스된 항목을 실행한다.
+     * @returns {void}
+     */
+    function activateOnlineFormFocus() {
+        if (!onlineForm) return;
+        const fieldCount = onlineForm.fields.length;
+        if (onlineForm.focus < fieldCount) {
+            // 입력칸에서 엔터를 누르면 편집을 시작한다.
+            onlineForm.editing = true;
+            onlineForm.cursor = Array.from(onlineForm.fields[onlineForm.focus].value).length;
+            return;
+        }
+        const button = onlineForm.buttons[onlineForm.focus - fieldCount];
+        if (!button) return;
+        if (button.key === 'cancel') {
+            playMenuCancelSound();
+            if (onlineForm.mode === 'signup') openOnlineLogin();
+            else exitOnlinePlay();
+            return;
+        }
+        if (button.key === 'signup' && onlineForm.mode === 'login') { playMenuSelectSound(); openOnlineSignup(); return; }
+        if (button.key === 'signup') { void submitOnlineSignup(); return; }
+        if (button.key === 'login') void submitOnlineLogin();
+    }
+
+    /**
+     * 로그인·회원가입 화면의 키 입력을 처리한다.
+     * @param {KeyboardEvent} event 키보드 이벤트
+     * @param {string} key 소문자 키 이름
+     * @returns {void}
+     */
+    function handleOnlineFormKeydown(event, key) {
+        if (!onlineForm) return;
+        const fieldCount = onlineForm.fields.length;
+        const focusCount = fieldCount + onlineForm.buttons.length;
+        const field = onlineForm.focus < fieldCount ? onlineForm.fields[onlineForm.focus] : null;
+
+        // 입력칸을 편집하는 중에는 문자 입력이 우선이다.
+        if (onlineForm.editing && field) {
+            event.preventDefault();
+            const characters = Array.from(field.value);
+            if (key === 'enter' || key === 'escape') { onlineForm.editing = false; return; }
+            if (key === 'arrowleft') { onlineForm.cursor = Math.max(0, onlineForm.cursor - 1); return; }
+            if (key === 'arrowright') { onlineForm.cursor = Math.min(characters.length, onlineForm.cursor + 1); return; }
+            if (key === 'home') { onlineForm.cursor = 0; return; }
+            if (key === 'end') { onlineForm.cursor = characters.length; return; }
+            if (key === 'arrowup' || key === 'arrowdown') {
+                onlineForm.editing = false;
+                onlineForm.focus = (onlineForm.focus + (key === 'arrowup' ? -1 : 1) + focusCount) % focusCount;
+                return;
+            }
+            if (key === 'backspace') {
+                if (onlineForm.cursor > 0) {
+                    characters.splice(onlineForm.cursor - 1, 1);
+                    field.value = characters.join('');
+                    onlineForm.cursor -= 1;
+                }
+                return;
+            }
+            if (key === 'delete') {
+                characters.splice(onlineForm.cursor, 1);
+                field.value = characters.join('');
+                return;
+            }
+            // 아이디·닉네임·비밀번호 모두 한 글자 키 입력만 받는다. 길이 상한은 규칙의 최대 길이와 같다.
+            if (!event.ctrlKey && !event.altKey && event.key.length === 1 && characters.length < 30) {
+                characters.splice(onlineForm.cursor, 0, event.key);
+                field.value = characters.join('');
+                onlineForm.cursor += 1;
+                onlineForm.error = null;
+            }
+            return;
+        }
+
+        if (key === 'escape') {
+            playMenuCancelSound();
+            if (onlineForm.mode === 'signup') openOnlineLogin();
+            else exitOnlinePlay();
+            return;
+        }
+        if (key === 'enter' || key === ' ') { activateOnlineFormFocus(); return; }
+        if (key === 'arrowup' || key === 'arrowleft') { onlineForm.focus = (onlineForm.focus - 1 + focusCount) % focusCount; return; }
+        if (key === 'arrowdown' || key === 'arrowright') { onlineForm.focus = (onlineForm.focus + 1) % focusCount; return; }
+        // 입력칸에 포커스가 있을 때 글자를 누르면 바로 편집을 시작해 그 글자부터 입력한다.
+        if (field && !event.ctrlKey && !event.altKey && event.key.length === 1) {
+            onlineForm.editing = true;
+            onlineForm.cursor = Array.from(field.value).length;
+            handleOnlineFormKeydown(event, key);
+        }
+    }
+
+    /**
+     * 로그인·회원가입 화면의 클릭을 처리한다.
+     * @param {number} x 논리 X 좌표
+     * @param {number} y 논리 Y 좌표
+     * @returns {void}
+     */
+    function handleOnlineFormClick(x, y) {
+        if (!onlineForm) return;
+        const fieldIndex = onlineForm.fields.findIndex((field, index) => {
+            const bounds = getOnlineFormFieldBounds(index);
+            return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        });
+        if (fieldIndex >= 0) {
+            onlineForm.focus = fieldIndex;
+            onlineForm.editing = true;
+            onlineForm.cursor = Array.from(onlineForm.fields[fieldIndex].value).length;
+            return;
+        }
+        const buttonIndex = onlineForm.buttons.findIndex((button, index) => {
+            const bounds = getOnlineFormButtonBounds(index);
+            return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        });
+        if (buttonIndex >= 0) {
+            onlineForm.editing = false;
+            onlineForm.focus = onlineForm.fields.length + buttonIndex;
+            activateOnlineFormFocus();
+        }
+    }
+
+    /**
+     * 방 생성 팝업을 연다. 기본값은 4색·기본 룰이다.
+     * @returns {void}
+     */
+    function openOnlineCreatePopup() {
+        onlineCreatePopup = { rule: 'standard', colorCount: 4, focus: 0, action: 0 };
+    }
+
+    /**
+     * 방 생성 팝업을 닫고 대기실로 돌아간다.
+     * @returns {void}
+     */
+    function closeOnlineCreatePopup() {
+        onlineCreatePopup = null;
+    }
+
+    /**
+     * 팝업에서 고른 규칙·색상 수로 방 생성을 요청한다. 성공하면 서버가 보내는 room_state로 방에 들어간다.
+     * @returns {void}
+     */
+    function submitOnlineCreateRoom() {
+        if (!onlineCreatePopup) return;
+        playMenuSelectSound();
+        sendOnlineMessage({ type: 'room_create', rule: onlineCreatePopup.rule, colorCount: onlineCreatePopup.colorCount });
+        closeOnlineCreatePopup();
+    }
+
+    /**
+     * 방 생성 팝업의 키 입력을 처리한다.
+     * @param {string} key 소문자 키 이름
+     * @returns {void}
+     */
+    function handleOnlineCreatePopupKeydown(key) {
+        if (!onlineCreatePopup) return;
+        if (key === 'escape') { playMenuCancelSound(); closeOnlineCreatePopup(); return; }
+        if (key === 'arrowup') { onlineCreatePopup.focus = Math.max(0, onlineCreatePopup.focus - 1); return; }
+        if (key === 'arrowdown') { onlineCreatePopup.focus = Math.min(2, onlineCreatePopup.focus + 1); return; }
+        if (key === 'enter' || key === ' ') {
+            if (onlineCreatePopup.focus < 2) { onlineCreatePopup.focus += 1; return; }
+            if (onlineCreatePopup.action === 0) submitOnlineCreateRoom();
+            else { playMenuCancelSound(); closeOnlineCreatePopup(); }
+            return;
+        }
+        if (key !== 'arrowleft' && key !== 'arrowright') return;
+        const direction = key === 'arrowleft' ? -1 : 1;
+        if (onlineCreatePopup.focus === 0) {
+            const index = DIFFICULTIES.findIndex((difficulty) => difficulty.colors.length === onlineCreatePopup.colorCount);
+            const nextIndex = Math.max(0, Math.min(DIFFICULTIES.length - 1, index + direction));
+            onlineCreatePopup.colorCount = DIFFICULTIES[nextIndex].colors.length;
+            return;
+        }
+        if (onlineCreatePopup.focus === 1) {
+            // 잠긴 "피버 룰 (시작)"은 건너뛴다. 잠금 기준은 오프라인과 같다.
+            const index = ONLINE_ROOM_RULE_OPTIONS.findIndex((option) => option.key === onlineCreatePopup.rule);
+            for (let next = index + direction; next >= 0 && next < ONLINE_ROOM_RULE_OPTIONS.length; next += direction) {
+                const option = ONLINE_ROOM_RULE_OPTIONS[next];
+                if (option.key === 'feverStart' && !isFeverStartRuleUnlocked()) continue;
+                onlineCreatePopup.rule = option.key;
+                return;
+            }
+            return;
+        }
+        onlineCreatePopup.action = onlineCreatePopup.action === 0 ? 1 : 0;
+    }
+
+    /**
+     * 방 생성 팝업의 클릭을 처리한다.
+     * @param {number} x 논리 X 좌표
+     * @param {number} y 논리 Y 좌표
+     * @returns {void}
+     */
+    function handleOnlineCreatePopupClick(x, y) {
+        if (!onlineCreatePopup) return;
+        const colorIndex = DIFFICULTIES.findIndex((difficulty, index) => {
+            const bounds = getOnlineCreateColorButtonBounds(index);
+            return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        });
+        if (colorIndex >= 0) { onlineCreatePopup.focus = 0; onlineCreatePopup.colorCount = DIFFICULTIES[colorIndex].colors.length; return; }
+        const ruleIndex = ONLINE_ROOM_RULE_OPTIONS.findIndex((option, index) => {
+            const bounds = getOnlineCreateRuleButtonBounds(index);
+            return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        });
+        if (ruleIndex >= 0) {
+            const option = ONLINE_ROOM_RULE_OPTIONS[ruleIndex];
+            if (option.key === 'feverStart' && !isFeverStartRuleUnlocked()) return;
+            onlineCreatePopup.focus = 1;
+            onlineCreatePopup.rule = option.key;
+            return;
+        }
+        const actionIndex = [0, 1].find((index) => {
+            const bounds = getOnlineCreatePopupButtonBounds(index);
+            return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        });
+        if (actionIndex === undefined) return;
+        onlineCreatePopup.focus = 2;
+        onlineCreatePopup.action = actionIndex;
+        if (actionIndex === 0) submitOnlineCreateRoom();
+        else { playMenuCancelSound(); closeOnlineCreatePopup(); }
+    }
+
+    /**
+     * 대기실에서 포커스된 항목을 실행한다.
+     * @returns {void}
+     */
+    function activateOnlineLobbyFocus() {
+        if (onlineLobbyFocus === 0) { playMenuCancelSound(); exitOnlinePlay(); return; }
+        if (onlineLobbyFocus === 1) { playMenuSelectSound(); openOnlineCreatePopup(); return; }
+        const room = onlineRooms[onlineLobbyFocus - ONLINE_LOBBY_ROOM_FOCUS_BASE];
+        if (!room) return;
+        playMenuSelectSound();
+        sendOnlineMessage({ type: 'room_join', roomId: room.id });
+    }
+
+    /**
+     * 대기실 화면의 키 입력을 처리한다.
+     * @param {string} key 소문자 키 이름
+     * @returns {void}
+     */
+    function handleOnlineLobbyKeydown(key) {
+        if (onlineCreatePopup) { handleOnlineCreatePopupKeydown(key); return; }
+        if (key === 'escape') { playMenuCancelSound(); exitOnlinePlay(); return; }
+        if (key === 'enter' || key === ' ') { activateOnlineLobbyFocus(); return; }
+        const lastFocus = ONLINE_LOBBY_ROOM_FOCUS_BASE + onlineRooms.length - 1;
+        if (key === 'arrowleft' || key === 'arrowright') {
+            // 상단 두 버튼 사이만 좌우로 오간다.
+            if (onlineLobbyFocus <= 1) onlineLobbyFocus = onlineLobbyFocus === 0 ? 1 : 0;
+            return;
+        }
+        if (key !== 'arrowup' && key !== 'arrowdown') return;
+        const direction = key === 'arrowup' ? -1 : 1;
+        onlineLobbyFocus = Math.max(0, Math.min(Math.max(1, lastFocus), onlineLobbyFocus + direction));
+        // 포커스가 화면 밖으로 나가면 목록을 스크롤한다.
+        const roomIndex = onlineLobbyFocus - ONLINE_LOBBY_ROOM_FOCUS_BASE;
+        if (roomIndex >= 0) {
+            if (roomIndex < onlineLobbyScroll) onlineLobbyScroll = roomIndex;
+            else if (roomIndex >= onlineLobbyScroll + ONLINE_LOBBY_VISIBLE_ROOMS) onlineLobbyScroll = roomIndex - ONLINE_LOBBY_VISIBLE_ROOMS + 1;
+        }
+    }
+
+    /**
+     * 대기실 화면의 클릭을 처리한다.
+     * @param {number} x 논리 X 좌표
+     * @param {number} y 논리 Y 좌표
+     * @returns {void}
+     */
+    function handleOnlineLobbyClick(x, y) {
+        if (onlineCreatePopup) { handleOnlineCreatePopupClick(x, y); return; }
+        const exitBounds = getOnlineExitButtonBounds();
+        if (x >= exitBounds.x && x <= exitBounds.x + exitBounds.width && y >= exitBounds.y && y <= exitBounds.y + exitBounds.height) {
+            onlineLobbyFocus = 0;
+            activateOnlineLobbyFocus();
+            return;
+        }
+        const createBounds = getOnlineCreateButtonBounds();
+        if (x >= createBounds.x && x <= createBounds.x + createBounds.width && y >= createBounds.y && y <= createBounds.y + createBounds.height) {
+            onlineLobbyFocus = 1;
+            activateOnlineLobbyFocus();
+            return;
+        }
+        const visibleRooms = onlineRooms.slice(onlineLobbyScroll, onlineLobbyScroll + ONLINE_LOBBY_VISIBLE_ROOMS);
+        const visibleIndex = visibleRooms.findIndex((room, index) => {
+            const bounds = getOnlineRoomRowBounds(index);
+            return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        });
+        if (visibleIndex < 0) return;
+        onlineLobbyFocus = ONLINE_LOBBY_ROOM_FOCUS_BASE + onlineLobbyScroll + visibleIndex;
+        activateOnlineLobbyFocus();
+    }
+
+    /**
+     * 방에서 나간다. 방장이 나가면 서버가 참여자에게 방장 권한을 넘긴다.
+     * @returns {void}
+     */
+    function leaveOnlineRoom() {
+        playMenuCancelSound();
+        sendOnlineMessage({ type: 'room_leave' });
+        openOnlineLobby();
+    }
+
+    /**
+     * 방장이 게임 시작을 요청한다. 실제 시작 시점은 서버가 정한다.
+     * @returns {void}
+     */
+    function requestOnlineGameStart() {
+        if (!onlineRoom?.youAreHost || !onlineRoom.room?.guest) return;
+        playMenuSelectSound();
+        sendOnlineMessage({ type: 'game_start_request' });
+    }
+
+    /**
+     * 방 화면의 키 입력을 처리한다.
+     * @param {string} key 소문자 키 이름
+     * @returns {void}
+     */
+    function handleOnlineRoomKeydown(key) {
+        // 시작 준비(음영처리) 중에는 조작을 받지 않는다.
+        if (onlinePrepare) return;
+        if (key === 'escape') { leaveOnlineRoom(); return; }
+        if (key === 'enter' || key === ' ') {
+            if (onlineRoomFocus === 0) leaveOnlineRoom();
+            else requestOnlineGameStart();
+            return;
+        }
+        if (!['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) return;
+        // 참여자가 없으면 시작 버튼은 잠긴 상태이므로 포커스를 받지 않는다.
+        const canStart = Boolean(onlineRoom?.youAreHost && onlineRoom.room?.guest);
+        if (!canStart) { onlineRoomFocus = 0; return; }
+        onlineRoomFocus = onlineRoomFocus === 0 ? 1 : 0;
+    }
+
+    /**
+     * 방 화면의 클릭을 처리한다.
+     * @param {number} x 논리 X 좌표
+     * @param {number} y 논리 Y 좌표
+     * @returns {void}
+     */
+    function handleOnlineRoomClick(x, y) {
+        if (onlinePrepare) return;
+        const exitBounds = getOnlineExitButtonBounds();
+        if (x >= exitBounds.x && x <= exitBounds.x + exitBounds.width && y >= exitBounds.y && y <= exitBounds.y + exitBounds.height) {
+            onlineRoomFocus = 0;
+            leaveOnlineRoom();
+            return;
+        }
+        if (!onlineRoom?.youAreHost || !onlineRoom.room?.guest) return;
+        const startBounds = getOnlineStartButtonBounds();
+        if (x >= startBounds.x && x <= startBounds.x + startBounds.width && y >= startBounds.y && y <= startBounds.y + startBounds.height) {
+            onlineRoomFocus = 1;
+            requestOnlineGameStart();
+        }
+    }
+
     /**
      * 확인한 Local AI 사용 가능 여부를 저장된 설정과 편집 중인 설정에 반영한다.
      * 사용할 수 없게 된 Local AI는 다른 제공자로 옮기지 않고 아무것도 선택하지 않은 상태로 되돌리며,
@@ -1419,6 +2724,7 @@
     /** 뷰포트 방향에 맞춰 게임 화면 회전 클래스를 갱신한다. @returns {void} */
     function updateCanvasOrientation() {
         document.body?.classList.toggle('puyow-portrait', shouldRotateCanvasForViewport());
+        if(threeEffectManager != null) threeEffectManager.onWindowResize();
     }
 
     /** 캔버스 입력 이벤트를 게임의 논리 좌표로 변환한다. @param {MouseEvent|PointerEvent} event 입력 이벤트 @returns {{x:number,y:number}} 게임 논리 좌표 */
@@ -2304,6 +3610,9 @@
         if (menuScreen === 'title' && watchSelectionOpen) return `watch:${watchSelectionFocus}:${watchDifficulty}:${watchRule}:${watchSelectedAction}`;
         if (menuScreen === 'title' && togetherModeSelectionOpen) return `togetherMode:${togetherModeSelectionFocus}`;
         if (menuScreen === 'togetherGuide') return `togetherGuide:${togetherGuideFocus}:${togetherRule}:${togetherDifficulty}:${togetherGuideAction}`;
+        if (menuScreen === 'onlineLogin' || menuScreen === 'onlineSignup') return `onlineForm:${onlineForm?.mode}:${onlineForm?.focus}:${onlineForm?.editing}`;
+        if (menuScreen === 'onlineLobby') return `onlineLobby:${onlineLobbyFocus}:${onlineLobbyScroll}:${onlineCreatePopup ? `${onlineCreatePopup.focus}:${onlineCreatePopup.rule}:${onlineCreatePopup.colorCount}:${onlineCreatePopup.action}` : 'none'}`;
+        if (menuScreen === 'onlineRoom') return `onlineRoom:${onlineRoomFocus}`;
         if (menuScreen === 'title') return `title:${titleMenuFocus}`;
         if (menuScreen === 'opponent') return `opponent:${opponentMenuFocus}:${selectedDifficulty}:${selectedAiDifficulty}:${selectedOpponent}:${selectedOpponentAction}`;
         if (menuScreen === 'practiceDifficulty') return `difficulty:${colorSelectionFocus}:${selectedDifficulty}`;
@@ -3026,8 +4335,8 @@
 
     /** 현재 사용자 게임이 API 학습 전송 대상인지 확인한다. @returns {boolean} 전송 대상이면 true */
     function shouldSendLearningEvent() {
-        // "너랑 나랑"은 AI 모델 관련 기능을 쓰지 않으므로 역방향 학습 전송에서도 제외한다.
-        return Boolean(learningApiConfig && game && !game.tutorial && !game.watch && !game.together && game.players?.[0]?.controller === null);
+        // "너랑 나랑"과 온라인 플레이는 AI 모델 관련 기능을 쓰지 않으므로 역방향 학습 전송에서도 제외한다.
+        return Boolean(learningApiConfig && game && !game.tutorial && !game.watch && !game.together && !game.online && game.players?.[0]?.controller === null);
     }
 
     /**
@@ -3583,6 +4892,14 @@
      * @returns {void}
      */
     function ensurePairQueue(requiredPosition) {
+        // 온라인 대전은 서버가 정한 덱만 쓴다. 여기서 무작위로 만들면 양쪽 화면이 어긋나므로,
+        // 덱을 다 쓰면 앞에서부터 다시 사용해 양쪽이 언제나 같은 뿌요를 받게 한다.
+        if (game.online) {
+            const deckLength = game.pairQueue.length;
+            if (deckLength === 0) return;
+            while (game.pairQueue.length <= requiredPosition) game.pairQueue.push([...game.pairQueue[game.pairQueue.length % deckLength]]);
+            return;
+        }
         while (game.pairQueue.length <= requiredPosition) game.pairQueue.push(createRandomPair(game.pairQueueColors));
     }
 
@@ -4175,6 +5492,8 @@
         if (!canPlace(player, candidate)) return false;
         player.active = candidate;
         recordReplayInput(player, REPLAY_INPUT.move, horizontal);
+        // 온라인 대전에서는 내 조작을 서버로 보내 상대 화면에도 같은 조작이 적용되게 한다.
+        sendOnlineInput(player, horizontal < 0 ? 'left' : 'right', horizontal);
         return true;
     }
 
@@ -4193,6 +5512,7 @@
             player.active = candidate;
             playSound(commonSoundPool?.puyoRotate, 'effects', '뿌요 회전 효과음');
             recordReplayInput(player, REPLAY_INPUT.rotate, direction);
+            sendOnlineInput(player, direction < 0 ? 'rotateLeft' : 'rotateRight', direction);
             return true;
         }
         const horizontalKick = candidate.rotation === 1 ? -1 : candidate.rotation === 3 ? 1 : 0;
@@ -4202,6 +5522,7 @@
             player.active = kicked;
             playSound(commonSoundPool?.puyoRotate, 'effects', '뿌요 회전 효과음');
             recordReplayInput(player, REPLAY_INPUT.rotate, direction);
+            sendOnlineInput(player, direction < 0 ? 'rotateLeft' : 'rotateRight', direction);
             return true;
         }
         const flipped = { ...player.active, rotation: (player.active.rotation + direction * 2 + 4) % 4 };
@@ -5789,8 +7110,8 @@
      * @returns {void}
      */
     function recordEnemyClear(winner) {
-        // "너랑 나랑"은 적이 없으므로 적 진행도를 저장하지 않는다.
-        if (game.practice || game.watch || game.together || winner !== game.players[0]) return;
+        // "너랑 나랑"과 온라인 플레이는 적이 없으므로 적 진행도를 저장하지 않는다.
+        if (game.practice || game.watch || game.together || game.online || winner !== game.players[0]) return;
         const enemyController = game.players[1].controller;
         const enemyClassName = enemyController.constructor.name;
         unlockGalleryEnemy(enemyController.getClassType());
@@ -5889,8 +7210,8 @@
     /** 종료된 현재 게임에서 지급할 GOLD를 계산한다. @returns {number} 지급 GOLD */
     function calculateCurrentGameGoldReward() {
         const player = game?.players?.[0];
-        // "너랑 나랑"은 진행도와 마찬가지로 GOLD 지급 대상이 아니다.
-        if (!player || game.watch || game.puzzle || game.together || (!game.practice && game.winner !== player)) return 0;
+        // "너랑 나랑"과 온라인 플레이는 진행도와 마찬가지로 GOLD 지급 대상이 아니다.
+        if (!player || game.watch || game.puzzle || game.together || game.online || (!game.practice && game.winner !== player)) return 0;
         const soloMode = game.practice === true;
         const difficultyKey = AI_DIFFICULTIES[game.aiDifficulty]?.key || 'normal';
         const difficultyBonus = soloMode ? 1 : (AI_DIFFICULTY_GOLD_BONUSES[difficultyKey] || 1);
@@ -6077,6 +7398,8 @@
      */
     function updateDefeatSequence(delta) {
         const ending = game.ending;
+        // 온라인 대전은 패배가 확정되는 즉시 서버에 보고한다. 중복 전송은 defeatSent가 막는다.
+        reportOnlineDefeat(ending.loser);
         ending.elapsed += delta;
         // 승자의 연쇄 단계는 계속 갱신한다. 그 밖의 단계에서도 싹쓸이 효과와 예약 공격을
         // 별도로 진행한다. 시작 시점의 스냅샷에 의존하지 않고 매 프레임 정산 상태를 확인해야
@@ -7258,6 +8581,9 @@
         } else if (game.together) {
             // "너랑 나랑"은 적이 없으므로 초상화 자리에 두 사람의 승패 현황을 표시한다.
             drawTogetherRecordPanel(305);
+        } else if (game.online) {
+            // 온라인 대전도 적 컨트롤러가 없으므로 초상화 자리에 양측 닉네임과 WIN POINT를 표시한다.
+            drawOnlineMatchPanel(305);
         } else {
             right.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, getEnemyPortraitExpression(right, left));
         }
@@ -7277,8 +8603,8 @@
 
     /** 가상 컨트롤러를 표시할 수 있는 게임 진행 상태인지 확인한다. @returns {boolean} */
     function shouldShowVirtualController() {
-        // "너랑 나랑"은 두 사람이 키보드·게임패드를 나눠 쓰므로 가상 컨트롤러를 지원하지 않는다.
-        return Boolean(game && !game.tutorial && !game.together && !game.replayPlayback && game.running && !game.paused && !game.ending && game.countdown <= 0 && store.settings.virtualController !== 'none');
+        // "너랑 나랑"은 두 사람이 키보드·게임패드를 나눠 쓰므로 가상 컨트롤러를 지원하지 않는다. 온라인 플레이도 같게 제외한다.
+        return Boolean(game && !game.tutorial && !game.together && !game.online && !game.replayPlayback && game.running && !game.paused && !game.ending && game.countdown <= 0 && store.settings.virtualController !== 'none');
     }
 
     /** 선택된 가상 컨트롤러의 렌더링·입력 배율을 반환한다. @returns {number} */
@@ -7636,6 +8962,8 @@
         const enemy = game.players[1];
         // "너랑 나랑"은 적 초상화 대신 누적 승수를 결과 화면에서도 이어서 보여 준다.
         if (game.together) drawTogetherRecordPanel(400);
+        // 온라인 대전도 적 컨트롤러가 없으므로 초상화 대신 서버가 확정한 WIN POINT 변화를 보여 준다.
+        else if (game.online) drawOnlineResultPanel(380);
         else if (!game.puzzle && enemy !== game.winner) enemy.controller.drawPortrait(context, WIDTH / 2, 380, 0.86, 'defeated');
         context.fillStyle = '#d8f2f5'; context.font = `18px ${MESSAGE_FONT}`;
         context.fillText(translate('게임 시간 %1초', Math.floor(game.elapsed / 1000)), WIDTH / 2, 145);
@@ -9370,6 +10698,7 @@
 
     /** 갤러리를 닫고 메인 메뉴로 돌아간다. @returns {void} */
     function closeGallery() {
+        threeEffectManager?.cancelReveal?.();
         playMenuCancelSound();
         gallery = null;
         menuScreen = 'title';
@@ -9443,8 +10772,8 @@
         gallery.cardScrollRow = Math.max(0, Math.min(maxScroll, gallery.cardScrollRow));
     }
 
-    /** 카드의 대상 그림을 카드 중앙에 그린다. @param {{type:string}} card 카드 인스턴스 @param {object} bounds 카드 영역 @returns {void} */
-    function drawCardTarget(card, bounds) {
+    /** 카드의 대상 그림을 카드 중앙에 그린다. @param {{type:string}} card 카드 인스턴스 @param {object} bounds 카드 영역 @param {CanvasRenderingContext2D} context 출력 대상(기본값은 게임 캔버스) @returns {void} */
+    function drawCardTarget(card, bounds, context = canvas.getContext('2d')) {
         const definition = getCardDefinitions().find((candidate) => candidate.type === card.type);
         if (!definition) return;
         const centerX = bounds.x + bounds.width / 2;
@@ -9464,6 +10793,18 @@
             entry?.createController().drawPortrait(context, centerX, centerY, 0.17, 'normal');
         }
         context.restore();
+    }
+
+    /** 저장을 마친 새 카드만 선택적 효과 모듈에 전달한다. THREE 객체는 여기서 만들지 않는다. @param {object[]} cards 지급된 카드 */
+    function revealGrantedCards(cards) {
+        if (!threeEffectManager?.playCardReveal) return;
+        const definitions = getCardDefinitions();
+        const appearances = cards.map((card) => {
+            const definition = definitions.find((candidate) => candidate.type === card.type);
+            const rarity = getCardRarity(definition.weight);
+            return { rarity: rarity.key, color: rarity.color, draw: (target, bounds) => drawCardTarget(card, bounds, target) };
+        });
+        threeEffectManager.playCardReveal(appearances);
     }
 
     /** 공용 확인 대화상자의 버튼 영역을 반환한다. @param {number} index 0=확인, 1=취소 @returns {{x:number,y:number,width:number,height:number}} */
@@ -9492,10 +10833,11 @@
             store.gold -= price;
             saveStore();
             const firstNewIndex = ownedCards.length;
-            grantRandomCards(count);
+            const granted = grantRandomCards(count);
             gallery.cardIndex = firstNewIndex;
             gallery.focus = 'cards';
             ensureCardFocusVisible();
+            revealGrantedCards(granted);
             return;
         }
         const selectedIds = gallery.selectedCardIds;
@@ -9507,10 +10849,11 @@
         ownedCards = ownedCards.filter((card) => !selectedIds.has(card.id));
         selectedIds.clear();
         const firstNewIndex = ownedCards.length;
-        grantRandomCards(resultCount);
+        const granted = grantRandomCards(resultCount);
         gallery.cardIndex = Math.max(0, firstNewIndex);
         gallery.focus = ownedCards.length ? 'cards' : 'cardButtons';
         ensureCardFocusVisible();
+        revealGrantedCards(granted);
     }
 
     /** 카드 갤러리 작업을 검증한 뒤 공용 확인 대화상자를 요청한다. @param {number} index 0=1장, 1=10장, 2=합성 @returns {void} */
@@ -10392,7 +11735,9 @@
             return;
         }
         if (option.key === 'online') {
-            // TODO: 온라인 플레이 로그인·대기실·대전 기능 구현 뒤 이 분기에 화면 전환을 추가한다.
+            playMenuSelectSound();
+            closeTogetherModeSelection();
+            openOnlineLogin();
             return;
         }
         playMenuSelectSound();
@@ -11175,6 +12520,9 @@
             else if (menuScreen === 'simulator' && simulator) drawSimulator();
             else if (menuScreen === 'settings' && settingsDraft) drawSettings();
             else if (menuScreen === 'gallery' && gallery) drawGallery();
+            else if (menuScreen === 'onlineLogin' || menuScreen === 'onlineSignup') drawOnlineForm();
+            else if (menuScreen === 'onlineLobby') drawOnlineLobby();
+            else if (menuScreen === 'onlineRoom') drawOnlineRoom();
             else drawMenu();
             drawPlayerNamePrompt();
         } else if (game.tutorial) {
@@ -11414,6 +12762,11 @@
         } while (remaining > 0);
         syncBackgroundMusic();
         render();
+        // 선택적 효과는 프레임당 한 번만 그리고 실제 시각으로 종료한다.
+        if (threeEffectManager?.active) {
+            if (game || menuScreen !== 'gallery' || getGalleryTypes()[gallery?.typeIndex]?.key !== 'card') threeEffectManager.cancelReveal();
+            else threeEffectManager.update(time);
+        }
         animationFrameId = requestAnimationFrame(frame);
     }
 
@@ -11459,6 +12812,11 @@
     /** 갤러리의 키보드·게임패드 입력을 처리한다. @param {string} key 소문자 키 이름 @returns {void} */
     function handleGalleryKeydown(key) {
         if (!gallery) return;
+        // 확인·취소 입력은 연출만 건너뛰고, 뒤쪽 카드 선택이나 추가 구매로 전달하지 않는다.
+        if (threeEffectManager?.active) {
+            if (key === 'escape' || key === 'enter' || key === ' ') threeEffectManager.cancelReveal();
+            return;
+        }
         if (key === 'escape') { closeGallery(); return; }
         const cardTypeSelected = getGalleryTypes()[gallery.typeIndex]?.key === 'card';
         if (gallery.focus === 'type') {
@@ -11717,6 +13075,15 @@
         stopBackgroundMusic();
         releaseGameOnnxModels(finishedGame);
         game = null;
+        // 온라인 대전은 방이 그대로 유지되므로 메인 메뉴가 아니라 방 화면으로 돌아간다.
+        // 다시 대전하려면 방장이 방에서 "시작"을 다시 누른다.
+        if (finishedGame.online) {
+            onlineResult = null;
+            if (onlineRoom) { menuScreen = 'onlineRoom'; onlineRoomFocus = 0; }
+            else if (onlineSession) openOnlineLobby();
+            else { menuScreen = 'title'; loadNotice(); }
+            return;
+        }
         if (returnToPuzzleStages) openPuzzleStageSelection(puzzleFocusIndex);
         else if (returnToTitle) { menuScreen = 'title'; loadNotice(); }
         else restoreOpponentMenuAfterResult(finishedGame);
@@ -11889,6 +13256,9 @@
             return;
         }
         if (playerNamePrompt) { handlePlayerNamePromptKeydown(event, key); return; }
+        if (!game && (menuScreen === 'onlineLogin' || menuScreen === 'onlineSignup')) { handleOnlineFormKeydown(event, key); return; }
+        if (!game && menuScreen === 'onlineLobby') { handleOnlineLobbyKeydown(key); return; }
+        if (!game && menuScreen === 'onlineRoom') { handleOnlineRoomKeydown(key); return; }
         if (!game && menuScreen === 'simulator') { handleSimulatorKeydown(key); return; }
         if (!game && menuScreen === 'gallery') { handleGalleryKeydown(key); return; }
         if (game?.tutorial) {
@@ -12030,7 +13400,11 @@
             if (togetherControl && TOGETHER_HOLD_ACTIONS.includes(togetherControl.action)) pressPlayerDirection(togetherControl.playerIndex, togetherControl.action);
         } else {
             if (key === 'arrowleft' || key === 'arrowright') pressPlayerDirection(0, key === 'arrowleft' ? 'left' : 'right');
-            if (key === 'arrowdown') pressPlayerDirection(0, 'down');
+            if (key === 'arrowdown') {
+                pressPlayerDirection(0, 'down');
+                // 빠른 하강은 누름과 뗌을 따로 보내야 상대 화면에서도 같은 구간만 빨리 떨어진다.
+                if (!event.repeat) sendOnlineInput(game.players[0], 'downStart');
+            }
         }
         if (game.countdown > 0) {
             return;
@@ -12041,7 +13415,8 @@
             return;
         }
         // 종료 연출이 아닐 때 ESC로 일시정지를 시작한다.
-        if (key === 'escape' && !game.ending) {
+        // 온라인 대전은 상대를 기다리게 할 수 없으므로 ESC로도 일시정지할 수 없다.
+        if (key === 'escape' && !game.ending && !game.online) {
             resetVirtualControllerInput();
             game.paused = true;
             pauseMenuFocus = 0;
@@ -12079,7 +13454,10 @@
             if (control && TOGETHER_HOLD_ACTIONS.includes(control.action)) releasePlayerDirection(control.playerIndex, control.action);
             return;
         }
-        if (key === 'arrowdown') releasePlayerDirection(0, 'down');
+        if (key === 'arrowdown') {
+            releasePlayerDirection(0, 'down');
+            if (game?.online) sendOnlineInput(game.players[0], 'downEnd');
+        }
         if (key === 'arrowleft' || key === 'arrowright') releasePlayerDirection(0, key === 'arrowleft' ? 'left' : 'right');
     }
 
@@ -12325,6 +13703,7 @@
 
     /** 카드 갤러리에서 마우스 휠로 카드 행을 스크롤한다. @param {WheelEvent} event 휠 이벤트 @returns {void} */
     function handleCanvasWheel(event) {
+        if (threeEffectManager?.active) { if (event.cancelable) event.preventDefault(); return; }
         if (confirmDialog || game || menuScreen !== 'gallery' || !gallery || getGalleryTypes()[gallery.typeIndex]?.key !== 'card') return;
         const { x, y } = getCanvasEventCoordinates(event);
         if (x < 414 || x > 1246 || y < 180 || y > 680) return;
@@ -12336,6 +13715,7 @@
 
     /** 캔버스 클릭의 실제 화면 동작을 처리한다. @param {MouseEvent} event 마우스 이벤트 @returns {void} */
     function handleCanvasClickCore(event) {
+        if (threeEffectManager?.active) { threeEffectManager.cancelReveal(); return; }
         if (confirmDialog) {
             const { x, y } = getCanvasEventCoordinates(event);
             const choice = [0, 1].find((index) => {
@@ -12393,6 +13773,9 @@
         }
         // 실행 중인 게임 화면의 일반 클릭은 메뉴 동작으로 처리하지 않는다.
         if (game) return;
+        if (menuScreen === 'onlineLogin' || menuScreen === 'onlineSignup') { handleOnlineFormClick(x, y); return; }
+        if (menuScreen === 'onlineLobby') { handleOnlineLobbyClick(x, y); return; }
+        if (menuScreen === 'onlineRoom') { handleOnlineRoomClick(x, y); return; }
         if (menuScreen === 'title' && watchSelectionOpen) {
             const difficultyIndex = DIFFICULTIES.findIndex((difficulty, index) => {
                 const buttonX = getColorDifficultyButtonX(index);
@@ -12766,6 +14149,10 @@
             if (menuScreen === 'title' && watchSelectionOpen) return { screen: 'watch_select', playerCanControl: false };
             if (menuScreen === 'title' && togetherModeSelectionOpen) return { screen: 'together_mode_select', playerCanControl: false };
             if (menuScreen === 'togetherGuide') return { screen: 'together_guide', playerCanControl: false };
+            if (menuScreen === 'onlineLogin') return { screen: 'online_login', playerCanControl: false };
+            if (menuScreen === 'onlineSignup') return { screen: 'online_signup', playerCanControl: false };
+            if (menuScreen === 'onlineLobby') return { screen: 'online_lobby', playerCanControl: false };
+            if (menuScreen === 'onlineRoom') return { screen: 'online_room', playerCanControl: false };
             if (menuScreen === 'opponent') return { screen: opponentMenuRule !== 'standard' ? 'fever_opponent_select' : 'opponent_select', playerCanControl: false };
             if (menuScreen === 'practiceDifficulty') return { screen: 'practice_difficulty', playerCanControl: false };
             if (menuScreen === 'puzzleStage') return { screen: 'puzzle_stage_select', playerCanControl: false };
@@ -12882,7 +14269,8 @@
         return {
             ...state,
             replayPlayback: Boolean(game.replayPlayback),
-            together: game.together ? { rule: game.together.rule, wins: [...getTogetherWinCounts()] } : null
+            together: game.together ? { rule: game.together.rule, wins: [...getTogetherWinCounts()] } : null,
+            online: game.online ? { rule: game.online.rule, youAreHost: game.online.youAreHost, opponentNickname: game.online.opponent?.nickname ?? null } : null
         };
     }
 
@@ -13123,7 +14511,7 @@
         webMcpAbortController = new AbortController();
         const emptyInput = { type: 'object', properties: {}, additionalProperties: false };
         // getNowScreen()이 돌려줄 수 있는 화면 이름을 모두 담는다. 화면을 더하면 이 목록도 함께 고친다.
-        const screenNames = ['initial_title', 'main_menu', 'rule_select', 'watch_select', 'together_mode_select', 'together_guide', 'practice_difficulty', 'puzzle_stage_select', 'opponent_select', 'fever_opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'settings_resetting', 'gallery', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'];
+        const screenNames = ['initial_title', 'main_menu', 'rule_select', 'watch_select', 'together_mode_select', 'together_guide', 'online_login', 'online_signup', 'online_lobby', 'online_room', 'practice_difficulty', 'puzzle_stage_select', 'opponent_select', 'fever_opponent_select', 'simulator_draw', 'simulator_simulation', 'simulator_complete', 'settings', 'settings_resetting', 'gallery', 'tutorial_intro', 'tutorial_demo', 'tutorial_result', 'tutorial_complete', 'countdown', 'playing', 'paused', 'ending', 'game_over'];
         const modeNames = ['versus', 'together', 'practice', 'watch', 'continuous_fever', 'puzzle'];
         const ruleNames = ['standard', 'fever', 'fever_start', 'continuous_fever'];
         const playerCanControlSchema = { type: 'boolean', description: 'True only while the left human player (1P) controls an active pair. Always false in watch mode and during replay playback. In together mode it describes 1P only.' };
@@ -13247,6 +14635,11 @@
                 rule: { type: 'string', enum: TOGETHER_RULE_OPTIONS.map((option) => option.key) },
                 wins: { type: 'array', items: { type: 'integer', minimum: 0 }, minItems: 2, maxItems: 2 }
             }, required: ['rule', 'wins'] },
+            online: { type: ['object', 'null'], description: 'Online play state (two humans on different computers through this server), or null. youAreHost tells whether this client created the room.', properties: {
+                rule: { type: 'string', enum: ONLINE_ROOM_RULE_OPTIONS.map((option) => option.key) },
+                youAreHost: { type: 'boolean' },
+                opponentNickname: { type: ['string', 'null'] }
+            }, required: ['rule', 'youAreHost', 'opponentNickname'] },
             puzzle: puzzleSchema,
             fever: feverSchema,
             player: playerSchema,
@@ -13257,7 +14650,7 @@
         };
         const statusSchema = {
             type: 'object',
-            description: 'Match mode and rule, time and ATTACK scaling, both current, normal, and FEVER fields, scores, ATTACK and DAMAGE, all-clear tickets, upcoming pairs, warning puyos, FEVER, Puzzle Puyo, and together-mode state, and both active pairs. Board coordinates start at the bottom-left.',
+            description: 'Match mode and rule, time and ATTACK scaling, both current, normal, and FEVER fields, scores, ATTACK and DAMAGE, all-clear tickets, upcoming pairs, warning puyos, FEVER, Puzzle Puyo, together-mode and online-play state, and both active pairs. Board coordinates start at the bottom-left.',
             properties: statusProperties,
             // getNowGameStatus()는 모든 항목을 항상 채우므로 required도 properties 전체다.
             required: Object.keys(statusProperties)
@@ -13365,6 +14758,10 @@
         canvas.removeEventListener('pointermove', handleVirtualPointerMove);
         canvas.removeEventListener('pointerup', handleVirtualPointerUp);
         canvas.removeEventListener('pointercancel', handleVirtualPointerUp);
+        if(threeEffectManager != null) {
+            try { threeEffectManager.dispose(); } catch(ex) { console.error(ex); }
+            threeEffectManager = null;
+        }
         resetKeyboardDirectionInput();
         resetVirtualControllerInput();
         resetGamepadInput();
@@ -13522,7 +14919,8 @@
         if (!threeAvailable || !canvas || !threeCanvas) return false;
         canvas.style.zIndex = active ? '1' : '2';
         threeCanvas.style.zIndex = active ? '2' : '1';
-        threeCanvas.style.pointerEvents = active ? 'auto' : 'none';
+        // 3D 연출 중에도 기존 2D 캔버스의 좌표 변환과 클릭 처리 경로를 사용한다.
+        threeCanvas.style.pointerEvents = 'none';
         return true;
     }
 
@@ -13544,6 +14942,7 @@
         if (typeof document === 'undefined' || typeof window === 'undefined') {
             throw new Error('Web Puyo 초기화에는 브라우저 DOM 환경이 필요합니다.');
         }
+
         // ONNX 런타임은 선택 라이브러리다. 여기서 한 번 확인한 결과로 추론 기반 적의 표시 여부를 정한다.
         refreshOnnxRuntimeAvailability();
         prepareFontImportStyle();
@@ -13570,14 +14969,23 @@
         canvas.dataset.puyowCanvas = '2d';
         canvas.setAttribute('aria-label', 'Web Puyo puzzle game');
         puyowRoot.append(threeCanvas, canvas);
-        // 3D 연출은 아직 구현하지 않는다. THREE가 없으면 canvas는 그대로 두고 renderer·레이어 교환만 생략한다.
+        // THREE와 효과 모듈은 선택 사항이며, 렌더러는 실제 연출 때 효과 모듈이 만든다.
         threeAvailable = Boolean(getThreeLibrary());
         threeCanvas.dataset.threeAvailable = String(threeAvailable);
         context = canvas.getContext('2d');
         if (!context) throw new Error('2D 캔버스 컨텍스트를 만들 수 없습니다.');
+        // puyow_3d.js 존재여부 체크해 초기화
+        if(typeof(window.PuyoW3DEffect) !== 'undefined') {
+            threeEffectManager = window.PuyoW3DEffect.initialize(threeCanvas, { onActiveChange: setThreeCanvasLayerActive });
+        }
+        // 캔버스 크기 및 방향조정
         applyCanvasOutputResolution();
         updateCanvasOrientation();
-        initialized = true;
+        // 사운드풀 준비
+        prepareSoundPools();
+        // WebMCP 등록
+        registerWebMcpTools();
+        // 이벤트 부여
         window.addEventListener('keydown', handleKeydown);
         window.addEventListener('keyup', handleKeyup);
         window.addEventListener('blur', resetKeyboardDirectionInput);
@@ -13590,9 +14998,9 @@
         canvas.addEventListener('pointerup', handleVirtualPointerUp);
         canvas.addEventListener('pointercancel', handleVirtualPointerUp);
         initializeGamepadInput();
-        prepareSoundPools();
-        registerWebMcpTools();
+        // 공지사항 로드
         loadNotice();
+        // AI 및 온라인 플레이 가능여부 새로고침
         refreshLocalAiAvailability();
         refreshOnlinePlayAvailability();
         // 첫 화면은 제목과 시작 문구만 즉시 표시한 뒤 갤러리 미리보기를 비동기로 준비한다.
@@ -13600,6 +15008,8 @@
         scheduleFeverStageValidation();
         loadInitialGalleryPreview();
         animationFrameId = requestAnimationFrame(frame);
+        // 초기화 완료 표시
+        initialized = true;
     }
 
     /**
@@ -15171,28 +16581,7 @@
 
         /** 인간 왕의 왕관·망토를 바탕으로 솔로몬의 일반·위기·우는 표정을 그린다. */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-            drawingContext.fillStyle = '#38275f'; drawingContext.strokeStyle = '#201536'; drawingContext.lineWidth = 4 * scale;
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.62, size * 0.72); drawingContext.lineTo(-size * 0.47, -size * 0.05); drawingContext.lineTo(0, size * 0.13); drawingContext.lineTo(size * 0.47, -size * 0.05); drawingContext.lineTo(size * 0.62, size * 0.72); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#e7b58f'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.07, size * 0.4, size * 0.49, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#352334'; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.2, size * 0.43, Math.PI, Math.PI * 2); drawingContext.fill();
-            drawingContext.fillStyle = '#e9c95f'; drawingContext.beginPath(); drawingContext.moveTo(-size * 0.38, -size * 0.46); drawingContext.lineTo(-size * 0.3, -size * 0.9); drawingContext.lineTo(-size * 0.08, -size * 0.59); drawingContext.lineTo(0, -size * 0.96); drawingContext.lineTo(size * 0.12, -size * 0.59); drawingContext.lineTo(size * 0.36, -size * 0.88); drawingContext.lineTo(size * 0.38, -size * 0.46); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            const eyeY = -size * 0.08;
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#38233d'; drawingContext.lineWidth = 3 * scale;
-                [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.07, eyeY - size * 0.05); drawingContext.lineTo(eyeX + size * 0.07, eyeY + size * 0.05); drawingContext.moveTo(eyeX + size * 0.07, eyeY - size * 0.05); drawingContext.lineTo(eyeX - size * 0.07, eyeY + size * 0.05); drawingContext.stroke(); });
-                drawingContext.fillStyle = '#78d5f4'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.2, size * 0.055, size * 0.14, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.beginPath(); drawingContext.arc(0, size * 0.29, size * 0.11, Math.PI, Math.PI * 2); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#7b2636' : '#38233d';
-                [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.065, expression === 'crisis' ? size * 0.12 : size * 0.075, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#7b2636'; drawingContext.lineWidth = 3 * scale; drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(0, size * 0.3, size * 0.11, Math.PI, Math.PI * 2); else drawingContext.arc(0, size * 0.15, size * 0.12, 0, Math.PI); drawingContext.stroke();
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Solomon');
         }
     }
 
@@ -15258,7 +16647,7 @@
         }
 
         /**
-         * 초상화 색과 어울리는 집게와 뱀의 짙은 초록 계열로 맞춘다.
+         * 초상화 색과 어울리는 제복과 뱀 목도리의 짙은 초록 계열로 맞춘다.
          * @returns {{bezel:string, field:string, center:string}} 베젤·플레이 영역·중앙 영역 배경색
          */
         getFieldThemeColors() {
@@ -15274,46 +16663,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.strokeStyle = '#164c50';
-            drawingContext.fillStyle = '#237f79';
-            drawingContext.lineWidth = 9 * scale;
-            // 양쪽 집게를 대칭으로 그려 갑각형 실루엣을 만든다.
-            for (const direction of [-1, 1]) {
-                drawingContext.beginPath();
-                drawingContext.moveTo(direction * size * 0.32, size * 0.1);
-                drawingContext.quadraticCurveTo(direction * size * 0.9, size * 0.22, direction * size * 0.78, size * 0.68);
-                drawingContext.stroke();
-            }
-            drawingContext.beginPath();
-            drawingContext.ellipse(0, size * 0.18, size * 0.56, size * 0.63, 0, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.stroke();
-            // 도둑을 찾아주는 정의의 백작답게 한 손의 작은 뱀과 별 배지를 더한다.
-            drawingContext.strokeStyle = '#b7d65b'; drawingContext.lineWidth = 5 * scale;
-            drawingContext.beginPath(); drawingContext.arc(size * 0.58, size * 0.22, size * 0.18, 0, Math.PI * 1.8); drawingContext.stroke();
-            drawingContext.fillStyle = '#f3d46b'; drawingContext.beginPath(); drawingContext.arc(-size * 0.3, size * 0.35, size * 0.1, 0, Math.PI * 2); drawingContext.fill();
-            drawingContext.fillStyle = '#9ad9b8';
-            drawingContext.beginPath();
-            drawingContext.arc(-size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
-            drawingContext.arc(size * 0.19, -size * 0.06, size * 0.16, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.fillStyle = '#172535';
-            drawingContext.beginPath();
-            drawingContext.arc(-size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
-            drawingContext.arc(size * 0.17, -size * 0.04, size * 0.07, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.fillStyle = '#d6a63a';
-            drawingContext.beginPath();
-            drawingContext.moveTo(0, size * 0.12);
-            drawingContext.lineTo(-size * 0.12, size * 0.42);
-            drawingContext.lineTo(size * 0.12, size * 0.42);
-            drawingContext.closePath();
-            drawingContext.fill();
-            drawPortraitEmotion(drawingContext, size, expression, -size * 0.06, size * 0.19);
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Andromalius');
         }
     }
 
@@ -15431,7 +16781,7 @@
         }
 
         /**
-         * 여러 얼굴과 비밀의 책을 가진 단탈리온의 일반·위기·우는 표정을 그린다.
+         * 베레모와 비밀의 책을 가진 인간형 단탈리온의 일반·위기·우는 표정을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -15439,115 +16789,278 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineCap = 'round';
-            drawingContext.strokeStyle = '#3d204d';
-            drawingContext.lineWidth = 14 * scale;
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.33, size * 0.34);
-            drawingContext.lineTo(-size * 0.5, size * 0.82);
-            drawingContext.moveTo(size * 0.33, size * 0.34);
-            drawingContext.lineTo(size * 0.5, size * 0.82);
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#563068';
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.52, size * 0.34);
-            drawingContext.lineTo(-size * 0.92, size * 0.04);
-            drawingContext.moveTo(size * 0.52, size * 0.34);
-            drawingContext.lineTo(size * 0.92, size * 0.04);
-            drawingContext.lineWidth = 15 * scale;
-            drawingContext.stroke();
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.5, size * 0.28);
-            drawingContext.quadraticCurveTo(0, -size * 0.02, size * 0.5, size * 0.28);
-            drawingContext.lineTo(size * 0.35, size * 0.72);
-            drawingContext.quadraticCurveTo(0, size * 0.88, -size * 0.35, size * 0.72);
-            drawingContext.closePath();
-            drawingContext.fillStyle = '#6e3f8b';
-            drawingContext.fill();
-            drawingContext.strokeStyle = '#bd87e8';
-            drawingContext.lineWidth = 3 * scale;
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#303752';
-            drawingContext.beginPath();
-            drawingContext.arc(0, -size * 0.28, size * 0.43, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.strokeStyle = '#bd87e8';
-            drawingContext.lineWidth = 3 * scale;
-            drawingContext.stroke();
-            // '서로 다름'의 공작: 옆에 겹친 작은 얼굴들과 미래를 적은 책을 보인다.
-            drawingContext.fillStyle = '#48506d'; [-size * 0.48, size * 0.48].forEach((faceX) => { drawingContext.beginPath(); drawingContext.arc(faceX, -size * 0.21, size * 0.16, 0, Math.PI * 2); drawingContext.fill(); });
-            drawingContext.fillStyle = '#d8a968'; drawingContext.fillRect(-size * 0.34, size * 0.36, size * 0.68, size * 0.2); drawingContext.strokeStyle = '#563068'; drawingContext.strokeRect(-size * 0.34, size * 0.36, size * 0.68, size * 0.2);
-            drawingContext.fillStyle = '#ef5350';
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.27, -size * 0.6);
-            drawingContext.lineTo(-size * 0.08, -size * 0.93);
-            drawingContext.lineTo(size * 0.03, -size * 0.55);
-            drawingContext.closePath();
-            drawingContext.moveTo(size * 0.27, -size * 0.6);
-            drawingContext.lineTo(size * 0.08, -size * 0.93);
-            drawingContext.lineTo(-size * 0.03, -size * 0.55);
-            drawingContext.closePath();
-            drawingContext.fill();
-            drawingContext.fillStyle = '#f5fbfc';
-            drawingContext.beginPath();
-            drawingContext.arc(-size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
-            drawingContext.arc(size * 0.16, -size * 0.31, size * 0.12, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.fillStyle = '#ef5350';
-            drawingContext.beginPath();
-            drawingContext.arc(-size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
-            drawingContext.arc(size * 0.13, -size * 0.29, size * 0.055, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawPortraitEmotion(drawingContext, size, expression, -size * 0.31, size * 0.16);
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Dantalion');
         }
     }
 
+    /** 적별 의상·머리칼·소품 색이다. 전승의 동물과 여러 얼굴은 장식으로만 재해석한다. */
+    const ENEMY_PORTRAIT_STYLES = {
+        Solomon: { hair: '#735044', light: '#ba8970', coat: '#7964b7', accent: '#f6ce70', skin: '#f8d5bc', motif: 'king' },
+        Andromalius: { hair: '#306958', light: '#65a68a', coat: '#3b9272', accent: '#e3d77e', skin: '#ffdfc9', motif: 'snake' },
+        Dantalion: { hair: '#82629d', light: '#ba9cd4', coat: '#7953a0', accent: '#f2bbd8', skin: '#ffe0d3', motif: 'book' },
+        Seere: { hair: '#78b7dc', light: '#c9edfa', coat: '#569dcc', accent: '#fbe0a0', skin: '#ffe2ce', motif: 'prince' },
+        Decarabia: { hair: '#c774a3', light: '#f6b1ce', coat: '#b6619e', accent: '#ffe394', skin: '#ffe1d6', motif: 'star' },
+        Belial: { hair: '#e8bfd2', light: '#fff0e7', coat: '#8b547e', accent: '#f4cb84', skin: '#ffdeca', motif: 'angel' },
+        Amdusias: { hair: '#939fdb', light: '#dce3ff', coat: '#626fa9', accent: '#f9dda0', skin: '#ffe3d2', motif: 'music' },
+        Kimaris: { hair: '#494653', light: '#8d8797', coat: '#6a6a7c', accent: '#e7bc76', skin: '#dca885', motif: 'knight' },
+        Andrealphus: { hair: '#4a9a9b', light: '#9fdbcb', coat: '#397f93', accent: '#f6d477', skin: '#ffe1c9', motif: 'peacock' },
+        Flauros: { hair: '#e59951', light: '#ffd097', coat: '#da8853', accent: '#ffe3a2', skin: '#ffdbb9', motif: 'leopard' },
+        Andras: { hair: '#8496b8', light: '#ccd9ee', coat: '#526486', accent: '#f9c185', skin: '#ffe1d0', motif: 'owl' },
+        Valak: { hair: '#edc17a', light: '#fff0bf', coat: '#b76668', accent: '#f6d788', skin: '#ffe0c9', motif: 'dragon' },
+        Zagan: { hair: '#bd8b58', light: '#eed0a0', coat: '#ad7f4d', accent: '#ffe6a4', skin: '#f3c5a3', motif: 'bull' },
+        ChainBuildingEnemy: { hair: '#8389b8', light: '#c6ccee', coat: '#71679e', accent: '#e7ccfa', skin: '#ffe0cf', motif: 'oracle' }
+    };
+
+    /** 매 프레임 같은 윤곽 경로를 재생성하지 않도록 보관한다. */
+    const enemyPortraitPaths = new Map();
+
     /**
-     * 적 초상화 위에 위기 또는 패배 표정을 겹쳐 그린다.
-     * @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트
-     * @param {number} size 초상화 기준 크기
+     * 머리 하나의 작은 인간형 캐릭터를 캔버스 도형만으로 그린다.
+     * 일반은 웃음과 열린 자세, 위기는 움츠린 팔·땀, 패배는 처진 자세·눈물로 구별한다.
+     * 좌표와 선 두께를 함께 확대하므로 카드부터 갤러리까지 같은 그림을 사용한다.
+     * @param {CanvasRenderingContext2D} context 캔버스 2D 컨텍스트
+     * @param {number} centerX 캐릭터 중심 X 좌표
+     * @param {number} centerY 캐릭터 중심 Y 좌표
+     * @param {number} scale 기본 크기 대비 배율
      * @param {'normal'|'crisis'|'defeated'} expression 표시할 표정
-     * @param {number} eyeY 눈 중심 Y 좌표
-     * @param {number} eyeSpacing 눈 중심의 X축 거리
+     * @param {string} type 기본 제공 적 클래스 이름
      * @returns {void}
      */
-    function drawPortraitEmotion(drawingContext, size, expression, eyeY, eyeSpacing) {
-        if (expression === 'crisis') {
-            drawingContext.strokeStyle = '#172535';
-            drawingContext.lineWidth = Math.max(2, size * 0.045);
-            drawingContext.beginPath();
-            drawingContext.moveTo(-eyeSpacing * 1.65, eyeY - size * 0.19);
-            drawingContext.lineTo(-eyeSpacing * 0.35, eyeY - size * 0.13);
-            drawingContext.moveTo(eyeSpacing * 1.65, eyeY - size * 0.19);
-            drawingContext.lineTo(eyeSpacing * 0.35, eyeY - size * 0.13);
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#8dd8ef';
-            drawingContext.beginPath();
-            drawingContext.ellipse(eyeSpacing * 1.85, eyeY + size * 0.18, size * 0.075, size * 0.12, 0.25, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.strokeStyle = '#d9f8ff';
-            drawingContext.lineWidth = Math.max(1, size * 0.018);
-            drawingContext.stroke();
-        } else if (expression === 'defeated') {
-            drawingContext.fillStyle = '#75c9f0';
-            [-eyeSpacing, eyeSpacing].forEach((eyeX) => {
-                drawingContext.beginPath();
-                drawingContext.ellipse(eyeX, eyeY + size * 0.2, size * 0.09, size * 0.2, 0, 0, Math.PI * 2);
-                drawingContext.fill();
-            });
-            drawingContext.strokeStyle = '#e7f8fa';
-            drawingContext.lineWidth = Math.max(1, size * 0.018);
-            drawingContext.beginPath();
-            drawingContext.moveTo(-eyeSpacing, eyeY + size * 0.04);
-            drawingContext.lineTo(-eyeSpacing, eyeY + size * 0.3);
-            drawingContext.moveTo(eyeSpacing, eyeY + size * 0.04);
-            drawingContext.lineTo(eyeSpacing, eyeY + size * 0.3);
-            drawingContext.stroke();
+    function drawCuteEnemyPortrait(context, centerX, centerY, scale, expression, type) {
+        const style = ENEMY_PORTRAIT_STYLES[type];
+        const { hair, light, coat, accent, skin, motif } = style;
+        const ink = '#343047';
+        const crisis = expression === 'crisis';
+        const defeated = expression === 'defeated';
+        const path = (data, fill, stroke = ink, width = 3.4) => {
+            if (!enemyPortraitPaths.has(data)) enemyPortraitPaths.set(data, new Path2D(data));
+            const shape = enemyPortraitPaths.get(data);
+            if (fill) { context.fillStyle = fill; context.fill(shape); }
+            if (stroke) { context.strokeStyle = stroke; context.lineWidth = width; context.stroke(shape); }
+        };
+        const oval = (x, y, rx, ry, fill, stroke = ink, width = 3.4, angle = 0) => {
+            context.beginPath(); context.ellipse(x, y, rx, ry, angle, 0, Math.PI * 2);
+            if (fill) { context.fillStyle = fill; context.fill(); }
+            if (stroke) { context.strokeStyle = stroke; context.lineWidth = width; context.stroke(); }
+        };
+        const star = (x, y, radius, fill = accent) => {
+            context.save(); context.translate(x, y); context.scale(radius / 15, radius / 15);
+            path('M0 -15 L4 -5 L14 -5 L7 3 L9 14 L0 8 L-9 14 L-7 3 L-14 -5 L-4 -5 Z', fill, ink, 2.4);
+            context.restore();
+        };
+        const featherWing = (direction, color, droop = 0) => {
+            context.save(); context.scale(direction, 1); context.translate(0, droop);
+            path('M28 32 Q51 25 72 -5 Q79 17 67 34 Q82 27 77 39 Q74 53 58 57 Q67 62 57 66 Q42 68 29 51 Z', color);
+            path('M38 48 Q55 39 63 21 M44 54 L62 44', null, coat, 2);
+            context.restore();
+        };
+
+        context.save();
+        context.translate(centerX, centerY);
+        context.scale(scale * 0.8, scale * 0.8);
+        context.lineJoin = 'round'; context.lineCap = 'round';
+        oval(0, 88, 42, 6, 'rgba(27,25,47,0.16)', null);
+        context.translate(0, defeated ? 5 : 0);
+        context.rotate(defeated ? -0.07 : crisis ? 0.035 : 0);
+
+        // 얼굴을 더 만들지 않고 날개·꼬리·망토에 원작의 실루엣을 담는다.
+        if (motif === 'peacock') {
+            for (const angle of [-0.9, -0.45, 0, 0.45, 0.9]) {
+                context.save(); context.translate(0, 51); context.rotate(angle);
+                oval(0, -52, 17, 50, '#58ab9e');
+                oval(0, -79, 10, 15, accent, null);
+                oval(0, -80, 5, 8, '#4b67a0', null);
+                context.restore();
+            }
         }
+        if (['prince', 'angel', 'owl', 'dragon', 'bull'].includes(motif)) {
+            for (const direction of [-1, 1]) featherWing(direction, motif === 'owl' ? '#b6c5dc' : motif === 'bull' ? '#f3d58e' : '#f8eef3', defeated ? 9 : 0);
+        }
+        if (motif === 'leopard') {
+            path('M28 63 C79 83 83 35 61 43', null, ink, 15);
+            path('M28 63 C79 83 83 35 61 43', null, hair, 9);
+            path('M64 65 L70 68 M71 49 L78 49', null, '#79523d', 5);
+        }
+        if (motif === 'dragon') {
+            path('M29 69 Q66 85 66 50 L77 42 L73 62 Q61 94 29 80 Z', '#c77878');
+            path('M60 75 L62 65 L70 69 M48 81 L51 73 L57 80', accent, ink, 2);
+        }
+        if (['king', 'prince', 'knight', 'angel', 'oracle'].includes(motif)) {
+            path('M-24 22 Q-41 37 -49 75 Q-22 87 0 70 Q22 87 49 75 Q41 37 24 22 Z', coat);
+            path('M-29 42 L-38 73 M29 42 L38 73', null, light, 2.4);
+        }
+        if (['book', 'music', 'star'].includes(motif)) {
+            oval(-32, 1, 18, 42, hair); oval(32, 1, 18, 42, hair);
+        }
+
+        // 작고 둥근 부츠, 튜닉, 깃과 소매를 얼굴보다 먼저 그린다.
+        oval(-17, 78, 13, 10, coat); oval(17, 78, 13, 10, coat);
+        path('M-27 31 Q0 18 27 31 L32 65 Q0 78 -32 65 Z', coat);
+        path('M-18 31 L0 50 L18 31 M0 50 L0 68', null, accent, 3);
+        path('M-22 28 L-6 25 L0 39 L-13 42 Z M22 28 L6 25 L0 39 L13 42 Z', '#fff1dc', ink, 2.2);
+        for (const direction of [-1, 1]) {
+            context.save(); context.scale(direction, 1);
+            if (crisis) {
+                path('M25 32 Q45 42 40 19', null, ink, 16);
+                path('M25 32 Q45 42 40 19', null, coat, 10);
+                oval(39, 16, 8, 9, skin);
+            } else if (defeated) {
+                path('M24 34 Q35 47 35 57', null, ink, 16);
+                path('M24 34 Q35 47 35 57', null, coat, 10);
+                oval(35, 60, 8, 9, skin);
+            } else {
+                path('M24 33 Q39 39 46 31', null, ink, 16);
+                path('M24 33 Q39 39 46 31', null, coat, 10);
+                oval(47, 29, 8, 8, skin);
+            }
+            context.restore();
+        }
+
+        // 큰 머리와 부드러운 앞머리 안에 사람 얼굴 하나만 배치한다.
+        oval(0, -29, 43, 43, hair);
+        oval(-38, -17, 7, 10, skin); oval(38, -17, 7, 10, skin);
+        path('M-36 -38 Q-38 -1 -24 13 Q0 30 24 13 Q38 -1 36 -38 Q0 -58 -36 -38 Z', skin);
+        if (['book', 'angel', 'music', 'peacock'].includes(motif)) {
+            path('M-41 -20 Q-51 -66 -13 -72 Q22 -83 40 -48 L41 -15 Q25 -27 16 -50 Q-1 -23 -24 -27 L-14 -47 Q-27 -30 -41 -20 Z', hair);
+            path('M-30 -47 Q-17 -64 6 -62 M23 -57 Q30 -48 33 -38', null, light, 4);
+        } else {
+            path('M-42 -20 Q-47 -57 -28 -65 L-30 -76 L-10 -69 Q13 -81 34 -58 L44 -56 L37 -17 L22 -39 L16 -27 L1 -46 L-10 -30 L-16 -43 Z', hair);
+            path('M-30 -50 Q-16 -61 -5 -57 M9 -62 L23 -52', null, light, 4);
+        }
+
+        // 적마다 다른 머리 장식이 작은 카드에서도 형태 차이를 만든다.
+        if (motif === 'king' || motif === 'prince') {
+            path('M-27 -64 L-31 -86 L-14 -76 L0 -96 L14 -76 L31 -86 L27 -64 Z', accent);
+            path('M-23 -68 L23 -68', null, '#fff3c6', 3);
+            oval(0, -77, 5, 7, coat, ink, 2);
+        } else if (motif === 'snake') {
+            path('M-39 -57 Q-24 -89 14 -77 L32 -60 Q2 -66 -39 -57 Z', coat);
+            path('M-40 -56 Q-7 -70 34 -59', null, ink, 7);
+            star(-19, -68, 8);
+        } else if (motif === 'book') {
+            path('M-35 -64 Q-46 -84 -22 -87 L-9 -74 Q10 -93 37 -77 L33 -64 Z', coat);
+            oval(27, -69, 7, 7, accent, ink, 2);
+            path('M-27 -66 Q-13 -74 4 -72', null, light, 3);
+        } else if (motif === 'star' || motif === 'oracle') {
+            path('M-37 -59 Q-22 -77 -13 -96 Q0 -91 7 -78 L35 -60 Z', coat);
+            path('M-49 -55 Q-8 -74 47 -54 Q18 -43 -49 -55 Z', coat);
+            star(-13, -77, 9);
+        } else if (motif === 'angel') {
+            path('M-27 -85 C-50 -102 39 -110 31 -87 M24 -84 L31 -82', null, ink, 7);
+            path('M-27 -85 C-50 -102 39 -110 31 -87 M24 -84 L31 -82', null, accent, 3.5);
+            star(30, -53, 9);
+        } else if (motif === 'music') {
+            path('M-10 -65 L0 -100 L12 -66 Z', accent);
+            path('M-5 -80 L6 -75 M-2 -89 L3 -86', null, '#bd986b', 2);
+            path('M-35 -54 Q-58 -82 -37 -83 L-20 -65 M35 -54 Q58 -82 37 -83 L20 -65', light);
+        } else if (motif === 'knight') {
+            path('M-35 -52 L-31 -81 L-15 -66 M35 -52 L31 -81 L15 -66', hair);
+            path('M-41 -48 Q0 -68 41 -48 L37 -40 Q0 -54 -37 -40 Z', '#a2a7b7');
+            path('M-7 -57 L0 -65 L7 -57 L0 -46 Z', accent, ink, 2);
+        } else if (motif === 'peacock') {
+            path('M22 -60 Q46 -92 41 -98 Q20 -93 17 -70', '#71baa8');
+            oval(34, -85, 7, 10, accent, ink, 2, 0.5);
+            oval(34, -85, 3, 5, '#4b67a0', null, 0, 0.5);
+        } else if (motif === 'leopard') {
+            oval(-32, -65, 14, 14, hair); oval(32, -65, 14, 14, hair);
+            oval(-32, -65, 7, 7, '#f5c0a4', null); oval(32, -65, 7, 7, '#f5c0a4', null);
+            for (const [x, y] of [[-23, -50], [26, -44], [9, -57]]) oval(x, y, 4, 3, '#86513c', null);
+        } else if (motif === 'owl') {
+            path('M-37 -49 L-47 -83 L-20 -69 Q0 -76 20 -69 L47 -83 L37 -49 L16 -60 L0 -50 L-16 -60 Z', light);
+            path('M-36 -66 L-27 -59 M36 -66 L27 -59 M-5 -61 L0 -55 L5 -61', null, coat, 2.5);
+        } else if (motif === 'dragon') {
+            path('M-29 -60 Q-51 -67 -40 -88 L-22 -70 M29 -60 Q51 -67 40 -88 L22 -70', accent);
+            path('M-20 -65 L-9 -75 L0 -66 L9 -75 L20 -65', '#c77878');
+        } else if (motif === 'bull') {
+            path('M-30 -58 Q-64 -57 -52 -86 Q-45 -70 -28 -75 Z M30 -58 Q64 -57 52 -86 Q45 -70 28 -75 Z', accent);
+            path('M-38 -41 Q-61 -48 -53 -62 L-34 -54 M38 -41 Q61 -48 53 -62 L34 -54', hair);
+            path('M-12 -63 Q0 -79 14 -63 L6 -49 L0 -55 L-6 -49 Z', light);
+        }
+
+        // 표정을 덧칠하지 않고 눈·눈썹·입을 상태에 맞춰 한 번씩 그린다.
+        for (const direction of [-1, 1]) {
+            context.save(); context.scale(direction, 1);
+            oval(25, 1, 8, 4, '#efa7aa', null);
+            if (defeated) {
+                path('M9 -10 Q17 -3 25 -11', null, ink, 3);
+                path('M12 -6 Q11 8 13 14 Q17 20 21 14 L22 -6 Z', '#8edcec', null);
+                path('M15 0 L15 10', null, '#eefcff', 2);
+                path('M9 -23 Q18 -28 25 -22', null, ink, 2.5);
+            } else {
+                oval(17, -12, crisis ? 10 : 9, crisis ? 13 : 11, '#fffaf4', ink, 2.5);
+                oval(17, -10, crisis ? 4 : 5, crisis ? 8 : 8.5, coat, null);
+                oval(17, -9, 2.5, 5, ink, null);
+                oval(15, -16, 2.8, 3, '#ffffff', null);
+                path(crisis ? 'M9 -29 L25 -25' : 'M10 -27 Q17 -30 24 -26', null, ink, 2.5);
+            }
+            context.restore();
+        }
+        if (defeated) path('M-8 11 Q0 3 8 11', null, ink, 3);
+        else if (crisis) {
+            oval(0, 10, 5, 6, '#ba6e7c', ink, 2);
+            path('M36 -29 Q47 -15 43 -8 Q36 -3 33 -10 Q30 -16 36 -29 Z', '#8edcec', ink, 2);
+            path('M38 -18 L39 -12', null, '#effcff', 2);
+        } else {
+            path('M-9 5 Q0 10 9 5 Q7 19 0 18 Q-7 18 -9 5 Z', '#b76578', ink, 2.2);
+            path('M-4 14 Q0 11 4 14', null, '#ffc0c3', 2.8);
+        }
+
+        // 얼굴 아래의 상징 소품은 어느 표정에서도 눈과 입을 가리지 않는다.
+        context.save(); context.translate(0, defeated ? 5 : crisis ? -2 : 0);
+        if (motif === 'book' || motif === 'oracle') {
+            path('M0 45 Q-15 34 -29 39 L-28 61 Q-12 58 0 66 Q12 58 28 61 L29 39 Q15 34 0 45 Z', accent);
+            path('M0 45 L0 66 M-22 45 L-7 49 M-22 51 L-8 54 M8 49 L21 45 M8 54 L21 51', null, coat, 2);
+        } else if (motif === 'snake') {
+            path('M-26 49 C-12 68 27 64 29 46 C30 31 50 33 47 45', null, ink, 13);
+            path('M-26 49 C-12 68 27 64 29 46 C30 31 50 33 47 45', null, '#bbd980', 8);
+            path('M-17 58 L-15 54 M-1 62 L0 57 M15 59 L13 55', null, '#75a567', 2);
+            // 머리 모양 없이 뱀의 곡선을 수놓은 목도리로 표현한다.
+            star(-15, 31, 8);
+        } else if (motif === 'king') {
+            path('M-21 46 Q0 59 21 46 L18 65 Q0 74 -18 65 Z', accent);
+            oval(0, 57, 8, 8, '#b98ccf', ink, 2); star(0, 57, 4, '#fff2cd');
+        } else if (motif === 'prince') {
+            path('M-19 44 L0 37 L19 44 L14 62 L0 70 L-14 62 Z', '#e2eff7');
+            path('M-9 50 Q-18 42 -12 41 Q-1 43 0 54 Q1 43 12 41 Q18 42 9 50 L0 59 Z', accent, ink, 2);
+        } else if (motif === 'star') {
+            path('M40 53 L54 21', null, ink, 6); path('M40 53 L54 21', null, accent, 3);
+            star(55, 15, 14);
+            path('M-19 49 Q-10 35 0 48 Q10 35 19 49 Q8 58 0 53 Q-8 58 -19 49 Z', '#fff0d5', ink, 2);
+        } else if (motif === 'music') {
+            path('M-16 41 Q0 51 16 41 L11 65 Q0 74 -11 65 Z', accent);
+            path('M-8 48 L-6 62 M0 49 L0 65 M8 48 L6 62', null, coat, 2);
+            path('M48 11 L48 -8 L60 -12 L60 5', null, accent, 3);
+            oval(44, 12, 5, 3.5, accent, null); oval(56, 6, 5, 3.5, accent, null);
+        } else if (motif === 'knight') {
+            path('M-24 42 L-8 38 L7 44 L23 40 L23 62 L7 66 L-8 60 L-24 64 Z', '#f4dfb1');
+            path('M-8 38 L-8 60 M7 44 L7 66 M-18 51 Q-5 45 0 54 L13 53 M10 49 L17 57 M17 49 L10 57', null, '#a97854', 2);
+        } else if (motif === 'peacock') {
+            oval(0, 53, 23, 12, null, accent, 3, -0.4);
+            oval(0, 53, 12, 19, null, accent, 2, 0.4);
+            star(0, 53, 7);
+            oval(17, -11, 12, 15, null, accent, 2);
+            path('M29 -5 L34 16', null, accent, 2);
+        } else if (motif === 'leopard') {
+            path('M-17 37 L0 65 L17 37 Z', accent);
+            for (const [x, y] of [[-22, 47], [24, 54], [-18, 63]]) oval(x, y, 4, 3, '#86513c', null);
+            path('M47 15 Q33 4 46 -11 Q46 0 55 -3 Q67 13 47 15 Z', '#f7ad73', ink, 2);
+        } else if (motif === 'owl') {
+            path('M43 48 L56 3 L63 -6 L64 8 L49 51 Z', '#e7effb');
+            path('M40 43 L56 48 M45 48 L42 58', null, accent, 5);
+            path('M-16 49 L-21 39 L-4 44 L4 44 L21 39 L16 49 L0 60 Z', '#b9c7df', ink, 2);
+            path('M60 -13 Q45 -17 56 -33 Q53 -22 63 -25 Q70 -16 60 -13 Z', '#ffc68e', ink, 2);
+        } else if (motif === 'dragon') {
+            path('M-21 39 L0 47 L21 39 L16 61 L0 72 L-16 61 Z', '#d58a86');
+            path('M-12 48 L0 55 L12 48 M-9 57 L0 63 L9 57', null, accent, 2.5);
+        } else if (motif === 'bull') {
+            path('M-12 39 L12 39 L10 52 Q0 65 -10 52 Z', accent);
+            path('M0 60 L0 70 M-10 71 L10 71', null, accent, 4);
+        } else if (motif === 'angel') {
+            path('M-21 40 Q0 30 21 40 L15 55 L0 49 L-15 55 Z', accent);
+            oval(0, 42, 7, 8, '#d997ae', ink, 2);
+        }
+        context.restore();
+        context.restore();
     }
 
     /**
@@ -15706,7 +17219,7 @@
         }
 
         /**
-         * 가면과 수정구를 가진 예지자 모습 및 표정별 얼굴을 그린다.
+         * 별 모자와 예언서를 가진 인간형 예지자의 세 표정을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -15715,88 +17228,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-
-            drawingContext.fillStyle = '#1b3046';
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.55, size * 0.78);
-            drawingContext.quadraticCurveTo(0, size * 0.3, size * 0.55, size * 0.78);
-            drawingContext.closePath();
-            drawingContext.fill();
-            drawingContext.strokeStyle = '#83d5df';
-            drawingContext.lineWidth = 3 * scale;
-            drawingContext.stroke();
-
-            drawingContext.fillStyle = '#d7e8da';
-            drawingContext.beginPath();
-            drawingContext.ellipse(0, -size * 0.1, size * 0.48, size * 0.58, 0, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.strokeStyle = '#35556a';
-            drawingContext.lineWidth = 4 * scale;
-            drawingContext.stroke();
-
-            drawingContext.fillStyle = '#77cfd5';
-            drawingContext.beginPath();
-            drawingContext.arc(0, size * 0.66, size * 0.23, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.strokeStyle = '#d7ffff';
-            drawingContext.lineWidth = 2 * scale;
-            drawingContext.stroke();
-            drawingContext.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            drawingContext.beginPath();
-            drawingContext.arc(-size * 0.075, size * 0.58, size * 0.055, 0, Math.PI * 2);
-            drawingContext.fill();
-
-            const eyeY = -size * 0.16;
-            if (expression === 'defeated') {
-                drawingContext.fillStyle = '#6cbce6';
-                [-size * 0.19, size * 0.19].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.ellipse(eyeX, eyeY + size * 0.13, size * 0.1, size * 0.23, 0, 0, Math.PI * 2);
-                    drawingContext.fill();
-                });
-                drawingContext.strokeStyle = '#35556a';
-                drawingContext.lineWidth = 3 * scale;
-                drawingContext.beginPath();
-                drawingContext.arc(0, size * 0.25, size * 0.13, Math.PI, Math.PI * 2);
-                drawingContext.stroke();
-            } else if (expression === 'crisis') {
-                drawingContext.fillStyle = '#203d56';
-                [-size * 0.19, size * 0.19].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.arc(eyeX, eyeY, size * 0.08, 0, Math.PI * 2);
-                    drawingContext.fill();
-                });
-                drawingContext.fillStyle = '#87dff1';
-                drawingContext.beginPath();
-                drawingContext.ellipse(size * 0.42, -size * 0.34, size * 0.07, size * 0.13, 0.2, 0, Math.PI * 2);
-                drawingContext.fill();
-                drawingContext.fillStyle = '#35556a';
-                drawingContext.beginPath();
-                drawingContext.ellipse(0, size * 0.25, size * 0.11, size * 0.14, 0, 0, Math.PI * 2);
-                drawingContext.fill();
-            } else {
-                drawingContext.fillStyle = '#203d56';
-                [-size * 0.19, size * 0.19].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.moveTo(eyeX, eyeY - size * 0.11);
-                    drawingContext.lineTo(eyeX + size * 0.07, eyeY);
-                    drawingContext.lineTo(eyeX, eyeY + size * 0.11);
-                    drawingContext.lineTo(eyeX - size * 0.07, eyeY);
-                    drawingContext.closePath();
-                    drawingContext.fill();
-                });
-                drawingContext.strokeStyle = '#35556a';
-                drawingContext.lineWidth = 3 * scale;
-                drawingContext.beginPath();
-                drawingContext.moveTo(-size * 0.13, size * 0.26);
-                drawingContext.quadraticCurveTo(0, size * 0.34, size * 0.13, size * 0.26);
-                drawingContext.stroke();
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'ChainBuildingEnemy');
         }
     }
 
@@ -16000,7 +17432,7 @@
         }
 
         /**
-         * 날개 달린 은빛 말을 타고 순식간에 달려오는 미남 왕자 세레의 일반·위기·패배 초상화를 그린다.
+         * 날개 망토와 작은 왕관을 쓴 인간형 왕자 세레의 일반·위기·패배 초상화를 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -16009,94 +17441,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            const outline = '#0c1c2c';
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round'; drawingContext.lineCap = 'round';
-
-            // 어디든 순식간에 오가는 전승을 꼬리 뒤의 바람 줄기로 암시한다.
-            drawingContext.strokeStyle = '#5fb3de'; drawingContext.lineWidth = 3 * scale;
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.96, size * 0.64); drawingContext.lineTo(-size * 0.64, size * 0.64); drawingContext.moveTo(-size * 0.9, size * 0.76); drawingContext.lineTo(-size * 0.7, size * 0.76); drawingContext.stroke();
-
-            // 깃털 끝이 층진 하늘빛 날개다.
-            drawingContext.strokeStyle = outline; drawingContext.lineWidth = 4 * scale;
-            [-1, 1].forEach((direction) => {
-                drawingContext.fillStyle = '#7ec4e8';
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.14, size * 0.26);
-                drawingContext.quadraticCurveTo(direction * size * 0.42, -size * 0.34, direction * size * 0.9, -size * 0.68);
-                drawingContext.quadraticCurveTo(direction * size * 0.96, -size * 0.4, direction * size * 0.8, -size * 0.3);
-                drawingContext.quadraticCurveTo(direction * size * 0.9, -size * 0.1, direction * size * 0.68, -size * 0.04);
-                drawingContext.quadraticCurveTo(direction * size * 0.76, size * 0.14, direction * size * 0.52, size * 0.16);
-                drawingContext.quadraticCurveTo(direction * size * 0.46, size * 0.3, direction * size * 0.24, size * 0.34);
-                drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-                drawingContext.strokeStyle = '#d4f1fb'; drawingContext.lineWidth = 1.6 * scale;
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.28, size * 0.12); drawingContext.lineTo(direction * size * 0.76, -size * 0.5);
-                drawingContext.moveTo(direction * size * 0.32, size * 0.22); drawingContext.lineTo(direction * size * 0.64, -size * 0.1); drawingContext.stroke();
-                drawingContext.strokeStyle = outline; drawingContext.lineWidth = 4 * scale;
-            });
-
-            // 푸른 꼬리와 은빛 말의 몸통이다.
-            drawingContext.fillStyle = '#4f9ad6';
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.5, size * 0.34); drawingContext.quadraticCurveTo(-size * 0.86, size * 0.26, -size * 0.94, size * 0.52); drawingContext.quadraticCurveTo(-size * 0.78, size * 0.44, -size * 0.52, size * 0.52); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#dde6ee';
-            drawingContext.beginPath(); drawingContext.ellipse(size * 0.02, size * 0.47, size * 0.6, size * 0.27, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-
-            // 바람에 날리는 왕자의 망토와 갑주다.
-            drawingContext.fillStyle = '#24507e';
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.2, -size * 0.12); drawingContext.quadraticCurveTo(-size * 0.62, size * 0.0, -size * 0.68, size * 0.38); drawingContext.lineTo(-size * 0.42, size * 0.3); drawingContext.lineTo(-size * 0.3, size * 0.44); drawingContext.lineTo(size * 0.08, size * 0.3); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#4a78b0';
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.3, size * 0.38); drawingContext.lineTo(-size * 0.22, -size * 0.1); drawingContext.lineTo(size * 0.1, -size * 0.1); drawingContext.lineTo(size * 0.18, size * 0.38); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#c9d6e2'; drawingContext.lineWidth = 2.5 * scale;
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.18, -size * 0.07); drawingContext.lineTo(size * 0.06, -size * 0.07); drawingContext.lineTo(-size * 0.06, size * 0.2); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#e6bd47'; drawingContext.beginPath(); drawingContext.arc(-size * 0.06, size * 0.02, size * 0.045, 0, Math.PI * 2); drawingContext.fill();
-
-            // 오른쪽으로 달려 나가는 말의 목·갈기·머리다.
-            drawingContext.lineWidth = 4 * scale; drawingContext.fillStyle = '#dde6ee';
-            drawingContext.beginPath(); drawingContext.moveTo(size * 0.26, size * 0.34); drawingContext.quadraticCurveTo(size * 0.34, 0, size * 0.46, -size * 0.16); drawingContext.lineTo(size * 0.72, -size * 0.06); drawingContext.quadraticCurveTo(size * 0.66, size * 0.18, size * 0.62, size * 0.42); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.beginPath(); drawingContext.moveTo(size * 0.54, -size * 0.3); drawingContext.lineTo(size * 0.57, -size * 0.52); drawingContext.lineTo(size * 0.67, -size * 0.34); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.beginPath(); drawingContext.ellipse(size * 0.66, -size * 0.2, size * 0.2, size * 0.17, 0.45, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#c3d0dc'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.8, -size * 0.06, size * 0.12, size * 0.1, 0.45, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = outline; drawingContext.beginPath(); drawingContext.arc(size * 0.85, -size * 0.04, size * 0.025, 0, Math.PI * 2); drawingContext.fill();
-            drawingContext.fillStyle = '#4f9ad6';
-            drawingContext.beginPath(); drawingContext.moveTo(size * 0.5, -size * 0.38); drawingContext.quadraticCurveTo(size * 0.3, -size * 0.3, size * 0.3, -size * 0.02); drawingContext.quadraticCurveTo(size * 0.22, size * 0.14, size * 0.28, size * 0.32); drawingContext.lineTo(size * 0.37, size * 0.2); drawingContext.quadraticCurveTo(size * 0.38, size * 0.0, size * 0.48, -size * 0.14); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            const horseEyeX = size * 0.66; const horseEyeY = -size * 0.22;
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = outline; drawingContext.lineWidth = 2.5 * scale;
-                drawingContext.beginPath(); drawingContext.moveTo(horseEyeX - size * 0.045, horseEyeY - size * 0.045); drawingContext.lineTo(horseEyeX + size * 0.045, horseEyeY + size * 0.045); drawingContext.moveTo(horseEyeX + size * 0.045, horseEyeY - size * 0.045); drawingContext.lineTo(horseEyeX - size * 0.045, horseEyeY + size * 0.045); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = '#f8fbff'; drawingContext.beginPath(); drawingContext.ellipse(horseEyeX, horseEyeY, size * 0.05, expression === 'crisis' ? size * 0.075 : size * 0.06, 0, 0, Math.PI * 2); drawingContext.fill();
-                drawingContext.fillStyle = expression === 'crisis' ? '#d32f2f' : '#1b3a66'; drawingContext.beginPath(); drawingContext.arc(horseEyeX + size * 0.01, horseEyeY, size * 0.03, 0, Math.PI * 2); drawingContext.fill();
-            }
-
-            // 푸른 머리칼과 작은 왕관을 쓴 왕자의 얼굴이다.
-            drawingContext.strokeStyle = outline; drawingContext.lineWidth = 4 * scale;
-            drawingContext.fillStyle = '#f0d0b0'; drawingContext.beginPath(); drawingContext.arc(-size * 0.06, -size * 0.34, size * 0.25, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#2c4f8a';
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.33, -size * 0.32); drawingContext.quadraticCurveTo(-size * 0.36, -size * 0.66, -size * 0.06, -size * 0.64); drawingContext.quadraticCurveTo(size * 0.24, -size * 0.66, size * 0.21, -size * 0.32);
-            drawingContext.lineTo(size * 0.12, -size * 0.44); drawingContext.lineTo(size * 0.02, -size * 0.38); drawingContext.lineTo(-size * 0.08, -size * 0.47); drawingContext.lineTo(-size * 0.18, -size * 0.39); drawingContext.lineTo(-size * 0.25, -size * 0.46); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#e6bd47'; drawingContext.lineWidth = 3 * scale;
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.2, -size * 0.6); drawingContext.lineTo(-size * 0.19, -size * 0.8); drawingContext.lineTo(-size * 0.11, -size * 0.69); drawingContext.lineTo(-size * 0.06, -size * 0.86); drawingContext.lineTo(-size * 0.01, -size * 0.69); drawingContext.lineTo(size * 0.07, -size * 0.8); drawingContext.lineTo(size * 0.08, -size * 0.6); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#7ec4e8'; drawingContext.beginPath(); drawingContext.arc(-size * 0.06, -size * 0.66, size * 0.03, 0, Math.PI * 2); drawingContext.fill();
-
-            const eyeY = -size * 0.3;
-            const eyeXs = [-size * 0.15, size * 0.03];
-            // 왕자의 얼굴은 다른 적보다 작으므로 표정 선도 가늘고 작게 그려 입이 뭉개지지 않게 한다.
-            drawingContext.strokeStyle = '#1b2a3a'; drawingContext.lineWidth = 2 * scale;
-            if (expression === 'defeated') {
-                eyeXs.forEach((eyeX) => { drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.045, eyeY - size * 0.04); drawingContext.lineTo(eyeX + size * 0.045, eyeY + size * 0.04); drawingContext.moveTo(eyeX + size * 0.045, eyeY - size * 0.04); drawingContext.lineTo(eyeX - size * 0.045, eyeY + size * 0.04); drawingContext.stroke(); });
-                drawingContext.fillStyle = '#75c9f0'; eyeXs.forEach((eyeX, index) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX + (index ? size * 0.03 : -size * 0.03), eyeY + size * 0.1, size * 0.03, size * 0.065, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.beginPath(); drawingContext.arc(-size * 0.06, -size * 0.14, size * 0.04, Math.PI, Math.PI * 2); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = '#f8fbff'; eyeXs.forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.06, expression === 'crisis' ? size * 0.09 : size * 0.07, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = expression === 'crisis' ? '#d32f2f' : '#1b3a66'; eyeXs.forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX + size * 0.01, eyeY + size * 0.005, size * 0.036, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(-size * 0.06, -size * 0.15, size * 0.04, Math.PI, Math.PI * 2);
-                else drawingContext.arc(-size * 0.06, -size * 0.21, size * 0.05, 0.2, Math.PI - 0.2);
-                drawingContext.stroke();
-                if (expression === 'crisis') { drawingContext.fillStyle = '#7adcf4'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.2, -size * 0.42, size * 0.045, size * 0.09, 0.2, 0, Math.PI * 2); drawingContext.fill(); }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Seere');
         }
     }
 
@@ -16208,85 +17553,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-            drawingContext.fillStyle = '#5c354e';
-            drawingContext.strokeStyle = '#2b1a31';
-            drawingContext.lineWidth = 4 * scale;
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath();
-                drawingContext.moveTo(direction * size * 0.3, -size * 0.05);
-                drawingContext.lineTo(direction * size * 0.92, -size * 0.48);
-                drawingContext.lineTo(direction * size * 0.7, size * 0.4);
-                drawingContext.lineTo(direction * size * 0.27, size * 0.32);
-                drawingContext.closePath();
-                drawingContext.fill();
-                drawingContext.stroke();
-            });
-            drawingContext.fillStyle = '#a55b80';
-            drawingContext.beginPath();
-            drawingContext.arc(0, 0, size * 0.52, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#ffd76b';
-            drawingContext.beginPath();
-            for (let index = 0; index < 10; index += 1) {
-                const angle = -Math.PI / 2 + index * Math.PI / 5;
-                const radius = index % 2 ? size * 0.15 : size * 0.31;
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius - size * 0.58;
-                if (index === 0) drawingContext.moveTo(x, y);
-                else drawingContext.lineTo(x, y);
-            }
-            drawingContext.closePath();
-            drawingContext.fill();
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#b9d7f0'; drawingContext.beginPath(); drawingContext.arc(size * 0.72, -size * 0.42, size * 0.11, 0, Math.PI * 2); drawingContext.fill(); drawingContext.beginPath(); drawingContext.moveTo(size * 0.75, -size * 0.42); drawingContext.lineTo(size * 0.98, -size * 0.52); drawingContext.lineTo(size * 0.78, -size * 0.3); drawingContext.closePath(); drawingContext.fill();
-
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#f3edff';
-                drawingContext.lineWidth = 3 * scale;
-                [-size * 0.18, size * 0.18].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.moveTo(eyeX - size * 0.09, -size * 0.1);
-                    drawingContext.lineTo(eyeX + size * 0.09, size * 0.1);
-                    drawingContext.moveTo(eyeX + size * 0.09, -size * 0.1);
-                    drawingContext.lineTo(eyeX - size * 0.09, size * 0.1);
-                    drawingContext.stroke();
-                });
-                drawingContext.fillStyle = '#75c9f0';
-                drawingContext.beginPath();
-                drawingContext.ellipse(0, size * 0.27, size * 0.13, size * 0.08, 0, 0, Math.PI * 2);
-                drawingContext.fill();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#fff5bb' : '#f7efff';
-                [-size * 0.18, size * 0.18].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.ellipse(eyeX, -size * 0.1, size * 0.11, size * 0.14, 0, 0, Math.PI * 2);
-                    drawingContext.fill();
-                });
-                drawingContext.fillStyle = expression === 'crisis' ? '#ef5350' : '#3c2347';
-                [-size * 0.18, size * 0.18].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.arc(eyeX, -size * 0.08, size * 0.047, 0, Math.PI * 2);
-                    drawingContext.fill();
-                });
-                drawingContext.strokeStyle = '#3c2347';
-                drawingContext.lineWidth = 3 * scale;
-                drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(0, size * 0.32, size * 0.12, Math.PI, Math.PI * 2);
-                else drawingContext.arc(0, size * 0.16, size * 0.12, 0, Math.PI);
-                drawingContext.stroke();
-                if (expression === 'crisis') {
-                    drawingContext.fillStyle = '#82d9f5';
-                    drawingContext.beginPath();
-                    drawingContext.ellipse(size * 0.42, size * 0.06, size * 0.06, size * 0.11, 0.2, 0, Math.PI * 2);
-                    drawingContext.fill();
-                }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Decarabia');
         }
     }
 
@@ -16378,75 +17645,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-            drawingContext.fillStyle = '#372446';
-            drawingContext.strokeStyle = '#1d1629';
-            drawingContext.lineWidth = 4 * scale;
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.7, size * 0.8);
-            drawingContext.lineTo(-size * 0.52, -size * 0.05);
-            drawingContext.lineTo(0, size * 0.26);
-            drawingContext.lineTo(size * 0.52, -size * 0.05);
-            drawingContext.lineTo(size * 0.7, size * 0.8);
-            drawingContext.closePath();
-            drawingContext.fill();
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#d79a73';
-            drawingContext.beginPath();
-            drawingContext.ellipse(0, -size * 0.08, size * 0.42, size * 0.52, 0, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#e7b846';
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.34, -size * 0.5);
-            drawingContext.lineTo(-size * 0.24, -size * 0.91);
-            drawingContext.lineTo(0, -size * 0.62);
-            drawingContext.lineTo(size * 0.24, -size * 0.91);
-            drawingContext.lineTo(size * 0.34, -size * 0.5);
-            drawingContext.closePath();
-            drawingContext.fill();
-            drawingContext.stroke();
-            drawingContext.strokeStyle = '#f0d88a'; drawingContext.lineWidth = 3 * scale; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.78, size * 0.28, Math.PI * 0.12, Math.PI * 0.88); drawingContext.stroke();
-
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#413047';
-                drawingContext.lineWidth = 3 * scale;
-                [-size * 0.16, size * 0.16].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.moveTo(eyeX - size * 0.08, -size * 0.13);
-                    drawingContext.lineTo(eyeX + size * 0.08, size * 0.03);
-                    drawingContext.moveTo(eyeX + size * 0.08, -size * 0.13);
-                    drawingContext.lineTo(eyeX - size * 0.08, size * 0.03);
-                    drawingContext.stroke();
-                });
-                drawingContext.fillStyle = '#75c9f0';
-                drawingContext.beginPath();
-                drawingContext.ellipse(0, size * 0.3, size * 0.15, size * 0.09, 0, 0, Math.PI * 2);
-                drawingContext.fill();
-            } else {
-                drawingContext.fillStyle = '#2a1a32';
-                [-size * 0.16, size * 0.16].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.ellipse(eyeX, -size * 0.13, size * 0.07, expression === 'crisis' ? size * 0.12 : size * 0.07, 0, 0, Math.PI * 2);
-                    drawingContext.fill();
-                });
-                drawingContext.strokeStyle = '#5a2438';
-                drawingContext.lineWidth = 3 * scale;
-                drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(0, size * 0.31, size * 0.12, Math.PI, Math.PI * 2);
-                else drawingContext.arc(0, size * 0.15, size * 0.12, 0, Math.PI);
-                drawingContext.stroke();
-                if (expression === 'crisis') {
-                    drawingContext.fillStyle = '#82d9f5';
-                    drawingContext.beginPath();
-                    drawingContext.ellipse(size * 0.42, size * 0.08, size * 0.06, size * 0.11, 0.2, 0, Math.PI * 2);
-                    drawingContext.fill();
-                }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Belial');
         }
     }
 
@@ -16517,35 +17716,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-            // 뿔과 음표 리본으로 유니콘 작곡가를 귀엽게 각색한다.
-            drawingContext.fillStyle = '#405270'; drawingContext.strokeStyle = '#1a263b'; drawingContext.lineWidth = 4 * scale;
-            drawingContext.beginPath();
-            drawingContext.moveTo(-size * 0.56, size * 0.72); drawingContext.lineTo(-size * 0.78, -size * 0.12); drawingContext.lineTo(-size * 0.34, size * 0.06);
-            drawingContext.lineTo(0, -size * 0.48); drawingContext.lineTo(size * 0.34, size * 0.06); drawingContext.lineTo(size * 0.78, -size * 0.12); drawingContext.lineTo(size * 0.56, size * 0.72);
-            drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#c7d7ed'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.06, size * 0.43, size * 0.5, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#f1d77a'; drawingContext.beginPath(); drawingContext.moveTo(0, -size * 0.52); drawingContext.lineTo(size * 0.12, -size * 0.98); drawingContext.lineTo(size * 0.24, -size * 0.46); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.strokeStyle = '#f1d77a'; drawingContext.lineWidth = 3 * scale; drawingContext.beginPath(); drawingContext.arc(-size * 0.62, size * 0.23, size * 0.18, -Math.PI * 0.7, Math.PI * 0.35); drawingContext.stroke();
-            drawingContext.fillStyle = '#f1d77a'; drawingContext.beginPath(); drawingContext.arc(-size * 0.51, size * 0.17, size * 0.05, 0, Math.PI * 2); drawingContext.fill();
-            const eyeY = -size * 0.11;
-            if (expression === 'defeated') {
-                // 우는 표정
-                drawingContext.fillStyle = '#577aa3'; [-size * 0.17, size * 0.17].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.08, size * 0.05, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = '#77d8f5'; [-size * 0.17, size * 0.17].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.2, size * 0.07, size * 0.15, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#30415f'; drawingContext.beginPath(); drawingContext.arc(0, size * 0.28, size * 0.12, Math.PI, Math.PI * 2); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#ef5350' : '#293c5b';
-                [-size * 0.17, size * 0.17].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.075, expression === 'crisis' ? size * 0.13 : size * 0.09, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#30415f'; drawingContext.lineWidth = 3 * scale; drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(0, size * 0.28, size * 0.11, Math.PI, Math.PI * 2);
-                else drawingContext.arc(0, size * 0.18, size * 0.12, 0, Math.PI);
-                drawingContext.stroke();
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Amdusias');
         }
     }
 
@@ -16664,28 +17835,12 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save(); drawingContext.translate(centerX, centerY); drawingContext.lineJoin = 'round';
-            drawingContext.fillStyle = '#252332'; drawingContext.strokeStyle = '#10101b'; drawingContext.lineWidth = 4 * scale;
-            drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.18, size * 0.61, size * 0.57, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            [-1, 1].forEach((direction) => { drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.28, -size * 0.2); drawingContext.lineTo(direction * size * 0.53, -size * 0.74); drawingContext.lineTo(direction * size * 0.05, -size * 0.45); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke(); });
-            drawingContext.fillStyle = '#5b473d'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.04, size * 0.43, size * 0.46, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#c89043'; drawingContext.fillRect(size * 0.23, size * 0.27, size * 0.29, size * 0.22); drawingContext.strokeRect(size * 0.23, size * 0.27, size * 0.29, size * 0.22);
-            const eyeY = -size * 0.1;
-            if (expression === 'defeated') {
-                drawingContext.fillStyle = '#72cdeb'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.16, size * 0.075, size * 0.19, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#231c28'; drawingContext.beginPath(); drawingContext.arc(0, size * 0.26, size * 0.12, Math.PI, Math.PI * 2); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#f3dc75' : '#f5f0dc'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.09, expression === 'crisis' ? size * 0.14 : size * 0.1, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = '#161522'; [-size * 0.16, size * 0.16].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.04, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#231c28'; drawingContext.beginPath(); if (expression === 'crisis') drawingContext.arc(0, size * 0.25, size * 0.12, Math.PI, Math.PI * 2); else drawingContext.arc(0, size * 0.14, size * 0.12, 0, Math.PI); drawingContext.stroke();
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Kimaris');
         }
     }
 
     /**
-     * 안드레알푸스는 수학·기하학·천문학에 능통한 미모후작을 거대한 공작으로 각색한 기본 제공 적이다.
+     * 안드레알푸스는 수학·기하학·천문학에 능통한 미모후작을 공작 깃털을 두른 인간형 학자로 각색한 기본 제공 적이다.
      * 키마리스와 같은 생존·상쇄 평가를 사용하되, 일반 상황에서는 Worker로 3수 앞까지 읽는다.
      */
     class Andrealphus extends BundledEnemy {
@@ -16833,69 +17988,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-            drawingContext.lineCap = 'round';
-            drawingContext.strokeStyle = '#123a4b';
-            drawingContext.lineWidth = 3 * scale;
-
-            // 부채처럼 펼친 꼬리와 눈 모양 깃털로 거대한 공작의 실루엣을 만든다.
-            [-0.72, -0.36, 0, 0.36, 0.72].forEach((angle) => {
-                drawingContext.save();
-                drawingContext.rotate(angle);
-                drawingContext.fillStyle = '#237f73';
-                drawingContext.beginPath();
-                drawingContext.ellipse(0, -size * 0.48, size * 0.19, size * 0.54, 0, 0, Math.PI * 2);
-                drawingContext.fill(); drawingContext.stroke();
-                drawingContext.fillStyle = '#e6bd47';
-                drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.69, size * 0.11, size * 0.16, 0, 0, Math.PI * 2); drawingContext.fill();
-                drawingContext.fillStyle = '#3553a4';
-                drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.7, size * 0.06, size * 0.09, 0, 0, Math.PI * 2); drawingContext.fill();
-                drawingContext.restore();
-            });
-
-            drawingContext.fillStyle = '#174f67';
-            drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.27, size * 0.46, size * 0.58, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#55b79d';
-            drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.08, size * 0.34, size * 0.43, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#e6bd47';
-            drawingContext.beginPath(); drawingContext.moveTo(0, size * 0.08); drawingContext.lineTo(size * 0.13, size * 0.2); drawingContext.lineTo(0, size * 0.27); drawingContext.lineTo(-size * 0.13, size * 0.2); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-
-            // 후작의 우아함과 학식을 암시하는 볏, 단안경, 기하 문양을 더한다.
-            drawingContext.strokeStyle = '#e6bd47';
-            drawingContext.fillStyle = '#e6bd47';
-            [-0.16, 0, 0.16].forEach((offset) => {
-                drawingContext.beginPath(); drawingContext.moveTo(offset * size, -size * 0.48); drawingContext.lineTo(offset * size * 1.5, -size * 0.75); drawingContext.stroke();
-                drawingContext.beginPath(); drawingContext.arc(offset * size * 1.5, -size * 0.78, size * 0.045, 0, Math.PI * 2); drawingContext.fill();
-            });
-            drawingContext.beginPath(); drawingContext.arc(size * 0.16, -size * 0.12, size * 0.13, 0, Math.PI * 2); drawingContext.stroke();
-            drawingContext.beginPath(); drawingContext.moveTo(size * 0.27, -size * 0.03); drawingContext.lineTo(size * 0.39, size * 0.15); drawingContext.stroke();
-            drawingContext.beginPath(); drawingContext.moveTo(-size * 0.19, size * 0.43); drawingContext.lineTo(0, size * 0.17); drawingContext.lineTo(size * 0.19, size * 0.43); drawingContext.closePath(); drawingContext.stroke();
-
-            const eyeY = -size * 0.13;
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#18384b';
-                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.07, 0.1, Math.PI - 0.1); drawingContext.stroke(); });
-                drawingContext.fillStyle = '#7adcf4';
-                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.18, size * 0.055, size * 0.14, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.beginPath(); drawingContext.arc(0, size * 0.12, size * 0.11, Math.PI, Math.PI * 2); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = '#f8f1d7';
-                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.08, expression === 'crisis' ? size * 0.13 : size * 0.09, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = '#182e52';
-                [-size * 0.15, size * 0.15].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.035, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#18384b';
-                drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(0, size * 0.13, size * 0.1, Math.PI, Math.PI * 2);
-                else drawingContext.arc(0, size * 0.04, size * 0.11, 0, Math.PI);
-                drawingContext.stroke();
-                if (expression === 'crisis') {
-                    drawingContext.fillStyle = '#7adcf4'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.32, -size * 0.01, size * 0.05, size * 0.11, 0.2, 0, Math.PI * 2); drawingContext.fill();
-                }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Andrealphus');
         }
     }
 
@@ -17257,7 +18350,7 @@
         }
 
         /**
-         * 검은 점무늬, 날카로운 눈, 삼각형 마법진으로 표현한 표범의 일반·위기·우는 초상화를 그린다.
+         * 표범 귀와 점무늬 의상을 갖춘 인간형 플라우로스의 일반·위기·우는 초상화를 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -17266,96 +18359,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round';
-            drawingContext.lineCap = 'round';
-            drawingContext.fillStyle = '#34262c';
-            drawingContext.strokeStyle = '#160f14';
-            drawingContext.lineWidth = 4 * scale;
-
-            // 삼각형 마법진과 긴 꼬리로 전승 속 사나운 표범의 실루엣을 만든다.
-            drawingContext.strokeStyle = '#d98539';
-            drawingContext.lineWidth = 2.5 * scale;
-            drawingContext.beginPath();
-            drawingContext.moveTo(0, -size * 0.9);
-            drawingContext.lineTo(-size * 0.78, size * 0.52);
-            drawingContext.lineTo(size * 0.78, size * 0.52);
-            drawingContext.closePath();
-            drawingContext.stroke();
-            drawingContext.strokeStyle = '#160f14';
-            drawingContext.lineWidth = 4 * scale;
-            drawingContext.beginPath();
-            drawingContext.moveTo(size * 0.43, size * 0.43);
-            drawingContext.quadraticCurveTo(size * 0.92, size * 0.68, size * 0.72, size * 0.04);
-            drawingContext.stroke();
-
-            drawingContext.fillStyle = '#b56b32';
-            drawingContext.beginPath();
-            drawingContext.ellipse(0, size * 0.26, size * 0.52, size * 0.52, 0, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.stroke();
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath();
-                drawingContext.moveTo(direction * size * 0.28, -size * 0.38);
-                drawingContext.lineTo(direction * size * 0.58, -size * 0.78);
-                drawingContext.lineTo(direction * size * 0.52, -size * 0.19);
-                drawingContext.closePath();
-                drawingContext.fill();
-                drawingContext.stroke();
-            });
-            drawingContext.fillStyle = '#d99145';
-            drawingContext.beginPath();
-            drawingContext.ellipse(0, -size * 0.08, size * 0.48, size * 0.46, 0, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.stroke();
-            drawingContext.fillStyle = '#3a2020';
-            [-0.28, -0.1, 0.1, 0.28].forEach((offset, index) => {
-                drawingContext.beginPath();
-                drawingContext.ellipse(offset * size, index % 2 ? size * 0.14 : -size * 0.28, size * 0.07, size * 0.1, offset * 1.6, 0, Math.PI * 2);
-                drawingContext.fill();
-            });
-            drawingContext.fillStyle = '#f0c982';
-            drawingContext.beginPath();
-            drawingContext.ellipse(0, size * 0.23, size * 0.28, size * 0.2, 0, 0, Math.PI * 2);
-            drawingContext.fill();
-            drawingContext.stroke();
-
-            const eyeY = -size * 0.08;
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#26151a';
-                drawingContext.lineWidth = 3 * scale;
-                [-size * 0.17, size * 0.17].forEach((eyeX) => {
-                    drawingContext.beginPath();
-                    drawingContext.moveTo(eyeX - size * 0.08, eyeY - size * 0.07);
-                    drawingContext.lineTo(eyeX + size * 0.08, eyeY + size * 0.07);
-                    drawingContext.moveTo(eyeX + size * 0.08, eyeY - size * 0.07);
-                    drawingContext.lineTo(eyeX - size * 0.08, eyeY + size * 0.07);
-                    drawingContext.stroke();
-                });
-                drawingContext.fillStyle = '#72cdeb';
-                [-size * 0.17, size * 0.17].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY + size * 0.2, size * 0.06, size * 0.14, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#26151a';
-                drawingContext.beginPath(); drawingContext.arc(0, size * 0.34, size * 0.11, Math.PI, Math.PI * 2); drawingContext.stroke();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#fff0a6' : '#f6e6ac';
-                [-size * 0.17, size * 0.17].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.1, expression === 'crisis' ? size * 0.13 : size * 0.09, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = expression === 'crisis' ? '#e53935' : '#2c1720';
-                [-size * 0.17, size * 0.17].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.035, size * 0.075, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = '#26151a';
-                drawingContext.beginPath(); drawingContext.moveTo(0, size * 0.13); drawingContext.lineTo(size * 0.07, size * 0.21); drawingContext.lineTo(0, size * 0.25); drawingContext.lineTo(-size * 0.07, size * 0.21); drawingContext.closePath(); drawingContext.fill();
-                drawingContext.strokeStyle = '#26151a';
-                drawingContext.beginPath();
-                if (expression === 'crisis') drawingContext.arc(0, size * 0.38, size * 0.12, Math.PI, Math.PI * 2);
-                else drawingContext.arc(0, size * 0.28, size * 0.12, 0, Math.PI);
-                drawingContext.stroke();
-                if (expression === 'crisis') {
-                    drawingContext.fillStyle = '#72cdeb';
-                    drawingContext.beginPath(); drawingContext.ellipse(size * 0.36, size * 0.03, size * 0.06, size * 0.12, 0.2, 0, Math.PI * 2); drawingContext.fill();
-                }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Flauros');
         }
     }
 
@@ -17383,7 +18387,7 @@
         }
 
         /**
-         * 검은 늑대에 탄 날개 달린 새 머리 천사와 불타는 검을 그린다.
+         * 새 깃털 두건과 늑대 문장, 불꽃 장식 검을 가진 인간형 안드라스를 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -17392,46 +18396,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round'; drawingContext.lineCap = 'round';
-            // 검은 늑대의 몸과 꼬리다.
-            drawingContext.fillStyle = '#202633'; drawingContext.strokeStyle = '#090c14'; drawingContext.lineWidth = 4 * scale;
-            drawingContext.beginPath(); drawingContext.ellipse(-size * 0.08, size * 0.33, size * 0.67, size * 0.31, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.beginPath(); drawingContext.moveTo(size * 0.48, size * 0.25); drawingContext.lineTo(size * 0.85, size * 0.08); drawingContext.lineTo(size * 0.66, size * 0.45); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#3c4555'; drawingContext.beginPath(); drawingContext.ellipse(-size * 0.45, size * 0.27, size * 0.29, size * 0.21, -0.18, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            // 청회색 천사 날개다.
-            drawingContext.fillStyle = '#aabbd1'; drawingContext.strokeStyle = '#53657d'; drawingContext.lineWidth = 2.5 * scale;
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.13, size * 0.06);
-                drawingContext.quadraticCurveTo(direction * size * 0.92, -size * 0.02, direction * size * 0.74, -size * 0.74);
-                drawingContext.quadraticCurveTo(direction * size * 0.42, -size * 0.48, direction * size * 0.16, -size * 0.2);
-                drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-                drawingContext.strokeStyle = '#71849c'; drawingContext.lineWidth = 1.4 * scale;
-                for (let feather = 0; feather < 3; feather += 1) {
-                    drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.22, -size * (0.14 + feather * 0.1)); drawingContext.lineTo(direction * size * (0.64 + feather * 0.06), -size * (0.45 + feather * 0.08)); drawingContext.stroke();
-                }
-                drawingContext.strokeStyle = '#53657d'; drawingContext.lineWidth = 2.5 * scale;
-            });
-            // 천사 갑옷과 까마귀 머리다.
-            drawingContext.fillStyle = '#d2d9e7'; drawingContext.beginPath(); drawingContext.moveTo(-size * 0.28, size * 0.17); drawingContext.lineTo(0, -size * 0.35); drawingContext.lineTo(size * 0.29, size * 0.17); drawingContext.lineTo(0, size * 0.44); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#232937'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.45, size * 0.24, size * 0.25, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#c5a35c'; drawingContext.beginPath(); drawingContext.moveTo(size * 0.12, -size * 0.45); drawingContext.lineTo(size * 0.45, -size * 0.36); drawingContext.lineTo(size * 0.13, -size * 0.27); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            // 불타는 검을 든 오른팔이다.
-            drawingContext.strokeStyle = '#d6ddea'; drawingContext.lineWidth = 5 * scale; drawingContext.beginPath(); drawingContext.moveTo(size * 0.16, -size * 0.03); drawingContext.lineTo(size * 0.54, size * 0.05); drawingContext.stroke();
-            drawingContext.strokeStyle = '#ffb300'; drawingContext.lineWidth = 4 * scale; drawingContext.beginPath(); drawingContext.moveTo(size * 0.51, size * 0.06); drawingContext.lineTo(size * 0.98, -size * 0.55); drawingContext.stroke();
-            drawingContext.strokeStyle = '#ff7043'; drawingContext.lineWidth = 2 * scale; drawingContext.beginPath(); drawingContext.moveTo(size * 0.56, size * 0.01); drawingContext.lineTo(size * 0.88, -size * 0.73); drawingContext.stroke();
-            const eyeX = size * 0.03; const eyeY = -size * 0.47;
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#e1e6f0'; drawingContext.lineWidth = 2.5 * scale;
-                drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.09, eyeY - size * 0.06); drawingContext.lineTo(eyeX + size * 0.09, eyeY + size * 0.06); drawingContext.moveTo(eyeX + size * 0.09, eyeY - size * 0.06); drawingContext.lineTo(eyeX - size * 0.09, eyeY + size * 0.06); drawingContext.stroke();
-                drawingContext.fillStyle = '#6ec6e8'; drawingContext.beginPath(); drawingContext.arc(size * 0.17, -size * 0.23, size * 0.06, 0, Math.PI * 2); drawingContext.fill();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#ff5252' : '#ffe082'; drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.06, 0, Math.PI * 2); drawingContext.fill();
-                if (expression === 'crisis') { drawingContext.fillStyle = '#6ec6e8'; drawingContext.beginPath(); drawingContext.arc(size * 0.19, -size * 0.26, size * 0.055, 0, Math.PI * 2); drawingContext.fill(); }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Andras');
         }
     }
 
@@ -17458,7 +18423,7 @@
         }
 
         /**
-         * 두 머리의 붉은 드래곤과 그 위에 탄 작은 날개 달린 소년을 그린다.
+         * 드래곤 뿔과 비늘 튜닉을 입은 머리 하나의 날개 달린 소년을 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -17467,58 +18432,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save();
-            drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round'; drawingContext.lineCap = 'round';
-            drawingContext.strokeStyle = '#2a0a10'; drawingContext.lineWidth = 4 * scale;
-
-            // 불길처럼 뻗은 날개와 드래곤 몸통이다.
-            drawingContext.fillStyle = '#7d1f2d';
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.2, size * 0.22);
-                drawingContext.lineTo(direction * size * 0.92, -size * 0.26); drawingContext.lineTo(direction * size * 0.67, size * 0.15);
-                drawingContext.lineTo(direction * size * 0.96, size * 0.38); drawingContext.lineTo(direction * size * 0.28, size * 0.46);
-                drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            });
-            drawingContext.fillStyle = '#a52b37';
-            drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.43, size * 0.65, size * 0.31, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-
-            // 서로 갈라진 두 붉은 목과 뿔 달린 머리다.
-            [-1, 1].forEach((direction) => {
-                drawingContext.strokeStyle = '#a52b37'; drawingContext.lineWidth = 16 * scale;
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.18, size * 0.38); drawingContext.quadraticCurveTo(direction * size * 0.28, 0, direction * size * 0.5, -size * 0.28); drawingContext.stroke();
-                drawingContext.fillStyle = '#bb3440'; drawingContext.strokeStyle = '#2a0a10'; drawingContext.lineWidth = 3 * scale;
-                drawingContext.beginPath(); drawingContext.ellipse(direction * size * 0.55, -size * 0.34, size * 0.25, size * 0.18, direction * 0.18, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-                drawingContext.fillStyle = '#e0b75c';
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.48, -size * 0.48); drawingContext.lineTo(direction * size * 0.52, -size * 0.72); drawingContext.lineTo(direction * size * 0.66, -size * 0.49); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-                const eyeX = direction * size * 0.59; const eyeY = -size * 0.38;
-                if (expression === 'defeated') {
-                    drawingContext.strokeStyle = '#f4d7ad'; drawingContext.lineWidth = 2.5 * scale;
-                    drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.055, eyeY - size * 0.045); drawingContext.lineTo(eyeX + size * 0.055, eyeY + size * 0.045); drawingContext.moveTo(eyeX + size * 0.055, eyeY - size * 0.045); drawingContext.lineTo(eyeX - size * 0.055, eyeY + size * 0.045); drawingContext.stroke();
-                } else {
-                    drawingContext.fillStyle = expression === 'crisis' ? '#fff176' : '#ffca55'; drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.045, 0, Math.PI * 2); drawingContext.fill();
-                }
-            });
-
-            // 드래곤 위의 아기 천사 모습이다.
-            drawingContext.fillStyle = '#f0d2b2'; drawingContext.strokeStyle = '#5a3441'; drawingContext.lineWidth = 3 * scale;
-            drawingContext.beginPath(); drawingContext.arc(0, -size * 0.28, size * 0.18, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#f2eadf';
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.08, -size * 0.1); drawingContext.quadraticCurveTo(direction * size * 0.48, -size * 0.2, direction * size * 0.38, size * 0.13); drawingContext.quadraticCurveTo(direction * size * 0.18, size * 0.04, direction * size * 0.04, 0); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            });
-            drawingContext.fillStyle = '#ead8c6'; drawingContext.beginPath(); drawingContext.moveTo(-size * 0.17, -size * 0.13); drawingContext.lineTo(size * 0.17, -size * 0.13); drawingContext.lineTo(size * 0.25, size * 0.31); drawingContext.lineTo(-size * 0.25, size * 0.31); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#5a3441'; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.21, size * 0.08, Math.PI, Math.PI * 2); drawingContext.stroke();
-                drawingContext.fillStyle = '#78d5ee'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.2, -size * 0.2, size * 0.045, size * 0.09, 0.2, 0, Math.PI * 2); drawingContext.fill();
-            } else {
-                drawingContext.fillStyle = expression === 'crisis' ? '#d32f2f' : '#4d3541';
-                [-size * 0.06, size * 0.06].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, -size * 0.31, size * 0.025, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.strokeStyle = '#5a3441'; drawingContext.beginPath(); drawingContext.arc(0, -size * 0.24, size * 0.055, expression === 'crisis' ? Math.PI : 0, expression === 'crisis' ? Math.PI * 2 : Math.PI); drawingContext.stroke();
-                if (expression === 'crisis') { drawingContext.fillStyle = '#78d5ee'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.2, -size * 0.2, size * 0.04, size * 0.08, 0.2, 0, Math.PI * 2); drawingContext.fill(); }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Valak');
         }
     }
 
@@ -17547,7 +18461,7 @@
         }
 
         /**
-         * 황금빛 그리폰 날개와 굽은 뿔을 지닌 숫소의 일반·위기·패배 초상화를 그린다.
+         * 황금빛 날개와 숫소 뿔 장식을 지닌 인간형 자간의 일반·위기·패배 초상화를 그린다.
          * @param {CanvasRenderingContext2D} drawingContext 캔버스 렌더링 컨텍스트
          * @param {number} centerX 캐릭터 중심 X 좌표
          * @param {number} centerY 캐릭터 중심 Y 좌표
@@ -17556,39 +18470,7 @@
          * @returns {void}
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
-            const size = 72 * scale;
-            drawingContext.save(); drawingContext.translate(centerX, centerY);
-            drawingContext.lineJoin = 'round'; drawingContext.lineCap = 'round';
-            drawingContext.strokeStyle = '#24180c'; drawingContext.lineWidth = 4 * scale;
-            // 그리폰처럼 층이 진 황금 날개다.
-            drawingContext.fillStyle = '#b88a3b';
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.16, size * 0.14);
-                drawingContext.lineTo(direction * size * 0.62, -size * 0.7); drawingContext.lineTo(direction * size * 0.58, -size * 0.15);
-                drawingContext.lineTo(direction * size * 0.96, -size * 0.48); drawingContext.lineTo(direction * size * 0.7, size * 0.08);
-                drawingContext.lineTo(direction * size, -size * 0.06); drawingContext.lineTo(direction * size * 0.48, size * 0.43);
-                drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            });
-            // 숫소의 몸과 머리다.
-            drawingContext.fillStyle = '#5a3b25'; drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.34, size * 0.58, size * 0.43, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#795238'; drawingContext.beginPath(); drawingContext.ellipse(0, -size * 0.09, size * 0.43, size * 0.4, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#d7b56a';
-            [-1, 1].forEach((direction) => {
-                drawingContext.beginPath(); drawingContext.moveTo(direction * size * 0.27, -size * 0.34); drawingContext.quadraticCurveTo(direction * size * 0.75, -size * 0.72, direction * size * 0.64, -size * 0.18); drawingContext.quadraticCurveTo(direction * size * 0.48, -size * 0.39, direction * size * 0.23, -size * 0.21); drawingContext.closePath(); drawingContext.fill(); drawingContext.stroke();
-            });
-            drawingContext.fillStyle = '#b98262'; drawingContext.beginPath(); drawingContext.ellipse(0, size * 0.13, size * 0.3, size * 0.2, 0, 0, Math.PI * 2); drawingContext.fill(); drawingContext.stroke();
-            drawingContext.fillStyle = '#2b170f'; [-size * 0.11, size * 0.11].forEach((nostrilX) => { drawingContext.beginPath(); drawingContext.arc(nostrilX, size * 0.14, size * 0.035, 0, Math.PI * 2); drawingContext.fill(); });
-            const eyeY = -size * 0.11;
-            if (expression === 'defeated') {
-                drawingContext.strokeStyle = '#f0dfba'; drawingContext.lineWidth = 3 * scale;
-                [-size * 0.18, size * 0.18].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.moveTo(eyeX - size * 0.06, eyeY - size * 0.055); drawingContext.lineTo(eyeX + size * 0.06, eyeY + size * 0.055); drawingContext.moveTo(eyeX + size * 0.06, eyeY - size * 0.055); drawingContext.lineTo(eyeX - size * 0.06, eyeY + size * 0.055); drawingContext.stroke(); });
-                drawingContext.fillStyle = '#75cce7'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.34, size * 0.04, size * 0.05, size * 0.11, 0.15, 0, Math.PI * 2); drawingContext.fill();
-            } else {
-                drawingContext.fillStyle = '#f5e8bd'; [-size * 0.18, size * 0.18].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.ellipse(eyeX, eyeY, size * 0.09, expression === 'crisis' ? size * 0.12 : size * 0.08, 0, 0, Math.PI * 2); drawingContext.fill(); });
-                drawingContext.fillStyle = expression === 'crisis' ? '#d32f2f' : '#21140d'; [-size * 0.18, size * 0.18].forEach((eyeX) => { drawingContext.beginPath(); drawingContext.arc(eyeX, eyeY, size * 0.035, 0, Math.PI * 2); drawingContext.fill(); });
-                if (expression === 'crisis') { drawingContext.fillStyle = '#75cce7'; drawingContext.beginPath(); drawingContext.ellipse(size * 0.35, size * 0.02, size * 0.045, size * 0.1, 0.15, 0, Math.PI * 2); drawingContext.fill(); }
-            }
-            drawingContext.restore();
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Zagan');
         }
     }
 
