@@ -20,7 +20,11 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 56;
+    const BUILDNO = 64;
+    /** 일반 텍스트 입력 대화상자의 최대 문자 수다. */
+    const TEXT_DIALOG_DEFAULT_MAX_LENGTH = 2000;
+    /** 리플레이·시뮬레이터 JSON처럼 붙여 넣는 긴 텍스트의 최대 문자 수다. */
+    const TEXT_DIALOG_IMPORT_MAX_LENGTH = 1000000;
     /** 게임 캔버스의 논리 너비다. @type {number} */
     const WIDTH = 1280;
     /** 게임 캔버스의 논리 높이다. @type {number} */
@@ -604,6 +608,8 @@
     let context = null;
     /** 라이브러리가 초기화되어 이벤트와 게임 루프가 연결됐는지 여부다. @type {boolean} */
     let initialized = false;
+    /** 마지막으로 외부에 알린 표준 화면 식별자다. 초기화와 destroy 사이에서만 사용한다. */
+    let lastDispatchedScreen = null;
     /** 초기 타이틀에서 탑재된 피버 스테이지 검증을 마쳤는지 여부다. @type {boolean} */
     let feverStageValidationComplete = false;
     /** 피버 스테이지 검증 전에 받은 초기 타이틀 진입 입력을 보관한다. @type {boolean} */
@@ -668,9 +674,11 @@
     let screenMessage = null;
     /** 현재 표시 중인 공용 확인 대화상자다. @type {{message:string,choice:number,resolve:(value:boolean)=>void}|null} */
     let confirmDialog = null;
-    /** 동시에 요청된 확인 대화상자를 순서대로 표시하기 위한 대기열이다. @type {{message:string,choice:number,resolve:(value:boolean)=>void}[]} */
-    let confirmDialogQueue = [];
-    /** 확인 대화상자 연속 표시 중 자동 일시정지한 게임과 복원 여부다. @type {{game:object|null,resume:boolean}|null} */
+    /** 현재 표시 중인 텍스트 입력 대화상자다. focus는 0=입력창, 1=확인, 2=취소이며 editing은 실제 문자 입력 모드 여부다. @type {{message:string,multiline:boolean,maxLength:number,value:string,cursor:number,selectionAnchor:number|null,focus:number,editing:boolean,resolve:(value:string|null)=>void}|null} */
+    let textDialog = null;
+    /** 확인·텍스트 대화상자를 요청된 순서대로 표시하기 위한 대기열이다. @type {{type:'confirm'|'text',message:string,confirmLabel?:string,multiline?:boolean,maxLength?:number,choice?:number,value?:string,cursor?:number,selectionAnchor?:number|null,resolve:(value:boolean|string|null)=>void}[]} */
+    let dialogQueue = [];
+    /** 대화상자 연속 표시 중 자동 일시정지한 게임과 복원 여부다. @type {{game:object|null,resume:boolean}|null} */
     let confirmDialogPauseContext = null;
     /** Game start firework animation state. @type {{elapsed:number,particles:{angle:number,speed:number,delay:number,size:number,color:string}[]}|null} */
     let gameStartFirework = null;
@@ -2786,6 +2794,7 @@
         if (galleryUnlocks.warning.includes(type)) return;
         galleryUnlocks.warning.push(type);
         saveGalleryUnlocks();
+        dispatchPuyoUnlocked(`gallery_warning:${type}`);
     }
 
     /** 기본·피버 룰 대전에서 이긴 적을 갤러리에 공개한다. @param {string} classType 적 종류 식별자 @returns {void} */
@@ -2794,6 +2803,7 @@
         galleryUnlocks.enemies.push(classType);
         // saveGalleryUnlocks는 setTimeout(1)과 try-catch로 저장 실패가 게임 흐름을 막지 않게 한다.
         saveGalleryUnlocks();
+        dispatchPuyoUnlocked(`gallery_enemy:${classType}`);
     }
 
     /** 현재 실제 플레이가 갤러리 예고뿌요 해금을 허용하는 모드인지 판별한다. 피버 룰 (시작)은 예외적으로 허용한다. @returns {boolean} 해금 가능 여부 */
@@ -3603,6 +3613,7 @@
     /** 현재 입력 가능한 메뉴 포커스를 비교하기 위한 식별자를 만든다. @returns {string|null} */
     function getMenuFocusToken() {
         if (confirmDialog) return `confirmation:${confirmDialog.choice}`;
+        if (textDialog) return `text:${textDialog.focus}:${textDialog.editing}`;
         if (game?.tutorial?.mode === 'complete') return `tutorial:${game.tutorial.finalFocus}`;
         if (game?.paused) return `pause:${pauseMenuFocus}`;
         if (game) return null;
@@ -4043,9 +4054,11 @@
 
     /** 성공한 AI API 테스트 뒤 현재 접속에 한해 솔로몬을 적 목록에 표시한다. @returns {void} */
     function unlockSolomonForSession() {
+        if (solomonSessionUnlocked) return;
         solomonSessionUnlocked = true;
         const solomon = OPPONENTS.find((opponent) => opponent.classType === 'Solomon');
         if (solomon) solomon.hidden = false;
+        dispatchPuyoUnlocked('enemy:Solomon');
     }
 
     /** 적 선택 규칙에 맞는 난이도별 적 진행도 저장소를 반환한다. @param {'standard'|'fever'|'feverStart'} [rule=opponentMenuRule] 대전 규칙 @returns {Record<'easy'|'normal'|'hard'|'extreme', string[]>} 진행도 저장소 */
@@ -7114,21 +7127,35 @@
         if (game.practice || game.watch || game.together || game.online || winner !== game.players[0]) return;
         const enemyController = game.players[1].controller;
         const enemyClassName = enemyController.constructor.name;
-        unlockGalleryEnemy(enemyController.getClassType());
         const difficultyKey = AI_DIFFICULTIES[game.aiDifficulty]?.key || AI_DIFFICULTIES[1].key;
+        const rule = game.feverStart ? 'fever_start' : game.feverRule ? 'fever' : 'standard';
+        const feverStartWasUnlocked = isFeverStartRuleUnlocked();
+        const watchModeWasUnlocked = isWatchModeUnlocked();
+        unlockGalleryEnemy(enemyController.getClassType());
         const progressStore = game.feverStart
             ? store.feverStartClearListByDifficulty
             : game.feverRule ? store.feverClearListByDifficulty : store.clearListByDifficulty;
         let changed = false;
+        let progressionAdded = false;
         if (!progressStore[difficultyKey].includes(enemyClassName)) {
             progressStore[difficultyKey].push(enemyClassName);
             changed = true;
+            progressionAdded = true;
         }
         if (!game.feverRule && !store.clearList.includes(enemyClassName)) {
             store.clearList.push(enemyClassName);
             changed = true;
         }
         if (changed) saveStore();
+        if (progressionAdded) {
+            // 선택 가능 적의 순서는 이긴 적 바로 다음 적을 새로 여는 진행도 계약과 같다.
+            const progressionOpponents = OPPONENTS.filter((entry) => !entry.hidden && !entry.notAvail && entry.classType !== 'Solomon');
+            const clearedIndex = progressionOpponents.findIndex((entry) => entry.className === enemyClassName);
+            const unlockedOpponent = clearedIndex >= 0 ? progressionOpponents[clearedIndex + 1] : null;
+            if (unlockedOpponent && !isObservationCodeApplied()) dispatchPuyoUnlocked(`enemy:${unlockedOpponent.classType}`, rule, difficultyKey);
+        }
+        if (!feverStartWasUnlocked && isFeverStartRuleUnlocked()) dispatchPuyoUnlocked('rule:fever_start');
+        if (!watchModeWasUnlocked && isWatchModeUnlocked()) dispatchPuyoUnlocked('mode:watch');
     }
 
     /** AI 난이도별 GOLD 배율이다. */
@@ -7336,6 +7363,7 @@
         let goldReward = 0;
         // 개발용 도구의 테스트는 등록되지 않은 스테이지를 실행하므로 클리어 기록과 골드를 남기지 않는다.
         const recordsProgress = !game.toolsTest && stageIndex >= 0;
+        const openedStageCountBefore = recordsProgress ? getOpenedPuzzleStageCount() : 0;
         if (recordsProgress && !store.puzzleClearStages.includes(stageIndex)) {
             store.puzzleClearStages.push(stageIndex);
             progressChanged = true;
@@ -7356,6 +7384,12 @@
         }
         if (goldReward > 0) store.gold = normalizeGold(store.gold + goldReward);
         if (progressChanged) saveStore();
+        if (recordsProgress) {
+            const openedStageCountAfter = getOpenedPuzzleStageCount();
+            for (let index = openedStageCountBefore; index < openedStageCountAfter; index += 1) {
+                dispatchPuyoUnlocked(`puzzle_stage:${index}`);
+            }
+        }
         game.winner = player;
         game.running = false;
         game.ending = null;
@@ -7415,6 +7449,7 @@
             game.running = false;
             game.ending = null;
             resultScreenFocus = 0;
+            dispatchPuyoWin(game.winner);
             // 승패가 확정된 마지막 상태까지 담아 리플레이 기록을 닫는다.
             finishReplayRecording();
             finishLearningEpisode(true);
@@ -9496,14 +9531,15 @@
 
     /** 메인 메뉴에서 리플레이 JSON을 입력받아 재생을 시작한다. @returns {void} */
     function openReplayPlaybackPrompt() {
-        const serialized = window.prompt(translate('리플레이 JSON코드를 붙여넣어 주세요.'));
-        if (serialized === null || serialized.trim() === '') return;
-        const replay = normalizeReplayData(parseJSON(serialized));
-        if (!replay) {
-            showMessage(translate('리플레이 데이터가 올바르지 않습니다.'), '#ef5350', 3500);
-            return;
-        }
-        startReplayPlayback(replay);
+        askText(translate('리플레이 JSON코드를 붙여넣어 주세요.'), true, TEXT_DIALOG_IMPORT_MAX_LENGTH).then((serialized) => {
+            if (serialized === null || serialized.trim() === '') return;
+            const replay = normalizeReplayData(parseJSON(serialized));
+            if (!replay) {
+                showMessage(translate('리플레이 데이터가 올바르지 않습니다.'), '#ef5350', 3500);
+                return;
+            }
+            startReplayPlayback(replay);
+        });
     }
 
     /**
@@ -10120,15 +10156,10 @@
 
     /** 설정 화면에서 마우스로 테스트 기능 코드를 입력받아 등록한다. @returns {void} */
     function enterSettingsCode() {
-        let input;
-        try {
-            input = typeof window.prompt === 'function' ? window.prompt('코드를 입력하세요') : null;
-        } catch (error) {
-            console.error('Puyo W 코드 입력 창을 표시하지 못했습니다.', error);
-            return;
-        }
-        if (typeof input !== 'string' || !input.trim()) return;
-        addCode(input.trim());
+        askText('코드를 입력하세요').then((input) => {
+            if (typeof input !== 'string' || !input.trim()) return;
+            addCode(input.trim());
+        });
     }
 
     /** 모든 저장 데이터를 지우고 2초 뒤 첫 화면으로 돌아간다. @returns {void} */
@@ -11014,23 +11045,26 @@
 
     /** 입력받은 JSON 문자열로 시뮬레이터 배치를 교체한다. @returns {void} */
     function pasteSimulatorJson() {
-        const serialized = window.prompt(translate('배치 JSON을 입력하세요.'));
-        if (serialized === null || serialized.trim() === '') return;
-        try {
-            const parsed = parseJSON(serialized);
-            if (!parsed || !Array.isArray(parsed.puyos)) throw new TypeError('puyos 배열이 필요합니다.');
-            const board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
-            parsed.puyos.forEach((puyo) => {
-                if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y) || puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= SIMULATOR_EDITABLE_ROWS || ![...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO].includes(puyo.color)) {
-                    throw new TypeError('유효하지 않은 뿌요 좌표 또는 색상입니다.');
-                }
-                if (board[puyo.y][puyo.x]) throw new TypeError('같은 칸에 뿌요가 중복됩니다.');
-                board[puyo.y][puyo.x] = puyo.color;
-            });
-            simulator.player.board = board;
-        } catch (error) {
-            showSimulatorMessage(translate('JSON 파싱 실패'));
-        }
+        const targetSimulator = simulator;
+        askText(translate('배치 JSON을 입력하세요.'), true, TEXT_DIALOG_IMPORT_MAX_LENGTH).then((serialized) => {
+            // 비동기 입력을 기다리는 동안 시뮬레이터가 닫히거나 재생 단계로 바뀌면 이전 보드를 건드리지 않는다.
+            if (serialized === null || serialized.trim() === '' || simulator !== targetSimulator || !simulator || simulator.mode !== 'draw') return;
+            try {
+                const parsed = parseJSON(serialized);
+                if (!parsed || !Array.isArray(parsed.puyos)) throw new TypeError('puyos 배열이 필요합니다.');
+                const board = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
+                parsed.puyos.forEach((puyo) => {
+                    if (!puyo || !Number.isInteger(puyo.x) || !Number.isInteger(puyo.y) || puyo.x < 0 || puyo.x >= COLUMNS || puyo.y < 0 || puyo.y >= SIMULATOR_EDITABLE_ROWS || ![...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO].includes(puyo.color)) {
+                        throw new TypeError('유효하지 않은 뿌요 좌표 또는 색상입니다.');
+                    }
+                    if (board[puyo.y][puyo.x]) throw new TypeError('같은 칸에 뿌요가 중복됩니다.');
+                    board[puyo.y][puyo.x] = puyo.color;
+                });
+                simulator.player.board = board;
+            } catch (error) {
+                showSimulatorMessage(translate('JSON 파싱 실패'));
+            }
+        });
     }
 
     /** 시뮬레이터 그리기 모드의 좌측 플레이 영역을 비운다. @returns {void} */
@@ -12552,6 +12586,9 @@
         drawScreenMessage();
         drawGameStartFirework();
         drawConfirmDialog();
+        drawTextDialog();
+        // 모든 화면 전환 경로가 여기로 모이므로, 실제로 보인 표준 화면이 바뀐 경우에만 외부에 알린다.
+        dispatchScreenChangeIfNeeded();
     }
 
     /** 화면 최상단에 표시 중인 외부 메시지를 그린다. @returns {void} */
@@ -13011,7 +13048,7 @@
 
     /** 실제 텍스트 입력 중에는 Z 키를 메뉴 확인 키로 바꾸지 않아야 하는지 확인한다. @param {KeyboardEvent|{target?:EventTarget|null}} event 입력 이벤트 @returns {boolean} */
     function isTextInputInProgress(event) {
-        if (settingsEditing || playerNamePrompt) return true;
+        if (settingsEditing || playerNamePrompt || textDialog) return true;
         const target = event.target;
         if (!target || typeof target !== 'object') return false;
         if (target.isContentEditable) return true;
@@ -13183,6 +13220,116 @@
         }
     }
 
+    /** 여러 줄 텍스트 입력 대화상자의 입력창·버튼 포커스를 방향키로 옮긴다. @param {string} key 소문자 키 이름 @returns {void} */
+    function moveTextDialogFocus(key) {
+        if (!textDialog || !textDialog.multiline || textDialog.editing) return;
+        const direction = key === 'arrowleft' || key === 'arrowup' ? -1 : 1;
+        textDialog.focus = (textDialog.focus + direction + 3) % 3;
+    }
+
+    /** 텍스트 입력 대화상자의 키보드·게임패드 입력을 처리한다. @param {KeyboardEvent} event 키보드 이벤트 @param {string} key 소문자 키 이름 @returns {void} */
+    function handleTextDialogKeydown(event, key) {
+        if (!textDialog) return;
+        event.preventDefault();
+        const characters = Array.from(textDialog.value);
+        const selecting = event.shiftKey;
+        const moveCursor = (nextCursor, collapseDirection = 0) => {
+            if (selecting && textDialog.selectionAnchor === null) textDialog.selectionAnchor = textDialog.cursor;
+            if (!selecting && textDialog.selectionAnchor !== null) {
+                // 일반 방향키는 선택 끝에서 한 칸 더 이동하지 않고 해당 방향의 끝으로 선택을 해제한다.
+                if (collapseDirection < 0) nextCursor = Math.min(textDialog.cursor, textDialog.selectionAnchor);
+                else if (collapseDirection > 0) nextCursor = Math.max(textDialog.cursor, textDialog.selectionAnchor);
+                textDialog.selectionAnchor = null;
+            }
+            textDialog.cursor = Math.max(0, Math.min(characters.length, nextCursor));
+        };
+
+        // 여러 줄 입력은 먼저 포커스를 입력 모드로 바꿔야 Enter가 줄바꿈으로 동작한다.
+        if (textDialog.multiline && !textDialog.editing) {
+            if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(key)) {
+                moveTextDialogFocus(key);
+                return;
+            }
+            if (key === 'enter' || key === ' ') {
+                if (textDialog.focus === 0) textDialog.editing = true;
+                else if (textDialog.focus === 1) {
+                    playMenuSelectSound();
+                    resolveTextDialog(textDialog.value);
+                } else {
+                    playMenuCancelSound();
+                    resolveTextDialog(null);
+                }
+                return;
+            }
+            if (key === 'escape') {
+                playMenuCancelSound();
+                resolveTextDialog(null);
+            }
+            return;
+        }
+
+        // 입력 모드의 ESC는 대화상자를 취소하지 않고 포커스 선택 상태로 돌아간다.
+        if (key === 'escape') {
+            if (textDialog.multiline) {
+                textDialog.editing = false;
+                textDialog.selectionAnchor = null;
+            } else {
+                playMenuCancelSound();
+                resolveTextDialog(null);
+            }
+            return;
+        }
+        if (event.ctrlKey && key === 'a') {
+            textDialog.selectionAnchor = 0;
+            textDialog.cursor = characters.length;
+            return;
+        }
+        if (event.ctrlKey && key === 'c') {
+            copyTextDialogSelection();
+            return;
+        }
+        if (event.ctrlKey && key === 'v') {
+            pasteTextDialogClipboard();
+            return;
+        }
+        if (key === 'enter') {
+            if (textDialog.multiline) insertTextDialogText('\n');
+            else {
+                playMenuSelectSound();
+                resolveTextDialog(textDialog.value);
+            }
+            return;
+        }
+        if (key === 'arrowleft') { moveCursor(textDialog.cursor - 1, -1); return; }
+        if (key === 'arrowright') { moveCursor(textDialog.cursor + 1, 1); return; }
+        if (key === 'arrowup') {
+            moveCursor(getTextDialogVerticalCursor(textDialog, -1), -1);
+            return;
+        }
+        if (key === 'arrowdown') {
+            moveCursor(getTextDialogVerticalCursor(textDialog, 1), 1);
+            return;
+        }
+        if (key === 'home') { moveCursor(0); return; }
+        if (key === 'end') { moveCursor(characters.length); return; }
+        if (key === 'backspace') {
+            if (deleteTextDialogSelection(-1)) return;
+            if (textDialog.cursor > 0) {
+                characters.splice(textDialog.cursor - 1, 1);
+                textDialog.value = characters.join('');
+                textDialog.cursor -= 1;
+            }
+            return;
+        }
+        if (key === 'delete') {
+            if (deleteTextDialogSelection(1)) return;
+            characters.splice(textDialog.cursor, 1);
+            textDialog.value = characters.join('');
+            return;
+        }
+        if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) insertTextDialogText(event.key);
+    }
+
     /** 이름 입력 대화상자의 값을 현재 커서 위치에 넣는다. @param {string} text 삽입할 문자열 @returns {void} */
     function insertPlayerNamePromptText(text) {
         if (!playerNamePrompt) return;
@@ -13249,6 +13396,7 @@
         else if (!textInputInProgress && (rawKey === 'x' || event.code === 'KeyX')) key = 'x';
         if (key === 'z' && shouldTreatZAsEnter(event)) key = 'enter';
         if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'escape', 'enter', ' '].includes(key)) event.preventDefault();
+        if (textDialog) { handleTextDialogKeydown(event, key); return; }
         if (confirmDialog) { handleConfirmDialogKeydown(key); return; }
         if (settingsResetting) return;
         if (!game && menuScreen === 'initialTitle') {
@@ -13716,6 +13864,28 @@
     /** 캔버스 클릭의 실제 화면 동작을 처리한다. @param {MouseEvent} event 마우스 이벤트 @returns {void} */
     function handleCanvasClickCore(event) {
         if (threeEffectManager?.active) { threeEffectManager.cancelReveal(); return; }
+        if (textDialog) {
+            const { x, y } = getCanvasEventCoordinates(event);
+            const bounds = getTextDialogBounds(textDialog.multiline);
+            if (x >= bounds.input.x && x <= bounds.input.x + bounds.input.width && y >= bounds.input.y && y <= bounds.input.y + bounds.input.height) {
+                textDialog.focus = 0;
+                textDialog.cursor = getTextDialogCursorFromPoint(textDialog, bounds, x, y);
+                // 클릭은 기존 선택을 해제하고 새 커서 위치에서 다음 입력을 시작한다.
+                textDialog.selectionAnchor = null;
+                if (textDialog.multiline) {
+                    textDialog.editing = true;
+                }
+            } else if (x >= bounds.confirm.x && x <= bounds.confirm.x + bounds.confirm.width && y >= bounds.confirm.y && y <= bounds.confirm.y + bounds.confirm.height) {
+                textDialog.focus = 1;
+                playMenuSelectSound();
+                resolveTextDialog(textDialog.value);
+            } else if (x >= bounds.cancel.x && x <= bounds.cancel.x + bounds.cancel.width && y >= bounds.cancel.y && y <= bounds.cancel.y + bounds.cancel.height) {
+                textDialog.focus = 2;
+                playMenuCancelSound();
+                resolveTextDialog(null);
+            }
+            return;
+        }
         if (confirmDialog) {
             const { x, y } = getCanvasEventCoordinates(event);
             const choice = [0, 1].find((index) => {
@@ -14139,7 +14309,7 @@
 
     /**
      * 현재 화면을 AI가 구분할 수 있는 간결한 상태 객체로 만든다.
-     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'watch_select'|'together_mode_select'|'together_guide'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
+     * @returns {{screen:'initial_title'|'main_menu'|'rule_select'|'watch_select'|'together_mode_select'|'together_guide'|'online_login'|'online_signup'|'online_lobby'|'online_room'|'practice_difficulty'|'puzzle_stage_select'|'opponent_select'|'fever_opponent_select'|'simulator_draw'|'simulator_simulation'|'simulator_complete'|'settings'|'settings_resetting'|'gallery'|'tutorial_intro'|'tutorial_demo'|'tutorial_result'|'tutorial_complete'|'countdown'|'playing'|'paused'|'ending'|'game_over', playerCanControl:boolean}}
      */
     function getNowScreen() {
         if (settingsResetting) return { screen: 'settings_resetting', playerCanControl: false };
@@ -14175,6 +14345,65 @@
         if (game.ending) return { screen: 'ending', playerCanControl: false };
         // 리플레이 재생은 기록된 조작 단계를 되살릴 뿐 사람이 조작하는 것이 아니므로 제외한다.
         return { screen: 'playing', playerCanControl: !game.watch && !game.replayPlayback && game.players[0].controller === null && game.players[0].phase === 'control' && game.players[0].active !== null };
+    }
+
+    /**
+     * 브라우저 외부 확장에 Puyo W의 상태 변화를 알린다.
+     * 모든 공개 이벤트 정보는 CustomEvent.detail에만 넣어 기존 DOM 이벤트 필드와 충돌하지 않게 한다.
+     * @param {'puyow_init'|'puyow_changescreen'|'puyow_unlocked'|'puyow_win'} type 발생시킬 이벤트 이름
+     * @param {object} [detail={}] 외부에 전달할 읽기 전용 정보
+     * @returns {void}
+     */
+    function dispatchPuyoCustomEvent(type, detail = {}) {
+        if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function' || typeof window.CustomEvent !== 'function') return;
+        window.dispatchEvent(new window.CustomEvent(type, { detail }));
+    }
+
+    /**
+     * 새 콘텐츠 해금 정보를 외부 확장에 알린다.
+     * rule과 difficulty는 적 진행도 해금이 아닐 때 null이며, 적 해금일 때는 어느 진행도 칸인지 함께 보낸다.
+     * @param {string} content 새로 해금된 콘텐츠의 안정적인 식별 문자열
+     * @param {'standard'|'fever'|'fever_start'|null} [rule=null] 적 해금에 적용한 규칙
+     * @param {'easy'|'normal'|'hard'|'extreme'|null} [difficulty=null] 적 해금에 적용한 AI 난이도
+     * @returns {void}
+     */
+    function dispatchPuyoUnlocked(content, rule = null, difficulty = null) {
+        // 초기 저장 데이터 로드와 테스트 코드 적용은 실제 플레이 중 새로 열린 콘텐츠가 아니므로 알리지 않는다.
+        if (!initialized) return;
+        dispatchPuyoCustomEvent('puyow_unlocked', { content, rule, difficulty });
+    }
+
+    /** 현재 표시 화면이 바뀐 경우 한 번만 화면 이동 이벤트를 발생시킨다. @returns {void} */
+    function dispatchScreenChangeIfNeeded() {
+        if (!initialized) return;
+        const screen = getNowScreen().screen;
+        if (screen === lastDispatchedScreen) return;
+        const previousScreen = lastDispatchedScreen;
+        lastDispatchedScreen = screen;
+        // 초기화 직후 화면은 이동 결과가 아니므로 puyow_init만 발생시킨다.
+        if (previousScreen !== null) dispatchPuyoCustomEvent('puyow_changescreen', { screen, previousScreen });
+    }
+
+    /**
+     * 실제 CPU 대전에서 플레이어 승리가 정산까지 끝난 시점의 정보를 외부 확장에 알린다.
+     * @param {PlayerState} winner 이번 대전의 확정 승자
+     * @returns {void}
+     */
+    function dispatchPuyoWin(winner) {
+        const enemyController = game?.players?.[1]?.controller;
+        if (!game || winner !== game.players[0] || !enemyController
+            || game.tutorial || game.watch || game.practice || game.continuousFever
+            || game.puzzle || game.together || game.online || game.replayPlayback) return;
+        const difficulty = AI_DIFFICULTIES[game.aiDifficulty]?.key || 'normal';
+        const colorCount = DIFFICULTIES[game.difficulty]?.colors.length || 0;
+        const rule = game.feverStart ? 'fever_start' : game.feverRule ? 'fever' : 'standard';
+        dispatchPuyoCustomEvent('puyow_win', {
+            difficulty,
+            colorCount,
+            rule,
+            enemy: enemyController.getClassType(),
+            elapsedMs: game.elapsed
+        });
     }
 
     /**
@@ -14275,8 +14504,8 @@
     }
 
     /**
-     * WebMCP now_screen 도구가 돌려줄 화면 상태다. 공개 getScreenState()의 값에 모드·리플레이·모델 로딩·확인창 여부를 더한다.
-     * @returns {{screen:string, playerCanControl:boolean, mode:string|null, rule:string|null, replayPlayback:boolean, modelLoading:boolean, confirmDialogOpen:boolean}}
+     * WebMCP now_screen 도구가 돌려줄 화면 상태다. 공개 getScreenState()의 값에 모드·리플레이·모델 로딩·대화상자 여부를 더한다.
+     * @returns {{screen:string, playerCanControl:boolean, mode:string|null, rule:string|null, replayPlayback:boolean, modelLoading:boolean, confirmDialogOpen:boolean, textDialogOpen:boolean}}
      */
     function getWebMcpScreen() {
         const inMatch = Boolean(game && !game.tutorial);
@@ -14287,7 +14516,8 @@
             rule,
             replayPlayback: Boolean(game?.replayPlayback),
             modelLoading: Boolean(game?.onnxLoading),
-            confirmDialogOpen: Boolean(confirmDialog)
+            confirmDialogOpen: Boolean(confirmDialog),
+            textDialogOpen: Boolean(textDialog)
         };
     }
 
@@ -14317,9 +14547,9 @@
         screenMessage = { message, color, backgroundColor, elapsed: 0, duration };
     }
 
-    /** 대기 중인 다음 확인 요청을 표시하고, 진행 중인 게임은 대화상자들이 모두 끝날 때까지 일시정지한다. @returns {void} */
-    function openNextConfirmDialog() {
-        if (confirmDialog || !confirmDialogQueue.length) return;
+    /** 대기 중인 다음 대화상자를 표시하고, 진행 중인 게임은 대화상자들이 모두 끝날 때까지 일시정지한다. @returns {void} */
+    function openNextDialog() {
+        if (confirmDialog || textDialog || !dialogQueue.length) return;
         if (!confirmDialogPauseContext) {
             confirmDialogPauseContext = { game, resume: Boolean(game?.running && !game.paused) };
             if (confirmDialogPauseContext.resume) {
@@ -14329,16 +14559,18 @@
                 pauseBackgroundMusic();
             }
         }
-        confirmDialog = confirmDialogQueue.shift();
+        const request = dialogQueue.shift();
+        if (request.type === 'text') textDialog = request;
+        else confirmDialog = request;
     }
 
-    /** 현재 확인 요청을 완료하고 다음 요청 또는 자동 일시정지 상태를 정리한다. @param {boolean} value 선택 결과 @returns {void} */
+    /** 현재 대화상자를 완료하고 다음 요청 또는 자동 일시정지 상태를 정리한다. @param {boolean|string|null} value 선택 결과 @returns {void} */
     function resolveConfirmDialog(value) {
         if (!confirmDialog) return;
         const resolver = confirmDialog.resolve;
         confirmDialog = null;
-        if (confirmDialogQueue.length) {
-            openNextConfirmDialog();
+        if (dialogQueue.length) {
+            openNextDialog();
         } else {
             const pauseContext = confirmDialogPauseContext;
             confirmDialogPauseContext = null;
@@ -14348,6 +14580,24 @@
             }
         }
         resolver(value === true);
+    }
+
+    /** 현재 텍스트 입력을 완료하고 다음 요청 또는 자동 일시정지 상태를 정리한다. @param {string|null} value 입력값 또는 취소 시 null @returns {void} */
+    function resolveTextDialog(value) {
+        if (!textDialog) return;
+        const resolver = textDialog.resolve;
+        textDialog = null;
+        if (dialogQueue.length) {
+            openNextDialog();
+        } else {
+            const pauseContext = confirmDialogPauseContext;
+            confirmDialogPauseContext = null;
+            if (pauseContext?.resume && game === pauseContext.game && game?.running && game.paused) {
+                game.paused = false;
+                resumeBackgroundMusic();
+            }
+        }
+        resolver(value === null ? null : String(value));
     }
 
     /**
@@ -14369,8 +14619,229 @@
      */
     function requestConfirmDialog(message, confirmLabel = '확인') {
         return new Promise((resolve) => {
-            confirmDialogQueue.push({ message, confirmLabel, choice: 0, resolve });
-            openNextConfirmDialog();
+            dialogQueue.push({ type: 'confirm', message, confirmLabel, choice: 0, resolve });
+            openNextDialog();
+        });
+    }
+
+    /** 텍스트 입력 대화상자의 영역을 반환한다. @param {boolean} multiline 여러 줄 입력 여부 @returns {{panel:{x:number,y:number,width:number,height:number},input:{x:number,y:number,width:number,height:number},confirm:{x:number,y:number,width:number,height:number},cancel:{x:number,y:number,width:number,height:number}}} */
+    function getTextDialogBounds(multiline) {
+        const inputHeight = multiline ? 148 : 58;
+        const panelHeight = multiline ? 430 : 340;
+        const panelY = multiline ? 145 : 190;
+        const inputY = panelY + (multiline ? 112 : 106);
+        const buttonY = panelY + panelHeight - 82;
+        return {
+            panel: { x: 300, y: panelY, width: 680, height: panelHeight },
+            input: { x: 340, y: inputY, width: 600, height: inputHeight },
+            confirm: { x: 405, y: buttonY, width: 190, height: 58 },
+            cancel: { x: 685, y: buttonY, width: 190, height: 58 }
+        };
+    }
+
+    /** 텍스트 입력 대화상자의 입력 문자열을 줄 목록으로 나눈다. @param {string} value 입력 문자열 @returns {string[]} 줄 목록 */
+    function getTextDialogLines(value) {
+        return String(value).split('\n');
+    }
+
+    /** 텍스트 입력 대화상자의 커서가 위치한 줄과 그 줄 안의 순번을 반환한다. @param {{value:string,cursor:number}} dialog 텍스트 대화상자 @returns {{line:number,offset:number}} 커서 위치 */
+    function getTextDialogCursorPosition(dialog) {
+        const characters = Array.from(dialog.value);
+        const beforeCursor = characters.slice(0, dialog.cursor).join('');
+        const lines = beforeCursor.split('\n');
+        return { line: lines.length - 1, offset: Array.from(lines[lines.length - 1]).length };
+    }
+
+    /** 지정한 줄과 줄 안 순번을 전체 문자열의 커서 순번으로 바꾼다. @param {{value:string}} dialog 텍스트 대화상자 @param {number} line 줄 번호 @param {number} offset 줄 안 문자 순번 @returns {number} 전체 커서 순번 */
+    function getTextDialogCursorAtLineOffset(dialog, line, offset) {
+        const lines = getTextDialogLines(dialog.value);
+        const targetLine = Math.max(0, Math.min(lines.length - 1, line));
+        let cursor = 0;
+        for (let index = 0; index < targetLine; index += 1) cursor += Array.from(lines[index]).length + 1;
+        return cursor + Math.max(0, Math.min(Array.from(lines[targetLine]).length, offset));
+    }
+
+    /** 위·아래 방향키에 대응하는 커서 순번을 반환한다. 한 줄 입력에서는 각각 처음·끝으로 이동한다. @param {{value:string,cursor:number,multiline:boolean}} dialog 텍스트 대화상자 @param {number} direction -1은 위, 1은 아래 @returns {number} 다음 커서 순번 */
+    function getTextDialogVerticalCursor(dialog, direction) {
+        const characters = Array.from(dialog.value);
+        if (!dialog.multiline) return direction < 0 ? 0 : characters.length;
+        const position = getTextDialogCursorPosition(dialog);
+        const lines = getTextDialogLines(dialog.value);
+        const targetLine = Math.max(0, Math.min(lines.length - 1, position.line + direction));
+        return getTextDialogCursorAtLineOffset(dialog, targetLine, position.offset);
+    }
+
+    /** 입력창 안 클릭 좌표에 가장 가까운 문자 사이의 커서 순번을 반환한다. @param {{value:string,multiline:boolean}} dialog 텍스트 대화상자 @param {{input:{x:number,y:number,width:number,height:number}}} bounds 대화상자 영역 @param {number} x 클릭 x 좌표 @param {number} y 클릭 y 좌표 @returns {number} 커서 순번 */
+    function getTextDialogCursorFromPoint(dialog, bounds, x, y) {
+        const lines = getTextDialogLines(dialog.value);
+        const inputPadding = 14;
+        const lineHeight = 27;
+        const line = dialog.multiline ? Math.max(0, Math.min(lines.length - 1, Math.floor((y - bounds.input.y - inputPadding + lineHeight / 2) / lineHeight))) : 0;
+        const characters = Array.from(lines[line]);
+        const relativeX = Math.max(0, x - bounds.input.x - inputPadding);
+        let width = 0;
+        context.save();
+        context.font = `20px ${MESSAGE_FONT}`;
+        for (let index = 0; index < characters.length; index += 1) {
+            const characterWidth = context.measureText(characters[index]).width;
+            if (relativeX < width + characterWidth / 2) {
+                context.restore();
+                return getTextDialogCursorAtLineOffset(dialog, line, index);
+            }
+            width += characterWidth;
+        }
+        context.restore();
+        return getTextDialogCursorAtLineOffset(dialog, line, characters.length);
+    }
+
+    /** 현재 선택 영역의 문자열을 반환한다. @returns {string} 선택 문자열. 선택이 없으면 빈 문자열 */
+    function getTextDialogSelectedText() {
+        if (!textDialog || textDialog.selectionAnchor === null || textDialog.selectionAnchor === textDialog.cursor) return '';
+        const characters = Array.from(textDialog.value);
+        return characters.slice(Math.min(textDialog.cursor, textDialog.selectionAnchor), Math.max(textDialog.cursor, textDialog.selectionAnchor)).join('');
+    }
+
+    /** 현재 선택 영역을 시스템 클립보드에 복사한다. 클립보드를 쓸 수 없는 환경에서는 입력 상태를 유지한다. @returns {void} */
+    function copyTextDialogSelection() {
+        const selectedText = getTextDialogSelectedText();
+        if (!selectedText || !navigator.clipboard?.writeText) return;
+        navigator.clipboard.writeText(selectedText).catch(() => {});
+    }
+
+    /** 시스템 클립보드 문자열을 현재 커서·선택 영역에 붙여 넣는다. @returns {void} */
+    function pasteTextDialogClipboard() {
+        const dialog = textDialog;
+        if (!dialog || !navigator.clipboard?.readText) return;
+        navigator.clipboard.readText().then((clipboardText) => {
+            // 비동기 읽기 중 대화상자가 닫히거나 입력 모드가 끝났으면 내용을 넣지 않는다.
+            if (textDialog !== dialog || !dialog.editing) return;
+            insertTextDialogText(clipboardText);
+        }).catch(() => {});
+    }
+
+    /** 텍스트 입력 대화상자의 문자를 커서 위치에 삽입한다. @param {string} text 삽입할 문자열 @returns {void} */
+    function insertTextDialogText(text) {
+        if (!textDialog) return;
+        const characters = Array.from(textDialog.value);
+        const selectionStart = textDialog.selectionAnchor === null ? textDialog.cursor : Math.min(textDialog.cursor, textDialog.selectionAnchor);
+        const selectionEnd = textDialog.selectionAnchor === null ? textDialog.cursor : Math.max(textDialog.cursor, textDialog.selectionAnchor);
+        const inserted = Array.from(String(text).replace(/\r\n?/g, '\n'))
+            .filter((character) => textDialog.multiline || character !== '\n');
+        const next = characters.slice(0, selectionStart).concat(inserted, characters.slice(selectionEnd));
+        textDialog.value = next.slice(0, textDialog.maxLength).join('');
+        textDialog.cursor = Math.min(next.length, textDialog.maxLength, selectionStart + inserted.length);
+        textDialog.selectionAnchor = null;
+    }
+
+    /** 텍스트 입력 대화상자의 선택 영역을 지우고 커서를 이동한다. @param {number} direction -1이면 앞, 1이면 뒤 @returns {boolean} 선택 영역을 지웠는지 여부 */
+    function deleteTextDialogSelection(direction) {
+        if (!textDialog || textDialog.selectionAnchor === null || textDialog.selectionAnchor === textDialog.cursor) return false;
+        const characters = Array.from(textDialog.value);
+        const start = Math.min(textDialog.cursor, textDialog.selectionAnchor);
+        const end = Math.max(textDialog.cursor, textDialog.selectionAnchor);
+        textDialog.value = characters.slice(0, start).concat(characters.slice(end)).join('');
+        textDialog.cursor = direction < 0 ? start : start;
+        textDialog.selectionAnchor = null;
+        return true;
+    }
+
+    /** 텍스트 입력 대화상자의 입력 내용을 그린다. @returns {void} */
+    function drawTextDialog() {
+        if (!textDialog) return;
+        const bounds = getTextDialogBounds(textDialog.multiline);
+        context.fillStyle = 'rgba(2, 8, 13, 0.82)'; context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.fillStyle = '#102c3b'; context.fillRect(bounds.panel.x, bounds.panel.y, bounds.panel.width, bounds.panel.height);
+        context.strokeStyle = '#6ea2b8'; context.lineWidth = 3; context.strokeRect(bounds.panel.x, bounds.panel.y, bounds.panel.width, bounds.panel.height);
+        context.textAlign = 'center'; context.fillStyle = '#f5fbfc'; context.font = `24px ${MESSAGE_FONT}`;
+        const messageLines = wrapCanvasText(textDialog.message, 600);
+        messageLines.forEach((line, index) => context.fillText(line, WIDTH / 2, bounds.panel.y + 48 + index * 30));
+
+        context.fillStyle = '#071621'; context.fillRect(bounds.input.x, bounds.input.y, bounds.input.width, bounds.input.height);
+        const inputFocused = textDialog.focus === 0;
+        const inputStateColor = !inputFocused ? '#6ea2b8' : textDialog.editing ? '#4cc9b0' : '#f7c843';
+        context.strokeStyle = inputStateColor; context.lineWidth = textDialog.editing ? 4 : inputFocused ? 3 : 2; context.strokeRect(bounds.input.x, bounds.input.y, bounds.input.width, bounds.input.height);
+        if (textDialog.multiline) {
+            // 노란색 빈 표시는 포커스만 있는 상태, 초록색 채운 표시는 실제 입력 모드임을 나타낸다.
+            context.beginPath(); context.arc(bounds.input.x + bounds.input.width - 18, bounds.input.y + 18, 6, 0, Math.PI * 2);
+            context.fillStyle = textDialog.editing ? '#f7c843' : 'transparent';
+            if (textDialog.editing) context.fill();
+            context.strokeStyle = inputStateColor; context.lineWidth = 2; context.stroke();
+        }
+        const lines = getTextDialogLines(textDialog.value);
+        const cursorPosition = getTextDialogCursorPosition(textDialog);
+        const lineHeight = 27;
+        const inputPadding = 14;
+        context.save();
+        context.beginPath(); context.rect(bounds.input.x + 4, bounds.input.y + 4, bounds.input.width - 8, bounds.input.height - 8); context.clip();
+        context.textAlign = 'left'; context.textBaseline = 'top'; context.fillStyle = '#f5fbfc'; context.font = `20px ${MESSAGE_FONT}`;
+        const selectionStart = textDialog.selectionAnchor === null ? textDialog.cursor : Math.min(textDialog.cursor, textDialog.selectionAnchor);
+        const selectionEnd = textDialog.selectionAnchor === null ? textDialog.cursor : Math.max(textDialog.cursor, textDialog.selectionAnchor);
+        if (selectionStart !== selectionEnd) {
+            let lineStart = 0;
+            lines.forEach((line, index) => {
+                const lineCharacters = Array.from(line);
+                const lineEnd = lineStart + lineCharacters.length;
+                const selectedStart = Math.max(selectionStart, lineStart);
+                const selectedEnd = Math.min(selectionEnd, lineEnd);
+                if (selectedStart < selectedEnd) {
+                    const startOffset = selectedStart - lineStart;
+                    const endOffset = selectedEnd - lineStart;
+                    const prefix = lineCharacters.slice(0, startOffset).join('');
+                    const selected = lineCharacters.slice(startOffset, endOffset).join('');
+                    const selectionX = bounds.input.x + inputPadding + context.measureText(prefix).width;
+                    const selectionY = bounds.input.y + (textDialog.multiline ? inputPadding + index * lineHeight : 17);
+                    context.fillStyle = '#326f9b'; context.fillRect(selectionX, selectionY, Math.max(2, context.measureText(selected).width), 24);
+                }
+                lineStart = lineEnd + 1;
+            });
+            context.fillStyle = '#f5fbfc';
+        }
+        if (textDialog.multiline) {
+            lines.forEach((line, index) => context.fillText(line, bounds.input.x + inputPadding, bounds.input.y + inputPadding + index * lineHeight));
+        } else context.fillText(lines[0], bounds.input.x + inputPadding, bounds.input.y + 17);
+        const cursorLineY = bounds.input.y + (textDialog.multiline ? inputPadding + cursorPosition.line * lineHeight : 17);
+        const cursorLineText = textDialog.multiline ? lines[cursorPosition.line] || '' : lines[0] || '';
+        const cursorX = bounds.input.x + inputPadding + context.measureText(Array.from(cursorLineText).slice(0, cursorPosition.offset).join('')).width;
+        if (textDialog.editing) {
+            context.strokeStyle = '#f7c843'; context.lineWidth = 2; context.beginPath(); context.moveTo(cursorX, cursorLineY); context.lineTo(cursorX, cursorLineY + 24); context.stroke();
+        }
+        context.restore();
+
+        [['확인', bounds.confirm, '#4cc9b0'], ['취소', bounds.cancel, '#563068']].forEach(([label, button, color], index) => {
+            const focused = textDialog.multiline && textDialog.focus === index + 1;
+            context.fillStyle = focused ? (index === 0 ? '#397d70' : '#563068') : color; context.fillRect(button.x, button.y, button.width, button.height);
+            context.strokeStyle = focused ? '#f7c843' : (index === 0 ? '#7ae3cb' : '#e5c7f5'); context.lineWidth = focused ? 4 : 2; context.strokeRect(button.x, button.y, button.width, button.height);
+            context.fillStyle = '#fff'; context.font = `20px ${BUTTON_FONT}`; context.textAlign = 'center'; context.textBaseline = 'alphabetic';
+            context.fillText(translate(label), button.x + button.width / 2, button.y + 37);
+        });
+    }
+
+    /**
+     * 현재 화면을 음영 처리한 뒤, 그 위에 텍스트 입력 대화상자를 표시한다. 메시지는 원문 그대로 표시하고 버튼만 현재 언어로 번역한다.
+     * @param {string} message 대화 상자 내 보여줄 메시지
+     * @param {boolean|null} multiline 여러줄 입력 사용여부 (기본값 false)
+     * @param {number} [maxLength=2000] 최대 입력 문자 수. JSON 가져오기처럼 내부에서만 큰 값을 사용한다.
+     * @returns {Promise<string|null>} 텍스트 입력 시 그 내용, 취소 시 null
+     */
+    function askText(message, multiline, maxLength = TEXT_DIALOG_DEFAULT_MAX_LENGTH) {
+        if (!initialized || !context) throw new Error('텍스트 입력 대화상자를 표시하려면 먼저 WebPuyo.initialize()를 호출해야 합니다.');
+        if (typeof message !== 'string') throw new TypeError('message는 문자열이어야 합니다.');
+        if (multiline !== undefined && multiline !== null && typeof multiline !== 'boolean') throw new TypeError('multiline은 boolean 또는 null이어야 합니다.');
+        if (!Number.isInteger(maxLength) || maxLength < 1 || maxLength > TEXT_DIALOG_IMPORT_MAX_LENGTH) throw new TypeError(`maxLength는 1~${TEXT_DIALOG_IMPORT_MAX_LENGTH} 사이의 정수여야 합니다.`);
+        return new Promise((resolve) => {
+            dialogQueue.push({
+                type: 'text',
+                message,
+                multiline: multiline === true,
+                maxLength,
+                value: '',
+                cursor: 0,
+                selectionAnchor: null,
+                focus: 0,
+                editing: multiline !== true,
+                resolve
+            });
+            openNextDialog();
         });
     }
 
@@ -14519,15 +14990,16 @@
         const screenSchema = {
             type: 'object',
             properties: {
-                screen: { type: 'string', enum: screenNames, description: 'The exact visible title, menu, together-mode selection or guide, puzzle-stage selection, gallery, simulator, tutorial, or match screen. game_over is the match result screen.' },
+                screen: { type: 'string', enum: screenNames, description: 'The exact visible title, menu, together-mode selection or guide, online login, signup, lobby, or room, puzzle-stage selection, gallery, simulator, tutorial, or match screen. game_over is the match result screen.' },
                 playerCanControl: playerCanControlSchema,
                 mode: { type: ['string', 'null'], enum: [...modeNames, null], description: 'Match mode, or null outside a match (menus, simulator, gallery, settings, tutorial).' },
                 rule: { type: ['string', 'null'], enum: [...ruleNames, null], description: 'Match rule, or null outside a match.' },
                 replayPlayback: replayPlaybackSchema,
                 modelLoading: { type: 'boolean', description: 'True while ONNX models of a deep-learning opponent are loading. The countdown waits until loading ends.' },
-                confirmDialogOpen: { type: 'boolean', description: 'True while a confirmation dialog covers the screen and captures all input. A match under the dialog is paused.' }
+                confirmDialogOpen: { type: 'boolean', description: 'True while a confirmation dialog covers the screen and captures all input. A match under the dialog is paused.' },
+                textDialogOpen: { type: 'boolean', description: 'True while a text input dialog covers the screen and captures all input. A match under the dialog is paused.' }
             },
-            required: ['screen', 'playerCanControl', 'mode', 'rule', 'replayPlayback', 'modelLoading', 'confirmDialogOpen']
+            required: ['screen', 'playerCanControl', 'mode', 'rule', 'replayPlayback', 'modelLoading', 'confirmDialogOpen', 'textDialogOpen']
         };
         const boardColors = [...COLORS, 'garbage', HARD_GARBAGE, IRON_PUYO];
         // 외부에서 등록한 예고뿌요도 설명에 들어가도록 등록 시점의 목록에서 만든다.
@@ -14660,30 +15132,33 @@
                 name: 'manual',
                 description: 'Return English instructions for playing Puyo W and using the other available game tools.',
                 inputSchema: emptyInput,
+                annotations: { readOnlyHint: true },
                 execute: () => [
                     `Puyo W is a falling-pair puzzle battle on a ${COLUMNS}-column field. x counts columns from the left (0-${COLUMNS - 1}) and y counts rows from the bottom; ${VISIBLE_ROWS} rows are visible and more hidden rows sit above them.`,
                     'Connect four or more same-color puyos vertically or horizontally to clear them. Garbage puyos next to a clear are removed too; a hard garbage puyo becomes normal garbage when hit once and breaks when hit twice in the same step. Chains create ATTACK, which first offsets your own DAMAGE and then reaches the opponent as warning puyos and falling garbage. ATTACK is the score divided by the current margin rate, which drops over time, multiplied by a time multiplier that doubles every 20 seconds from 320 seconds.',
                     'A player loses when cell (2, 11) is filled. FEVER rules and continuous fever also use cell (3, 11).',
                     'Keyboard: Left and Right move, Z rotates one way while X and Up rotate the other way, holding Down drops faster, and Escape pauses. Gamepads and an on-screen virtual joystick with Z, X, and ESC buttons also work.',
-                    'Modes: the standard rule, FEVER rule, and FEVER rule (start) are matches against a CPU opponent. In the standard rule an all-clear grants a ticket that adds 2100 points and 30 ATTACK to your next colored-puyo explosion. In FEVER rules each player has a FEVER gauge; when it fills, the player plays preset chain patterns on a separate FEVER field under a time limit, and FEVER rule (start) begins both players inside FEVER with 60 seconds. Practice is solo play. Continuous fever is solo FEVER play starting with a 5-chain target and 60 seconds. Puzzle Puyo gives stage objectives (combo, clear, multiple, color, attack) and a recommended turn count. Watch mode shows two CPUs playing each other and restarts 5 seconds after each result.',
-                    'Choosing Together mode in the main menu first opens a selection of Offline Play, Online Play, and Cancel (together_mode_select). Online Play is not available yet and cannot be focused or chosen. Offline Play opens the offline together guide (together_guide), where the rule and color count are chosen.',
+                    'Modes: the standard rule, FEVER rule, and FEVER rule (start) are matches against a CPU opponent. In the standard rule an all-clear grants a ticket that adds 2100 points and 30 ATTACK to your next colored-puyo explosion. In FEVER rules each player has a FEVER gauge; when it fills, the player plays preset chain patterns on a separate FEVER field under a time limit, and FEVER rule (start) begins both players inside FEVER with 60 seconds. Practice is solo play. Continuous fever is solo FEVER play starting with a 5-chain target and 60 seconds. Puzzle Puyo gives stage objectives (combo, clear, multiple, color, attack) and a recommended turn count. Watch mode shows two CPUs playing each other and restarts 5 seconds after each result. Online play is a two-human match on separate computers through the configured game server; it is available only when that server reports online play enabled.',
+                    'Choosing Together mode in the main menu first opens a selection of Offline Play, Online Play, and Cancel (together_mode_select). Offline Play opens the offline together guide (together_guide), where the rule and color count are chosen. Online Play opens login and signup, then the lobby and room screens; it is hidden when the configured server does not provide online play.',
                     'Offline together mode is a two-human match on one computer: 1P uses the arrow keys, Z, and X (or F, G, H, B), and 2P uses numpad 4, 6, 2, 5 and the [ and ] keys. Neither side is a CPU, and point_recommend only marks the 1P field.',
-                    'Replays of recorded matches can be played back from the main menu; during playback no input is accepted except Escape, which skips to the result screen. The tutorial, simulator, gallery, and settings are separate menu screens. Some menus open a confirmation dialog that captures all input until it is answered.',
-                    'Tools: now_screen returns the exact screen, the match mode and rule, and whether a replay, ONNX model loading, or confirmation dialog is in progress. now_game_status works only while a match is playing or paused, in every mode including watch, together, and replay playback. point_recommend works only while now_screen reports playerCanControl, and marks one cell on the left field until the active pair locks. show_message displays already-localized text at the top of the current screen.'
+                    'Replays of recorded matches can be played back from the main menu; during playback no input is accepted except Escape, which skips to the result screen. Online matches cannot be paused or recorded. The tutorial, simulator, gallery, and settings are separate menu screens. Confirmation and text input dialogs capture all input until they are answered.',
+                    'Tools: now_screen returns the exact screen, the match mode and rule, and whether a replay, ONNX model loading, confirmation dialog, or text input dialog is in progress. now_game_status works only while a match is playing or paused, in every mode including online, watch, together, and replay playback, and includes online connection state when applicable. point_recommend works only while now_screen reports playerCanControl, and marks one cell on the left field until the active pair locks. show_message displays already-localized text at the top of the current screen.'
                 ].join('\n\n')
             },
             {
                 name: 'now_screen',
-                description: 'Get the exact visible Puyo W screen: initial title, main menu, rule or watch selection, together-mode selection or offline together guide, standard or FEVER opponent selection, practice or continuous-fever color selection, Puzzle Puyo stage selection, simulator modes, settings, gallery, tutorial phases, match countdown, playing, pause, ending animation, or the result screen (game_over). Also reports the match mode and rule, replay playback, ONNX model loading, and whether a confirmation dialog is open. playerCanControl is true only while the left human player (1P) controls an active pair.',
+                description: 'Get the exact visible Puyo W screen: initial title, main menu, rule or watch selection, together-mode selection or offline together guide, online login, signup, lobby or room, standard or FEVER opponent selection, practice or continuous-fever color selection, Puzzle Puyo stage selection, simulator modes, settings, gallery, tutorial phases, match countdown, playing, pause, ending animation, or the result screen (game_over). Also reports the match mode and rule, replay playback, ONNX model loading, confirmation-dialog state, and text-input-dialog state. playerCanControl is true only while the left human player (1P) controls an active pair.',
                 inputSchema: emptyInput,
                 outputSchema: screenSchema,
+                annotations: { readOnlyHint: true },
                 execute: getWebMcpScreen
             },
             {
                 name: 'now_game_status',
-                description: 'Get complete JSON match state while a match is playing or paused, in any mode (CPU match, together, practice, continuous fever, Puzzle Puyo, watch, or replay playback): mode and rule, elapsed time, margin rate and time multiplier, colors, AI difficulty, both current, normal, and FEVER fields, scores, ATTACK and DAMAGE, all-clear tickets, the next two pairs, warning puyos, per-player and continuous FEVER state, Puzzle Puyo objective, together-mode win counts, and both active pairs with coordinates.',
+                description: 'Get complete JSON match state while a match is playing or paused, in any mode (CPU match, online, together, practice, continuous fever, Puzzle Puyo, watch, or replay playback): mode and rule, elapsed time, margin rate and time multiplier, colors, AI difficulty, both current, normal, and FEVER fields, scores, ATTACK and DAMAGE, all-clear tickets, the next two pairs, warning puyos, per-player and continuous FEVER state, Puzzle Puyo objective, together-mode win counts, online connection state, and both active pairs with coordinates.',
                 inputSchema: emptyInput,
                 outputSchema: statusSchema,
+                annotations: { readOnlyHint: true, untrustedContentHint: true },
                 execute: getNowGameStatus
             },
             {
@@ -14695,11 +15170,13 @@
                         y: { type: 'integer', minimum: 0, maximum: VISIBLE_ROWS - 1, description: 'Board row from the bottom.' }
                     }, required: ['x', 'y'], additionalProperties: false
                 },
+                annotations: { readOnlyHint: false },
                 execute: ({ x, y }) => {
                     const screen = getNowScreen();
                     if (screen.screen !== 'playing' || !screen.playerCanControl) throw new Error('point_recommend is available only during the player control phase.');
                     if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= COLUMNS || y < 0 || y >= VISIBLE_ROWS) throw new RangeError('x and y must identify a visible board cell.');
                     recommendedPoint = { x, y };
+                    return `Recommendation recorded for cell (${x}, ${y}).`;
                 }
             },
             {
@@ -14716,7 +15193,11 @@
                     required: ['message'],
                     additionalProperties: false
                 },
-                execute: ({ message, color = 'white', duration = 2000, backgroundColor = null }) => showMessage(message, color, duration, backgroundColor)
+                annotations: { readOnlyHint: false },
+                execute: ({ message, color = 'white', duration = 2000, backgroundColor = null }) => {
+                    showMessage(message, color, duration, backgroundColor);
+                    return 'Message displayed.';
+                }
             }
         ];
         tools.forEach((tool) => {
@@ -14742,9 +15223,12 @@
         feverStageValidationTimer = null;
         settingsResetting = false;
         screenMessage = null;
-        [confirmDialog, ...confirmDialogQueue].filter(Boolean).forEach((request) => request.resolve(false));
+        if (confirmDialog) confirmDialog.resolve(false);
+        if (textDialog) textDialog.resolve(null);
+        dialogQueue.forEach((request) => request.resolve(request.type === 'text' ? null : false));
         confirmDialog = null;
-        confirmDialogQueue = [];
+        textDialog = null;
+        dialogQueue = [];
         confirmDialogPauseContext = null;
         gameStartFirework = null;
         window.removeEventListener('keydown', handleKeydown);
@@ -14789,6 +15273,7 @@
         playerNameSetupRequired = false;
         recommendedPoint = null;
         menuScreen = 'initialTitle';
+        lastDispatchedScreen = null;
         hasUserStarted = false;
         feverStageValidationComplete = false;
         pendingInitialTitleEntry = false;
@@ -15010,6 +15495,9 @@
         animationFrameId = requestAnimationFrame(frame);
         // 초기화 완료 표시
         initialized = true;
+        // 초기 화면은 화면 이동으로 보지 않고, 초기화 완료만 한 번 알린다.
+        lastDispatchedScreen = getNowScreen().screen;
+        dispatchPuyoCustomEvent('puyow_init');
     }
 
     /**
@@ -18709,6 +19197,7 @@
         playSound,
         showMessage,
         askConfirm,
+        askText,
         addCode,
         initialize,
         destroy,
