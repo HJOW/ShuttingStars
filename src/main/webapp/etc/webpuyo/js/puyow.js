@@ -20,7 +20,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 69;
+    const BUILDNO = 73;
     /** 일반 텍스트 입력 대화상자의 최대 문자 수다. */
     const TEXT_DIALOG_DEFAULT_MAX_LENGTH = 2000;
     /** 리플레이·시뮬레이터 JSON처럼 붙여 넣는 긴 텍스트의 최대 문자 수다. */
@@ -1235,7 +1235,7 @@
     /*
      * 온라인 플레이 통신 계층이다.
      * 가입·로그인·로그아웃만 HTTP POST로 처리하고, 대기실·방·대전은 WebSocket 하나로 주고받는다.
-     * 서버 구현은 nodeserver/onlineplay.js 와 python/onlineplay.py 이며 메시지 이름과 오류 코드가 셋 다 같아야 한다.
+     * 서버 구현은 node/onlineplay.js 와 python/onlineplay.py 이며 메시지 이름과 오류 코드가 셋 다 같아야 한다.
      */
 
     /** 대기실에서 방 목록보다 앞에 오는 버튼(나가기·방 생성)의 개수다. 방 목록 포커스는 이 값부터 시작한다. @type {number} */
@@ -1269,6 +1269,7 @@
         duplicate_nickname: '이미 사용 중인 닉네임입니다.',
         login_failed: '아이디 또는 비밀번호가 올바르지 않습니다.',
         account_locked: '비밀번호를 여러 번 틀려 5분 동안 로그인할 수 없습니다.',
+        account_disabled: '이 계정은 서버 관리자가 비활성화했습니다.',
         invalid_token: '로그인 정보가 만료되었습니다. 다시 로그인해 주세요.',
         already_in_room: '이미 다른 방에 들어가 있습니다.',
         room_not_found: '방을 찾을 수 없습니다.',
@@ -3943,7 +3944,11 @@
             this.announcedAttack = 0;
             /** 현재 announcedAttack을 표시 중인 에너지다. 예고 취소 시 다른 에너지의 표시를 지우지 않도록 식별한다. @type {object|null} */
             this.announcedAttackEnergy = null;
+            /** 리플레이에 기록된 일반 필드행 미정산 예고량이다. 구형 기록은 0으로 기존 표시를 유지한다. @type {number} */
+            this.replayNormalWarningPreview = 0;
             this.lastAttackTransfer = null;
+            /** 연쇄 첫 폭발 당시 상대 피버 회차다. -1은 일반 피해, null은 피버 룰 밖이다. @type {number|null} */
+            this.chainTargetFeverId = null;
             this.lastAttackEnergySource = null;
             this.receivesPuyos = true;
             this.allClearEnabled = true;
@@ -4164,6 +4169,8 @@
     function createFeverRuleState(lightStart = FEVER_LIGHT_STARTS) {
         return {
             active: false,
+            /** 피버 재진입을 구별해 이전 피버로 향하던 피해가 새 피버로 들어가지 않게 한다. */
+            activationId: 0,
             lightStart: Math.max(0, Math.min(6, lightStart)),
             gauge: Math.max(0, Math.min(6, lightStart)),
             nextTime: FEVER_INITIAL_TIME,
@@ -5173,6 +5180,7 @@
         state.field = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
         state.damage = 0;
         state.active = true;
+        state.activationId += 1;
         playSound(commonSoundPool?.feverEnter, 'effects', '피버 진입 효과음');
         state.gauge = state.lightStart;
         state.pendingActivation = false;
@@ -6781,6 +6789,13 @@
         const exploding = explosionGroups.flatMap((group) => group.cells);
         // 이번 단계에 폭발할 색 뿌요가 있으면 점수와 공격을 처리한다.
         if (exploding.length) {
+            // 정수 ATTACK이 생기지 않는 첫 폭발도 연쇄 시작이다. 이후 상대가 피버에
+            // 진입하더라도 이 연쇄 전체의 피해 목적지는 첫 폭발 당시 상태를 유지한다.
+            if (player.combo === 0) {
+                player.chainTargetFeverId = game?.feverRule && opponent.fever
+                    ? (opponent.fever.active ? opponent.fever.activationId : -1)
+                    : null;
+            }
             const resolution = getExplosionResolution(player.board, exploding);
             const ticketBonus = consumeAllClearTicket(player);
             player.combo += 1;
@@ -6907,6 +6922,9 @@
      */
     function deliverFinalAttackEnergy(player, opponent) {
         const amount = Math.floor(player.attack);
+        const targetFeverId = player.chainTargetFeverId;
+        // 최종 에너지가 아직 이동 중이어도 다음 연쇄는 별도의 목적지를 기록한다.
+        player.chainTargetFeverId = null;
         const energyTransfers = getEnergyTransfers();
         const lastEnergy = player.lastAttackTransfer;
         // 연쇄 중 먼저 출발한 에너지도 이후 ATTACK 상쇄로 최종 전달량이 0이 될 수 있다.
@@ -6922,11 +6940,31 @@
         // 해당 연출이 끝난 상태라면 지금이 곧 "에너지 완료 후" 시점이다.
         if (lastEnergy && energyTransfers?.includes(lastEnergy)) {
             lastEnergy.finalDamageAmount = amount;
+            lastEnergy.targetFeverId = targetFeverId;
         } else {
-            opponent.damage += amount;
+            applyAttackDamage(opponent, amount, targetFeverId);
             clearAnnouncedAttack(player);
         }
         player.lastAttackTransfer = null;
+    }
+
+    /**
+     * 연쇄 시작 당시의 목적지에 상쇄 후 남은 피해를 적용한다.
+     * @param {PlayerState} opponent 피해를 받을 플레이어
+     * @param {number} amount 확정된 정수 피해량
+     * @param {number|null} targetFeverId 연쇄 시작 시 상대 피버 회차(-1: 일반, null: 피버 룰 밖)
+     * @returns {void}
+     */
+    function applyAttackDamage(opponent, amount, targetFeverId) {
+        if (targetFeverId == null) {
+            opponent.damage += amount;
+        } else if (targetFeverId >= 0 && opponent.fever?.active && opponent.fever.activationId === targetFeverId) {
+            opponent.fever.damage += amount;
+        } else {
+            // 당시 피버가 이미 종료됐다면 종료 때의 피해 합산 규칙대로 일반 피해에 넣는다.
+            // 새 피버에 재진입했더라도 이전 피버를 향한 피해가 새 필드를 침범하지 않는다.
+            opponent.normalDamage += amount;
+        }
     }
 
     /**
@@ -6960,7 +6998,7 @@
         if (cancelledDamage || cancelledAttack) route.push({ target: ownTarget, kind: 'cancel', amount: cancelledDamage, attackAmount: cancelledAttack, arcDirection: 'up' });
         if (delivered || travelToOpponent) route.push({ target: opponentTarget, kind: 'damage', amount: delivered, previewAmount, arcDirection: (cancelledDamage || cancelledAttack) ? 'down' : startsAtExplosion ? 'up' : 'down' });
         if (!route.length) return null;
-        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, previewCancelled: false, finalDamageAmount: 0, spellEffectCombo: null, spellEffectPlayed: false };
+        const energy = { player, opponent, position: source, route, routeIndex: 0, elapsed: 0, fading: false, previewCancelled: false, finalDamageAmount: 0, targetFeverId: player.chainTargetFeverId, spellEffectCombo: null, spellEffectPlayed: false };
         energyTransfers.push(energy);
         return energy;
     }
@@ -6973,6 +7011,22 @@
      */
     function warningAmount(player, opponent) {
         return player.damage + opponent.announcedAttack + player.warningReductionDelay;
+    }
+
+    /** 피버 중 뒤편에 표시할 일반 필드행 미정산 공격량을 구한다. 피해·상쇄 수치는 바꾸지 않는다. @param {PlayerState} player 수신자 @param {PlayerState} opponent 송신자 @returns {number} 일반 예고로 분리할 공격량 */
+    function normalWarningPreview(player, opponent) {
+        if (!game?.feverRule || !player.fever?.active) return 0;
+        if (game.replayPlayback) return player.replayNormalWarningPreview;
+        // 에너지가 화면에서 사라졌거나 송신자의 다음 연쇄가 시작되어도, 현재 예고를
+        // 만든 에너지의 목적지를 사용해야 최종 DAMAGE와 동일한 필드에 표시된다.
+        const targetFeverId = opponent.announcedAttackEnergy?.targetFeverId;
+        if (targetFeverId == null || targetFeverId === player.fever.activationId) return 0;
+        return opponent.announcedAttack;
+    }
+
+    /** 현재 활성 필드 앞쪽에 표시할 예고량이다. AI·상쇄용 warningAmount와 표시용 분리를 구별한다. @param {PlayerState} player 수신자 @param {PlayerState} opponent 송신자 @returns {number} 앞쪽 예고량 */
+    function currentFieldWarningAmount(player, opponent) {
+        return warningAmount(player, opponent) - normalWarningPreview(player, opponent);
     }
 
     /**
@@ -7024,7 +7078,7 @@
                 energy.elapsed += delta;
                 if (energy.elapsed < 150) return true;
                 if (energy.finalDamageAmount) {
-                    energy.opponent.damage += energy.finalDamageAmount;
+                    applyAttackDamage(energy.opponent, energy.finalDamageAmount, energy.targetFeverId);
                     clearAnnouncedAttack(energy.player, energy);
                 }
                 return false;
@@ -7043,7 +7097,7 @@
                     energy.player.announcedAttackEnergy = energy;
                 }
                 if (segment.amount) {
-                    energy.opponent.damage += segment.amount;
+                    applyAttackDamage(energy.opponent, segment.amount, energy.targetFeverId);
                     clearAnnouncedAttack(energy.player, energy);
                 }
                 if (energy.spellEffectCombo !== null && !energy.spellEffectPlayed) {
@@ -7729,7 +7783,8 @@
             drawingContext.save();
             drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
             drawingContext.fillStyle = PALETTE[this.paletteKey];
-            drawingContext.globalAlpha = this.garbageStyle ? 0.75 : 1;
+            // 바깥에서 지정한 불투명도(피버 중 유예된 예고뿌요 등)를 덮어쓰지 않고 그 위에 곱한다.
+            drawingContext.globalAlpha *= this.garbageStyle ? 0.75 : 1;
             drawingContext.beginPath();
             drawingContext.arc(0, 0, radius, 0, Math.PI * 2);
             drawingContext.fill();
@@ -8122,12 +8177,13 @@
     function strokeHypercubeEdges(drawingContext, projection, radius, passes) {
         const { points } = projection;
         const groups = getHypercubeDepthGroups(projection);
+        const ambientAlpha = drawingContext.globalAlpha;
         passes.forEach(([lineWidth, alpha, color, minimumDepth]) => {
             drawingContext.lineWidth = lineWidth;
             drawingContext.strokeStyle = color;
             groups.forEach((group) => {
                 if (!group.edges.length || group.depth < minimumDepth) return;
-                drawingContext.globalAlpha = alpha * (0.25 + group.depth * 0.75);
+                drawingContext.globalAlpha = ambientAlpha * alpha * (0.25 + group.depth * 0.75);
                 drawingContext.beginPath();
                 group.edges.forEach(([from, to]) => {
                     drawingContext.moveTo(points[from][0] * radius, -points[from][1] * radius);
@@ -8175,6 +8231,7 @@
         draw(drawingContext, x, y, cellSize) {
             const radius = cellSize * 0.42;
             const { points, edges } = TESSERACT_PROJECTION;
+            const ambientAlpha = drawingContext.globalAlpha;
             drawingContext.save();
             drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
             // 어느 필드 색 위에서도 네온선이 읽히도록 어두운 우주색 바탕을 먼저 깐다.
@@ -8186,14 +8243,14 @@
             [[cellSize * 0.1, 0.16, '#26e2ff'], [cellSize * 0.05, 0.42, '#7ef0ff'], [cellSize * 0.022, 0.95, '#ecfeff']].forEach(([lineWidth, alpha, color]) => {
                 drawingContext.lineWidth = lineWidth; drawingContext.strokeStyle = color;
                 edges.forEach(([from, to]) => {
-                    drawingContext.globalAlpha = alpha * (0.52 + (points[from][2] + points[to][2]) / 2 * 0.48);
+                    drawingContext.globalAlpha = ambientAlpha * alpha * (0.52 + (points[from][2] + points[to][2]) / 2 * 0.48);
                     drawingContext.beginPath();
                     drawingContext.moveTo(points[from][0] * radius, -points[from][1] * radius);
                     drawingContext.lineTo(points[to][0] * radius, -points[to][1] * radius);
                     drawingContext.stroke();
                 });
             });
-            drawingContext.globalAlpha = 1;
+            drawingContext.globalAlpha = ambientAlpha;
             // 눈은 안쪽 정육면체 한가운데에 둬 다른 예고뿌요와 같은 캐릭터성을 유지한다.
             drawingContext.translate(radius * 0.11, -radius * 0.22);
             drawPuyoEyes(drawingContext, radius * 0.44);
@@ -8247,6 +8304,7 @@
         /** 참고 영상처럼 푸른 유리 구슬 속에 5차원 격자가 촘촘히 겹친 모습을 한 칸 크기로 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
         draw(drawingContext, x, y, cellSize) {
             const radius = cellSize * 0.44;
+            const ambientAlpha = drawingContext.globalAlpha;
             drawingContext.save();
             drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
             // 왼쪽 위에서 빛을 받는 푸른 유리 몸체다. 모서리 80개가 이 위에서 읽히도록 안쪽을 밝게 둔다.
@@ -8261,7 +8319,7 @@
             strokeHypercubeEdges(drawingContext, PENTERACT_PROJECTION, radius, [
                 [cellSize * 0.052, 0.6, '#07203f', 0], [cellSize * 0.024, 0.95, '#63b4f0', 0], [cellSize * 0.01, 0.95, '#ffffff', 0.62]
             ]);
-            drawingContext.globalAlpha = 1;
+            drawingContext.globalAlpha = ambientAlpha;
             // 모서리 80개가 겹친 자리라 눈이 묻히기 쉬우므로 살짝 어두운 바닥을 깔고 그린다.
             drawingContext.fillStyle = 'rgba(9, 32, 68, 0.55)';
             drawingContext.beginPath(); drawingContext.ellipse(0, -radius * 0.04, radius * 0.44, radius * 0.28, 0, 0, Math.PI * 2); drawingContext.fill();
@@ -8315,6 +8373,7 @@
         /** 자수정 구슬 속에 6차원 격자가 겹치고 바깥으로 후광이 번지는 모습을 한 칸 크기로 그린다. @override @param {CanvasRenderingContext2D} drawingContext 캔버스 2D 컨텍스트 @param {number} x 셀의 왼쪽 X 좌표 @param {number} y 셀의 위쪽 Y 좌표 @param {number} cellSize 셀 크기 @returns {void} */
         draw(drawingContext, x, y, cellSize) {
             const radius = cellSize * 0.42;
+            const ambientAlpha = drawingContext.globalAlpha;
             drawingContext.save();
             drawingContext.translate(x + cellSize / 2, y + cellSize / 2);
             // 펜터렉트보다 한 단계 위라는 것이 한눈에 보이도록 몸체 바깥으로 보랏빛 후광을 두른다.
@@ -8333,7 +8392,7 @@
             strokeHypercubeEdges(drawingContext, HEXAACT_PROJECTION, radius, [
                 [cellSize * 0.042, 0.5, '#1a0940', 0], [cellSize * 0.02, 0.85, '#d9b6ff', 0], [cellSize * 0.009, 0.95, '#fff3c8', 0.74]
             ]);
-            drawingContext.globalAlpha = 1;
+            drawingContext.globalAlpha = ambientAlpha;
             // 모서리 192개가 겹친 자리라 눈이 묻히기 쉬우므로 살짝 어두운 바닥을 깔고 그린다.
             drawingContext.fillStyle = 'rgba(30, 10, 66, 0.6)';
             drawingContext.beginPath(); drawingContext.ellipse(0, -radius * 0.04, radius * 0.44, radius * 0.28, 0, 0, Math.PI * 2); drawingContext.fill();
@@ -8767,12 +8826,13 @@
             context.fillStyle = '#0a1d29'; context.fillRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
             context.strokeStyle = 'rgba(176, 232, 244, 0.25)'; context.strokeRect(x + index * CELL + 3, FIELD_TOP - CELL + 3, CELL - 6, CELL - 6);
         }
-        const displayedWarnings = warningUnits(warningAmount(player, opponent));
+        const displayedWarnings = warningUnits(currentFieldWarningAmount(player, opponent));
+        const normalWarnings = player.normalDamage + normalWarningPreview(player, opponent);
         // 피버 중에는 보존된 일반 필드의 DAMAGE 예고를 흐리게 뒤에 먼저 그린다. 피버 필드 예고는 현행 불투명도로 앞에 그린다.
-        if (game?.feverRule && player.fever?.active && player.normalDamage > 0) {
+        if (game?.feverRule && player.fever?.active && normalWarnings > 0) {
             context.save();
             context.globalAlpha = FEVER_NORMAL_WARNING_ALPHA;
-            drawWarningUnits(x + FEVER_NORMAL_WARNING_OFFSET_X, FIELD_TOP - CELL, warningUnits(player.normalDamage));
+            drawWarningUnits(x + FEVER_NORMAL_WARNING_OFFSET_X, FIELD_TOP - CELL, warningUnits(normalWarnings));
             context.restore();
         }
         // 기본 룰·연습·연속 피버의 실제 플레이 중 나타난 예고뿌요만 갤러리에 공개한다.
@@ -9677,6 +9737,8 @@
         assignReplayField(frame, group, previous, 'tk', player.allClearTicket ? 1 : 0);
         assignReplayField(frame, group, previous, 'ae', player.allClearEffectElapsed > 0 ? Math.round(recorder.elapsed + player.allClearEffectElapsed) : 0);
         assignReplayField(frame, group, previous, 'aa', roundReplayNumber(player.announcedAttack, 3));
+        // 재생용 에너지는 표시 전용이므로, 목적지 대신 이 시점에 분리한 일반 예고량을 저장한다.
+        assignReplayField(frame, group, previous, 'nw', roundReplayNumber(normalWarningPreview(player, game.players[group === 'a' ? 1 : 0]), 3));
         assignReplayField(frame, group, previous, 'wr', roundReplayNumber(player.warningReductionDelay, 3));
         assignReplayField(frame, group, previous, 'np', encodeReplayPairs(player.nextPairs.slice(0, getExposedNextPairCount())));
         assignReplayField(frame, group, previous, 'ef', player.effects
@@ -10034,6 +10096,7 @@
         if ('tk' in fields) player.allClearTicket = fields.tk === 1;
         if ('ae' in fields) playback.allClearEnd[index] = Number(fields.ae) || 0;
         if ('aa' in fields) player.announcedAttack = Number(fields.aa) || 0;
+        if ('nw' in fields) player.replayNormalWarningPreview = Math.max(0, Number(fields.nw) || 0);
         if ('wr' in fields) player.warningReductionDelay = Number(fields.wr) || 0;
         if ('np' in fields) player.nextPairs = decodeReplayPairs(fields.np);
         if ('ef' in fields) {
@@ -14785,7 +14848,7 @@
             normalBoard: getBoardGameStatus(player.normalBoard),
             // 외부 AI·학습기는 게임 모드와 무관하게 다음 두 쌍까지만 사용한다.
             nextPairs: player.nextPairs.slice(0, 2).map((pair) => [...pair]),
-            warningPuyos: warningUnits(warningAmount(player, opponent)).map((unit) => unit.type),
+            warningPuyos: warningUnits(currentFieldWarningAmount(player, opponent)).map((unit) => unit.type),
             fever: player.fever ? {
                 active: player.fever.active,
                 gauge: player.fever.gauge,
