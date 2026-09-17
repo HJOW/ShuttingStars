@@ -20,7 +20,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 73;
+    const BUILDNO = 82;
     /** 일반 텍스트 입력 대화상자의 최대 문자 수다. */
     const TEXT_DIALOG_DEFAULT_MAX_LENGTH = 2000;
     /** 리플레이·시뮬레이터 JSON처럼 붙여 넣는 긴 텍스트의 최대 문자 수다. */
@@ -173,7 +173,9 @@
     /** 모든 게임 모드에서 새로 지급한 뿌요 쌍의 회전축 생성 Y 좌표다.  @type {number} */
     const ACTIVE_PUYO_SPAWN_Y = 11.9;
     /** 게임 경과 시간에 따른 사용자 낙하 속도의 최대 배율이다. @type {number} */
-    const MAX_PLAYER_FALL_SPEED_MULTIPLIER = 256;
+    const MAX_PLAYER_FALL_SPEED_MULTIPLIER = 128;
+    /** 게임 경과 1분마다 더할 사용자 낙하 속도 배율이다. (여기에 1이 더하여 적용. 예를 들어 1 입력 시 매 1분마다 2배씩 증가) @type {number} */
+    const PLAYER_FALL_SPEED_INCREASE_PER_MINUTE = 1.0;
     /** 좌우 방향키를 홀드 입력으로 판정하기 전 대기 시간(ms)이다. @type {number} */
     const HORIZONTAL_HOLD_DELAY = 100;
     /** 좌우 방향키 홀드 중 반복 이동 간격(ms)이다. @type {number} */
@@ -371,6 +373,7 @@
             '초기화': 'Reset', '이 게임의 모든 설정을 초기화하시겠습니까?': 'Reset all settings for this game?', '초기화 중...': 'Resetting...',
             '게임 시작': 'Game Start', '구경': 'Watch', '모드': 'Mode', '규칙': 'Rules', '색상 수': 'Colors', '다음 대전까지 %1초': 'Next match in %1 sec', '기본 룰': 'Standard Rules', '피버 룰': 'FEVER Rules', '연속 피버': 'Continuous FEVER', '퍼즐뿌요': 'Puzzle Puyo', '퍼즐뿌요 스테이지': 'Puzzle Puyo Stage', '스테이지 %1': 'Stage %1', '권장 턴 수 %1': 'Recommended turns: %1', '현재 턴 %1': 'Turn %1', '현재 턴 %1 / %2': 'Turn %1 / %2', '%1 연쇄 해봐': 'Make a %1-chain!', '싹쓸이 해봐': 'Get an all clear!', '한 번에 %1개 뿌요를 터뜨려봐': 'Pop %1 puyos at once!', '한 번에 %1가지 색 뿌요를 터뜨려봐': 'Pop %1 colors at once!', '방해뿌요 %1개를 발생 시켜봐': 'Send %1 garbage puyos!', '스테이지 클리어': 'Stage Clear', '(출시 예정)': '(Coming soon)', '목표 연쇄': 'TARGET COMBO', '남은 시간': 'LEFT TIME', '연습': 'Practice', '선택': 'Select', '난이도': 'Difficulty', '적 선택': 'Opponent', 'ENTER 혹은 클릭하여 시작': 'Press ENTER or click to start',
             '3색': '3 Colors', '4색': '4 Colors', '5색': '5 Colors', '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '안드로말리우스': 'Andromalius', '단탈리온': 'Dantalion', '세레': 'Seere', '데카라비아': 'Decarabia', '벨리알': 'Belial', '암두시아스': 'Amdusias', '키마리스': 'Kimaris', '안드레알푸스': 'Andrealphus', '플라우로스': 'Flauros', '안드라스': 'Andras', '발라크': 'Valak', '자간': 'Zagan', '시작': 'Start', '이전': 'Back',
+            '바퓰라': 'Vapula', '오리아스': 'Oriax',
             '극한': 'Extreme',
             '일시정지': 'Paused', '재개': 'Resume', '다시하기': 'Restart', '종료': 'Exit', 'GitHub': 'GitHub',
             '승리': 'Victory', '패배': 'Defeat', '최종 점수 %1': 'Final score %1', '게임 시간 %1초': 'Game time: %1 sec', '%1연쇄': '%1 Chain',
@@ -403,6 +406,7 @@
             '초기화': '初期化', '이 게임의 모든 설정을 초기화하시겠습니까?': 'このゲームのすべての設定を初期化しますか？', '초기화 중...': '初期化中…',
             '게임 시작': 'ゲーム開始', '구경': '観戦', '모드': 'モード', '규칙': 'ルール', '색상 수': '色数', '다음 대전까지 %1초': '次の対戦まで%1秒', '기본 룰': '基本ルール', '피버 룰': 'FEVERルール', '연속 피버': '連続FEVER', '퍼즐뿌요': 'パズルぷよ', '퍼즐뿌요 스테이지': 'パズルぷよステージ', '스테이지 %1': 'ステージ %1', '권장 턴 수 %1': '推奨ターン数: %1', '현재 턴 %1': 'ターン %1', '현재 턴 %1 / %2': 'ターン %1 / %2', '%1 연쇄 해봐': '%1連鎖してみよう！', '싹쓸이 해봐': '全消ししてみよう！', '한 번에 %1개 뿌요를 터뜨려봐': '一度に%1個のぷよを消そう！', '한 번에 %1가지 색 뿌요를 터뜨려봐': '一度に%1色のぷよを消そう！', '방해뿌요 %1개를 발생 시켜봐': 'おじゃまぷよを%1個送ろう！', '스테이지 클리어': 'ステージクリア', '(출시 예정)': '(近日公開)', '목표 연쇄': '目標連鎖', '남은 시간': '残り時間', '연습': '練習', '선택': '選択', '난이도': '難易度', '적 선택': '対戦相手', 'ENTER 혹은 클릭하여 시작': 'ENTERキーまたはクリックで開始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '簡単', '보통': '普通', '어려움': '難しい', '안드로말리우스': 'アンドロマリウス', '단탈리온': 'ダンタリオン', '세레': 'セーレ', '데카라비아': 'デカラビア', '벨리알': 'ベリアル', '암두시아스': 'アムドゥシアス', '키마리스': 'キマリス', '안드레알푸스': 'アンドレアルフス', '플라우로스': 'フラウロス', '안드라스': 'アンドラス', '발라크': 'ヴァラク', '자간': 'ザガン', '시작': '開始', '이전': '戻る',
+            '바퓰라': 'ヴァプラ', '오리아스': 'オリアス',
             '극한': '極限',
             '일시정지': '一時停止', '재개': '再開', '다시하기': 'やり直す', '종료': '終了', 'GitHub': 'GitHub',
             '승리': '勝利', '패배': '敗北', '최종 점수 %1': '最終スコア %1', '게임 시간 %1초': 'ゲーム時間: %1秒', '%1연쇄': '%1連鎖',
@@ -436,6 +440,7 @@
             '게임 시작': '开始游戏', '구경': '观战', '모드': '模式', '규칙': '规则', '색상 수': '颜色数', '다음 대전까지 %1초': '距离下一场对战还有%1秒', '기본 룰': '基本规则', '피버 룰': 'FEVER规则', '연속 피버': '连续FEVER', '퍼즐뿌요': '益智魔法气泡', '퍼즐뿌요 스테이지': '益智魔法气泡关卡', '스테이지 %1': '关卡 %1', '권장 턴 수 %1': '推荐回合数: %1', '현재 턴 %1': '第 %1 回合', '현재 턴 %1 / %2': '第 %1 / %2 回合', '%1 연쇄 해봐': '试试 %1 连锁！', '싹쓸이 해봐': '试试全消！', '한 번에 %1개 뿌요를 터뜨려봐': '一次消除 %1 个魔法气泡！', '한 번에 %1가지 색 뿌요를 터뜨려봐': '一次消除 %1 种颜色的魔法气泡！', '방해뿌요 %1개를 발생 시켜봐': '发送 %1 个垃圾魔法气泡！', '스테이지 클리어': '关卡完成', '(출시 예정)': '(即将推出)', '목표 연쇄': '目标连锁', '남은 시간': '剩余时间', '연습': '练习', '선택': '选择', '난이도': '难度', '적 선택': '对手', 'ENTER 혹은 클릭하여 시작': '按 ENTER 键或点击开始',
             '3색': '3色', '4색': '4色', '5색': '5色', '쉬움': '简单', '보통': '普通', '어려움': '困难', '안드로말리우스': '安德罗马利乌斯', '단탈리온': '丹塔利昂', '세레': '西瑞', '데카라비亚': '德卡拉比亚', '벨리알': '贝利亚尔', '시작': '开始', '이전': '返回',
             '암두시아스': '阿姆杜西亚斯', '키마리스': '基马里斯', '안드레알푸스': '安德雷阿尔弗斯', '플라우로스': '弗劳洛斯', '안드라스': '安德拉斯', '발라크': '瓦拉克', '자간': '扎甘',
+            '바퓰라': '瓦布拉', '오리아스': '欧里亚斯',
             '극한': '极限',
             '일시정지': '暂停', '재개': '继续', '다시하기': '重新开始', '종료': '退出', 'GitHub': 'GitHub',
             '승리': '胜利', '패배': '失败', '최종 점수 %1': '最终得分 %1', '게임 시간 %1초': '游戏时间：%1秒', '%1연쇄': '%1连锁',
@@ -626,6 +631,8 @@
     let threeAvailable = false;
     /** 다음 게임 프레임 취소에 사용할 요청 식별자다. @type {number|null} */
     let animationFrameId = null;
+    /** 초기화 이후 requestAnimationFrame 콜백이 실행된 누적 횟수다. 4294967295를 넘으면 0으로 돌아간다. @type {number} */
+    let frameCounts = 0;
     /** 등록된 WebMCP 도구를 한 번에 해제하는 컨트롤러다. @type {AbortController|null} */
     let webMcpAbortController = null;
     /** 현재 실행 중인 게임 상태다. @type {object|null} */
@@ -869,6 +876,8 @@
      * @type {number}
      */
     const MAX_CATCH_UP_MS = 250;
+    /** puyow_render 이벤트의 누적 프레임 수 최댓값이다. 이 값을 넘으면 0으로 돌아간다. @type {number} */
+    const MAX_FRAME_COUNTS = 4294967295;
     /**
      * 사람이 조작하는 플레이어별 키보드·게임패드 방향 입력 상태다.
      * 0번은 1P, 1번은 "너랑 나랑"의 2P가 사용한다.
@@ -1011,7 +1020,7 @@
     /** 구경 해금 및 대전 출전 승리를 확인할 난이도 키다. @type {('normal'|'hard'|'extreme')[]} */
     const WATCH_ELIGIBLE_DIFFICULTY_KEYS = ['normal', 'hard', 'extreme'];
     /** 빈 필드에서 첫 배치를 무작위로 정할 기본 제공 적 종류다. @type {Set<string>} */
-    const RANDOM_EMPTY_FIELD_ENEMY_TYPES = new Set(['Decarabia', 'Belial', 'Amdusias', 'Kimaris', 'Andrealphus']);
+    const RANDOM_EMPTY_FIELD_ENEMY_TYPES = new Set(['Decarabia', 'Belial', 'Amdusias', 'Kimaris', 'Andrealphus', 'Flauros', 'Andras']);
     /** getClassType()별로 외부에서 지정한 적 사운드 풀이다. @type {Map<string, SoundPool>} */
     const enemySoundPools = new Map();
     /** 메인 메뉴 게임 규칙 선택지의 버튼 배경색이다. */
@@ -5624,7 +5633,7 @@
     /** 게임 경과 시간에 따른 조작 뿌요 자연 낙하 속도 배율을 반환한다. @param {number} elapsed 게임 경과 시간(ms) @returns {number} 자연 낙하 속도 배율 */
     function getPlayerFallSpeedMultiplier(elapsed) {
         const elapsedMinutes = Math.max(0, Math.floor(elapsed / 60000));
-        return Math.min(MAX_PLAYER_FALL_SPEED_MULTIPLIER, 1 + elapsedMinutes * 0.2);
+        return Math.min(MAX_PLAYER_FALL_SPEED_MULTIPLIER, 1 + elapsedMinutes * PLAYER_FALL_SPEED_INCREASE_PER_MINUTE);
     }
 
     /** 조작 중인 뿌요 쌍의 한 칸 낙하 간격을 반환한다. 피버의 1.5배는 보드 중력 애니메이션에만 적용하며, 새로 지급된 뿌요의 자연 낙하에는 적용하지 않는다. 빠른 하강 전의 AI 자연 낙하는 플레이어와 같은 속도를 쓴다. @param {PlayerState} player 대상 플레이어 @param {boolean} fastDown 빠른 하강 여부 @returns {number} 한 칸 낙하 간격(ms) */
@@ -6231,8 +6240,9 @@
             }
             return score;
         };
-        const getPlacementScore = (combo, attack, allClear, targetCombo, board, rules) => {
-            const boardScore = getBoardScore(board, rules);
+        // precomputedBoardScore는 advanced 탐색이 발화점 점수를 더한 값을 넘길 때만 쓴다. 기본 탐색은 생략한다.
+        const getPlacementScore = (combo, attack, allClear, targetCombo, board, rules, precomputedBoardScore = null) => {
+            const boardScore = precomputedBoardScore === null ? getBoardScore(board, rules) : precomputedBoardScore;
             if (allClear) return 2000000 + combo * 10000 + attack * 1000 + boardScore;
             if (combo >= targetCombo) return 1000000 + combo * 10000 + attack * 1000 + boardScore;
             return attack * 200 + boardScore - (combo > 0 ? (targetCombo - combo + 1) * 25000 : 0);
@@ -6320,16 +6330,662 @@
             return best;
         };
 
+        /*
+         * ------------------------------------------------------------------------------------------
+         * advanced 탐색 모드 (BUILDNO 76)
+         * 위의 기본 탐색은 외부 적 API 계약을 위해 그대로 두고, `snapshot.searchMode === 'advanced'`일 때만 아래를 쓴다.
+         * 1) 문자열 2차원 배열 대신 셀 코드 1차원 Int8Array와 열 높이 배열을 쓰고, 좌표 문자열 Set·콜백·
+         *    단계마다 보드를 새로 만드는 비용을 없앤다. 한 배치의 연쇄 수·ATTACK·최종 보드는 기본 탐색의
+         *    resolvePlacement와 같아야 하며, 'resolvePlacements' 메시지로 두 결과를 비교할 수 있다.
+         * 2) 현재 수의 후보는 모두 읽고, 그 아래 수부터는 한 수 평가가 좋은 beamWidth개만 더 깊이 읽는다.
+         *    같은 색 쌍의 180도 회전은 같은 보드를 만들므로 첫 수 아래에서는 건너뛴다.
+         * 3) 인접 점수에 "지금 한두 개를 떨어뜨리면 몇 연쇄가 터지는가"(발화점 탐색)를 더해 연쇄 기반을 평가한다.
+         * 4) 메인 스코프가 예측한 방해뿌요 도착 수(realtime.garbageMoveIndex)까지의 공격만 상쇄로 보고,
+         *    그 수 뒤에는 남은 방해뿌요를 보드에 올린 채로 이어서 읽는다.
+         * ------------------------------------------------------------------------------------------
+         */
+        const EMPTY_CODE = 0;
+        const GARBAGE_CODE = colors.length + 1;
+        const HARD_GARBAGE_CODE = colors.length + 2;
+        /** 색·방해뿌요가 아닌 알 수 없는 칸이다. 폭발로 지워지지 않는 벽으로 취급한다. */
+        const BLOCK_CODE = colors.length + 3;
+        const cellCount = columns * rows;
+        const rotationOffsets = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+        const spawnFloor = Math.floor(spawnY);
+        /** 발화점 연쇄 수의 제곱에 곱하는 가중치다. 7연쇄 기반이 인접 점수보다 충분히 크게 평가되도록 정했다. */
+        const POTENTIAL_CHAIN_WEIGHT = 400;
+        /** 발화에 뿌요 두 개가 필요한 기반을 한 개로 되는 기반보다 낮게 보는 감점이다. */
+        const POTENTIAL_EXTRA_PUYO_PENALTY = 300;
+        /** 다음 수를 어디에 두어도 패배하는 경로의 감점이다. */
+        const DEAD_END_PENALTY = 500000;
+        /** 피버 룰 점등 우선 모드에서 상쇄로 전등 하나를 켤 때의 점수다. 인접·발화점 점수보다 충분히 커야 한다. */
+        const FEVER_LAMP_SCORE = 100000;
+        /** 피버 룰 점등 우선 모드에서 터뜨린 색 뿌요 하나당 감점이다. 다음 턴에도 점등할 재료를 남기도록 한다. */
+        const FEVER_LAMP_POP_PENALTY = 2500;
+        /** 상쇄로 전등이 모두 켜져 피버에 들어가는 경로의 가산점이다. 그 뒤는 피버 패턴이 무작위라 읽지 않는다. */
+        const FEVER_ENTRY_SCORE = 400000;
+        const floodStamp = new Int32Array(cellCount);
+        const removeStamp = new Int32Array(cellCount);
+        const hardHitStamp = new Int32Array(cellCount);
+        const hardHitCount = new Int8Array(cellCount);
+        const hardHitCells = new Int16Array(cellCount);
+        const floodStack = new Int16Array(cellCount);
+        const explodingCells = new Int16Array(cellCount);
+        const colorExplodeCounts = new Int16Array(colors.length + 1);
+        const potentialCells = new Int8Array(cellCount);
+        const potentialHeights = new Int8Array(columns);
+        let stampValue = 0;
+        const nextStamp = () => {
+            stampValue += 1;
+            if (stampValue > 2000000000) {
+                floodStamp.fill(0);
+                removeStamp.fill(0);
+                hardHitStamp.fill(0);
+                stampValue = 1;
+            }
+            return stampValue;
+        };
+        const encodeCell = (cell) => {
+            if (cell === null || cell === undefined) return EMPTY_CODE;
+            const colorIndex = colors.indexOf(cell);
+            if (colorIndex >= 0) return colorIndex + 1;
+            if (cell === 'garbage') return GARBAGE_CODE;
+            if (cell === hardGarbage) return HARD_GARBAGE_CODE;
+            return BLOCK_CODE;
+        };
+        const decodeCell = (code) => {
+            if (code === EMPTY_CODE) return null;
+            if (code <= colors.length) return colors[code - 1];
+            if (code === GARBAGE_CODE) return 'garbage';
+            if (code === HARD_GARBAGE_CODE) return hardGarbage;
+            return 'block';
+        };
+        /** 문자열 보드를 셀 코드와 열 높이로 바꾼다. 게임 보드는 조작 단계에서 항상 중력이 끝난 상태이므로 열을 아래로 모아 담는다. */
+        const encodeFastBoard = (board) => {
+            const cells = new Int8Array(cellCount);
+            const heights = new Int8Array(columns);
+            for (let x = 0; x < columns; x += 1) {
+                let height = 0;
+                for (let y = 0; y < rows; y += 1) {
+                    const code = encodeCell(board[y][x]);
+                    if (code === EMPTY_CODE) continue;
+                    cells[height * columns + x] = code;
+                    height += 1;
+                }
+                heights[x] = height;
+            }
+            return { cells, heights };
+        };
+        const decodeFastBoard = (cells) => Array.from({ length: rows }, (_, y) => Array.from({ length: columns }, (__, x) => decodeCell(cells[y * columns + x])));
+        /** 기본 탐색 findLandingPlacement와 같은 조건으로 착지 시 회전축 뿌요의 Y를 구한다. 놓을 수 없으면 -1이다. */
+        const findFastLanding = (heights, x, rotation) => {
+            const offset = rotationOffsets[rotation];
+            const otherX = x + offset[0];
+            const otherSpawnY = spawnFloor + offset[1];
+            if (x < 0 || x >= columns || otherX < 0 || otherX >= columns || spawnFloor >= rows || otherSpawnY < 0 || otherSpawnY >= rows) return -1;
+            // 중력이 끝난 열은 높이 위가 모두 비어 있으므로, 생성 위치 두 칸이 비었는지는 높이 비교로 충분하다.
+            if (heights[x] > spawnFloor || heights[otherX] > otherSpawnY) return -1;
+            return Math.max(heights[x], heights[otherX] - offset[1]);
+        };
+        /** 착지한 쌍을 중력까지 적용한 위치에 놓는다. 가로 쌍은 각 열 높이에, 세로 쌍은 한 열에 차례로 쌓는다. */
+        const placeFastPair = (cells, heights, code0, code1, x, rotation) => {
+            const offset = rotationOffsets[rotation];
+            if (offset[0] === 0) {
+                const height = heights[x];
+                cells[height * columns + x] = offset[1] > 0 ? code0 : code1;
+                cells[(height + 1) * columns + x] = offset[1] > 0 ? code1 : code0;
+                heights[x] = height + 2;
+                return;
+            }
+            const otherX = x + offset[0];
+            cells[heights[x] * columns + x] = code0;
+            heights[x] += 1;
+            cells[heights[otherX] * columns + otherX] = code1;
+            heights[otherX] += 1;
+        };
+        /**
+         * 폭발·방해뿌요 제거·중력을 끝까지 반복한다. cells와 heights를 직접 바꾸고 연쇄 수와 ATTACK을 반환한다.
+         * record를 넘기면 연쇄 단계별 ATTACK(links)과 터진 색 뿌요 수(popped)를 함께 기록한다. 피버 룰 상쇄·점등 계산에 쓴다.
+         */
+        const resolveFastChain = (cells, heights, rules, record = null) => {
+            let combo = 0;
+            let attack = 0;
+            while (true) {
+                let scanRows = 0;
+                for (let x = 0; x < columns; x += 1) if (heights[x] > scanRows) scanRows = heights[x];
+                if (scanRows > visibleRows) scanRows = visibleRows;
+                const visit = nextStamp();
+                let explodingCount = 0;
+                colorExplodeCounts.fill(0);
+                for (let y = 0; y < scanRows; y += 1) {
+                    for (let x = 0; x < columns; x += 1) {
+                        const start = y * columns + x;
+                        const color = cells[start];
+                        if (color < 1 || color > colors.length || floodStamp[start] === visit) continue;
+                        floodStamp[start] = visit;
+                        floodStack[0] = start;
+                        let stackSize = 1;
+                        let size = 0;
+                        while (stackSize) {
+                            stackSize -= 1;
+                            const current = floodStack[stackSize];
+                            explodingCells[explodingCount + size] = current;
+                            size += 1;
+                            const currentX = current % columns;
+                            const currentY = (current - currentX) / columns;
+                            if (currentX > 0 && floodStamp[current - 1] !== visit && cells[current - 1] === color) { floodStamp[current - 1] = visit; floodStack[stackSize] = current - 1; stackSize += 1; }
+                            if (currentX < columns - 1 && floodStamp[current + 1] !== visit && cells[current + 1] === color) { floodStamp[current + 1] = visit; floodStack[stackSize] = current + 1; stackSize += 1; }
+                            if (currentY > 0 && floodStamp[current - columns] !== visit && cells[current - columns] === color) { floodStamp[current - columns] = visit; floodStack[stackSize] = current - columns; stackSize += 1; }
+                            if (currentY < visibleRows - 1 && floodStamp[current + columns] !== visit && cells[current + columns] === color) { floodStamp[current + columns] = visit; floodStack[stackSize] = current + columns; stackSize += 1; }
+                        }
+                        // 네 개 미만 그룹은 방문 표시만 남기고, 모은 칸은 다음 그룹이 덮어쓴다.
+                        if (size >= 4) {
+                            explodingCount += size;
+                            colorExplodeCounts[color] += size;
+                        }
+                    }
+                }
+                if (!explodingCount) return { combo, attack };
+                const removal = nextStamp();
+                let hardCount = 0;
+                for (let index = 0; index < explodingCount; index += 1) removeStamp[explodingCells[index]] = removal;
+                for (let index = 0; index < explodingCount; index += 1) {
+                    const cell = explodingCells[index];
+                    const cellX = cell % columns;
+                    const cellY = (cell - cellX) / columns;
+                    for (let direction = 0; direction < 4; direction += 1) {
+                        const neighborX = cellX + (direction === 0 ? 1 : direction === 1 ? -1 : 0);
+                        const neighborY = cellY + (direction === 2 ? 1 : direction === 3 ? -1 : 0);
+                        if (neighborX < 0 || neighborX >= columns || neighborY < 0 || neighborY >= rows) continue;
+                        const neighbor = neighborY * columns + neighborX;
+                        const code = cells[neighbor];
+                        if (code === GARBAGE_CODE) removeStamp[neighbor] = removal;
+                        else if (code === HARD_GARBAGE_CODE) {
+                            if (hardHitStamp[neighbor] !== removal) {
+                                hardHitStamp[neighbor] = removal;
+                                hardHitCount[neighbor] = 0;
+                                hardHitCells[hardCount] = neighbor;
+                                hardCount += 1;
+                            }
+                            hardHitCount[neighbor] += 1;
+                        }
+                    }
+                }
+                // 딱딱뿌요는 인접 폭발이 두 번 이상이면 파괴되고, 한 번이면 일반 방해뿌요로 약해진다.
+                let brokenHardGarbageCount = 0;
+                for (let index = 0; index < hardCount; index += 1) {
+                    const cell = hardHitCells[index];
+                    if (hardHitCount[cell] >= 2) {
+                        removeStamp[cell] = removal;
+                        brokenHardGarbageCount += 1;
+                    } else cells[cell] = GARBAGE_CODE;
+                }
+                combo += 1;
+                let largestColorCount = 0;
+                let colorCount = 0;
+                for (let color = 1; color <= colors.length; color += 1) {
+                    const count = colorExplodeCounts[color];
+                    if (!count) continue;
+                    colorCount += 1;
+                    if (count > largestColorCount) largestColorCount = count;
+                }
+                // 기본 탐색 calculateAttack과 같은 순서로 계산해 부동소수점 결과까지 맞춘다.
+                const bonus = Math.max(1, getChainBonus(combo) + getConnectionBonus(largestColorCount) + getColorBonus(colorCount));
+                const point = explodingCount * (brokenHardGarbageCount * hardGarbageScoreMultiplier + 1) * bonus * 10;
+                const linkAttack = point / rules.marginRate * rules.timeProgressMultiplier;
+                attack += linkAttack;
+                if (record) {
+                    record.links.push(linkAttack);
+                    record.popped += explodingCount;
+                }
+                for (let x = 0; x < columns; x += 1) {
+                    const height = heights[x];
+                    let write = 0;
+                    for (let y = 0; y < height; y += 1) {
+                        const index = y * columns + x;
+                        if (removeStamp[index] === removal) continue;
+                        if (write !== y) cells[write * columns + x] = cells[index];
+                        write += 1;
+                    }
+                    for (let y = write; y < height; y += 1) cells[y * columns + x] = EMPTY_CODE;
+                    heights[x] = write;
+                }
+            }
+        };
+        /** 한 칸에서 시작한 같은 색 연결 수를 네 개까지만 센다. 발화점 후보를 빠르게 거르는 데 쓴다. */
+        const measureConnectedAtLeastFour = (cells, start, color) => {
+            const visit = nextStamp();
+            floodStamp[start] = visit;
+            floodStack[0] = start;
+            let stackSize = 1;
+            let size = 0;
+            while (stackSize) {
+                stackSize -= 1;
+                const current = floodStack[stackSize];
+                size += 1;
+                if (size >= 4) return true;
+                const currentX = current % columns;
+                const currentY = (current - currentX) / columns;
+                if (currentX > 0 && floodStamp[current - 1] !== visit && cells[current - 1] === color) { floodStamp[current - 1] = visit; floodStack[stackSize] = current - 1; stackSize += 1; }
+                if (currentX < columns - 1 && floodStamp[current + 1] !== visit && cells[current + 1] === color) { floodStamp[current + 1] = visit; floodStack[stackSize] = current + 1; stackSize += 1; }
+                if (currentY > 0 && floodStamp[current - columns] !== visit && cells[current - columns] === color) { floodStamp[current - columns] = visit; floodStack[stackSize] = current - columns; stackSize += 1; }
+                if (currentY < visibleRows - 1 && floodStamp[current + columns] !== visit && cells[current + columns] === color) { floodStamp[current + columns] = visit; floodStack[stackSize] = current + columns; stackSize += 1; }
+            }
+            return false;
+        };
+        /**
+         * 발화점 탐색: 각 열 맨 위에 옆·아래와 같은 색 뿌요를 한 개(안 되면 두 개) 떨어뜨렸을 때 터지는 최대 연쇄를 구한다.
+         * 이웃에 같은 색이 없으면 새 그룹이 네 개가 될 수 없으므로 그 색은 시도하지 않는다.
+         */
+        const findChainPotential = (cells, heights, rules) => {
+            let bestCombo = 0;
+            let bestAttack = 0;
+            let bestNeeded = 0;
+            for (let x = 0; x < columns; x += 1) {
+                const y = heights[x];
+                if (y >= visibleRows) continue;
+                const index = y * columns + x;
+                let colorMask = 0;
+                if (x > 0 && heights[x - 1] > y) colorMask |= 1 << cells[index - 1];
+                if (x < columns - 1 && heights[x + 1] > y) colorMask |= 1 << cells[index + 1];
+                if (y > 0) colorMask |= 1 << cells[index - columns];
+                for (let color = 1; color <= colors.length; color += 1) {
+                    if (!(colorMask & (1 << color))) continue;
+                    for (let needed = 1; needed <= 2; needed += 1) {
+                        if (y + needed > visibleRows) break;
+                        cells[index] = color;
+                        if (needed === 2) cells[index + columns] = color;
+                        let result = null;
+                        if (measureConnectedAtLeastFour(cells, index, color)) {
+                            potentialCells.set(cells);
+                            potentialHeights.set(heights);
+                            potentialHeights[x] = y + needed;
+                            result = resolveFastChain(potentialCells, potentialHeights, rules);
+                        }
+                        cells[index] = EMPTY_CODE;
+                        if (needed === 2) cells[index + columns] = EMPTY_CODE;
+                        if (!result) continue;
+                        if (result.combo > bestCombo
+                            || (result.combo === bestCombo && needed < bestNeeded)
+                            || (result.combo === bestCombo && needed === bestNeeded && result.attack > bestAttack)) {
+                            bestCombo = result.combo;
+                            bestAttack = result.attack;
+                            bestNeeded = needed;
+                        }
+                        break;
+                    }
+                }
+            }
+            return { combo: bestCombo, attack: bestAttack, needed: bestNeeded };
+        };
+        /** 기본 탐색 getBoardScore와 같은 인접·높이 점수다. */
+        const getFastBoardScore = (cells, heights, rules) => {
+            let score = 0;
+            for (let x = 0; x < columns; x += 1) {
+                for (let y = 0; y < heights[x]; y += 1) {
+                    const index = y * columns + x;
+                    const code = cells[index];
+                    if (code < 1 || code > colors.length) continue;
+                    score -= y * 4;
+                    if (x < columns - 1 && cells[index + 1] === code) score += 80;
+                    if (y < rows - 1 && cells[index + columns] === code) score += 55;
+                    if (y >= 8 && (x === 2 || (rules.usesSecondDefeatCell && x === 3))) score -= 180;
+                }
+            }
+            return score;
+        };
+        const isFastDefeat = (heights, rules) => heights[2] > 11 || (rules.usesSecondDefeatCell && heights[3] > 11);
+        /** 도착한 방해뿌요 중 한 줄을 채우는 몫만 각 열 위에 올린다. 나머지 몇 개의 무작위 열은 알 수 없으므로 올리지 않는다. */
+        const addFastGarbageRows = (cells, heights, amount) => {
+            const rowCount = Math.floor(Math.min(30, amount) / columns);
+            for (let x = 0; x < columns; x += 1) {
+                for (let row = 0; row < rowCount && heights[x] < rows; row += 1) {
+                    cells[heights[x] * columns + x] = GARBAGE_CODE;
+                    heights[x] += 1;
+                }
+            }
+        };
+        /**
+         * 피버 룰(일반 상태) 한 배치의 상쇄·점등·역공을 게임과 같은 순서로 계산하고 events의 남은 양을 줄인다.
+         * sendAttackEnergy()처럼 단계마다 누적 ATTACK의 정수 부분을 보내며, 상쇄할 예고가 있으면 최소 공격 1을 보장한다.
+         * 상쇄가 일어난 단계마다 전등이 하나 켜진다. 아직 상대 연쇄가 시작되지 않은 예고(availableMove가 더 큰 것)는 상쇄할 수 없다.
+         */
+        const applyFeverOffsets = (events, moveIndex, links, startAttack) => {
+            let carried = startAttack;
+            let lamps = 0;
+            let cancelled = 0;
+            for (let linkIndex = 0; linkIndex < links.length; linkIndex += 1) {
+                carried += links[linkIndex];
+                let pool = 0;
+                for (let index = 0; index < events.length; index += 1) if (events[index].availableMove <= moveIndex) pool += events[index].remaining;
+                if (pool >= 1 && Math.floor(carried) < 1) carried = 1;
+                const sent = Math.floor(carried);
+                if (sent < 1 || pool < 1) continue;
+                let cancel = Math.min(sent, pool);
+                carried -= cancel;
+                cancelled += cancel;
+                lamps += 1;
+                // 먼저 떨어질 예고부터 상쇄한다. events는 landMove 오름차순이다.
+                for (let index = 0; index < events.length && cancel > 0; index += 1) {
+                    const event = events[index];
+                    if (event.availableMove > moveIndex || event.remaining <= 0) continue;
+                    const used = Math.min(event.remaining, cancel);
+                    event.remaining -= used;
+                    cancel -= used;
+                }
+            }
+            return { lamps, cancelled, overflow: links.length ? Math.floor(carried) : 0 };
+        };
+        const countAvailableFeverIncoming = (events, moveIndex) => events.reduce((sum, event) => sum + (event.availableMove <= moveIndex ? event.remaining : 0), 0);
+        /**
+         * 피버 룰 일반 상태에서 상쇄할 예고가 있을 때 이번 수(1턴)의 우선순위를 정한다.
+         * 1) 목표 연쇄를 쏠 수 있으면 그 후보만, 2) 다 받아치고 방해뿌요를 하나라도 넘길 수 있으면 그 후보만 읽는다.
+         * 3) 그 밖에는 점등 우선이다. 단 이번 수 최대 공격이 받을 양보다 작으면(다 상쇄 불가) 작은 연쇄 점등 설정을 따르고,
+         *    설정이 꺼져 있으면 목표 연쇄를 계속 쌓는다.
+         */
+        const decideFeverSearchMode = (context) => {
+            const model = context.feverModel;
+            const pool = countAvailableFeverIncoming(model.events, 0);
+            if (pool < 1) {
+                model.mode = 'none';
+                return;
+            }
+            const targetPlacements = new Set();
+            const counterPlacements = new Set();
+            let maxSent = 0;
+            for (let rotation = 0; rotation < 4; rotation += 1) {
+                for (let x = 0; x < columns; x += 1) {
+                    const key = x * 4 + rotation;
+                    if (context.allowedPlacements && !context.allowedPlacements.has(key)) continue;
+                    const baseY = findFastLanding(context.rootHeights, x, rotation);
+                    if (baseY < 0) continue;
+                    const cells = context.rootCells.slice();
+                    const heights = context.rootHeights.slice();
+                    placeFastPair(cells, heights, context.activeCodes[0], context.activeCodes[1], x, rotation);
+                    const record = { links: [], popped: 0 };
+                    const resolved = resolveFastChain(cells, heights, context.rules, record);
+                    if (isFastDefeat(heights, context.rules)) continue;
+                    const events = model.events.map((event) => ({ ...event }));
+                    const offset = applyFeverOffsets(events, 0, record.links, context.selfAttack);
+                    maxSent = Math.max(maxSent, offset.cancelled + offset.overflow);
+                    if (resolved.combo >= context.targetCombo) targetPlacements.add(key);
+                    if (resolved.combo > 0 && countAvailableFeverIncoming(events, 0) < 1 && offset.overflow >= 1) counterPlacements.add(key);
+                }
+            }
+            if (targetPlacements.size) {
+                model.mode = 'target';
+                model.rootPlacements = targetPlacements;
+            } else if (counterPlacements.size) {
+                model.mode = 'counter';
+                model.rootPlacements = counterPlacements;
+            } else if (maxSent < pool) {
+                model.mode = model.lampChains ? 'lamp' : 'build';
+            } else {
+                model.mode = 'lamp';
+            }
+        };
+        const isBetterAdvancedCandidate = (candidate, best, urgent) => {
+            if (!best) return true;
+            if (urgent && candidate.unresolvedDanger !== best.unresolvedDanger) return !candidate.unresolvedDanger;
+            if (urgent && candidate.unresolvedDanger && candidate.remainingIncoming !== best.remainingIncoming) return candidate.remainingIncoming < best.remainingIncoming;
+            if (candidate.score !== best.score) return candidate.score > best.score;
+            if (candidate.maxCombo !== best.maxCombo) return candidate.maxCombo > best.maxCombo;
+            return candidate.x > best.x;
+        };
+        /** 요청 하나에서 깊이마다 다시 쓰는 advanced 탐색 입력을 만든다. 사용할 수 없는 입력이면 null이다. */
+        const createAdvancedContext = (snapshot) => {
+            const selfState = snapshot.self;
+            const active = selfState?.active;
+            if (!isUsableBoard(selfState.board) || !active || !Array.isArray(active.colors) || active.colors.length !== 2) return null;
+            const encodePair = (pair) => (Array.isArray(pair) && pair.length === 2 && colors.includes(pair[0]) && colors.includes(pair[1])
+                ? [encodeCell(pair[0]), encodeCell(pair[1])]
+                : null);
+            const activeCodes = encodePair(active.colors);
+            if (!activeCodes) return null;
+            const root = encodeFastBoard(selfState.board);
+            const realtime = snapshot.realtime && typeof snapshot.realtime === 'object' ? snapshot.realtime : null;
+            const incoming = Math.max(0, Math.floor(Number(realtime ? realtime.incoming : snapshot.incomingGarbage) || 0));
+            const realtimeMoveIndex = Math.floor(Number(realtime?.garbageMoveIndex));
+            const threshold = Math.max(1, Math.floor(Number(snapshot.urgentGarbageThreshold) || 1));
+            const allowedPlacements = Array.isArray(snapshot.allowedPlacements)
+                ? new Set(snapshot.allowedPlacements.map((placement) => Math.floor(Number(placement?.x)) * 4 + Math.floor(Number(placement?.rotation))))
+                : null;
+            // 피버 룰 일반 상태는 예고 도착 순번 하나 대신 예고 묶음(events)으로 상쇄·점등·낙하를 따로 계산한다.
+            const feverRealtime = snapshot.rules?.feverRule && realtime?.fever && !selfState.fever?.active ? realtime.fever : null;
+            const feverModel = feverRealtime ? {
+                gauge: Math.max(0, Math.floor(Number(feverRealtime.gauge) || 0)),
+                gaugeMax: Math.max(1, Math.floor(Number(feverRealtime.gaugeMax) || 7)),
+                lampChains: feverRealtime.lampChains !== false,
+                events: (Array.isArray(feverRealtime.events) ? feverRealtime.events : [])
+                    .map((event) => ({
+                        remaining: Math.max(0, Math.floor(Number(event?.amount) || 0)),
+                        availableMove: Math.max(0, Math.floor(Number(event?.availableMove) || 0)),
+                        landMove: Math.max(0, Math.floor(Number(event?.landMove) || 0))
+                    }))
+                    .filter((event) => event.remaining > 0)
+                    .sort((left, right) => left.landMove - right.landMove),
+                mode: 'none',
+                rootPlacements: null
+            } : null;
+            const context = {
+                rules: snapshot.rules,
+                targetCombo: snapshot.targetCombo,
+                rootCells: root.cells,
+                rootHeights: root.heights,
+                activeCodes,
+                nextPairCodes: Array.isArray(selfState.nextPairs) ? selfState.nextPairs.map(encodePair) : [],
+                beamWidth: Math.max(1, Math.floor(Number(snapshot.beamWidth) || 5)),
+                incoming,
+                threshold,
+                urgent: incoming >= threshold,
+                selfAttack: Math.max(0, Number(selfState.attack) || 0),
+                // 실시간 예측이 없으면 기본 탐색처럼 이번 수 직후에 방해뿌요가 온다고 본다.
+                garbageMoveIndex: incoming < 1 ? Infinity : (realtimeMoveIndex >= 0 ? realtimeMoveIndex : 0),
+                dangerColumns: snapshot.rules.usesSecondDefeatCell ? [2, 3] : [2],
+                allowedPlacements,
+                feverModel
+            };
+            if (feverModel) {
+                // 피버 룰은 위험 우선 비교 대신 우선순위 모드와 점수로 고른다. 기본 룰의 도착 순번 계산도 쓰지 않는다.
+                context.incoming = 0;
+                context.urgent = false;
+                context.garbageMoveIndex = Infinity;
+                decideFeverSearchMode(context);
+            }
+            return context;
+        };
+        /** 현재 수(moveIndex 0)는 모든 후보를, 그 아래 수는 beamWidth개 후보만 재귀적으로 읽어 최선 경로를 반환한다. */
+        const searchAdvanced = (context, cells, heights, moveIndex, remainingTurns, cumulativeAttack, settledRemaining, state, feverPath = null) => {
+            if (expired(state)) return null;
+            const pair = moveIndex === 0 ? context.activeCodes : context.nextPairCodes[moveIndex - 1];
+            if (!pair) return null;
+            const code0 = pair[0];
+            const code1 = pair[1];
+            const skipMirroredRotation = moveIndex > 0 && code0 === code1;
+            const children = [];
+            for (let rotation = 0; rotation < 4; rotation += 1) {
+                if (skipMirroredRotation && rotation >= 2) continue;
+                for (let x = 0; x < columns; x += 1) {
+                    if (moveIndex === 0 && context.allowedPlacements && !context.allowedPlacements.has(x * 4 + rotation)) continue;
+                    if (moveIndex === 0 && context.feverModel?.rootPlacements && !context.feverModel.rootPlacements.has(x * 4 + rotation)) continue;
+                    const baseY = findFastLanding(heights, x, rotation);
+                    if (baseY < 0) continue;
+                    const childCells = cells.slice();
+                    const childHeights = heights.slice();
+                    placeFastPair(childCells, childHeights, code0, code1, x, rotation);
+                    const record = context.feverModel ? { links: [], popped: 0 } : null;
+                    const resolved = resolveFastChain(childCells, childHeights, context.rules, record);
+                    if (isFastDefeat(childHeights, context.rules)) continue;
+                    let childFever = null;
+                    if (context.feverModel) {
+                        const model = context.feverModel;
+                        const events = (feverPath || model).events.map((event) => ({ ...event }));
+                        const offset = applyFeverOffsets(events, moveIndex, record.links, moveIndex === 0 ? context.selfAttack : 0);
+                        const gauge = Math.min(model.gaugeMax, (feverPath ? feverPath.gauge : model.gauge) + offset.lamps);
+                        const entered = gauge >= model.gaugeMax;
+                        // 피버 룰은 터지지 않은 배치 뒤에만 도착한 예고가 떨어진다(터진 배치는 그 턴 낙하를 건너뛴다).
+                        if (resolved.combo === 0 && !entered) {
+                            let landed = 0;
+                            for (let index = 0; index < events.length; index += 1) if (events[index].landMove <= moveIndex) landed += events[index].remaining;
+                            const dropAmount = Math.min(30, landed);
+                            if (dropAmount > 0) {
+                                const extraPerColumn = Math.ceil(dropAmount / columns);
+                                if (context.dangerColumns.some((column) => childHeights[column] + extraPerColumn > 11)) continue;
+                                addFastGarbageRows(childCells, childHeights, dropAmount);
+                                if (isFastDefeat(childHeights, context.rules)) continue;
+                                let drop = dropAmount;
+                                for (let index = 0; index < events.length && drop > 0; index += 1) {
+                                    if (events[index].landMove > moveIndex) continue;
+                                    const used = Math.min(events[index].remaining, drop);
+                                    events[index].remaining -= used;
+                                    drop -= used;
+                                }
+                            }
+                        }
+                        childFever = { events, gauge, entered, lamps: offset.lamps, overflow: offset.overflow, popped: record.popped };
+                    }
+                    let allClear = true;
+                    for (let column = 0; column < columns; column += 1) if (childHeights[column]) { allClear = false; break; }
+                    let childCumulative = cumulativeAttack;
+                    let childSettled = settledRemaining;
+                    if (!context.feverModel && moveIndex <= context.garbageMoveIndex) childCumulative += resolved.attack;
+                    if (moveIndex === context.garbageMoveIndex) {
+                        // 이 수를 두고 나면 방해뿌요가 떨어진다. 여기까지 보낸 공격만 상쇄로 인정한다.
+                        childSettled = Math.max(0, context.incoming - Math.floor(context.selfAttack + childCumulative));
+                        if (childSettled > 0) {
+                            const extraPerColumn = Math.ceil(Math.min(30, childSettled) / columns);
+                            if (resolved.combo === 0 && context.dangerColumns.some((column) => childHeights[column] + extraPerColumn > 11)) continue;
+                            addFastGarbageRows(childCells, childHeights, childSettled);
+                            if (isFastDefeat(childHeights, context.rules)) continue;
+                        }
+                    }
+                    if (expired(state)) return null;
+                    const potential = findChainPotential(childCells, childHeights, context.rules);
+                    const boardScore = getFastBoardScore(childCells, childHeights, context.rules)
+                        + (potential.combo >= 2 ? potential.combo * potential.combo * POTENTIAL_CHAIN_WEIGHT - (potential.needed - 1) * POTENTIAL_EXTRA_PUYO_PENALTY : 0);
+                    // 방해뿌요가 이 경로 안에서 아직 도착하지 않았다면, 지금 발화점으로 낼 수 있는 공격까지 상쇄 가능량으로 본다.
+                    const remainingIncoming = childSettled !== null
+                        ? childSettled
+                        : (context.incoming < 1 ? 0 : Math.max(0, context.incoming - Math.floor(context.selfAttack + childCumulative + potential.attack)));
+                    let score = getPlacementScore(resolved.combo, resolved.attack, allClear, context.targetCombo, null, context.rules, boardScore);
+                    if (childFever) {
+                        // 점등 우선 모드에서는 목표 연쇄 가산·조기 연쇄 감점 대신 전등 수와 터뜨린 색 뿌요 수로 평가한다.
+                        // 상쇄 없이 터뜨린 연쇄는 점등에 도움이 되지 않으므로 기존 점수(조기 연쇄 감점)를 그대로 쓴다.
+                        if (context.feverModel.mode === 'lamp' && !(resolved.combo > 0 && childFever.lamps === 0)) {
+                            score = boardScore + childFever.lamps * FEVER_LAMP_SCORE - childFever.popped * FEVER_LAMP_POP_PENALTY
+                                + childFever.overflow * 200 + (allClear ? 2000000 : 0);
+                        }
+                        if (childFever.entered) score += FEVER_ENTRY_SCORE;
+                    }
+                    children.push({
+                        x, rotation, baseY,
+                        cells: childCells,
+                        heights: childHeights,
+                        combo: resolved.combo,
+                        attack: resolved.attack,
+                        allClear,
+                        cumulativeAttack: childCumulative,
+                        settledRemaining: childSettled,
+                        fever: childFever,
+                        score,
+                        maxCombo: resolved.combo,
+                        totalAttack: resolved.attack,
+                        remainingIncoming,
+                        unresolvedDanger: context.urgent && remainingIncoming >= context.threshold
+                    });
+                }
+            }
+            if (!children.length) return null;
+            if (remainingTurns <= 1) {
+                let best = null;
+                children.forEach((child) => { if (isBetterAdvancedCandidate(child, best, context.urgent)) best = child; });
+                return best;
+            }
+            children.sort((left, right) => (isBetterAdvancedCandidate(left, right, context.urgent) ? -1 : isBetterAdvancedCandidate(right, left, context.urgent) ? 1 : 0));
+            const expandCount = moveIndex === 0 ? children.length : Math.min(children.length, context.beamWidth);
+            const nextPairAvailable = !!context.nextPairCodes[moveIndex];
+            let best = null;
+            for (let index = 0; index < expandCount; index += 1) {
+                const child = children[index];
+                // 피버에 들어가는 경로는 다음 수부터 무작위 피버 패턴이 올라오므로 더 읽지 않는다.
+                const continues = nextPairAvailable && !child.fever?.entered;
+                const future = continues
+                    ? searchAdvanced(context, child.cells, child.heights, moveIndex + 1, remainingTurns - 1, child.cumulativeAttack, child.settledRemaining, state, child.fever)
+                    : null;
+                if (state.timedOut) return null;
+                const remainingIncoming = future ? future.remainingIncoming : child.remainingIncoming;
+                const candidate = {
+                    x: child.x,
+                    rotation: child.rotation,
+                    baseY: child.baseY,
+                    combo: child.combo,
+                    attack: child.attack,
+                    allClear: child.allClear,
+                    score: child.score + (future ? future.score * 0.92 : (continues ? -DEAD_END_PENALTY : 0)),
+                    maxCombo: Math.max(child.combo, future?.maxCombo || 0),
+                    totalAttack: child.attack + (future?.totalAttack || 0),
+                    remainingIncoming,
+                    unresolvedDanger: context.urgent && remainingIncoming >= context.threshold
+                };
+                if (isBetterAdvancedCandidate(candidate, best, context.urgent)) best = candidate;
+            }
+            return best;
+        };
+        const findBestCurrentPlacementAdvanced = (context, depth, state) => {
+            const best = searchAdvanced(context, context.rootCells, context.rootHeights, 0, depth, 0, null, state);
+            if (!best) return null;
+            const offset = rotationOffsets[best.rotation];
+            return {
+                simulation: {
+                    x: best.x,
+                    rotation: best.rotation,
+                    positions: [{ x: best.x, y: best.baseY }, { x: best.x + offset[0], y: best.baseY + offset[1] }],
+                    combo: best.combo,
+                    attack: best.attack
+                },
+                score: best.score,
+                maxCombo: best.maxCombo,
+                totalAttack: best.totalAttack
+            };
+        };
+
         self.onmessage = ({ data }) => {
+            if (data?.type === 'resolvePlacements') {
+                // advanced 엔진의 배치 결과를 기본 규칙과 비교하는 검증용 요청이다.
+                try {
+                    const results = (Array.isArray(data.cases) ? data.cases : []).map((testCase) => {
+                        const { cells, heights } = encodeFastBoard(testCase.board);
+                        const baseY = findFastLanding(heights, testCase.x, testCase.rotation);
+                        if (baseY < 0) return null;
+                        placeFastPair(cells, heights, encodeCell(testCase.colors[0]), encodeCell(testCase.colors[1]), testCase.x, testCase.rotation);
+                        const resolved = resolveFastChain(cells, heights, data.rules);
+                        const offset = rotationOffsets[testCase.rotation];
+                        return {
+                            positions: [{ x: testCase.x, y: baseY }, { x: testCase.x + offset[0], y: baseY + offset[1] }],
+                            combo: resolved.combo,
+                            attack: resolved.attack,
+                            board: decodeFastBoard(cells),
+                            potential: findChainPotential(cells, heights, data.rules)
+                        };
+                    });
+                    self.postMessage({ type: 'resolved', requestId: data.requestId, results });
+                } catch (error) {
+                    self.postMessage({ type: 'error', requestId: data.requestId, message: error instanceof Error ? error.message : String(error) });
+                }
+                return;
+            }
             if (!data || data.type !== 'simulate') return;
             try {
                 const snapshot = data.snapshot;
                 const maxDepth = Math.max(3, Math.min(Math.floor(Number(snapshot?.turnCount) || 3), Array.isArray(snapshot?.self?.nextPairs) ? snapshot.self.nextPairs.length + 1 : 3));
                 const state = { deadline: performance.now() + Math.max(1, Number(data.timeLimitMs) || 1), timedOut: false };
+                const advancedContext = snapshot?.searchMode === 'advanced' ? createAdvancedContext(snapshot) : null;
                 let latest = null;
                 for (let depth = 1; depth <= maxDepth; depth += 1) {
                     if (expired(state)) break;
-                    const plan = findBestCurrentPlacement(snapshot, depth, state);
+                    const plan = snapshot?.searchMode === 'advanced'
+                        ? (advancedContext ? findBestCurrentPlacementAdvanced(advancedContext, depth, state) : null)
+                        : findBestCurrentPlacement(snapshot, depth, state);
                     if (state.timedOut) break;
                     if (!plan) break;
                     latest = { depth, placement: plan.simulation, score: plan.score, maxCombo: plan.maxCombo, totalAttack: plan.totalAttack };
@@ -6387,13 +7043,32 @@
         };
     }
 
-    /** @param {PlayerState|object} player 현재 CPU 플레이어 @param {PlayerState|object|null} opponent 상대 플레이어 @param {number} targetCombo 목표 연쇄 @param {number} turnCount 탐색 수 @param {number} urgentGarbageThreshold 긴급 상쇄 기준 @returns {object} Worker 탐색용 JSON snapshot */
-    function createNMoveWorkerSnapshot(player, opponent, targetCombo, turnCount, urgentGarbageThreshold) {
+    /**
+     * @param {PlayerState|object} player 현재 CPU 플레이어
+     * @param {PlayerState|object|null} opponent 상대 플레이어
+     * @param {number} targetCombo 목표 연쇄
+     * @param {number} turnCount 탐색 수
+     * @param {number} urgentGarbageThreshold 긴급 상쇄 기준
+     * @param {{searchMode?:'legacy'|'advanced',beamWidth?:number,allowedPlacements?:{x:number,rotation:number}[]|null,lightFeverGaugeWithSmallChains?:boolean}} [searchOptions={}] advanced 탐색 설정. 생략하면 기존 탐색 snapshot과 같다. lightFeverGaugeWithSmallChains는 피버 룰에서 다 상쇄할 수 없을 때 작은 연쇄로 점등할지 여부다(기본 true).
+     * @returns {object} Worker 탐색용 JSON snapshot
+     */
+    function createNMoveWorkerSnapshot(player, opponent, targetCombo, turnCount, urgentGarbageThreshold, searchOptions = {}) {
         const selfSnapshot = createNMoveWorkerPlayerSnapshot(player, opponent);
         const opponentSnapshot = createNMoveWorkerPlayerSnapshot(opponent, player);
         const displayedWarning = selfSnapshot.warningPuyoAmount;
         const pendingAttack = selfSnapshot.damage + opponentSnapshot.attack;
+        const advanced = searchOptions.searchMode === 'advanced';
+        const realtime = advanced && player?.board && opponent?.board ? getRealtimeGarbageForecast(player, opponent) : null;
+        if (realtime?.fever) realtime.fever.lampChains = searchOptions.lightFeverGaugeWithSmallChains !== false;
         return {
+            ...(advanced ? {
+                searchMode: 'advanced',
+                beamWidth: Math.max(1, Math.floor(Number(searchOptions.beamWidth) || N_MOVE_ADVANCED_DEFAULT_BEAM_WIDTH)),
+                allowedPlacements: Array.isArray(searchOptions.allowedPlacements)
+                    ? searchOptions.allowedPlacements.map((placement) => ({ x: placement.x, rotation: placement.rotation }))
+                    : null,
+                realtime
+            } : {}),
             self: selfSnapshot,
             opponent: opponentSnapshot,
             incomingGarbage: Math.max(displayedWarning, pendingAttack),
@@ -6454,7 +7129,7 @@
      * @param {number} [targetCombo=6] 목표 연쇄 수
      * @param {number} [turnCount=3] 현재 수를 포함한 탐색 수
      * @param {number} [timeLimitMs=50] 메인 스코프에서 측정할 최대 처리 시간(ms)
-     * @param {{opponent?:PlayerState|object|null,urgentGarbageThreshold?:number,onProgress?:(result:object)=>void,onComplete?:(result:object)=>void,onError?:(error:Error)=>void}} [options] Worker 결과 콜백
+     * @param {{opponent?:PlayerState|object|null,urgentGarbageThreshold?:number,searchMode?:'legacy'|'advanced',beamWidth?:number,allowedPlacements?:{x:number,rotation:number}[]|null,lightFeverGaugeWithSmallChains?:boolean,onProgress?:(result:object)=>void,onComplete?:(result:object)=>void,onError?:(error:Error)=>void}} [options] Worker 결과 콜백과 탐색 설정. searchMode가 'advanced'이면 빠른 보드·빔 탐색·발화점 평가·방해뿌요 도착 예측을 쓰고, allowedPlacements가 있으면 현재 수를 그 위치·회전으로만 제한한다.
      * @returns {{cancel:(reason?:string)=>void,promise:Promise<object>}} 취소 가능한 비동기 탐색 작업
      */
     function simulateNMovePlacementsInWorker(player, targetCombo = 6, turnCount = 3, timeLimitMs = 50, options = {}) {
@@ -6500,7 +7175,11 @@
                 console.error(`N수 AI Worker ${reason}: ${error.message}`, error);
                 try { options.onError?.(error); } catch (callbackError) { console.error('N수 AI Worker 오류 콜백에 실패했습니다.', callbackError); }
             }
-            const fallbackPlan = findBestNMovePlacement(player, targetCombo, 1);
+            const fallbackPlan = Array.isArray(options.allowedPlacements)
+                ? simulateNMovePlacements(player, targetCombo, 1)
+                    .filter((plan) => options.allowedPlacements.some((placement) => placement.x === plan.simulation.x && placement.rotation === plan.simulation.rotation))
+                    .reduce((best, plan) => (!best || plan.score > best.score || (plan.score === best.score && plan.simulation.x > best.simulation.x) ? plan : best), null)
+                : findBestNMovePlacement(player, targetCombo, 1);
             notifyComplete({
                 depth: 0,
                 placement: fallbackPlan?.simulation || null,
@@ -6527,7 +7206,12 @@
         };
         try {
             worker = acquireNMoveSimulationWorker();
-            const snapshot = createNMoveWorkerSnapshot(player, opponent, targetCombo, normalizedTurns, options.urgentGarbageThreshold ?? 1);
+            const snapshot = createNMoveWorkerSnapshot(player, opponent, targetCombo, normalizedTurns, options.urgentGarbageThreshold ?? 1, {
+                searchMode: options.searchMode,
+                beamWidth: options.beamWidth,
+                allowedPlacements: options.allowedPlacements,
+                lightFeverGaugeWithSmallChains: options.lightFeverGaugeWithSmallChains
+            });
             const requestId = `${Date.now()}-${Math.floor(randomFloat() * 1000000)}`;
             const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
             const remainingTimeMs = Math.max(0, normalizedLimit - (now - startedAt));
@@ -6591,6 +7275,7 @@
         enemy.attackPlacement = null;
         enemy.workerSearchDepth = 0;
         enemy.workerSearchState = 'idle';
+        enemy.workerSearchKeepsDecisionElapsed = false;
     }
 
     /** @param {Enemy|object} enemy 적 @param {PlayerState|object} player CPU 플레이어 @param {number} rotation 요청 회전값 @returns {number} 즉시 패배 보호를 반영한 회전값 */
@@ -6610,7 +7295,8 @@
         enemy.workerSearchDepth = result.depth;
         player.aiTarget = placement.x;
         player.aiRotation = selectWorkerSearchRotation(enemy, player, placement.rotation);
-        player.aiDecisionElapsed = 0;
+        // 실시간 재판단은 빠른 하강 대기 시간을 처음부터 다시 세지 않는다.
+        if (!enemy.workerSearchKeepsDecisionElapsed) player.aiDecisionElapsed = 0;
         enemy.workerSearchState = 'ready';
     }
 
@@ -6620,13 +7306,22 @@
             || findBestAttackPlacement(player, player.active ? player.active.x : 2, null, true);
     }
 
-    /** @param {Enemy|object} enemy Worker 탐색을 시작할 적 @param {PlayerState|object} player CPU 플레이어 @returns {void} */
-    function startWorkerLookaheadSearch(enemy, player) {
+    /**
+     * @param {Enemy|object} enemy Worker 탐색을 시작할 적. `lookaheadSearchMode`·`lookaheadBeamWidth`가 있으면 탐색 방식에 반영한다.
+     * @param {PlayerState|object} player CPU 플레이어
+     * @param {{allowedPlacements?:{x:number,rotation:number}[]|null,keepDecisionElapsed?:boolean}} [searchOptions={}] 조작 도중 재판단 설정. allowedPlacements는 지금 위치에서 도달할 수 있는 후보, keepDecisionElapsed는 빠른 하강 대기 시간을 유지할지 여부다.
+     * @returns {void}
+     */
+    function startWorkerLookaheadSearch(enemy, player, searchOptions = {}) {
         cancelPendingWorkerSearch(enemy, null, 'replaced');
         enemy.workerSearchPlayer = player;
         enemy.workerSearchActive = player.active;
         enemy.workerSearchDepth = 0;
         enemy.workerSearchState = 'pending';
+        enemy.workerSearchKeepsDecisionElapsed = searchOptions.keepDecisionElapsed === true;
+        const allowedPlacements = Array.isArray(searchOptions.allowedPlacements) ? searchOptions.allowedPlacements : null;
+        // 재판단이 실패하면 새 후보를 억지로 고르지 않고 직전에 정한 목표를 그대로 유지한다.
+        const previousPlacement = allowedPlacements ? enemy.attackPlacement : null;
         const opponent = game?.players.find((candidate) => candidate !== player) ?? null;
         enemy.pendingWorkerSearch = simulateNMovePlacementsInWorker(
             player,
@@ -6635,18 +7330,25 @@
             enemy.lookaheadTimeLimitMs,
             {
                 opponent,
-                urgentGarbageThreshold: enemy.ignorableIncomingGarbage,
+                // 적이 규칙별 무시 기준을 따로 정했다면 그 값을 쓴다(안드레알푸스는 피버 룰에서 무시 기준을 쓰지 않는다).
+                urgentGarbageThreshold: typeof enemy.getLookaheadIgnorableIncomingGarbage === 'function'
+                    ? enemy.getLookaheadIgnorableIncomingGarbage(player)
+                    : enemy.ignorableIncomingGarbage,
+                searchMode: enemy.lookaheadSearchMode === 'advanced' ? 'advanced' : 'legacy',
+                beamWidth: enemy.lookaheadBeamWidth,
+                allowedPlacements,
+                lightFeverGaugeWithSmallChains: enemy.lightFeverGaugeWithSmallChains,
                 onProgress: (result) => applyWorkerSearchResult(enemy, player, result),
                 onComplete: (result) => {
                     if (!isCurrentWorkerSearch(enemy, player)) return;
                     enemy.pendingWorkerSearch = null;
                     if (result.placement) applyWorkerSearchResult(enemy, player, result);
                     else {
-                        enemy.attackPlacement = getWorkerSearchFallbackPlacement(enemy, player);
+                        enemy.attackPlacement = previousPlacement || getWorkerSearchFallbackPlacement(enemy, player);
                         player.aiTarget = enemy.attackPlacement?.x ?? (player.active ? player.active.x : 2);
                         player.aiRotation = selectWorkerSearchRotation(enemy, player, enemy.attackPlacement?.rotation ?? 0);
                         enemy.workerSearchDepth = 0;
-                        player.aiDecisionElapsed = 0;
+                        if (!enemy.workerSearchKeepsDecisionElapsed) player.aiDecisionElapsed = 0;
                     }
                     enemy.workerSearchState = 'ready';
                 },
@@ -6671,6 +7373,302 @@
     function getWorkerSearchRotation(enemy, player) {
         const preparedPlacement = enemy.getPreparedPlacement?.();
         return selectWorkerSearchRotation(enemy, player, preparedPlacement?.rotation ?? enemy.attackPlacement?.rotation ?? 0);
+    }
+
+    /** advanced N수 탐색에서 현재 수 아래 수마다 더 깊이 읽을 후보 수의 기본값이다. @type {number} */
+    const N_MOVE_ADVANCED_DEFAULT_BEAM_WIDTH = 5;
+    /** 연쇄 단계 사이 대기 시간(ms)이다. updatePlayer()의 phaseTimer 150ms와 같은 값이어야 한다. @type {number} */
+    const CHAIN_PHASE_WAIT_MS = 150;
+    /** 폭발 연출 시간(ms)이다. resolveExplosions()의 effects.duration 430ms와 같은 값이어야 한다. @type {number} */
+    const EXPLOSION_EFFECT_DURATION_MS = 430;
+    /** 조작 뿌요가 고정된 뒤 방해뿌요가 떨어지기까지의 대기 시간(ms)이다. explode 150ms + garbage 150ms 단계다. @type {number} */
+    const LOCK_TO_GARBAGE_DROP_MS = CHAIN_PHASE_WAIT_MS * 2;
+    /** 조작 뿌요가 고정된 뒤 다음 조작 뿌요가 나오기까지의 대기 시간(ms)이다. explode·garbage·check 단계다. @type {number} */
+    const LOCK_TO_NEXT_CONTROL_MS = CHAIN_PHASE_WAIT_MS * 3;
+
+    /**
+     * 중력을 적용한 보드와, startGravity()가 쓰는 것과 같은 식의 낙하 연출 시간을 구한다.
+     * @param {(string|null)[][]} board 중력을 적용할 보드
+     * @param {number} [gravitySpeedMultiplier=1] 중력 연출 속도 배율
+     * @returns {{board:(string|null)[][], duration:number}} 중력 적용 보드와 연출 시간(ms). 떨어지는 뿌요가 없으면 0이다.
+     */
+    function measureGravityOnBoard(board, gravitySpeedMultiplier = 1) {
+        const nextBoard = Array.from({ length: ROWS }, () => Array(COLUMNS).fill(null));
+        let duration = 0;
+        for (let x = 0; x < COLUMNS; x += 1) {
+            let targetY = 0;
+            for (let y = 0; y < ROWS; y += 1) {
+                if (!board[y]?.[x]) continue;
+                nextBoard[targetY][x] = board[y][x];
+                if (y !== targetY) duration = Math.max(duration, (210 + 790 * Math.sqrt((y - targetY) / VISIBLE_ROWS)) / gravitySpeedMultiplier);
+                targetY += 1;
+            }
+        }
+        return { board: nextBoard, duration };
+    }
+
+    /**
+     * 연쇄 중인 플레이어의 남은 연쇄를 끝까지 계산한다. 연쇄 진행에는 무작위 요소가 없어 결과가 정확하다.
+     * 연쇄 보너스가 연쇄 번호에 따라 달라지므로 현재 `player.combo`부터 이어서 센다. 시간은 폭발 대기·폭발 연출·
+     * 중력 연출을 실제 게임 루프와 같은 값으로 더한 것이며, 싹쓸이 티켓과 피버 최소 공격 보정은 넣지 않는다.
+     * @param {PlayerState|object} player 예측할 플레이어(보통 CPU의 상대)
+     * @returns {{active:boolean, currentCombo:number, remainingCombo:number, finalCombo:number, finalAttack:number, endInMs:number}}
+     *     active는 연쇄가 진행 중이거나 곧 시작되는지, finalAttack은 연쇄가 끝났을 때의 ATTACK(상쇄 전), endInMs는 연쇄가 끝나 피해가 확정될 때까지 남은 시간(ms)이다.
+     */
+    function predictPlayerChain(player) {
+        const currentCombo = Math.max(0, Math.floor(Number(player?.combo) || 0));
+        const currentAttack = Math.max(0, Number(player?.attack) || 0);
+        const idle = { active: false, currentCombo, remainingCombo: 0, finalCombo: currentCombo, finalAttack: currentAttack, endInMs: 0 };
+        if (!Array.isArray(player?.board) || !isResolutionPhase(player.phase)) return idle;
+        const gravitySpeedMultiplier = getGravitySpeedMultiplier(player);
+        let board = player.board.map((row) => [...row]);
+        let elapsedMs = 0;
+        if (player.phase === 'burst') {
+            // 폭발한 뿌요는 이미 보드에서 지워졌고, 연출이 끝나면 중력과 다음 폭발 판정이 이어진다.
+            elapsedMs += Math.max(0, (player.effects?.duration ?? EXPLOSION_EFFECT_DURATION_MS) - (player.effects?.elapsed ?? 0));
+            const gravity = measureGravityOnBoard(board, gravitySpeedMultiplier);
+            board = gravity.board;
+            elapsedMs += gravity.duration + CHAIN_PHASE_WAIT_MS;
+        } else if (player.phase === 'gravity') {
+            // startGravity()는 보드를 먼저 정리한 뒤 연출만 재생하므로 보드는 이미 중력이 끝난 상태다.
+            if (player.gravityNextPhase !== 'explode') return idle;
+            elapsedMs += player.gravityAnimation ? Math.max(0, player.gravityAnimation.duration - player.gravityAnimation.elapsed) : 0;
+            elapsedMs += CHAIN_PHASE_WAIT_MS;
+        } else if (player.phase === 'explode') {
+            elapsedMs += Math.max(0, CHAIN_PHASE_WAIT_MS - (Number(player.phaseTimer) || 0));
+        } else {
+            // garbage·check 단계는 연쇄 정산이 이미 끝난 뒤다.
+            return idle;
+        }
+        let combo = currentCombo;
+        let attack = currentAttack;
+        while (true) {
+            const explosionGroups = findExplosionGroupsOnBoard(board);
+            if (!explosionGroups.length) break;
+            const resolution = getExplosionResolution(board, explosionGroups.flatMap((group) => group.cells));
+            combo += 1;
+            attack += calculateExplosionAttack(calculateExplosionPoint(explosionGroups, combo, resolution.brokenHardGarbageCount));
+            applyExplosionResolution(board, resolution);
+            const gravity = measureGravityOnBoard(board, gravitySpeedMultiplier);
+            board = gravity.board;
+            elapsedMs += EXPLOSION_EFFECT_DURATION_MS + gravity.duration + CHAIN_PHASE_WAIT_MS;
+        }
+        const remainingCombo = combo - currentCombo;
+        // 착지 직후 중력 단계에서 아무것도 터지지 않는 경우는 연쇄가 아니다.
+        if (currentCombo === 0 && remainingCombo === 0) return idle;
+        return { active: true, currentCombo, remainingCombo, finalCombo: combo, finalAttack: attack, endInMs: elapsedMs };
+    }
+
+    /**
+     * CPU 배치의 시간을 어림한다. 빠른 하강 대기 시간(난이도·적의 일반/위기 비율)이 지나면 빠른 하강 간격으로 내려간다고 본다.
+     * @param {PlayerState|object} player CPU 플레이어
+     * @param {PlayerState|object|null} opponent 상대 플레이어
+     * @returns {{currentLandingMs:number, nextPlacementMs:number}} 지금 조작 중인 뿌요가 고정될 때까지의 시간과, 그 다음 배치 하나에 걸리는 시간(ms)
+     */
+    function estimateAiPlacementTiming(player, opponent) {
+        const normalInterval = game ? getActivePuyoFallInterval(player, false) : PLAYER_FALL_INTERVAL;
+        const difficulty = getSelectedDifficulty();
+        const controller = player?.controller;
+        const delayRate = isEnemyInCrisis(player, opponent) ? (controller?.dangerFastDownDelayRate ?? 1) : (controller?.normalFastDownDelayRate ?? 1);
+        const fastDownDelay = difficulty.fastDownDelay === null ? Infinity : difficulty.fastDownDelay * delayRate;
+        let heightTotal = 0;
+        for (let x = 0; x < COLUMNS; x += 1) {
+            let height = 0;
+            while (height < VISIBLE_ROWS && player.board[height][x] !== null) height += 1;
+            heightTotal += height;
+        }
+        const averageHeight = heightTotal / COLUMNS;
+        // 낙하 거리 rows를 decisionElapsed 시점부터 내려가는 데 걸리는 시간이다. 빠른 하강 대기 시간이 지나면 빠른 하강 간격으로 내려간다.
+        const fallTime = (rows, decisionElapsed) => {
+            const normalMs = Math.max(0, fastDownDelay - decisionElapsed);
+            const normalRows = normalMs / normalInterval;
+            return rows <= normalRows ? rows * normalInterval : normalMs + (rows - normalRows) * getActivePuyoFallInterval(player, true);
+        };
+        return {
+            currentLandingMs: player?.active ? fallTime(Math.max(0, player.active.y - averageHeight), Number(player.aiDecisionElapsed) || 0) : 0,
+            nextPlacementMs: LOCK_TO_NEXT_CONTROL_MS + fallTime(Math.max(0, ACTIVE_PUYO_SPAWN_Y - averageHeight), 0)
+        };
+    }
+
+    /** 피버 중인 상대의 피버 패턴 연쇄 예측 캐시다. 같은 조작 턴 동안은 같은 결과를 쓴다. @type {WeakMap<object, {key:string, result:object|null}>} */
+    const feverStageChainPredictionCache = new WeakMap();
+
+    /**
+     * 피버 중인 상대가 현재 피버 패턴을 언제·몇 연쇄로 터뜨릴지 예측한다.
+     * 상대가 지금 조작 중인 뿌요를 최대 연쇄(같으면 큰 ATTACK)가 되게 두고, 곧바로 빠른 하강한다고 가정한다.
+     * 지금 뿌요로 터지지 않으면 연쇄 없이 둔 뒤 다음 1쌍으로 터뜨리는 경우까지 보고, 그래도 안 되면 null이다.
+     * 상대가 실제로 연쇄를 시작하면 이 예측 대신 predictPlayerChain()의 실제 연쇄 계산을 쓴다.
+     * @param {PlayerState|object} opponent 피버 중인 상대
+     * @returns {{combo:number, attack:number, startInMs:number, endInMs:number}|null} 예측 연쇄 수·ATTACK, 첫 폭발까지와 연쇄가 끝날 때까지 남은 시간(ms)
+     */
+    function predictFeverStageChain(opponent) {
+        if (!game?.feverRule || !opponent?.fever?.active || opponent.phase !== 'control' || !opponent.active) return null;
+        const fever = opponent.fever;
+        const key = [fever.activationId, fever.turn, opponent.placedPairCount, ...opponent.active.colors, ...(opponent.nextPairs?.[0] || [])].join(':');
+        const cached = feverStageChainPredictionCache.get(opponent);
+        const fastInterval = getActivePuyoFallInterval(opponent, true);
+        // 시간은 매번 현재 Y로 다시 계산하고, 무거운 배치 탐색 결과만 같은 조작 턴 동안 재사용한다.
+        let plan = cached?.key === key ? cached.plan : undefined;
+        if (plan === undefined) {
+            const collectPlacements = (board, colors) => {
+                const virtualPlayer = { board, active: { x: 2, y: ACTIVE_PUYO_SPAWN_Y, rotation: 0, colors } };
+                const placements = [];
+                for (let rotation = 0; rotation < 4; rotation += 1) {
+                    for (let x = 0; x < COLUMNS; x += 1) {
+                        const placement = findLandingPlacement(virtualPlayer, x, rotation);
+                        if (!placement) continue;
+                        const positions = activeCells(placement).map(({ x: cellX, y: cellY }) => ({ x: cellX, y: cellY }));
+                        const result = simulatePlacementResult(board, colors, positions);
+                        if (result) placements.push({ positions, result });
+                    }
+                }
+                return placements;
+            };
+            const better = (candidate, best) => !best || candidate.result.combo > best.result.combo
+                || (candidate.result.combo === best.result.combo && candidate.result.attack > best.result.attack);
+            let best = null;
+            const current = collectPlacements(opponent.board, opponent.active.colors);
+            current.forEach((candidate) => { if (candidate.result.combo > 0 && better(candidate, best)) best = { ...candidate, board: opponent.board, colors: opponent.active.colors, delayedTurns: 0 }; });
+            const nextColors = opponent.nextPairs?.[0];
+            if (!best && Array.isArray(nextColors) && nextColors.length === 2) {
+                current.filter((candidate) => candidate.result.combo === 0).forEach((first) => {
+                    collectPlacements(first.result.board, nextColors).forEach((candidate) => {
+                        if (candidate.result.combo > 0 && better(candidate, best)) best = { ...candidate, board: first.result.board, colors: nextColors, delayedTurns: 1, firstPositions: first.positions };
+                    });
+                });
+            }
+            plan = null;
+            if (best) {
+                // 뿌요를 놓은 직후(중력 연출 전) 보드로 실제 게임 루프와 같은 연쇄 시간·ATTACK을 계산한다.
+                const placedBoard = best.board.map((row) => [...row]);
+                best.positions.forEach(({ x, y }, index) => { placedBoard[y][x] = best.colors[index]; });
+                const gravity = measureGravityOnBoard(placedBoard, FEVER_GRAVITY_SPEED_MULTIPLIER);
+                const chain = predictPlayerChain({
+                    board: gravity.board,
+                    phase: 'gravity',
+                    gravityNextPhase: 'explode',
+                    gravityAnimation: { duration: gravity.duration, elapsed: 0 },
+                    combo: 0,
+                    attack: 0,
+                    fever: { active: true }
+                });
+                const landingY = Math.min(...(best.delayedTurns ? best.firstPositions : best.positions).map((position) => position.y));
+                plan = chain.active ? {
+                    combo: chain.finalCombo,
+                    attack: chain.finalAttack,
+                    landingY,
+                    delayedTurns: best.delayedTurns,
+                    nextLandingY: best.delayedTurns ? Math.min(...best.positions.map((position) => position.y)) : null,
+                    firstExplosionMs: gravity.duration + CHAIN_PHASE_WAIT_MS,
+                    chainMs: chain.endInMs
+                } : null;
+            }
+            feverStageChainPredictionCache.set(opponent, { key, plan });
+        }
+        if (!plan) return null;
+        let landingMs = Math.max(0, opponent.active.y - plan.landingY) * fastInterval;
+        if (plan.delayedTurns) landingMs += LOCK_TO_NEXT_CONTROL_MS + Math.max(0, ACTIVE_PUYO_SPAWN_Y - plan.nextLandingY) * fastInterval;
+        return { combo: plan.combo, attack: plan.attack, startInMs: landingMs + plan.firstExplosionMs, endInMs: landingMs + plan.chainMs };
+    }
+
+    /**
+     * CPU가 받을 방해뿌요 양과, 그 방해뿌요가 몇 번째 배치 직후에 떨어질지를 예측한다.
+     * 방해뿌요는 상대 연쇄가 끝나 DAMAGE가 확정된 뒤 CPU가 다음으로 뿌요를 고정하고 garbage 단계에 들어갈 때 떨어진다.
+     * 배치 시간은 현재 자연 낙하 속도와 난이도별 빠른 하강 대기 시간으로 어림한다.
+     * 기본 룰은 연쇄 종료 시각으로 garbageMoveIndex를 구한다. 피버 룰에서 CPU가 일반 상태이면 fever 항목에 예고 묶음(events)을 따로 담는다.
+     * 연속 피버와 CPU 자신이 피버 중인 경우는 기존처럼 이번 배치 직후로 본다.
+     * @param {PlayerState|object} player CPU 플레이어
+     * @param {PlayerState|object|null} opponent 상대 플레이어
+     * @returns {{incoming:number, garbageMoveIndex:number, opponentChainActive:boolean, opponentChainEndInMs:number, fever?:{gauge:number, gaugeMax:number, events:{amount:number, availableMove:number, landMove:number}[], predictedOpponentFeverChain:object|null}}}
+     *     incoming은 받을 방해뿌요 수(정수), garbageMoveIndex는 0부터 센 "이 배치를 두고 나면 떨어지는" 배치 순번이며 받을 것이 없으면 -1이다.
+     *     fever.events의 availableMove는 그 예고를 상쇄할 수 있게 되는 배치 순번(상대 연쇄가 시작된 뒤), landMove는 도착하는 배치 순번이다.
+     */
+    function getRealtimeGarbageForecast(player, opponent) {
+        const damage = Math.max(0, Number(player?.damage) || 0);
+        const displayedWarning = opponent ? warningAmount(player, opponent) : damage + (Number(player?.warningReductionDelay) || 0);
+        const legacyIncoming = Math.max(displayedWarning, damage + Math.max(0, Number(opponent?.attack) || 0));
+        const prediction = opponent ? predictPlayerChain(opponent) : null;
+        const incoming = Math.max(0, Math.floor(Math.max(legacyIncoming, damage + (prediction?.active ? prediction.finalAttack : 0))));
+        const opponentChainActive = prediction?.active === true;
+        const opponentChainEndInMs = opponentChainActive ? prediction.endInMs : 0;
+        if (game?.feverRule && player?.fever && !player.fever.active && Array.isArray(player.board)) {
+            return getFeverRealtimeGarbageForecast(player, opponent, { damage, incoming, prediction, opponentChainActive, opponentChainEndInMs });
+        }
+        if (incoming < 1) return { incoming: 0, garbageMoveIndex: -1, opponentChainActive, opponentChainEndInMs };
+        const standard = !game?.feverRule && !game?.continuousFever;
+        // 이미 확정된 DAMAGE가 연쇄 공격보다 크거나 피버 규칙이면 이번 배치 직후에 떨어진다고 본다.
+        if (!standard || !opponentChainActive || Math.floor(damage) >= Math.floor(prediction.finalAttack)) {
+            return { incoming, garbageMoveIndex: 0, opponentChainActive, opponentChainEndInMs };
+        }
+        const { currentLandingMs, nextPlacementMs } = estimateAiPlacementTiming(player, opponent);
+        const firstDropMs = currentLandingMs + LOCK_TO_GARBAGE_DROP_MS;
+        const garbageMoveIndex = opponentChainEndInMs <= firstDropMs ? 0 : Math.ceil((opponentChainEndInMs - firstDropMs) / Math.max(1, nextPlacementMs));
+        return { incoming, garbageMoveIndex, opponentChainActive, opponentChainEndInMs };
+    }
+
+    /**
+     * 피버 룰에서 일반 상태인 CPU가 받을 예고를 상쇄 가능 시점·도착 시점별 묶음으로 나눈다.
+     * 이미 받은 DAMAGE는 지금 상쇄할 수 있고 다음 터지지 않은 배치 뒤에 떨어진다. 진행 중인 상대 연쇄는 지금 상쇄할 수 있고 연쇄가 끝난 뒤 도착한다.
+     * 상대가 피버 중이고 아직 연쇄를 시작하지 않았다면 피버 패턴 연쇄를 예측해, 상대 첫 폭발 뒤의 배치부터 상쇄할 수 있다고 본다.
+     * @param {PlayerState|object} player CPU 플레이어
+     * @param {PlayerState|object|null} opponent 상대 플레이어
+     * @param {{damage:number, incoming:number, prediction:object|null, opponentChainActive:boolean, opponentChainEndInMs:number}} base 공통 계산값
+     * @returns {object} getRealtimeGarbageForecast()와 같은 형식의 예측
+     */
+    function getFeverRealtimeGarbageForecast(player, opponent, base) {
+        const { currentLandingMs, nextPlacementMs } = estimateAiPlacementTiming(player, opponent);
+        const firstDropMs = currentLandingMs + LOCK_TO_GARBAGE_DROP_MS;
+        const landMoveAt = (ms) => (ms <= firstDropMs ? 0 : Math.ceil((ms - firstDropMs) / Math.max(1, nextPlacementMs)));
+        // CPU 배치의 첫 폭발은 고정 뒤 폭발 대기 시간이 지나야 일어난다. 그때 상대 연쇄가 시작돼 있어야 상쇄할 수 있다.
+        const availableMoveAt = (ms) => Math.max(0, Math.ceil((ms - currentLandingMs - CHAIN_PHASE_WAIT_MS) / Math.max(1, nextPlacementMs)));
+        const events = [];
+        const settledDamage = Math.floor(base.damage);
+        if (settledDamage >= 1) events.push({ amount: settledDamage, availableMove: 0, landMove: 0 });
+        const pendingAmount = base.incoming - settledDamage;
+        if (pendingAmount >= 1) events.push({ amount: pendingAmount, availableMove: 0, landMove: base.opponentChainActive ? landMoveAt(base.opponentChainEndInMs) : 0 });
+        let predictedOpponentFeverChain = null;
+        if (!base.opponentChainActive && opponent?.fever?.active) {
+            const predicted = predictFeverStageChain(opponent);
+            if (predicted && Math.floor(predicted.attack) >= 1) {
+                predictedOpponentFeverChain = predicted;
+                events.push({ amount: Math.floor(predicted.attack), availableMove: availableMoveAt(predicted.startInMs), landMove: landMoveAt(predicted.endInMs) });
+            }
+        }
+        const incoming = events.reduce((sum, event) => sum + event.amount, 0);
+        return {
+            incoming,
+            garbageMoveIndex: events.length ? Math.min(...events.map((event) => event.landMove)) : -1,
+            opponentChainActive: base.opponentChainActive,
+            opponentChainEndInMs: base.opponentChainEndInMs,
+            fever: { gauge: player.fever.gauge, gaugeMax: FEVER_GAUGE_MAX, events, predictedOpponentFeverChain }
+        };
+    }
+
+    /**
+     * 조작 중인 뿌요가 지금 위치에서 도달할 수 있는 배치 후보만 고른다.
+     * 게임 루프는 회전을 먼저 시도하고 막히면 가로 이동을 섞으므로, "회전 후 이동"과 기존
+     * canUseAiPlacement()의 "이동 후 회전(킥 포함)" 중 하나라도 되는 후보를 도달 가능으로 본다.
+     * @param {PlayerState} player CPU 플레이어
+     * @returns {{x:number, rotation:number}[]} 도달 가능한 위치·회전 목록
+     */
+    function getReachableAiPlacements(player) {
+        if (!player?.active || !Array.isArray(player.aiSimulations)) return [];
+        return player.aiSimulations.filter((simulation) => {
+            let probe = { ...player.active };
+            let reachable = true;
+            const rotationDelta = (simulation.rotation - probe.rotation + 4) % 4;
+            const direction = rotationDelta === 3 ? -1 : 1;
+            const rotationSteps = rotationDelta === 3 ? 1 : rotationDelta;
+            for (let step = 0; step < rotationSteps && reachable; step += 1) {
+                probe = { ...probe, rotation: (probe.rotation + direction + 4) % 4 };
+                reachable = canPlace(player, probe);
+            }
+            while (reachable && probe.x !== simulation.x) {
+                probe = { ...probe, x: probe.x + (probe.x < simulation.x ? 1 : -1) };
+                reachable = canPlace(player, probe);
+            }
+            return reachable || canUseAiPlacement(player, simulation);
+        }).map((simulation) => ({ x: simulation.x, rotation: simulation.rotation }));
     }
 
     /** @param {(string|null)[][]} board 검사할 보드 @returns {boolean} 빈 보드 여부 */
@@ -7131,6 +8129,13 @@
     function dropGarbage(player) {
         // 연속 피버에서는 DAMAGE를 다음 스테이지 배치 전까지 예고로 보존하며 실제 방해뿌요를 만들지 않는다.
         if (game?.continuousFever) {
+            player.phase = 'check';
+            player.phaseTimer = 0;
+            return;
+        }
+        // 피버 룰에서 시간이 끝난 피버 필드에 터지지 않은 배치를 했다면, 곧 사라질 피버 필드에 떨어뜨리지 않는다.
+        // check 단계의 종료 A가 피버 DAMAGE를 일반 DAMAGE에 합친 뒤, 일반 필드로 돌아가 조작 전에 한꺼번에 떨어뜨린다.
+        if (game?.feverRule && player.fever?.active && isFeverTimeExpired(player.fever)) {
             player.phase = 'check';
             player.phaseTimer = 0;
             return;
@@ -12972,6 +13977,8 @@
         drawTextDialog();
         // 모든 화면 전환 경로가 여기로 모이므로, 실제로 보인 표준 화면이 바뀐 경우에만 외부에 알린다.
         dispatchScreenChangeIfNeeded();
+        // 게임 그리기가 모두 끝난 뒤 외부 리스너가 최상단에 덧그릴 수 있게 알린다.
+        dispatchPuyoRender();
     }
 
     /** 화면 최상단에 표시 중인 외부 메시지를 그린다. @returns {void} */
@@ -13170,6 +14177,8 @@
      * @returns {void}
      */
     function frame(time) {
+        // render 호출 횟수가 아니라 실제로 실행된 애니메이션 프레임 수를 센다.
+        frameCounts = frameCounts >= MAX_FRAME_COUNTS ? 0 : frameCounts + 1;
         const realDelta = lastTime ? Math.min(MAX_CATCH_UP_MS, Math.max(0, time - lastTime)) : 0;
         lastTime = time;
         updateGamepadInput();
@@ -14733,13 +15742,33 @@
     /**
      * 브라우저 외부 확장에 Puyo W의 상태 변화를 알린다.
      * 모든 공개 이벤트 정보는 CustomEvent.detail에만 넣어 기존 DOM 이벤트 필드와 충돌하지 않게 한다.
-     * @param {'puyow_init'|'puyow_changescreen'|'puyow_unlocked'|'puyow_win'} type 발생시킬 이벤트 이름
+     * 외부 리스너에서 오류가 나더라도 게임 루프가 멈추지 않도록 발생 과정의 예외는 기록만 하고 삼킨다.
+     * @param {'puyow_init'|'puyow_changescreen'|'puyow_unlocked'|'puyow_win'|'puyow_render'} type 발생시킬 이벤트 이름
      * @param {object} [detail={}] 외부에 전달할 읽기 전용 정보
      * @returns {void}
      */
     function dispatchPuyoCustomEvent(type, detail = {}) {
         if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function' || typeof window.CustomEvent !== 'function') return;
-        window.dispatchEvent(new window.CustomEvent(type, { detail }));
+        try {
+            window.dispatchEvent(new window.CustomEvent(type, { detail }));
+        } catch (error) {
+            console.error(`${type} 이벤트 처리 중 오류가 발생했습니다.`, error);
+        }
+    }
+
+    /**
+     * 매 render 끝에 외부 확장이 캔버스 위에 덧그릴 수 있도록 알린다.
+     * 리스너가 바꾼 그리기 상태(변환·투명도·색 등)가 다음 게임 그리기에 새지 않도록 앞뒤로 컨텍스트 상태를 보존한다.
+     * @returns {void}
+     */
+    function dispatchPuyoRender() {
+        if (!canvas || !context) return;
+        context.save();
+        try {
+            dispatchPuyoCustomEvent('puyow_render', { canvas, ctx: context, frameCounts });
+        } finally {
+            context.restore();
+        }
     }
 
     /**
@@ -15677,6 +16706,7 @@
         runtimeLayoutStyle = null;
         threeAvailable = false;
         animationFrameId = null;
+        frameCounts = 0;
         webMcpAbortController = null;
         initialized = false;
     }
@@ -17679,6 +18709,8 @@
         Andras: { hair: '#8496b8', light: '#ccd9ee', coat: '#526486', accent: '#f9c185', skin: '#ffe1d0', motif: 'owl' },
         Valak: { hair: '#edc17a', light: '#fff0bf', coat: '#b76668', accent: '#f6d788', skin: '#ffe0c9', motif: 'dragon' },
         Zagan: { hair: '#bd8b58', light: '#eed0a0', coat: '#ad7f4d', accent: '#ffe6a4', skin: '#f3c5a3', motif: 'bull' },
+        Vapula: { hair: '#cc955c', light: '#ffe0ac', coat: '#568f87', accent: '#f8d589', skin: '#ffddbf', motif: 'griffin' },
+        Oriax: { hair: '#b594c7', light: '#ecd8f7', coat: '#64588f', accent: '#f5db96', skin: '#ffddcd', motif: 'astrologer' },
         ChainBuildingEnemy: { hair: '#8389b8', light: '#c6ccee', coat: '#71679e', accent: '#e7ccfa', skin: '#ffe0cf', motif: 'oracle' }
     };
 
@@ -17744,8 +18776,19 @@
                 context.restore();
             }
         }
-        if (['prince', 'angel', 'owl', 'dragon', 'bull'].includes(motif)) {
-            for (const direction of [-1, 1]) featherWing(direction, motif === 'owl' ? '#b6c5dc' : motif === 'bull' ? '#f3d58e' : '#f8eef3', defeated ? 9 : 0);
+        if (['prince', 'angel', 'owl', 'dragon', 'bull', 'griffin'].includes(motif)) {
+            for (const direction of [-1, 1]) featherWing(direction, motif === 'owl' ? '#b6c5dc' : motif === 'bull' ? '#f3d58e' : motif === 'griffin' ? '#b9ded1' : '#f8eef3', defeated ? 9 : 0);
+        }
+        if (motif === 'griffin') {
+            // 사자 꼬리 장식과 깃털 날개로 전승을 표현한다.
+            path('M29 65 Q70 86 67 48', null, ink, 11);
+            path('M29 65 Q70 86 67 48', null, hair, 6);
+            path('M67 51 Q51 44 67 31 Q82 45 67 51 Z', light);
+        }
+        if (motif === 'astrologer') {
+            // 뱀 꼬리는 머리 없는 곡선 장식으로 남겨 인간형 얼굴을 유지한다.
+            path('M26 69 C79 89 78 49 57 57 C42 65 76 69 72 42', null, ink, 11);
+            path('M26 69 C79 89 78 49 57 57 C42 65 76 69 72 42', null, '#93b9aa', 6);
         }
         if (motif === 'leopard') {
             path('M28 63 C79 83 83 35 61 43', null, ink, 15);
@@ -17756,7 +18799,7 @@
             path('M29 69 Q66 85 66 50 L77 42 L73 62 Q61 94 29 80 Z', '#c77878');
             path('M60 75 L62 65 L70 69 M48 81 L51 73 L57 80', accent, ink, 2);
         }
-        if (['king', 'prince', 'knight', 'angel', 'oracle'].includes(motif)) {
+        if (['king', 'prince', 'knight', 'angel', 'oracle', 'astrologer'].includes(motif)) {
             path('M-24 22 Q-41 37 -49 75 Q-22 87 0 70 Q22 87 49 75 Q41 37 24 22 Z', coat);
             path('M-29 42 L-38 73 M29 42 L38 73', null, light, 2.4);
         }
@@ -17788,6 +18831,10 @@
         }
 
         // 큰 머리와 부드러운 앞머리 안에 사람 얼굴 하나만 배치한다.
+        if (motif === 'griffin' || motif === 'astrologer') {
+            // 두 사자 전승은 갈기 모양의 후드로 공유하고 색·소품으로 구별한다.
+            path('M-37 -57 L-50 -46 L-44 -30 L-51 -14 L-41 -1 L-44 16 L-26 22 L-18 31 L0 23 L18 31 L26 22 L44 16 L41 -1 L51 -14 L44 -30 L50 -46 L37 -57 Z', light);
+        }
         oval(0, -29, 43, 43, hair);
         oval(-38, -17, 7, 10, skin); oval(38, -17, 7, 10, skin);
         path('M-36 -38 Q-38 -1 -24 13 Q0 30 24 13 Q38 -1 36 -38 Q0 -58 -36 -38 Z', skin);
@@ -17836,6 +18883,17 @@
             oval(-32, -65, 14, 14, hair); oval(32, -65, 14, 14, hair);
             oval(-32, -65, 7, 7, '#f5c0a4', null); oval(32, -65, 7, 7, '#f5c0a4', null);
             for (const [x, y] of [[-23, -50], [26, -44], [9, -57]]) oval(x, y, 4, 3, '#86513c', null);
+        } else if (motif === 'griffin' || motif === 'astrologer') {
+            oval(-33, -65, 13, 13, hair); oval(33, -65, 13, 13, hair);
+            oval(-33, -65, 6, 6, light, null); oval(33, -65, 6, 6, light, null);
+            if (motif === 'griffin') {
+                path('M-21 -64 Q0 -72 21 -64', null, coat, 6);
+                oval(-12, -65, 9, 8, '#d7f3ee', ink, 2); oval(12, -65, 9, 8, '#d7f3ee', ink, 2);
+                path('M-3 -65 L3 -65', null, accent, 3);
+            } else {
+                path('M-23 -64 L-22 -78 L-10 -72 L0 -85 L10 -72 L22 -78 L23 -64 Z', coat);
+                star(0, -73, 7);
+            }
         } else if (motif === 'owl') {
             path('M-37 -49 L-47 -83 L-20 -69 Q0 -76 20 -69 L47 -83 L37 -49 L16 -60 L0 -50 L-16 -60 Z', light);
             path('M-36 -66 L-27 -59 M36 -66 L27 -59 M-5 -61 L0 -55 L5 -61', null, coat, 2.5);
@@ -17923,6 +18981,19 @@
         } else if (motif === 'dragon') {
             path('M-21 39 L0 47 L21 39 L16 61 L0 72 L-16 61 Z', '#d58a86');
             path('M-12 48 L0 55 L12 48 M-9 57 L0 63 L9 57', null, accent, 2.5);
+        } else if (motif === 'griffin') {
+            // 기술과 학문의 상징으로 펼친 설계책과 작은 공구를 든다.
+            path('M0 45 L-25 38 L-25 61 L0 68 L25 61 L25 38 Z', '#f7eed7');
+            path('M0 45 L0 68 M-18 47 L-7 50 M-18 53 L-7 56', null, coat, 2);
+            oval(13, 53, 7, 7, null, coat, 2);
+            path('M45 54 L45 29 M35 26 L55 26 L55 34 L35 34 Z', accent, ink, 3);
+        } else if (motif === 'astrologer') {
+            // 별의 궤도와 쌍뱀 문양 지팡이, 말발굽 문장으로 점성술·기마 전승을 담는다.
+            oval(-4, 52, 21, 15, '#37385f', ink, 2);
+            oval(-4, 52, 17, 8, null, accent, 2, -0.45); star(-4, 52, 7);
+            path('M48 67 L48 27 M45 58 C27 51 61 42 42 34 M51 58 C69 51 35 42 54 34', null, accent, 3);
+            star(48, 23, 8);
+            path('M-22 31 L-22 36 Q-16 44 -10 36 L-10 31', null, accent, 3);
         } else if (motif === 'bull') {
             path('M-12 39 L12 39 L10 52 Q0 65 -10 52 Z', accent);
             path('M0 60 L0 70 M-10 71 L10 71', null, accent, 4);
@@ -18711,32 +19782,59 @@
     }
 
     /**
-     * 안드레알푸스는 수학·기하학·천문학에 능통한 미모후작을 공작 깃털을 두른 인간형 학자로 각색한 기본 제공 적이다.
-     * 키마리스와 같은 생존·상쇄 평가를 사용하되, 일반 상황에서는 Worker로 3수 앞까지 읽는다.
+     * Worker advanced N수 탐색과 실시간 재판단을 쓰는 기본 제공 적의 공통 클래스다. 안드레알푸스에서 분리했다.
+     *
+     * - 일반 상황에서는 Worker로 3수 앞까지 읽는다(빠른 보드·빔 탐색·발화점 평가·방해뿌요 도착 예측).
+     * - 기본 룰과 피버 룰(시작·완화 포함)의 일반 상태에서, 조작 중 상대 연쇄·받을 방해뿌요·상대 피버 패턴 예측이 바뀌면
+     *   빠른 하강을 시작하기 전까지만 도달 가능한 위치로 다시 탐색한다.
+     * - 피버 룰 일반 상태에서는 목표 연쇄 → 역공 → 점등 우선순위를 따른다.
+     * - 피버·패배 위치 보호·필드 80% 보호 후보가 있으면 Worker를 시작하지 않고 그 후보를 쓴다.
+     *
+     * 하위 클래스는 constructor에서 `super({ targetCombo, lightFeverGaugeWithSmallChains })`로 적마다 다른 값을 정하고,
+     * `sortPriority`·`notAvail`과 `getClassType()`·`getName()`·`getFieldThemeColors()`·`drawPortrait()`를 재정의한다.
+     * 적 종류 문자열로 동작이 갈리는 `RANDOM_EMPTY_FIELD_ENEMY_TYPES`(빈 필드 무작위 첫 배치)와 `ENEMY_GOLD_BONUSES`(GOLD 배율)는
+     * 하위 적마다 따로 등록해야 한다.
      */
-    class Andrealphus extends BundledEnemy {
-        constructor() {
+    class RealtimeLookaheadEnemy extends BundledEnemy {
+        /**
+         * @param {{targetCombo?:number, lightFeverGaugeWithSmallChains?:boolean}} [options={}] 적마다 다르게 정하는 값.
+         *     targetCombo는 피버가 아닌 평상시 목표 연쇄 수(기본 7), lightFeverGaugeWithSmallChains는 피버 룰에서
+         *     다 상쇄할 수 없을 때 작은 연쇄로 일부러 점등할지 여부(기본 true)다.
+         */
+        constructor(options = {}) {
             super();
-            this.sortPriority = 8;
-            this.notAvail = false;
+            const targetCombo = options.targetCombo ?? 7;
+            if (!Number.isInteger(targetCombo) || targetCombo < 1) throw new RangeError('targetCombo는 1 이상의 정수여야 합니다.');
+            const lightFeverGaugeWithSmallChains = options.lightFeverGaugeWithSmallChains ?? true;
+            if (typeof lightFeverGaugeWithSmallChains !== 'boolean') throw new TypeError('lightFeverGaugeWithSmallChains는 boolean이어야 합니다.');
             /** 이 수보다 적은 방해뿌요는 긴급 상쇄 대상으로 보지 않는다. @type {number} */
             this.ignorableIncomingGarbage = 4;
             /** 피버가 아닌 평상시 목표 연쇄 수. @type {number} */
-            this.targetCombo = 7;
+            this.targetCombo = targetCombo;
             /** 현재 수를 포함해 Worker가 읽을 예고쌍 수. @type {number} */
             this.lookaheadTurnCount = 3;
             /** Worker 반복 심화 탐색의 최대 대기 시간(ms)이다. 호출자가 인스턴스별로 조정할 수 있다. @type {number} */
             this.lookaheadTimeLimitMs = 50;
+            /** Worker 탐색 방식이다. 'advanced'는 빠른 보드·빔 탐색·발화점 평가·방해뿌요 도착 예측을 쓴다. @type {'legacy'|'advanced'} */
+            this.lookaheadSearchMode = 'advanced';
+            /** advanced 탐색에서 현재 수 아래 수마다 더 깊이 읽을 후보 수다. @type {number} */
+            this.lookaheadBeamWidth = N_MOVE_ADVANCED_DEFAULT_BEAM_WIDTH;
+            /** 조작 중 상대 연쇄·방해뿌요 변화에 맞춰 다시 판단할지 여부다. 기본 룰과 피버 룰(시작·완화 포함)의 일반 상태에서 동작한다. @type {boolean} */
+            this.realtimeReaction = true;
+            /**
+             * 피버 룰에서 이번 수로 받을 예고를 다 상쇄할 수 없을 때, 작은 연쇄로 일부러 전등을 켤지 여부다.
+             * 끄면 그 상황에서는 목표 연쇄를 계속 쌓는다. @type {boolean}
+             */
+            this.lightFeverGaugeWithSmallChains = lightFeverGaugeWithSmallChains;
+            /** 이번 조작 턴의 실시간 재판단 상태다. Worker 탐색을 시작한 턴에만 만든다. @type {{turn:number, signature:string, incoming:number, opponentChainActive:boolean, fastDownStarted:boolean, replanCount:number}|null} */
+            this.realtimeReactionState = null;
             // 키마리스가 암두시아스에서 물려받는 일반·위기 빠른 하강 속도와 같게 유지한다.
             this.normalFastDownDelayRate = 1.0;
             this.dangerFastDownDelayRate = 0.5;
         }
 
-        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
-        getClassType() { return 'Andrealphus'; }
-
-        /** @returns {string} 적 이름 */
-        getName() { return '안드레알푸스'; }
+        /** 이 클래스 이름 반환, 하위 클래스는 반드시 이 메소드를 오버라이드해야 함. @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'RealtimeLookaheadEnemy'; }
 
         /**
          * 현재 예고된 방해뿌요 수를 반환한다. 키마리스 계열의 상쇄 우선순위와 같은 기준을 쓴다.
@@ -18811,6 +19909,7 @@
          */
         prepareTurn(player) {
             beginWorkerSearchTurn(this);
+            this.realtimeReactionState = null;
             Enemy.prototype.prepareTurn.call(this, player);
             if (this.getPreparedPlacement()) return;
             if (!this.isInFever(player) && this.isFieldAtLeastEightyPercentFilled(player)) {
@@ -18818,6 +19917,68 @@
                 if (this.getPreparedPlacement()) return;
             }
             startWorkerLookaheadSearch(this, player);
+            const forecast = this.getRealtimeGarbageForecast(player);
+            this.realtimeReactionState = {
+                turn: player.placedPairCount,
+                signature: this.getRealtimeReactionSignature(forecast),
+                incoming: forecast.incoming,
+                opponentChainActive: forecast.opponentChainActive,
+                fastDownStarted: false,
+                replanCount: 0
+            };
+        }
+
+        /** @param {PlayerState} player CPU 플레이어 @returns {{incoming:number, garbageMoveIndex:number, opponentChainActive:boolean, opponentChainEndInMs:number}} 상대 연쇄를 반영한 방해뿌요 예측 */
+        getRealtimeGarbageForecast(player) {
+            const opponent = game?.players.find((candidate) => candidate !== player) ?? null;
+            return getRealtimeGarbageForecast(player, opponent);
+        }
+
+        /**
+         * 탐색에 반영할 무시 기준을 반환한다. 피버 룰에서는 방해뿌요 하나도 상쇄·점등 기회이므로 무시 기준을 쓰지 않는다(1).
+         * @param {PlayerState} player CPU 플레이어
+         * @returns {number} 긴급 상쇄·재판단 기준 방해뿌요 수
+         */
+        getLookaheadIgnorableIncomingGarbage(player) {
+            return game?.feverRule && player?.fever ? 1 : this.ignorableIncomingGarbage;
+        }
+
+        /**
+         * 재판단 여부를 가르는 상황 요약이다. 시간이 흐르며 바뀌는 도착 순번은 넣지 않고, 받을 양·상대 연쇄 진행·
+         * 상대 피버 패턴 연쇄 예측의 유무와 양만 비교한다.
+         * @param {{incoming:number, opponentChainActive:boolean, fever?:{predictedOpponentFeverChain:object|null}}} forecast 방해뿌요 예측
+         * @returns {string} 비교용 문자열
+         */
+        getRealtimeReactionSignature(forecast) {
+            const predicted = forecast.fever?.predictedOpponentFeverChain;
+            return [forecast.incoming, forecast.opponentChainActive ? 1 : 0, predicted ? `${predicted.combo}:${Math.floor(predicted.attack)}` : '-'].join('|');
+        }
+
+        /**
+         * 조작 중 상대 연쇄가 시작·종료되거나, 받을 방해뿌요 양이나 상대 피버 패턴 연쇄 예측이 바뀌면 지금 도달할 수 있는 위치만으로 다시 탐색한다.
+         * 이번 턴에 빠른 하강을 이미 시작했다면 재판단하지 않는다. 받을 양이 바뀌기 전후 모두 무시 기준보다 작으면
+         * 판단이 달라지지 않으므로 기준 상태만 갱신한다. 적 자신이 피버 중이거나 연속 피버에서는 재판단하지 않는다.
+         * @param {PlayerState} player CPU 플레이어
+         * @returns {boolean} 재판단 탐색을 시작했는지 여부
+         */
+        updateRealtimeReaction(player) {
+            const state = this.realtimeReactionState;
+            if (!this.realtimeReaction || !state || state.fastDownStarted || !player.active || state.turn !== player.placedPairCount) return false;
+            if (this.getPreparedPlacement() || !game || game.continuousFever || player.fever?.active) return false;
+            const forecast = this.getRealtimeGarbageForecast(player);
+            const signature = this.getRealtimeReactionSignature(forecast);
+            if (signature === state.signature) return false;
+            const previousIncoming = state.incoming;
+            state.signature = signature;
+            state.incoming = forecast.incoming;
+            state.opponentChainActive = forecast.opponentChainActive;
+            const threshold = this.getLookaheadIgnorableIncomingGarbage(player);
+            if (forecast.incoming < threshold && previousIncoming < threshold) return false;
+            const allowedPlacements = getReachableAiPlacements(player);
+            if (!allowedPlacements.length) return false;
+            state.replanCount += 1;
+            startWorkerLookaheadSearch(this, player, { allowedPlacements, keepDecisionElapsed: true });
+            return true;
         }
 
         /** @param {PlayerState} player 자동 조작할 플레이어 @returns {number} Worker 탐색 결과의 목표 X 좌표 */
@@ -18832,14 +19993,37 @@
 
         /** @param {PlayerState} player CPU 플레이어 @returns {boolean} Worker 결과가 준비될 때까지 기본 이동을 대체했는지 */
         updateControl(player) {
+            this.updateRealtimeReaction(player);
             return isWorkerSearchPending(this, player);
         }
 
         /** @param {PlayerState} player CPU 플레이어 @returns {boolean} Worker 결과를 기다리는 동안에는 빠른 하강을 하지 않는다. */
         useFastDown(player) {
             if (isWorkerSearchPending(this, player)) return false;
-            return super.useFastDown(player);
+            const fastDown = super.useFastDown(player);
+            // 빠른 하강을 한 번 시작한 턴은 더 이상 실시간 재판단을 하지 않는다.
+            if (fastDown && this.realtimeReactionState?.turn === player.placedPairCount) this.realtimeReactionState.fastDownStarted = true;
+            return fastDown;
         }
+    }
+
+    /**
+     * 안드레알푸스는 수학·기하학·천문학에 능통한 미모후작을 공작 깃털을 두른 인간형 학자로 각색한 기본 제공 적이다.
+     * 판단은 공통 클래스 RealtimeLookaheadEnemy를 그대로 쓰며, 목표 5연쇄와 작은 연쇄 점등 켜짐을 사용한다.
+     * BUILDNO 82부터 같은 판단을 쓰는 플라우로스(6)·안드라스(7)와 목표 연쇄 수로 난이도를 나눈다(그 전에는 7).
+     */
+    class Andrealphus extends RealtimeLookaheadEnemy {
+        constructor() {
+            super({ targetCombo: 5, lightFeverGaugeWithSmallChains: true });
+            this.sortPriority = 8;
+            this.notAvail = false;
+        }
+
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'Andrealphus'; }
+
+        /** @returns {string} 적 이름 */
+        getName() { return '안드레알푸스'; }
 
         /**
          * 초상화 색과 어울리는 공작 깃털의 짙은 청록 계열로 맞춘다.
@@ -18883,8 +20067,8 @@
             // 이 적은 ONNX 런타임이 없는 페이지의 적 선택 화면과 구경 후보에서 숨긴다.
             this.requiresOnnx = true;
             /**
-             * 이 적이 사용할 ONNX 모델의 `src/` 기준 상대 경로다. 적과 모델은 1:1로 대응하므로
-             * 하위 클래스가 각자 model02.onnx, model03.onnx처럼 다른 값을 지정한다.
+             * 이 적이 사용할 ONNX 모델의 `src/` 기준 상대 경로다.
+             * 하위 클래스별로 지정하며, 출시 예정 적은 임시로 기존 적의 모델을 공유할 수 있다.
              * @type {string}
              */
             this.modelPath = 'onnx/model01.onnx';
@@ -19196,14 +20380,15 @@
     /**
      * 플라우로스는 강하고 무서운 표범 모습으로 나타나며, 삼각형 밖에서는 거짓말로 소환자를 속인다는
      * 전승을 귀엽지만 위엄 있는 모습으로 각색한 적이다.
-     * 판단은 `src/onnx/model01.onnx` 가치망 추론으로 하며, 추론에 실패한 턴만 앞 1수 시뮬레이션으로 넘어간다.
+     * BUILDNO 79부터 판단은 안드레알푸스와 같은 공통 클래스 RealtimeLookaheadEnemy(작은 연쇄 점등 켜짐)를 쓰며,
+     * BUILDNO 82부터 목표 연쇄는 6이다(안드레알푸스 5·안드라스 7과 차별화, 그 전에는 7).
+     * 모델을 쓰지 않으므로 ONNX 경고 표시·첫 선택 경고 대상이 아니다. 이전에 쓰던 `model01.onnx` 가치망은 안드라스가 이어받았다.
      */
-    class Flauros extends OnnxEnemy {
+    class Flauros extends RealtimeLookaheadEnemy {
         constructor() {
-            super();
+            super({ targetCombo: 6, lightFeverGaugeWithSmallChains: true });
             this.sortPriority = 9;
-            // 첫 ONNX 적이라 model01.onnx와 1:1로 대응한다. 이후 적은 model02.onnx처럼 각자 모델을 갖는다.
-            this.modelPath = 'onnx/model01.onnx';
+            this.notAvail = false;
         }
 
         /** @returns {string} 진행 상황에 저장할 클래스 이름 */
@@ -19236,14 +20421,15 @@
 
     /**
      * 안드라스는 날개 달린 천사 몸·새 머리·검은 늑대·불타는 검의 전승을 바탕으로 한 적이다.
-     * 판단은 플라우로스와 같은 ONNX 공통 로직으로 하며 전용 `model02.onnx` 가치망을 사용한다.
+     * BUILDNO 81부터 판단은 플라우로스·안드레알푸스와 같은 공통 클래스 RealtimeLookaheadEnemy(목표 7연쇄·작은 연쇄 점등 켜짐)를 쓴다.
+     * BUILDNO 82부터 세 적은 목표 연쇄 수로 차별화한다(안드레알푸스 5·플라우로스 6·안드라스 7).
+     * 모델을 쓰지 않으므로 ONNX 경고 표시·첫 선택 경고 대상이 아니다. 이전에 쓰던 `model01.onnx` 가치망은 발라크가 이어받았다.
      */
-    class Andras extends OnnxEnemy {
+    class Andras extends RealtimeLookaheadEnemy {
         constructor() {
-            super();
+            super({ targetCombo: 7, lightFeverGaugeWithSmallChains: true });
             this.sortPriority = 10;
             this.notAvail = false;
-            this.modelPath = 'onnx/model02.onnx';
         }
 
         /** @returns {string} 진행 상황에 저장할 클래스 이름 */
@@ -19273,13 +20459,14 @@
 
     /**
      * 발라크는 두 개의 붉은 목을 가진 지옥의 드래곤 위에 탄 날개 달린 소년의 모습으로 나타나는 적이다.
-     * 판단은 플라우로스와 같은 ONNX 공통 로직으로 하며 전용 `model03.onnx` 가치망을 사용한다.
+     * 판단은 ONNX 공통 로직(OnnxEnemy)으로 하며, BUILDNO 81부터 이전 안드라스의 `model01.onnx` 가치망을 사용한다.
+     * 모델을 쓰는 첫 적이므로 적 선택 화면의 경고 표시와 첫 선택 경고가 여기서부터 적용된다.
      */
     class Valak extends OnnxEnemy {
         constructor() {
             super();
             this.sortPriority = 11;
-            this.modelPath = 'onnx/model03.onnx';
+            this.modelPath = 'onnx/model01.onnx';
         }
 
         /** @returns {string} 진행 상황에 저장할 클래스 이름 */
@@ -19308,16 +20495,15 @@
     }
 
     /**
-     * 자간은 그리폰의 날개를 가진 숫소의 모습으로 나타나는 출시 예정 적이다.
-     * TODO: 출시 전에 자간 전용 ONNX 가치망으로 modelPath를 교체하고 판단 특성을 검증한다.
+     * 자간은 그리폰의 날개를 가진 숫소의 모습으로 나타나는 적이다. BUILDNO 79에 출시했다.
+     * 판단은 ONNX 공통 로직(OnnxEnemy)으로 하며, BUILDNO 81부터 이전 발라크의 `model02.onnx` 가치망을 사용한다.
      */
     class Zagan extends OnnxEnemy {
         constructor() {
             super();
             this.sortPriority = 12;
-            this.notAvail = true;
-            // 전용 모델이 준비되기 전까지 플라우로스의 가치망으로 동작 구조만 미리 연결한다.
-            this.modelPath = 'onnx/model01.onnx';
+            this.notAvail = false;
+            this.modelPath = 'onnx/model02.onnx';
         }
 
         /** @returns {string} 진행 상황에 저장할 클래스 이름 */
@@ -19342,6 +20528,60 @@
          */
         drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
             drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Zagan');
+        }
+    }
+
+    /** 그리폰 날개를 가진 사자 전승의 바퓰라. BUILDNO 81에 출시했으며, ONNX 공통 로직으로 이전 자간의 `model03.onnx` 가치망을 사용한다. */
+    class Vapula extends OnnxEnemy {
+        constructor() {
+            super();
+            this.sortPriority = 13;
+            this.notAvail = false;
+            // 추후 전용 모델을 배치하면 이 경로만 교체한다.
+            this.modelPath = 'onnx/model03.onnx';
+        }
+
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'Vapula'; }
+
+        /** @returns {string} 적 이름 */
+        getName() { return '바퓰라'; }
+
+        /** @returns {{bezel:string, field:string, center:string}} 옥색 의상과 어울리는 필드 테마 */
+        getFieldThemeColors() {
+            return { bezel: '#233e38', field: '#36594e', center: '#101e1a' };
+        }
+
+        /** 사자 갈기 후드·깃털 날개·설계책을 갖춘 인간형의 세 표정을 그린다. */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Vapula');
+        }
+    }
+
+    /** 사자·뱀·말과 별의 전승을 가진 오리아스. 출시 예정이며, 출시 전에는 바퓰라와 같은 ONNX 공통 로직·`model03.onnx`를 임시로 사용한다. */
+    class Oriax extends OnnxEnemy {
+        constructor() {
+            super();
+            this.sortPriority = 14;
+            this.notAvail = true;
+            // 바퓰라와 독립된 경로이므로 나중에 각 적의 모델만 교체할 수 있다.
+            this.modelPath = 'onnx/model03.onnx';
+        }
+
+        /** @returns {string} 진행 상황에 저장할 클래스 이름 */
+        getClassType() { return 'Oriax'; }
+
+        /** @returns {string} 적 이름 */
+        getName() { return '오리아스'; }
+
+        /** @returns {{bezel:string, field:string, center:string}} 별무늬 망토와 어울리는 필드 테마 */
+        getFieldThemeColors() {
+            return { bezel: '#30283f', field: '#49405d', center: '#17121f' };
+        }
+
+        /** 사자 갈기 후드·별 장식·쌍뱀 문양 지팡이를 가진 인간형의 세 표정을 그린다. */
+        drawPortrait(drawingContext, centerX, centerY, scale = 1, expression = 'normal') {
+            drawCuteEnemyPortrait(drawingContext, centerX, centerY, scale, expression, 'Oriax');
         }
     }
 
@@ -19384,7 +20624,9 @@
         createOpponentEntry(() => new Flauros()),
         createOpponentEntry(() => new Andras()),
         createOpponentEntry(() => new Valak()),
-        createOpponentEntry(() => new Zagan())
+        createOpponentEntry(() => new Zagan()),
+        createOpponentEntry(() => new Vapula()),
+        createOpponentEntry(() => new Oriax())
     );
 
     /**
@@ -19459,6 +20701,9 @@
         simulateNMovePlacements,
         findBestNMovePlacement,
         simulateNMovePlacementsInWorker,
+        predictPlayerChain,
+        predictFeverStageChain,
+        getRealtimeGarbageForecast,
         findExplosionsOnBoard,
         findExplosionGroupsOnBoard,
         getChainBonus,
@@ -19491,11 +20736,14 @@
         getWorkerSearchTarget,
         getWorkerSearchRotation,
         Kimaris,
+        RealtimeLookaheadEnemy,
         Andrealphus,
         Flauros,
         Andras,
         Valak,
         Zagan,
+        Vapula,
+        Oriax,
         Puyo,
         RedPuyo,
         GreenPuyo,
@@ -19547,6 +20795,9 @@
         simulateNMovePlacements,
         findBestNMovePlacement,
         simulateNMovePlacementsInWorker,
+        predictPlayerChain,
+        predictFeverStageChain,
+        getRealtimeGarbageForecast,
         findExplosionsOnBoard,
         findExplosionGroupsOnBoard,
         getChainBonus,
