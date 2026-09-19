@@ -20,7 +20,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 90;
+    const BUILDNO = 98;
     /** 일반 텍스트 입력 대화상자의 최대 문자 수다. */
     const TEXT_DIALOG_DEFAULT_MAX_LENGTH = 2000;
     /** 리플레이·시뮬레이터 JSON처럼 붙여 넣는 긴 텍스트의 최대 문자 수다. */
@@ -195,7 +195,7 @@
     /** 한 방향을 대각선으로도 볼지 판단하는 다른 축 대비 최대 배율이다. 값이 클수록 대각선으로 인정하는 범위가 넓어진다. @type {number} */
     const VIRTUAL_JOYSTICK_DIAGONAL_RATIO = 2;
     /** AI 쉬움 난이도에서 빠른 하강을 사용하지 않음을 나타내는 지연 시간이다. @type {number|null} */
-    const AI_FAST_DOWN_DELAY_EASY = null;
+    const AI_FAST_DOWN_DELAY_EASY = 4000;
     /** AI 보통 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
     const AI_FAST_DOWN_DELAY_NORMAL = 1500;
     /** AI 어려움 난이도에서 목표 결정 후 빠른 하강까지 기다리는 시간(ms)이다. @type {number|null} */
@@ -257,6 +257,15 @@
     ];
     /** 새 설정 및 잘못된 저장값에 사용할 기본 그래픽 품질이다. @type {'low'} */
     const DEFAULT_GRAPHICS_QUALITY = 'low';
+    /** 설정 화면에서 고를 수 있는 언어 코드다. 지원하지 않는 시스템 언어와 저장값은 영어로 보정한다. @type {string[]} */
+    const SUPPORTED_LANGUAGE_CODES = ['en', 'ko', 'ja', 'zh', 'fr', 'de'];
+    /** 새 설정 및 잘못된 저장값에 사용할 기본 언어 코드다. */
+    const DEFAULT_LANGUAGE_CODE = 'en';
+    /** 설정 화면의 언어 선택지다. 언어를 바꾸기 전에도 알아볼 수 있도록 각 언어의 자체 표기를 쓴다. @type {{key:string,label:string}[]} */
+    const LANGUAGE_OPTIONS = [
+        { key: 'en', label: 'English' }, { key: 'ko', label: '한국어' }, { key: 'ja', label: '日本語' },
+        { key: 'zh', label: '中文' }, { key: 'fr', label: 'Français' }, { key: 'de', label: 'Deutsch' }
+    ];
     /** 플레이어 이름으로 허용할 최대 글자 수다. */
     const PLAYER_NAME_MAX_LENGTH = 10;
     /** 사운드 데이터 URL로 허용할 최대 글자 수다. */
@@ -500,6 +509,13 @@
         '은하': 'Galaxie', '음소거(꺼짐)': 'Muet (désactivé)', '음소거(활성)': 'Muet (activé)', '화면 가로방향 고정': 'Verrouiller le mode paysage', '피버 (완화)': 'FEVER (adouci)'
     });
 
+    // 설정 화면의 언어 이름은 어느 언어 화면에서도 바로 알아볼 수 있게 선택지 자체는 각 언어의 자체 표기를 쓴다.
+    Object.assign(stringTable.en, { '언어': 'Language' });
+    Object.assign(stringTable.ja, { '언어': '言語' });
+    Object.assign(stringTable.zh, { '언어': '语言' });
+    Object.assign(stringTable.de, { '언어': 'Sprache' });
+    Object.assign(stringTable.fr, { '언어': 'Langue' });
+
     Object.assign(stringTable.en, { '피버 룰 (시작)': 'FEVER Rules (Start)' });
     Object.assign(stringTable.ja, { '피버 룰 (시작)': 'FEVER ルール (開始)' });
     Object.assign(stringTable.zh, { '피버 룰 (시작)': 'FEVER 规则（开始）' });
@@ -511,6 +527,7 @@
 
     // 리플레이 기록·재생 관련 문구다. 독일어·프랑스어 표는 위에서 영어 표를 복사한 뒤이므로 언어별로 각각 추가한다.
     Object.assign(stringTable.en, {
+        '리더보드': 'Leaderboard',
         '리플레이 재생': 'Play Replay', '리플레이 복사': 'Copy Replay',
         '리플레이가 클립보드에 복사됨': 'Replay copied to clipboard', '리플레이 복사 실패': 'Replay copy failed',
         '리플레이 JSON코드를 붙여넣어 주세요.': 'Paste the replay JSON code.',
@@ -518,6 +535,7 @@
         '리플레이 재현 중 오류가 발생했습니다.': 'An error occurred while playing the replay.'
     });
     Object.assign(stringTable.ja, {
+        '리더보드': 'リーダーボード',
         '리플레이 재생': 'リプレイ再生', '리플레이 복사': 'リプレイをコピー',
         '리플레이가 클립보드에 복사됨': 'リプレイをクリップボードにコピーしました', '리플레이 복사 실패': 'リプレイのコピーに失敗しました',
         '리플레이 JSON코드를 붙여넣어 주세요.': 'リプレイのJSONコードを貼り付けてください。',
@@ -525,6 +543,7 @@
         '리플레이 재현 중 오류가 발생했습니다.': 'リプレイの再現中にエラーが発生しました。'
     });
     Object.assign(stringTable.zh, {
+        '리더보드': '排行榜',
         '리플레이 재생': '播放回放', '리플레이 복사': '复制回放',
         '리플레이가 클립보드에 복사됨': '回放已复制到剪贴板', '리플레이 복사 실패': '复制回放失败',
         '리플레이 JSON코드를 붙여넣어 주세요.': '请粘贴回放 JSON 代码。',
@@ -532,6 +551,7 @@
         '리플레이 재현 중 오류가 발생했습니다.': '回放播放过程中发生错误。'
     });
     Object.assign(stringTable.de, {
+        '리더보드': 'Bestenliste',
         '리플레이 재생': 'Wiederholung abspielen', '리플레이 복사': 'Wiederholung kopieren',
         '리플레이가 클립보드에 복사됨': 'Wiederholung in die Zwischenablage kopiert', '리플레이 복사 실패': 'Kopieren der Wiederholung fehlgeschlagen',
         '리플레이 JSON코드를 붙여넣어 주세요.': 'Füge den Wiederholungs-JSON-Code ein.',
@@ -540,6 +560,7 @@
         '리플레이 사용': 'Wiederholung verwenden', '역으로 모델 학습': 'Modell umgekehrt lernen'
     });
     Object.assign(stringTable.fr, {
+        '리더보드': 'Classement',
         '리플레이 재생': 'Lire la reprise', '리플레이 복사': 'Copier la reprise',
         '리플레이가 클립보드에 복사됨': 'Reprise copiée dans le presse-papiers', '리플레이 복사 실패': 'Échec de la copie de la reprise',
         '리플레이 JSON코드를 붙여넣어 주세요.': 'Colle le code JSON de la reprise.',
@@ -814,12 +835,20 @@
     const TITLE_MUTE_FOCUS_INDEX = 8;
     /** 메인 메뉴 리플레이 재생 버튼의 포커스 순번이다. @type {number} */
     const TITLE_REPLAY_FOCUS_INDEX = 9;
-    /** 메인 메뉴 좌측 하단 리플레이 재생 버튼의 위치와 크기다. GitHub 버튼 바로 위에 둔다. @type {{x:number,y:number,width:number,height:number}} */
-    const TITLE_REPLAY_BUTTON = { x: 32, y: 634, width: 85, height: 23 };
-    /** 메인 메뉴 방향키 포커스 이동 순서다. 목록 항목 뒤에 리플레이 재생, GitHub, 음소거 버튼이 온다. @type {number[]} */
+    /** 메인 메뉴 리더보드 버튼의 포커스 순번이다. @type {number} */
+    const TITLE_LEADERBOARD_FOCUS_INDEX = 10;
+    /** 메인 메뉴 좌측 하단 GitHub 버튼의 위치와 크기다. @type {{x:number,y:number,width:number,height:number}} */
+    const TITLE_GITHUB_BUTTON = { x: 32, y: 665, width: 85, height: 23 };
+    /** 메인 메뉴 좌측 하단 리더보드 버튼의 위치와 크기다. GitHub 버튼 바로 위에 둔다. @type {{x:number,y:number,width:number,height:number}} */
+    const TITLE_LEADERBOARD_BUTTON = { x: 32, y: 634, width: 85, height: 23 };
+    /** 메인 메뉴 좌측 하단 리플레이 재생 버튼의 위치와 크기다. 리더보드 버튼 바로 위에 둔다. @type {{x:number,y:number,width:number,height:number}} */
+    const TITLE_REPLAY_BUTTON = { x: 32, y: 603, width: 85, height: 23 };
+    /** 메인 메뉴 좌측 하단 리더보드 버튼이 이동할 리더보드 화면 주소다. 게임 페이지 기준 상대 경로다. @type {string} */
+    const LEADERBOARD_PAGE_URL = './leaderboard.html';
+    /** 메인 메뉴 방향키 포커스 이동 순서다. 목록 항목 뒤에 좌측 하단 버튼을 위에서 아래로(리플레이 재생, 리더보드, GitHub), 이어서 음소거 버튼이 온다. @type {number[]} */
     const TITLE_MENU_FOCUS_ORDER = [
         ...TITLE_MENU_OPTIONS.map((option, index) => index),
-        TITLE_REPLAY_FOCUS_INDEX, TITLE_GITHUB_FOCUS_INDEX, TITLE_MUTE_FOCUS_INDEX
+        TITLE_REPLAY_FOCUS_INDEX, TITLE_LEADERBOARD_FOCUS_INDEX, TITLE_GITHUB_FOCUS_INDEX, TITLE_MUTE_FOCUS_INDEX
     ];
     /** 메인 메뉴의 게임 규칙 선택 오버레이가 열려 있는지 여부다. @type {boolean} */
     let ruleSelectionOpen = false;
@@ -988,7 +1017,7 @@
         { z: false, x: false, enter: false, escape: false }
     ];
     /** 현재 화면 문구에 적용할 언어 코드다. @type {string} */
-    let languageCode = 'ko';
+    let languageCode = DEFAULT_LANGUAGE_CODE;
     /** [CTX] 예약어를 치환할 웹 애플리케이션의 URL 컨텍스트 경로다. @type {string} */
     let urlContextPath = '/';
     /** localStorage에서 불러온 진행도 데이터다. @type {{clearList:string[], clearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, feverStartClearListByDifficulty:Record<'easy'|'normal'|'hard'|'extreme', string[]>, puzzleClearStages:number[], puzzleStarStages:number[]}} */
@@ -2583,11 +2612,29 @@
             puzzleGoldClearStages: [],
             puzzleGoldStarStages: [],
             gold: 0,
-            settings: { playerName: DEFAULT_PLAYER_NAME, musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, landscapeOrientationLocked: false, useReplayFeature: false, reverseLearning: false, soundDataURL: '', ...createDefaultAiSettings() },
+            settings: { playerName: DEFAULT_PLAYER_NAME, language: detectSystemLanguageCode(), musicVolume: 100, effectsVolume: 100, virtualController: 'none', graphicsQuality: DEFAULT_GRAPHICS_QUALITY, landscapeOrientationLocked: false, useReplayFeature: false, reverseLearning: false, soundDataURL: '', ...createDefaultAiSettings() },
             muted: false,
             /** ONNX 추론 적 대전 전 불안정 안내에서 한 번이라도 `계속`을 골랐는지 여부다. */
             onnxWarningAcknowledged: false
         };
+    }
+
+    /** 지원하는 두 글자 언어 코드로 보정한다. @param {unknown} value 언어 코드 후보 @param {string} [fallback=DEFAULT_LANGUAGE_CODE] 보정 실패 시 값 @returns {string} 지원 언어 코드 */
+    function normalizeLanguageCode(value, fallback = DEFAULT_LANGUAGE_CODE) {
+        const code = typeof value === 'string' ? value.trim().slice(0, 2).toLowerCase() : '';
+        return SUPPORTED_LANGUAGE_CODES.includes(code) ? code : fallback;
+    }
+
+    /** 브라우저 시스템 언어를 설정 기본값으로 보정한다. 지원하지 않거나 알 수 없으면 영어를 사용한다. @returns {string} 지원 언어 코드 */
+    function detectSystemLanguageCode() {
+        const systemLanguage = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage) : '';
+        return normalizeLanguageCode(systemLanguage);
+    }
+
+    /** 저장소를 읽은 뒤 설정 언어를 현재 화면 언어로 적용한다. 이후에는 시스템 언어가 아니라 이 값을 유일한 기준으로 쓴다. @returns {void} */
+    function applyStoredLanguage() {
+        languageCode = normalizeLanguageCode(store?.settings?.language, detectSystemLanguageCode());
+        if (store?.settings) store.settings.language = languageCode;
     }
 
     /** 저장되거나 계산된 GOLD를 0 이상의 안전한 정수로 정규화한다. @param {unknown} value GOLD 후보 @returns {number} 정규화한 GOLD */
@@ -3090,6 +3137,7 @@
             store = { clearList: [...new Set(parsed.clearList)], clearListByDifficulty, feverClearListByDifficulty, feverStartClearListByDifficulty, puzzleClearStages, puzzleStarStages,
                 puzzleGoldClearStages, puzzleGoldStarStages, gold: normalizeGold(parsed.gold), settings: {
                 playerName: normalizePlayerName(settings.playerName),
+                language: normalizeLanguageCode(settings.language, initial.settings.language),
                 musicVolume: Number.isInteger(settings.musicVolume) ? Math.max(0, Math.min(100, settings.musicVolume)) : initial.settings.musicVolume,
                 effectsVolume: Number.isInteger(settings.effectsVolume) ? Math.max(0, Math.min(100, settings.effectsVolume)) : initial.settings.effectsVolume,
                 // 이전 켜기/끄기 불리언 저장값도 각각 보통/없음으로 유지한다.
@@ -3529,20 +3577,15 @@
     }
 
     /**
-     * 시스템 언어에서 URL 예약어에 쓸 두 글자 언어 코드를 구한다.
-     * 한국어 원문은 번역표 밖에 있으나 기본 언어이므로 지원 언어로 취급한다.
-     * @returns {string} stringTable에 있는 언어 코드 또는 ko, 그 외에는 en
+     * 설정에서 선택한 언어를 URL 예약어에 쓸 두 글자 코드로 구한다.
+     * @returns {string} 지원 언어 코드
      */
     function getURLLanguageCode() {
-        const systemLanguage = typeof navigator !== 'undefined'
-            ? (navigator.language || navigator.userLanguage || languageCode)
-            : languageCode;
-        const code = typeof systemLanguage === 'string' ? systemLanguage.trim().slice(0, 2).toLowerCase() : '';
-        return code === 'ko' || Object.prototype.hasOwnProperty.call(stringTable, code) ? code : 'en';
+        return normalizeLanguageCode(languageCode);
     }
 
     /**
-     * URL 안의 [CTX], [LANG] 예약어를 현재 컨텍스트 경로와 시스템 언어 코드로 모두 치환한다.
+     * URL 안의 [CTX], [LANG] 예약어를 현재 컨텍스트 경로와 설정 언어 코드로 모두 치환한다.
      * 상대경로와 절대 URL 모두 전달할 수 있다.
      * @param {string} url 변환할 URL
      * @returns {string} 예약어가 치환된 URL
@@ -3575,13 +3618,13 @@
     }
 
     /**
-     * 현재 브라우저 언어에 맞춰 한국어 원문을 번역하고 %1, %2 형식의 인수를 채운다.
+     * 설정에서 선택한 언어에 맞춰 한국어 원문을 번역하고 %1, %2 형식의 인수를 채운다.
      * @param {string} text 한국어 원문 키
      * @param {...(string|number)} values 치환할 값
      * @returns {string} 표시할 문구
      */
     function translate(text, ...values) {
-        const localeTable = stringTable[languageCode] || stringTable[languageCode.split('-')[0]] || stringTable.en;
+        const localeTable = stringTable[languageCode] || stringTable.en;
         const translated = languageCode === 'ko' ? text : localeTable[text] || text;
         return values.reduce((result, value, index) => result.replace(`%${index + 1}`, String(value)), translated);
     }
@@ -8244,6 +8287,226 @@
         };
     }
 
+    /** 리더보드 기록을 저장할 localStorage 키다. */
+    const LEADERBOARD_STORE_KEY = 'puyow_leaderboard';
+    /** 리더보드 저장 형식 버전이다. 구조를 바꾸면 올리고 loadLeaderboard()에서 이관한다. */
+    const LEADERBOARD_FORMAT_VERSION = 2;
+    /** 한 경우(룰·AI 난이도·색 수·적)마다 남길 최대 순위 수다. */
+    const LEADERBOARD_MAX_ENTRIES = 10;
+    /**
+     * 리더보드에 기록하는 룰 목록이다. battle이 true인 룰(적이 있는 대전)은 AI 난이도 → 색 수 → 적 종류별로 순위를 나눈다.
+     * label은 게임 번역표의 한국어 키다. @type {{key:string, label:string, battle:boolean}[]}
+     */
+    const LEADERBOARD_RULES = Object.freeze([
+        Object.freeze({ key: 'standard', label: '기본 룰', battle: true }),
+        Object.freeze({ key: 'fever', label: '피버 룰', battle: true }),
+        Object.freeze({ key: 'fever_start', label: '피버 룰 (시작)', battle: true }),
+        Object.freeze({ key: 'practice', label: '연습', battle: false }),
+        Object.freeze({ key: 'continuous_fever', label: '연속 피버', battle: false })
+    ]);
+    /** 리더보드 기록에서 제외하는 적 종류다. 솔로몬은 모드와 무관하게 기록하지 않는다. */
+    const LEADERBOARD_EXCLUDED_ENEMY_TYPES = new Set(['Solomon']);
+
+    /**
+     * 순위 한 줄을 정리한다. 잘못된 값이면 null이다.
+     * recordedAt은 기록이 발생한 당시의 현재 시각(1970-01-01 UTC 기준 밀리초)이다. 게임 진행 시간이 아니다.
+     * 이 필드가 없거나 잘못된 예전 기록은 null로 보정한다.
+     * @param {*} entry 저장된 값
+     * @returns {{name:string, score:number, recordedAt:number|null}|null} 정리한 기록
+     */
+    function normalizeLeaderboardEntry(entry) {
+        if (!entry || typeof entry !== 'object') return null;
+        const score = Number(entry.score);
+        if (!Number.isFinite(score) || score < 0) return null;
+        const recordedAt = Number(entry.recordedAt);
+        return {
+            name: typeof entry.name === 'string' ? entry.name : '',
+            score: Math.floor(score),
+            recordedAt: entry.recordedAt !== null && entry.recordedAt !== undefined && Number.isFinite(recordedAt) && recordedAt >= 0 ? Math.floor(recordedAt) : null
+        };
+    }
+
+    /** 순위 목록을 점수 내림차순으로 최대 10개까지 정리한다. 동점은 기존 순서를 유지한다. @param {*} list 저장된 값 @returns {{name:string, score:number, recordedAt:number|null}[]} 정리한 목록 */
+    function normalizeLeaderboardList(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map(normalizeLeaderboardEntry).filter(Boolean)
+            .sort((left, right) => right.score - left.score)
+            .slice(0, LEADERBOARD_MAX_ENTRIES);
+    }
+
+    /** AI 난이도 키 목록이다(쉬움·보통·어려움·극한). 대전 룰 기록의 두 번째 단계 키로 쓴다. @returns {string[]} 키 목록 */
+    function getLeaderboardDifficultyKeys() {
+        return AI_DIFFICULTIES.map((difficulty) => difficulty.key);
+    }
+
+    /** 색 수 → 순위 목록 구조(단독 룰)를 정리한다. @param {*} byColor 저장된 값 @returns {object|null} 정리 결과, 비었으면 null */
+    function normalizeLeaderboardSoloRecords(byColor) {
+        if (!byColor || typeof byColor !== 'object') return null;
+        const result = {};
+        Object.keys(byColor).forEach((colorKey) => {
+            if (!/^[3-5]$/.test(colorKey)) return;
+            const list = normalizeLeaderboardList(byColor[colorKey]);
+            if (list.length > 0) result[colorKey] = list;
+        });
+        return Object.keys(result).length > 0 ? result : null;
+    }
+
+    /** 색 수 → 적 종류 → 순위 목록 구조(대전 룰의 한 난이도)를 정리한다. @param {*} byColor 저장된 값 @returns {object|null} 정리 결과, 비었으면 null */
+    function normalizeLeaderboardBattleRecords(byColor) {
+        if (!byColor || typeof byColor !== 'object') return null;
+        const result = {};
+        Object.keys(byColor).forEach((colorKey) => {
+            if (!/^[3-5]$/.test(colorKey)) return;
+            const byEnemy = byColor[colorKey];
+            if (!byEnemy || typeof byEnemy !== 'object' || Array.isArray(byEnemy)) return;
+            Object.keys(byEnemy).forEach((enemyType) => {
+                if (!enemyType || LEADERBOARD_EXCLUDED_ENEMY_TYPES.has(enemyType)) return;
+                const list = normalizeLeaderboardList(byEnemy[enemyType]);
+                if (list.length > 0) (result[colorKey] ||= {})[enemyType] = list;
+            });
+        });
+        return Object.keys(result).length > 0 ? result : null;
+    }
+
+    /**
+     * 저장된 리더보드를 읽어 정리한 새 객체로 반환한다. 파싱 실패나 잘못된 항목은 버린다.
+     * 구조(형식 2): 단독 룰은 records[룰][색 수] = 순위 배열,
+     * 대전 룰은 records[룰][AI 난이도 키][색 수][적 classType] = 순위 배열이다.
+     * 형식 1(BUILDNO 91~93)의 대전 기록은 AI 난이도 정보가 없어 어느 난이도에도 넣지 않고,
+     * 지워지지 않도록 legacy.v1[룰]에 형식 1 구조 그대로 보존한다(화면에는 표시하지 않는다). 단독 룰 기록은 구조가 같아 그대로 옮긴다.
+     * @returns {{version:number, records:object, legacy?:object}} 리더보드 데이터
+     */
+    function loadLeaderboard() {
+        const records = {};
+        let raw = null;
+        try {
+            const serialized = storageManager.getItem(LEADERBOARD_STORE_KEY);
+            raw = serialized ? JSON.parse(serialized) : null;
+        } catch (error) {
+            console.error('리더보드 기록을 읽지 못했습니다.', error);
+        }
+        const rawRecords = raw && typeof raw === 'object' && raw.records && typeof raw.records === 'object' ? raw.records : {};
+        const rawVersion = Number(raw?.version) || 1;
+        let legacy = raw && raw.legacy && typeof raw.legacy === 'object' && !Array.isArray(raw.legacy) ? raw.legacy : null;
+        LEADERBOARD_RULES.forEach((rule) => {
+            const byRule = rawRecords[rule.key];
+            if (!byRule || typeof byRule !== 'object') return;
+            if (!rule.battle) {
+                const solo = normalizeLeaderboardSoloRecords(byRule);
+                if (solo) records[rule.key] = solo;
+                return;
+            }
+            if (rawVersion < 2) {
+                const oldBattle = normalizeLeaderboardBattleRecords(byRule);
+                if (oldBattle) ((legacy ||= {}).v1 ||= {})[rule.key] = oldBattle;
+                return;
+            }
+            getLeaderboardDifficultyKeys().forEach((difficultyKey) => {
+                const battle = normalizeLeaderboardBattleRecords(byRule[difficultyKey]);
+                if (battle) (records[rule.key] ||= {})[difficultyKey] = battle;
+            });
+        });
+        return legacy ? { version: LEADERBOARD_FORMAT_VERSION, records, legacy } : { version: LEADERBOARD_FORMAT_VERSION, records };
+    }
+
+    /**
+     * 리더보드에 점수 하나를 넣고 저장한다. 상위 10위 밖이면 저장하지 않는다.
+     * 기록이 발생한 현재 시각(Date.now())을 recordedAt으로 함께 남긴다.
+     * @param {string} ruleKey LEADERBOARD_RULES의 key
+     * @param {number} colorCount 색 수(3~5)
+     * @param {string|null} enemyType 대전 룰의 적 classType, 단독 룰이면 null
+     * @param {string|null} difficultyKey 대전 룰의 AI 난이도 키(easy·normal·hard·extreme), 단독 룰이면 null
+     * @param {string} name 기록 당시 플레이어 닉네임
+     * @param {number} score 최종 점수
+     * @returns {boolean} 순위에 들어 저장했는지 여부
+     */
+    function addLeaderboardRecord(ruleKey, colorCount, enemyType, difficultyKey, name, score) {
+        const rule = LEADERBOARD_RULES.find((entry) => entry.key === ruleKey);
+        const entry = normalizeLeaderboardEntry({ name, score, recordedAt: Date.now() });
+        if (!rule || !entry) return false;
+        if (rule.battle && (!enemyType || !getLeaderboardDifficultyKeys().includes(difficultyKey))) return false;
+        const data = loadLeaderboard();
+        const byRule = data.records[rule.key] ||= {};
+        const colorKey = String(colorCount);
+        let list;
+        if (rule.battle) list = ((byRule[difficultyKey] ||= {})[colorKey] ||= {})[enemyType] ||= [];
+        else list = byRule[colorKey] ||= [];
+        // 동점은 따로 고려하지 않는다. 먼저 들어간 기록 뒤에 놓이고 10위 밖으로 밀리면 버려진다.
+        const insertIndex = list.findIndex((item) => item.score < entry.score);
+        if (insertIndex < 0 && list.length >= LEADERBOARD_MAX_ENTRIES) return false;
+        list.splice(insertIndex < 0 ? list.length : insertIndex, 0, entry);
+        list.length = Math.min(list.length, LEADERBOARD_MAX_ENTRIES);
+        try {
+            storageManager.setItem(LEADERBOARD_STORE_KEY, JSON.stringify(data));
+        } catch (error) {
+            console.error('리더보드 기록을 저장하지 못했습니다.', error);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 끝난 게임이 리더보드 기록 대상이면 사용자 점수를 기록한다. 결과가 확정되는 updateDefeatSequence()에서 한 번 부른다.
+     * 대전(기본 룰·피버 룰·피버 룰 (시작))은 사용자가 이겼을 때, 연습·연속 피버는 사용자가 패배 조건을 만족했을 때만 기록한다.
+     * 너랑 나랑(오프라인·온라인)·구경·퍼즐뿌요·플레이 방법·리플레이 재생·개발용 도구 테스트와 솔로몬 대전은 기록하지 않는다.
+     * @param {PlayerState} winner 승리한 플레이어
+     * @param {PlayerState} loser 패배한 플레이어
+     * @returns {boolean} 기록했는지 여부
+     */
+    function recordLeaderboardResult(winner, loser) {
+        if (!game || game.leaderboardRecorded) return false;
+        game.leaderboardRecorded = true;
+        if (game.watch || game.together || game.online || game.puzzle || game.tutorial || game.replayPlayback || game.toolsTest) return false;
+        const player = game.players?.[0];
+        if (!player || player.controller !== null) return false;
+        const colorCount = DIFFICULTIES[game.difficulty]?.colors.length;
+        if (!colorCount) return false;
+        if (game.practice) {
+            // 단독 모드는 승리 조건이 없으므로 사용자가 패배했을 때의 최종 점수를 남긴다.
+            if (loser !== player) return false;
+            return addLeaderboardRecord(game.continuousFever ? 'continuous_fever' : 'practice', colorCount, null, null, player.name, player.point);
+        }
+        if (winner !== player) return false;
+        const enemyType = game.players[1]?.controller?.getClassType?.();
+        if (!enemyType || LEADERBOARD_EXCLUDED_ENEMY_TYPES.has(enemyType)) return false;
+        const ruleKey = game.feverStart ? 'fever_start' : game.feverRule ? 'fever' : 'standard';
+        // 적이 있는 대전은 게임 시작 때 고른 AI 난이도마다 순위를 따로 둔다.
+        const difficultyKey = AI_DIFFICULTIES[game.aiDifficulty]?.key;
+        if (!difficultyKey) return false;
+        return addLeaderboardRecord(ruleKey, colorCount, enemyType, difficultyKey, player.name, player.point);
+    }
+
+    /**
+     * 게임 번역표로 한국어 원문을 지정한 언어로 번역한다. 초기화하지 않은 페이지(리더보드 화면)에서도 쓸 수 있다.
+     * 해당 언어에 번역이 없으면 영어, 그것도 없으면 원문을 돌려준다.
+     * @param {string} language 언어 코드(ko, en, ja, zh, de, fr 등)
+     * @param {string} text 한국어 원문 키
+     * @returns {string} 번역한 문구
+     */
+    function translateLeaderboardText(language, text) {
+        const code = typeof language === 'string' ? language.trim().slice(0, 2).toLowerCase() : 'en';
+        if (code === 'ko') return text;
+        return stringTable[code]?.[text] || stringTable.en?.[text] || text;
+    }
+
+    /** 리더보드 화면(leaderboard.html)이 쓰는 읽기 전용 API다. */
+    const leaderboardApi = Object.freeze({
+        STORE_KEY: LEADERBOARD_STORE_KEY,
+        MAX_ENTRIES: LEADERBOARD_MAX_ENTRIES,
+        /** @returns {{key:string, label:string, battle:boolean}[]} 기록 대상 룰 목록 */
+        getRules: () => LEADERBOARD_RULES.map((rule) => ({ ...rule })),
+        /** 대전 룰 기록을 나누는 AI 난이도 목록이다. label은 한국어 원문 키다. @returns {{key:string, label:string}[]} 난이도 목록 */
+        getDifficulties: () => AI_DIFFICULTIES.map((difficulty) => ({ key: difficulty.key, label: difficulty.name })),
+        /** @returns {number[]} 선택할 수 있는 색 수 목록 */
+        getColorCounts: () => DIFFICULTIES.map((difficulty) => difficulty.colors.length),
+        /** 기록 대상이 될 수 있는 적 목록이다(숨김·출시 예정·솔로몬 제외). name은 한국어 원문 키다. @returns {{classType:string, name:string}[]} 적 목록 */
+        getOpponents: () => OPPONENTS
+            .filter((entry) => !entry.hidden && !entry.notAvail && !LEADERBOARD_EXCLUDED_ENEMY_TYPES.has(entry.classType))
+            .map((entry) => ({ classType: entry.classType, name: entry.createController().getName() })),
+        getData: loadLeaderboard,
+        translate: translateLeaderboardText
+    });
+
     /**
      * 대전에서 이긴 적의 클래스명을 한 번만 저장한다.
      * @param {PlayerState} winner 승리한 플레이어
@@ -8571,6 +8834,7 @@
         if (ending.elapsed > ending.duration && !isWinnerSettlementPending(ending.winner)) {
             recordEnemyClear(ending.winner);
             recordTogetherResult(ending.winner);
+            recordLeaderboardResult(ending.winner, ending.loser);
             game.winner = ending.winner;
             awardCurrentGameGold();
             game.running = false;
@@ -9922,9 +10186,14 @@
         player.comboPopups.forEach((popup) => drawComboPopup(x, popup));
         if (!(usesSoloPlayLayout() && player === game.players[1])) {
             context.fillStyle = '#e7f8fa'; context.font = `18px ${MESSAGE_FONT}`; context.textAlign = 'left';
-            context.fillText(player.name, x, 54);
+            context.fillText(getDisplayedPlayerName(player), x, 54);
         }
         if (puzzleTargetField) drawPuzzleStageStatus(x);
+    }
+
+    /** 게임 화면에 표시할 플레이어 이름을 반환한다. CPU 적은 한국어 원문 이름을 보관하고, 그릴 때만 현재 설정 언어로 번역한다. @param {PlayerState} player 대상 플레이어 @returns {string} 화면 표시 이름 */
+    function getDisplayedPlayerName(player) {
+        return player.controller instanceof Enemy ? translate(player.name) : player.name;
     }
 
     /** 패배 연출 중 움직이는 뿌요보다 앞에 고정 베젤을 다시 그린다. @param {PlayerState} player 대상 플레이어 @returns {void} */
@@ -10052,7 +10321,7 @@
             ].forEach(({ player, x, color }, playerIndex) => {
                 context.fillStyle = '#0b202c'; context.fillRect(x, nextAreaY, 148, 150);
                 context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, nextAreaY, 148, 150);
-                context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(`${player.name} NEXT`, x + 74, nextAreaY + 23);
+                context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(`${getDisplayedPlayerName(player)} NEXT`, x + 74, nextAreaY + 23);
                 const displayedPairs = playerIndex === 1 ? [...player.nextPairs.slice(0, 2)].reverse() : player.nextPairs.slice(0, 2);
                 displayedPairs.forEach((pair, pairIndex) => {
                     const pairX = x + 21 + pairIndex * 70;
@@ -10087,7 +10356,7 @@
         scores.forEach(({ player, x, width, color }) => {
             context.fillStyle = '#0b202c'; context.fillRect(x, 492, width, 92);
             context.strokeStyle = color; context.lineWidth = 2; context.strokeRect(x, 492, width, 92);
-            context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(player.name, x + width / 2, 516);
+            context.fillStyle = color; context.font = `13px ${MESSAGE_FONT}`; context.fillText(getDisplayedPlayerName(player), x + width / 2, 516);
             context.fillStyle = '#f5fbfc'; context.font = `22px ${NUMBER_FONT}`; context.fillText(formatPoint(player.point), x + width / 2, 557);
         });
     }
@@ -10438,7 +10707,7 @@
         }
         if (!(usesSoloPlayLayout() && player === game.players[1])) {
             context.fillStyle = '#e7f8fa'; context.font = `18px ${MESSAGE_FONT}`; context.textAlign = 'left';
-            context.fillText(player.name, x, 54);
+            context.fillText(getDisplayedPlayerName(player), x, 54);
         }
         if (puzzleTargetField) drawPuzzleStageStatus(x, true);
     }
@@ -11596,6 +11865,7 @@
         playMenuSelectSound();
         clearSettingsApiTest();
         settingsDraft.playerName = playerNameResult.name;
+        settingsDraft.language = normalizeLanguageCode(settingsDraft.language);
         settingsDraft.soundDataURL = normalizeSoundDataURL(settingsDraft.soundDataURL);
         settingsDraft.aiApiURL = normalizeAiApiURL(settingsDraft.aiApiURL);
         const convertedSoundDataURL = convertURL(settingsDraft.soundDataURL);
@@ -11603,6 +11873,7 @@
         // Local AI는 게임 서버가 직접 모델을 제공하므로 AI API 테스트 없이도 솔로몬을 열어 준다.
         if (isLocalAiProvider(settingsDraft)) unlockSolomonForSession();
         store.settings = { ...settingsDraft };
+        applyStoredLanguage();
         saveStore();
         applyCanvasOutputResolution();
         updateCanvasOrientation();
@@ -11712,8 +11983,8 @@
     function getSelectableSettingsFocuses() {
         // URL·키·모델명은 사용자가 직접 입력하는 LM Studio에서만 쓴다. Local AI는 고정값을 채우고,
         // 아무 제공자도 고르지 않았으면 입력할 대상 자체가 없으므로 세 행을 모두 건너뛴다.
-        const aiSettingFocuses = isLmStudioProvider(settingsDraft) ? [7, 8, 9] : [];
-        return [0, 1, 2, 3, 4, 5, 6, ...aiSettingFocuses, ...(canRunAiApiTest() ? [10] : []), 11, 12, 13, 14, 15, 16];
+        const aiSettingFocuses = isLmStudioProvider(settingsDraft) ? [8, 9, 10] : [];
+        return [0, 1, 2, 3, 4, 5, 6, 7, ...aiSettingFocuses, ...(canRunAiApiTest() ? [11] : []), 12, 13, 14, 15, 16, 17];
     }
 
     /** 설정 화면에서 다음 또는 이전 포커스로 이동한다. @param {number} direction 이동 방향 @returns {void} */
@@ -11851,24 +12122,29 @@
 
     /** 설정 화면의 포커스 항목을 실행한다. @returns {void} */
     function activateSettingsFocus() {
-        if (settingsFocus === 3) {
+        if (settingsFocus === 1) {
+            playMenuSelectSound();
+            const currentIndex = LANGUAGE_OPTIONS.findIndex((option) => option.key === settingsDraft.language);
+            settingsDraft.language = LANGUAGE_OPTIONS[(currentIndex + 1) % LANGUAGE_OPTIONS.length].key;
+        }
+        else if (settingsFocus === 4) {
             playMenuSelectSound();
             const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
             settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + 1) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
         }
-        else if (settingsFocus === 4) {
+        else if (settingsFocus === 5) {
             playMenuSelectSound();
             const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
             settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + 1) % GRAPHICS_QUALITY_OPTIONS.length].key;
-        } else if (settingsFocus === 6) {
+        } else if (settingsFocus === 7) {
             playMenuSelectSound();
             const providers = getAiServiceProviders();
             const currentIndex = providers.indexOf(settingsDraft.aiProvider);
             setSettingsDraftProvider(providers[(currentIndex + 1) % providers.length]);
-        } else if (settingsFocus === 10 && canRunAiApiTest()) { playMenuSelectSound(); runAiApiTest(); }
-        else if (settingsFocus === 14) saveSettings();
-        else if (settingsFocus === 15) cancelSettings();
-        else if (settingsFocus === 16) resetAllSettings();
+        } else if (settingsFocus === 11 && canRunAiApiTest()) { playMenuSelectSound(); runAiApiTest(); }
+        else if (settingsFocus === 15) saveSettings();
+        else if (settingsFocus === 16) cancelSettings();
+        else if (settingsFocus === 17) resetAllSettings();
         else {
             const checkbox = getSettingsCheckboxes().find((candidate) => candidate.focus === settingsFocus);
             if (checkbox) toggleSettingsCheckbox(checkbox);
@@ -11884,17 +12160,17 @@
 
     /** 코드 버튼을 제외하고 축소한 설정 화면의 공통 논리 좌표다. 그리기와 마우스 판정이 함께 사용한다. */
     const SETTINGS_UI_LAYOUT = {
-        rowYs: [82, 126, 170, 214, 258, 302, 346, 390, 434, 478],
+        rowYs: [78, 112, 146, 180, 214, 248, 282, 316, 350, 384, 418],
         labelX: 300,
         controlX: 550,
         controlWidth: 400,
-        controlHeight: 28,
-        optionWidth: 115,
-        optionGap: 20,
-        sliderWidth: 340,
-        testY: 502,
-        testHeight: 32,
-        checkboxY: 568,
+        controlHeight: 24,
+        optionWidth: 110,
+        optionGap: 18,
+        sliderWidth: 330,
+        testY: 448,
+        testHeight: 28,
+        checkboxY: 518,
         // 체크박스 줄은 다른 행과 달리 왼쪽에 별도 라벨 열이 필요 없으므로, controlX(550)가 아니라
         // 라벨 열의 시작 좌표(labelX)부터 시작해 그만큼 왼쪽 공간을 더 쓴다.
         landscapeCheckboxX: 300,
@@ -11902,10 +12178,10 @@
         reverseLearningCheckboxX: 780,
         // 체크박스 하나가 클릭을 받는 가로 폭이다. 체크박스 사이 간격과 같아 라벨을 눌러도 토글된다.
         checkboxHitWidth: 240,
-        checkboxSize: 18,
-        actionY: 652,
+        checkboxSize: 16,
+        actionY: 640,
         actionWidth: 140,
-        actionHeight: 38
+        actionHeight: 34
     };
 
     /** 현재 설정값으로 표시할 행 정보를 만든다. @returns {object[]} 설정 행 */
@@ -11914,6 +12190,7 @@
         const step = SETTINGS_UI_LAYOUT.optionWidth + SETTINGS_UI_LAYOUT.optionGap;
         return [
             { label: '이름', value: settingsDraft.playerName, kind: 'text' },
+            { label: '언어', value: settingsDraft.language, kind: 'radio', options: LANGUAGE_OPTIONS.map((option, index) => ({ ...option, value: option.key, x: x + index * 67, width: 64, translateLabel: false })) },
             { label: '배경음악 볼륨', value: settingsDraft.musicVolume, kind: 'slider' },
             { label: '효과음 볼륨', value: settingsDraft.effectsVolume, kind: 'slider' },
             { label: '가상 컨트롤러 사용', value: settingsDraft.virtualController, kind: 'radio', options: VIRTUAL_CONTROLLER_OPTIONS.map((option, index) => ({ label: option.label, value: option.key, x: x + index * step, translateLabel: true })) },
@@ -11928,7 +12205,11 @@
 
     /** 저장·취소·초기화 버튼 정보를 반환한다. @returns {object[]} 동작 버튼 */
     function getSettingsActionButtons() {
-        return [{ label: '저장', x: 410, focus: 14, color: '#4cc9b0' }, { label: '취소', x: 570, focus: 15, color: '#ef5350' }, { label: '초기화', x: 730, focus: 16, color: '#7e6bc4' }];
+        return [
+            { label: '저장', action: 'save', x: 410, focus: 15, color: '#4cc9b0' },
+            { label: '취소', action: 'cancel', x: 570, focus: 16, color: '#ef5350' },
+            { label: '초기화', action: 'reset', x: 730, focus: 17, color: '#7e6bc4' }
+        ];
     }
 
     /**
@@ -11938,9 +12219,9 @@
      */
     function getSettingsCheckboxes() {
         return [
-            { x: SETTINGS_UI_LAYOUT.landscapeCheckboxX, focus: 11, key: 'landscapeOrientationLocked', label: '화면 가로방향 고정' },
-            { x: SETTINGS_UI_LAYOUT.replayCheckboxX, focus: 12, key: 'useReplayFeature', label: '리플레이 사용' },
-            { x: SETTINGS_UI_LAYOUT.reverseLearningCheckboxX, focus: 13, key: 'reverseLearning', label: '역으로 모델 학습' }
+            { x: SETTINGS_UI_LAYOUT.landscapeCheckboxX, focus: 12, key: 'landscapeOrientationLocked', label: '화면 가로방향 고정' },
+            { x: SETTINGS_UI_LAYOUT.replayCheckboxX, focus: 13, key: 'useReplayFeature', label: '리플레이 사용' },
+            { x: SETTINGS_UI_LAYOUT.reverseLearningCheckboxX, focus: 14, key: 'reverseLearning', label: '역으로 모델 학습' }
         ];
     }
 
@@ -11948,10 +12229,10 @@
     function drawSettings() {
         const layout = SETTINGS_UI_LAYOUT;
         context.fillStyle = '#071621'; context.fillRect(0, 0, WIDTH, HEIGHT);
-        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `30px ${TITLE_FONT}`; context.fillText(translate('설정'), WIDTH / 2, 44);
+        context.textAlign = 'center'; context.fillStyle = '#d8f2f5'; context.font = `28px ${TITLE_FONT}`; context.fillText(translate('설정'), WIDTH / 2, 44);
         const rows = getSettingsRows();
         rows.forEach((row, index) => {
-            context.textAlign = 'left'; context.fillStyle = row.disabled ? '#6f858e' : '#d8f2f5'; context.font = `12px ${BUTTON_FONT}`; context.fillText(translate(row.label), layout.labelX, row.y + 4);
+            context.textAlign = 'left'; context.fillStyle = row.disabled ? '#6f858e' : '#d8f2f5'; context.font = `11px ${BUTTON_FONT}`; context.fillText(translate(row.label), layout.labelX, row.y + 4);
             const focused = settingsFocus === index;
             if (row.kind === 'slider') {
                 context.strokeStyle = focused ? '#ffd54f' : '#426474'; context.lineWidth = focused ? 3 : 2; context.strokeRect(layout.controlX, row.y - 7, layout.sliderWidth, 14);
@@ -11961,13 +12242,14 @@
                 // 아무 선택지도 고르지 않은 상태에서는 포커스를 표시할 선택지가 없으므로 모든 선택지에 포커스 테두리를 그린다.
                 const noneSelected = !row.options.some((option) => row.value === option.value);
                 row.options.forEach((option) => {
+                    const optionWidth = option.width || layout.optionWidth;
                     const selected = row.value === option.value;
                     const focusHighlighted = focused && (selected || noneSelected);
-                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(option.x, row.y - layout.controlHeight / 2, layout.optionWidth, layout.controlHeight);
-                    context.strokeStyle = focusHighlighted ? '#ffd54f' : '#426474'; context.lineWidth = focusHighlighted ? 3 : 2; context.strokeRect(option.x, row.y - layout.controlHeight / 2, layout.optionWidth, layout.controlHeight);
+                    context.fillStyle = selected ? '#563068' : '#0b202c'; context.fillRect(option.x, row.y - layout.controlHeight / 2, optionWidth, layout.controlHeight);
+                    context.strokeStyle = focusHighlighted ? '#ffd54f' : '#426474'; context.lineWidth = focusHighlighted ? 3 : 2; context.strokeRect(option.x, row.y - layout.controlHeight / 2, optionWidth, layout.controlHeight);
                     context.beginPath(); context.arc(option.x + 14, row.y, 5, 0, Math.PI * 2); context.fillStyle = '#d8f2f5'; context.strokeStyle = '#d8f2f5'; context.lineWidth = 2; context.stroke();
                     if (selected) { context.beginPath(); context.arc(option.x + 14, row.y, 2.5, 0, Math.PI * 2); context.fill(); }
-                    context.fillStyle = '#f5fbfc'; context.textAlign = 'center'; context.fillText(option.translateLabel ? translate(option.label) : option.label, option.x + (layout.optionWidth + 14) / 2, row.y + 4);
+                    context.fillStyle = '#f5fbfc'; context.font = `10px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(option.translateLabel ? translate(option.label) : option.label, option.x + (optionWidth + 14) / 2, row.y + 4);
                 });
             } else {
                 context.fillStyle = row.disabled ? '#172932' : '#0b202c'; context.fillRect(layout.controlX, row.y - layout.controlHeight / 2, layout.controlWidth, layout.controlHeight); context.strokeStyle = focused ? '#ffd54f' : (row.disabled ? '#354851' : '#426474'); context.lineWidth = focused ? 3 : 2; context.strokeRect(layout.controlX, row.y - layout.controlHeight / 2, layout.controlWidth, layout.controlHeight);
@@ -11980,7 +12262,7 @@
                 let visibleEnd = visibleStart;
                 while (visibleEnd < characters.length && context.measureText(characters.slice(visibleStart, visibleEnd + 1).join('')).width <= textFieldWidth) visibleEnd += 1;
                 context.save();
-                context.beginPath(); context.rect(textFieldX, row.y - 13, textFieldWidth, 26); context.clip();
+                context.beginPath(); context.rect(textFieldX, row.y - layout.controlHeight / 2 + 2, textFieldWidth, layout.controlHeight - 4); context.clip();
                 const selection = settingsEditing && settingsFocus === index ? getSettingsTextSelectionRange() : null;
                 if (selection) {
                     const selectionStart = Math.max(selection[0], visibleStart);
@@ -11991,27 +12273,27 @@
                         context.fillStyle = '#426f9e'; context.fillRect(selectionX, row.y - 10, selectionWidth, 16);
                     }
                 }
-                context.fillStyle = row.disabled ? '#70838c' : '#f5fbfc'; context.textAlign = 'left'; context.fillText(characters.slice(visibleStart, visibleEnd).join('') || ' ', textFieldX, row.y + 4);
-                if (settingsEditing && settingsFocus === index) { const cursorX = textFieldX + context.measureText(characters.slice(visibleStart, settingsCursor).join('')).width; context.fillStyle = '#ffd54f'; context.fillRect(cursorX, row.y - 10, 2, 16); }
+                context.fillStyle = row.disabled ? '#70838c' : '#f5fbfc'; context.font = `11px ${BUTTON_FONT}`; context.textAlign = 'left'; context.fillText(characters.slice(visibleStart, visibleEnd).join('') || ' ', textFieldX, row.y + 4);
+                if (settingsEditing && settingsFocus === index) { const cursorX = textFieldX + context.measureText(characters.slice(visibleStart, settingsCursor).join('')).width; context.fillStyle = '#ffd54f'; context.fillRect(cursorX, row.y - 8, 2, 14); }
                 context.restore();
             }
         });
         const apiTestEnabled = canRunAiApiTest();
         context.fillStyle = apiTestEnabled ? '#264b5b' : '#263640'; context.fillRect(layout.controlX, layout.testY, layout.controlWidth, layout.testHeight);
-        context.strokeStyle = settingsFocus === 10 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 10 && apiTestEnabled ? 3 : 2; context.strokeRect(layout.controlX, layout.testY, layout.controlWidth, layout.testHeight);
-        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `13px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), layout.controlX + layout.controlWidth / 2, layout.testY + 21);
-        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `10px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), layout.controlX, 552);
+        context.strokeStyle = settingsFocus === 11 && apiTestEnabled ? '#ffd54f' : (apiTestEnabled ? '#4cc9b0' : '#4b5b64'); context.lineWidth = settingsFocus === 11 && apiTestEnabled ? 3 : 2; context.strokeRect(layout.controlX, layout.testY, layout.controlWidth, layout.testHeight);
+        context.fillStyle = apiTestEnabled ? '#f5fbfc' : '#7f969e'; context.font = `12px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate('AI API 테스트'), layout.controlX + layout.controlWidth / 2, layout.testY + 19);
+        context.textAlign = 'left'; context.fillStyle = '#a9d9e5'; context.font = `10px ${MESSAGE_FONT}`; context.fillText(translate('이 API키는 브라우저에만 저장됩니다.'), layout.controlX, 490);
         const checkboxY = layout.checkboxY;
         getSettingsCheckboxes().forEach((checkbox) => {
             context.fillStyle = '#0b202c'; context.fillRect(checkbox.x, checkboxY, layout.checkboxSize, layout.checkboxSize);
             context.strokeStyle = settingsFocus === checkbox.focus ? '#ffd54f' : '#426474'; context.lineWidth = settingsFocus === checkbox.focus ? 3 : 2; context.strokeRect(checkbox.x, checkboxY, layout.checkboxSize, layout.checkboxSize);
             if (settingsDraft[checkbox.key]) {
-                context.strokeStyle = '#4cc9b0'; context.lineWidth = 3; context.beginPath(); context.moveTo(checkbox.x + 3, checkboxY + 9); context.lineTo(checkbox.x + 7, checkboxY + 14); context.lineTo(checkbox.x + 16, checkboxY + 4); context.stroke();
+                context.strokeStyle = '#4cc9b0'; context.lineWidth = 3; context.beginPath(); context.moveTo(checkbox.x + 3, checkboxY + 8); context.lineTo(checkbox.x + 7, checkboxY + 12); context.lineTo(checkbox.x + 14, checkboxY + 4); context.stroke();
             }
-            context.fillStyle = '#f5fbfc'; context.font = `13px ${BUTTON_FONT}`; context.textAlign = 'left'; context.fillText(translate(checkbox.label), checkbox.x + 27, checkboxY + 15);
+            context.fillStyle = '#f5fbfc'; context.font = `12px ${BUTTON_FONT}`; context.textAlign = 'left'; context.fillText(translate(checkbox.label), checkbox.x + 27, checkboxY + 15);
         });
         getSettingsActionButtons().forEach((button) => {
-            context.fillStyle = button.color; context.fillRect(button.x, layout.actionY, layout.actionWidth, layout.actionHeight); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, layout.actionY, layout.actionWidth, layout.actionHeight); context.fillStyle = '#fff'; context.font = `13px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + layout.actionWidth / 2, layout.actionY + 24);
+            context.fillStyle = button.color; context.fillRect(button.x, layout.actionY, layout.actionWidth, layout.actionHeight); context.strokeStyle = settingsFocus === button.focus ? '#ffd54f' : button.color; context.lineWidth = settingsFocus === button.focus ? 3 : 2; context.strokeRect(button.x, layout.actionY, layout.actionWidth, layout.actionHeight); context.fillStyle = '#fff'; context.font = `12px ${BUTTON_FONT}`; context.textAlign = 'center'; context.fillText(translate(button.label), button.x + layout.actionWidth / 2, layout.actionY + 23);
         });
         context.fillStyle = '#8aa6af'; context.font = `10px ${MESSAGE_FONT}`; context.textAlign = 'left'; context.fillText(`Build ${BUILDNO}`, 10, HEIGHT - 10);
         context.fillStyle = '#263640'; context.fillRect(SETTINGS_CODE_BUTTON.x, SETTINGS_CODE_BUTTON.y, SETTINGS_CODE_BUTTON.width, SETTINGS_CODE_BUTTON.height);
@@ -12034,7 +12316,8 @@
         if (!noticeText) return;
         const x = 42; const y = 230; const width = 370; const lineHeight = 18; const lines = [];
         context.save();
-        context.beginPath(); context.rect(x, y, width, 390); context.clip();
+        // 좌측 하단 버튼 묶음 맨 위(리플레이 재생, y=603) 위 8px까지만 그린다.
+        context.beginPath(); context.rect(x, y, width, TITLE_REPLAY_BUTTON.y - 8 - y); context.clip();
         context.fillStyle = '#a9d9e5'; context.textAlign = 'left'; context.font = `13px ${quoteFontNameIfNeeded(MESSAGE_FONT_NAME)}`;
         noticeText.split(/\r?\n/).forEach((sourceLine) => {
             let line = '';
@@ -13815,9 +14098,15 @@
         context.strokeRect(TITLE_REPLAY_BUTTON.x, TITLE_REPLAY_BUTTON.y, TITLE_REPLAY_BUTTON.width, TITLE_REPLAY_BUTTON.height);
         context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`;
         context.fillText(translate('리플레이 재생'), TITLE_REPLAY_BUTTON.x + TITLE_REPLAY_BUTTON.width / 2, TITLE_REPLAY_BUTTON.y + 16);
-        context.fillStyle = '#24292f'; context.fillRect(32, 665, 85, 23);
-        context.strokeStyle = titleMenuFocus === TITLE_GITHUB_FOCUS_INDEX ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === TITLE_GITHUB_FOCUS_INDEX ? 2 : 1; context.strokeRect(32, 665, 85, 23);
-        context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`; context.fillText(translate('GitHub'), 74.5, 681);
+        context.fillStyle = '#3b4f2c'; context.fillRect(TITLE_LEADERBOARD_BUTTON.x, TITLE_LEADERBOARD_BUTTON.y, TITLE_LEADERBOARD_BUTTON.width, TITLE_LEADERBOARD_BUTTON.height);
+        context.strokeStyle = titleMenuFocus === TITLE_LEADERBOARD_FOCUS_INDEX ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === TITLE_LEADERBOARD_FOCUS_INDEX ? 2 : 1;
+        context.strokeRect(TITLE_LEADERBOARD_BUTTON.x, TITLE_LEADERBOARD_BUTTON.y, TITLE_LEADERBOARD_BUTTON.width, TITLE_LEADERBOARD_BUTTON.height);
+        context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`;
+        context.fillText(translate('리더보드'), TITLE_LEADERBOARD_BUTTON.x + TITLE_LEADERBOARD_BUTTON.width / 2, TITLE_LEADERBOARD_BUTTON.y + 16);
+        context.fillStyle = '#24292f'; context.fillRect(TITLE_GITHUB_BUTTON.x, TITLE_GITHUB_BUTTON.y, TITLE_GITHUB_BUTTON.width, TITLE_GITHUB_BUTTON.height);
+        context.strokeStyle = titleMenuFocus === TITLE_GITHUB_FOCUS_INDEX ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === TITLE_GITHUB_FOCUS_INDEX ? 2 : 1;
+        context.strokeRect(TITLE_GITHUB_BUTTON.x, TITLE_GITHUB_BUTTON.y, TITLE_GITHUB_BUTTON.width, TITLE_GITHUB_BUTTON.height);
+        context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`; context.fillText(translate('GitHub'), TITLE_GITHUB_BUTTON.x + TITLE_GITHUB_BUTTON.width / 2, TITLE_GITHUB_BUTTON.y + 16);
         context.fillStyle = store.muted ? '#52606d' : '#264b5b'; context.fillRect(WIDTH - 117, 665, 85, 23);
         context.strokeStyle = titleMenuFocus === TITLE_MUTE_FOCUS_INDEX ? '#f7c843' : '#52606d'; context.lineWidth = titleMenuFocus === TITLE_MUTE_FOCUS_INDEX ? 2 : 1; context.strokeRect(WIDTH - 117, 665, 85, 23);
         context.fillStyle = '#ffffff'; context.font = `10px ${BUTTON_FONT}`; context.fillText(translate(store.muted ? '음소거(활성)' : '음소거(꺼짐)'), WIDTH - 74.5, 681);
@@ -14380,10 +14669,10 @@
     /** 설정 화면에서 편집 가능한 텍스트 입력 필드 이름을 반환한다. @returns {'playerName'|'soundDataURL'|'aiApiURL'|'aiApiKey'|'aiModel'|null} 설정 입력 필드 */
     function getSettingsTextField() {
         if (settingsFocus === 0) return 'playerName';
-        if (settingsFocus === 5) return 'soundDataURL';
-        if (settingsFocus === 7 && isLmStudioProvider(settingsDraft)) return 'aiApiURL';
-        if (settingsFocus === 8 && isLmStudioProvider(settingsDraft)) return 'aiApiKey';
-        if (settingsFocus === 9 && isLmStudioProvider(settingsDraft)) return 'aiModel';
+        if (settingsFocus === 6) return 'soundDataURL';
+        if (settingsFocus === 8 && isLmStudioProvider(settingsDraft)) return 'aiApiURL';
+        if (settingsFocus === 9 && isLmStudioProvider(settingsDraft)) return 'aiApiKey';
+        if (settingsFocus === 10 && isLmStudioProvider(settingsDraft)) return 'aiModel';
         return null;
     }
 
@@ -14499,24 +14788,28 @@
         else if (key === 'arrowup' || key === 'arrowdown') moveSettingsFocus(key === 'arrowup' ? -1 : 1);
         else if (key === 'arrowleft' || key === 'arrowright') {
             const direction = key === 'arrowleft' ? -1 : 1;
-            if (settingsFocus === 1) settingsDraft.musicVolume = Math.max(0, Math.min(100, settingsDraft.musicVolume + direction));
-            else if (settingsFocus === 2) settingsDraft.effectsVolume = Math.max(0, Math.min(100, settingsDraft.effectsVolume + direction));
-            else if (settingsFocus === 3) {
+            if (settingsFocus === 1) {
+                const currentIndex = LANGUAGE_OPTIONS.findIndex((option) => option.key === settingsDraft.language);
+                settingsDraft.language = LANGUAGE_OPTIONS[(currentIndex + direction + LANGUAGE_OPTIONS.length) % LANGUAGE_OPTIONS.length].key;
+            }
+            else if (settingsFocus === 2) settingsDraft.musicVolume = Math.max(0, Math.min(100, settingsDraft.musicVolume + direction));
+            else if (settingsFocus === 3) settingsDraft.effectsVolume = Math.max(0, Math.min(100, settingsDraft.effectsVolume + direction));
+            else if (settingsFocus === 4) {
                 const currentIndex = VIRTUAL_CONTROLLER_OPTIONS.findIndex((option) => option.key === settingsDraft.virtualController);
                 settingsDraft.virtualController = VIRTUAL_CONTROLLER_OPTIONS[(currentIndex + direction + VIRTUAL_CONTROLLER_OPTIONS.length) % VIRTUAL_CONTROLLER_OPTIONS.length].key;
             }
-            else if (settingsFocus === 4) {
+            else if (settingsFocus === 5) {
                 const currentIndex = GRAPHICS_QUALITY_OPTIONS.findIndex((option) => option.key === settingsDraft.graphicsQuality);
                 settingsDraft.graphicsQuality = GRAPHICS_QUALITY_OPTIONS[(currentIndex + direction + GRAPHICS_QUALITY_OPTIONS.length) % GRAPHICS_QUALITY_OPTIONS.length].key;
-            } else if (settingsFocus === 6) {
+            } else if (settingsFocus === 7) {
                 const providers = getAiServiceProviders();
                 const currentIndex = providers.indexOf(settingsDraft.aiProvider);
                 setSettingsDraftProvider(providers[(currentIndex + direction + providers.length) % providers.length]);
-            } else if (settingsFocus >= 11 && settingsFocus <= 13) {
+            } else if (settingsFocus >= 12 && settingsFocus <= 14) {
                 // 체크박스 사이 좌우 이동은 양 끝에서 멈추고 저장·취소 버튼으로 넘어가지 않는다.
-                settingsFocus = Math.max(11, Math.min(13, settingsFocus + direction));
+                settingsFocus = Math.max(12, Math.min(14, settingsFocus + direction));
             }
-            else if (settingsFocus >= 14) settingsFocus = 14 + (settingsFocus - 14 + (direction < 0 ? 2 : 1)) % 3;
+            else if (settingsFocus >= 15) settingsFocus = 15 + (settingsFocus - 15 + (direction < 0 ? 2 : 1)) % 3;
         }
     }
 
@@ -15117,12 +15410,18 @@
         else if (titleMenuFocus === 5) openGallery();
         else if (titleMenuFocus === 6) openSettings();
         else if (titleMenuFocus === TITLE_REPLAY_FOCUS_INDEX) openReplayPlaybackPrompt();
+        else if (titleMenuFocus === TITLE_LEADERBOARD_FOCUS_INDEX) openLeaderboardPage();
         else if (titleMenuFocus === TITLE_GITHUB_FOCUS_INDEX) {
             const githubWindow = window.open(convertURL('https://github.com/HJOW/puyow'), '_blank');
             if (githubWindow) githubWindow.opener = null;
         } else {
             toggleMuted();
         }
+    }
+
+    /** 현재 페이지를 리더보드 화면(leaderboard.html)으로 이동시킨다. @returns {void} */
+    function openLeaderboardPage() {
+        window.location.href = convertURL(LEADERBOARD_PAGE_URL);
     }
 
     /** 일시정지 메뉴에서 방향키로 포커스를 옮긴다. @param {string} key 누른 방향키 @returns {void} */
@@ -15651,8 +15950,11 @@
             } else if (x >= WIDTH - 117 && x <= WIDTH - 32 && y >= 665 && y <= 688) {
                 playMenuSelectSound();
                 toggleMuted();
-            } else if (x >= 32 && x <= 117 && y >= 665 && y <= 688) {
+            } else if (x >= TITLE_GITHUB_BUTTON.x && x <= TITLE_GITHUB_BUTTON.x + TITLE_GITHUB_BUTTON.width && y >= TITLE_GITHUB_BUTTON.y && y <= TITLE_GITHUB_BUTTON.y + TITLE_GITHUB_BUTTON.height) {
                 titleMenuFocus = TITLE_GITHUB_FOCUS_INDEX;
+                activateTitleMenu();
+            } else if (x >= TITLE_LEADERBOARD_BUTTON.x && x <= TITLE_LEADERBOARD_BUTTON.x + TITLE_LEADERBOARD_BUTTON.width && y >= TITLE_LEADERBOARD_BUTTON.y && y <= TITLE_LEADERBOARD_BUTTON.y + TITLE_LEADERBOARD_BUTTON.height) {
+                titleMenuFocus = TITLE_LEADERBOARD_FOCUS_INDEX;
                 activateTitleMenu();
             } else if (x >= TITLE_REPLAY_BUTTON.x && x <= TITLE_REPLAY_BUTTON.x + TITLE_REPLAY_BUTTON.width && y >= TITLE_REPLAY_BUTTON.y && y <= TITLE_REPLAY_BUTTON.y + TITLE_REPLAY_BUTTON.height) {
                 titleMenuFocus = TITLE_REPLAY_FOCUS_INDEX;
@@ -15661,7 +15963,7 @@
         } else if (menuScreen === 'settings') {
             const layout = SETTINGS_UI_LAYOUT;
             if (x >= SETTINGS_CODE_BUTTON.x && x <= SETTINGS_CODE_BUTTON.x + SETTINGS_CODE_BUTTON.width && y >= SETTINGS_CODE_BUTTON.y && y <= SETTINGS_CODE_BUTTON.y + SETTINGS_CODE_BUTTON.height) enterSettingsCode();
-            else if (y >= layout.testY && y <= layout.testY + layout.testHeight && x >= layout.controlX && x <= layout.controlX + layout.controlWidth && canRunAiApiTest()) { playMenuSelectSound(); settingsFocus = 10; runAiApiTest(); }
+            else if (y >= layout.testY && y <= layout.testY + layout.testHeight && x >= layout.controlX && x <= layout.controlX + layout.controlWidth && canRunAiApiTest()) { playMenuSelectSound(); settingsFocus = 11; runAiApiTest(); }
             else if (y >= layout.checkboxY && y <= layout.checkboxY + layout.checkboxSize && x >= layout.landscapeCheckboxX && x <= layout.reverseLearningCheckboxX + layout.checkboxHitWidth) {
                 // 각 체크박스는 자기 위치부터 다음 체크박스 직전까지를 클릭 범위로 가진다.
                 const checkbox = getSettingsCheckboxes().filter((candidate) => x >= candidate.x).pop();
@@ -15671,8 +15973,8 @@
                 const action = getSettingsActionButtons().find((button) => x >= button.x && x <= button.x + layout.actionWidth && y >= layout.actionY && y <= layout.actionY + layout.actionHeight);
                 if (action) {
                     settingsFocus = action.focus;
-                    if (action.focus === 14) saveSettings();
-                    else if (action.focus === 15) cancelSettings();
+                    if (action.action === 'save') saveSettings();
+                    else if (action.action === 'cancel') cancelSettings();
                     else resetAllSettings();
                     return;
                 }
@@ -15680,20 +15982,21 @@
                 const rowIndex = rows.findIndex((row) => {
                     if (row.disabled) return false;
                     if (row.kind === 'slider') return x >= layout.controlX && x <= layout.controlX + layout.sliderWidth && y >= row.y - 7 && y <= row.y + 7;
-                    if (row.kind === 'radio') return row.options.some((option) => x >= option.x && x <= option.x + layout.optionWidth && y >= row.y - layout.controlHeight / 2 && y <= row.y + layout.controlHeight / 2);
+                    if (row.kind === 'radio') return row.options.some((option) => x >= option.x && x <= option.x + (option.width || layout.optionWidth) && y >= row.y - layout.controlHeight / 2 && y <= row.y + layout.controlHeight / 2);
                     return x >= layout.controlX && x <= layout.controlX + layout.controlWidth && y >= row.y - layout.controlHeight / 2 && y <= row.y + layout.controlHeight / 2;
                 });
                 if (rowIndex >= 0) {
                     const row = rows[rowIndex];
                     settingsFocus = rowIndex;
                     if (row.kind === 'slider') {
-                        settingsDraft[rowIndex === 1 ? 'musicVolume' : 'effectsVolume'] = Math.round(Math.max(0, Math.min(100, (x - layout.controlX) / layout.sliderWidth * 100)));
+                        settingsDraft[rowIndex === 2 ? 'musicVolume' : 'effectsVolume'] = Math.round(Math.max(0, Math.min(100, (x - layout.controlX) / layout.sliderWidth * 100)));
                     } else if (row.kind === 'radio') {
-                        const option = row.options.find((candidate) => x >= candidate.x && x <= candidate.x + layout.optionWidth);
+                        const option = row.options.find((candidate) => x >= candidate.x && x <= candidate.x + (candidate.width || layout.optionWidth));
                         if (option) {
                             playMenuSelectSound();
-                            if (rowIndex === 3) settingsDraft.virtualController = option.value;
-                            else if (rowIndex === 4) settingsDraft.graphicsQuality = option.value;
+                            if (rowIndex === 1) settingsDraft.language = option.value;
+                            else if (rowIndex === 4) settingsDraft.virtualController = option.value;
+                            else if (rowIndex === 5) settingsDraft.graphicsQuality = option.value;
                             else setSettingsDraftProvider(option.value);
                         }
                         settingsEditing = false;
@@ -16633,6 +16936,7 @@
                     'A player loses when cell (2, 11) is filled. FEVER rules and continuous fever also use cell (3, 11).',
                     'Keyboard: Left and Right move, Z rotates one way while X and Up rotate the other way, holding Down drops faster, and Escape pauses. Gamepads and an on-screen virtual joystick with Z, X, and ESC buttons also work.',
                     'Modes: the standard rule, FEVER rule, and FEVER rule (start) are matches against a CPU opponent. In the standard rule an all-clear grants a ticket that adds 2100 points and 30 ATTACK to your next colored-puyo explosion. In FEVER rules each player has a FEVER gauge; when it fills, the player plays preset chain patterns on a separate FEVER field under a time limit, and FEVER rule (start) begins both players inside FEVER with 60 seconds. Practice is solo play. Continuous fever is solo FEVER play starting with a 5-chain target and 60 seconds. Puzzle Puyo gives stage objectives (combo, clear, multiple, color, attack) and a recommended turn count. Watch mode shows two CPUs playing each other and restarts 5 seconds after each result. Online play is a two-human match on separate computers through the configured game server; it is available only when that server reports online play enabled.',
+                    'Leaderboard: the top 10 scores are kept only in this browser (localStorage key puyow_leaderboard) with the player name and the date and time when each score was recorded, and are viewed on the separate leaderboard.html page, which the Leaderboard button at the bottom left of the main menu opens in the same tab. Standard, FEVER, and FEVER (start) matches record the final score only when the human player wins, separately for each AI difficulty, color count, and opponent; matches against Solomon are never recorded. Practice and continuous fever record the final score separately for each color count only when the player loses (quitting from the pause menu is not recorded). Together (offline and online), watch mode, Puzzle Puyo, the tutorial, the simulator, and replay playback are never recorded.',
                     'Choosing Together mode in the main menu first opens a selection of Offline Play, Online Play, and Cancel (together_mode_select). Offline Play opens the offline together guide (together_guide), where the rule and color count are chosen. Online Play opens login and signup, then the lobby and room screens; it is hidden when the configured server does not provide online play.',
                     'Offline together mode is a two-human match on one computer: 1P uses the arrow keys, Z, and X (or F, G, H, B), and 2P uses numpad 4, 6, 2, 5 and the [ and ] keys. Neither side is a CPU, and point_recommend only marks the 1P field.',
                     'Replays of recorded matches can be played back from the main menu; during playback no input is accepted except Escape, which skips to the result screen. Online matches cannot be paused or recorded. The tutorial, simulator, gallery, and settings are separate menu screens. Confirmation and text input dialogs capture all input until they are answered.',
@@ -16927,9 +17231,9 @@
         refreshOnnxRuntimeAvailability();
         prepareFontImportStyle();
         prepareRuntimeLayoutStyle();
-        languageCode = navigator.language || navigator.userLanguage || 'ko';
-        if (languageCode === 'ko-KR') languageCode = 'ko';
+        languageCode = detectSystemLanguageCode();
         loadStore();
+        applyStoredLanguage();
         loadCards();
         loadAppliedCodes();
         soundDataURL = store.settings.soundDataURL;
@@ -21072,6 +21376,7 @@
         common: commonFunctions,
         getCommonFunctions: () => commonFunctions,
         tools: toolsApi,
+        leaderboard: leaderboardApi,
         randomFloat,
         randomColor,
         translate,
