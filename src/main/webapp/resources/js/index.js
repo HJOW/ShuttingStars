@@ -190,6 +190,10 @@ window.addEventListener('load', async function() {
         homepageDiv.querySelector('.a_ss_webpuyo').addEventListener('click', function() {
             fStart('./etc/webpuyo/puyow.html');
         });
+		
+		homepageDiv.querySelector('.a_ss_worldwriter').addEventListener('click', function() {
+            fStart('./etc/worldwriter/index.html');
+        });
 
         // 창 크기 변경 이벤트
         const fResize = function() {

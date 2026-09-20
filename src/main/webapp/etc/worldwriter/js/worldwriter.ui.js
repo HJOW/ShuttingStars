@@ -14,13 +14,16 @@
 
 import {
     WorldWriter, Env, Storage, Settings, Projects, Books, AI, Pipeline,
-    Backup, Tools, Chat, WebMcp, PROVIDERS, ITEM_KINDS, KIND_LABELS
+    Backup, AiSocket, Tools, Chat, WebMcp, PROVIDERS, ITEM_KINDS, KIND_LABELS
 } from './worldwriter.core.js';
 
 /* ------------------------------------------------------------------ *
  *  다국어 문자열
  * ------------------------------------------------------------------ */
 
+/**
+ * `I18N` 선언이 담당하는 값을 보관한다.
+ */
 const I18N = {
     ko: {
         'app.title': 'WorldWriter',
@@ -38,6 +41,8 @@ const I18N = {
         'common.error': '오류',
         'common.working': '처리 중입니다...',
         'common.export': '내보내기',
+        'common.add': '추가',
+        'common.reset': '초기화',
         'common.name': '이름',
         'common.summary': '한 줄 요약',
         'common.detail': '상세 설명',
@@ -104,12 +109,22 @@ const I18N = {
         'step2.next': '3단계로 이동',
         'step2.prev': '1단계로 돌아가기',
         'step2.detailAll': '비어 있는 상세 설명 모두 생성',
+        'step2.addItem': '항목 추가',
+        'step2.resetAll': '2단계 초기화',
+        'step2.resetAllConfirm': '등장인물·지역·주요 사건을 모두 삭제하고 1단계로 돌아갑니다. 사건 흐름과 목표 권수도 함께 초기화됩니다. 계속할까요?',
+        'step2.resetKindConfirm': '{0} 항목을 모두 삭제합니다. 사건 흐름과 목표 권수도 함께 초기화됩니다. 계속할까요?',
+        'step2.deleteItemConfirm': '"{0}" 항목을 삭제합니다. 사건 흐름과 목표 권수도 함께 초기화됩니다. 계속할까요?',
+        'step2.newItem': '새 항목',
 
         'step3.title': '사건 흐름',
         'step3.guide': '항목을 끌어서 순서를 바꾸거나 삭제할 수 있습니다.',
         'step3.generate': '사건 흐름 생성',
         'step3.empty': '아직 사건 흐름이 없습니다. "사건 흐름 생성" 을 눌러 주세요.',
         'step3.confirmRegen': '기존 사건 흐름이 지워지고 새로 만들어집니다. 계속할까요?',
+        'step3.targetVolumes': '목표 권수',
+        'step3.targetGuide': '사건 흐름을 생성하기 전에 전체 이야기를 몇 권으로 구성할지 정합니다. AI는 이 권수에 맞춰 권별 전환점과 흐름을 구성합니다.',
+        'step3.setTarget': '목표 권수 설정',
+        'step3.targetChangeConfirm': '목표 권수를 바꾸면 현재 사건 흐름을 지우고 새 권수 기준으로 다시 생성해야 합니다. 계속할까요?',
         'step3.main': '주요',
         'step3.count': '사건 {0}개',
         'step3.next': '4단계로 이동',
@@ -118,9 +133,6 @@ const I18N = {
         'step3.hasBooks': '기존 책을 보존하기 위해 개요 재생성·사건 흐름·목표 권수를 잠갔습니다. 마지막 권부터 모두 삭제하면 변경할 수 있습니다.',
 
         'step4.title': '책 생성',
-        'step4.targetVolumes': '목표 권수',
-        'step4.targetGuide': '전체 사건 흐름을 몇 권으로 나눌지 정합니다. 한 권은 약 10만 ~ 15만 자를 목표로 합니다.',
-        'step4.setTarget': '목표 권수 설정',
         'step4.newBook': '새 책 생성',
         'step4.empty': '아직 생성된 책이 없습니다.',
         'step4.bookInfo': '{0}장 / 약 {1}자',
@@ -138,7 +150,6 @@ const I18N = {
         'step4.cancelling': '현재 응답을 저장한 뒤 중단합니다...',
         'step4.done': '{0} 생성이 끝났습니다.',
         'step4.allDone': '목표 권수({0}권)만큼 모두 생성했습니다.',
-        'step4.needTarget': '먼저 목표 권수를 1 이상의 숫자로 입력해 주세요.',
         'step4.selectBook': '위 목록에서 책을 선택하면 내용을 보거나 수정할 수 있습니다.',
         'step4.volumeOf': '{0}권',
         'step4.exportBook': '이 책 내보내기',
@@ -162,6 +173,9 @@ const I18N = {
         'chat.usingTool': '도구 실행 중: {0}',
         'chat.failed': '채팅에 실패했습니다.',
         'chat.working': '작업 진행 중:',
+        'progress.aiLive': '서버에서 작업 중 · {0}초 경과 (연결 유지 중)',
+        'progress.aiSilent': '서버 응답을 기다리는 중 · {0}초 경과',
+        'progress.aiLocal': '{0}초 경과',
         'backup.button': '백업',
         'backup.title': '프로젝트 백업',
         'backup.hint': '이 프로젝트의 모든 내용(설명·설정·사건 흐름·책 본문·AI 대화)을 JSON 파일로 내려받습니다. 설정 화면의 값은 포함되지 않습니다.',
@@ -215,6 +229,8 @@ const I18N = {
         'common.error': 'Error',
         'common.working': 'Working...',
         'common.export': 'Export',
+        'common.add': 'Add',
+        'common.reset': 'Reset',
         'common.name': 'Name',
         'common.summary': 'Summary',
         'common.detail': 'Details',
@@ -281,12 +297,22 @@ const I18N = {
         'step2.next': 'Go to step 3',
         'step2.prev': 'Back to step 1',
         'step2.detailAll': 'Generate all missing details',
+        'step2.addItem': 'Add item',
+        'step2.resetAll': 'Reset step 2',
+        'step2.resetAllConfirm': 'This deletes all characters, places and events, then returns to step 1. The event flow and target volumes will also be cleared. Continue?',
+        'step2.resetKindConfirm': 'This deletes all {0} items. The event flow and target volumes will also be cleared. Continue?',
+        'step2.deleteItemConfirm': 'Delete "{0}"? The event flow and target volumes will also be cleared. Continue?',
+        'step2.newItem': 'New item',
 
         'step3.title': 'Event flow',
         'step3.guide': 'Drag items to reorder, or delete them.',
         'step3.generate': 'Generate event flow',
         'step3.empty': 'No event flow yet. Press "Generate event flow".',
         'step3.confirmRegen': 'The existing flow will be replaced. Continue?',
+        'step3.targetVolumes': 'Target volumes',
+        'step3.targetGuide': 'Choose how many volumes the whole story will have before generating the event flow. The AI will plan turning points and flow around this count.',
+        'step3.setTarget': 'Set target volumes',
+        'step3.targetChangeConfirm': 'Changing target volumes clears the current event flow. You will need to regenerate it for the new target. Continue?',
         'step3.main': 'main',
         'step3.count': '{0} events',
         'step3.next': 'Go to step 4',
@@ -295,9 +321,6 @@ const I18N = {
         'step3.hasBooks': 'Outline regeneration, event flow and volume count are locked to preserve books. Delete all books from the last volume first to unlock them.',
 
         'step4.title': 'Books',
-        'step4.targetVolumes': 'Target volumes',
-        'step4.targetGuide': 'How many volumes to split the event flow into. Each volume targets 100k-150k characters.',
-        'step4.setTarget': 'Set target volumes',
         'step4.newBook': 'Create next book',
         'step4.empty': 'No books yet.',
         'step4.bookInfo': '{0} chapters / about {1} chars',
@@ -315,7 +338,6 @@ const I18N = {
         'step4.cancelling': 'Stopping after saving the current response...',
         'step4.done': '{0} finished.',
         'step4.allDone': 'All {0} volumes have been generated.',
-        'step4.needTarget': 'Enter a target volume count of 1 or more.',
         'step4.selectBook': 'Pick a book above to read or edit it.',
         'step4.volumeOf': 'Volume {0}',
         'step4.exportBook': 'Export this book',
@@ -339,6 +361,9 @@ const I18N = {
         'chat.usingTool': 'Running tool: {0}',
         'chat.failed': 'The chat request failed.',
         'chat.working': 'Working:',
+        'progress.aiLive': 'Working on the server · {0}s elapsed (connection alive)',
+        'progress.aiSilent': 'Waiting for the server · {0}s elapsed',
+        'progress.aiLocal': '{0}s elapsed',
         'backup.button': 'Back up',
         'backup.title': 'Back up project',
         'backup.hint': 'Downloads everything in this project (description, world-building, event flow, book text, AI chat) as a JSON file. Settings screen values are not included.',
@@ -435,6 +460,9 @@ function h(tag, props) {
     return el;
 }
 
+/**
+ * `appendChild` 작업을 수행한다.
+ */
 function appendChild(parent, child) {
     if (child === null || child === undefined || child === false) return;
     if (Array.isArray(child)) {
@@ -444,6 +472,9 @@ function appendChild(parent, child) {
     parent.appendChild(child instanceof Node ? child : document.createTextNode(String(child)));
 }
 
+/**
+ * `clearNode` 작업을 수행한다.
+ */
 function clearNode(node) {
     while (node.firstChild) node.removeChild(node.firstChild);
 }
@@ -456,10 +487,16 @@ function humanSize(bytes) {
     return (bytes / 1024 / 1024).toFixed(2) + ' MB';
 }
 
+/**
+ * `formatNumber` 작업을 수행한다.
+ */
 function formatNumber(value) {
     return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/**
+ * `formatDate` 작업을 수행한다.
+ */
 function formatDate(ms) {
     const d = new Date(ms);
     const pad = function (n) { return n < 10 ? '0' + n : String(n); };
@@ -471,8 +508,14 @@ function formatDate(ms) {
  *  스타일
  * ------------------------------------------------------------------ */
 
+/**
+ * `STYLE_ID` 선언이 담당하는 값을 보관한다.
+ */
 const STYLE_ID = 'worldwriter-style';
 
+/**
+ * `CSS` 선언이 담당하는 값을 보관한다.
+ */
 const CSS = `
 .ww-app {
     --ww-bg: #f5f6f8;
@@ -611,7 +654,9 @@ body { margin: 0; }
 
 /* 2단계 */
 .ww-groups { display: flex; flex-direction: column; gap: 20px; }
+.ww-group { min-width: 0; }
 .ww-group-title { font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.ww-group-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
 .ww-badge {
     font-size: 11px; padding: 1px 7px; border-radius: 10px;
     background: var(--ww-panel-2); color: var(--ww-text-dim); font-weight: 400;
@@ -674,6 +719,7 @@ body { margin: 0; }
 .ww-modal-message { line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 
 .ww-progress-line { margin-top: 12px; font-size: 13px; color: var(--ww-text-dim); }
+.ww-progress-live { margin-top: 8px; font-size: 12px; color: var(--ww-text-dim); min-height: 16px; }
 .ww-bar { height: 8px; border-radius: 4px; background: var(--ww-panel-2); overflow: hidden; margin-top: 10px; }
 .ww-bar > div { height: 100%; background: var(--ww-accent); width: 0%; transition: width 0.25s; }
 
@@ -747,6 +793,9 @@ body { margin: 0; }
 }
 `;
 
+/**
+ * `injectStyle` 작업을 수행한다.
+ */
 function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
@@ -759,6 +808,9 @@ function injectStyle() {
  *  화면 상태
  * ------------------------------------------------------------------ */
 
+/**
+ * `state` 선언이 담당하는 값을 보관한다.
+ */
 const state = {
     root: null,
     user: '',
@@ -772,15 +824,36 @@ const state = {
     currentBookId: null,
     currentBook: null,
     currentChapterIndex: 0,
-    cancelRequested: false
+    cancelRequested: false,
+    titleProgress: null
 };
 
+/**
+ * `USER_KEY` 선언이 담당하는 값을 보관한다.
+ */
 const USER_KEY = 'ww.currentUser';
+
+/**
+ * 현재 화면과 알려진 작업 진행률을 브라우저 창 제목에 반영한다.
+ * @returns {string} 적용한 브라우저 창 제목
+ */
+function updateDocumentTitle() {
+    const base = (state.screen === 'workspace' && state.project)
+        ? state.project.name + ' - World Writer'
+        : 'World Writer';
+    const progress = state.titleProgress && state.titleProgress.percent;
+    const title = Number.isFinite(progress) ? Math.round(progress) + '% - ' + base : base;
+    if (typeof document !== 'undefined') document.title = title;
+    return title;
+}
 
 /* ------------------------------------------------------------------ *
  *  공통 대화상자
  * ------------------------------------------------------------------ */
 
+/**
+ * `openOverlay` 작업을 수행한다.
+ */
 function openOverlay(modal, options) {
     const opts = options || {};
     const overlay = h('div.ww-overlay', {
@@ -792,6 +865,9 @@ function openOverlay(modal, options) {
     return overlay;
 }
 
+/**
+ * `closeOverlay` 작업을 수행한다.
+ */
 function closeOverlay(overlay) {
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
 }
@@ -821,7 +897,9 @@ function showConfirm(title, message, confirmLabel, danger) {
             h('div.ww-modal-head', { text: title }),
             h('div.ww-modal-body', {}, h('div.ww-modal-message', { text: message })),
             h('div.ww-modal-foot', {},
-                h('button.ww-btn', { text: t('common.cancel'), onClick: function () { finish(false); } }),
+                h('button.ww-btn', { text: t('common.cancel'),
+                    /** 확인 대화상자를 취소 결과로 닫는다. */
+                    onClick: function () { finish(false); } }),
                 h('button.ww-btn' + (danger ? '.danger' : '.primary'), {
                     text: confirmLabel || t('common.ok'),
                     onClick: function () { finish(true); }
@@ -854,11 +932,15 @@ function showPrompt(options) {
                 field,
                 options.hint ? h('div.ww-hint', { text: options.hint }) : null),
             h('div.ww-modal-foot', {},
-                h('button.ww-btn', { text: t('common.cancel'), onClick: function () { finish(null); } }),
+                h('button.ww-btn', { text: t('common.cancel'),
+                    /** 입력 대화상자를 값 없이 닫는다. */
+                    onClick: function () { finish(null); } }),
                 h('button.ww-btn.primary', { text: options.confirmLabel || t('common.ok'), onClick: submit })
             ));
         overlay = openOverlay(modal, { onClose: function () { finish(null); } });
-        setTimeout(function () { field.focus(); }, 0);
+        setTimeout(
+            /** 대화상자가 표시된 다음 입력 필드에 초점을 맞춘다. */
+            function () { field.focus(); }, 0);
     });
 }
 
@@ -866,6 +948,9 @@ function showPrompt(options) {
 function toast(message) {
     const node = h('div.ww-toast', { text: message });
     state.root.appendChild(node);
+/**
+ * `setTimeout` 작업을 수행한다.
+ */
     setTimeout(function () {
         if (node.parentNode) node.parentNode.removeChild(node);
     }, 2600);
@@ -878,6 +963,8 @@ function toast(message) {
 function openProgress(title, options) {
     const opts = options || {};
     const line = h('div.ww-progress-line', { text: opts.text || t('common.working') });
+    // 서버 모드에서는 AI 작업이 살아 있는지 함께 보여 준다. (오래 걸리는 호출 확인용)
+    const liveLine = h('div.ww-progress-live', {});
     const bar = h('div', {});
     const barWrap = h('div.ww-bar', {}, bar);
 
@@ -896,18 +983,55 @@ function openProgress(title, options) {
 
     const modal = h('div.ww-modal', {},
         h('div.ww-modal-head', { text: title }),
-        h('div.ww-modal-body', {}, line, opts.showBar === false ? null : barWrap),
+        h('div.ww-modal-body', {}, line, opts.showBar === false ? null : barWrap, liveLine),
         opts.onCancel ? foot : null);
 
     const overlay = openOverlay(modal, { closeOnBackdrop: false });
+    const titleToken = {};
+
+    const startedAt = Date.now();
+    const tick = setInterval(function () {
+        liveLine.textContent = liveStatusText(startedAt);
+    }, 1000);
 
     return {
         setText: function (text) { line.textContent = text; },
         setProgress: function (current, total) {
-            bar.style.width = (total > 0 ? Math.round(current / total * 100) : 0) + '%';
+            const percent = total > 0 ? Math.max(0, Math.min(100, Math.round(current / total * 100))) : 0;
+            bar.style.width = percent + '%';
+            state.titleProgress = { token: titleToken, percent: percent };
+            updateDocumentTitle();
         },
-        close: function () { closeOverlay(overlay); }
+        close: function () {
+            clearInterval(tick);
+            closeOverlay(overlay);
+            if (state.titleProgress && state.titleProgress.token === titleToken) {
+                state.titleProgress = null;
+                updateDocumentTitle();
+            }
+        }
     };
+}
+
+/**
+ * 진행 중인 작업이 살아 있는지 알려 주는 한 줄을 만든다.
+ * 서버 모드에서는 백엔드가 WebSocket 으로 보내는 진행 알림을 기준으로 표시한다.
+ * @param {number} startedAt 작업 시작 시각(ms)
+ * @returns {string} 표시할 문구
+ */
+function liveStatusText(startedAt) {
+    const seconds = Math.round((Date.now() - startedAt) / 1000);
+    if (seconds < 3) return '';
+
+    const jobs = AiSocket.status();
+    if (jobs.length === 0) return t('progress.aiLocal', seconds);
+
+    // 마지막 알림을 받은 지 얼마 안 됐으면 연결이 살아 있는 것이다.
+    const freshest = jobs.reduce(function (best, job) {
+        return (best === null || job.since < best.since) ? job : best;
+    }, null);
+    const alive = freshest.since < ((AiSocket.info && AiSocket.info.heartbeatMs) || 15000) * 2;
+    return t(alive ? 'progress.aiLive' : 'progress.aiSilent', seconds);
 }
 
 /** 오류를 사용자에게 보여준다. */
@@ -931,6 +1055,9 @@ async function withProgress(title, text, task) {
  *  테마 적용
  * ------------------------------------------------------------------ */
 
+/**
+ * `applyTheme` 작업을 수행한다.
+ */
 function applyTheme() {
     if (!state.root) return;
     state.root.classList.add('ww-app');
@@ -943,7 +1070,11 @@ function applyTheme() {
  *  1) 로그인 화면
  * ------------------------------------------------------------------ */
 
+/**
+ * `renderLogin` 작업을 수행한다.
+ */
 function renderLogin() {
+    updateDocumentTitle();
     const input = h('input.ww-input', {
         type: 'text',
         placeholder: t('login.placeholder'),
@@ -993,6 +1124,9 @@ function renderLogin() {
         ));
 
     mount(view);
+/**
+ * `setTimeout` 작업을 수행한다.
+ */
     setTimeout(function () { input.focus(); }, 0);
 }
 
@@ -1013,6 +1147,9 @@ function storageNoteText(mode) {
     return t('home.storageLocal');
 }
 
+/**
+ * `goHome` 작업을 수행한다.
+ */
 async function goHome() {
     state.screen = 'home';
     state.project = null;
@@ -1033,7 +1170,11 @@ async function useChatScope(projectId) {
     renderChatPanel();
 }
 
+/**
+ * `renderHome` 작업을 수행한다.
+ */
 function renderHome() {
+    updateDocumentTitle();
     const list = state.projects.slice().sort(function (a, b) {
         return (b.updatedAt || 0) - (a.updatedAt || 0);
     });
@@ -1101,6 +1242,9 @@ function renderHome() {
     mount(view);
 }
 
+/**
+ * `createProject` 작업을 수행한다.
+ */
 async function createProject() {
     const name = await showPrompt({ title: t('home.newTitle'), label: t('home.newLabel') });
     if (name === null) return;
@@ -1112,6 +1256,9 @@ async function createProject() {
     }
 }
 
+/**
+ * `openProject` 작업을 수행한다.
+ */
 async function openProject(projectId) {
     try {
         const project = await Projects.load(projectId);
@@ -1138,6 +1285,9 @@ async function openProject(projectId) {
  *  설정 화면
  * ------------------------------------------------------------------ */
 
+/**
+ * `openSettings` 작업을 수행한다.
+ */
 function openSettings() {
     const draft = WorldWriter.util.clone(Settings.current);
     let overlay;
@@ -1263,7 +1413,11 @@ function openSettings() {
  *  3) 작업 화면
  * ------------------------------------------------------------------ */
 
+/**
+ * `renderWorkspace` 작업을 수행한다.
+ */
 function renderWorkspace() {
+    updateDocumentTitle();
     const project = state.project;
     const maxStep = Projects.maxStep(project);
 
@@ -1320,6 +1474,9 @@ function downloadText(fileName, text, mime) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+/**
+ * `setTimeout` 작업을 수행한다.
+ */
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
@@ -1410,6 +1567,9 @@ async function saveProject(rerenderAfter) {
 
 /* --------------------------- 1단계 --------------------------- */
 
+/**
+ * `renderStep1` 작업을 수행한다.
+ */
 function renderStep1(main) {
     const project = state.project;
 
@@ -1464,6 +1624,49 @@ function renderStep1(main) {
 
 /* --------------------------- 2단계 --------------------------- */
 
+/**
+ * 2단계의 지정한 종류에 빈 설정 항목을 추가하고 곧바로 편집 상태로 연다.
+ * @param {string} kind characters | places | events
+ * @returns {Promise<void>}
+ */
+async function addStep2Item(kind) {
+    const project = state.project;
+    try {
+        const item = await Projects.addItem(project, kind, { name: t('step2.newItem') });
+        await Projects.save(project);
+        state.openItems[item.id] = true;
+        renderWorkspace();
+    } catch (error) {
+        await showError(error);
+    }
+}
+
+/**
+ * 2단계의 지정한 종류 또는 전체 설정을 확인 후 초기화한다.
+ * @param {string} [kind] characters | places | events. 생략하면 전체
+ * @returns {Promise<void>}
+ */
+async function resetStep2Items(kind) {
+    const project = state.project;
+    const all = !kind;
+    const label = all ? t('step2.resetAll') : KIND_LABELS[kind];
+    const message = all ? t('step2.resetAllConfirm') : t('step2.resetKindConfirm', label);
+    const confirmed = await showConfirm(label, message, t('common.reset'), true);
+    if (!confirmed) return;
+    try {
+        await Projects.clearItems(project, kind);
+        await Projects.save(project);
+        state.openItems = {};
+        if (all || !ITEM_KINDS.some(function (entry) { return project[entry].length > 0; })) state.step = 1;
+        renderWorkspace();
+    } catch (error) {
+        await showError(error);
+    }
+}
+
+/**
+ * `renderStep2` 작업을 수행한다.
+ */
 function renderStep2(main) {
     const project = state.project;
 
@@ -1472,21 +1675,24 @@ function renderStep2(main) {
         return sum + project[k].filter(function (i) { return !WorldWriter.util.isBlank(i.detail); }).length;
     }, 0);
 
-    if (totalItems === 0) {
-        appendChild(main, [
-            h('h2', { text: t('step2.title') }),
-            h('div.ww-empty', { text: t('step2.empty') })
-        ]);
-        return;
-    }
-
     const groups = ITEM_KINDS.map(function (kind) {
         const items = project[kind];
         const rows = items.map(function (item) { return renderStep2Item(kind, item); });
-        return h('div', {},
+        return h('section.ww-group', {},
             h('div.ww-group-title', {},
                 h('span', { text: KIND_LABELS[kind] }),
-                h('span.ww-badge', { text: String(items.length) })),
+                h('span.ww-badge', { text: String(items.length) }),
+                h('div.ww-group-actions', {},
+                    h('button.ww-btn.small', {
+                        text: t('common.add'),
+                        title: t('step2.addItem'),
+                        onClick: function () { addStep2Item(kind); }
+                    }),
+                    h('button.ww-btn.small.danger', {
+                        text: t('common.reset'),
+                        disabled: items.length === 0,
+                        onClick: function () { resetStep2Items(kind); }
+                    }))),
             rows.length > 0 ? rows : h('div.ww-hint', { text: '-' }));
     });
 
@@ -1494,8 +1700,15 @@ function renderStep2(main) {
         h('h2', { text: t('step2.title') }),
         h('p.ww-guide', { text: t('step2.guide') + ' (' + t('step2.progress', detailed, totalItems) + ')' }),
         h('div.ww-actions', {},
-            h('button.ww-btn', { text: t('step2.prev'), onClick: function () { state.step = 1; renderWorkspace(); } }),
+            h('button.ww-btn', { text: t('step2.prev'),
+                /** 이전 단계 화면으로 이동한다. */
+                onClick: function () { state.step = 1; renderWorkspace(); } }),
             h('button.ww-btn', { text: t('step2.detailAll'), onClick: generateAllDetails }),
+            h('button.ww-btn.danger', {
+                text: t('step2.resetAll'),
+                disabled: totalItems === 0,
+                onClick: function () { resetStep2Items(); }
+            }),
             h('div.ww-spacer', {}),
             h('button.ww-btn.primary', {
                 text: t('step2.next'),
@@ -1509,11 +1722,15 @@ function renderStep2(main) {
                     } catch (e) { await showError(e); }
                 }
             })),
-        !Projects.detailsComplete(project) ? h('p.ww-guide', { text: t('step2.needDetails') }) : null,
+        totalItems === 0 ? h('p.ww-guide', { text: t('step2.empty') })
+            : (!Projects.detailsComplete(project) ? h('p.ww-guide', { text: t('step2.needDetails') }) : null),
         h('div.ww-groups', {}, groups)
     ]);
 }
 
+/**
+ * `renderStep2Item` 작업을 수행한다.
+ */
 function renderStep2Item(kind, item) {
     const project = state.project;
     const opened = state.openItems[item.id] === true;
@@ -1571,6 +1788,27 @@ function renderStep2Item(kind, item) {
                     renderWorkspace();
                     toast(t('common.saved'));
                 }
+            }),
+            h('button.ww-btn.danger', {
+                text: t('common.delete'),
+                onClick: async function () {
+                    const confirmed = await showConfirm(
+                        t('common.delete'),
+                        t('step2.deleteItemConfirm', item.name || t('step2.newItem')),
+                        t('common.delete'),
+                        true
+                    );
+                    if (!confirmed) return;
+                    try {
+                        await Projects.removeItem(project, kind, item.id);
+                        await Projects.save(project);
+                        delete state.openItems[item.id];
+                        if (!ITEM_KINDS.some(function (entry) { return project[entry].length > 0; })) state.step = 1;
+                        renderWorkspace();
+                    } catch (error) {
+                        await showError(error);
+                    }
+                }
             })));
 
     return h('div.ww-item', {}, head, body);
@@ -1614,8 +1852,36 @@ async function generateAllDetails() {
 
 /* --------------------------- 3단계 --------------------------- */
 
+/**
+ * `renderStep3` 작업을 수행한다.
+ */
 function renderStep3(main) {
     const project = state.project;
+    const hasTarget = Number.isSafeInteger(project.targetVolumes) && project.targetVolumes > 0;
+
+    const setTarget = async function () {
+        const value = await showPrompt({
+            title: t('step3.setTarget'),
+            label: t('step3.targetVolumes'),
+            hint: t('step3.targetGuide'),
+            type: 'number',
+            value: project.targetVolumes || 3
+        });
+        if (value === null) return;
+        let count;
+        try { count = Projects.validateFlowTarget(project, value); }
+        catch (error) { await showError(error); return; }
+        if (project.flow.length > 0 && project.targetVolumes !== count) {
+            const confirmed = await showConfirm(t('step3.setTarget'), t('step3.targetChangeConfirm'), t('common.regenerate'), true);
+            if (!confirmed) return;
+        }
+        try {
+            await Projects.setTargetVolumes(project, count);
+            await saveProject();
+        } catch (error) {
+            await showError(error);
+        }
+    };
 
     const generate = async function () {
         if (project.flow.length > 0) {
@@ -1639,18 +1905,29 @@ function renderStep3(main) {
             text: t('step3.guide')
                 + (project.books.length > 0 ? ' ' + t('step3.hasBooks') : '')
         }),
+        h('p.ww-guide', { text: t('step3.targetGuide') }),
         h('div.ww-actions', {},
-            h('button.ww-btn', { text: t('step3.prev'), onClick: function () { state.step = 2; renderWorkspace(); } }),
+            h('button.ww-btn', { text: t('step3.prev'),
+                /** 설정 검토 단계 화면으로 이동한다. */
+                onClick: function () { state.step = 2; renderWorkspace(); } }),
+            h('button.ww-btn.small', {
+                text: t('step3.setTarget'),
+                disabled: project.books.length > 0,
+                onClick: setTarget
+            }),
+            h('span.ww-badge', {
+                text: t('step3.targetVolumes') + ': ' + (hasTarget ? project.targetVolumes : '-')
+            }),
             h('button.ww-btn' + (project.flow.length === 0 ? '.primary' : ''), {
                 text: project.flow.length === 0 ? t('step3.generate') : t('common.regenerate'),
-                disabled: project.books.length > 0 || !Projects.detailsComplete(project),
+                disabled: project.books.length > 0 || !Projects.detailsComplete(project) || !hasTarget,
                 onClick: generate
             }),
             h('span.ww-badge', { text: t('step3.count', project.flow.length) }),
             h('div.ww-spacer', {}),
             h('button.ww-btn.primary', {
                 text: t('step3.next'),
-                disabled: project.flow.length === 0,
+                disabled: project.flow.length === 0 || !hasTarget,
                 onClick: function () { state.step = 4; renderWorkspace(); }
             }))
     ];
@@ -1663,6 +1940,9 @@ function renderStep3(main) {
     appendChild(main, header.concat([renderFlowList()]));
 }
 
+/**
+ * `renderFlowList` 작업을 수행한다.
+ */
 function renderFlowList() {
     const project = state.project;
     const container = h('div.ww-flow', {});
@@ -1727,41 +2007,25 @@ function renderFlowList() {
 
 /* --------------------------- 4단계 --------------------------- */
 
+/**
+ * `renderStep4` 작업을 수행한다.
+ */
 function renderStep4(main) {
     const project = state.project;
     const hasTarget = (project.targetVolumes || 0) > 0;
     const unfinished = project.books.find(meta => meta.status && meta.status !== 'complete');
     const allDone = hasTarget && project.books.length >= project.targetVolumes && !unfinished;
 
-    const setTarget = async function () {
-        const value = await showPrompt({
-            title: t('step4.setTarget'),
-            label: t('step4.targetVolumes'),
-            hint: t('step4.targetGuide'),
-            type: 'number',
-            value: project.targetVolumes || Math.min(3, project.flow.length)
-        });
-        if (value === null) return;
-        let count;
-        try { count = Projects.validateTarget(project, value); }
-        catch (e) { await showError(e); return; }
-        project.targetVolumes = count;
-        await saveProject();
-    };
-
     const header = [
         h('h2', { text: t('step4.title') }),
-        h('p.ww-guide', { text: t('step4.targetGuide') }),
         h('p.ww-guide', { text: t('step4.costGuide') }),
         h('div.ww-actions', {},
-            h('button.ww-btn', { text: t('step3.title'), onClick: function () { state.step = 3; renderWorkspace(); } }),
+            h('button.ww-btn', { text: t('step3.title'),
+                /** 사건 흐름 단계 화면으로 이동한다. */
+                onClick: function () { state.step = 3; renderWorkspace(); } }),
             h('span.ww-badge', {
-                text: t('step4.targetVolumes') + ': ' + (hasTarget ? project.targetVolumes : '-')
+                text: t('step3.targetVolumes') + ': ' + (hasTarget ? project.targetVolumes : '-')
             }),
-            // 책이 하나라도 생성된 뒤에는 권수 변경을 막는다. (기존 권과 배분이 어긋나기 때문)
-            project.books.length === 0
-                ? h('button.ww-btn.small', { text: t('step4.setTarget'), onClick: setTarget })
-                : null,
             h('div.ww-spacer', {}),
             h('button.ww-btn.primary', {
                 text: unfinished ? t('step4.resume') : t('step4.newBook'),
@@ -1801,6 +2065,9 @@ function renderStep4(main) {
     appendChild(main, renderBookEditor());
 }
 
+/**
+ * `selectBook` 작업을 수행한다.
+ */
 async function selectBook(bookId) {
     try {
         const book = await Books.load(state.project.id, bookId);
@@ -1813,6 +2080,9 @@ async function selectBook(bookId) {
     }
 }
 
+/**
+ * `renderBookEditor` 작업을 수행한다.
+ */
 function renderBookEditor() {
     const project = state.project;
     const book = state.currentBook;
@@ -1896,23 +2166,15 @@ function updateBookMeta(book) {
     list.push(meta);
 }
 
+/**
+ * `generateNextBook` 작업을 수행한다.
+ */
 async function generateNextBook() {
     const project = state.project;
 
     if (!(project.targetVolumes > 0)) {
-        const value = await showPrompt({
-            title: t('step4.setTarget'),
-            label: t('step4.targetVolumes'),
-            hint: t('step4.targetGuide'),
-            type: 'number',
-            value: Math.min(3, project.flow.length)
-        });
-        if (value === null) return;
-        let count;
-        try { count = Projects.validateTarget(project, value); }
-        catch (e) { await showError(e); return; }
-        project.targetVolumes = count;
-        await Projects.save(project);
+        await showAlert(t('step3.setTarget'), t('step3.targetGuide'));
+        return;
     }
 
     state.cancelRequested = false;
@@ -1955,6 +2217,9 @@ async function generateNextBook() {
     }
 }
 
+/**
+ * `deleteLastBook` 작업을 수행한다.
+ */
 async function deleteLastBook() {
     const project = state.project;
     if (project.books.length === 0) return;
@@ -2128,10 +2393,16 @@ function runBackground(kind, task) {
 
 /** 코어의 Tools 에 등록할 화면 조작 어댑터 */
 const ToolAdapter = {
+/**
+ * `get_screen` 작업을 수행한다.
+ */
     async get_screen() {
         return collectScreenContext();
     },
 
+/**
+ * `list_projects` 작업을 수행한다.
+ */
     async list_projects() {
         const list = await Projects.list();
         state.projects = list;
@@ -2141,18 +2412,27 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `create_project` 작업을 수행한다.
+ */
     async create_project(args) {
         const project = await Projects.create(args.name);
         if (state.screen === 'home') await goHome();
         return { id: project.id, name: project.name };
     },
 
+/**
+ * `open_project` 작업을 수행한다.
+ */
     async open_project(args) {
         await openProject(args.projectId);
         if (!state.project || state.project.id !== args.projectId) throw new Error(t('tool.noProject', args.projectId));
         return { ok: true, step: state.step, name: state.project.name };
     },
 
+/**
+ * `rename_project` 작업을 수행한다.
+ */
     async rename_project(args) {
         await Projects.rename(args.projectId, args.name);
         if (state.project && state.project.id === args.projectId) state.project.name = args.name.trim();
@@ -2160,6 +2440,9 @@ const ToolAdapter = {
         return { ok: true };
     },
 
+/**
+ * `delete_project` 작업을 수행한다.
+ */
     async delete_project(args) {
         await Projects.remove(args.projectId);
         if (state.project && state.project.id === args.projectId) await goHome();
@@ -2167,11 +2450,17 @@ const ToolAdapter = {
         return { ok: true };
     },
 
+/**
+ * `go_home` 작업을 수행한다.
+ */
     async go_home() {
         await goHome();
         return { ok: true, screen: 'home' };
     },
 
+/**
+ * `go_step` 작업을 수행한다.
+ */
     async go_step(args) {
         const project = requireProject();
         const step = Math.round(args.step);
@@ -2182,6 +2471,9 @@ const ToolAdapter = {
         return { ok: true, step: step };
     },
 
+/**
+ * `get_project` 작업을 수행한다.
+ */
     async get_project() {
         const project = requireProject();
         return {
@@ -2194,6 +2486,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `set_description` 작업을 수행한다.
+ */
     async set_description(args) {
         const project = requireProject();
         project.description = args.text;
@@ -2202,6 +2497,9 @@ const ToolAdapter = {
         return { ok: true, length: project.description.length };
     },
 
+/**
+ * `generate_outline` 작업을 수행한다.
+ */
     async generate_outline() {
         const project = requireProject();
         return runBackground('outline', async function () {
@@ -2212,6 +2510,9 @@ const ToolAdapter = {
         });
     },
 
+/**
+ * `list_items` 작업을 수행한다.
+ */
     async list_items(args) {
         const project = requireProject();
         const kinds = args.kind ? [requireKind(args.kind)] : ITEM_KINDS;
@@ -2224,6 +2525,9 @@ const ToolAdapter = {
         return out;
     },
 
+/**
+ * `update_item` 작업을 수행한다.
+ */
     async update_item(args) {
         const project = requireProject();
         const kind = requireKind(args.kind);
@@ -2237,6 +2541,62 @@ const ToolAdapter = {
         return { ok: true, item: { id: item.id, name: item.name, summary: item.summary, detail: item.detail } };
     },
 
+    /**
+     * 2단계 설정 항목을 추가한다.
+     * @param {{kind: string, name?: string, summary?: string, detail?: string}} args 도구 인자
+     * @returns {Promise<object>} 추가한 항목
+     */
+    async add_item(args) {
+        const project = requireProject();
+        const kind = requireKind(args.kind);
+        const item = await Projects.addItem(project, kind, {
+            name: args.name === undefined ? t('step2.newItem') : args.name,
+            summary: args.summary,
+            detail: args.detail
+        });
+        await Projects.save(project);
+        if (state.screen === 'workspace') {
+            state.openItems[item.id] = true;
+            renderWorkspace();
+        }
+        return { ok: true, item: item };
+    },
+
+    /**
+     * 2단계 설정 항목을 선택한 종류 또는 전체에서 삭제한다.
+     * @param {{kind?: string}} args 도구 인자
+     * @returns {Promise<object>} 초기화 결과
+     */
+    async clear_items(args) {
+        const project = requireProject();
+        const kind = args.kind === undefined ? undefined : requireKind(args.kind);
+        const cleared = await Projects.clearItems(project, kind);
+        await Projects.save(project);
+        state.openItems = {};
+        if (!kind || !ITEM_KINDS.some(function (entry) { return project[entry].length > 0; })) state.step = 1;
+        if (state.screen === 'workspace') renderWorkspace();
+        return { ok: true, cleared: cleared };
+    },
+
+    /**
+     * 2단계 설정 항목 하나를 삭제한다.
+     * @param {{kind: string, itemId: string}} args 도구 인자
+     * @returns {Promise<object>} 삭제 결과
+     */
+    async remove_item(args) {
+        const project = requireProject();
+        const kind = requireKind(args.kind);
+        const removed = await Projects.removeItem(project, kind, args.itemId);
+        await Projects.save(project);
+        delete state.openItems[args.itemId];
+        if (!ITEM_KINDS.some(function (entry) { return project[entry].length > 0; })) state.step = 1;
+        if (state.screen === 'workspace') renderWorkspace();
+        return { ok: true, removed: removed };
+    },
+
+/**
+ * `generate_item_detail` 작업을 수행한다.
+ */
     async generate_item_detail(args) {
         const project = requireProject();
         const kind = requireKind(args.kind);
@@ -2247,6 +2607,9 @@ const ToolAdapter = {
         });
     },
 
+/**
+ * `generate_all_details` 작업을 수행한다.
+ */
     async generate_all_details() {
         const project = requireProject();
         const targets = [];
@@ -2269,6 +2632,9 @@ const ToolAdapter = {
         });
     },
 
+/**
+ * `get_flow` 작업을 수행한다.
+ */
     async get_flow() {
         const project = requireProject();
         return {
@@ -2278,6 +2644,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `generate_flow` 작업을 수행한다.
+ */
     async generate_flow() {
         const project = requireProject();
         return runBackground('flow', async function () {
@@ -2288,6 +2657,9 @@ const ToolAdapter = {
         });
     },
 
+/**
+ * `move_flow_item` 작업을 수행한다.
+ */
     async move_flow_item(args) {
         const project = requireProject();
         await Projects.assertStructureEditable(project);
@@ -2301,6 +2673,9 @@ const ToolAdapter = {
         return { ok: true, from: from, to: to };
     },
 
+/**
+ * `remove_flow_item` 작업을 수행한다.
+ */
     async remove_flow_item(args) {
         const project = requireProject();
         await Projects.assertStructureEditable(project);
@@ -2312,15 +2687,20 @@ const ToolAdapter = {
         return { ok: true, remaining: project.flow.length };
     },
 
+/**
+ * `set_target_volumes` 작업을 수행한다.
+ */
     async set_target_volumes(args) {
         const project = requireProject();
-        const count = Projects.validateTarget(project, args.count);
-        project.targetVolumes = count;
+        const result = await Projects.setTargetVolumes(project, args.count);
         await Projects.save(project);
-        if (state.step === 4) renderWorkspace();
-        return { ok: true, targetVolumes: count };
+        if (state.step === 3 || state.step === 4) renderWorkspace();
+        return { ok: true, targetVolumes: result.count, flowCleared: result.flowCleared };
     },
 
+/**
+ * `list_books` 작업을 수행한다.
+ */
     async list_books() {
         const project = requireProject();
         return {
@@ -2335,6 +2715,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `open_book` 작업을 수행한다.
+ */
     async open_book(args) {
         const project = requireProject();
         findBookMeta(project, args.bookId);
@@ -2352,6 +2735,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `get_chapter` 작업을 수행한다.
+ */
     async get_chapter(args) {
         const project = requireProject();
         const bookId = args.bookId || state.currentBookId;
@@ -2371,6 +2757,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `set_chapter_text` 작업을 수행한다.
+ */
     async set_chapter_text(args) {
         const project = requireProject();
         const book = await loadBookFor(project, args.bookId);
@@ -2383,6 +2772,9 @@ const ToolAdapter = {
         return { ok: true, charCount: chapter.text.length };
     },
 
+/**
+ * `revise_chapter` 작업을 수행한다.
+ */
     async revise_chapter(args) {
         const project = requireProject();
         const book = await loadBookFor(project, args.bookId);
@@ -2398,6 +2790,9 @@ const ToolAdapter = {
         });
     },
 
+/**
+ * `export_book_text` 작업을 수행한다.
+ */
     async export_book_text(args) {
         const project = requireProject();
         const book = await loadBookFor(project, args.bookId);
@@ -2410,6 +2805,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `delete_last_book` 작업을 수행한다.
+ */
     async delete_last_book() {
         const project = requireProject();
         if (project.books.length === 0) throw new Error(t('tool.noBooks'));
@@ -2424,6 +2822,9 @@ const ToolAdapter = {
         return { ok: true, deleted: last.title, remaining: state.project.books.length };
     },
 
+/**
+ * `generate_next_book` 작업을 수행한다.
+ */
     async generate_next_book() {
         const project = requireProject();
         if (!(project.targetVolumes > 0)) throw new Error(t('tool.needTarget'));
@@ -2445,6 +2846,9 @@ const ToolAdapter = {
         });
     },
 
+/**
+ * `generation_status` 작업을 수행한다.
+ */
     async generation_status() {
         const g = state.generation;
         return {
@@ -2452,16 +2856,26 @@ const ToolAdapter = {
             current: g.current, total: g.total,
             charCount: g.charCount, targetChars: g.targetChars,
             message: g.message, error: g.error,
-            cancelRequested: state.cancelRequested
+            cancelRequested: state.cancelRequested,
+            // 백엔드로 보낸 AI 요청이 아직 진행 중인지도 함께 알려 준다.
+            aiTransport: AiSocket.supported() ? 'websocket' : (Env.isServer() ? 'http' : Env.mode),
+            aiSocketState: AiSocket.state,
+            aiRequests: AiSocket.status()
         };
     },
 
+/**
+ * `stop_generation` 작업을 수행한다.
+ */
     async stop_generation() {
         if (!state.generation.running) return { ok: true, running: false };
         state.cancelRequested = true;
         return { ok: true, stopping: true };
     },
 
+/**
+ * `backup_project` 작업을 수행한다.
+ */
     async backup_project(args) {
         const projectId = args.projectId || (state.project && state.project.id);
         if (!projectId) throw new Error(t('tool.needProject'));
@@ -2480,6 +2894,9 @@ const ToolAdapter = {
         return Object.assign({ tooLarge: false, json: json }, summary);
     },
 
+/**
+ * `restore_project` 작업을 수행한다.
+ */
     async restore_project(args) {
         let data;
         try {
@@ -2492,6 +2909,9 @@ const ToolAdapter = {
         return { ok: true, id: project.id, name: project.name, books: project.books.length };
     },
 
+/**
+ * `get_display_settings` 작업을 수행한다.
+ */
     async get_display_settings() {
         return {
             language: Settings.current.language,
@@ -2500,6 +2920,9 @@ const ToolAdapter = {
         };
     },
 
+/**
+ * `set_display_settings` 작업을 수행한다.
+ */
     async set_display_settings(args) {
         const next = WorldWriter.util.clone(Settings.current);
         if (args.language !== undefined) {
@@ -2554,6 +2977,11 @@ function renderChatPanel() {
         let text = state.chat.status;
         if (!text && generation.running) {
             text = t('chat.working') + ' ' + (generation.title || generation.kind);
+        }
+        // 백엔드로 보낸 AI 요청이 진행 중이면 경과 시간을 덧붙인다.
+        const jobs = AiSocket.status();
+        if (text && jobs.length > 0) {
+            text += ' · ' + Math.round(jobs[0].elapsed / 1000) + 's';
         }
         status.textContent = text || '';
     }
@@ -2679,12 +3107,18 @@ function attachChat(view) {
  *  화면 전환
  * ------------------------------------------------------------------ */
 
+/**
+ * `mount` 작업을 수행한다.
+ */
 function mount(view) {
     // 열려 있는 모달은 유지하지 않는다. (화면이 바뀌면 함께 닫힌다.)
     clearNode(state.root);
     state.root.appendChild(attachChat(view));
 }
 
+/**
+ * `rerender` 작업을 수행한다.
+ */
 function rerender() {
     if (state.screen === 'login') renderLogin();
     else if (state.screen === 'home') renderHome();
@@ -2695,6 +3129,9 @@ function rerender() {
  *  진입점
  * ------------------------------------------------------------------ */
 
+/**
+ * `WorldWriterUI` 선언이 담당하는 값을 보관한다.
+ */
 const WorldWriterUI = {
     /**
      * UI 를 초기화한다. index.html 의 DOMContentLoaded 시점에 호출된다.

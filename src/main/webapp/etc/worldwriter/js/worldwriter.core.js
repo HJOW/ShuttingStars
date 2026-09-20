@@ -49,7 +49,13 @@ function localize(ko, en, settings = Settings.current) {
     return settings.language === 'en' ? en : ko;
 }
 
+/**
+ * `activeGenerations` 선언이 담당하는 값을 보관한다.
+ */
 const activeGenerations = new Set();
+/**
+ * `BOOK_LENGTH` 선언이 담당하는 값을 보관한다.
+ */
 const BOOK_LENGTH = { min: 100000, target: 125000, max: 150000 };
 
 /* ------------------------------------------------------------------ *
@@ -60,12 +66,18 @@ const BOOK_LENGTH = { min: 100000, target: 125000, max: 150000 };
  *  둘 다 아니면 localStorage 와 브라우저 직접 호출을 사용한다.
  * ------------------------------------------------------------------ */
 
+/**
+ * `Env` 선언이 담당하는 값을 보관한다.
+ */
 const Env = {
     mode: 'local',      // 'local' | 'server' | 'desktop'
     backend: null,      // 백엔드 또는 데스크톱 앱이 알려준 정보
     desktop: null,      // electron preload 가 노출한 브리지
     detected: false,
 
+/**
+ * `detect` 작업을 수행한다.
+ */
     async detect() {
         if (this.detected) return this.mode;
         this.detected = true;
@@ -99,8 +111,14 @@ const Env = {
         return this.mode;
     },
 
+/**
+ * `isServer` 작업을 수행한다.
+ */
     isServer() { return this.mode === 'server'; },
 
+/**
+ * `isDesktop` 작업을 수행한다.
+ */
     isDesktop() { return this.mode === 'desktop'; }
 };
 
@@ -120,9 +138,15 @@ function desktopResult(body) {
  *   - desktop : electron 앱 데이터 폴더의 파일 저장소 (<userData>/data/<사용자명>/)
  * ------------------------------------------------------------------ */
 
+/**
+ * `Storage` 선언이 담당하는 값을 보관한다.
+ */
 const Storage = {
     user: '',
 
+/**
+ * `setUser` 작업을 수행한다.
+ */
     setUser(userName) {
         this.user = String(userName || '').trim();
     },
@@ -132,6 +156,9 @@ const Storage = {
         return 'ww.' + encodeURIComponent(this.user) + '.' + key;
     },
 
+/**
+ * `get` 작업을 수행한다.
+ */
     async get(key, defaultValue) {
         if (Env.isDesktop()) {
             const body = desktopResult(await Env.desktop.storeGet(this.user, key));
@@ -154,6 +181,9 @@ const Storage = {
         }
     },
 
+/**
+ * `set` 작업을 수행한다.
+ */
     async set(key, value) {
         if (Env.isDesktop()) {
             desktopResult(await Env.desktop.storeSet(this.user, key, value));
@@ -177,6 +207,9 @@ const Storage = {
         }
     },
 
+/**
+ * `remove` 작업을 수행한다.
+ */
     async remove(key) {
         if (Env.isDesktop()) {
             desktopResult(await Env.desktop.storeRemove(this.user, key));
@@ -209,6 +242,9 @@ const Storage = {
  *  AI 공급자 정의
  * ------------------------------------------------------------------ */
 
+/**
+ * `PROVIDERS` 선언이 담당하는 값을 보관한다.
+ */
 const PROVIDERS = {
     openai: {
         label: 'OpenAI',
@@ -233,6 +269,9 @@ const PROVIDERS = {
     }
 };
 
+/**
+ * `DEFAULT_SETTINGS` 선언이 담당하는 값을 보관한다.
+ */
 const DEFAULT_SETTINGS = {
     provider: 'openai',
     apiKeys: { openai: '', claude: '', lmstudio: '' },
@@ -242,14 +281,24 @@ const DEFAULT_SETTINGS = {
     darkMode: false
 };
 
+/**
+ * `LANGUAGE_NAMES` 선언이 담당하는 값을 보관한다.
+ */
 const LANGUAGE_NAMES = { ko: '한국어', en: 'English' };
 
 /** 로그인 전에도 언어/테마를 적용하기 위한 별도 보관 키 */
 const UI_PREF_KEY = 'ww.uipref';
 
+/**
+ * `Settings` 선언이 담당하는 값을 보관한다.
+ */
 const Settings = {
     current: clone(DEFAULT_SETTINGS),
 
+    /**
+     * 저장된 설정을 읽어 기본값과 병합한다.
+     * @returns {Promise<object>} 현재 적용된 설정
+     */
     async load() {
         const saved = await Storage.get('settings', null);
         this.current = Object.assign(clone(DEFAULT_SETTINGS), saved || {});
@@ -258,6 +307,9 @@ const Settings = {
         return this.current;
     },
 
+/**
+ * `save` 작업을 수행한다.
+ */
     async save(settings) {
         const merged = Object.assign(clone(DEFAULT_SETTINGS), settings || {});
         merged.apiKeys = Object.assign({}, DEFAULT_SETTINGS.apiKeys, merged.apiKeys || {});
@@ -291,6 +343,9 @@ const Settings = {
         return isBlank(chosen) ? spec.defaultModel : String(chosen).trim();
     },
 
+/**
+ * `baseUrlOf` 작업을 수행한다.
+ */
     baseUrlOf(settings) {
         const conf = settings || this.current;
         const spec = PROVIDERS[conf.provider] || PROVIDERS.openai;
@@ -301,11 +356,17 @@ const Settings = {
         return spec.defaultBaseUrl;
     },
 
+/**
+ * `apiKeyOf` 작업을 수행한다.
+ */
     apiKeyOf(settings) {
         const conf = settings || this.current;
         return String((conf.apiKeys || {})[conf.provider] || '').trim();
     },
 
+/**
+ * `languageName` 작업을 수행한다.
+ */
     languageName(settings) {
         const conf = settings || this.current;
         return LANGUAGE_NAMES[conf.language] || LANGUAGE_NAMES.ko;
@@ -407,21 +468,333 @@ async function callClaude(conf, request) {
         .join('');
 }
 
+/* ------------------------------------------------------------------ *
+ *  AI 작업용 WebSocket 연결 (server 모드 전용)
+ *
+ *  AI 한 번 호출이 수 분까지 걸릴 수 있어 일반 HTTP 요청은 브라우저·프록시의
+ *  시간 제한에 걸리기 쉽다. 백엔드가 WebSocket 을 제공하면 그 연결로 요청을 보내고
+ *  진행 알림을 받아 연결을 살려 둔다.
+ *
+ *  연결이 끊겨도 서버는 작업을 계속하므로, 다시 연결해 같은 작업 id 로 붙으면
+ *  진행 상태나 완료된 결과를 그대로 받는다. WebSocket 을 쓸 수 없는 환경
+ *  (구버전 백엔드, 소켓을 막는 프록시)에서는 기존 `/api/ai` 호출로 되돌아간다.
+ * ------------------------------------------------------------------ */
+
+/** 연결 시도 실패 후 다시 시도하기까지의 간격(ms) */
+const AI_SOCKET_RETRY_MS = 2000;
+
+/** 연결을 기다리는 최대 시간(ms). 이 안에 열리지 않으면 HTTP 로 처리한다. */
+const AI_SOCKET_OPEN_TIMEOUT = 8000;
+
+/** 진행 알림이 이 시간 동안 없으면 연결이 죽은 것으로 보고 다시 붙는다. */
+const AI_SOCKET_SILENCE_MS = 60000;
+
+/**
+ * `AiSocket` 선언이 담당하는 값을 보관한다.
+ */
+const AiSocket = {
+    /** 'idle' | 'connecting' | 'open' | 'closed' | 'unsupported' */
+    state: 'idle',
+
+    /** 열려 있는 WebSocket */
+    socket: null,
+
+    /** 서버가 알려준 규약 정보 */
+    info: null,
+
+    /** 진행 중이거나 결과를 기다리는 작업 : Map<id, job> */
+    jobs: new Map(),
+
+    /** 연결을 기다리는 대기열 */
+    waiting: [],
+
+    /** 사용자가 끈 경우 다시 연결하지 않는다. */
+    stopped: false,
+
+    /** 이 백엔드가 WebSocket 을 제공하는지 확인한다. */
+    supported() {
+        if (typeof WebSocket === 'undefined') return false;
+        if (!Env.isServer()) return false;
+        // 구버전 백엔드는 health 에 websocket 표시가 없다.
+        return !!(Env.backend && Env.backend.websocket);
+    },
+
+    /** 연결할 주소를 만든다. (현재 페이지 주소 기준) */
+    url() {
+        const path = (Env.backend && Env.backend.wsPath) || '/api/ws';
+        const base = new URL(path, window.location.href);
+        base.protocol = (base.protocol === 'https:') ? 'wss:' : 'ws:';
+        return base.toString();
+    },
+
+    /**
+     * 연결을 열고 기다린다. 이미 열려 있으면 그대로 돌려준다.
+     * @returns {Promise<WebSocket|null>} 열린 소켓. 열 수 없으면 null
+     */
+    connect() {
+        if (!this.supported()) {
+            this.state = 'unsupported';
+            return Promise.resolve(null);
+        }
+        if (this.socket && this.state === 'open') return Promise.resolve(this.socket);
+        if (this.state === 'connecting') {
+            return new Promise((resolve) => { this.waiting.push(resolve); });
+        }
+
+        this.state = 'connecting';
+        this.stopped = false;
+        return new Promise((resolve) => {
+            let settled = false;
+            const done = (socket) => {
+                if (settled) return;
+                settled = true;
+                const queue = this.waiting;
+                this.waiting = [];
+                queue.forEach(function (fn) { fn(socket); });
+                resolve(socket);
+            };
+
+            let socket;
+            try {
+                socket = new WebSocket(this.url());
+            } catch (e) {
+                this.state = 'closed';
+                done(null);
+                return;
+            }
+            this.socket = socket;
+
+            const timer = setTimeout(() => {
+                if (this.state !== 'open') {
+                    try { socket.close(); } catch (e) { /* 무시 */ }
+                    this.state = 'closed';
+                    done(null);
+                }
+            }, AI_SOCKET_OPEN_TIMEOUT);
+
+            socket.onopen = () => {
+                clearTimeout(timer);
+                this.state = 'open';
+                // 아직 못 보낸 요청은 보내고, 서버가 이미 받은 작업에는 다시 붙는다.
+                this.jobs.forEach((job) => this.submit(job));
+                done(socket);
+            };
+            socket.onmessage = (event) => this.receive(event);
+            socket.onerror = () => { /* onclose 에서 함께 처리한다. */ };
+            socket.onclose = () => {
+                clearTimeout(timer);
+                this.socket = null;
+                this.state = this.stopped ? 'idle' : 'closed';
+                done(null);
+                // 기다리는 작업이 남아 있으면 다시 연결해 결과를 받아 온다.
+                if (!this.stopped && this.hasPending()) {
+                    setTimeout(() => { this.connect(); }, AI_SOCKET_RETRY_MS);
+                }
+            };
+        });
+    },
+
+    /**
+     * 작업을 서버에 보낸다. 상태에 따라 새 요청과 재접속을 구분한다.
+     *  - pending/sent : 아직 서버가 받았는지 모르므로 요청을 보낸다.
+     *                   (서버는 같은 id 를 다시 받으면 새로 시작하지 않고 붙여 준다)
+     *  - running      : 서버가 이미 받아 진행 중이므로 다시 붙기만 한다.
+     * @param {object} job 작업 객체
+     * @returns {void}
+     */
+    submit(job) {
+        if (job.state === 'done' || job.state === 'error') return;
+        if (job.state === 'running') {
+            this.send({ type: 'attach', id: job.id });
+            return;
+        }
+        if (this.send({ type: 'ai', id: job.id, payload: job.payload })) job.state = 'sent';
+    },
+
+    /** 결과를 기다리는 작업이 남아 있는지 확인한다. */
+    hasPending() {
+        let pending = false;
+        this.jobs.forEach(function (job) {
+            if (job.state !== 'done' && job.state !== 'error') pending = true;
+        });
+        return pending;
+    },
+
+    /** 메시지를 보낸다. */
+    send(message) {
+        if (!this.socket || this.state !== 'open') return false;
+        try {
+            this.socket.send(JSON.stringify(message));
+            return true;
+        } catch (e) {
+            return false;
+        }
+    },
+
+    /** 서버가 보낸 메시지를 처리한다. */
+    receive(event) {
+        let message;
+        try {
+            message = JSON.parse(event.data);
+        } catch (e) {
+            return;
+        }
+        if (message.type === 'hello') {
+            this.info = message;
+            return;
+        }
+        const job = message.id ? this.jobs.get(message.id) : null;
+        if (!job) return;
+
+        job.lastMessageAt = Date.now();
+        if (message.type === 'accepted' || message.type === 'progress') {
+            job.state = 'running';
+            if (typeof message.elapsed === 'number') job.elapsed = message.elapsed;
+            if (typeof job.onProgress === 'function') {
+                try { job.onProgress(this.describe(job)); } catch (e) { /* 표시 실패는 무시한다. */ }
+            }
+            return;
+        }
+        if (message.type === 'result') {
+            job.state = 'done';
+            this.jobs.delete(job.id);
+            job.resolve(String(message.text || ''));
+            return;
+        }
+        if (message.type === 'error') {
+            job.state = 'error';
+            this.jobs.delete(job.id);
+            job.reject(new Error(message.error || localize('AI 호출에 실패했습니다.', 'AI request failed.')));
+        }
+    },
+
+    /** 작업 상태 요약 */
+    describe(job) {
+        return {
+            id: job.id,
+            state: job.state,
+            elapsed: Date.now() - job.startedAt,
+            since: Date.now() - (job.lastMessageAt || job.startedAt)
+        };
+    },
+
+    /**
+     * 진행 중인 AI 작업 목록을 돌려준다. 화면에서 "계속 진행 중"을 보여줄 때 쓴다.
+     * @returns {Array<object>} 작업 요약 목록
+     */
+    status() {
+        const out = [];
+        this.jobs.forEach((job) => out.push(this.describe(job)));
+        return out;
+    },
+
+    /**
+     * AI 호출 하나를 WebSocket 으로 보내고 결과를 기다린다.
+     * @param {object} payload `/api/ai` 와 같은 형식의 요청
+     * @param {{onProgress?: Function}} [options] 진행 알림 콜백
+     * @returns {Promise<string>} AI 응답 본문
+     */
+    request(payload, options) {
+        const opts = options || {};
+        const id = newId('job');
+        const self = this;
+
+        return new Promise(function (resolve, reject) {
+            const job = {
+                id: id,
+                state: 'pending',
+                startedAt: Date.now(),
+                lastMessageAt: Date.now(),
+                elapsed: 0,
+                payload: payload,
+                onProgress: opts.onProgress,
+                resolve: resolve,
+                reject: reject
+            };
+            self.jobs.set(id, job);
+
+            // 진행 알림이 오래 끊기면 연결을 새로 열어 작업에 다시 붙는다.
+            job.watchdog = setInterval(function () {
+                if (!self.jobs.has(id)) {
+                    clearInterval(job.watchdog);
+                    return;
+                }
+                if (Date.now() - job.lastMessageAt < AI_SOCKET_SILENCE_MS) return;
+                job.lastMessageAt = Date.now();
+                if (self.state === 'open') self.submit(job);
+                else self.connect();
+            }, AI_SOCKET_SILENCE_MS / 2);
+            if (job.watchdog && job.watchdog.unref) job.watchdog.unref();
+
+            const cleanup = function () { clearInterval(job.watchdog); };
+            const originalResolve = job.resolve;
+            const originalReject = job.reject;
+            job.resolve = function (value) { cleanup(); originalResolve(value); };
+            job.reject = function (error) { cleanup(); originalReject(error); };
+
+            self.connect().then(function (socket) {
+                if (!socket) {
+                    self.jobs.delete(id);
+                    job.reject(new Error(localize('AI 서버 연결(WebSocket)을 열지 못했습니다.',
+                        'Could not open the AI server connection (WebSocket).')));
+                    return;
+                }
+                // onopen 에서 이미 보냈을 수 있다. 서버가 같은 id 를 중복 처리하지 않는다.
+                if (job.state === 'pending') self.submit(job);
+            });
+        });
+    },
+
+    /** 연결을 닫는다. (로그아웃·테스트 정리용) */
+    disconnect() {
+        this.stopped = true;
+        this.jobs.clear();
+        if (this.socket) {
+            try { this.socket.close(); } catch (e) { /* 무시 */ }
+        }
+        this.socket = null;
+        this.state = 'idle';
+    }
+};
+
 /** 백엔드 중계를 통한 호출 (CORS 회피) */
+/** 백엔드에 보낼 요청 본문을 만든다. HTTP 와 WebSocket 이 같은 형식을 쓴다. */
+function backendPayload(conf, request) {
+    return {
+        provider: conf.provider,
+        language: conf.language,
+        model: Settings.modelOf(conf),
+        apiKey: Settings.apiKeyOf(conf),
+        baseUrl: Settings.baseUrlOf(conf),
+        system: request.system || '',
+        messages: request.messages,
+        maxTokens: request.maxTokens
+    };
+}
+
+/**
+ * 백엔드 중계를 통한 호출.
+ * WebSocket 을 쓸 수 있으면 그쪽으로 보내 시간 제한을 피하고, 안 되면 HTTP 로 처리한다.
+ */
 async function callViaBackend(conf, request) {
+    if (AiSocket.supported()) {
+        try {
+            return await AiSocket.request(backendPayload(conf, request), { onProgress: request.onProgress });
+        } catch (error) {
+            // 연결 자체를 열지 못한 경우에만 HTTP 로 되돌아간다. (공급자 오류는 그대로 알린다)
+            if (String(error && error.message).indexOf('WebSocket') < 0) throw error;
+            console.warn('WebSocket 을 쓰지 못해 HTTP 로 AI 를 호출합니다.', error);
+        }
+    }
+    return await callViaBackendHttp(conf, request);
+}
+
+/** 기존 방식의 HTTP 호출 (구버전 백엔드나 소켓이 막힌 환경에서 사용) */
+async function callViaBackendHttp(conf, request) {
     const res = await fetch('./api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            provider: conf.provider,
-            language: conf.language,
-            model: Settings.modelOf(conf),
-            apiKey: Settings.apiKeyOf(conf),
-            baseUrl: Settings.baseUrlOf(conf),
-            system: request.system || '',
-            messages: request.messages,
-            maxTokens: request.maxTokens
-        })
+        body: JSON.stringify(backendPayload(conf, request))
     });
     if (!res.ok) throw new Error(await readErrorMessage(res));
     const body = await res.json();
@@ -444,6 +817,9 @@ async function callViaDesktop(conf, request) {
     return String(body.text || '');
 }
 
+/**
+ * `AI` 선언이 담당하는 값을 보관한다.
+ */
 const AI = {
     /**
      * AI 에게 한 번 질의하고 텍스트 응답을 받는다.
@@ -461,7 +837,9 @@ const AI = {
         const request = {
             system: options.system || '',
             messages: options.messages || [{ role: 'user', content: options.prompt || '' }],
-            maxTokens: options.maxTokens || 8000
+            maxTokens: options.maxTokens || 8000,
+            // 백엔드가 보내는 진행 알림을 화면에 전달할 때 쓴다.
+            onProgress: options.onProgress
         };
 
         if (Env.isDesktop()) return await callViaDesktop(conf, request);
@@ -535,14 +913,23 @@ function parseJsonLoosely(text) {
  *  프로젝트 데이터
  * ------------------------------------------------------------------ */
 
+/**
+ * `ITEM_KINDS` 선언이 담당하는 값을 보관한다.
+ */
 const ITEM_KINDS = ['characters', 'places', 'events'];
 
+/**
+ * `KIND_LABELS` 선언이 담당하는 값을 보관한다.
+ */
 const KIND_LABELS = {
     get characters() { return localize('등장인물', 'Characters'); },
     get places() { return localize('지역', 'Places'); },
     get events() { return localize('주요 사건', 'Major events'); }
 };
 
+/**
+ * `emptyProject` 작업을 수행한다.
+ */
 function emptyProject(name) {
     const now = Date.now();
     return {
@@ -560,6 +947,9 @@ function emptyProject(name) {
     };
 }
 
+/**
+ * `Projects` 선언이 담당하는 값을 보관한다.
+ */
 const Projects = {
     /** 프로젝트 목록 (요약 정보만) */
     async list() {
@@ -567,10 +957,16 @@ const Projects = {
         return Array.isArray(list) ? list : [];
     },
 
+/**
+ * `saveList` 작업을 수행한다.
+ */
     async saveList(list) {
         await Storage.set('projects', list);
     },
 
+/**
+ * `create` 작업을 수행한다.
+ */
     async create(name) {
         if (isBlank(name)) throw new Error(localize('프로젝트 이름을 입력해 주세요.', 'Enter a project name.'));
         const project = emptyProject(name);
@@ -584,6 +980,9 @@ const Projects = {
         return project;
     },
 
+/**
+ * `load` 작업을 수행한다.
+ */
     async load(projectId) {
         const project = await Storage.get('project.' + projectId, null);
         if (!project) throw new Error(localize('프로젝트를 찾을 수 없습니다.', 'Project not found.'));
@@ -601,6 +1000,9 @@ const Projects = {
         return project;
     },
 
+/**
+ * `save` 작업을 수행한다.
+ */
     async save(project) {
         const saved = await Storage.get('project.' + project.id, null);
         if (saved && (saved.books || []).length > 0) {
@@ -627,6 +1029,9 @@ const Projects = {
         return project;
     },
 
+/**
+ * `remove` 작업을 수행한다.
+ */
     async remove(projectId) {
         if (activeGenerations.has(projectId)) throw new Error(localize('생성을 중단한 후 삭제해 주세요.', 'Stop generation before deleting.'));
         const project = await Storage.get('project.' + projectId, null);
@@ -642,6 +1047,9 @@ const Projects = {
         await this.saveList(list.filter(function (p) { return p.id !== projectId; }));
     },
 
+/**
+ * `rename` 작업을 수행한다.
+ */
     async rename(projectId, name) {
         if (isBlank(name)) throw new Error(localize('프로젝트 이름을 입력해 주세요.', 'Enter a project name.'));
         const project = await this.load(projectId);
@@ -659,6 +1067,9 @@ const Projects = {
             && project[kind].every(item => !isBlank(item.name) && !isBlank(item.detail)));
     },
 
+/**
+ * `validateTarget` 작업을 수행한다.
+ */
     validateTarget(project, value) {
         const text = String(value).trim();
         const count = Number(text);
@@ -672,6 +1083,42 @@ const Projects = {
         return count;
     },
 
+    /**
+     * 사건 흐름 생성 전에 사용할 목표 권수를 검증한다.
+     * 흐름은 최대 80개 항목으로 생성하므로 권수도 그 범위 안에서 받는다.
+     * @param {object} project 대상 프로젝트
+     * @param {string|number} value 목표 권수
+     * @returns {number} 검증한 목표 권수
+     */
+    validateFlowTarget(project, value) {
+        const text = String(value).trim();
+        const count = Number(text);
+        if (!/^\d+$/.test(text) || !Number.isSafeInteger(count) || count < 1 || count > 80) {
+            throw new Error(localize('목표 권수는 사건 흐름 생성 전에 1부터 80 사이의 정수로 지정해 주세요.',
+                'Before generating the event flow, set target volumes to an integer between 1 and 80.'));
+        }
+        return count;
+    },
+
+    /**
+     * 3단계의 목표 권수를 지정한다.
+     * 이미 만든 사건 흐름과 다른 권수를 선택하면 흐름을 비워 새 권수 기준으로 다시 생성하게 한다.
+     * @param {object} project 대상 프로젝트
+     * @param {string|number} value 목표 권수
+     * @returns {Promise<{count: number, flowCleared: boolean}>} 저장할 권수와 흐름 초기화 여부
+     */
+    async setTargetVolumes(project, value) {
+        await this.assertStructureEditable(project);
+        const count = this.validateFlowTarget(project, value);
+        const flowCleared = (project.flow || []).length > 0 && Number(project.targetVolumes) !== count;
+        project.targetVolumes = count;
+        if (flowCleared) project.flow = [];
+        return { count: count, flowCleared: flowCleared };
+    },
+
+/**
+ * `assertStructureEditable` 작업을 수행한다.
+ */
     async assertStructureEditable(project) {
         const saved = await Storage.get('project.' + project.id, null);
         if (project.books.length > 0 || (saved && (saved.books || []).length > 0)) {
@@ -680,6 +1127,74 @@ const Projects = {
         }
     },
 
+    /**
+     * 2단계 설정 항목을 하나 추가한다.
+     * @param {object} project 대상 프로젝트
+     * @param {string} kind characters | places | events
+     * @param {{name?: string, summary?: string, detail?: string}} [values] 새 항목의 초기값
+     * @returns {Promise<object>} 추가한 항목
+     */
+    async addItem(project, kind, values) {
+        if (ITEM_KINDS.indexOf(kind) < 0) {
+            throw new Error(localize('설정 항목 종류가 올바르지 않습니다.', 'The item kind is invalid.'));
+        }
+        await this.assertStructureEditable(project);
+        const source = values || {};
+        const item = {
+            id: newId('itm'),
+            name: String(source.name || '').trim(),
+            summary: String(source.summary || '').trim(),
+            detail: String(source.detail || '').trim()
+        };
+        project[kind].push(item);
+        return item;
+    },
+
+    /**
+     * 2단계 설정 항목 하나를 삭제하고 관련 사건 흐름과 목표 권수도 초기화한다.
+     * @param {object} project 대상 프로젝트
+     * @param {string} kind characters | places | events
+     * @param {string} itemId 삭제할 항목 식별자
+     * @returns {Promise<object>} 삭제한 항목
+     */
+    async removeItem(project, kind, itemId) {
+        if (ITEM_KINDS.indexOf(kind) < 0) {
+            throw new Error(localize('설정 항목 종류가 올바르지 않습니다.', 'The item kind is invalid.'));
+        }
+        await this.assertStructureEditable(project);
+        const items = project[kind] || [];
+        const index = items.findIndex(function (item) { return item.id === itemId; });
+        if (index < 0) {
+            throw new Error(localize('삭제할 설정 항목을 찾을 수 없습니다.', 'The item to delete was not found.'));
+        }
+        const removed = items.splice(index, 1)[0];
+        project.flow = [];
+        project.targetVolumes = 0;
+        return removed;
+    },
+
+    /**
+     * 2단계 설정 항목을 선택한 종류 또는 전체에서 비운다.
+     * 관련 사건 흐름과 목표 권수도 함께 초기화한다.
+     * @param {object} project 대상 프로젝트
+     * @param {string} [kind] characters | places | events. 생략하면 전체
+     * @returns {Promise<string[]>} 비운 항목 종류 목록
+     */
+    async clearItems(project, kind) {
+        const kinds = (kind === undefined || kind === null || kind === '') ? ITEM_KINDS : [kind];
+        if (kinds.some(function (entry) { return ITEM_KINDS.indexOf(entry) < 0; })) {
+            throw new Error(localize('설정 항목 종류가 올바르지 않습니다.', 'The item kind is invalid.'));
+        }
+        await this.assertStructureEditable(project);
+        kinds.forEach(function (entry) { project[entry] = []; });
+        project.flow = [];
+        project.targetVolumes = 0;
+        return kinds;
+    },
+
+/**
+ * `maxStep` 작업을 수행한다.
+ */
     maxStep(project) {
         if (!project) return 1;
         // 기존 저장 데이터의 상세가 부족하더라도 작성된 책에는 접근할 수 있다.
@@ -696,9 +1211,18 @@ const Projects = {
  *  책 본문 저장 (프로젝트와 분리해 한 번에 다루는 데이터 크기를 줄인다.)
  * ------------------------------------------------------------------ */
 
+/**
+ * `Books` 선언이 담당하는 값을 보관한다.
+ */
 const Books = {
+/**
+ * `key` 작업을 수행한다.
+ */
     key(projectId, bookId) { return 'book.' + projectId + '.' + bookId; },
 
+/**
+ * `load` 작업을 수행한다.
+ */
     async load(projectId, bookId) {
         const book = await Storage.get(this.key(projectId, bookId), null);
         if (!book) throw new Error(localize('책 내용을 찾을 수 없습니다.', 'Book content not found.'));
@@ -706,10 +1230,16 @@ const Books = {
         return book;
     },
 
+/**
+ * `save` 작업을 수행한다.
+ */
     async save(projectId, book) {
         await Storage.set(this.key(projectId, book.id), book);
     },
 
+/**
+ * `remove` 작업을 수행한다.
+ */
     async remove(projectId, bookId) {
         if (activeGenerations.has(projectId)) throw new Error(localize('생성을 중단한 후 삭제해 주세요.', 'Stop generation before deleting.'));
         const project = await Projects.load(projectId);
@@ -721,8 +1251,13 @@ const Books = {
         await Storage.remove(this.key(projectId, bookId));
     },
 
+/**
+ * `charCount` 작업을 수행한다.
+ */
     charCount(book) {
-        return (book.chapters || []).reduce(function (sum, ch) { return sum + (ch.text || '').length; }, 0);
+        return (book.chapters || []).reduce(
+            /** 각 장의 본문 글자 수를 누적한다. */
+            function (sum, ch) { return sum + (ch.text || '').length; }, 0);
     },
 
     /** 프로젝트에 보관하는 책 요약 정보 */
@@ -740,9 +1275,11 @@ const Books = {
 
     /** 책 전체를 하나의 텍스트로 합친다. (내보내기용) */
     toPlainText(book) {
-        return (book.chapters || []).map(function (ch) {
+        return (book.chapters || []).map(
+            /** 내보낼 장의 제목과 본문을 텍스트로 변환한다. */
+            function (ch) {
             return ch.title + '\n\n' + ch.text;
-        }).join('\n\n\n');
+            }).join('\n\n\n');
     }
 };
 
@@ -750,9 +1287,15 @@ const Books = {
  *  프롬프트 구성
  * ------------------------------------------------------------------ */
 
+/**
+ * `AUTHOR_PERSONA` 선언이 담당하는 값을 보관한다.
+ */
 const AUTHOR_PERSONA = '너는 판타지 장편 소설을 집필하는 전문 작가이자 기획자다. '
     + '설정의 일관성을 지키고, 진부한 표현을 피하며, 독자가 몰입할 수 있는 글을 쓴다.';
 
+/**
+ * `languageInstruction` 작업을 수행한다.
+ */
 function languageInstruction(settings) {
     return '모든 결과물은 ' + Settings.languageName(settings) + '(으)로 작성한다.';
 }
@@ -799,6 +1342,9 @@ function flowToText(flow, markIndex) {
  *  생성 파이프라인
  * ------------------------------------------------------------------ */
 
+/**
+ * `Pipeline` 선언이 담당하는 값을 보관한다.
+ */
 const Pipeline = {
 
     /**
@@ -911,7 +1457,8 @@ const Pipeline = {
             throw new Error(localize('2단계의 주요 사건이 없습니다. 먼저 2단계를 완료해 주세요.', 'No major events exist. Complete step 2 first.'));
         }
 
-        const targetCount = clamp(project.events.length * 4, 24, 80);
+        const targetVolumes = Projects.validateFlowTarget(project, project.targetVolumes);
+        const targetCount = clamp(Math.max(project.events.length * 4, targetVolumes), 24, 80);
         const system = AUTHOR_PERSONA + ' ' + languageInstruction(conf)
             + ' 결과는 반드시 JSON 배열 하나만 출력하며, 설명이나 코드블록 표시를 덧붙이지 않는다.';
 
@@ -923,6 +1470,8 @@ const Pipeline = {
             '위 설정을 바탕으로 소설 전체의 사건 흐름을 시간 순서대로 나열하라.',
             '- [주요 사건] 목록의 사건은 반드시 모두 포함해야 한다.',
             '- 주요 사건 사이를 잇는 세부 사건(만남, 갈등, 이동, 복선, 전투, 반전 등)을 추가해 흐름을 촘촘하게 만들어라.',
+            '- 이 소설은 총 ' + targetVolumes + '권으로 구성한다. 각 권이 도입·전개·전환·절정 등 뚜렷한 이야기 단위를 갖고 다음 권으로 자연스럽게 이어지도록 사건을 배치하라.',
+            '- 각 권에 하나 이상의 사건 항목이 배정될 수 있도록 전체 항목 수는 최소 ' + targetVolumes + '개여야 한다.',
             '- 각 항목은 소설 한 장(章) 분량에 해당하는 크기여야 한다.',
             '- 전체 항목 수는 ' + targetCount + '개 내외로 한다.',
             '- 주요 사건은 반드시 각각 별도 항목으로 포함한다. sourceEventId에는 해당 주요 사건 ID를 그대로 쓴다. 세부 사건은 null이다.',
@@ -954,6 +1503,10 @@ const Pipeline = {
                 id: newId('flw'), title: event.name, summary: event.detail || event.summary,
                 main: true, sourceEventId: event.id
             });
+        }
+        if (flow.length < targetVolumes) {
+            throw new Error(localize('AI가 목표 권수에 배정할 만큼의 사건을 만들지 못했습니다. 다시 시도해 주세요.',
+                'The AI did not create enough events for the target volumes. Try again.'));
         }
         project.flow = flow;
         return project;
@@ -1001,6 +1554,9 @@ const Pipeline = {
         }
     },
 
+/**
+ * `writeBook` 작업을 수행한다.
+ */
     async writeBook(project, options) {
         const opts = options || {};
         const conf = opts.settings || Settings.current;
@@ -1205,6 +1761,9 @@ const BACKUP_FORMAT = 'worldwriter.project';
 /** 백업 형식 버전. 구조가 바뀌면 올린다. */
 const BACKUP_VERSION = 1;
 
+/**
+ * `Backup` 선언이 담당하는 값을 보관한다.
+ */
 const Backup = {
     /**
      * 프로젝트 하나를 백업용 객체로 만든다.
@@ -1420,6 +1979,29 @@ const TOOL_SPECS = [
         }
     },
     {
+        name: 'add_item',
+        description: '2단계에 등장인물·지역·주요 사건 항목을 하나 추가하고 저장한다. 책이 있으면 거부된다.',
+        params: {
+            kind: { type: 'string', required: true, description: 'characters | places | events' },
+            name: { type: 'string', description: '항목 이름. 생략하면 기본 이름' },
+            summary: { type: 'string', description: '한 줄 요약' },
+            detail: { type: 'string', description: '상세 설명' }
+        }
+    },
+    {
+        name: 'remove_item',
+        description: '2단계의 설정 항목 하나를 삭제하고 사건 흐름·목표 권수도 비운다. 되돌릴 수 없으며 책이 있으면 거부된다.',
+        params: {
+            kind: { type: 'string', required: true, description: 'characters | places | events' },
+            itemId: { type: 'string', required: true, description: '삭제할 항목 id' }
+        }
+    },
+    {
+        name: 'clear_items',
+        description: '2단계 항목을 선택한 종류 또는 전체에서 삭제하고 사건 흐름·목표 권수도 비운다. 되돌릴 수 없으며 책이 있으면 거부된다.',
+        params: { kind: { type: 'string', description: 'characters | places | events. 생략하면 2단계 전체' } }
+    },
+    {
         name: 'generate_item_detail',
         description: '설정 항목 하나의 상세 설명을 AI로 생성하고 저장한다.',
         params: {
@@ -1439,7 +2021,7 @@ const TOOL_SPECS = [
     },
     {
         name: 'generate_flow',
-        description: '세부 사건을 포함한 사건 흐름을 AI로 생성한다. 모든 상세 설명이 있어야 하고 책이 있으면 거부된다.',
+        description: '3단계에서 지정한 목표 권수를 반영해 세부 사건을 포함한 사건 흐름을 AI로 생성한다. 모든 상세 설명이 있어야 하고 책이 있으면 거부된다.',
         params: {}
     },
     {
@@ -1457,7 +2039,7 @@ const TOOL_SPECS = [
     },
     {
         name: 'set_target_volumes',
-        description: '목표 권수를 지정한다. 1 이상 사건 수 이하의 정수만 허용하며 책이 있으면 거부된다.',
+        description: '3단계에서 사건 흐름 생성 전에 목표 권수를 지정한다. 기존 흐름과 다른 값이면 흐름을 비워 다시 생성하게 하며, 책이 있으면 거부된다.',
         params: { count: { type: 'number', required: true, description: '목표 권수' } }
     },
     {
@@ -1559,6 +2141,9 @@ const TOOL_SPECS = [
     }
 ];
 
+/**
+ * `Tools` 선언이 담당하는 값을 보관한다.
+ */
 const Tools = {
     /** UI 가 등록한 어댑터. 키는 도구 이름이며 값은 async 함수이다. */
     adapter: null,
@@ -1692,6 +2277,9 @@ const CHAT_MAX_TOOL_CALLS = 8;
 /** 저장할 대화 기록의 최대 개수 */
 const CHAT_MAX_HISTORY = 60;
 
+/**
+ * `Chat` 선언이 담당하는 값을 보관한다.
+ */
 const Chat = {
     /** 대화 기록 : [{ role: 'user'|'assistant'|'tool', text, at }] */
     history: [],
@@ -1776,7 +2364,7 @@ const Chat = {
             'To run a tool: {"tool": "<name>", "args": { ... }}',
             'To answer the user: {"reply": "<text>"}',
             'Run one tool at a time and wait for its result. Use at most ' + CHAT_MAX_TOOL_CALLS + ' tool calls per request.',
-            'Before destructive tools (delete_project, delete_last_book, remove_flow_item, set_chapter_text, generate_outline, generate_flow), make sure the user asked for it.',
+            'Before destructive tools (delete_project, delete_last_book, remove_flow_item, remove_item, clear_items, set_chapter_text, generate_outline, generate_flow), make sure the user asked for it.',
             'Long generation tools cost money and time; only run them when the user asks.'
         ].join('\n');
     },
@@ -1872,6 +2460,9 @@ const Chat = {
 /** 백엔드 호출 대기(긴 폴링) 실패 시 다시 시도하기까지의 간격(ms) */
 const MCP_RETRY_DELAY = 3000;
 
+/**
+ * `WebMcp` 선언이 담당하는 값을 보관한다.
+ */
 const WebMcp = {
     /** navigator.modelContext 등록 여부 */
     registered: false,
@@ -1957,6 +2548,7 @@ const WebMcp = {
                 name: tool.name,
                 description: tool.description,
                 inputSchema: tool.inputSchema,
+                /** WebMCP 호출을 내부 도구 레지스트리로 전달한다. */
                 async execute(args) {
                     const result = await Tools.call(tool.name, args, { source: 'webmcp' });
                     return { content: [{ type: 'text', text: JSON.stringify(result) }] };
@@ -2080,6 +2672,9 @@ const WebMcp = {
     }
 };
 
+/**
+ * `WorldWriter` 선언이 담당하는 값을 보관한다.
+ */
 const WorldWriter = {
     version: '0.1.0',
     Env: Env,
@@ -2090,6 +2685,7 @@ const WorldWriter = {
     AI: AI,
     Pipeline: Pipeline,
     Backup: Backup,
+    AiSocket: AiSocket,
     Tools: Tools,
     Chat: Chat,
     WebMcp: WebMcp,
@@ -2120,6 +2716,6 @@ if (typeof window !== 'undefined') {
 
 export {
     WorldWriter, Env, Storage, Settings, Projects, Books, AI, Pipeline,
-    Backup, Tools, Chat, WebMcp, PROVIDERS, ITEM_KINDS, KIND_LABELS
+    Backup, AiSocket, Tools, Chat, WebMcp, PROVIDERS, ITEM_KINDS, KIND_LABELS
 };
 export default WorldWriter;

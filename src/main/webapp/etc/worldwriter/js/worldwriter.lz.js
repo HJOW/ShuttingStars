@@ -16,22 +16,49 @@
  */
 
 const CLEAR_CODE = 256;   // 사전 초기화 신호 코드
+/**
+ * `FIRST_CODE` 선언이 담당하는 값을 보관한다.
+ */
 const FIRST_CODE = 257;   // 사전에 등록되는 첫 코드
+/**
+ * `CODE_LIMIT` 선언이 담당하는 값을 보관한다.
+ */
 const CODE_LIMIT = 32768; // 15비트로 표현 가능한 코드 수 (0 ~ 32767)
+/**
+ * `CODE_BITS` 선언이 담당하는 값을 보관한다.
+ */
 const CODE_BITS = 15;
+/**
+ * `CHAR_OFFSET` 선언이 담당하는 값을 보관한다.
+ */
 const CHAR_OFFSET = 32;   // UTF-16 문자로 옮길 때 더하는 값
 
+/**
+ * `encoder` 선언이 담당하는 값을 보관한다.
+ */
 const encoder = new TextEncoder();
+/**
+ * `decoder` 선언이 담당하는 값을 보관한다.
+ */
 const decoder = new TextDecoder();
 
 /** 15비트 코드들을 UTF-16 문자열로 묶어주는 기록기 */
 class BitWriter {
+/**
+ * `constructor` 작업을 수행한다.
+ */
     constructor() {
         this.chunks = [];
     }
+/**
+ * `write` 작업을 수행한다.
+ */
     write(code) {
         this.chunks.push(String.fromCharCode(code + CHAR_OFFSET));
     }
+/**
+ * `toString` 작업을 수행한다.
+ */
     toString() {
         return this.chunks.join('');
     }
@@ -39,13 +66,22 @@ class BitWriter {
 
 /** UTF-16 문자열에서 15비트 코드를 하나씩 꺼내는 판독기 */
 class BitReader {
+/**
+ * `constructor` 작업을 수행한다.
+ */
     constructor(text) {
         this.text = text;
         this.pos = 0;
     }
+/**
+ * `hasNext` 작업을 수행한다.
+ */
     hasNext() {
         return this.pos < this.text.length;
     }
+/**
+ * `read` 작업을 수행한다.
+ */
     read() {
         return this.text.charCodeAt(this.pos++) - CHAR_OFFSET;
     }
@@ -163,5 +199,8 @@ export function decompress(stored) {
     return decoder.decode(out.subarray(0, outPos));
 }
 
+/**
+ * `LZ` 선언이 담당하는 값을 보관한다.
+ */
 export const LZ = { compress, decompress };
 export default LZ;
