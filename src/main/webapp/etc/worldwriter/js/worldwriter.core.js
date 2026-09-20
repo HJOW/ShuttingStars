@@ -55,18 +55,34 @@ const BOOK_LENGTH = { min: 100000, target: 125000, max: 150000 };
 /* ------------------------------------------------------------------ *
  *  실행 환경 판별
  *
- *  백엔드(node.js / python) 위에서 동작 중이면 파일 저장 및 AI 호출 중계를
- *  백엔드에 위임하고, 그렇지 않으면 localStorage 와 직접 호출을 사용한다.
+ *  electron 데스크톱 앱이면 preload 가 노출한 브리지에, 백엔드(node.js / python)
+ *  위에서 동작 중이면 백엔드에 파일 저장과 AI 호출 중계를 위임한다.
+ *  둘 다 아니면 localStorage 와 브라우저 직접 호출을 사용한다.
  * ------------------------------------------------------------------ */
 
 const Env = {
-    mode: 'local',      // 'local' | 'server'
-    backend: null,      // 백엔드가 알려준 정보
+    mode: 'local',      // 'local' | 'server' | 'desktop'
+    backend: null,      // 백엔드 또는 데스크톱 앱이 알려준 정보
+    desktop: null,      // electron preload 가 노출한 브리지
     detected: false,
 
     async detect() {
         if (this.detected) return this.mode;
         this.detected = true;
+
+        // electron 빌드에서는 브리지가 먼저 존재하므로 네트워크 확인이 필요 없다.
+        const bridge = (typeof window !== 'undefined') ? window.worldwriterDesktop : null;
+        if (bridge && typeof bridge.storeGet === 'function') {
+            this.desktop = bridge;
+            this.mode = 'desktop';
+            try {
+                this.backend = await bridge.info();
+            } catch (e) {
+                this.backend = null;
+            }
+            return this.mode;
+        }
+
         try {
             const res = await fetch('./api/health', { method: 'GET' });
             if (res.ok) {
@@ -83,15 +99,25 @@ const Env = {
         return this.mode;
     },
 
-    isServer() { return this.mode === 'server'; }
+    isServer() { return this.mode === 'server'; },
+
+    isDesktop() { return this.mode === 'desktop'; }
 };
+
+/** 데스크톱 브리지 응답에서 오류를 확인하고 결과를 돌려준다. */
+function desktopResult(body) {
+    if (!body) throw new Error(localize('데스크톱 앱이 응답하지 않았습니다.', 'The desktop app did not respond.'));
+    if (body.error) throw new Error(body.error);
+    return body;
+}
 
 /* ------------------------------------------------------------------ *
  *  저장소 추상화
  *
  *  key 는 사용자 단위로 구분되며, 실제 저장 위치는 실행 환경에 따라 달라진다.
- *   - local  : localStorage (LZ 압축 적용)
- *   - server : 백엔드의 파일 저장소 (~/.worldwriter/<사용자명>/)
+ *   - local   : localStorage (LZ 압축 적용)
+ *   - server  : 백엔드의 파일 저장소 (~/.worldwriter/<사용자명>/)
+ *   - desktop : electron 앱 데이터 폴더의 파일 저장소 (<userData>/data/<사용자명>/)
  * ------------------------------------------------------------------ */
 
 const Storage = {
@@ -107,6 +133,10 @@ const Storage = {
     },
 
     async get(key, defaultValue) {
+        if (Env.isDesktop()) {
+            const body = desktopResult(await Env.desktop.storeGet(this.user, key));
+            return (body.value === null || body.value === undefined) ? clone(defaultValue) : body.value;
+        }
         if (Env.isServer()) {
             const res = await fetch('./api/store?user=' + encodeURIComponent(this.user)
                 + '&key=' + encodeURIComponent(key));
@@ -125,6 +155,10 @@ const Storage = {
     },
 
     async set(key, value) {
+        if (Env.isDesktop()) {
+            desktopResult(await Env.desktop.storeSet(this.user, key, value));
+            return;
+        }
         if (Env.isServer()) {
             const res = await fetch('./api/store?user=' + encodeURIComponent(this.user)
                 + '&key=' + encodeURIComponent(key), {
@@ -144,6 +178,10 @@ const Storage = {
     },
 
     async remove(key) {
+        if (Env.isDesktop()) {
+            desktopResult(await Env.desktop.storeRemove(this.user, key));
+            return;
+        }
         if (Env.isServer()) {
             await fetch('./api/store?user=' + encodeURIComponent(this.user)
                 + '&key=' + encodeURIComponent(key), { method: 'DELETE' });
@@ -152,9 +190,9 @@ const Storage = {
         window.localStorage.removeItem(this.localKey(key));
     },
 
-    /** 사용 중인 저장 공간(바이트)을 돌려준다. 백엔드 모드에서는 null. */
+    /** 사용 중인 저장 공간(바이트)을 돌려준다. 파일 저장 모드에서는 null. */
     usage() {
-        if (Env.isServer()) return null;
+        if (Env.isServer() || Env.isDesktop()) return null;
         let total = 0;
         const prefix = 'ww.' + encodeURIComponent(this.user) + '.';
         for (let i = 0; i < window.localStorage.length; i++) {
@@ -391,6 +429,21 @@ async function callViaBackend(conf, request) {
     return String(body.text || '');
 }
 
+/** electron 메인 프로세스를 통한 호출 (CORS 회피, API 키는 메인 프로세스에서만 사용) */
+async function callViaDesktop(conf, request) {
+    const body = desktopResult(await Env.desktop.ai({
+        provider: conf.provider,
+        language: conf.language,
+        model: Settings.modelOf(conf),
+        apiKey: Settings.apiKeyOf(conf),
+        baseUrl: Settings.baseUrlOf(conf),
+        system: request.system || '',
+        messages: request.messages,
+        maxTokens: request.maxTokens
+    }));
+    return String(body.text || '');
+}
+
 const AI = {
     /**
      * AI 에게 한 번 질의하고 텍스트 응답을 받는다.
@@ -411,6 +464,7 @@ const AI = {
             maxTokens: options.maxTokens || 8000
         };
 
+        if (Env.isDesktop()) return await callViaDesktop(conf, request);
         if (Env.isServer()) return await callViaBackend(conf, request);
         if (conf.provider === 'claude') return await callClaude(conf, request);
         return await callOpenAiCompatible(conf, request);
@@ -582,6 +636,8 @@ const Projects = {
             }
         }
         await Storage.remove('project.' + projectId);
+        // 프로젝트에 딸린 AI 대화 기록도 함께 지운다.
+        await Storage.remove('chat.' + projectId);
         const list = await this.list();
         await this.saveList(list.filter(function (p) { return p.id !== projectId; }));
     },
@@ -1134,6 +1190,896 @@ const Pipeline = {
  *  외부 공개
  * ------------------------------------------------------------------ */
 
+
+/* ------------------------------------------------------------------ *
+ *  프로젝트 백업과 복원
+ *
+ *  한 프로젝트의 모든 내용(설명·세계관·사건 흐름·책 본문·AI 대화 기록)을
+ *  JSON 하나로 묶는다. 설정 화면의 값(공급자·API 키·모델명·언어·다크 모드)과
+ *  사용자명은 프로젝트의 내용이 아니므로 담지 않는다.
+ * ------------------------------------------------------------------ */
+
+/** 백업 파일임을 알아보기 위한 표시 */
+const BACKUP_FORMAT = 'worldwriter.project';
+
+/** 백업 형식 버전. 구조가 바뀌면 올린다. */
+const BACKUP_VERSION = 1;
+
+const Backup = {
+    /**
+     * 프로젝트 하나를 백업용 객체로 만든다.
+     * @param {string} projectId 프로젝트 id
+     * @returns {Promise<object>} 백업 객체 (그대로 JSON 으로 저장하면 된다)
+     */
+    async create(projectId) {
+        const project = await Projects.load(projectId);
+        const books = [];
+        for (const meta of project.books) {
+            try {
+                books.push(await Books.load(projectId, meta.id));
+            } catch (e) {
+                // 본문이 없는 책은 건너뛴다. 목록 정보는 프로젝트에 남아 있다.
+                console.warn('백업에서 제외된 책: ' + meta.id, e);
+            }
+        }
+        const chat = await Storage.get('chat.' + projectId, null);
+
+        return {
+            format: BACKUP_FORMAT,
+            version: BACKUP_VERSION,
+            app: WorldWriter.version,
+            exportedAt: Date.now(),
+            project: clone(project),
+            books: books,
+            chat: (chat && Array.isArray(chat.messages)) ? { version: 1, messages: chat.messages } : { version: 1, messages: [] }
+        };
+    },
+
+    /**
+     * 백업 파일 이름을 만든다.
+     * @param {object} project 프로젝트(또는 백업 객체의 project)
+     * @param {number} [at] 기준 시각(ms)
+     * @returns {string} 파일 이름
+     */
+    fileName(project, at) {
+        const when = new Date(at || Date.now());
+        const two = function (value) { return String(value).padStart(2, '0'); };
+        const stamp = when.getFullYear() + two(when.getMonth() + 1) + two(when.getDate())
+            + '-' + two(when.getHours()) + two(when.getMinutes());
+        const name = String((project && project.name) || 'project')
+            .replace(/[\\/:*?"<>|]/g, '_')
+            .trim()
+            .substring(0, 60);
+        return (name.length === 0 ? 'project' : name) + '-backup-' + stamp + '.json';
+    },
+
+    /**
+     * 백업 객체가 이 프로그램의 것인지 확인한다.
+     * @param {object} data 백업 객체
+     * @returns {object} 확인된 백업 객체
+     */
+    validate(data) {
+        const invalid = function () {
+            return new Error(localize('WorldWriter 백업 파일이 아닙니다.', 'This is not a WorldWriter backup file.'));
+        };
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw invalid();
+        if (data.format !== BACKUP_FORMAT) throw invalid();
+        if (Number(data.version) > BACKUP_VERSION) {
+            throw new Error(localize('더 새로운 버전에서 만든 백업 파일입니다. 프로그램을 최신으로 올려 주세요.',
+                'This backup was made by a newer version. Please update the app first.'));
+        }
+        const project = data.project;
+        if (!project || typeof project !== 'object' || isBlank(project.name)) throw invalid();
+        ITEM_KINDS.forEach(function (kind) {
+            if (project[kind] !== undefined && !Array.isArray(project[kind])) throw invalid();
+        });
+        if (project.flow !== undefined && !Array.isArray(project.flow)) throw invalid();
+        if (data.books !== undefined && !Array.isArray(data.books)) throw invalid();
+        return data;
+    },
+
+    /**
+     * 백업 객체로 새 프로젝트를 만든다. 기존 프로젝트를 덮어쓰지 않는다.
+     * @param {object} data 백업 객체
+     * @param {string} [name] 새 프로젝트 이름 (생략하면 백업에 담긴 이름)
+     * @returns {Promise<object>} 새로 만들어진 프로젝트
+     */
+    async restore(data, name) {
+        this.validate(data);
+        const source = clone(data.project);
+        const projectName = isBlank(name) ? source.name : String(name).trim();
+        if (isBlank(projectName)) throw new Error(localize('프로젝트 이름을 입력해 주세요.', 'Enter a project name.'));
+
+        // 새 id 로 복원해 같은 백업을 여러 번 불러와도 서로 영향을 주지 않는다.
+        const project = Object.assign(emptyProject(projectName), {
+            description: source.description || '',
+            characters: Array.isArray(source.characters) ? source.characters : [],
+            places: Array.isArray(source.places) ? source.places : [],
+            events: Array.isArray(source.events) ? source.events : [],
+            flow: Array.isArray(source.flow) ? source.flow : [],
+            targetVolumes: Number(source.targetVolumes) > 0 ? Number(source.targetVolumes) : 0,
+            createdAt: Number(source.createdAt) > 0 ? Number(source.createdAt) : Date.now(),
+            updatedAt: Date.now(),
+            books: []
+        });
+
+        // 책 본문을 먼저 저장하고, 목록 정보는 본문에서 다시 계산한다.
+        const books = Array.isArray(data.books) ? data.books.slice() : [];
+        books.sort(function (a, b) { return (a.index || 0) - (b.index || 0); });
+        for (let i = 0; i < books.length; i++) {
+            const book = clone(books[i]);
+            book.id = book.id || newId('book');
+            book.index = i;
+            if (!Array.isArray(book.chapters)) book.chapters = [];
+            await Books.save(project.id, book);
+            project.books.push(Books.metaOf(book));
+        }
+
+        await Storage.set('project.' + project.id, project);
+        const list = await Projects.list();
+        list.push({
+            id: project.id, name: project.name,
+            createdAt: project.createdAt, updatedAt: project.updatedAt
+        });
+        await Projects.saveList(list);
+
+        // AI 대화 기록도 새 프로젝트의 대화로 복원한다.
+        const messages = (data.chat && Array.isArray(data.chat.messages)) ? data.chat.messages : [];
+        if (messages.length > 0) {
+            await Storage.set('chat.' + project.id, { version: 1, messages: messages });
+        }
+        return project;
+    }
+};
+
+/* ------------------------------------------------------------------ *
+ *  도구(Tool) 레지스트리
+ *
+ *  채팅 AI, WebMCP, 백엔드 MCP 가 모두 같은 도구 목록을 사용한다.
+ *  실제 화면 조작은 UI 가 등록한 어댑터(worldwriter.ui.js 의 ToolAdapter)가 맡고,
+ *  이 레지스트리는 도구 정의·인자 검증·호출 경로만 담당한다.
+ *
+ *  제외 기능 : 사용자 전환과 AI 공급자 설정(유형/주소/API 키/모델명) 변경은
+ *  도구로 제공하지 않는다. 외부에서 이 두 가지를 바꿀 수 없어야 하기 때문이다.
+ * ------------------------------------------------------------------ */
+
+/** 도구 정의 목록. `params` 의 키는 인자명, 값은 { type, required, description } 이다. */
+const TOOL_SPECS = [
+    {
+        name: 'get_screen',
+        description: '현재 열려 있는 화면 종류, 단계, 프로젝트, 화면에 입력되어 있는 값을 돌려준다.',
+        params: {}
+    },
+    {
+        name: 'list_projects',
+        description: '저장된 프로젝트 목록을 최근 수정 순으로 돌려준다.',
+        params: {}
+    },
+    {
+        name: 'create_project',
+        description: '새 프로젝트를 만든다. 만든 뒤 열지는 않는다.',
+        params: { name: { type: 'string', required: true, description: '프로젝트 이름' } }
+    },
+    {
+        name: 'open_project',
+        description: '프로젝트를 열어 작업 화면으로 이동한다.',
+        params: { projectId: { type: 'string', required: true, description: '프로젝트 id' } }
+    },
+    {
+        name: 'rename_project',
+        description: '프로젝트 이름을 바꾼다.',
+        params: {
+            projectId: { type: 'string', required: true, description: '프로젝트 id' },
+            name: { type: 'string', required: true, description: '새 이름' }
+        }
+    },
+    {
+        name: 'delete_project',
+        description: '프로젝트와 그 안의 책 본문을 삭제한다. 되돌릴 수 없다.',
+        params: { projectId: { type: 'string', required: true, description: '프로젝트 id' } }
+    },
+    {
+        name: 'go_home',
+        description: '홈(프로젝트 목록) 화면으로 이동한다.',
+        params: {}
+    },
+    {
+        name: 'go_step',
+        description: '열려 있는 프로젝트의 1~4단계 화면으로 이동한다.',
+        params: { step: { type: 'number', required: true, description: '1: 소설 설명, 2: 설정 검토, 3: 사건 흐름, 4: 책 생성' } }
+    },
+    {
+        name: 'get_project',
+        description: '열려 있는 프로젝트의 설명·설정 항목·사건 흐름·책 목록을 돌려준다. 책 본문은 포함하지 않는다.',
+        params: {}
+    },
+    {
+        name: 'set_description',
+        description: '1단계의 소설 설명을 바꾸고 저장한다.',
+        params: { text: { type: 'string', required: true, description: '소설 설명 전체 내용' } }
+    },
+    {
+        name: 'generate_outline',
+        description: '소설 설명을 바탕으로 등장인물·지역·주요 사건 목록을 AI로 생성한다. 책이 있으면 거부된다.',
+        params: {}
+    },
+    {
+        name: 'list_items',
+        description: '2단계의 설정 항목을 돌려준다.',
+        params: { kind: { type: 'string', description: 'characters | places | events. 생략하면 전부' } }
+    },
+    {
+        name: 'update_item',
+        description: '설정 항목의 이름·한 줄 요약·상세 설명을 바꾸고 저장한다. 보낸 값만 바뀐다.',
+        params: {
+            kind: { type: 'string', required: true, description: 'characters | places | events' },
+            itemId: { type: 'string', required: true, description: '항목 id' },
+            name: { type: 'string', description: '새 이름' },
+            summary: { type: 'string', description: '새 한 줄 요약' },
+            detail: { type: 'string', description: '새 상세 설명' }
+        }
+    },
+    {
+        name: 'generate_item_detail',
+        description: '설정 항목 하나의 상세 설명을 AI로 생성하고 저장한다.',
+        params: {
+            kind: { type: 'string', required: true, description: 'characters | places | events' },
+            itemId: { type: 'string', required: true, description: '항목 id' }
+        }
+    },
+    {
+        name: 'generate_all_details',
+        description: '상세 설명이 비어 있는 설정 항목을 순서대로 모두 생성한다. 항목 수만큼 AI를 호출하므로 오래 걸린다.',
+        params: {}
+    },
+    {
+        name: 'get_flow',
+        description: '3단계의 사건 흐름 목록을 순서대로 돌려준다.',
+        params: {}
+    },
+    {
+        name: 'generate_flow',
+        description: '세부 사건을 포함한 사건 흐름을 AI로 생성한다. 모든 상세 설명이 있어야 하고 책이 있으면 거부된다.',
+        params: {}
+    },
+    {
+        name: 'move_flow_item',
+        description: '사건 흐름의 순서를 바꾸고 즉시 저장한다.',
+        params: {
+            flowId: { type: 'string', required: true, description: '옮길 사건 id' },
+            toIndex: { type: 'number', required: true, description: '옮길 위치(0부터 시작)' }
+        }
+    },
+    {
+        name: 'remove_flow_item',
+        description: '사건 흐름에서 사건 하나를 지우고 즉시 저장한다.',
+        params: { flowId: { type: 'string', required: true, description: '지울 사건 id' } }
+    },
+    {
+        name: 'set_target_volumes',
+        description: '목표 권수를 지정한다. 1 이상 사건 수 이하의 정수만 허용하며 책이 있으면 거부된다.',
+        params: { count: { type: 'number', required: true, description: '목표 권수' } }
+    },
+    {
+        name: 'list_books',
+        description: '생성된 책의 제목·장 수·글자 수·상태를 돌려준다.',
+        params: {}
+    },
+    {
+        name: 'open_book',
+        description: '책을 선택해 본문 편집 화면에 표시한다.',
+        params: {
+            bookId: { type: 'string', required: true, description: '책 id' },
+            chapterIndex: { type: 'number', description: '선택할 장 번호(0부터 시작)' }
+        }
+    },
+    {
+        name: 'get_chapter',
+        description: '장 본문을 돌려준다. 책과 장을 생략하면 지금 열려 있는 장을 읽는다.',
+        params: {
+            bookId: { type: 'string', description: '책 id' },
+            chapterId: { type: 'string', description: '장 id' },
+            maxChars: { type: 'number', description: '돌려줄 최대 글자 수(기본 8000)' }
+        }
+    },
+    {
+        name: 'set_chapter_text',
+        description: '장 본문을 통째로 바꾸고 저장한다.',
+        params: {
+            bookId: { type: 'string', required: true, description: '책 id' },
+            chapterId: { type: 'string', required: true, description: '장 id' },
+            text: { type: 'string', required: true, description: '새 본문 전체' }
+        }
+    },
+    {
+        name: 'revise_chapter',
+        description: '수정 지시를 AI에 보내 장 본문을 고치고 저장한다.',
+        params: {
+            bookId: { type: 'string', required: true, description: '책 id' },
+            chapterId: { type: 'string', required: true, description: '장 id' },
+            instruction: { type: 'string', required: true, description: '어떻게 고칠지에 대한 지시' }
+        }
+    },
+    {
+        name: 'export_book_text',
+        description: '책 전체를 장 제목과 본문을 합친 텍스트로 돌려준다.',
+        params: {
+            bookId: { type: 'string', required: true, description: '책 id' },
+            maxChars: { type: 'number', description: '돌려줄 최대 글자 수(기본 20000)' }
+        }
+    },
+    {
+        name: 'delete_last_book',
+        description: '마지막 권을 삭제한다. 마지막 권만 지울 수 있다.',
+        params: {}
+    },
+    {
+        name: 'generate_next_book',
+        description: '다음 권(또는 미완성 권의 이어쓰기)을 시작한다. 오래 걸리므로 백그라운드로 실행하고 즉시 돌아온다. 진행 상황은 generation_status 로 확인한다.',
+        params: {}
+    },
+    {
+        name: 'generation_status',
+        description: '책 생성 진행 상황을 돌려준다.',
+        params: {}
+    },
+    {
+        name: 'stop_generation',
+        description: '진행 중인 책 생성이나 일괄 상세 생성을 중단한다. 그때까지 작성된 내용은 남는다.',
+        params: {}
+    },
+    {
+        name: 'backup_project',
+        description: '프로젝트 전체(설명·설정·사건 흐름·책 본문·AI 대화)를 백업 JSON 으로 만든다. 설정 화면의 값은 담기지 않는다. 화면에서는 이 내용을 파일로 내려받는다.',
+        params: {
+            projectId: { type: 'string', description: '생략하면 열려 있는 프로젝트' },
+            maxChars: { type: 'number', description: '돌려줄 JSON 최대 글자 수(기본 200000). 넘으면 내용 대신 크기만 알려 준다.' }
+        }
+    },
+    {
+        name: 'restore_project',
+        description: '백업 JSON 으로 새 프로젝트를 만든다. 기존 프로젝트를 덮어쓰지 않는다.',
+        params: {
+            json: { type: 'string', required: true, description: '백업 파일의 JSON 내용' },
+            name: { type: 'string', description: '새 프로젝트 이름(생략하면 백업에 담긴 이름)' }
+        }
+    },
+    {
+        name: 'get_display_settings',
+        description: '표시 설정(언어, 다크 모드)과 현재 저장 모드를 돌려준다. AI 공급자 설정은 제공하지 않는다.',
+        params: {}
+    },
+    {
+        name: 'set_display_settings',
+        description: '표시 설정(언어, 다크 모드)을 바꾼다. AI 공급자 설정은 바꿀 수 없다.',
+        params: {
+            language: { type: 'string', description: 'ko 또는 en' },
+            darkMode: { type: 'boolean', description: '다크 모드 사용 여부' }
+        }
+    }
+];
+
+const Tools = {
+    /** UI 가 등록한 어댑터. 키는 도구 이름이며 값은 async 함수이다. */
+    adapter: null,
+
+    /** 도구가 실행될 때마다 알림을 받는 함수 목록 (WebMCP/MCP 호출 표시용) */
+    listeners: [],
+
+    /**
+     * 화면 조작 어댑터를 등록한다. UI 초기화 시 한 번 호출한다.
+     * @param {Object<string, Function>} adapter 도구 이름별 처리 함수
+     */
+    setAdapter(adapter) {
+        this.adapter = adapter || null;
+    },
+
+    /** 도구 실행 알림을 받을 함수를 추가한다. */
+    onCall(listener) {
+        if (typeof listener === 'function') this.listeners.push(listener);
+    },
+
+    /** 도구 정의 목록(설명용 사본) */
+    list() {
+        return TOOL_SPECS.map(function (spec) {
+            return { name: spec.name, description: spec.description, params: clone(spec.params) };
+        });
+    },
+
+    /** MCP 규격의 inputSchema 형태로 도구 목록을 돌려준다. */
+    listForMcp() {
+        return TOOL_SPECS.map(function (spec) {
+            const properties = {};
+            const required = [];
+            Object.keys(spec.params).forEach(function (key) {
+                const param = spec.params[key];
+                properties[key] = { type: param.type || 'string', description: param.description || '' };
+                if (param.required) required.push(key);
+            });
+            return {
+                name: spec.name,
+                description: spec.description,
+                inputSchema: { type: 'object', properties: properties, required: required }
+            };
+        });
+    },
+
+    /** 이름으로 도구 정의를 찾는다. */
+    specOf(name) {
+        return TOOL_SPECS.find(function (spec) { return spec.name === name; }) || null;
+    },
+
+    /**
+     * 인자를 도구 정의에 맞게 확인하고 형을 맞춘다.
+     * @param {object} spec 도구 정의
+     * @param {object} args 호출 인자
+     * @returns {object} 정리된 인자
+     */
+    normalizeArgs(spec, args) {
+        const input = args && typeof args === 'object' ? args : {};
+        const out = {};
+        Object.keys(spec.params).forEach(function (key) {
+            const param = spec.params[key];
+            let value = input[key];
+            if (value === undefined || value === null || value === '') {
+                if (param.required) {
+                    throw new Error(localize(spec.name + ' 도구에는 ' + key + ' 값이 필요합니다.',
+                        'The ' + spec.name + ' tool requires the ' + key + ' argument.'));
+                }
+                return;
+            }
+            if (param.type === 'number') {
+                const num = Number(value);
+                if (!isFinite(num)) {
+                    throw new Error(localize(key + ' 값은 숫자여야 합니다.', 'The ' + key + ' argument must be a number.'));
+                }
+                value = num;
+            } else if (param.type === 'boolean') {
+                value = (value === true || value === 'true' || value === 1 || value === '1');
+            } else {
+                value = String(value);
+            }
+            out[key] = value;
+        });
+        return out;
+    },
+
+    /**
+     * 도구를 실행한다. 모든 호출 경로(채팅, WebMCP, 백엔드 MCP)가 이 함수를 지난다.
+     * @param {string} name 도구 이름
+     * @param {object} [args] 호출 인자
+     * @param {{source?: string}} [options] 호출 출처 표시 (chat | webmcp | mcp)
+     * @returns {Promise<object>} 도구 결과
+     */
+    async call(name, args, options) {
+        const spec = this.specOf(name);
+        if (!spec) throw new Error(localize('없는 도구입니다: ', 'Unknown tool: ') + name);
+        if (!this.adapter || typeof this.adapter[name] !== 'function') {
+            throw new Error(localize('화면이 아직 준비되지 않아 도구를 실행할 수 없습니다.',
+                'The screen is not ready, so the tool cannot run.'));
+        }
+        const normalized = this.normalizeArgs(spec, args);
+        const source = (options && options.source) || 'chat';
+        this.listeners.forEach(function (listener) {
+            try { listener({ phase: 'start', name: name, args: normalized, source: source }); } catch (e) { /* 무시 */ }
+        });
+        try {
+            const result = await this.adapter[name](normalized);
+            const value = (result === undefined) ? { ok: true } : result;
+            this.listeners.forEach(function (listener) {
+                try { listener({ phase: 'done', name: name, args: normalized, source: source, result: value }); } catch (e) { /* 무시 */ }
+            });
+            return value;
+        } catch (error) {
+            this.listeners.forEach(function (listener) {
+                try { listener({ phase: 'error', name: name, args: normalized, source: source, error: error }); } catch (e) { /* 무시 */ }
+            });
+            throw error;
+        }
+    }
+};
+
+/* ------------------------------------------------------------------ *
+ *  AI 채팅
+ *
+ *  화면 맥락과 도구 목록을 함께 전달해, 질문 답변뿐 아니라 화면 조작까지
+ *  요청할 수 있게 한다. 대화 기록은 현재 저장 모드(파일/localStorage)에 남는다.
+ * ------------------------------------------------------------------ */
+
+/** 한 번의 사용자 요청에서 허용할 최대 도구 호출 횟수 */
+const CHAT_MAX_TOOL_CALLS = 8;
+
+/** 저장할 대화 기록의 최대 개수 */
+const CHAT_MAX_HISTORY = 60;
+
+const Chat = {
+    /** 대화 기록 : [{ role: 'user'|'assistant'|'tool', text, at }] */
+    history: [],
+    loaded: false,
+
+    /** 대화가 속한 프로젝트 id. 비어 있으면 홈 화면의 공용 대화이다. */
+    projectId: '',
+
+    /** 현재 대화를 저장할 키. 프로젝트 대화는 백업에 함께 담긴다. */
+    key() {
+        return this.projectId ? ('chat.' + this.projectId) : 'chat';
+    },
+
+    /**
+     * 대화 범위를 바꾼다. 프로젝트를 열면 그 프로젝트의 대화를, 홈에서는 공용 대화를 쓴다.
+     * @param {string} [projectId] 프로젝트 id (없으면 홈 대화)
+     * @returns {Promise<Array>} 해당 범위의 대화 기록
+     */
+    async setScope(projectId) {
+        const next = String(projectId || '');
+        if (this.loaded && next === this.projectId) return this.history;
+        this.projectId = next;
+        this.loaded = false;
+        return await this.load();
+    },
+
+    /** 저장된 대화 기록을 읽어 온다. */
+    async load() {
+        const saved = await Storage.get(this.key(), null);
+        this.history = (saved && Array.isArray(saved.messages)) ? saved.messages : [];
+        this.loaded = true;
+        return this.history;
+    },
+
+    /** 대화 기록을 저장한다. 너무 길어지면 오래된 것부터 버린다. */
+    async save() {
+        if (this.history.length > CHAT_MAX_HISTORY) {
+            this.history = this.history.slice(this.history.length - CHAT_MAX_HISTORY);
+        }
+        await Storage.set(this.key(), { version: 1, messages: this.history });
+    },
+
+    /** 대화를 초기화한다. 현재 범위(프로젝트 또는 홈)의 기록만 지운다. */
+    async clear() {
+        this.history = [];
+        await Storage.set(this.key(), { version: 1, messages: [] });
+    },
+
+    /** 기록에 한 줄 추가한다. */
+    append(role, text, extra) {
+        const entry = Object.assign({ role: role, text: String(text || ''), at: Date.now() }, extra || {});
+        this.history.push(entry);
+        return entry;
+    },
+
+    /** AI 에게 보낼 시스템 프롬프트를 만든다. */
+    systemPrompt(screen) {
+        const lang = Settings.languageName();
+        const tools = Tools.list().map(function (tool) {
+            const params = Object.keys(tool.params).map(function (key) {
+                const param = tool.params[key];
+                return key + '(' + (param.type || 'string') + (param.required ? ', 필수' : '') + '): ' + (param.description || '');
+            });
+            return '- ' + tool.name + ' : ' + tool.description
+                + (params.length > 0 ? '\n    인자 ' + params.join(' / ') : '');
+        }).join('\n');
+
+        return [
+            'You are the built-in assistant of WorldWriter, a web app that writes fantasy novels with AI.',
+            'Answer in ' + lang + '.',
+            'You can both answer questions and operate the screen with the tools below.',
+            '',
+            'Current screen state (JSON):',
+            JSON.stringify(screen),
+            '',
+            'Available tools:',
+            tools,
+            '',
+            'You cannot switch users or change AI provider settings (provider, base url, API key, model). Refuse those requests.',
+            '',
+            'Reply with a single JSON object and nothing else.',
+            'To run a tool: {"tool": "<name>", "args": { ... }}',
+            'To answer the user: {"reply": "<text>"}',
+            'Run one tool at a time and wait for its result. Use at most ' + CHAT_MAX_TOOL_CALLS + ' tool calls per request.',
+            'Before destructive tools (delete_project, delete_last_book, remove_flow_item, set_chapter_text, generate_outline, generate_flow), make sure the user asked for it.',
+            'Long generation tools cost money and time; only run them when the user asks.'
+        ].join('\n');
+    },
+
+    /** AI 에게 보낼 대화 메시지 목록을 만든다. */
+    buildMessages(screen) {
+        const messages = [];
+        this.history.slice(-20).forEach(function (entry) {
+            if (entry.role === 'user') messages.push({ role: 'user', content: entry.text });
+            else if (entry.role === 'assistant') messages.push({ role: 'assistant', content: entry.text });
+            else if (entry.role === 'tool') messages.push({ role: 'user', content: '[도구 결과] ' + entry.text });
+        });
+        if (messages.length === 0) messages.push({ role: 'user', content: '안녕하세요.' });
+        return messages;
+    },
+
+    /**
+     * 사용자의 채팅 한 줄을 처리한다. 필요하면 도구를 실행하고 최종 답변을 돌려준다.
+     * @param {string} text 사용자 입력
+     * @param {{onUpdate?: Function, screen?: object}} [options] 진행 알림
+     * @returns {Promise<string>} 최종 답변
+     */
+    async send(text, options) {
+        const opts = options || {};
+        const notify = typeof opts.onUpdate === 'function' ? opts.onUpdate : function () { };
+        if (!this.loaded) await this.load();
+        if (isBlank(text)) throw new Error(localize('보낼 내용을 입력해 주세요.', 'Enter a message to send.'));
+
+        this.append('user', text);
+        await this.save();
+
+        let answer = '';
+        for (let turn = 0; turn <= CHAT_MAX_TOOL_CALLS; turn++) {
+            const screen = (Tools.adapter && typeof Tools.adapter.get_screen === 'function')
+                ? await Tools.adapter.get_screen({})
+                : (opts.screen || {});
+
+            const raw = await AI.chat({
+                system: this.systemPrompt(screen),
+                messages: this.buildMessages(screen),
+                maxTokens: 4000
+            });
+
+            let decision;
+            try {
+                decision = parseJsonLoosely(raw);
+            } catch (e) {
+                // JSON 이 아니면 그대로 답변으로 본다.
+                decision = { reply: String(raw || '') };
+            }
+            if (Array.isArray(decision)) decision = decision[0] || {};
+
+            if (decision && decision.tool && turn < CHAT_MAX_TOOL_CALLS) {
+                const name = String(decision.tool);
+                notify({ phase: 'tool', name: name, args: decision.args || {} });
+                let resultText;
+                try {
+                    const result = await Tools.call(name, decision.args || {}, { source: 'chat' });
+                    resultText = name + ' → ' + JSON.stringify(result).substring(0, 4000);
+                } catch (error) {
+                    resultText = name + ' → ' + localize('실패: ', 'failed: ') + (error && error.message ? error.message : String(error));
+                }
+                this.append('tool', resultText, { tool: name });
+                await this.save();
+                notify({ phase: 'toolDone', name: name, text: resultText });
+                continue;
+            }
+
+            answer = String((decision && (decision.reply || decision.answer || decision.text)) || raw || '');
+            break;
+        }
+
+        if (isBlank(answer)) {
+            answer = localize('도구 실행을 마쳤습니다.', 'Finished running the tools.');
+        }
+        this.append('assistant', answer);
+        await this.save();
+        notify({ phase: 'answer', text: answer });
+        return answer;
+    }
+};
+
+/* ------------------------------------------------------------------ *
+ *  WebMCP 와 백엔드 MCP 연결
+ *
+ *  WebMCP : 브라우저(또는 확장/에이전트)가 이 페이지의 도구를 쓸 수 있도록
+ *           navigator.modelContext 에 등록하고 window.WorldWriterWebMCP 로도 노출한다.
+ *  백엔드 MCP : 서버 모드에서 열린 페이지가 백엔드에 도구 목록을 등록하고
+ *           긴 폴링으로 호출을 받아 실행한 뒤 결과를 돌려준다.
+ *           (생성 파이프라인이 화면 쪽 구현이므로 페이지가 실행 주체이다.)
+ * ------------------------------------------------------------------ */
+
+/** 백엔드 호출 대기(긴 폴링) 실패 시 다시 시도하기까지의 간격(ms) */
+const MCP_RETRY_DELAY = 3000;
+
+const WebMcp = {
+    /** navigator.modelContext 등록 여부 */
+    registered: false,
+
+    /**
+     * 표준 WebMCP API 지원 상태
+     *  'unknown'      : 아직 확인하지 않음
+     *  'standard'     : navigator.modelContext 에 등록 완료
+     *  'unsupported'  : 표준 API 가 없는 브라우저 (전역 객체만 제공)
+     *  'incompatible' : modelContext 는 있으나 아는 등록 함수가 없음
+     *  'rejected'     : 등록을 시도했으나 브라우저가 거절함
+     */
+    support: 'unknown',
+
+    /** 지원 상태가 바뀌면 호출되는 함수. UI 가 표시를 갱신하는 데 쓴다. */
+    onChange: null,
+
+    /** 백엔드 MCP 연결 여부 */
+    bridged: false,
+
+    /** 이 페이지의 연결 식별자 */
+    clientId: '',
+
+    /** 연결을 멈추기 위한 플래그 */
+    stopped: false,
+
+    /**
+     * 페이지의 도구를 WebMCP 로 노출한다.
+     * 표준 API(navigator.modelContext)가 있으면 등록하고, 없어도 전역 객체는 항상 노출한다.
+     * @returns {boolean} 표준 API 등록 성공 여부
+     */
+    expose() {
+        if (typeof window === 'undefined') return false;
+
+        // 표준 API 가 없어도 채팅과 백엔드 MCP 는 그대로 동작한다.
+        // 이 전역 객체는 어떤 브라우저에서든 노출해, 확장/에이전트가 쓸 수 있게 한다.
+        window.WorldWriterWebMCP = {
+            version: 1,
+            /** 표준 WebMCP 등록 여부와 지원 상태 */
+            get support() { return WebMcp.support; },
+            get registered() { return WebMcp.registered; },
+            /** 사용할 수 있는 도구 목록 (MCP inputSchema 형식) */
+            listTools() { return Tools.listForMcp(); },
+            /** 도구를 실행한다. */
+            async callTool(name, args) {
+                return await Tools.call(name, args, { source: 'webmcp' });
+            }
+        };
+
+        const context = window.navigator && window.navigator.modelContext;
+        const tools = this.describeTools();
+
+        if (!context) {
+            // 표준 WebMCP 를 지원하지 않는 브라우저이다. 전역 객체만 쓰면 된다.
+            this.setSupport('unsupported');
+        } else if (typeof context.provideContext === 'function') {
+            this.tryRegister(function () { return context.provideContext({ tools: tools }); });
+        } else if (typeof context.registerTool === 'function') {
+            // 초안에 따라 도구를 하나씩 등록하는 형태도 있다.
+            this.tryRegister(function () {
+                const results = tools.map(function (tool) { return context.registerTool(tool); });
+                return Promise.all(results.filter(function (r) { return r && typeof r.then === 'function'; }));
+            });
+        } else {
+            this.setSupport('incompatible');
+            console.info('navigator.modelContext 가 있지만 아는 등록 방식이 아닙니다. window.WorldWriterWebMCP 로만 제공합니다.');
+        }
+
+        try {
+            window.dispatchEvent(new CustomEvent('worldwriter-webmcp-ready', {
+                detail: { tools: tools.length, support: this.support, registered: this.registered }
+            }));
+        } catch (e) {
+            // CustomEvent 를 만들지 못하는 환경이어도 도구 제공에는 영향이 없다.
+        }
+        return this.registered;
+    },
+
+    /** 표준 API 에 넘길 도구 목록을 만든다. */
+    describeTools() {
+        return Tools.listForMcp().map(function (tool) {
+            return {
+                name: tool.name,
+                description: tool.description,
+                inputSchema: tool.inputSchema,
+                async execute(args) {
+                    const result = await Tools.call(tool.name, args, { source: 'webmcp' });
+                    return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+                }
+            };
+        });
+    },
+
+    /** 지원 상태를 바꾸고 화면에 알린다. */
+    setSupport(state) {
+        this.support = state;
+        this.registered = (state === 'standard');
+        if (typeof this.onChange === 'function') {
+            try { this.onChange(state); } catch (e) { /* 표시 갱신 실패는 무시한다. */ }
+        }
+        return this.registered;
+    },
+
+    /**
+     * 표준 API 등록을 시도한다.
+     * 등록 함수가 동기 예외를 던지거나, 나중에 거부되는 프라미스를 돌려주는 경우를 모두 처리한다.
+     * 어느 쪽이든 전역 객체(window.WorldWriterWebMCP)는 그대로 쓸 수 있다.
+     * @param {Function} run 등록을 수행하는 함수
+     * @returns {boolean} 등록 성공 여부(비동기 거절은 나중에 되돌린다)
+     */
+    tryRegister(run) {
+        const self = this;
+        let result;
+        try {
+            result = run();
+        } catch (error) {
+            self.setSupport('rejected');
+            console.warn('WebMCP 등록에 실패했습니다. window.WorldWriterWebMCP 로만 제공합니다.', error);
+            return false;
+        }
+        self.setSupport('standard');
+        if (result && typeof result.then === 'function') {
+            result.then(null, function (error) {
+                // 브라우저가 사용자 승인 등을 이유로 나중에 거절할 수 있다.
+                self.setSupport('rejected');
+                console.warn('WebMCP 등록이 거절되었습니다. window.WorldWriterWebMCP 로만 제공합니다.', error);
+            });
+        }
+        return self.registered;
+    },
+
+    /**
+     * 백엔드 MCP 서버에 이 페이지를 연결한다. 서버 모드에서만 동작한다.
+     * 등록 후에는 긴 폴링으로 호출을 기다리며, 실패하면 잠시 뒤 다시 시도한다.
+     * @returns {Promise<boolean>} 연결 시작 여부
+     */
+    async connectBackend() {
+        if (!Env.isServer()) return false;
+        if (this.bridged) return true;
+        this.clientId = this.clientId || newId('page');
+        this.stopped = false;
+        try {
+            await this.register();
+        } catch (e) {
+            console.warn('MCP 백엔드 등록에 실패했습니다.', e);
+            return false;
+        }
+        this.bridged = true;
+        this.pollLoop();
+        return true;
+    },
+
+    /** 백엔드에 도구 목록을 등록한다. */
+    async register() {
+        const res = await fetch('./api/mcp/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                client: this.clientId,
+                user: Storage.user,
+                tools: Tools.listForMcp()
+            })
+        });
+        if (!res.ok) throw new Error('register ' + res.status);
+        return await res.json();
+    },
+
+    /** 백엔드 연결을 끊는다. */
+    disconnect() {
+        this.stopped = true;
+        this.bridged = false;
+    },
+
+    /** 호출을 기다렸다가 실행하고 결과를 돌려보내는 반복 동작 */
+    async pollLoop() {
+        while (!this.stopped) {
+            let call = null;
+            try {
+                const res = await fetch('./api/mcp/poll?client=' + encodeURIComponent(this.clientId));
+                if (!res.ok) throw new Error('poll ' + res.status);
+                const body = await res.json();
+                call = body && body.call;
+            } catch (e) {
+                // 서버가 잠시 응답하지 않아도 페이지는 계속 쓸 수 있어야 한다.
+                await new Promise(function (resolve) { setTimeout(resolve, MCP_RETRY_DELAY); });
+                try { await this.register(); } catch (registerError) { /* 다음 회차에 다시 시도한다. */ }
+                continue;
+            }
+            if (!call) continue;
+
+            let payload;
+            try {
+                const result = await Tools.call(call.name, call.args || {}, { source: 'mcp' });
+                payload = { id: call.id, result: result };
+            } catch (error) {
+                payload = { id: call.id, error: (error && error.message) ? error.message : String(error) };
+            }
+            try {
+                await fetch('./api/mcp/result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.assign({ client: this.clientId }, payload))
+                });
+            } catch (e) { /* 결과 전달 실패는 호출 쪽에서 시간 초과로 처리된다. */ }
+        }
+    }
+};
+
 const WorldWriter = {
     version: '0.1.0',
     Env: Env,
@@ -1143,6 +2089,10 @@ const WorldWriter = {
     Books: Books,
     AI: AI,
     Pipeline: Pipeline,
+    Backup: Backup,
+    Tools: Tools,
+    Chat: Chat,
+    WebMcp: WebMcp,
     PROVIDERS: PROVIDERS,
     ITEM_KINDS: ITEM_KINDS,
     KIND_LABELS: KIND_LABELS,
@@ -1170,6 +2120,6 @@ if (typeof window !== 'undefined') {
 
 export {
     WorldWriter, Env, Storage, Settings, Projects, Books, AI, Pipeline,
-    PROVIDERS, ITEM_KINDS, KIND_LABELS
+    Backup, Tools, Chat, WebMcp, PROVIDERS, ITEM_KINDS, KIND_LABELS
 };
 export default WorldWriter;

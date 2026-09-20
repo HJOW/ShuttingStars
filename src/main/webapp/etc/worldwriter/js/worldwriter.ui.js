@@ -8,11 +8,13 @@
  *   1. 로그인   : 사용자명(닉네임) 입력
  *   2. 초기화면 : 프로젝트 목록 + 프로젝트 생성 + 설정
  *   3. 작업화면 : 상단 툴바 + 좌측 사이드바(1~4단계) + 중앙 메인 영역
+ *   4. 우측 사이드바 : AI 채팅. 화면 맥락을 함께 보내고 도구로 화면을 조작한다.
+ *                      같은 도구를 WebMCP 와 백엔드 MCP 도 사용한다.
  */
 
 import {
     WorldWriter, Env, Storage, Settings, Projects, Books, AI, Pipeline,
-    PROVIDERS, ITEM_KINDS, KIND_LABELS
+    Backup, Tools, Chat, WebMcp, PROVIDERS, ITEM_KINDS, KIND_LABELS
 } from './worldwriter.core.js';
 
 /* ------------------------------------------------------------------ *
@@ -56,8 +58,9 @@ const I18N = {
         'home.newLabel': '프로젝트 이름',
         'home.deleteConfirm': '프로젝트 "{0}" 을(를) 삭제할까요? 생성된 책 내용도 함께 지워집니다.',
         'home.logout': '사용자 변경',
-        'home.storageLocal': '저장 위치: 브라우저 (localStorage, 압축 저장)',
-        'home.storageServer': '저장 위치: 서버 파일 ({0})',
+        'home.storageLocal': '저장 위치: 브라우저',
+        'home.storageServer': '저장 위치: 서버 내 파일로 저장',
+        'home.storageDesktop': '저장 위치: 앱 폴더 내 파일로 저장',
         'home.usage': '사용 중인 저장 공간: 약 {0}',
 
         'settings.title': '설정',
@@ -147,7 +150,54 @@ const I18N = {
         'step4.status.error': '오류 후 이어쓰기 가능',
         'step4.status.complete': '완료',
         'step4.lengthProgress': '{0}자 / 목표 {1}자',
-        'step4.costGuide': '권당 10만~15만 자를 위해 여러 번 호출합니다. 짧은 응답은 추가 집필하며, 한 번에 최대 120회 호출 후 진행분을 저장하고 멈춥니다.'
+        'step4.costGuide': '권당 10만~15만 자를 위해 여러 번 호출합니다. 짧은 응답은 추가 집필하며, 한 번에 최대 120회 호출 후 진행분을 저장하고 멈춥니다.',
+        'chat.title': 'AI 채팅',
+        'chat.placeholder': '화면에 대해 묻거나 작업을 요청하세요. (Enter 전송, Shift+Enter 줄바꿈)',
+        'chat.send': '보내기',
+        'chat.reset': '대화 초기화',
+        'chat.resetConfirm': '지금까지의 대화 내용을 모두 지웁니다. 계속할까요?',
+        'chat.close': '닫기',
+        'chat.empty': '연결된 AI와 대화할 수 있습니다. 현재 화면과 입력 내용을 함께 전달하며, 요청하면 화면 작업도 대신 수행합니다.',
+        'chat.thinking': 'AI가 생각하는 중입니다...',
+        'chat.usingTool': '도구 실행 중: {0}',
+        'chat.failed': '채팅에 실패했습니다.',
+        'chat.working': '작업 진행 중:',
+        'backup.button': '백업',
+        'backup.title': '프로젝트 백업',
+        'backup.hint': '이 프로젝트의 모든 내용(설명·설정·사건 흐름·책 본문·AI 대화)을 JSON 파일로 내려받습니다. 설정 화면의 값은 포함되지 않습니다.',
+        'backup.done': '백업 파일을 내려받았습니다.',
+        'restore.button': '복원',
+        'restore.title': '프로젝트 복원',
+        'restore.nameLabel': '새 프로젝트 이름',
+        'restore.summary': '백업된 이름: {0} / 책 {1}권 / 대화 {2}개. 기존 프로젝트를 덮어쓰지 않고 새 프로젝트로 추가합니다.',
+        'restore.badFile': '백업 파일을 읽지 못했습니다.',
+        'restore.done': '{0} 프로젝트를 복원했습니다.',
+        'chat.mcpOn': 'MCP 연결됨',
+        'chat.webmcpOn': 'WebMCP',
+        'chat.mcpOnHint': '백엔드 MCP 서버에 연결되어 있어 외부 MCP 클라이언트도 이 화면의 도구를 쓸 수 있습니다.',
+        'chat.webmcpOnHint': '브라우저의 WebMCP 표준에 도구를 등록했습니다.',
+        'chat.webmcpOffHint': '이 브라우저는 WebMCP 표준을 지원하지 않습니다. 채팅과 도구는 그대로 동작하며, 페이지 안에서는 window.WorldWriterWebMCP 로 도구를 쓸 수 있습니다.',
+        'tool.needProject': '먼저 프로젝트를 열어야 합니다.',
+        'tool.noProject': '프로젝트를 찾을 수 없습니다: {0}',
+        'tool.noBook': '책을 찾을 수 없습니다: {0}',
+        'tool.noBooks': '삭제할 책이 없습니다.',
+        'tool.noItem': '설정 항목을 찾을 수 없습니다: {0}',
+        'tool.noFlow': '사건을 찾을 수 없습니다: {0}',
+        'tool.noChapter': '장을 찾을 수 없습니다: {0}',
+        'tool.needBook': '먼저 책을 선택해 주세요.',
+        'tool.needTarget': '목표 권수를 먼저 지정해 주세요.',
+        'tool.badKind': '설정 종류가 잘못되었습니다: {0}',
+        'tool.badStep': '단계는 1~4 사이여야 합니다.',
+        'tool.stepLocked': '{0}단계는 아직 열 수 없습니다. 앞 단계를 먼저 완료해 주세요.',
+        'tool.badLanguage': '언어는 ko 또는 en 만 사용할 수 있습니다.',
+        'tool.busy': '이미 다른 생성 작업이 진행 중입니다.',
+        'tool.finished': '작업을 마쳤습니다.',
+        'tool.outlineDone': '설정 목록을 생성했습니다.',
+        'tool.detailDone': '상세 설명을 생성했습니다.',
+        'tool.detailAllDone': '상세 설명 {0}개를 생성했습니다.',
+        'tool.flowDone': '사건 흐름 {0}개를 생성했습니다.',
+        'tool.reviseDone': '{0} 수정을 마쳤습니다.',
+        'tool.bookDone': '{0} 생성을 마쳤습니다. (상태: {1})'
     },
     en: {
         'app.title': 'WorldWriter',
@@ -185,8 +235,9 @@ const I18N = {
         'home.newLabel': 'Project name',
         'home.deleteConfirm': 'Delete project "{0}"? Generated books will be removed too.',
         'home.logout': 'Switch user',
-        'home.storageLocal': 'Storage: browser localStorage (compressed)',
-        'home.storageServer': 'Storage: server files ({0})',
+        'home.storageLocal': 'Storage: browser',
+        'home.storageServer': 'Storage: files on the server',
+        'home.storageDesktop': 'Storage: files in the app folder',
         'home.usage': 'Storage in use: about {0}',
 
         'settings.title': 'Settings',
@@ -276,7 +327,54 @@ const I18N = {
         'step4.status.error': 'Error / resumable',
         'step4.status.complete': 'Complete',
         'step4.lengthProgress': '{0} chars / target {1} chars',
-        'step4.costGuide': 'Reaching 100k–150k characters takes multiple requests. Short responses require more writing. Each run stops after at most 120 requests, preserving progress.'
+        'step4.costGuide': 'Reaching 100k–150k characters takes multiple requests. Short responses require more writing. Each run stops after at most 120 requests, preserving progress.',
+        'chat.title': 'AI chat',
+        'chat.placeholder': 'Ask about this screen or request a task. (Enter to send, Shift+Enter for a new line)',
+        'chat.send': 'Send',
+        'chat.reset': 'Reset chat',
+        'chat.resetConfirm': 'This clears the whole conversation. Continue?',
+        'chat.close': 'Close',
+        'chat.empty': 'Chat with the connected AI. It receives the current screen and what you typed, and can run the screen actions you ask for.',
+        'chat.thinking': 'The AI is thinking...',
+        'chat.usingTool': 'Running tool: {0}',
+        'chat.failed': 'The chat request failed.',
+        'chat.working': 'Working:',
+        'backup.button': 'Back up',
+        'backup.title': 'Back up project',
+        'backup.hint': 'Downloads everything in this project (description, world-building, event flow, book text, AI chat) as a JSON file. Settings screen values are not included.',
+        'backup.done': 'Backup file downloaded.',
+        'restore.button': 'Restore',
+        'restore.title': 'Restore project',
+        'restore.nameLabel': 'New project name',
+        'restore.summary': 'Backed up name: {0} / {1} book(s) / {2} chat message(s). This adds a new project and never overwrites an existing one.',
+        'restore.badFile': 'Could not read the backup file.',
+        'restore.done': 'Restored the project {0}.',
+        'chat.mcpOn': 'MCP connected',
+        'chat.webmcpOn': 'WebMCP',
+        'chat.mcpOnHint': 'Connected to the backend MCP server, so external MCP clients can use the tools on this screen.',
+        'chat.webmcpOnHint': 'Tools are registered with the WebMCP standard API of this browser.',
+        'chat.webmcpOffHint': 'This browser does not support the WebMCP standard. Chat and tools still work, and window.WorldWriterWebMCP exposes the tools inside the page.',
+        'tool.needProject': 'Open a project first.',
+        'tool.noProject': 'Project not found: {0}',
+        'tool.noBook': 'Book not found: {0}',
+        'tool.noBooks': 'There is no book to delete.',
+        'tool.noItem': 'Item not found: {0}',
+        'tool.noFlow': 'Event not found: {0}',
+        'tool.noChapter': 'Chapter not found: {0}',
+        'tool.needBook': 'Select a book first.',
+        'tool.needTarget': 'Set the target volume count first.',
+        'tool.badKind': 'Unknown item kind: {0}',
+        'tool.badStep': 'The step must be between 1 and 4.',
+        'tool.stepLocked': 'Step {0} is still locked. Finish the earlier steps first.',
+        'tool.badLanguage': 'The language must be ko or en.',
+        'tool.busy': 'Another generation task is already running.',
+        'tool.finished': 'Done.',
+        'tool.outlineDone': 'Generated the world-building lists.',
+        'tool.detailDone': 'Generated the detail.',
+        'tool.detailAllDone': 'Generated {0} details.',
+        'tool.flowDone': 'Generated {0} events.',
+        'tool.reviseDone': 'Finished revising {0}.',
+        'tool.bookDone': 'Finished {0}. (status: {1})'
     }
 };
 
@@ -499,6 +597,13 @@ body { margin: 0; }
 .ww-step:disabled { opacity: 0.38; cursor: not-allowed; }
 .ww-step-note { font-size: 11px; color: var(--ww-text-dim); padding: 8px 12px; line-height: 1.5; }
 .ww-main { flex: 1; overflow-y: auto; padding: 22px 26px 60px 26px; min-width: 0; }
+.ww-sidebar { display: flex; flex-direction: column; }
+.ww-side-steps { flex: 1; min-height: 0; overflow-y: auto; }
+.ww-side-tools {
+    border-top: 1px solid var(--ww-border); padding-top: 10px; margin-top: 10px;
+    display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;
+}
+.ww-side-tools .ww-btn { width: 100%; text-align: left; }
 .ww-main h2 { margin: 0 0 6px 0; font-size: 18px; }
 .ww-guide { color: var(--ww-text-dim); font-size: 13px; margin: 0 0 16px 0; line-height: 1.6; }
 .ww-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; align-items: center; }
@@ -577,6 +682,62 @@ body { margin: 0; }
     background: var(--ww-panel); color: var(--ww-text); border: 1px solid var(--ww-border);
     box-shadow: var(--ww-shadow); padding: 11px 18px; border-radius: 8px; z-index: 1100;
     max-width: 80vw; line-height: 1.5;
+}
+
+/* --- AI 채팅 사이드바 --- */
+.ww-shell { display: flex; align-items: stretch; min-height: 100vh; }
+.ww-shell-main { flex: 1; min-width: 0; }
+.ww-chat {
+    width: 360px; flex: 0 0 360px; height: 100vh; position: sticky; top: 0;
+    display: flex; flex-direction: column;
+    background: var(--ww-panel); border-left: 1px solid var(--ww-border);
+}
+.ww-chat-head {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    border-bottom: 1px solid var(--ww-border); flex: 0 0 auto;
+}
+.ww-chat-title { font-weight: 600; flex: 1; }
+.ww-chat-badge { font-size: 11px; color: var(--ww-text-dim); }
+.ww-chat-icon {
+    border: 1px solid var(--ww-border); background: var(--ww-panel); color: var(--ww-text);
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 14px;
+    font-family: inherit; line-height: 1; padding: 0;
+}
+.ww-chat-icon:hover { background: var(--ww-panel-2); }
+.ww-chat-list { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+.ww-chat-empty { color: var(--ww-text-dim); font-size: 12.5px; line-height: 1.7; }
+.ww-chat-msg { margin-bottom: 10px; display: flex; }
+.ww-chat-msg.user { justify-content: flex-end; }
+.ww-chat-msg.tool {
+    display: block; font-size: 11.5px; color: var(--ww-text-dim);
+    background: var(--ww-panel-2); border-radius: 6px; padding: 6px 8px;
+    word-break: break-word; line-height: 1.5;
+}
+.ww-chat-tool-name { font-weight: 600; }
+.ww-chat-bubble {
+    max-width: 88%; padding: 9px 11px; border-radius: 10px; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word; background: var(--ww-panel-2);
+}
+.ww-chat-msg.user .ww-chat-bubble { background: var(--ww-accent); color: var(--ww-accent-text); }
+.ww-chat-status { padding: 0 12px 6px 12px; font-size: 12px; color: var(--ww-text-dim); min-height: 18px; }
+.ww-chat-foot { border-top: 1px solid var(--ww-border); padding: 10px 12px; flex: 0 0 auto; }
+.ww-chat-input {
+    width: 100%; resize: vertical; min-height: 46px; padding: 8px 10px;
+    border: 1px solid var(--ww-border); border-radius: 7px;
+    background: var(--ww-bg); color: var(--ww-text); font-family: inherit; font-size: 13px; line-height: 1.6;
+}
+.ww-chat-buttons { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.ww-chat-buttons .ww-btn { flex: 1; }
+.ww-chat-open {
+    position: fixed; right: 18px; bottom: 18px; z-index: 900;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer; font-size: 19px;
+    border: 1px solid var(--ww-border); background: var(--ww-panel); color: var(--ww-text);
+    box-shadow: var(--ww-shadow);
+}
+.ww-chat-open:hover { background: var(--ww-panel-2); }
+
+@media (max-width: 900px) {
+    .ww-chat { width: 300px; flex-basis: 300px; }
 }
 
 @media (max-width: 720px) {
@@ -803,6 +964,10 @@ function renderLogin() {
             state.user = name;
             state.language = Settings.current.language;
             state.darkMode = Settings.current.darkMode;
+            // 사용자별 저장소가 정해진 뒤에 대화 기록을 읽고 백엔드 MCP 에 연결한다.
+            Chat.loaded = false;
+            try { await Chat.load(); } catch (chatError) { console.error(chatError); }
+            WebMcp.connectBackend().catch(function (mcpError) { console.warn(mcpError); });
             try { window.localStorage.setItem(USER_KEY, name); } catch (e) { /* 무시 */ }
             applyTheme();
             await goHome();
@@ -835,11 +1000,37 @@ function renderLogin() {
  *  2) 초기 화면 (프로젝트 목록)
  * ------------------------------------------------------------------ */
 
+/**
+ * 홈 화면에 보여줄 저장 위치 안내 문구를 만든다.
+ * 접속 위치와 관계없이 어디에 저장되는지만 간략히 알린다.
+ * 서버의 실제 경로는 화면에 표시하지 않는다.
+ * @param {string} mode 실행 환경 (local | server | desktop)
+ * @returns {string} 안내 문구
+ */
+function storageNoteText(mode) {
+    if (mode === 'desktop') return t('home.storageDesktop');
+    if (mode === 'server') return t('home.storageServer');
+    return t('home.storageLocal');
+}
+
 async function goHome() {
     state.screen = 'home';
     state.project = null;
     state.projects = await Projects.list();
+    // 홈에서는 프로젝트에 매이지 않는 공용 대화를 쓴다.
+    await useChatScope('');
     renderHome();
+}
+
+/** 채팅 범위를 현재 화면에 맞춘다. 실패해도 화면 이동은 막지 않는다. */
+async function useChatScope(projectId) {
+    try {
+        await Chat.setScope(projectId);
+    } catch (e) {
+        console.error(e);
+        Chat.history = [];
+    }
+    renderChatPanel();
 }
 
 function renderHome() {
@@ -883,14 +1074,13 @@ function renderHome() {
     });
 
     const usage = Storage.usage();
-    const storageNote = Env.isServer()
-        ? t('home.storageServer', (Env.backend && Env.backend.storagePath) || 'server')
-        : t('home.storageLocal');
+    const storageNote = storageNoteText(Env.mode);
 
     const view = h('div.ww-home', {},
         h('div.ww-home-head', {},
             h('h2', { text: t('home.projects') }),
             h('button.ww-btn.primary', { text: t('home.new'), onClick: createProject }),
+            h('button.ww-btn', { text: t('restore.button'), onClick: restoreProject }),
             h('button.ww-btn', { text: t('home.settings'), onClick: openSettings })),
         rows.length > 0
             ? h('div.ww-projects', {}, rows)
@@ -927,6 +1117,8 @@ async function openProject(projectId) {
         const project = await Projects.load(projectId);
         state.project = project;
         state.screen = 'workspace';
+        // 대화 기록은 프로젝트마다 따로 보관하며 백업에 함께 담긴다.
+        await useChatScope(project.id);
         // 마지막으로 진행된 지점을 열어준다.
         if (project.books.length > 0) state.step = 4;
         else if (project.flow.length > 0) state.step = 3;
@@ -1092,9 +1284,19 @@ function renderWorkspace() {
         });
     });
 
+    // 단계 메뉴 아래쪽에 프로젝트 단위 도구를 모아 둔다.
+    const sideTools = h('div.ww-side-tools', {},
+        h('button.ww-btn.small', {
+            text: '⭳ ' + t('backup.button'),
+            title: t('backup.hint'),
+            onClick: backupProject
+        }));
+
     const sidebar = h('div.ww-sidebar', {},
-        steps,
-        maxStep < 4 ? h('div.ww-step-note', { text: t('step.locked') }) : null);
+        h('div.ww-side-steps', {},
+            steps,
+            maxStep < 4 ? h('div.ww-step-note', { text: t('step.locked') }) : null),
+        sideTools);
 
     const main = h('div.ww-main', {});
     if (state.step === 1) renderStep1(main);
@@ -1103,6 +1305,101 @@ function renderWorkspace() {
     else renderStep4(main);
 
     mount(h('div.ww-workspace', {}, toolbar, h('div.ww-body', {}, sidebar, main)));
+}
+
+/**
+ * 텍스트를 파일로 내려받는다. (책 내보내기와 프로젝트 백업이 함께 쓴다)
+ * @param {string} fileName 저장할 파일 이름
+ * @param {string} text 파일 내용
+ * @param {string} [mime] 파일 형식
+ */
+function downloadText(fileName, text, mime) {
+    const blob = new Blob([text], { type: (mime || 'text/plain') + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = h('a', { href: url, download: fileName });
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+/**
+ * 파일 선택 창을 띄워 텍스트 파일 하나를 읽는다.
+ * @param {string} accept 허용할 확장자/형식
+ * @returns {Promise<{name: string, text: string}|null>} 고른 파일. 취소하면 null
+ */
+function pickTextFile(accept) {
+    return new Promise(function (resolve) {
+        const input = h('input', { type: 'file', accept: accept || '', style: { display: 'none' } });
+        let settled = false;
+        const finish = function (value) {
+            if (settled) return;
+            settled = true;
+            if (input.parentNode) input.parentNode.removeChild(input);
+            resolve(value);
+        };
+        input.addEventListener('change', function () {
+            const file = input.files && input.files[0];
+            if (!file) { finish(null); return; }
+            const reader = new FileReader();
+            reader.onload = function () { finish({ name: file.name, text: String(reader.result || '') }); };
+            reader.onerror = function () { finish(null); };
+            reader.readAsText(file, 'utf-8');
+        });
+        // 취소를 감지할 수 없는 브라우저도 있으므로 창 복귀 시에도 정리한다.
+        input.addEventListener('cancel', function () { finish(null); });
+        document.body.appendChild(input);
+        input.click();
+    });
+}
+
+/** 현재 프로젝트 전체를 JSON 파일로 내려받는다. */
+async function backupProject() {
+    const project = state.project;
+    if (!project) return;
+    try {
+        await Projects.save(project);
+        const data = await withProgress(t('backup.title'), t('common.working'), async function () {
+            return await Backup.create(project.id);
+        });
+        downloadText(Backup.fileName(project, data.exportedAt), JSON.stringify(data), 'application/json');
+        toast(t('backup.done'));
+    } catch (e) {
+        await showError(e);
+    }
+}
+
+/** 백업 파일을 골라 새 프로젝트로 복원한다. */
+async function restoreProject() {
+    const picked = await pickTextFile('application/json,.json');
+    if (!picked) return;
+
+    let data;
+    try {
+        data = Backup.validate(JSON.parse(picked.text));
+    } catch (e) {
+        await showAlert(t('restore.title'), t('restore.badFile') + '\n' + ((e && e.message) ? e.message : String(e)));
+        return;
+    }
+
+    // 복원 전에 이름을 바꿀 기회를 준다.
+    const name = await showPrompt({
+        title: t('restore.title'),
+        label: t('restore.nameLabel'),
+        hint: t('restore.summary', data.project.name, (data.books || []).length, ((data.chat || {}).messages || []).length),
+        value: data.project.name
+    });
+    if (name === null) return;
+
+    try {
+        const project = await withProgress(t('restore.title'), t('common.working'), async function () {
+            return await Backup.restore(data, name);
+        });
+        await goHome();
+        toast(t('restore.done', project.name));
+    } catch (e) {
+        await showError(e);
+    }
 }
 
 /** 프로젝트를 저장하고 화면을 다시 그린다. */
@@ -1573,14 +1870,7 @@ function renderBookEditor() {
     };
 
     const exportBook = function () {
-        const text = Books.toPlainText(book);
-        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = h('a', { href: url, download: project.name + ' - ' + book.title + '.txt' });
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        downloadText(project.name + ' - ' + book.title + '.txt', Books.toPlainText(book), 'text/plain');
     };
 
     return h('div.ww-editor', {},
@@ -1689,13 +1979,710 @@ async function deleteLastBook() {
 }
 
 /* ------------------------------------------------------------------ *
+ *  AI 채팅 사이드바와 도구 어댑터
+ *
+ *  채팅, WebMCP, 백엔드 MCP 가 모두 코어의 Tools 를 거쳐 아래 어댑터를 호출한다.
+ *  각 처리는 화면에서 버튼을 눌렀을 때와 같은 저장 경로를 사용하며,
+ *  사용자 전환과 AI 공급자 설정 변경은 어댑터에 두지 않는다.
+ * ------------------------------------------------------------------ */
+
+/** 열려 있는 프로젝트를 확인한다. */
+function requireProject() {
+    if (!state.project) throw new Error(t('tool.needProject'));
+    return state.project;
+}
+
+/** id 로 책 메타데이터를 찾는다. */
+function findBookMeta(project, bookId) {
+    const meta = project.books.find(function (b) { return b.id === bookId; });
+    if (!meta) throw new Error(t('tool.noBook', bookId));
+    return meta;
+}
+
+/** 편집 대상 책을 읽어 온다. 화면에 열려 있으면 그 사본을 그대로 쓴다. */
+async function loadBookFor(project, bookId) {
+    if (state.currentBook && state.currentBook.id === bookId) return state.currentBook;
+    findBookMeta(project, bookId);
+    return await Books.load(project.id, bookId);
+}
+
+/** 책 본문 변경을 저장하고 목록 정보를 갱신한다. */
+async function persistBook(project, book) {
+    await Books.save(project.id, book);
+    updateBookMeta(book);
+    await Projects.save(project);
+}
+
+/** 설정 항목 종류를 확인한다. */
+function requireKind(kind) {
+    if (ITEM_KINDS.indexOf(kind) < 0) throw new Error(t('tool.badKind', kind));
+    return kind;
+}
+
+/** 현재 화면 상태를 도구와 AI 에게 전달할 형태로 모은다. */
+function collectScreenContext() {
+    const project = state.project;
+    const context = {
+        screen: state.screen,
+        language: state.language,
+        darkMode: state.darkMode,
+        storageMode: Env.mode,
+        user: state.user,
+        busy: !!(state.generation && state.generation.running)
+    };
+
+    if (state.screen === 'home') {
+        context.projects = state.projects.map(function (meta) {
+            return { id: meta.id, name: meta.name, updatedAt: meta.updatedAt };
+        });
+        return context;
+    }
+    if (!project) return context;
+
+    context.step = state.step;
+    context.maxStep = Projects.maxStep(project);
+    context.project = {
+        id: project.id,
+        name: project.name,
+        // 입력 중인 값도 그대로 전달한다. (저장 버튼을 누르지 않아도 화면 내용이 보이도록)
+        description: project.description || '',
+        targetVolumes: project.targetVolumes || 0,
+        counts: {
+            characters: project.characters.length,
+            places: project.places.length,
+            events: project.events.length,
+            flow: project.flow.length,
+            books: project.books.length
+        }
+    };
+
+    if (state.step === 2) {
+        context.items = {};
+        ITEM_KINDS.forEach(function (kind) {
+            context.items[kind] = project[kind].map(function (item) {
+                return {
+                    id: item.id, name: item.name, summary: item.summary || '',
+                    hasDetail: !WorldWriter.util.isBlank(item.detail),
+                    detail: WorldWriter.util.tailOf(item.detail || '', 400)
+                };
+            });
+        });
+        context.openItemIds = Object.keys(state.openItems).filter(function (id) { return state.openItems[id]; });
+    } else if (state.step === 3) {
+        context.flow = project.flow.map(function (item, index) {
+            return { index: index, id: item.id, title: item.title, summary: item.summary || '', main: !!item.main };
+        });
+    } else if (state.step === 4) {
+        context.books = project.books.map(function (meta) {
+            return {
+                id: meta.id, index: meta.index, title: meta.title,
+                chapterCount: meta.chapterCount, charCount: meta.charCount, status: meta.status || 'complete'
+            };
+        });
+        if (state.currentBook) {
+            const index = Math.min(state.currentChapterIndex, Math.max(0, state.currentBook.chapters.length - 1));
+            const chapter = state.currentBook.chapters[index];
+            context.openBook = {
+                id: state.currentBook.id,
+                title: state.currentBook.title,
+                chapters: state.currentBook.chapters.map(function (ch, i) {
+                    return { index: i, id: ch.id, title: ch.title, charCount: (ch.text || '').length };
+                })
+            };
+            if (chapter) {
+                context.openChapter = {
+                    id: chapter.id, index: index, title: chapter.title,
+                    charCount: (chapter.text || '').length,
+                    textTail: WorldWriter.util.tailOf(chapter.text || '', 1200)
+                };
+            }
+        }
+    }
+    return context;
+}
+
+/** 진행 중인 긴 작업(책 생성, 일괄 상세 생성)의 상태 */
+state.generation = { running: false, kind: '', title: '', current: 0, total: 0, charCount: 0, targetChars: 0, message: '', error: '' };
+
+/** 긴 작업을 백그라운드로 실행한다. 채팅/MCP 는 기다리지 않고 상태만 확인한다. */
+function runBackground(kind, task) {
+    if (state.generation.running) throw new Error(t('tool.busy'));
+    state.cancelRequested = false;
+    state.generation = { running: true, kind: kind, title: '', current: 0, total: 0, charCount: 0, targetChars: 0, message: '', error: '' };
+    Promise.resolve()
+        .then(task)
+        .then(function (message) {
+            state.generation.running = false;
+            state.generation.message = message || t('tool.finished');
+        })
+        .catch(function (error) {
+            state.generation.running = false;
+            state.generation.error = (error && error.message) ? error.message : String(error);
+        })
+        .then(function () {
+            if (state.screen === 'workspace') renderWorkspace();
+            renderChatPanel();
+        });
+    return { started: true, kind: kind };
+}
+
+/** 코어의 Tools 에 등록할 화면 조작 어댑터 */
+const ToolAdapter = {
+    async get_screen() {
+        return collectScreenContext();
+    },
+
+    async list_projects() {
+        const list = await Projects.list();
+        state.projects = list;
+        return {
+            projects: list.slice().sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); })
+                .map(function (meta) { return { id: meta.id, name: meta.name, updatedAt: meta.updatedAt }; })
+        };
+    },
+
+    async create_project(args) {
+        const project = await Projects.create(args.name);
+        if (state.screen === 'home') await goHome();
+        return { id: project.id, name: project.name };
+    },
+
+    async open_project(args) {
+        await openProject(args.projectId);
+        if (!state.project || state.project.id !== args.projectId) throw new Error(t('tool.noProject', args.projectId));
+        return { ok: true, step: state.step, name: state.project.name };
+    },
+
+    async rename_project(args) {
+        await Projects.rename(args.projectId, args.name);
+        if (state.project && state.project.id === args.projectId) state.project.name = args.name.trim();
+        if (state.screen === 'home') await goHome(); else rerender();
+        return { ok: true };
+    },
+
+    async delete_project(args) {
+        await Projects.remove(args.projectId);
+        if (state.project && state.project.id === args.projectId) await goHome();
+        else if (state.screen === 'home') await goHome();
+        return { ok: true };
+    },
+
+    async go_home() {
+        await goHome();
+        return { ok: true, screen: 'home' };
+    },
+
+    async go_step(args) {
+        const project = requireProject();
+        const step = Math.round(args.step);
+        if (step < 1 || step > 4) throw new Error(t('tool.badStep'));
+        if (step > Projects.maxStep(project)) throw new Error(t('tool.stepLocked', step));
+        state.step = step;
+        renderWorkspace();
+        return { ok: true, step: step };
+    },
+
+    async get_project() {
+        const project = requireProject();
+        return {
+            id: project.id, name: project.name,
+            description: project.description || '',
+            targetVolumes: project.targetVolumes || 0,
+            characters: project.characters, places: project.places, events: project.events,
+            flow: project.flow,
+            books: project.books
+        };
+    },
+
+    async set_description(args) {
+        const project = requireProject();
+        project.description = args.text;
+        await Projects.save(project);
+        if (state.step === 1) renderWorkspace();
+        return { ok: true, length: project.description.length };
+    },
+
+    async generate_outline() {
+        const project = requireProject();
+        return runBackground('outline', async function () {
+            await Pipeline.generateOutline(project);
+            await Projects.save(project);
+            state.step = Math.min(2, Projects.maxStep(project));
+            return t('tool.outlineDone');
+        });
+    },
+
+    async list_items(args) {
+        const project = requireProject();
+        const kinds = args.kind ? [requireKind(args.kind)] : ITEM_KINDS;
+        const out = {};
+        kinds.forEach(function (kind) {
+            out[kind] = project[kind].map(function (item) {
+                return { id: item.id, name: item.name, summary: item.summary || '', detail: item.detail || '' };
+            });
+        });
+        return out;
+    },
+
+    async update_item(args) {
+        const project = requireProject();
+        const kind = requireKind(args.kind);
+        const item = project[kind].find(function (i) { return i.id === args.itemId; });
+        if (!item) throw new Error(t('tool.noItem', args.itemId));
+        if (args.name !== undefined) item.name = args.name;
+        if (args.summary !== undefined) item.summary = args.summary;
+        if (args.detail !== undefined) item.detail = args.detail;
+        await Projects.save(project);
+        if (state.step === 2) renderWorkspace();
+        return { ok: true, item: { id: item.id, name: item.name, summary: item.summary, detail: item.detail } };
+    },
+
+    async generate_item_detail(args) {
+        const project = requireProject();
+        const kind = requireKind(args.kind);
+        return runBackground('itemDetail', async function () {
+            await Pipeline.generateItemDetail(project, kind, args.itemId);
+            await Projects.save(project);
+            return t('tool.detailDone');
+        });
+    },
+
+    async generate_all_details() {
+        const project = requireProject();
+        const targets = [];
+        ITEM_KINDS.forEach(function (kind) {
+            project[kind].forEach(function (item) {
+                if (WorldWriter.util.isBlank(item.detail)) targets.push({ kind: kind, item: item });
+            });
+        });
+        if (targets.length === 0) return { ok: true, generated: 0 };
+        return runBackground('details', async function () {
+            state.generation.total = targets.length;
+            for (let i = 0; i < targets.length; i++) {
+                if (state.cancelRequested) break;
+                state.generation.current = i + 1;
+                state.generation.title = targets[i].item.name;
+                await Pipeline.generateItemDetail(project, targets[i].kind, targets[i].item.id);
+                await Projects.save(project);
+            }
+            return t('tool.detailAllDone', state.generation.current);
+        });
+    },
+
+    async get_flow() {
+        const project = requireProject();
+        return {
+            flow: project.flow.map(function (item, index) {
+                return { index: index, id: item.id, title: item.title, summary: item.summary || '', main: !!item.main };
+            })
+        };
+    },
+
+    async generate_flow() {
+        const project = requireProject();
+        return runBackground('flow', async function () {
+            await Pipeline.generateFlow(project);
+            await Projects.save(project);
+            state.step = Math.min(3, Projects.maxStep(project));
+            return t('tool.flowDone', project.flow.length);
+        });
+    },
+
+    async move_flow_item(args) {
+        const project = requireProject();
+        await Projects.assertStructureEditable(project);
+        const from = project.flow.findIndex(function (item) { return item.id === args.flowId; });
+        if (from < 0) throw new Error(t('tool.noFlow', args.flowId));
+        const to = Math.max(0, Math.min(project.flow.length - 1, Math.round(args.toIndex)));
+        const moved = project.flow.splice(from, 1)[0];
+        project.flow.splice(to, 0, moved);
+        await Projects.save(project);
+        if (state.step === 3) renderWorkspace();
+        return { ok: true, from: from, to: to };
+    },
+
+    async remove_flow_item(args) {
+        const project = requireProject();
+        await Projects.assertStructureEditable(project);
+        const index = project.flow.findIndex(function (item) { return item.id === args.flowId; });
+        if (index < 0) throw new Error(t('tool.noFlow', args.flowId));
+        project.flow.splice(index, 1);
+        await Projects.save(project);
+        if (state.step === 3) renderWorkspace();
+        return { ok: true, remaining: project.flow.length };
+    },
+
+    async set_target_volumes(args) {
+        const project = requireProject();
+        const count = Projects.validateTarget(project, args.count);
+        project.targetVolumes = count;
+        await Projects.save(project);
+        if (state.step === 4) renderWorkspace();
+        return { ok: true, targetVolumes: count };
+    },
+
+    async list_books() {
+        const project = requireProject();
+        return {
+            targetVolumes: project.targetVolumes || 0,
+            books: project.books.map(function (meta) {
+                return {
+                    id: meta.id, index: meta.index, title: meta.title,
+                    chapterCount: meta.chapterCount, charCount: meta.charCount,
+                    status: meta.status || 'complete'
+                };
+            })
+        };
+    },
+
+    async open_book(args) {
+        const project = requireProject();
+        findBookMeta(project, args.bookId);
+        state.step = 4;
+        await selectBook(args.bookId);
+        if (args.chapterIndex !== undefined && state.currentBook) {
+            state.currentChapterIndex = Math.max(0, Math.min(state.currentBook.chapters.length - 1, Math.round(args.chapterIndex)));
+            renderWorkspace();
+        }
+        return {
+            ok: true,
+            chapters: (state.currentBook ? state.currentBook.chapters : []).map(function (ch, i) {
+                return { index: i, id: ch.id, title: ch.title, charCount: (ch.text || '').length };
+            })
+        };
+    },
+
+    async get_chapter(args) {
+        const project = requireProject();
+        const bookId = args.bookId || state.currentBookId;
+        if (!bookId) throw new Error(t('tool.needBook'));
+        const book = await loadBookFor(project, bookId);
+        let chapter;
+        if (args.chapterId) chapter = book.chapters.find(function (ch) { return ch.id === args.chapterId; });
+        else chapter = book.chapters[Math.min(state.currentChapterIndex, book.chapters.length - 1)];
+        if (!chapter) throw new Error(t('tool.noChapter', args.chapterId || ''));
+        const limit = args.maxChars ? Math.max(200, Math.round(args.maxChars)) : 8000;
+        const text = chapter.text || '';
+        return {
+            bookId: book.id, chapterId: chapter.id, title: chapter.title,
+            charCount: text.length,
+            truncated: text.length > limit,
+            text: text.substring(0, limit)
+        };
+    },
+
+    async set_chapter_text(args) {
+        const project = requireProject();
+        const book = await loadBookFor(project, args.bookId);
+        const chapter = book.chapters.find(function (ch) { return ch.id === args.chapterId; });
+        if (!chapter) throw new Error(t('tool.noChapter', args.chapterId));
+        chapter.text = args.text;
+        await persistBook(project, book);
+        if (state.currentBookId === book.id) state.currentBook = book;
+        if (state.step === 4) renderWorkspace();
+        return { ok: true, charCount: chapter.text.length };
+    },
+
+    async revise_chapter(args) {
+        const project = requireProject();
+        const book = await loadBookFor(project, args.bookId);
+        const chapter = book.chapters.find(function (ch) { return ch.id === args.chapterId; });
+        if (!chapter) throw new Error(t('tool.noChapter', args.chapterId));
+        return runBackground('revise', async function () {
+            state.generation.title = chapter.title;
+            const revised = await Pipeline.reviseChapter(project, chapter, args.instruction);
+            chapter.text = revised;
+            await persistBook(project, book);
+            if (state.currentBookId === book.id) state.currentBook = book;
+            return t('tool.reviseDone', chapter.title);
+        });
+    },
+
+    async export_book_text(args) {
+        const project = requireProject();
+        const book = await loadBookFor(project, args.bookId);
+        const text = Books.toPlainText(book);
+        const limit = args.maxChars ? Math.max(500, Math.round(args.maxChars)) : 20000;
+        return {
+            bookId: book.id, title: book.title, charCount: text.length,
+            truncated: text.length > limit,
+            text: text.substring(0, limit)
+        };
+    },
+
+    async delete_last_book() {
+        const project = requireProject();
+        if (project.books.length === 0) throw new Error(t('tool.noBooks'));
+        const last = project.books[project.books.length - 1];
+        await Books.remove(project.id, last.id);
+        state.project = await Projects.load(project.id);
+        if (state.currentBookId === last.id) {
+            state.currentBookId = null;
+            state.currentBook = null;
+        }
+        if (state.screen === 'workspace') renderWorkspace();
+        return { ok: true, deleted: last.title, remaining: state.project.books.length };
+    },
+
+    async generate_next_book() {
+        const project = requireProject();
+        if (!(project.targetVolumes > 0)) throw new Error(t('tool.needTarget'));
+        return runBackground('book', async function () {
+            const book = await Pipeline.generateNextBook(project, {
+                cancelled: function () { return state.cancelRequested; },
+                onProgress: function (info) {
+                    state.generation.current = info.current;
+                    state.generation.total = info.total;
+                    state.generation.title = info.title;
+                    state.generation.charCount = info.charCount;
+                    state.generation.targetChars = info.targetChars;
+                }
+            });
+            state.currentBookId = book.id;
+            state.currentBook = book;
+            state.currentChapterIndex = 0;
+            return t('tool.bookDone', book.title, t('step4.status.' + (book.status || 'complete')));
+        });
+    },
+
+    async generation_status() {
+        const g = state.generation;
+        return {
+            running: g.running, kind: g.kind, title: g.title,
+            current: g.current, total: g.total,
+            charCount: g.charCount, targetChars: g.targetChars,
+            message: g.message, error: g.error,
+            cancelRequested: state.cancelRequested
+        };
+    },
+
+    async stop_generation() {
+        if (!state.generation.running) return { ok: true, running: false };
+        state.cancelRequested = true;
+        return { ok: true, stopping: true };
+    },
+
+    async backup_project(args) {
+        const projectId = args.projectId || (state.project && state.project.id);
+        if (!projectId) throw new Error(t('tool.needProject'));
+        if (state.project && state.project.id === projectId) await Projects.save(state.project);
+        const data = await Backup.create(projectId);
+        const json = JSON.stringify(data);
+        const limit = args.maxChars ? Math.max(1000, Math.round(args.maxChars)) : 200000;
+        const summary = {
+            fileName: Backup.fileName(data.project, data.exportedAt),
+            charCount: json.length,
+            books: data.books.length,
+            chatMessages: data.chat.messages.length
+        };
+        // 백업은 잘라 내면 복원할 수 없으므로, 너무 크면 내용 대신 크기만 알려 준다.
+        if (json.length > limit) return Object.assign({ tooLarge: true, maxChars: limit }, summary);
+        return Object.assign({ tooLarge: false, json: json }, summary);
+    },
+
+    async restore_project(args) {
+        let data;
+        try {
+            data = JSON.parse(args.json);
+        } catch (e) {
+            throw new Error(t('restore.badFile'));
+        }
+        const project = await Backup.restore(data, args.name);
+        if (state.screen === 'home') await goHome();
+        return { ok: true, id: project.id, name: project.name, books: project.books.length };
+    },
+
+    async get_display_settings() {
+        return {
+            language: Settings.current.language,
+            darkMode: !!Settings.current.darkMode,
+            storageMode: Env.mode
+        };
+    },
+
+    async set_display_settings(args) {
+        const next = WorldWriter.util.clone(Settings.current);
+        if (args.language !== undefined) {
+            if (args.language !== 'ko' && args.language !== 'en') throw new Error(t('tool.badLanguage'));
+            next.language = args.language;
+        }
+        if (args.darkMode !== undefined) next.darkMode = args.darkMode;
+        await Settings.save(next);
+        state.language = next.language;
+        state.darkMode = !!next.darkMode;
+        applyTheme();
+        rerender();
+        return { ok: true, language: next.language, darkMode: state.darkMode };
+    }
+};
+
+/* --------------------------- 채팅 사이드바 --------------------------- */
+
+/** 채팅 화면 상태 */
+state.chat = { open: false, busy: false, status: '', draft: '' };
+
+/** 채팅 패널 DOM (열려 있을 때만 존재) */
+let chatPanel = null;
+
+/** 대화 한 줄을 화면 요소로 만든다. */
+function renderChatMessage(entry) {
+    if (entry.role === 'tool') {
+        return h('div.ww-chat-msg.tool', {},
+            h('span.ww-chat-tool-name', { text: '⚙ ' + (entry.tool || 'tool') }),
+            h('span', { text: ' ' + entry.text.substring(0, 300) }));
+    }
+    return h('div.ww-chat-msg.' + (entry.role === 'user' ? 'user' : 'ai'), {},
+        h('div.ww-chat-bubble', { text: entry.text }));
+}
+
+/** 채팅 패널을 다시 그린다. 열려 있지 않으면 아무것도 하지 않는다. */
+function renderChatPanel() {
+    if (!chatPanel) return;
+    const list = chatPanel.querySelector('.ww-chat-list');
+    const status = chatPanel.querySelector('.ww-chat-status');
+    if (list) {
+        clearNode(list);
+        if (Chat.history.length === 0) {
+            list.appendChild(h('div.ww-chat-empty', { text: t('chat.empty') }));
+        } else {
+            Chat.history.forEach(function (entry) { list.appendChild(renderChatMessage(entry)); });
+        }
+        list.scrollTop = list.scrollHeight;
+    }
+    if (status) {
+        const generation = state.generation;
+        let text = state.chat.status;
+        if (!text && generation.running) {
+            text = t('chat.working') + ' ' + (generation.title || generation.kind);
+        }
+        status.textContent = text || '';
+    }
+}
+
+/** 채팅 패널을 만든다. */
+function buildChatPanel() {
+    const list = h('div.ww-chat-list', {});
+    const status = h('div.ww-chat-status', {});
+
+    const input = h('textarea.ww-chat-input', {
+        rows: 2,
+        placeholder: t('chat.placeholder'),
+        value: state.chat.draft || '',
+        onInput: function (ev) { state.chat.draft = ev.target.value; }
+    });
+
+    const send = async function () {
+        const text = input.value.trim();
+        if (text.length === 0 || state.chat.busy) return;
+        input.value = '';
+        state.chat.draft = '';
+        state.chat.busy = true;
+        state.chat.status = t('chat.thinking');
+        renderChatPanel();
+        try {
+            await Chat.send(text, {
+                onUpdate: function (info) {
+                    if (info.phase === 'tool') state.chat.status = t('chat.usingTool', info.name);
+                    else if (info.phase === 'toolDone') state.chat.status = t('chat.thinking');
+                    else if (info.phase === 'answer') state.chat.status = '';
+                    renderChatPanel();
+                }
+            });
+        } catch (e) {
+            Chat.append('assistant', t('chat.failed') + ' ' + ((e && e.message) ? e.message : String(e)));
+            try { await Chat.save(); } catch (saveError) { /* 저장 실패는 화면 표시로 충분하다. */ }
+        } finally {
+            state.chat.busy = false;
+            state.chat.status = '';
+            renderChatPanel();
+            input.focus();
+        }
+    };
+
+    input.addEventListener('keydown', function (ev) {
+        // Enter 로 전송, Shift+Enter 로 줄바꿈
+        if (ev.key === 'Enter' && !ev.shiftKey) {
+            ev.preventDefault();
+            send();
+        }
+    });
+
+    const reset = h('button.ww-chat-icon', {
+        title: t('chat.reset'),
+        text: '↺',
+        onClick: async function () {
+            if (state.chat.busy) return;
+            const ok = await showConfirm(t('chat.reset'), t('chat.resetConfirm'), t('chat.reset'), true);
+            if (!ok) return;
+            await Chat.clear();
+            renderChatPanel();
+        }
+    });
+
+    const panel = h('div.ww-chat', {},
+        h('div.ww-chat-head', {},
+            h('span.ww-chat-title', { text: t('chat.title') }),
+            h('span.ww-chat-badge', {
+                text: WebMcp.bridged ? t('chat.mcpOn') : (WebMcp.registered ? t('chat.webmcpOn') : ''),
+                // 표준 WebMCP 를 지원하지 않는 브라우저에서도 채팅과 도구는 그대로 쓸 수 있다.
+                title: WebMcp.bridged ? t('chat.mcpOnHint') : (WebMcp.registered ? t('chat.webmcpOnHint') : t('chat.webmcpOffHint'))
+            }),
+            h('button.ww-chat-icon', {
+                title: t('chat.close'), text: '✕',
+                onClick: function () { toggleChat(false); }
+            })),
+        list,
+        status,
+        h('div.ww-chat-foot', {},
+            input,
+            h('div.ww-chat-buttons', {},
+                h('button.ww-btn.small.primary', { text: t('chat.send'), onClick: send }),
+                reset)));
+
+    return panel;
+}
+
+/** 채팅 사이드바를 열거나 닫는다. */
+async function toggleChat(open) {
+    const next = (open === undefined) ? !state.chat.open : !!open;
+    state.chat.open = next;
+    if (next && !Chat.loaded) {
+        try { await Chat.load(); } catch (e) { console.error(e); }
+    }
+    rerender();
+    if (next && chatPanel) {
+        const input = chatPanel.querySelector('.ww-chat-input');
+        if (input) input.focus();
+    }
+}
+
+/** 로그인 뒤의 모든 화면에 채팅 사이드바(또는 열기 버튼)를 붙인다. */
+function attachChat(view) {
+    chatPanel = null;
+    if (state.screen === 'login') return view;
+
+    if (!state.chat.open) {
+        const opener = h('button.ww-chat-open', {
+            title: t('chat.title'), text: '💬',
+            onClick: function () { toggleChat(true); }
+        });
+        return h('div.ww-shell', {}, h('div.ww-shell-main', {}, view), opener);
+    }
+
+    chatPanel = buildChatPanel();
+    const shell = h('div.ww-shell.with-chat', {}, h('div.ww-shell-main', {}, view), chatPanel);
+    setTimeout(renderChatPanel, 0);
+    return shell;
+}
+
+/* ------------------------------------------------------------------ *
  *  화면 전환
  * ------------------------------------------------------------------ */
 
 function mount(view) {
     // 열려 있는 모달은 유지하지 않는다. (화면이 바뀌면 함께 닫힌다.)
     clearNode(state.root);
-    state.root.appendChild(view);
+    state.root.appendChild(attachChat(view));
 }
 
 function rerender() {
@@ -1717,6 +2704,12 @@ const WorldWriterUI = {
         state.root = rootElement || document.body;
         injectStyle();
 
+        // 채팅/WebMCP/백엔드 MCP 가 함께 쓰는 화면 조작 어댑터를 등록한다.
+        Tools.setAdapter(ToolAdapter);
+        // 브라우저가 나중에 WebMCP 등록을 거절하면 채팅 패널 표시를 되돌린다.
+        WebMcp.onChange = function () { renderChatPanel(); };
+        WebMcp.expose();
+
         const pref = Settings.readUiPreference();
         state.language = pref.language;
         state.darkMode = pref.darkMode;
@@ -1737,6 +2730,7 @@ const WorldWriterUI = {
 
     // 디버깅 편의를 위해 내부 상태와 코어를 함께 노출한다.
     state: state,
+    storageNoteText: storageNoteText,
     core: WorldWriter,
     t: t
 };
