@@ -14,7 +14,7 @@
  *     shuttingstarsinterface.js  - 클라우드 기능 사용
  *     shuttingstars3d.js         - 3D 기능 지원
  *     shuttingstarswebmcp.js     - WebMCP 지원
- * 
+ *
  */
 
 import { ShuttingStarsUtility, SSUtil, SSColor, SSStorage, SSLocalStorage, BrowserDetector, BpmDetector  } from './shuttingstarsutils.js'
