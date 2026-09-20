@@ -44,6 +44,14 @@ function tailOf(text, length) {
     return str.length <= length ? str : '...' + str.substring(str.length - length);
 }
 
+/** 긴 본문을 AI 수정 맥락에 넣을 때 앞뒤를 남겨 크기를 제한한다. */
+function excerptOf(text, length) {
+    const str = String(text || '');
+    if (str.length <= length) return str;
+    const half = Math.floor((length - 80) / 2);
+    return str.substring(0, half) + '\n\n... (중간 생략) ...\n\n' + str.substring(str.length - half);
+}
+
 /** 사용자에게 보이는 코어 메시지. 프롬프트 언어와 UI 언어를 구분한다. */
 function localize(ko, en, settings = Settings.current) {
     return settings.language === 'en' ? en : ko;
@@ -1554,6 +1562,46 @@ const Pipeline = {
         }
     },
 
+    /** 마지막 완료 권 바로 뒤에 다음 한 권만 추가한다. */
+    async generateFollowingBook(project, options) {
+        if (activeGenerations.has(project.id)) {
+            throw new Error(localize('이미 이 프로젝트의 책을 생성 중입니다.', 'A book is already being generated for this project.'));
+        }
+        activeGenerations.add(project.id);
+        try {
+            Object.assign(project, await Projects.load(project.id));
+            const last = project.books[project.books.length - 1];
+            if (last && last.status && last.status !== 'complete') {
+                throw new Error(localize('마지막 책이 아직 완성되지 않았습니다. 먼저 이어쓰기를 완료해 주세요.',
+                    'The last book is unfinished. Resume it before creating the following book.'));
+            }
+            return await this.writeBook(project, options);
+        } finally {
+            activeGenerations.delete(project.id);
+        }
+    },
+
+    /** 목표 권수까지 남은 책을 차례대로 생성한다. 중단하면 현재 권의 진행분을 남긴다. */
+    async generateAllBooks(project, options) {
+        if (activeGenerations.has(project.id)) {
+            throw new Error(localize('이미 이 프로젝트의 책을 생성 중입니다.', 'A book is already being generated for this project.'));
+        }
+        activeGenerations.add(project.id);
+        try {
+            Object.assign(project, await Projects.load(project.id));
+            const total = Projects.validateTarget(project, project.targetVolumes);
+            let latest = null;
+            while (project.books.length < total || project.books.some(book => book.status && book.status !== 'complete')) {
+                latest = await this.writeBook(project, options);
+                if (latest.status !== 'complete' || (options?.cancelled && options.cancelled())) return latest;
+                Object.assign(project, await Projects.load(project.id));
+            }
+            return latest;
+        } finally {
+            activeGenerations.delete(project.id);
+        }
+    },
+
 /**
  * `writeBook` 작업을 수행한다.
  */
@@ -1738,6 +1786,81 @@ const Pipeline = {
 
         const maxTokens = clamp(Math.round(chapter.text.length * 2.2), 4000, 32000);
         const text = await AI.chat({ settings: conf, system: system, prompt: prompt, maxTokens: maxTokens });
+        return text.trim();
+    },
+
+    /** 수정된 권 뒤의 모든 권을 장 순서대로 정리하고, 매 장을 즉시 저장한다. */
+    async reconcileFollowingBooks(project, changedBookId, change, options) {
+        if (activeGenerations.has(project.id)) {
+            throw new Error(localize('이미 이 프로젝트의 책을 생성 중입니다.', 'Another book task is already running for this project.'));
+        }
+        activeGenerations.add(project.id);
+        try {
+            Object.assign(project, await Projects.load(project.id));
+            const sourceIndex = project.books.findIndex(book => book.id === changedBookId);
+            if (sourceIndex < 0) throw new Error(localize('수정한 책을 찾을 수 없습니다.', 'The edited book could not be found.'));
+            const later = project.books.slice(sourceIndex + 1);
+            const opts = options || {};
+            const cancelled = opts.cancelled || function () { return false; };
+            const onProgress = opts.onProgress || function () { };
+            const conf = opts.settings || Settings.current;
+            const source = await Books.load(project.id, changedBookId);
+            let previousText = source.chapters[source.chapters.length - 1]?.text || '';
+            let updatedChapters = 0;
+            const totalChapters = later.reduce((sum, meta) => sum + (meta.chapterCount || 0), 0);
+
+            for (let bookOffset = 0; bookOffset < later.length; bookOffset++) {
+                if (cancelled()) return { updatedBooks: bookOffset, updatedChapters, cancelled: true };
+                const book = await Books.load(project.id, later[bookOffset].id);
+                for (let chapterIndex = 0; chapterIndex < book.chapters.length; chapterIndex++) {
+                    if (cancelled()) return { updatedBooks: bookOffset, updatedChapters, cancelled: true };
+                    const chapter = book.chapters[chapterIndex];
+                    onProgress({ current: updatedChapters + 1, total: Math.max(1, totalChapters),
+                        bookTitle: book.title, title: chapter.title });
+                    chapter.text = await this.reviseFollowingChapter(project, chapter, {
+                        settings: conf, previousText, change
+                    });
+                    previousText = chapter.text;
+                    updatedChapters++;
+                    await Books.save(project.id, book);
+                    project.books[sourceIndex + 1 + bookOffset] = Books.metaOf(book);
+                    await Projects.save(project);
+                }
+            }
+            return { updatedBooks: later.length, updatedChapters, cancelled: false };
+        } finally {
+            activeGenerations.delete(project.id);
+        }
+    },
+
+    /** 뒤 권 정리에 쓰는 장 단위 AI 수정 요청. */
+    async reviseFollowingChapter(project, chapter, params) {
+        const conf = params.settings || Settings.current;
+        const change = params.change || {};
+        const system = AUTHOR_PERSONA + ' ' + languageInstruction(conf) + ' '
+            + '너는 장편 소설의 연속성을 편집한다. 수정된 본문 전체만 출력하고 설명이나 변경 목록은 출력하지 않는다.';
+        const prompt = [
+            worldSummary(project, true),
+            '',
+            '[앞 권에서 바뀐 장]',
+            '장 제목: ' + (change.chapterTitle || ''),
+            '[수정 전 발췌]', excerptOf(change.beforeText, 24000),
+            '[수정 후 발췌]', excerptOf(change.afterText, 24000),
+            '',
+            '[직전 장의 최신 끝부분]',
+            isBlank(params.previousText) ? '(없음)' : tailOf(params.previousText, 3000),
+            '',
+            '[정리할 현재 장 원문]', chapter.text,
+            '',
+            '[편집 지시]',
+            '- 앞 권의 수정으로 인해 현재 장과 이후 전개에 생긴 모순만 자연스럽게 고친다.',
+            '- 현재 장이 맡은 사건과 분량, 문체는 최대한 유지한다.',
+            '- 직전 장의 최신 내용에서 자연스럽게 이어지게 한다.',
+            '- 본문 외의 텍스트를 출력하지 않는다.'
+        ].join('\n');
+        const maxTokens = clamp(Math.round((chapter.text || '').length * 2.2), 4000, 32000);
+        const text = await AI.chat({ settings: conf, system, prompt, maxTokens });
+        if (isBlank(text)) throw new Error(localize('AI가 정리할 본문을 반환하지 않았습니다.', 'The AI returned no revised text.'));
         return text.trim();
     }
 };
@@ -2066,11 +2189,12 @@ const TOOL_SPECS = [
     },
     {
         name: 'set_chapter_text',
-        description: '장 본문을 통째로 바꾸고 저장한다.',
+        description: '장 본문을 통째로 바꾸고 저장한다. autoOrganize가 true이면 이후 책들도 변경 내용에 맞춰 AI로 순차 정리한다.',
         params: {
             bookId: { type: 'string', required: true, description: '책 id' },
             chapterId: { type: 'string', required: true, description: '장 id' },
-            text: { type: 'string', required: true, description: '새 본문 전체' }
+            text: { type: 'string', required: true, description: '새 본문 전체' },
+            autoOrganize: { type: 'boolean', description: '저장 후 이후 책 자동정리 여부' }
         }
     },
     {
@@ -2097,7 +2221,17 @@ const TOOL_SPECS = [
     },
     {
         name: 'generate_next_book',
-        description: '다음 권(또는 미완성 권의 이어쓰기)을 시작한다. 오래 걸리므로 백그라운드로 실행하고 즉시 돌아온다. 진행 상황은 generation_status 로 확인한다.',
+        description: '마지막 완료 권 바로 뒤에 다음 한 권만 생성한다. 미완성 마지막 권이 있으면 거부된다. 오래 걸리므로 백그라운드로 실행하고 즉시 돌아온다.',
+        params: {}
+    },
+    {
+        name: 'resume_last_book',
+        description: '마지막 미완성 권의 이어쓰기를 시작한다. 오래 걸리므로 백그라운드로 실행하고 즉시 돌아온다.',
+        params: {}
+    },
+    {
+        name: 'generate_all_books',
+        description: '목표 권수까지 남은 모든 책을 순서대로 생성한다. 중단하면 현재 권의 진행분을 저장한다. 오래 걸리므로 백그라운드로 실행하고 즉시 돌아온다.',
         params: {}
     },
     {

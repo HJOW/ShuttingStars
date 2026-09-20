@@ -133,7 +133,8 @@ const I18N = {
         'step3.hasBooks': '기존 책을 보존하기 위해 개요 재생성·사건 흐름·목표 권수를 잠갔습니다. 마지막 권부터 모두 삭제하면 변경할 수 있습니다.',
 
         'step4.title': '책 생성',
-        'step4.newBook': '새 책 생성',
+        'step4.newBook': '다음 1권 생성',
+        'step4.allBooks': '새 책 전체 생성',
         'step4.empty': '아직 생성된 책이 없습니다.',
         'step4.bookInfo': '{0}장 / 약 {1}자',
         'step4.deleteLast': '마지막 책 삭제',
@@ -153,6 +154,15 @@ const I18N = {
         'step4.selectBook': '위 목록에서 책을 선택하면 내용을 보거나 수정할 수 있습니다.',
         'step4.volumeOf': '{0}권',
         'step4.exportBook': '이 책 내보내기',
+        'step4.exportFormatTitle': '책 내보내기 형식',
+        'step4.exportFormatGuide': '저장할 파일 형식을 선택해 주세요.',
+        'step4.exportTxt': 'TXT 파일',
+        'step4.exportPdf': 'PDF 파일',
+        'step4.exportPdfChecking': 'PDF 라이브러리 연결 확인 중...',
+        'step4.exportPdfUnavailable': 'PDF 라이브러리에 연결할 수 없어 현재 사용할 수 없습니다.',
+        'step4.exportStart': '내보내기',
+        'step4.exportTxtDone': 'TXT 파일을 내보냈습니다.',
+        'step4.exportPdfDone': 'PDF 파일을 내보냈습니다.',
         'step2.needDetails': '모든 인물·지역·주요 사건의 상세 설명을 저장하면 3단계로 이동할 수 있습니다.',
         'step4.resume': '중단한 책 이어쓰기',
         'step4.paused': '{0}의 진행분을 저장했습니다. 이어쓰기로 계속할 수 있습니다.',
@@ -161,6 +171,12 @@ const I18N = {
         'step4.status.error': '오류 후 이어쓰기 가능',
         'step4.status.complete': '완료',
         'step4.lengthProgress': '{0}자 / 목표 {1}자',
+        'step4.saveOrganize': '저장 후 자동정리',
+        'step4.organizingTitle': '이후 책 자동정리 중',
+        'step4.organizing': '{0} / {1} : {2}',
+        'step4.organizeDone': '이후 책 {0}권의 장 {1}개를 변경 내용에 맞게 정리했습니다.',
+        'step4.organizeNone': '이 책 뒤에는 정리할 책이 없습니다. 변경 내용을 저장했습니다.',
+        'step4.organizeStopped': '자동정리를 중단했습니다. 이미 정리한 내용은 저장되어 있습니다.',
         'step4.costGuide': '권당 10만~15만 자를 위해 여러 번 호출합니다. 짧은 응답은 추가 집필하며, 한 번에 최대 120회 호출 후 진행분을 저장하고 멈춥니다.',
         'chat.title': 'AI 채팅',
         'chat.placeholder': '화면에 대해 묻거나 작업을 요청하세요. (Enter 전송, Shift+Enter 줄바꿈)',
@@ -322,6 +338,7 @@ const I18N = {
 
         'step4.title': 'Books',
         'step4.newBook': 'Create next book',
+        'step4.allBooks': 'Create all remaining books',
         'step4.empty': 'No books yet.',
         'step4.bookInfo': '{0} chapters / about {1} chars',
         'step4.deleteLast': 'Delete last book',
@@ -341,6 +358,15 @@ const I18N = {
         'step4.selectBook': 'Pick a book above to read or edit it.',
         'step4.volumeOf': 'Volume {0}',
         'step4.exportBook': 'Export this book',
+        'step4.exportFormatTitle': 'Book export format',
+        'step4.exportFormatGuide': 'Choose the file format to save.',
+        'step4.exportTxt': 'TXT file',
+        'step4.exportPdf': 'PDF file',
+        'step4.exportPdfChecking': 'Checking the PDF library connection...',
+        'step4.exportPdfUnavailable': 'The PDF library is unavailable right now.',
+        'step4.exportStart': 'Export',
+        'step4.exportTxtDone': 'TXT file exported.',
+        'step4.exportPdfDone': 'PDF file exported.',
         'step2.needDetails': 'Save details for all characters, places and major events to unlock step 3.',
         'step4.resume': 'Resume unfinished book',
         'step4.paused': 'Progress for {0} saved. Resume to continue.',
@@ -349,6 +375,12 @@ const I18N = {
         'step4.status.error': 'Error / resumable',
         'step4.status.complete': 'Complete',
         'step4.lengthProgress': '{0} chars / target {1} chars',
+        'step4.saveOrganize': 'Save and reconcile later books',
+        'step4.organizingTitle': 'Reconciling later books',
+        'step4.organizing': '{0} / {1} : {2}',
+        'step4.organizeDone': 'Reconciled {1} chapter(s) across {0} later book(s) for the change.',
+        'step4.organizeNone': 'There are no later books to reconcile. The change was saved.',
+        'step4.organizeStopped': 'Reconciliation stopped. Already reconciled text was saved.',
         'step4.costGuide': 'Reaching 100k–150k characters takes multiple requests. Short responses require more writing. Each run stops after at most 120 requests, preserving progress.',
         'chat.title': 'AI chat',
         'chat.placeholder': 'Ask about this screen or request a task. (Enter to send, Shift+Enter for a new line)',
@@ -825,13 +857,18 @@ const state = {
     currentBook: null,
     currentChapterIndex: 0,
     cancelRequested: false,
-    titleProgress: null
+    titleProgress: null,
+    pdfStatus: 'idle',       // idle | checking | ready | unavailable
+    jsPDF: null
 };
 
 /**
  * `USER_KEY` 선언이 담당하는 값을 보관한다.
  */
 const USER_KEY = 'ww.currentUser';
+
+/** 4단계에서 필요할 때만 불러오는 jsPDF ES 모듈 CDN 주소 */
+const JSPDF_CDN_URL = 'https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.es.min.js';
 
 /**
  * 현재 화면과 알려진 작업 진행률을 브라우저 창 제목에 반영한다.
@@ -1480,6 +1517,126 @@ function downloadText(fileName, text, mime) {
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
+/** jsPDF CDN 모듈을 실제로 불러와 PDF 내보내기 가능 여부를 확인한다. */
+async function ensurePdfAvailable() {
+    if (state.pdfStatus === 'ready') return true;
+    if (state.pdfStatus === 'checking') return false;
+    state.pdfStatus = 'checking';
+    try {
+        // jsPDF 공식 ES 모듈 형식의 named export를 사용한다.
+        const module = await import(JSPDF_CDN_URL);
+        if (typeof module.jsPDF !== 'function') throw new Error('jsPDF export is unavailable');
+        state.jsPDF = module.jsPDF;
+        state.pdfStatus = 'ready';
+        return true;
+    } catch (error) {
+        console.warn('jsPDF CDN에 연결할 수 없습니다.', error);
+        state.pdfStatus = 'unavailable';
+        return false;
+    } finally {
+        // 확인 완료 후 현재 4단계 화면의 PDF 선택 상태를 즉시 갱신한다.
+        if (state.screen === 'workspace' && state.step === 4) renderWorkspace();
+    }
+}
+
+/** 캔버스 폭에 맞게 텍스트를 줄 단위로 나눈다. 한글 글리프도 안전하게 다룬다. */
+function wrapPdfText(context, text, maxWidth) {
+    const lines = [];
+    let line = '';
+    for (const char of String(text || '')) {
+        if (char === '\n') {
+            lines.push(line);
+            line = '';
+        } else if (!line || context.measureText(line + char).width <= maxWidth) {
+            line += char;
+        } else {
+            lines.push(line);
+            line = char;
+        }
+    }
+    lines.push(line);
+    return lines;
+}
+
+/**
+ * 한글을 포함한 본문을 브라우저 글꼴로 페이지 이미지화해 PDF로 저장한다.
+ * jsPDF 기본 14개 글꼴은 UTF-8 글리프를 보장하지 않으므로, 텍스트를 캔버스에 그려
+ * 어떤 시스템 글꼴 환경에서도 깨지지 않는 PDF 페이지로 넣는다.
+ */
+async function downloadBookPdf(project, book) {
+    if (state.pdfStatus !== 'ready' || typeof state.jsPDF !== 'function') {
+        throw new Error(t('step4.exportPdfUnavailable'));
+    }
+    const pageWidth = 1240;
+    const pageHeight = 1754;
+    const margin = 92;
+    const lineHeight = 30;
+    const canvas = document.createElement('canvas');
+    canvas.width = pageWidth;
+    canvas.height = pageHeight;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('PDF canvas context is unavailable.');
+    context.font = '18px "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif';
+    const lines = wrapPdfText(context, book.title + '\n\n' + Books.toPlainText(book), pageWidth - margin * 2);
+    const linesPerPage = Math.floor((pageHeight - margin * 2) / lineHeight);
+    const pdf = new state.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+
+    for (let start = 0, page = 0; start < lines.length; start += linesPerPage, page++) {
+        if (page > 0) pdf.addPage();
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, pageWidth, pageHeight);
+        context.fillStyle = '#1d2129';
+        context.textBaseline = 'top';
+        context.font = '18px "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif';
+        lines.slice(start, start + linesPerPage).forEach(function (line, index) {
+            context.fillText(line, margin, margin + index * lineHeight);
+        });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        // 긴 소설도 브라우저 렌더링이 멈추지 않도록 페이지마다 제어권을 돌려준다.
+        await new Promise(function (resolve) { setTimeout(resolve, 0); });
+    }
+    pdf.save(project.name + ' - ' + book.title + '.pdf');
+}
+
+/** TXT/PDF 중 원하는 책 내보내기 형식을 고르는 레이어를 연다. */
+function openBookExportDialog(project, book) {
+    let overlay;
+    const pdfReady = state.pdfStatus === 'ready';
+    const format = h('select.ww-select', {},
+        h('option', { value: 'txt', text: t('step4.exportTxt') }),
+        h('option', { value: 'pdf', text: t('step4.exportPdf'), disabled: !pdfReady }));
+    const hint = h('div.ww-hint', {
+        text: pdfReady ? '' : t(state.pdfStatus === 'unavailable' ? 'step4.exportPdfUnavailable' : 'step4.exportPdfChecking')
+    });
+    const close = function () { closeOverlay(overlay); };
+    const exportBook = async function () {
+        const selected = format.value;
+        close();
+        try {
+            if (selected === 'pdf') {
+                await withProgress(t('step4.exportFormatTitle'), book.title, async function () {
+                    await downloadBookPdf(project, book);
+                });
+                toast(t('step4.exportPdfDone'));
+            } else {
+                downloadText(project.name + ' - ' + book.title + '.txt', Books.toPlainText(book), 'text/plain');
+                toast(t('step4.exportTxtDone'));
+            }
+        } catch (error) {
+            await showError(error);
+        }
+    };
+    const modal = h('div.ww-modal', {},
+        h('div.ww-modal-head', { text: t('step4.exportFormatTitle') }),
+        h('div.ww-modal-body', {},
+            h('div.ww-modal-message', { text: t('step4.exportFormatGuide') }),
+            format, hint),
+        h('div.ww-modal-foot', {},
+            h('button.ww-btn', { text: t('common.cancel'), onClick: close }),
+            h('button.ww-btn.primary', { text: t('step4.exportStart'), onClick: exportBook })));
+    overlay = openOverlay(modal, { onClose: close });
+}
+
 /**
  * 파일 선택 창을 띄워 텍스트 파일 하나를 읽는다.
  * @param {string} accept 허용할 확장자/형식
@@ -2012,6 +2169,8 @@ function renderFlowList() {
  */
 function renderStep4(main) {
     const project = state.project;
+    // PDF 선택지는 처음에는 비활성화하고, 4단계에 들어온 뒤 CDN 모듈을 확인해 켠다.
+    if (state.pdfStatus === 'idle') ensurePdfAvailable();
     const hasTarget = (project.targetVolumes || 0) > 0;
     const unfinished = project.books.find(meta => meta.status && meta.status !== 'complete');
     const allDone = hasTarget && project.books.length >= project.targetVolumes && !unfinished;
@@ -2028,10 +2187,12 @@ function renderStep4(main) {
             }),
             h('div.ww-spacer', {}),
             h('button.ww-btn.primary', {
-                text: unfinished ? t('step4.resume') : t('step4.newBook'),
-                disabled: allDone,
-                onClick: generateNextBook
+                text: t('step4.allBooks'), disabled: allDone,
+                onClick: generateAllBooks
             }),
+            unfinished
+                ? h('button.ww-btn', { text: t('step4.resume'), onClick: resumeLastBook })
+                : h('button.ww-btn', { text: t('step4.newBook'), disabled: allDone, onClick: generateFollowingBook }),
             project.books.length > 0
                 ? h('button.ww-btn.danger', { text: t('step4.deleteLast'), onClick: deleteLastBook })
                 : null)
@@ -2091,6 +2252,8 @@ function renderBookEditor() {
 
     if (!chapter) return h('div.ww-empty', { text: t('step4.empty') });
 
+    // 이 화면을 연 시점의 원문은 자동정리가 어떤 변경을 전달할지 판단하는 기준이다.
+    const savedText = chapter.text;
     const chapterSelect = h('select.ww-select', {
         onChange: function (ev) {
             state.currentChapterIndex = parseInt(ev.target.value, 10);
@@ -2107,13 +2270,59 @@ function renderBookEditor() {
 
     const saveChapter = async function () {
         try {
-            await Books.save(project.id, book);
-            updateBookMeta(book);
-            await Projects.save(project);
+            await persistBook(project, book);
             renderWorkspace();
             toast(t('common.saved'));
         } catch (e) {
             await showError(e);
+        }
+    };
+
+    const saveAndOrganize = async function () {
+        try {
+            await persistBook(project, book);
+            const bookIndex = project.books.findIndex(function (meta) { return meta.id === book.id; });
+            if (chapter.text === savedText || bookIndex < 0 || bookIndex === project.books.length - 1) {
+                renderWorkspace();
+                toast(bookIndex === project.books.length - 1 ? t('step4.organizeNone') : t('common.saved'));
+                return;
+            }
+
+            state.cancelRequested = false;
+            const progress = openProgress(t('step4.organizingTitle'), {
+                text: t('common.working'),
+                cancelLabel: t('step4.cancel'),
+                onCancel: function () {
+                    state.cancelRequested = true;
+                    progress.setText(t('step4.cancelling'));
+                }
+            });
+            try {
+                const result = await Pipeline.reconcileFollowingBooks(project, book.id, {
+                    chapterTitle: chapter.title, beforeText: savedText, afterText: chapter.text
+                }, {
+                    cancelled: function () { return state.cancelRequested; },
+                    onProgress: function (info) {
+                        progress.setText(t('step4.organizing', info.current, info.total,
+                            info.bookTitle + ' · ' + info.title));
+                        progress.setProgress(info.current - 1, info.total);
+                    }
+                });
+                progress.close();
+                state.project = await Projects.load(project.id);
+                state.currentBook = book;
+                renderWorkspace();
+                toast(result.cancelled ? t('step4.organizeStopped')
+                    : t('step4.organizeDone', result.updatedBooks, result.updatedChapters));
+            } catch (error) {
+                progress.close();
+                state.project = await Projects.load(project.id);
+                state.currentBook = book;
+                renderWorkspace();
+                await showError(error);
+            }
+        } catch (error) {
+            await showError(error);
         }
     };
 
@@ -2139,9 +2348,7 @@ function renderBookEditor() {
         }
     };
 
-    const exportBook = function () {
-        downloadText(project.name + ' - ' + book.title + '.txt', Books.toPlainText(book), 'text/plain');
-    };
+    const exportBook = function () { openBookExportDialog(project, book); };
 
     return h('div.ww-editor', {},
         h('div.ww-editor-head', {},
@@ -2151,6 +2358,7 @@ function renderBookEditor() {
         textArea,
         h('div.ww-actions', {},
             h('button.ww-btn.primary', { text: t('common.save'), onClick: saveChapter }),
+            h('button.ww-btn', { text: t('step4.saveOrganize'), onClick: saveAndOrganize }),
             h('button.ww-btn', { text: t('step4.reviseAi'), onClick: reviseChapter }),
             h('div.ww-spacer', {}),
             h('button.ww-btn', { text: t('step4.exportBook'), onClick: exportBook })));
@@ -2166,10 +2374,8 @@ function updateBookMeta(book) {
     list.push(meta);
 }
 
-/**
- * `generateNextBook` 작업을 수행한다.
- */
-async function generateNextBook() {
+/** 전체 생성·다음 권 생성·이어쓰기에 공통으로 쓰는 진행 화면을 연다. */
+async function runBookGeneration(create) {
     const project = state.project;
 
     if (!(project.targetVolumes > 0)) {
@@ -2188,7 +2394,7 @@ async function generateNextBook() {
     });
 
     try {
-        const book = await Pipeline.generateNextBook(project, {
+        const book = await create(project, {
             cancelled: function () { return state.cancelRequested; },
             onProgress: function (info) {
                 progress.setText(t('step4.generating', info.current, info.total, info.title)
@@ -2215,6 +2421,21 @@ async function generateNextBook() {
         renderWorkspace();
         await showError(e);
     }
+}
+
+/** 마지막 미완성 권을 이어 쓴다. */
+async function resumeLastBook() {
+    return runBookGeneration(function (project, options) { return Pipeline.generateNextBook(project, options); });
+}
+
+/** 마지막 완료 권 바로 다음에 한 권만 생성한다. */
+async function generateFollowingBook() {
+    return runBookGeneration(function (project, options) { return Pipeline.generateFollowingBook(project, options); });
+}
+
+/** 남은 목표 권수를 모두 순서대로 생성한다. */
+async function generateAllBooks() {
+    return runBookGeneration(function (project, options) { return Pipeline.generateAllBooks(project, options); });
 }
 
 /**
@@ -2765,10 +2986,28 @@ const ToolAdapter = {
         const book = await loadBookFor(project, args.bookId);
         const chapter = book.chapters.find(function (ch) { return ch.id === args.chapterId; });
         if (!chapter) throw new Error(t('tool.noChapter', args.chapterId));
+        const beforeText = chapter.text;
         chapter.text = args.text;
         await persistBook(project, book);
         if (state.currentBookId === book.id) state.currentBook = book;
         if (state.step === 4) renderWorkspace();
+        if (args.autoOrganize && beforeText !== chapter.text) {
+            return runBackground('organize', async function () {
+                const result = await Pipeline.reconcileFollowingBooks(project, book.id, {
+                    chapterTitle: chapter.title, beforeText, afterText: chapter.text
+                }, {
+                    cancelled: function () { return state.cancelRequested; },
+                    onProgress: function (info) {
+                        state.generation.current = info.current;
+                        state.generation.total = info.total;
+                        state.generation.title = info.bookTitle + ' · ' + info.title;
+                    }
+                });
+                state.project = await Projects.load(project.id);
+                return result.cancelled ? t('step4.organizeStopped')
+                    : t('step4.organizeDone', result.updatedBooks, result.updatedChapters);
+            });
+        }
         return { ok: true, charCount: chapter.text.length };
     },
 
@@ -2829,6 +3068,27 @@ const ToolAdapter = {
         const project = requireProject();
         if (!(project.targetVolumes > 0)) throw new Error(t('tool.needTarget'));
         return runBackground('book', async function () {
+            const book = await Pipeline.generateFollowingBook(project, {
+                cancelled: function () { return state.cancelRequested; },
+                onProgress: function (info) {
+                    state.generation.current = info.current;
+                    state.generation.total = info.total;
+                    state.generation.title = info.title;
+                    state.generation.charCount = info.charCount;
+                    state.generation.targetChars = info.targetChars;
+                }
+            });
+            state.currentBookId = book.id;
+            state.currentBook = book;
+            state.currentChapterIndex = 0;
+            return t('tool.bookDone', book.title, t('step4.status.' + (book.status || 'complete')));
+        });
+    },
+
+/** 마지막 미완성 권 이어쓰기 */
+    async resume_last_book() {
+        const project = requireProject();
+        return runBackground('book', async function () {
             const book = await Pipeline.generateNextBook(project, {
                 cancelled: function () { return state.cancelRequested; },
                 onProgress: function (info) {
@@ -2843,6 +3103,30 @@ const ToolAdapter = {
             state.currentBook = book;
             state.currentChapterIndex = 0;
             return t('tool.bookDone', book.title, t('step4.status.' + (book.status || 'complete')));
+        });
+    },
+
+/** 목표 권수까지 남은 모든 권 생성 */
+    async generate_all_books() {
+        const project = requireProject();
+        if (!(project.targetVolumes > 0)) throw new Error(t('tool.needTarget'));
+        return runBackground('book', async function () {
+            const book = await Pipeline.generateAllBooks(project, {
+                cancelled: function () { return state.cancelRequested; },
+                onProgress: function (info) {
+                    state.generation.current = info.current;
+                    state.generation.total = info.total;
+                    state.generation.title = info.title;
+                    state.generation.charCount = info.charCount;
+                    state.generation.targetChars = info.targetChars;
+                }
+            });
+            if (book) {
+                state.currentBookId = book.id;
+                state.currentBook = book;
+                state.currentChapterIndex = 0;
+            }
+            return book ? t('tool.bookDone', book.title, t('step4.status.' + (book.status || 'complete'))) : t('tool.finished');
         });
     },
 
