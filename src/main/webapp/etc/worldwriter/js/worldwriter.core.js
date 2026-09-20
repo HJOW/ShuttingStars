@@ -44,6 +44,14 @@ function tailOf(text, length) {
     return str.length <= length ? str : '...' + str.substring(str.length - length);
 }
 
+/** 사용자에게 보이는 코어 메시지. 프롬프트 언어와 UI 언어를 구분한다. */
+function localize(ko, en, settings = Settings.current) {
+    return settings.language === 'en' ? en : ko;
+}
+
+const activeGenerations = new Set();
+const BOOK_LENGTH = { min: 100000, target: 125000, max: 150000 };
+
 /* ------------------------------------------------------------------ *
  *  실행 환경 판별
  *
@@ -102,7 +110,7 @@ const Storage = {
         if (Env.isServer()) {
             const res = await fetch('./api/store?user=' + encodeURIComponent(this.user)
                 + '&key=' + encodeURIComponent(key));
-            if (!res.ok) throw new Error('저장소 읽기에 실패했습니다. (' + res.status + ')');
+            if (!res.ok) throw new Error(localize('저장소 읽기에 실패했습니다.', 'Could not read storage.') + ' (' + res.status + ')');
             const body = await res.json();
             return (body.value === null || body.value === undefined) ? clone(defaultValue) : body.value;
         }
@@ -124,14 +132,14 @@ const Storage = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ value: value })
             });
-            if (!res.ok) throw new Error('저장소 쓰기에 실패했습니다. (' + res.status + ')');
+            if (!res.ok) throw new Error(localize('저장소 쓰기에 실패했습니다.', 'Could not write storage.') + ' (' + res.status + ')');
             return;
         }
         const packed = LZ.compress(JSON.stringify(value));
         try {
             window.localStorage.setItem(this.localKey(key), packed);
         } catch (e) {
-            throw new Error('브라우저 저장 공간이 부족합니다. 오래된 프로젝트나 책을 삭제해 주세요.');
+            throw new Error(localize('브라우저 저장 공간이 부족합니다. 오래된 프로젝트나 책을 삭제해 주세요.', 'Browser storage is full. Delete old projects or books.'));
         }
     },
 
@@ -282,7 +290,7 @@ async function readErrorMessage(res) {
             detail = text;
         }
     } catch (e) { /* 무시 */ }
-    return 'AI 호출에 실패했습니다. (HTTP ' + res.status + ') ' + String(detail).substring(0, 400);
+    return localize('AI 호출에 실패했습니다.', 'AI request failed.') + ' (HTTP ' + res.status + ') ' + String(detail).substring(0, 400);
 }
 
 /** OpenAI 호환 (OpenAI, LM Studio) 채팅 호출 */
@@ -317,7 +325,7 @@ async function callOpenAiCompatible(conf, request) {
 
     const body = await res.json();
     const choice = (body.choices || [])[0];
-    if (!choice) throw new Error('AI 응답이 비어 있습니다.');
+    if (!choice) throw new Error(localize('AI 응답이 비어 있습니다.', 'The AI response is empty.'));
     const content = choice.message && choice.message.content;
     if (Array.isArray(content)) {
         return content.map(function (p) { return p.text || ''; }).join('');
@@ -353,7 +361,7 @@ async function callClaude(conf, request) {
     const json = await res.json();
     if (json.stop_reason === 'refusal') {
         const reason = json.stop_details && json.stop_details.explanation;
-        throw new Error('AI가 요청을 거절했습니다. ' + (reason || ''));
+        throw new Error(localize('AI가 요청을 거절했습니다. ', 'The AI refused the request. ', conf) + (reason || ''));
     }
     return (json.content || [])
         .filter(function (b) { return b.type === 'text'; })
@@ -368,6 +376,7 @@ async function callViaBackend(conf, request) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             provider: conf.provider,
+            language: conf.language,
             model: Settings.modelOf(conf),
             apiKey: Settings.apiKeyOf(conf),
             baseUrl: Settings.baseUrlOf(conf),
@@ -391,9 +400,9 @@ const AI = {
     async chat(options) {
         const conf = options.settings || Settings.current;
         const spec = PROVIDERS[conf.provider];
-        if (!spec) throw new Error('알 수 없는 AI 공급자입니다: ' + conf.provider);
+        if (!spec) throw new Error(localize('알 수 없는 AI 공급자입니다: ', 'Unknown AI provider: ', conf) + conf.provider);
         if (spec.needsApiKey && isBlank(Settings.apiKeyOf(conf))) {
-            throw new Error('설정 화면에서 ' + spec.label + ' API 키를 먼저 입력해 주세요.');
+            throw new Error(localize('설정 화면에서 ' + spec.label + ' API 키를 먼저 입력해 주세요.', 'Enter your ' + spec.label + ' API key in settings.', conf));
         }
 
         const request = {
@@ -427,7 +436,7 @@ const AI = {
 
 /** 응답 문자열에서 JSON 부분만 뽑아 파싱한다. */
 function parseJsonLoosely(text) {
-    if (isBlank(text)) throw new Error('AI 응답이 비어 있습니다.');
+    if (isBlank(text)) throw new Error(localize('AI 응답이 비어 있습니다.', 'The AI response is empty.'));
     let body = String(text).trim();
 
     // ```json ... ``` 형태의 코드블록 제거
@@ -443,7 +452,7 @@ function parseJsonLoosely(text) {
         const ch = body.charAt(i);
         if (ch === '{' || ch === '[') { start = i; break; }
     }
-    if (start < 0) throw new Error('AI 응답에서 JSON 을 찾지 못했습니다.');
+    if (start < 0) throw new Error(localize('AI 응답에서 JSON 을 찾지 못했습니다.', 'No JSON was found in the AI response.'));
 
     const openChar = body.charAt(start);
     const closeChar = openChar === '{' ? '}' : ']';
@@ -465,7 +474,7 @@ function parseJsonLoosely(text) {
             if (depth === 0) return JSON.parse(body.substring(start, i + 1));
         }
     }
-    throw new Error('AI 응답의 JSON 형식이 올바르지 않습니다.');
+    throw new Error(localize('AI 응답의 JSON 형식이 올바르지 않습니다.', 'The AI response contains invalid JSON.'));
 }
 
 /* ------------------------------------------------------------------ *
@@ -475,9 +484,9 @@ function parseJsonLoosely(text) {
 const ITEM_KINDS = ['characters', 'places', 'events'];
 
 const KIND_LABELS = {
-    characters: '등장인물',
-    places: '지역',
-    events: '주요 사건'
+    get characters() { return localize('등장인물', 'Characters'); },
+    get places() { return localize('지역', 'Places'); },
+    get events() { return localize('주요 사건', 'Major events'); }
 };
 
 function emptyProject(name) {
@@ -509,7 +518,7 @@ const Projects = {
     },
 
     async create(name) {
-        if (isBlank(name)) throw new Error('프로젝트 이름을 입력해 주세요.');
+        if (isBlank(name)) throw new Error(localize('프로젝트 이름을 입력해 주세요.', 'Enter a project name.'));
         const project = emptyProject(name);
         await Storage.set('project.' + project.id, project);
         const list = await this.list();
@@ -523,16 +532,30 @@ const Projects = {
 
     async load(projectId) {
         const project = await Storage.get('project.' + projectId, null);
-        if (!project) throw new Error('프로젝트를 찾을 수 없습니다.');
+        if (!project) throw new Error(localize('프로젝트를 찾을 수 없습니다.', 'Project not found.'));
         ITEM_KINDS.forEach(function (kind) {
             if (!Array.isArray(project[kind])) project[kind] = [];
         });
         if (!Array.isArray(project.flow)) project.flow = [];
         if (!Array.isArray(project.books)) project.books = [];
+        // 본문 저장 직후 종료되어 메타데이터가 뒤처진 경우 본문을 기준으로 복구한다.
+        const last = project.books[project.books.length - 1];
+        if (last) {
+            const book = await Storage.get(Books.key(project.id, last.id), null);
+            if (book) project.books[project.books.length - 1] = Books.metaOf(book);
+        }
         return project;
     },
 
     async save(project) {
+        const saved = await Storage.get('project.' + project.id, null);
+        if (saved && (saved.books || []).length > 0) {
+            if (saved.targetVolumes !== project.targetVolumes
+                || JSON.stringify(saved.flow) !== JSON.stringify(project.flow)) {
+                throw new Error(localize('책이 있는 동안 사건 흐름과 목표 권수를 변경할 수 없습니다.',
+                    'The event flow and volume count are locked while books exist.'));
+            }
+        }
         project.updatedAt = Date.now();
         await Storage.set('project.' + project.id, project);
         const list = await this.list();
@@ -551,6 +574,7 @@ const Projects = {
     },
 
     async remove(projectId) {
+        if (activeGenerations.has(projectId)) throw new Error(localize('생성을 중단한 후 삭제해 주세요.', 'Stop generation before deleting.'));
         const project = await Storage.get('project.' + projectId, null);
         if (project && Array.isArray(project.books)) {
             for (const meta of project.books) {
@@ -563,7 +587,7 @@ const Projects = {
     },
 
     async rename(projectId, name) {
-        if (isBlank(name)) throw new Error('프로젝트 이름을 입력해 주세요.');
+        if (isBlank(name)) throw new Error(localize('프로젝트 이름을 입력해 주세요.', 'Enter a project name.'));
         const project = await this.load(projectId);
         project.name = String(name).trim();
         await this.save(project);
@@ -574,10 +598,39 @@ const Projects = {
      * 진행 가능한 최대 단계.
      * 1단계는 항상 열려 있고, 이후 단계는 앞 단계의 결과가 있어야 열린다.
      */
+    detailsComplete(project) {
+        return ITEM_KINDS.every(kind => (project[kind] || []).length > 0
+            && project[kind].every(item => !isBlank(item.name) && !isBlank(item.detail)));
+    },
+
+    validateTarget(project, value) {
+        const text = String(value).trim();
+        const count = Number(text);
+        if (!/^\d+$/.test(text) || !Number.isSafeInteger(count) || count < 1 || count > project.flow.length) {
+            throw new Error(localize('목표 권수는 1부터 사건 수(' + project.flow.length + ') 사이의 정수여야 합니다.',
+                'Volume count must be an integer between 1 and the event count (' + project.flow.length + ').'));
+        }
+        if (project.books.length > 0 && count !== project.targetVolumes) {
+            throw new Error(localize('책이 있는 동안 목표 권수를 변경할 수 없습니다.', 'Volume count is locked while books exist.'));
+        }
+        return count;
+    },
+
+    async assertStructureEditable(project) {
+        const saved = await Storage.get('project.' + project.id, null);
+        if (project.books.length > 0 || (saved && (saved.books || []).length > 0)) {
+            throw new Error(localize('기존 책을 보존하기 위해 개요 재생성과 사건 흐름 변경을 잠갔습니다. 마지막 권부터 모두 삭제하면 변경할 수 있습니다.',
+                'Outline regeneration and flow changes are locked to preserve existing books. Delete all books from the last volume first to unlock them.'));
+        }
+    },
+
     maxStep(project) {
         if (!project) return 1;
+        // 기존 저장 데이터의 상세가 부족하더라도 작성된 책에는 접근할 수 있다.
+        if ((project.books || []).length > 0) return 4;
         const hasOutline = ITEM_KINDS.some(function (k) { return (project[k] || []).length > 0; });
         if (!hasOutline) return 1;
+        if (!this.detailsComplete(project)) return 2;
         if ((project.flow || []).length === 0) return 3;
         return 4;
     }
@@ -592,7 +645,7 @@ const Books = {
 
     async load(projectId, bookId) {
         const book = await Storage.get(this.key(projectId, bookId), null);
-        if (!book) throw new Error('책 내용을 찾을 수 없습니다.');
+        if (!book) throw new Error(localize('책 내용을 찾을 수 없습니다.', 'Book content not found.'));
         if (!Array.isArray(book.chapters)) book.chapters = [];
         return book;
     },
@@ -602,6 +655,13 @@ const Books = {
     },
 
     async remove(projectId, bookId) {
+        if (activeGenerations.has(projectId)) throw new Error(localize('생성을 중단한 후 삭제해 주세요.', 'Stop generation before deleting.'));
+        const project = await Projects.load(projectId);
+        if (project.books[project.books.length - 1]?.id !== bookId) {
+            throw new Error(localize('마지막 권부터 삭제할 수 있습니다.', 'Only the last volume can be deleted.'));
+        }
+        project.books.pop();
+        await Projects.save(project);
         await Storage.remove(this.key(projectId, bookId));
     },
 
@@ -617,6 +677,7 @@ const Books = {
             title: book.title,
             chapterCount: (book.chapters || []).length,
             charCount: Books.charCount(book),
+            status: book.status || 'complete', // 이전 버전의 책은 그대로 보존한다.
             createdAt: book.createdAt
         };
     },
@@ -646,7 +707,7 @@ function itemsToText(items, withDetail) {
     return items.map(function (item, idx) {
         let line = (idx + 1) + '. ' + item.name + ' : ' + (item.summary || '');
         if (withDetail && !isBlank(item.detail)) {
-            line += '\n   상세: ' + String(item.detail).replace(/\s+/g, ' ').substring(0, 800);
+            line += '\n   상세: ' + String(item.detail);
         }
         return line;
     }).join('\n');
@@ -689,8 +750,9 @@ const Pipeline = {
      * 소설 설명을 바탕으로 등장인물 / 지역 / 주요 사건 목록을 생성한다.
      */
     async generateOutline(project, settings) {
+        await Projects.assertStructureEditable(project);
         if (isBlank(project.description)) {
-            throw new Error('소설에 대한 설명을 먼저 입력해 주세요.');
+            throw new Error(localize('소설에 대한 설명을 먼저 입력해 주세요.', 'Describe the novel first.'));
         }
         const conf = settings || Settings.current;
 
@@ -731,13 +793,11 @@ const Pipeline = {
             });
         };
 
-        project.characters = toItems(json.characters);
-        project.places = toItems(json.places);
-        project.events = toItems(json.events);
-
-        if (project.characters.length === 0 && project.places.length === 0 && project.events.length === 0) {
-            throw new Error('AI가 유효한 목록을 만들지 못했습니다. 설명을 조금 더 구체적으로 작성해 보세요.');
+        const outline = Object.fromEntries(ITEM_KINDS.map(kind => [kind, toItems(json?.[kind])]));
+        if (ITEM_KINDS.some(kind => outline[kind].length === 0)) {
+            throw new Error(localize('AI가 유효한 목록을 만들지 못했습니다. 설명을 조금 더 구체적으로 작성해 보세요.', 'The AI did not return valid characters, places and events. Try a more detailed description.'));
         }
+        Object.assign(project, outline);
 
         // 뒤 단계 결과는 새 설정과 맞지 않으므로 비운다.
         project.flow = [];
@@ -751,7 +811,7 @@ const Pipeline = {
     async generateItemDetail(project, kind, itemId, settings) {
         const conf = settings || Settings.current;
         const item = (project[kind] || []).filter(function (i) { return i.id === itemId; })[0];
-        if (!item) throw new Error('항목을 찾을 수 없습니다.');
+        if (!item) throw new Error(localize('항목을 찾을 수 없습니다.', 'Item not found.'));
 
         const label = KIND_LABELS[kind] || '항목';
         const system = AUTHOR_PERSONA + ' ' + languageInstruction(conf)
@@ -786,8 +846,13 @@ const Pipeline = {
      */
     async generateFlow(project, settings) {
         const conf = settings || Settings.current;
+        await Projects.assertStructureEditable(project);
+        if (!Projects.detailsComplete(project)) {
+            throw new Error(localize('모든 인물·지역·주요 사건의 상세 설명을 먼저 작성해 주세요.',
+                'Complete the details for every character, place and major event first.'));
+        }
         if ((project.events || []).length === 0) {
-            throw new Error('2단계의 주요 사건이 없습니다. 먼저 2단계를 완료해 주세요.');
+            throw new Error(localize('2단계의 주요 사건이 없습니다. 먼저 2단계를 완료해 주세요.', 'No major events exist. Complete step 2 first.'));
         }
 
         const targetCount = clamp(project.events.length * 4, 24, 80);
@@ -796,30 +861,44 @@ const Pipeline = {
 
         const prompt = [
             worldSummary(project, true),
+            '[주요 사건 ID]',
+            ...project.events.map(event => event.id + ': ' + event.name),
             '',
             '위 설정을 바탕으로 소설 전체의 사건 흐름을 시간 순서대로 나열하라.',
             '- [주요 사건] 목록의 사건은 반드시 모두 포함해야 한다.',
             '- 주요 사건 사이를 잇는 세부 사건(만남, 갈등, 이동, 복선, 전투, 반전 등)을 추가해 흐름을 촘촘하게 만들어라.',
             '- 각 항목은 소설 한 장(章) 분량에 해당하는 크기여야 한다.',
             '- 전체 항목 수는 ' + targetCount + '개 내외로 한다.',
-            '- main 값은 [주요 사건] 목록에 있던 사건이면 true, 새로 추가한 세부 사건이면 false 이다.',
+            '- 주요 사건은 반드시 각각 별도 항목으로 포함한다. sourceEventId에는 해당 주요 사건 ID를 그대로 쓴다. 세부 사건은 null이다.',
             '',
-            '[ { "title": "사건 제목", "summary": "이 사건에서 벌어지는 일 두 줄 이내 요약", "main": true } ]'
+            '[ { "title": "사건 제목", "summary": "이 사건에서 벌어지는 일 두 줄 이내 요약", "sourceEventId": "주요 사건 ID 또는 null" } ]'
         ].join('\n');
 
         const json = await AI.chatJson({ settings: conf, system: system, prompt: prompt, maxTokens: 16000 });
-        const rows = Array.isArray(json) ? json : (Array.isArray(json.flow) ? json.flow : []);
+        const rows = Array.isArray(json) ? json : (Array.isArray(json?.flow) ? json.flow : []);
 
         const flow = rows.filter(function (row) { return row && !isBlank(row.title); }).map(function (row) {
             return {
                 id: newId('flw'),
                 title: String(row.title).trim(),
                 summary: String(row.summary || '').trim(),
-                main: row.main === true
+                sourceEventId: project.events.some(event => event.id === row.sourceEventId) ? row.sourceEventId : null,
+                main: project.events.some(event => event.id === row.sourceEventId)
             };
         });
 
-        if (flow.length === 0) throw new Error('AI가 사건 흐름을 만들지 못했습니다. 다시 시도해 주세요.');
+        if (flow.length === 0) throw new Error(localize('AI가 사건 흐름을 만들지 못했습니다. 다시 시도해 주세요.', 'The AI did not create an event flow. Try again.'));
+        // 누락은 원래 사건의 설명으로 보완한다. 비용이 드는 재호출 없이 주요 사건 순서를 유지한다.
+        for (let i = 0; i < project.events.length; i++) {
+            const event = project.events[i];
+            if (flow.some(item => item.sourceEventId === event.id)) continue;
+            const nextIds = new Set(project.events.slice(i + 1).map(item => item.id));
+            const nextIndex = flow.findIndex(item => nextIds.has(item.sourceEventId));
+            flow.splice(nextIndex < 0 ? flow.length : nextIndex, 0, {
+                id: newId('flw'), title: event.name, summary: event.detail || event.summary,
+                main: true, sourceEventId: event.id
+            });
+        }
         project.flow = flow;
         return project;
     },
@@ -830,7 +909,10 @@ const Pipeline = {
      */
     splitFlowByVolumes(flow, totalVolumes) {
         const volumes = [];
-        const count = Math.max(1, totalVolumes);
+        const count = Number(totalVolumes);
+        if (!Number.isSafeInteger(count) || count < 1 || count > flow.length) {
+            throw new Error(localize('목표 권수는 1부터 사건 수 사이의 정수여야 합니다.', 'Volume count must be an integer between 1 and the event count.'));
+        }
         const base = Math.floor(flow.length / count);
         const extra = flow.length % count;
         let cursor = 0;
@@ -845,90 +927,136 @@ const Pipeline = {
     /**
      * 4단계. 다음 권을 생성한다.
      * 사건 흐름 중 이번 권 구간을 사건 단위로 나누어 순차 생성한다.
-     * (10만 자 이상을 한 번에 생성할 수 없으므로 사건마다 한 번씩 호출한다.)
+     * 목표 분량까지 사건별로 여러 번 호출하며, 미완성 권은 저장된 본문에서 이어 쓴다.
      *
      * @param {object} project
      * @param {{onProgress?:Function, settings?:object, cancelled?:Function}} options
      */
     async generateNextBook(project, options) {
+        if (activeGenerations.has(project.id)) {
+            throw new Error(localize('이미 이 프로젝트의 책을 생성 중입니다.', 'A book is already being generated for this project.'));
+        }
+        activeGenerations.add(project.id);
+        try {
+            Object.assign(project, await Projects.load(project.id));
+            return await this.writeBook(project, options);
+        } finally {
+            activeGenerations.delete(project.id);
+        }
+    },
+
+    async writeBook(project, options) {
         const opts = options || {};
         const conf = opts.settings || Settings.current;
         const onProgress = opts.onProgress || function () { };
         const cancelled = opts.cancelled || function () { return false; };
-
-        if ((project.flow || []).length === 0) throw new Error('3단계 사건 흐름을 먼저 만들어 주세요.');
-        const total = Math.max(1, project.targetVolumes || 1);
-        const index = project.books.length;
-        if (index >= total) throw new Error('목표 권수만큼 모두 생성되었습니다.');
-
-        const volumes = this.splitFlowByVolumes(project.flow, total);
-        const slice = volumes[index] || [];
-        if (slice.length === 0) throw new Error('이번 권에 배정된 사건이 없습니다. 목표 권수를 줄여 주세요.');
-
-        // 한 권 10만 ~ 15만 자를 목표로, 사건 하나가 담당할 분량을 계산한다.
-        const perChapter = clamp(Math.round(125000 / slice.length), 1500, 7000);
-
-        const book = {
-            id: newId('bok'),
-            index: index,
-            title: (index + 1) + '권',
-            createdAt: Date.now(),
-            chapters: []
-        };
-
-        // 직전 권의 마지막 부분을 이어쓰기 참고 자료로 사용한다.
-        let previousText = '';
-        if (index > 0) {
-            const prevMeta = project.books[index - 1];
-            try {
-                const prevBook = await Books.load(project.id, prevMeta.id);
-                const lastChapter = prevBook.chapters[prevBook.chapters.length - 1];
-                previousText = lastChapter ? lastChapter.text : '';
-            } catch (e) {
-                previousText = '';
+        const total = Projects.validateTarget(project, project.targetVolumes);
+        const last = project.books[project.books.length - 1];
+        let book = last ? await Books.load(project.id, last.id) : null;
+        if (!book?.generation || book.status === 'complete') {
+            if (!Projects.detailsComplete(project)) {
+                throw new Error(localize('모든 설정의 상세 설명을 먼저 작성해 주세요.', 'Complete all setting details first.'));
             }
-        }
-
-        const globalOffset = volumes.slice(0, index).reduce(function (sum, v) { return sum + v.length; }, 0);
-
-        for (let i = 0; i < slice.length; i++) {
-            if (cancelled()) break;
-            const item = slice[i];
-            onProgress({ phase: 'writing', current: i + 1, total: slice.length, title: item.title });
-
-            const text = await this.writeChapter(project, {
-                settings: conf,
-                flowIndex: globalOffset + i,
-                item: item,
-                previousText: previousText,
-                targetChars: perChapter,
-                volumeIndex: index,
-                volumeTotal: total,
-                isFirstOfBook: i === 0,
-                isLastOfBook: i === slice.length - 1
-            });
-
-            book.chapters.push({
-                id: newId('cht'),
-                flowId: item.id,
-                title: (i + 1) + '. ' + item.title,
-                text: text
-            });
-            previousText = text;
-
-            // 중간에 중단되더라도 진행분이 남도록 매 장마다 저장한다.
+            const index = project.books.length;
+            if (index >= total) throw new Error(localize('목표 권수만큼 모두 생성되었습니다.', 'All target volumes have been generated.'));
+            const volumes = this.splitFlowByVolumes(project.flow, total);
+            const items = volumes[index];
+            book = {
+                id: newId('bok'), index, title: localize((index + 1) + '권', 'Volume ' + (index + 1), conf),
+                createdAt: Date.now(), status: 'paused', chapters: [],
+                generation: {
+                    version: 1, items: clone(items), total,
+                    offset: volumes.slice(0, index).reduce((sum, volume) => sum + volume.length, 0),
+                    targetChars: BOOK_LENGTH.target, nextChapter: 0, requestCount: 0,
+                    language: conf.language,
+                    // API 키를 포함하지 않는 집필 당시 설정 사본.
+                    world: Object.fromEntries(['description', ...ITEM_KINDS, 'flow'].map(key => [key, clone(project[key])]))
+                }
+            };
+            // AI 호출 전 빈 책과 목록을 등록하여 이후 모든 진행분을 찾을 수 있게 한다.
             await Books.save(project.id, book);
-            onProgress({ phase: 'saved', current: i + 1, total: slice.length, title: item.title });
+            project.books.push(Books.metaOf(book));
+            await Projects.save(project);
         }
-
-        if (book.chapters.length === 0) {
-            await Books.remove(project.id, book.id);
-            throw new Error('생성이 취소되었습니다.');
+        const generation = book.generation;
+        const slice = generation.items;
+        const writingSettings = { ...conf, language: generation.language };
+        const checkpoint = async () => {
+            await Books.save(project.id, book);
+            project.books[book.index] = Books.metaOf(book);
+            await Projects.save(project);
+        };
+        let calls = 0;
+        let shortResponses = 0;
+        try {
+            book.status = 'writing';
+            await checkpoint();
+            for (let i = 0; i < slice.length; i++) {
+                const item = slice[i];
+                const target = Math.floor(generation.targetChars / slice.length)
+                    + (i < generation.targetChars % slice.length ? 1 : 0);
+                let chapter = book.chapters[i];
+                if (!chapter) {
+                    chapter = { id: newId('cht'), flowId: item.id,
+                        title: localize((i + 1) + '장. ', 'Chapter ' + (i + 1) + '. ', writingSettings) + item.title, text: '' };
+                    book.chapters.push(chapter);
+                }
+                generation.nextChapter = i;
+                while (chapter.text.length < target) {
+                    if (cancelled()) {
+                        book.status = 'paused';
+                        await checkpoint();
+                        return book;
+                    }
+                    if (calls >= 120 || shortResponses >= 3) {
+                        throw new Error(localize('짧은 응답 또는 요청 횟수 제한으로 중단했습니다. 저장된 책을 확인하고 이어쓰기를 실행해 주세요.',
+                            'Paused after repeated short responses or the request limit. Review the saved book and resume.'));
+                    }
+                    let previousText = chapter.text || book.chapters[i - 1]?.text || '';
+                    if (!previousText && book.index > 0) {
+                        const prev = await Books.load(project.id, project.books[book.index - 1].id);
+                        previousText = prev.chapters[prev.chapters.length - 1]?.text || '';
+                    }
+                    const remaining = target - chapter.text.length;
+                    onProgress({ phase: 'writing', current: i + 1, total: slice.length, title: item.title,
+                        charCount: Books.charCount(book), targetChars: generation.targetChars });
+                    const text = await this.writeChapter(generation.world, {
+                        settings: writingSettings, flowIndex: generation.offset + i, item, previousText,
+                        targetChars: Math.min(5000, remaining), remainingChars: remaining,
+                        continuation: chapter.text.length > 0, volumeIndex: book.index, volumeTotal: generation.total,
+                        isFirstOfBook: i === 0 && chapter.text.length === 0,
+                        isLastOfBook: i === slice.length - 1 && remaining <= 5000
+                    });
+                    calls++;
+                    generation.requestCount++;
+                    if (isBlank(text)) throw new Error(localize('AI 응답이 비어 있습니다. 저장된 위치부터 다시 시도할 수 있습니다.',
+                        'The AI response was empty. You can resume from the saved position.'));
+                    shortResponses = text.length < Math.min(200, remaining) ? shortResponses + 1 : 0;
+                    chapter.text += (chapter.text ? '\n\n' : '') + text;
+                    await checkpoint();
+                    onProgress({ phase: 'saved', current: i + 1, total: slice.length, title: item.title,
+                        charCount: Books.charCount(book), targetChars: generation.targetChars });
+                    if (Books.charCount(book) > BOOK_LENGTH.max) {
+                        throw new Error(localize('본문이 15만 자를 초과했습니다. 저장된 본문을 줄인 후 이어쓰기를 실행해 주세요.',
+                            'The book exceeds 150,000 characters. Shorten the saved text, then resume.'));
+                    }
+                }
+                generation.nextChapter = i + 1;
+                await checkpoint();
+            }
+            const length = Books.charCount(book);
+            if (length < BOOK_LENGTH.min || length > BOOK_LENGTH.max) {
+                throw new Error(localize('책 분량을 확인해 주세요. 완료 범위는 10만~15만 자입니다.',
+                    'Review the book length. Completion requires 100,000–150,000 characters.'));
+            }
+            book.status = 'complete';
+            await checkpoint();
+            return book;
+        } catch (error) {
+            book.status = 'error';
+            try { await checkpoint(); } catch (saveError) { console.error(saveError); }
+            throw error;
         }
-
-        project.books.push(Books.metaOf(book));
-        await Projects.save(project);
-        return book;
     },
 
     /** 사건 하나를 소설 본문으로 집필한다. */
@@ -941,7 +1069,7 @@ const Pipeline = {
             + '대화와 묘사, 인물의 내면을 균형 있게 배치한다.';
 
         const prompt = [
-            worldSummary(project, false),
+            worldSummary(project, true),
             '',
             '[전체 사건 흐름]',
             flowToText(project.flow, params.flowIndex),
@@ -957,6 +1085,10 @@ const Pipeline = {
             '- 위 "이번에 집필할 사건" 하나만 다룬다. 뒤의 사건까지 미리 진행하지 않는다.',
             '- 직전 본문에서 자연스럽게 이어지도록 시작한다. 같은 문장을 반복하지 않는다.',
             '- 분량은 공백 포함 ' + params.targetChars + '자 내외로 한다.',
+            params.continuation ? '- 현재 사건을 이어 쓰는 중이다. 앞부분을 다시 출력하거나 사건을 처음부터 시작하지 않는다.' : '',
+            params.remainingChars > params.targetChars
+                ? '- 이 사건에는 아직 약 ' + params.remainingChars + '자가 필요하다. 지금은 갈등과 묘사를 전개하고 결말은 뒤로 남겨라.'
+                : '- 이번 응답에서 이 사건을 마무리하라.',
             (params.isFirstOfBook && params.volumeIndex > 0)
                 ? '- 이 부분은 ' + (params.volumeIndex + 1) + '권의 시작이다. 앞 권의 흐름을 짧게 환기한 뒤 진행한다.'
                 : '',
@@ -974,14 +1106,14 @@ const Pipeline = {
     /** 4단계. AI에게 특정 장의 수정을 요청한다. */
     async reviseChapter(project, chapter, instruction, settings) {
         const conf = settings || Settings.current;
-        if (isBlank(instruction)) throw new Error('수정 요청 내용을 입력해 주세요.');
+        if (isBlank(instruction)) throw new Error(localize('수정 요청 내용을 입력해 주세요.', 'Enter revision instructions.'));
 
         const system = AUTHOR_PERSONA + ' ' + languageInstruction(conf) + ' '
             + '너는 이미 쓰인 소설 본문을 요청에 맞게 고쳐 쓴다. '
             + '수정한 본문 전체만 출력하고, 설명이나 변경 목록은 출력하지 않는다.';
 
         const prompt = [
-            worldSummary(project, false),
+            worldSummary(project, true),
             '',
             '[수정 요청]',
             instruction,

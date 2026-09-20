@@ -86,7 +86,7 @@ const I18N = {
         'step1.guide': '여기에 적은 내용은 소설에 반드시 반영됩니다. 적지 않은 부분은 AI가 알아서 창작합니다.',
         'step1.placeholder': '예) 마법이 사라져가는 대륙에서, 마지막 정령사가 된 소녀가 잊힌 신들의 유적을 찾아 떠나는 이야기. 주인공은 겁이 많지만 고집이 세다. ...',
         'step1.generate': '2단계 내용 생성',
-        'step1.confirmRegen': '이미 만들어진 2단계 이후 내용이 지워지고 새로 만들어집니다. 계속할까요?',
+        'step1.confirmRegen': '인물·지역·주요 사건과 상세 설명을 새로 만들고 기존 사건 흐름을 비웁니다. 계속할까요?',
         'step1.done': '2단계 내용을 생성했습니다.',
         'step1.needDescription': '소설에 대한 설명을 먼저 입력해 주세요.',
 
@@ -112,7 +112,7 @@ const I18N = {
         'step3.next': '4단계로 이동',
         'step3.prev': '2단계로 돌아가기',
         'step3.deleteConfirm': '이 사건을 목록에서 지울까요?',
-        'step3.hasBooks': '이미 생성된 책이 있어 사건 흐름을 바꾸면 이후 권의 내용과 어긋날 수 있습니다.',
+        'step3.hasBooks': '기존 책을 보존하기 위해 개요 재생성·사건 흐름·목표 권수를 잠갔습니다. 마지막 권부터 모두 삭제하면 변경할 수 있습니다.',
 
         'step4.title': '책 생성',
         'step4.targetVolumes': '목표 권수',
@@ -132,13 +132,22 @@ const I18N = {
         'step4.generating': '{0} / {1} : {2}',
         'step4.generatingTitle': '책 생성 중',
         'step4.cancel': '중단',
-        'step4.cancelling': '현재 장을 마친 뒤 중단합니다...',
+        'step4.cancelling': '현재 응답을 저장한 뒤 중단합니다...',
         'step4.done': '{0} 생성이 끝났습니다.',
         'step4.allDone': '목표 권수({0}권)만큼 모두 생성했습니다.',
         'step4.needTarget': '먼저 목표 권수를 1 이상의 숫자로 입력해 주세요.',
         'step4.selectBook': '위 목록에서 책을 선택하면 내용을 보거나 수정할 수 있습니다.',
         'step4.volumeOf': '{0}권',
-        'step4.exportBook': '이 책 내보내기'
+        'step4.exportBook': '이 책 내보내기',
+        'step2.needDetails': '모든 인물·지역·주요 사건의 상세 설명을 저장하면 3단계로 이동할 수 있습니다.',
+        'step4.resume': '중단한 책 이어쓰기',
+        'step4.paused': '{0}의 진행분을 저장했습니다. 이어쓰기로 계속할 수 있습니다.',
+        'step4.status.paused': '중단됨',
+        'step4.status.writing': '작성 중 / 이어쓰기 가능',
+        'step4.status.error': '오류 후 이어쓰기 가능',
+        'step4.status.complete': '완료',
+        'step4.lengthProgress': '{0}자 / 목표 {1}자',
+        'step4.costGuide': '권당 10만~15만 자를 위해 여러 번 호출합니다. 짧은 응답은 추가 집필하며, 한 번에 최대 120회 호출 후 진행분을 저장하고 멈춥니다.'
     },
     en: {
         'app.title': 'WorldWriter',
@@ -206,7 +215,7 @@ const I18N = {
         'step1.guide': 'Whatever you write here must appear in the novel. The rest is invented by the AI.',
         'step1.placeholder': 'e.g. On a continent where magic is fading, the last spirit caller sets out to find the ruins of forgotten gods...',
         'step1.generate': 'Generate step 2',
-        'step1.confirmRegen': 'Existing step 2+ content will be replaced. Continue?',
+        'step1.confirmRegen': 'Replace characters, places, events and their details, and clear the event flow? Continue?',
         'step1.done': 'Step 2 content generated.',
         'step1.needDescription': 'Please describe the novel first.',
 
@@ -232,7 +241,7 @@ const I18N = {
         'step3.next': 'Go to step 4',
         'step3.prev': 'Back to step 2',
         'step3.deleteConfirm': 'Remove this event from the list?',
-        'step3.hasBooks': 'Books already exist; changing the flow may conflict with later volumes.',
+        'step3.hasBooks': 'Outline regeneration, event flow and volume count are locked to preserve books. Delete all books from the last volume first to unlock them.',
 
         'step4.title': 'Books',
         'step4.targetVolumes': 'Target volumes',
@@ -252,13 +261,22 @@ const I18N = {
         'step4.generating': '{0} / {1} : {2}',
         'step4.generatingTitle': 'Writing the book',
         'step4.cancel': 'Stop',
-        'step4.cancelling': 'Stopping after the current chapter...',
+        'step4.cancelling': 'Stopping after saving the current response...',
         'step4.done': '{0} finished.',
         'step4.allDone': 'All {0} volumes have been generated.',
         'step4.needTarget': 'Enter a target volume count of 1 or more.',
         'step4.selectBook': 'Pick a book above to read or edit it.',
         'step4.volumeOf': 'Volume {0}',
-        'step4.exportBook': 'Export this book'
+        'step4.exportBook': 'Export this book',
+        'step2.needDetails': 'Save details for all characters, places and major events to unlock step 3.',
+        'step4.resume': 'Resume unfinished book',
+        'step4.paused': 'Progress for {0} saved. Resume to continue.',
+        'step4.status.paused': 'Paused',
+        'step4.status.writing': 'Writing / resumable',
+        'step4.status.error': 'Error / resumable',
+        'step4.status.complete': 'Complete',
+        'step4.lengthProgress': '{0} chars / target {1} chars',
+        'step4.costGuide': 'Reaching 100k–150k characters takes multiple requests. Short responses require more writing. Each run stops after at most 120 requests, preserving progress.'
     }
 };
 
@@ -358,7 +376,7 @@ function formatDate(ms) {
 const STYLE_ID = 'worldwriter-style';
 
 const CSS = `
-#worldwriter_root, .ww-app {
+.ww-app {
     --ww-bg: #f5f6f8;
     --ww-panel: #ffffff;
     --ww-panel-2: #f0f1f4;
@@ -914,6 +932,7 @@ async function openProject(projectId) {
         else if (project.flow.length > 0) state.step = 3;
         else if (ITEM_KINDS.some(function (k) { return project[k].length > 0; })) state.step = 2;
         else state.step = 1;
+        state.step = Math.min(state.step, Projects.maxStep(project));
         state.openItems = {};
         state.currentBookId = null;
         state.currentBook = null;
@@ -1132,9 +1151,10 @@ function renderStep1(main) {
     appendChild(main, [
         h('h2', { text: t('step1.title') }),
         h('p.ww-guide', { text: t('step1.guide') }),
+        project.books.length > 0 ? h('p.ww-guide', { text: t('step3.hasBooks') }) : null,
         textarea,
         h('div.ww-actions', {},
-            h('button.ww-btn.primary', { text: t('step1.generate'), onClick: generate }),
+            h('button.ww-btn.primary', { text: t('step1.generate'), disabled: project.books.length > 0, onClick: generate }),
             h('button.ww-btn', {
                 text: t('common.save'),
                 onClick: async function () {
@@ -1182,8 +1202,17 @@ function renderStep2(main) {
             h('div.ww-spacer', {}),
             h('button.ww-btn.primary', {
                 text: t('step2.next'),
-                onClick: function () { state.step = 3; renderWorkspace(); }
+                disabled: !Projects.detailsComplete(project),
+                onClick: async function () {
+                    if (!Projects.detailsComplete(project)) return;
+                    try {
+                        await Projects.save(project);
+                        state.step = 3;
+                        renderWorkspace();
+                    } catch (e) { await showError(e); }
+                }
             })),
+        !Projects.detailsComplete(project) ? h('p.ww-guide', { text: t('step2.needDetails') }) : null,
         h('div.ww-groups', {}, groups)
     ]);
 }
@@ -1317,6 +1346,7 @@ function renderStep3(main) {
             h('button.ww-btn', { text: t('step3.prev'), onClick: function () { state.step = 2; renderWorkspace(); } }),
             h('button.ww-btn' + (project.flow.length === 0 ? '.primary' : ''), {
                 text: project.flow.length === 0 ? t('step3.generate') : t('common.regenerate'),
+                disabled: project.books.length > 0 || !Projects.detailsComplete(project),
                 onClick: generate
             }),
             h('span.ww-badge', { text: t('step3.count', project.flow.length) }),
@@ -1342,7 +1372,7 @@ function renderFlowList() {
     let dragFrom = -1;
 
     project.flow.forEach(function (item, index) {
-        const row = h('div.ww-flow-item', { draggable: true },
+        const row = h('div.ww-flow-item', { draggable: project.books.length === 0 },
             h('span.ww-grip', { text: '☰' }),
             h('span.ww-flow-no', { text: String(index + 1) }),
             h('div.ww-flow-text', {},
@@ -1352,8 +1382,10 @@ function renderFlowList() {
                 h('div.ww-flow-summary', { text: item.summary || '' })),
             h('button.ww-btn.small.danger', {
                 text: t('common.delete'),
+                disabled: project.books.length > 0,
                 onClick: async function (ev) {
                     ev.stopPropagation();
+                    if (project.books.length > 0) return;
                     const ok = await showConfirm(t('common.delete'), t('step3.deleteConfirm'), t('common.delete'), true);
                     if (!ok) return;
                     project.flow.splice(index, 1);
@@ -1380,6 +1412,7 @@ function renderFlowList() {
         row.addEventListener('dragleave', function () { row.classList.remove('drop-target'); });
         row.addEventListener('drop', async function (ev) {
             ev.preventDefault();
+            if (project.books.length > 0) return;
             row.classList.remove('drop-target');
             const from = dragFrom >= 0 ? dragFrom : parseInt(ev.dataTransfer.getData('text/plain'), 10);
             if (isNaN(from) || from === index) return;
@@ -1400,7 +1433,8 @@ function renderFlowList() {
 function renderStep4(main) {
     const project = state.project;
     const hasTarget = (project.targetVolumes || 0) > 0;
-    const allDone = hasTarget && project.books.length >= project.targetVolumes;
+    const unfinished = project.books.find(meta => meta.status && meta.status !== 'complete');
+    const allDone = hasTarget && project.books.length >= project.targetVolumes && !unfinished;
 
     const setTarget = async function () {
         const value = await showPrompt({
@@ -1408,14 +1442,12 @@ function renderStep4(main) {
             label: t('step4.targetVolumes'),
             hint: t('step4.targetGuide'),
             type: 'number',
-            value: project.targetVolumes || 3
+            value: project.targetVolumes || Math.min(3, project.flow.length)
         });
         if (value === null) return;
-        const count = parseInt(value, 10);
-        if (isNaN(count) || count < 1) {
-            await showAlert(t('common.error'), t('step4.needTarget'));
-            return;
-        }
+        let count;
+        try { count = Projects.validateTarget(project, value); }
+        catch (e) { await showError(e); return; }
         project.targetVolumes = count;
         await saveProject();
     };
@@ -1423,6 +1455,7 @@ function renderStep4(main) {
     const header = [
         h('h2', { text: t('step4.title') }),
         h('p.ww-guide', { text: t('step4.targetGuide') }),
+        h('p.ww-guide', { text: t('step4.costGuide') }),
         h('div.ww-actions', {},
             h('button.ww-btn', { text: t('step3.title'), onClick: function () { state.step = 3; renderWorkspace(); } }),
             h('span.ww-badge', {
@@ -1434,7 +1467,7 @@ function renderStep4(main) {
                 : null,
             h('div.ww-spacer', {}),
             h('button.ww-btn.primary', {
-                text: t('step4.newBook'),
+                text: unfinished ? t('step4.resume') : t('step4.newBook'),
                 disabled: allDone,
                 onClick: generateNextBook
             }),
@@ -1449,7 +1482,7 @@ function renderStep4(main) {
 
     const tabs = h('div.ww-books', {}, project.books.map(function (meta) {
         return h('button.ww-book-tab' + (state.currentBookId === meta.id ? '.active' : ''), {
-            text: meta.title + ' (' + t('step4.bookInfo', meta.chapterCount, formatNumber(meta.charCount)) + ')',
+            text: meta.title + ' (' + t('step4.bookInfo', meta.chapterCount, formatNumber(meta.charCount)) + ') — ' + t('step4.status.' + (meta.status || 'complete')),
             onClick: function () { selectBook(meta.id); }
         });
     }));
@@ -1582,14 +1615,12 @@ async function generateNextBook() {
             label: t('step4.targetVolumes'),
             hint: t('step4.targetGuide'),
             type: 'number',
-            value: 3
+            value: Math.min(3, project.flow.length)
         });
         if (value === null) return;
-        const count = parseInt(value, 10);
-        if (isNaN(count) || count < 1) {
-            await showAlert(t('common.error'), t('step4.needTarget'));
-            return;
-        }
+        let count;
+        try { count = Projects.validateTarget(project, value); }
+        catch (e) { await showError(e); return; }
         project.targetVolumes = count;
         await Projects.save(project);
     }
@@ -1608,12 +1639,9 @@ async function generateNextBook() {
         const book = await Pipeline.generateNextBook(project, {
             cancelled: function () { return state.cancelRequested; },
             onProgress: function (info) {
-                if (info.phase === 'writing') {
-                    progress.setText(t('step4.generating', info.current, info.total, info.title));
-                    progress.setProgress(info.current - 1, info.total);
-                } else {
-                    progress.setProgress(info.current, info.total);
-                }
+                progress.setText(t('step4.generating', info.current, info.total, info.title)
+                    + '\n' + t('step4.lengthProgress', formatNumber(info.charCount), formatNumber(info.targetChars)));
+                progress.setProgress(info.charCount, info.targetChars);
             }
         });
         progress.close();
@@ -1621,11 +1649,19 @@ async function generateNextBook() {
         state.currentBook = book;
         state.currentChapterIndex = 0;
         renderWorkspace();
-        toast(t('step4.done', book.title));
+        toast(t(book.status === 'complete' ? 'step4.done' : 'step4.paused', book.title));
     } catch (e) {
         progress.close();
-        await showError(e);
+        try {
+            state.project = await Projects.load(project.id);
+            const last = state.project.books[state.project.books.length - 1];
+            if (last) {
+                state.currentBookId = last.id;
+                state.currentBook = await Books.load(project.id, last.id);
+            }
+        } catch (loadError) { console.error(loadError); }
         renderWorkspace();
+        await showError(e);
     }
 }
 
@@ -1641,12 +1677,12 @@ async function deleteLastBook() {
 
     try {
         await Books.remove(project.id, last.id);
-        project.books.pop();
+        state.project = await Projects.load(project.id);
         if (state.currentBookId === last.id) {
             state.currentBookId = null;
             state.currentBook = null;
         }
-        await saveProject();
+        renderWorkspace();
     } catch (e) {
         await showError(e);
     }
