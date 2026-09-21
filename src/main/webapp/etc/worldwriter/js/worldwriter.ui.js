@@ -149,6 +149,9 @@ const I18N = {
         'step4.generatingTitle': '책 생성 중',
         'step4.cancel': '중단',
         'step4.cancelling': '현재 응답을 저장한 뒤 중단합니다...',
+        'step4.autoRetry': '오류 시 자동 재시도',
+        'step4.retrying': '오류가 발생해 중단된 부분부터 자동으로 이어씁니다. ({0}/{1})',
+        'step4.retryFailed': '자동 재시도를 {0}회 했지만 계속 실패했습니다.',
         'step4.done': '{0} 생성이 끝났습니다.',
         'step4.allDone': '목표 권수({0}권)만큼 모두 생성했습니다.',
         'step4.selectBook': '위 목록에서 책을 선택하면 내용을 보거나 수정할 수 있습니다.',
@@ -353,6 +356,9 @@ const I18N = {
         'step4.generatingTitle': 'Writing the book',
         'step4.cancel': 'Stop',
         'step4.cancelling': 'Stopping after saving the current response...',
+        'step4.autoRetry': 'Retry automatically on error',
+        'step4.retrying': 'An error occurred. Resuming from the saved position. ({0}/{1})',
+        'step4.retryFailed': 'Automatic retry failed {0} time(s) in a row.',
         'step4.done': '{0} finished.',
         'step4.allDone': 'All {0} volumes have been generated.',
         'step4.selectBook': 'Pick a book above to read or edit it.',
@@ -749,6 +755,8 @@ body { margin: 0; }
     display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
 }
 .ww-modal-message { line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+/* 진행 모달 하단 왼쪽에 두는 선택 항목 */
+.ww-modal-foot > .ww-check { margin-right: auto; font-size: 13px; color: var(--ww-text-dim); }
 
 .ww-progress-line { margin-top: 12px; font-size: 13px; color: var(--ww-text-dim); }
 .ww-progress-live { margin-top: 8px; font-size: 12px; color: var(--ww-text-dim); min-height: 16px; }
@@ -857,6 +865,7 @@ const state = {
     currentBook: null,
     currentChapterIndex: 0,
     cancelRequested: false,
+    autoRetryBooks: false,   // 4단계 책 생성 중 오류가 나면 자동으로 이어쓸지 여부
     titleProgress: null,
     pdfStatus: 'idle',       // idle | checking | ready | unavailable
     jsPDF: null
@@ -866,6 +875,12 @@ const state = {
  * `USER_KEY` 선언이 담당하는 값을 보관한다.
  */
 const USER_KEY = 'ww.currentUser';
+
+/** 4단계 책 생성의 자동 재시도에서, 본문이 늘지 않은 채 연속으로 허용하는 실패 횟수 */
+const AUTO_RETRY_LIMIT = 5;
+
+/** 자동 재시도 전 대기 시간(ms). 공급자의 일시적인 오류가 가라앉을 시간을 둔다. */
+const AUTO_RETRY_DELAY = 3000;
 
 /** 4단계에서 필요할 때만 불러오는 jsPDF ES 모듈 CDN 주소 */
 const JSPDF_CDN_URL = 'https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.es.min.js';
@@ -1006,6 +1021,18 @@ function openProgress(title, options) {
     const barWrap = h('div.ww-bar', {}, bar);
 
     const foot = h('div.ww-modal-foot', {});
+    // 좌측 하단 선택 항목. 현재는 4단계 책 생성의 '오류 시 자동 재시도'가 사용한다.
+    let checkInput = null;
+    if (opts.checkbox) {
+        checkInput = h('input', {
+            type: 'checkbox',
+            checked: opts.checkbox.checked === true,
+            onChange: function (ev) {
+                if (opts.checkbox.onChange) opts.checkbox.onChange(ev.target.checked === true);
+            }
+        });
+        foot.appendChild(h('label.ww-check', {}, checkInput, h('span', { text: opts.checkbox.label })));
+    }
     let cancelButton = null;
     if (opts.onCancel) {
         cancelButton = h('button.ww-btn.danger', {
@@ -1021,7 +1048,7 @@ function openProgress(title, options) {
     const modal = h('div.ww-modal', {},
         h('div.ww-modal-head', { text: title }),
         h('div.ww-modal-body', {}, line, opts.showBar === false ? null : barWrap, liveLine),
-        opts.onCancel ? foot : null);
+        (opts.onCancel || opts.checkbox) ? foot : null);
 
     const overlay = openOverlay(modal, { closeOnBackdrop: false });
     const titleToken = {};
@@ -1033,6 +1060,7 @@ function openProgress(title, options) {
 
     return {
         setText: function (text) { line.textContent = text; },
+        isChecked: function () { return checkInput ? checkInput.checked === true : false; },
         setProgress: function (current, total) {
             const percent = total > 0 ? Math.max(0, Math.min(100, Math.round(current / total * 100))) : 0;
             bar.style.width = percent + '%';
@@ -1071,11 +1099,20 @@ function liveStatusText(startedAt) {
     return t(alive ? 'progress.aiLive' : 'progress.aiSilent', seconds);
 }
 
+/** 오류 객체에서 사용자에게 보여 줄 문구를 뽑는다. */
+function errorText(error) {
+    return (error && error.message) ? error.message : String(error);
+}
+
 /** 오류를 사용자에게 보여준다. */
 function showError(error) {
     console.error(error);
-    const message = (error && error.message) ? error.message : String(error);
-    return showAlert(t('common.error'), message);
+    return showAlert(t('common.error'), errorText(error));
+}
+
+/** 지정한 시간만큼 기다린다. */
+function wait(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
 }
 
 /** 작업 중 대기 표시를 띄우고 실행한다. */
@@ -2374,8 +2411,13 @@ function updateBookMeta(book) {
     list.push(meta);
 }
 
-/** 전체 생성·다음 권 생성·이어쓰기에 공통으로 쓰는 진행 화면을 연다. */
-async function runBookGeneration(create) {
+/**
+ * 전체 생성·다음 권 생성·이어쓰기에 공통으로 쓰는 진행 화면을 연다.
+ * 진행 화면의 '오류 시 자동 재시도'가 켜져 있으면 저장된 진행분에서 이어쓰기를 다시 시작한다.
+ * @param {Function} create 처음 실행할 생성 함수
+ * @param {Function} resume 오류 후 중단된 부분부터 다시 실행할 함수
+ */
+async function runBookGeneration(create, resume) {
     const project = state.project;
 
     if (!(project.targetVolumes > 0)) {
@@ -2390,52 +2432,107 @@ async function runBookGeneration(create) {
         onCancel: function () {
             state.cancelRequested = true;
             progress.setText(t('step4.cancelling'));
+        },
+        checkbox: {
+            label: t('step4.autoRetry'),
+            checked: state.autoRetryBooks,
+            onChange: function (checked) { state.autoRetryBooks = checked; }
         }
     });
 
-    try {
-        const book = await create(project, {
-            cancelled: function () { return state.cancelRequested; },
-            onProgress: function (info) {
-                progress.setText(t('step4.generating', info.current, info.total, info.title)
-                    + '\n' + t('step4.lengthProgress', formatNumber(info.charCount), formatNumber(info.targetChars)));
-                progress.setProgress(info.charCount, info.targetChars);
-            }
-        });
-        progress.close();
-        state.currentBookId = book.id;
-        state.currentBook = book;
-        state.currentChapterIndex = 0;
-        renderWorkspace();
-        toast(t(book.status === 'complete' ? 'step4.done' : 'step4.paused', book.title));
-    } catch (e) {
-        progress.close();
+    // 마지막 오류 이후 본문이 실제로 늘었는지. 늘었으면 연속 실패 횟수를 다시 센다.
+    let advanced = false;
+    const options = {
+        cancelled: function () { return state.cancelRequested; },
+        onProgress: function (info) {
+            if (info.phase === 'saved') advanced = true;
+            progress.setText(t('step4.generating', info.current, info.total, info.title)
+                + '\n' + t('step4.lengthProgress', formatNumber(info.charCount), formatNumber(info.targetChars)));
+            progress.setProgress(info.charCount, info.targetChars);
+        }
+    };
+
+    // 첫 실행은 요청한 방식으로, 재시도는 중단된 부분부터 이어쓰는 방식으로 진행한다.
+    let run = create;
+    let failures = 0;   // 본문이 늘지 않은 채 연속으로 실패한 횟수
+    let retried = 0;    // 지금까지 자동 재시도한 횟수
+
+    while (true) {
         try {
-            state.project = await Projects.load(project.id);
-            const last = state.project.books[state.project.books.length - 1];
-            if (last) {
-                state.currentBookId = last.id;
-                state.currentBook = await Books.load(project.id, last.id);
+            const book = await run(project, options);
+            progress.close();
+            state.currentBookId = book.id;
+            state.currentBook = book;
+            state.currentChapterIndex = 0;
+            renderWorkspace();
+            toast(t(book.status === 'complete' ? 'step4.done' : 'step4.paused', book.title));
+            return;
+        } catch (e) {
+            console.error(e);
+            failures = advanced ? 1 : failures + 1;
+            advanced = false;
+            // 체크박스는 진행 중에도 바꿀 수 있으므로 오류가 난 시점의 값을 본다.
+            if (!progress.isChecked() || state.cancelRequested || failures > AUTO_RETRY_LIMIT) {
+                progress.close();
+                await reloadAfterGeneration(project);
+                await showError(retried > 0
+                    ? new Error(t('step4.retryFailed', retried) + '\n' + errorText(e))
+                    : e);
+                return;
             }
-        } catch (loadError) { console.error(loadError); }
-        renderWorkspace();
-        await showError(e);
+            retried++;
+            progress.setText(t('step4.retrying', failures, AUTO_RETRY_LIMIT));
+            progress.setProgress(0, 0);
+            // 진행분은 이미 저장되어 있다. 잠시 기다렸다가 저장된 위치부터 이어쓴다.
+            await wait(AUTO_RETRY_DELAY);
+            if (state.cancelRequested) {
+                progress.close();
+                await reloadAfterGeneration(project);
+                return;
+            }
+            run = resume;
+        }
     }
+}
+
+/** 책 생성이 끝나지 못했을 때 저장된 내용으로 화면을 되돌린다. */
+async function reloadAfterGeneration(project) {
+    try {
+        state.project = await Projects.load(project.id);
+        const last = state.project.books[state.project.books.length - 1];
+        if (last) {
+            state.currentBookId = last.id;
+            state.currentBook = await Books.load(project.id, last.id);
+        }
+    } catch (loadError) { console.error(loadError); }
+    renderWorkspace();
+}
+
+/** 중단된 부분부터 이어쓴다. 한 권 단위 작업의 자동 재시도에도 이 방식을 쓴다. */
+function resumeBook(project, options) {
+    return Pipeline.generateNextBook(project, options);
+}
+
+/** 남은 목표 권수를 모두 생성한다. 미완성 권이 있으면 그 권을 이어쓴 뒤 계속한다. */
+function writeAllBooks(project, options) {
+    return Pipeline.generateAllBooks(project, options);
 }
 
 /** 마지막 미완성 권을 이어 쓴다. */
 async function resumeLastBook() {
-    return runBookGeneration(function (project, options) { return Pipeline.generateNextBook(project, options); });
+    return runBookGeneration(resumeBook, resumeBook);
 }
 
 /** 마지막 완료 권 바로 다음에 한 권만 생성한다. */
 async function generateFollowingBook() {
-    return runBookGeneration(function (project, options) { return Pipeline.generateFollowingBook(project, options); });
+    return runBookGeneration(function (project, options) {
+        return Pipeline.generateFollowingBook(project, options);
+    }, resumeBook);
 }
 
-/** 남은 목표 권수를 모두 순서대로 생성한다. */
+/** 남은 목표 권수를 모두 순서대로 생성한다. 재시도도 이어쓰기 후 전체 생성으로 계속한다. */
 async function generateAllBooks() {
-    return runBookGeneration(function (project, options) { return Pipeline.generateAllBooks(project, options); });
+    return runBookGeneration(writeAllBooks, writeAllBooks);
 }
 
 /**
