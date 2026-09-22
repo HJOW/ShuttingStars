@@ -286,8 +286,15 @@ const DEFAULT_SETTINGS = {
     models: { openai: '', claude: '', lmstudio: '' },
     lmStudioUrl: 'http://localhost:1234',
     language: 'ko',
-    darkMode: false
+    darkMode: false,
+    maxTokensLimit: 32000
 };
+
+/** 책 집필 max_tokens 상한을 정수로 정규화한다. */
+function normalizeMaxTokensLimit(value) {
+    const limit = Number(value);
+    return Number.isSafeInteger(limit) && limit >= 3000 ? limit : DEFAULT_SETTINGS.maxTokensLimit;
+}
 
 /**
  * `LANGUAGE_NAMES` 선언이 담당하는 값을 보관한다.
@@ -312,6 +319,7 @@ const Settings = {
         this.current = Object.assign(clone(DEFAULT_SETTINGS), saved || {});
         this.current.apiKeys = Object.assign({}, DEFAULT_SETTINGS.apiKeys, this.current.apiKeys || {});
         this.current.models = Object.assign({}, DEFAULT_SETTINGS.models, this.current.models || {});
+        this.current.maxTokensLimit = normalizeMaxTokensLimit(this.current.maxTokensLimit);
         return this.current;
     },
 
@@ -322,6 +330,7 @@ const Settings = {
         const merged = Object.assign(clone(DEFAULT_SETTINGS), settings || {});
         merged.apiKeys = Object.assign({}, DEFAULT_SETTINGS.apiKeys, merged.apiKeys || {});
         merged.models = Object.assign({}, DEFAULT_SETTINGS.models, merged.models || {});
+        merged.maxTokensLimit = normalizeMaxTokensLimit(merged.maxTokensLimit);
         this.current = merged;
         await Storage.set('settings', this.current);
         // 로그인 화면에서도 언어/다크모드를 적용할 수 있도록 사본을 남긴다.
@@ -825,6 +834,104 @@ async function callViaDesktop(conf, request) {
     return String(body.text || '');
 }
 
+/* ------------------------------------------------------------------ *
+ *  모델 목록 조회
+ *
+ *  설정 화면의 모델명 콤보박스가 쓴다. 채팅 호출과 같은 경로 구분을 따르며
+ *  (desktop → 브리지, server → 백엔드 중계, local → 브라우저 직접 호출)
+ *  목록을 가져오지 못해도 모델명은 직접 입력할 수 있으므로 오류는 그대로 알린다.
+ * ------------------------------------------------------------------ */
+
+/** 모델 목록 응답에서 모델 id 만 뽑아 중복 없이 돌려준다. */
+function extractModelIds(json) {
+    let list = Array.isArray(json) ? json : ((json && (json.data || json.models)) || []);
+    if (!Array.isArray(list)) list = [];
+    const ids = [];
+    list.forEach(function (item) {
+        const raw = typeof item === 'string' ? item : (item && (item.id || item.name));
+        const id = String(raw == null ? '' : raw).trim();
+        if (!isBlank(id) && ids.indexOf(id) < 0) ids.push(id);
+    });
+    return ids;
+}
+
+/** 모델 목록 조회에 필요한 정보만 담은 요청 본문 (백엔드·브리지 공용) */
+function modelsPayload(conf) {
+    return {
+        provider: conf.provider,
+        language: conf.language,
+        apiKey: Settings.apiKeyOf(conf),
+        baseUrl: Settings.baseUrlOf(conf)
+    };
+}
+
+/** 브라우저에서 공급자에게 직접 묻는다. (local 모드) */
+async function listModelsDirect(conf) {
+    const baseUrl = Settings.baseUrlOf(conf).replace(/\/+$/, '');
+    const apiKey = Settings.apiKeyOf(conf);
+    let url;
+    const headers = {};
+
+    if (conf.provider === 'claude') {
+        url = baseUrl + '/v1/models?limit=1000';
+        headers['x-api-key'] = apiKey;
+        headers['anthropic-version'] = '2023-06-01';
+        // 브라우저에서 직접 호출할 때 필요한 헤더이다.
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    } else {
+        // OpenAI 호환 (OpenAI, LM Studio). LM Studio 주소에는 /v1 을 붙인다.
+        url = baseUrl + (conf.provider === 'lmstudio' ? '/v1' : '') + '/models';
+        if (!isBlank(apiKey)) headers['Authorization'] = 'Bearer ' + apiKey;
+    }
+
+    const res = await fetch(url, { method: 'GET', headers: headers });
+    if (!res.ok) throw new Error(await readModelErrorMessage(res, conf));
+    return extractModelIds(await res.json());
+}
+
+/** 백엔드 중계를 통한 조회 (server 모드) */
+async function listModelsViaBackend(conf) {
+    const res = await fetch('./api/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(modelsPayload(conf))
+    });
+    if (res.status === 404) {
+        throw new Error(localize('이 서버는 모델 목록 조회를 지원하지 않습니다. 모델명을 직접 입력해 주세요.',
+            'This server does not support listing models. Enter the model name directly.', conf));
+    }
+    if (!res.ok) throw new Error(await readModelErrorMessage(res, conf));
+    const body = await res.json();
+    if (body.error) throw new Error(body.error);
+    return extractModelIds(body.models);
+}
+
+/** electron 메인 프로세스를 통한 조회 (desktop 모드) */
+async function listModelsViaDesktop(conf) {
+    if (!Env.desktop || typeof Env.desktop.models !== 'function') {
+        throw new Error(localize('이 앱 버전은 모델 목록 조회를 지원하지 않습니다. 모델명을 직접 입력해 주세요.',
+            'This app version does not support listing models. Enter the model name directly.', conf));
+    }
+    const body = desktopResult(await Env.desktop.models(modelsPayload(conf)));
+    return extractModelIds(body.models);
+}
+
+/** 모델 목록 조회 실패 응답에서 오류 메시지를 읽어낸다. */
+async function readModelErrorMessage(res, conf) {
+    let detail = '';
+    try {
+        const text = await res.text();
+        try {
+            const json = JSON.parse(text);
+            detail = (json.error && (json.error.message || json.error.type)) || json.message || text;
+        } catch (e) {
+            detail = text;
+        }
+    } catch (e) { /* 무시 */ }
+    return localize('모델 목록을 가져오지 못했습니다.', 'Could not load the model list.', conf)
+        + ' (HTTP ' + res.status + ') ' + String(detail).substring(0, 400);
+}
+
 /**
  * `AI` 선언이 담당하는 값을 보관한다.
  */
@@ -854,6 +961,28 @@ const AI = {
         if (Env.isServer()) return await callViaBackend(conf, request);
         if (conf.provider === 'claude') return await callClaude(conf, request);
         return await callOpenAiCompatible(conf, request);
+    },
+
+    /**
+     * 설정 화면의 모델명 콤보박스용 모델 목록 조회.
+     * 목록을 얻을 수 없는 상황(키·주소 미입력, 지원하지 않는 공급자)은 오류로 알린다.
+     * @param {object} [settings] 확인할 설정. 생략하면 현재 설정
+     * @returns {Promise<string[]>} 모델 id 배열
+     */
+    async listModels(settings) {
+        const conf = settings || Settings.current;
+        const spec = PROVIDERS[conf.provider];
+        if (!spec) throw new Error(localize('알 수 없는 AI 공급자입니다: ', 'Unknown AI provider: ', conf) + conf.provider);
+        if (spec.needsApiKey && isBlank(Settings.apiKeyOf(conf))) {
+            throw new Error(localize('API 키를 먼저 입력해 주세요.', 'Enter your API key first.', conf));
+        }
+        if (spec.needsBaseUrl && isBlank(conf.lmStudioUrl)) {
+            throw new Error(localize('서버 주소를 먼저 입력해 주세요.', 'Enter the server address first.', conf));
+        }
+
+        if (Env.isDesktop()) return await listModelsViaDesktop(conf);
+        if (Env.isServer()) return await listModelsViaBackend(conf);
+        return await listModelsDirect(conf);
     },
 
     /** 설정 화면의 연결 확인용 호출 */
@@ -1685,12 +1814,15 @@ const Pipeline = {
                         targetChars: Math.min(5000, remaining), remainingChars: remaining,
                         continuation: chapter.text.length > 0, volumeIndex: book.index, volumeTotal: generation.total,
                         isFirstOfBook: i === 0 && chapter.text.length === 0,
+                        maxTokensMultiplier: typeof opts.getMaxTokensMultiplier === 'function'
+                            ? opts.getMaxTokensMultiplier() : 1,
                         isLastOfBook: i === slice.length - 1 && remaining <= 5000
                     });
                     calls++;
                     generation.requestCount++;
                     if (isBlank(text)) throw new Error(localize('AI 응답이 비어 있습니다. 저장된 위치부터 다시 시도할 수 있습니다.',
                         'The AI response was empty. You can resume from the saved position.'));
+                    if (typeof opts.onAiRequestSuccess === 'function') opts.onAiRequestSuccess();
                     shortResponses = text.length < Math.min(200, remaining) ? shortResponses + 1 : 0;
                     chapter.text += (chapter.text ? '\n\n' : '') + text;
                     await checkpoint();
@@ -1758,7 +1890,10 @@ const Pipeline = {
             '- 본문 외의 어떤 텍스트도 출력하지 않는다.'
         ].filter(function (line) { return line !== ''; }).join('\n');
 
-        const maxTokens = clamp(Math.round(params.targetChars * 2.2), 3000, 32000);
+        const maxTokensLimit = normalizeMaxTokensLimit(conf.maxTokensLimit);
+        const baseMaxTokens = clamp(Math.round(params.targetChars * 2.2), 3000, maxTokensLimit);
+        const multiplier = Math.max(1, Number(params.maxTokensMultiplier) || 1);
+        const maxTokens = clamp(Math.round(baseMaxTokens * multiplier), 3000, maxTokensLimit);
         const text = await AI.chat({ settings: conf, system: system, prompt: prompt, maxTokens: maxTokens });
         return text.trim();
     },

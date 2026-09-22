@@ -74,9 +74,20 @@ const I18N = {
         'settings.apiKeyNone': 'LM Studio 는 API 키가 필요하지 않습니다. (필요한 경우에만 입력)',
         'settings.model': '모델명',
         'settings.modelHint': '비워두면 기본값 "{0}" 을(를) 사용합니다.',
+        'settings.modelList': '모델 목록 보기',
+        'settings.modelReload': '목록 새로고침',
+        'settings.modelLoading': '사용 가능한 모델 목록을 불러오는 중...',
+        'settings.modelLoaded': '모델 {0}개를 불러왔습니다. 목록에서 고르거나 직접 입력할 수 있습니다.',
+        'settings.modelEmpty': '사용 가능한 모델이 없습니다. 모델명을 직접 입력해 주세요.',
+        'settings.modelNoMatch': '입력한 내용과 일치하는 모델이 없습니다.',
+        'settings.modelLoadFailed': '모델 목록을 불러오지 못했습니다. 모델명을 직접 입력해 주세요. ({0})',
+        'settings.modelNeedKey': 'API 키를 입력하면 사용 가능한 모델 목록을 불러올 수 있습니다.',
+        'settings.modelNeedUrl': '서버 주소를 입력하면 사용 가능한 모델 목록을 불러올 수 있습니다.',
         'settings.lmUrl': 'LM Studio 서버 주소',
         'settings.language': '기본 언어',
         'settings.darkMode': '어두운 화면(다크 모드) 사용',
+        'settings.maxTokensLimit': '책 생성 max_tokens 최대 상한',
+        'settings.maxTokensLimitHint': '자동 계산값과 재시도 배수에 적용할 최대값입니다. 기본값: 32,000 (최소 3,000)',
         'settings.test': '연결 확인',
         'settings.testing': '확인 중...',
         'settings.testOk': '연결에 성공했습니다. 응답: {0}',
@@ -281,9 +292,20 @@ const I18N = {
         'settings.apiKeyNone': 'LM Studio does not require an API key.',
         'settings.model': 'Model name',
         'settings.modelHint': 'Leave empty to use the default "{0}".',
+        'settings.modelList': 'Show model list',
+        'settings.modelReload': 'Reload list',
+        'settings.modelLoading': 'Loading the available models...',
+        'settings.modelLoaded': 'Loaded {0} models. Pick one from the list or type a name.',
+        'settings.modelEmpty': 'No models are available. Enter the model name directly.',
+        'settings.modelNoMatch': 'No model matches what you typed.',
+        'settings.modelLoadFailed': 'Could not load the model list. Enter the model name directly. ({0})',
+        'settings.modelNeedKey': 'Enter an API key to load the available models.',
+        'settings.modelNeedUrl': 'Enter the server address to load the available models.',
         'settings.lmUrl': 'LM Studio server address',
         'settings.language': 'Default language',
         'settings.darkMode': 'Use dark mode',
+        'settings.maxTokensLimit': 'Maximum max_tokens for book generation',
+        'settings.maxTokensLimitHint': 'Caps the calculated value and retry multiplier. Default: 32,000 (minimum: 3,000)',
         'settings.test': 'Test connection',
         'settings.testing': 'Testing...',
         'settings.testOk': 'Connection succeeded. Response: {0}',
@@ -358,7 +380,7 @@ const I18N = {
         'step4.cancelling': 'Stopping after saving the current response...',
         'step4.autoRetry': 'Retry automatically on error',
         'step4.retrying': 'An error occurred. Resuming from the saved position. ({0}/{1})',
-        'step4.retryFailed': 'Automatic retry failed {0} time(s) in a row.',
+        'step4.retryFailed': 'Automatic retry failed {0} time(s).',
         'step4.done': '{0} finished.',
         'step4.allDone': 'All {0} volumes have been generated.',
         'step4.selectBook': 'Pick a book above to read or edit it.',
@@ -626,6 +648,19 @@ body { margin: 0; }
 .ww-hint { font-size: 12px; color: var(--ww-text-dim); margin-top: 4px; line-height: 1.5; }
 .ww-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 
+/* 모델명 콤보박스 (직접 입력 + 불러온 목록 선택) */
+.ww-combo { display: flex; align-items: stretch; gap: 6px; }
+.ww-combo > .ww-input { flex: 1; min-width: 0; }
+.ww-combo > .ww-btn { flex: none; }
+.ww-combo-list {
+    margin-top: 6px; border: 1px solid var(--ww-border); border-radius: 6px;
+    background: var(--ww-panel); max-height: 190px; overflow-y: auto;
+}
+.ww-combo-option { padding: 7px 10px; font-size: 13px; cursor: pointer; word-break: break-all; }
+.ww-combo-option:hover { background: var(--ww-panel-2); }
+.ww-combo-option.selected { color: var(--ww-accent); font-weight: 600; }
+.ww-combo-note { padding: 7px 10px; font-size: 12px; color: var(--ww-text-dim); }
+
 /* 로그인 / 초기화면 */
 .ww-center {
     min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -876,8 +911,8 @@ const state = {
  */
 const USER_KEY = 'ww.currentUser';
 
-/** 4단계 책 생성의 자동 재시도에서, 본문이 늘지 않은 채 연속으로 허용하는 실패 횟수 */
-const AUTO_RETRY_LIMIT = 5;
+/** 4단계 책 생성에서 허용하는 자동 재시도 횟수 */
+const AUTO_RETRY_LIMIT = 9;
 
 /** 자동 재시도 전 대기 시간(ms). 공급자의 일시적인 오류가 가라앉을 시간을 둔다. */
 const AUTO_RETRY_DELAY = 3000;
@@ -1360,10 +1395,164 @@ async function openProject(projectId) {
  * ------------------------------------------------------------------ */
 
 /**
+ * 설정 화면의 모델명 입력 필드를 만든다.
+ *
+ * 직접 입력할 수 있는 콤보박스이다. 공급자에서 모델 목록을 가져올 수 있으면
+ * 목록에서 고를 수 있고, 가져오지 못해도 모델명을 그대로 입력할 수 있다.
+ * @param {object} draft 편집 중인 설정 객체
+ * @param {object} spec 현재 공급자 정의 (PROVIDERS 의 값)
+ * @param {object} cache 설정 화면이 열려 있는 동안 유지하는 모델 목록 캐시
+ * @returns {{field: HTMLElement, refresh: Function}} 필드 요소와 다시 불러오기 함수
+ */
+function buildModelField(draft, spec, cache) {
+    // 응답이 늦게 도착했을 때 공급자가 바뀌었는지 확인하려고 만든 시점의 값을 기억한다.
+    const provider = draft.provider;
+    let models = [];
+
+    const input = h('input.ww-input', {
+        type: 'text',
+        value: (draft.models || {})[provider] || '',
+        placeholder: spec.defaultModel,
+        autocomplete: 'off',
+        onInput: function (ev) {
+            draft.models[provider] = ev.target.value;
+            if (!list.hidden) renderOptions();
+        }
+    });
+
+    const list = h('div.ww-combo-list', { hidden: true });
+    const status = h('div.ww-hint', {});
+
+    const toggleButton = h('button.ww-btn', {
+        type: 'button', text: '▾', title: t('settings.modelList'),
+        onClick: function () {
+            if (list.hidden) {
+                if (models.length === 0) { load(true, false); return; }
+                renderOptions();
+                list.hidden = false;
+            } else {
+                list.hidden = true;
+            }
+        }
+    });
+
+    const reloadButton = h('button.ww-btn', {
+        type: 'button', text: '↻', title: t('settings.modelReload'),
+        // 새로고침은 미리 받아 둔 목록을 버리고 공급자에게 다시 묻는다.
+        onClick: function () { load(true, true); }
+    });
+
+    /** 입력 중인 내용으로 목록을 걸러 다시 그린다. */
+    const renderOptions = function () {
+        clearNode(list);
+        const typed = String(input.value || '').trim().toLowerCase();
+        const shown = models.filter(function (id) {
+            return typed === '' || id.toLowerCase().indexOf(typed) >= 0;
+        });
+        if (shown.length === 0) {
+            appendChild(list, h('div.ww-combo-note', { text: t('settings.modelNoMatch') }));
+            return;
+        }
+        shown.forEach(function (id) {
+            appendChild(list, h('div.ww-combo-option' + (id === String(input.value || '').trim() ? '.selected' : ''), {
+                text: id,
+                onClick: function () {
+                    input.value = id;
+                    draft.models[provider] = id;
+                    list.hidden = true;
+                }
+            }));
+        });
+    };
+
+    /** 목록을 불러올 수 있는 상태인지 확인한다. */
+    const readiness = function () {
+        if (spec.needsApiKey && WorldWriter.util.isBlank((draft.apiKeys || {})[provider])) return 'key';
+        if (spec.needsBaseUrl && WorldWriter.util.isBlank(draft.lmStudioUrl)) return 'url';
+        return 'ok';
+    };
+
+    /** 목록을 불러온 뒤의 안내와 목록 상태를 갱신한다. */
+    const showLoaded = function (openList) {
+        if (models.length === 0) {
+            list.hidden = true;
+            clearNode(list);
+            status.textContent = t('settings.modelEmpty');
+            return;
+        }
+        status.textContent = t('settings.modelLoaded', models.length);
+        if (openList || !list.hidden) {
+            renderOptions();
+            list.hidden = false;
+        }
+    };
+
+    /**
+     * 모델 목록을 불러온다.
+     * @param {boolean} openList 성공 시 목록을 펼칠지 여부
+     * @param {boolean} force 미리 받아 둔 목록을 버리고 다시 물을지 여부
+     */
+    const load = async function (openList, force) {
+        const ready = readiness();
+        if (ready !== 'ok') {
+            models = [];
+            clearNode(list);
+            list.hidden = true;
+            status.textContent = t(ready === 'key' ? 'settings.modelNeedKey' : 'settings.modelNeedUrl');
+            return;
+        }
+
+        const signature = provider + '|' + String((draft.apiKeys || {})[provider] || '') + '|' + String(draft.lmStudioUrl || '');
+        if (force) delete cache[signature];
+        if (cache[signature]) {
+            models = cache[signature];
+            showLoaded(openList);
+            return;
+        }
+
+        status.textContent = t('settings.modelLoading');
+        toggleButton.disabled = true;
+        reloadButton.disabled = true;
+        try {
+            const found = await AI.listModels(draft);
+            // 기다리는 동안 공급자를 바꿨으면 결과를 버린다.
+            if (draft.provider !== provider) return;
+            models = found;
+            cache[signature] = found;
+            showLoaded(openList);
+        } catch (e) {
+            if (draft.provider !== provider) return;
+            models = [];
+            clearNode(list);
+            list.hidden = true;
+            // 목록을 못 가져와도 모델명은 직접 입력할 수 있으므로 안내만 남긴다.
+            status.textContent = t('settings.modelLoadFailed', e.message || String(e));
+        } finally {
+            toggleButton.disabled = false;
+            reloadButton.disabled = false;
+        }
+    };
+
+    const field = h('div.ww-field', {},
+        h('label.ww-label', { text: t('settings.model') }),
+        h('div.ww-combo', {}, input, toggleButton, reloadButton),
+        list,
+        h('div.ww-hint', { text: t('settings.modelHint', spec.defaultModel) }),
+        status);
+
+    // 화면을 그린 뒤 조건이 갖춰져 있으면 목록을 미리 불러 둔다.
+    load(false, false);
+
+    return { field: field, refresh: function () { load(false, false); } };
+}
+
+/**
  * `openSettings` 작업을 수행한다.
  */
 function openSettings() {
     const draft = WorldWriter.util.clone(Settings.current);
+    // 설정 화면이 열려 있는 동안 공급자별로 불러온 모델 목록을 재사용한다.
+    const modelCache = {};
     let overlay;
 
     const body = h('div.ww-modal-body', {});
@@ -1377,25 +1566,23 @@ function openSettings() {
             return h('option', { value: key, text: PROVIDERS[key].label, selected: draft.provider === key });
         }));
 
+        // 모델 목록은 API 키·서버 주소를 다 입력한 뒤(입력란을 벗어날 때) 다시 불러온다.
+        const modelField = buildModelField(draft, spec, modelCache);
+
         const apiKeyInput = h('input.ww-input', {
             type: 'password',
             value: (draft.apiKeys || {})[draft.provider] || '',
             placeholder: spec.needsApiKey ? 'sk-...' : '',
-            onInput: function (ev) { draft.apiKeys[draft.provider] = ev.target.value; }
-        });
-
-        const modelInput = h('input.ww-input', {
-            type: 'text',
-            value: (draft.models || {})[draft.provider] || '',
-            placeholder: spec.defaultModel,
-            onInput: function (ev) { draft.models[draft.provider] = ev.target.value; }
+            onInput: function (ev) { draft.apiKeys[draft.provider] = ev.target.value; },
+            onChange: function () { modelField.refresh(); }
         });
 
         const lmUrlInput = h('input.ww-input', {
             type: 'text',
             value: draft.lmStudioUrl || '',
             placeholder: 'http://localhost:1234',
-            onInput: function (ev) { draft.lmStudioUrl = ev.target.value; }
+            onInput: function (ev) { draft.lmStudioUrl = ev.target.value; },
+            onChange: function () { modelField.refresh(); }
         });
 
         const languageSelect = h('select.ww-select', {
@@ -1403,6 +1590,12 @@ function openSettings() {
         },
             h('option', { value: 'ko', text: '한국어', selected: draft.language === 'ko' }),
             h('option', { value: 'en', text: 'English', selected: draft.language === 'en' }));
+
+        const maxTokensLimitInput = h('input.ww-input', {
+            type: 'number', min: 3000, step: 1,
+            value: draft.maxTokensLimit || 32000,
+            onInput: function (ev) { draft.maxTokensLimit = Number(ev.target.value); }
+        });
 
         const darkCheck = h('input', {
             type: 'checkbox', checked: draft.darkMode === true,
@@ -1420,13 +1613,14 @@ function openSettings() {
                 h('label.ww-label', { text: t('settings.apiKey') }),
                 apiKeyInput,
                 spec.needsApiKey ? null : h('div.ww-hint', { text: t('settings.apiKeyNone') })),
-            h('div.ww-field', {},
-                h('label.ww-label', { text: t('settings.model') }),
-                modelInput,
-                h('div.ww-hint', { text: t('settings.modelHint', spec.defaultModel) })),
             spec.needsBaseUrl
                 ? h('div.ww-field', {}, h('label.ww-label', { text: t('settings.lmUrl') }), lmUrlInput)
                 : null,
+            modelField.field,
+            h('div.ww-field', {},
+                h('label.ww-label', { text: t('settings.maxTokensLimit') }),
+                maxTokensLimitInput,
+                h('div.ww-hint', { text: t('settings.maxTokensLimitHint') })),
             h('div.ww-field', {}, h('label.ww-label', { text: t('settings.language') }), languageSelect),
             h('div.ww-field', {}, h('label.ww-check', {}, darkCheck, h('span', { text: t('settings.darkMode') })))
         ]);
@@ -2440,12 +2634,9 @@ async function runBookGeneration(create, resume) {
         }
     });
 
-    // 마지막 오류 이후 본문이 실제로 늘었는지. 늘었으면 연속 실패 횟수를 다시 센다.
-    let advanced = false;
     const options = {
         cancelled: function () { return state.cancelRequested; },
         onProgress: function (info) {
-            if (info.phase === 'saved') advanced = true;
             progress.setText(t('step4.generating', info.current, info.total, info.title)
                 + '\n' + t('step4.lengthProgress', formatNumber(info.charCount), formatNumber(info.targetChars)));
             progress.setProgress(info.charCount, info.targetChars);
@@ -2454,8 +2645,10 @@ async function runBookGeneration(create, resume) {
 
     // 첫 실행은 요청한 방식으로, 재시도는 중단된 부분부터 이어쓰는 방식으로 진행한다.
     let run = create;
-    let failures = 0;   // 본문이 늘지 않은 채 연속으로 실패한 횟수
     let retried = 0;    // 지금까지 자동 재시도한 횟수
+    let maxTokensMultiplier = 1; // 집필 AI 요청이 실패하면 재시도 한도에 적용할 배수
+    options.getMaxTokensMultiplier = function () { return maxTokensMultiplier; };
+    options.onAiRequestSuccess = function () { maxTokensMultiplier = 1; };
 
     while (true) {
         try {
@@ -2469,10 +2662,8 @@ async function runBookGeneration(create, resume) {
             return;
         } catch (e) {
             console.error(e);
-            failures = advanced ? 1 : failures + 1;
-            advanced = false;
             // 체크박스는 진행 중에도 바꿀 수 있으므로 오류가 난 시점의 값을 본다.
-            if (!progress.isChecked() || state.cancelRequested || failures > AUTO_RETRY_LIMIT) {
+            if (!progress.isChecked() || state.cancelRequested || retried >= AUTO_RETRY_LIMIT) {
                 progress.close();
                 await reloadAfterGeneration(project);
                 await showError(retried > 0
@@ -2481,7 +2672,8 @@ async function runBookGeneration(create, resume) {
                 return;
             }
             retried++;
-            progress.setText(t('step4.retrying', failures, AUTO_RETRY_LIMIT));
+            maxTokensMultiplier *= 2;
+            progress.setText(t('step4.retrying', retried, AUTO_RETRY_LIMIT));
             progress.setProgress(0, 0);
             // 진행분은 이미 저장되어 있다. 잠시 기다렸다가 저장된 위치부터 이어쓴다.
             await wait(AUTO_RETRY_DELAY);
