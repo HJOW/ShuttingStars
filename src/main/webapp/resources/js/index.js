@@ -195,6 +195,10 @@ window.addEventListener('load', async function() {
             fStart('./etc/worldwriter/index.html');
         });
 
+        homepageDiv.querySelector('.a_ss_markdown').addEventListener('click', function() {
+            fStart('./etc/markdown/index.html');
+        });
+
         // 창 크기 변경 이벤트
         const fResize = function() {
             iframeMain.style.height = (window.innerHeight - topbar.offsetHeight - 20) + 'px';
