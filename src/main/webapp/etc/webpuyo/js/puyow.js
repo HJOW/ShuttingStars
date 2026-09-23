@@ -20,7 +20,7 @@
     'use strict';
 
     /** 빌드 번호 @type {number} */
-    const BUILDNO = 105;
+    const BUILDNO = 109;
     /** 일반 텍스트 입력 대화상자의 최대 문자 수다. */
     const TEXT_DIALOG_DEFAULT_MAX_LENGTH = 2000;
     /** 리플레이·시뮬레이터 JSON처럼 붙여 넣는 긴 텍스트의 최대 문자 수다. */
@@ -655,6 +655,20 @@
     let initialized = false;
     /** 마지막으로 외부에 알린 표준 화면 식별자다. 초기화와 destroy 사이에서만 사용한다. */
     let lastDispatchedScreen = null;
+    /** 
+     * 캔버스 화면 맞춤 모드
+     *     0 : 기본 (스크립트로 화면을 맞추지 않고 HTML 및 CSS에 의존한다. 주의 ! 이 경우 게임 자체에서는 화면 방향 전환을 지원하지 않는다.) 
+     *     1 : 캔버스를 화면에 맞춘다. 여백은 canvasFitMargin으로 조정한다.
+     * initialize 호출 전 setCanvasFitMode()로만 바꾼다. @type {0|1}
+    */
+    let canvasFitMode = 1;
+    /** canvasFitMode 1에서 웹 화면 가장자리와 게임 영역 사이에 비워 둘 여백(px)이다. initialize 호출 전 setCanvasFitMargin()으로만 바꾼다. @type {{top:number,right:number,bottom:number,left:number}} */
+    let canvasFitMargin = {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0
+    };
     /** 초기 타이틀에서 탑재된 피버 스테이지 검증을 마쳤는지 여부다. @type {boolean} */
     let feverStageValidationComplete = false;
     /** 피버 스테이지 검증 전에 받은 초기 타이틀 진입 입력을 보관한다. @type {boolean} */
@@ -912,7 +926,9 @@
     let ruleSelectionFocus = 0;
     /** 일시정지 메뉴에서 포커스된 항목이다. @type {number} */
     let pauseMenuFocus = 0;
-    /** 결과 화면에서 포커스된 버튼 순번이다. 0번은 항상 종료 버튼이다. @type {number} */
+    /** 리플레이 재생 페이지(replay.html)에서 실행 중인지 여부다. 참이면 리플레이 재생의 일시정지·결과 화면에서 종료 버튼을 빼고, 리플레이를 불러오기 전에는 게임 입력을 막는다. @type {boolean} */
+    let replayPageMode = false;
+    /** 결과 화면에서 포커스된 버튼 순번이다. 0번은 대개 종료 버튼이다(너랑 나랑은 다시 플레이, 리플레이 재생 페이지는 다시보기). @type {number} */
     let resultScreenFocus = 0;
     /** 직전 애니메이션 프레임의 시각이다. @type {number} */
     let lastTime = 0;
@@ -2843,14 +2859,116 @@
         return applyCanvasCoordinateTransform();
     }
 
-    /** 현재 뷰포트에서 게임 화면을 회전해야 하는지 반환한다. @returns {boolean} 화면 회전 여부 */
+    /** 현재 뷰포트에서 게임 화면을 회전해야 하는지 반환한다. 맞춤 모드 0에서는 회전하지 않는다. @returns {boolean} 화면 회전 여부 */
     function shouldRotateCanvasForViewport() {
-        return window.innerWidth < window.innerHeight && !store?.settings?.landscapeOrientationLocked;
+        return canvasFitMode === 1 && window.innerWidth < window.innerHeight && !store?.settings?.landscapeOrientationLocked;
     }
 
-    /** 뷰포트 방향에 맞춰 게임 화면 회전 클래스를 갱신한다. @returns {void} */
+    /**
+     * 캔버스 화면 맞춤 모드를 설정한다. initialize 호출 전에만 바꿀 수 있다.
+     * @param {0|1} mode 0이면 HTML·CSS에 크기를 맡기고(화면 회전 없음), 1이면 스크립트가 여백을 뺀 화면에 맞추고 세로 화면에서 회전한다.
+     * @returns {void}
+     */
+    function setCanvasFitMode(mode) {
+        if (initialized) throw new Error('캔버스 화면 맞춤 모드 설정은 initialize 호출 전에 해야 합니다.');
+        if (mode !== 0 && mode !== 1) throw new RangeError('캔버스 화면 맞춤 모드는 0 또는 1이어야 합니다.');
+        canvasFitMode = mode;
+    }
+
+    /**
+     * 캔버스 화면 맞춤 모드 1에서 사용할 여백(px)을 설정한다. initialize 호출 전에만 바꿀 수 있다.
+     * 숫자 하나를 주면 네 방향에 같은 값을 쓰고, 객체를 주면 생략한 방향은 0으로 둔다.
+     * @param {number|{top?:number,right?:number,bottom?:number,left?:number}} margin 여백(px)
+     * @returns {void}
+     */
+    function setCanvasFitMargin(margin) {
+        if (initialized) throw new Error('캔버스 여백 설정은 initialize 호출 전에 해야 합니다.');
+        const source = typeof margin === 'number' ? { top: margin, right: margin, bottom: margin, left: margin } : margin;
+        if (!source || typeof source !== 'object') throw new TypeError('캔버스 여백은 숫자 또는 {top, right, bottom, left} 객체여야 합니다.');
+        const next = {};
+        for (const side of ['top', 'right', 'bottom', 'left']) {
+            const value = source[side] === undefined ? 0 : source[side];
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new RangeError(`캔버스 여백 ${side}는 0 이상의 유한한 숫자(px)여야 합니다.`);
+            next[side] = value;
+        }
+        canvasFitMargin = next;
+    }
+
+    /** 캔버스 화면 맞춤 설정을 복사해 반환한다. @returns {{mode:0|1, margin:{top:number,right:number,bottom:number,left:number}}} */
+    function getCanvasFit() {
+        return { mode: canvasFitMode, margin: { ...canvasFitMargin } };
+    }
+
+    /** 맞춤 모드 1에서 최상위 div에 스크립트로 넣는 인라인 스타일 속성 목록이다. destroy 때 외부에서 받은 div를 이만큼만 되돌린다. */
+    const CANVAS_FIT_ROOT_STYLE_PROPERTIES = ['position', 'box-sizing', 'width', 'height', 'margin'];
+    /** 맞춤 모드 1에서 두 canvas에 스크립트로 넣는 인라인 스타일 속성 목록이다. */
+    const CANVAS_FIT_CANVAS_STYLE_PROPERTIES = ['left', 'top', 'width', 'height', 'transform', 'transform-origin'];
+
+    /**
+     * 맞춤 모드 1에서 여백을 뺀 화면 안에 16:9 게임 영역을 가운데 맞춰 배치한다.
+     * 가로·세로 중 비율상 더 짧은 쪽에 100% 맞추고, 세로 화면이면 90도 회전한 상태로 같은 규칙을 적용한다.
+     * @returns {void}
+     */
+    function applyCanvasFitLayout() {
+        if (canvasFitMode !== 1 || !puyowRoot) return;
+        const { top, right, bottom, left } = canvasFitMargin;
+        const availableWidth = Math.max(0, window.innerWidth - left - right);
+        const availableHeight = Math.max(0, window.innerHeight - top - bottom);
+        const rotated = shouldRotateCanvasForViewport();
+        // 회전 시에는 게임의 가로(1280)가 화면 세로에, 게임의 세로(720)가 화면 가로에 대응한다.
+        const scale = rotated
+            ? Math.min(availableHeight / WIDTH, availableWidth / HEIGHT)
+            : Math.min(availableWidth / WIDTH, availableHeight / HEIGHT);
+        const canvasWidth = WIDTH * scale;
+        const canvasHeight = HEIGHT * scale;
+        const boxWidth = rotated ? canvasHeight : canvasWidth;
+        const boxHeight = rotated ? canvasWidth : canvasHeight;
+        const offsetX = (availableWidth - boxWidth) / 2;
+        const offsetY = (availableHeight - boxHeight) / 2;
+        const rootStyle = puyowRoot.style;
+        rootStyle.position = 'relative';
+        rootStyle.boxSizing = 'content-box';
+        rootStyle.width = `${availableWidth}px`;
+        rootStyle.height = `${availableHeight}px`;
+        rootStyle.margin = `${top}px ${right}px ${bottom}px ${left}px`;
+        [canvas, threeCanvas].forEach((element) => {
+            if (!element) return;
+            element.style.left = `${offsetX}px`;
+            element.style.top = `${offsetY}px`;
+            element.style.width = `${canvasWidth}px`;
+            element.style.height = `${canvasHeight}px`;
+            // 시계 방향 90도 회전 후 표시 영역의 좌측 상단이 배치 위치에 오도록 회전 폭만큼 옮긴다.
+            element.style.transform = rotated ? `translateX(${canvasHeight}px) rotate(90deg)` : '';
+            element.style.transformOrigin = rotated ? 'top left' : '';
+        });
+    }
+
+    /** 맞춤 모드 1에서 넣은 인라인 스타일을 지운다. @returns {void} */
+    function clearCanvasFitLayout() {
+        if (canvasFitMode !== 1) return;
+        CANVAS_FIT_ROOT_STYLE_PROPERTIES.forEach((property) => puyowRoot?.style.removeProperty(property));
+        [canvas, threeCanvas].forEach((element) => CANVAS_FIT_CANVAS_STYLE_PROPERTIES.forEach((property) => element?.style.removeProperty(property)));
+    }
+
+    /**
+     * 현재 게임 화면의 맞춤 모드·여백·회전 여부와 2D canvas의 표시 영역(뷰포트 CSS px)을 반환한다.
+     * @returns {{fitMode:0|1, margin:{top:number,right:number,bottom:number,left:number}, rotated:boolean, viewport:{width:number,height:number}, canvasRect:{left:number,top:number,width:number,height:number}|null}}
+     */
+    function getScreenLayout() {
+        const bounds = canvas?.getBoundingClientRect();
+        return {
+            fitMode: canvasFitMode,
+            margin: { ...canvasFitMargin },
+            rotated: shouldRotateCanvasForViewport(),
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            canvasRect: bounds ? { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height } : null
+        };
+    }
+
+    /** 뷰포트 방향에 맞춰 게임 화면 회전 클래스와 맞춤 배치를 갱신한다. @returns {void} */
     function updateCanvasOrientation() {
         document.body?.classList.toggle('puyow-portrait', shouldRotateCanvasForViewport());
+        applyCanvasFitLayout();
         if(threeEffectManager != null) threeEffectManager.onWindowResize();
     }
 
@@ -11522,6 +11640,100 @@
     }
 
     /**
+     * 리플레이 재생 페이지가 넘긴 리플레이 데이터로 재생을 시작한다. 진행 중인 게임이 있으면 정리하고 바꾼다.
+     * @param {string|object} data 리플레이 JSON 문자열 또는 그 객체
+     * @returns {boolean} 재생을 시작했는지 여부. 데이터가 올바르지 않으면 false
+     */
+    function loadReplayPlaybackFromPage(data) {
+        if (!initialized) return false;
+        const replay = normalizeReplayData(typeof data === 'string' ? parseJSON(data) : data);
+        if (!replay) return false;
+        // 결과 화면의 리플레이 복사가 원본 그대로를 복사하도록, 객체로 받았으면 직렬화해 원본으로 보관한다.
+        let source = null;
+        try { source = typeof data === 'string' ? data.trim() : JSON.stringify(data); } catch { source = null; }
+        const previousGame = game;
+        if (previousGame) {
+            stopBackgroundMusic();
+            // 재생용 게임은 모델·탐색을 쓰지 않으므로 이전 게임의 비동기 자원 해제를 기다리지 않는다.
+            void Promise.resolve()
+                .then(() => releaseGameRuntimeResources(previousGame))
+                .catch((error) => { console.error('리플레이를 불러오기 전 게임 자원을 정리하지 못했습니다.', error); });
+            game = null;
+        }
+        startReplayPlayback(replay, source);
+        return true;
+    }
+
+    /** 리플레이 재생 페이지에서 리플레이를 재생하는 중(결과 화면 포함)인지 확인한다. 참이면 메뉴 화면으로 나가는 종료 선택지를 없앤다. @returns {boolean} 여부 */
+    function isReplayPagePlayback() {
+        return replayPageMode && Boolean(game?.replayPlayback);
+    }
+
+    /** 재생 중인 리플레이를 ESC와 같은 방식으로 일시정지한다. 카운트다운·종료 연출 중에는 하지 않는다. @returns {boolean} 일시정지했는지 여부 */
+    function pauseReplayPlaybackFromPage() {
+        if (!game?.replayPlayback || !game.running || game.paused || game.restartPending || game.ending || game.countdown > 0) return false;
+        resetVirtualControllerInput();
+        game.paused = true;
+        pauseMenuFocus = 0;
+        pauseBackgroundMusic();
+        return true;
+    }
+
+    /** 일시정지한 리플레이를 일시정지 화면의 재개 버튼과 같은 방식으로 재개한다. @returns {boolean} 재개했는지 여부 */
+    function resumeReplayPlaybackFromPage() {
+        if (!game?.replayPlayback || !game.running || !game.paused || game.restartPending) return false;
+        resumePausedGame();
+        return true;
+    }
+
+    /** 재생 중인 리플레이의 JSON 문자열을 결과 화면의 리플레이 복사와 같은 기준으로 돌려준다. @returns {string|null} 리플레이 JSON. 재생 중이 아니면 null */
+    function getReplayPlaybackSource() {
+        const playback = game?.replayPlayback;
+        if (!playback?.replay) return null;
+        if (typeof playback.source === 'string') return playback.source;
+        try { return JSON.stringify(playback.replay); } catch { return null; }
+    }
+
+    /** 불러온 리플레이를 카운트다운부터 다시 재생한다. @returns {boolean} 다시 재생을 시작했는지 여부 */
+    function restartReplayPlaybackFromPage() {
+        if (!game?.replayPlayback || game.restartPending) return false;
+        restartReplayPlayback();
+        return true;
+    }
+
+    /** 리플레이 재생 페이지(replay.html)가 게임과 리플레이 데이터를 주고받는 API다. */
+    const replayApi = Object.freeze({
+        /**
+         * 리플레이 재생 페이지 여부를 정한다. 참이면 리플레이의 일시정지·결과 화면에 종료 버튼이 없고(결과 화면 ESC도 무시),
+         * 리플레이를 불러오기 전에는 키보드·게임패드 입력을 게임에 넘기지 않는다.
+         * @param {boolean} enabled 사용 여부
+         * @returns {void}
+         */
+        setPageMode: (enabled) => { replayPageMode = enabled === true; },
+        /** 리플레이 데이터가 이 게임에서 재생할 수 있는 형식인지 확인한다. @param {string|object} data 리플레이 JSON 문자열 또는 객체 @returns {boolean} 재생 가능 여부 */
+        isValid: (data) => Boolean(normalizeReplayData(typeof data === 'string' ? parseJSON(data) : data)),
+        load: loadReplayPlaybackFromPage,
+        pause: pauseReplayPlaybackFromPage,
+        resume: resumeReplayPlaybackFromPage,
+        restart: restartReplayPlaybackFromPage,
+        getSource: getReplayPlaybackSource,
+        /** @returns {{loaded:boolean, running:boolean, paused:boolean, countdown:number, finished:boolean, restartPending:boolean}} 현재 리플레이 재생 상태 */
+        getState: () => {
+            const playing = Boolean(game?.replayPlayback);
+            return {
+                loaded: playing,
+                running: playing && game.running === true,
+                paused: playing && game.paused === true,
+                countdown: playing ? Math.max(0, Number(game.countdown) || 0) : 0,
+                finished: playing && !game.running,
+                restartPending: playing && game.restartPending === true
+            };
+        },
+        /** @returns {string} 게임 화면에 적용 중인 언어 코드 */
+        getLanguage: () => languageCode
+    });
+
+    /**
      * 델타 프레임의 전역 항목을 현재 게임 상태에 반영한다.
      * @param {object} playback 재생 상태
      * @param {Record<string,*>} fields 이번 프레임의 전역 항목
@@ -11760,7 +11972,8 @@
         if (!game || game.running) return [];
         const buttons = [];
         if (game.together && !game.replayPlayback) buttons.push({ key: 'playAgain', label: '다시 플레이', color: '#7e57c2' });
-        buttons.push({ key: 'exit', label: '종료', color: '#ef5350' });
+        // 리플레이 재생 페이지는 메뉴 화면으로 나가지 않으므로 종료 버튼을 두지 않는다.
+        if (!isReplayPagePlayback()) buttons.push({ key: 'exit', label: '종료', color: '#ef5350' });
         if (game.replayPlayback) buttons.push({ key: 'replayAgain', label: '다시보기', color: '#34556b' });
         if (hasCopyableReplay()) buttons.push({ key: 'copyReplay', label: '리플레이 복사', color: '#34556b' });
         return buttons.map((button, index) => ({ ...button, x: 515, y: 165 + index * (64 + RESULT_BUTTON_GAP), width: 250, height: 64 }));
@@ -14323,6 +14536,13 @@
 
     /** 일시정지 화면의 조작 버튼과 논리 캔버스 좌표를 반환한다. @returns {{key:'resume'|'restart'|'exit',label:string,color:string,x:number,y:number,width:number,height:number}[]} 버튼 목록 */
     function getPauseMenuButtons() {
+        // 리플레이 재생 페이지는 메뉴 화면으로 나가는 선택지를 보이지 않으므로 종료 버튼을 빼고 두 버튼을 가운데에 놓는다.
+        if (isReplayPagePlayback()) {
+            return [
+                { key: 'resume', label: '재개', color: '#4cc9b0', x: 470, y: 376, width: 150, height: 64 },
+                { key: 'restart', label: '다시하기', color: '#5c6bc0', x: 660, y: 376, width: 150, height: 64 }
+            ];
+        }
         return [
             { key: 'resume', label: '재개', color: '#4cc9b0', x: 375, y: 376, width: 150, height: 64 },
             { key: 'restart', label: '다시하기', color: '#5c6bc0', x: 565, y: 376, width: 150, height: 64 },
@@ -15187,6 +15407,8 @@
      * @returns {void}
      */
     function handleKeydown(event) {
+        // 리플레이 재생 페이지는 리플레이를 불러오기 전까지 게임 화면을 숨기므로, 보이지 않는 메뉴가 키·게임패드 입력으로 움직이지 않게 한다.
+        if (replayPageMode && !game?.replayPlayback) return;
         const focusBefore = getMenuFocusToken();
         const actionSoundCountBefore = menuActionSoundCount;
         handleKeydownCore(event);
@@ -15412,7 +15634,10 @@
         // 결과 화면에서는 ESC로 바로 나가고, 방향키로 버튼을 옮긴 뒤 Enter로 실행한다.
         // 기본 포커스는 종료 버튼이므로 Enter만 눌러도 기존처럼 이전 화면으로 돌아간다.
         if (game && !game.running) {
-            if (key === 'escape') closeResultScreen();
+            if (key === 'escape') {
+                // 리플레이 재생 페이지는 종료 버튼이 없으므로 ESC로도 메뉴 화면에 나가지 않는다.
+                if (!isReplayPagePlayback()) closeResultScreen();
+            }
             else if (['arrowup', 'arrowleft'].includes(key)) moveResultScreenFocus(-1);
             else if (['arrowdown', 'arrowright'].includes(key)) moveResultScreenFocus(1);
             else if (key === 'enter' || key === ' ') activateResultScreenButton(resultScreenFocus);
@@ -15757,6 +15982,16 @@
         });
     }
 
+    /** 일시정지한 게임을 재개 카운트다운(3초)부터 다시 진행한다. 일시정지 화면의 재개 버튼 동작이다. @returns {void} */
+    function resumePausedGame() {
+        playMenuSelectSound();
+        resetVirtualControllerInput();
+        game.paused = false;
+        game.countdown = 3000;
+        game.countdownStartsGame = false;
+        resumeBackgroundMusic();
+    }
+
     /**
      * 일시정지 오버레이에서 포커스된 명령을 실행한다.
      * @returns {void}
@@ -15765,12 +16000,7 @@
         const action = getPauseMenuButtons()[pauseMenuFocus]?.key;
         if (!game || game.restartPending || !action) return;
         if (action === 'resume') {
-            playMenuSelectSound();
-            resetVirtualControllerInput();
-            game.paused = false;
-            game.countdown = 3000;
-            game.countdownStartsGame = false;
-            resumeBackgroundMusic();
+            resumePausedGame();
         } else if (action === 'restart') {
             restartPausedGame();
         } else {
@@ -17179,7 +17409,7 @@
                     'Choosing Together mode in the main menu first opens a selection of Offline Play, Online Play, and Cancel (together_mode_select). Offline Play opens the offline together guide (together_guide), where the rule and color count are chosen. Online Play opens login and signup, then the lobby and room screens; it is hidden when the configured server does not provide online play.',
                     'Offline together mode is a two-human match on one computer: 1P uses the arrow keys, Z, and X (or F, G, H, B), and 2P uses numpad 4, 6, 2, 5 and the [ and ] keys. Neither side is a CPU, and point_recommend only marks the 1P field.',
                     'Replays of recorded matches can be played back from the main menu; during playback no input is accepted except Escape, which skips to the result screen. Online matches cannot be paused or recorded. The tutorial, simulator, gallery, and settings are separate menu screens. Confirmation and text input dialogs capture all input until they are answered.',
-                    'Tools: now_screen returns the exact screen, the match mode and rule, and whether a replay, ONNX model loading, confirmation dialog, or text input dialog is in progress. now_game_status works only while a match is playing or paused, in every mode including online, watch, together, and replay playback, and includes online connection state when applicable. Its warningPuyos are the warnings shown on the current field; normalDamage reports DAMAGE reserved for the normal field during FEVER. point_recommend works only while now_screen reports playerCanControl, and marks one cell on the left field until the active pair locks. show_message displays already-localized text at the top of the current screen.'
+                    'Tools: now_screen returns the exact screen, the match mode and rule, and whether a replay, ONNX model loading, confirmation dialog, or text input dialog is in progress. now_game_status works only while a match is playing or paused, in every mode including online, watch, together, and replay playback, and includes online connection state when applicable. Its warningPuyos are the warnings shown on the current field; normalDamage reports DAMAGE reserved for the normal field during FEVER. point_recommend works only while now_screen reports playerCanControl, and marks one cell on the left field until the active pair locks. show_message displays already-localized text at the top of the current screen. screen_layout reports the canvas fit mode, margins, 90-degree portrait rotation, and the on-screen canvas box, which are needed to convert page clicks into logical 1280x720 game coordinates.'
                 ].join('\n\n')
             },
             {
@@ -17189,6 +17419,33 @@
                 outputSchema: screenSchema,
                 annotations: { readOnlyHint: true },
                 execute: getWebMcpScreen
+            },
+            {
+                name: 'screen_layout',
+                description: 'Get how the game canvas is laid out on the web page. fitMode 0 means page HTML/CSS sizes the game and it never rotates; fitMode 1 means the script fits the 16:9 game inside the viewport minus margin (px), touching the shorter side and centering it, and rotates it 90 degrees clockwise on a portrait viewport unless landscape lock is enabled. canvasRect is the on-screen box of the 2D canvas in CSS pixels. When rotated is true, logical game x (0-1280) runs from canvasRect.top downward and logical game y (0-720) runs from the right edge of canvasRect leftward.',
+                inputSchema: emptyInput,
+                outputSchema: {
+                    type: 'object',
+                    properties: {
+                        fitMode: { type: 'integer', enum: [0, 1], description: '0 = sized by page HTML/CSS without rotation, 1 = fitted to the viewport by the script.' },
+                        margin: {
+                            type: 'object',
+                            properties: { top: { type: 'number' }, right: { type: 'number' }, bottom: { type: 'number' }, left: { type: 'number' } },
+                            required: ['top', 'right', 'bottom', 'left'],
+                            description: 'Space in CSS pixels kept empty between the viewport edges and the game area in fitMode 1.'
+                        },
+                        rotated: { type: 'boolean', description: 'True while the canvas is rotated 90 degrees clockwise for a portrait viewport.' },
+                        viewport: { type: 'object', properties: { width: { type: 'number' }, height: { type: 'number' } }, required: ['width', 'height'] },
+                        canvasRect: {
+                            type: ['object', 'null'],
+                            properties: { left: { type: 'number' }, top: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' } },
+                            description: 'On-screen bounding box of the 2D canvas in CSS pixels, after rotation.'
+                        }
+                    },
+                    required: ['fitMode', 'margin', 'rotated', 'viewport', 'canvasRect']
+                },
+                annotations: { readOnlyHint: true },
+                execute: getScreenLayout
             },
             {
                 name: 'now_game_status',
@@ -17296,6 +17553,8 @@
         }
         document.querySelectorAll('.div_puyow_root').forEach((element) => element.classList.remove('div_puyow_root'));
         if (createdRuntimeLayoutStyle) runtimeLayoutStyle?.remove();
+        // 외부에서 받은 div는 남으므로 맞춤 모드 1에서 넣은 인라인 크기·여백도 되돌린다.
+        clearCanvasFitLayout();
         document.body?.classList.remove('puyow-portrait');
         puyowRoot = null;
         canvas = null;
@@ -17384,21 +17643,26 @@
         runtimeLayoutStyle = document.createElement('style');
         runtimeLayoutStyle.className = 'puyow_runtime_layout';
         runtimeLayoutStyle.textContent = `
-            .div_puyow_root {
+            /*
+                최상위 div 크기의 기본값이다. 명시도 0인 :where()를 써서 페이지 CSS가 언제든 덮어쓸 수 있게 한다.
+                맞춤 모드 0에서는 이 값 또는 페이지 CSS가 크기를 정하고, 맞춤 모드 1에서는 스크립트가 인라인 스타일로 다시 맞춘다.
+            */
+            :where(.div_puyow_root) {
                 align-self: flex-start;
+                aspect-ratio: 16 / 9;
                 flex: 0 0 auto;
-                height: 56.25vw;
                 margin: 0;
                 position: relative;
-                width: 100vw;
+                width: 100%;
             }
 
             .div_puyow_root > canvas[data-puyow-canvas] {
                 display: block;
                 height: 100%;
                 image-rendering: auto;
-                inset: 0;
+                left: 0;
                 position: absolute;
+                top: 0;
                 touch-action: none;
                 width: 100%;
             }
@@ -17408,17 +17672,6 @@
                 background: transparent;
                 pointer-events: none;
                 z-index: 1;
-            }
-
-            body.puyow-portrait .div_puyow_root {
-                height: 100vw;
-                width: 177.7777777778vw;
-            }
-
-            body.puyow-portrait .div_puyow_root > canvas[data-puyow-canvas] {
-                /* 회전 후 실제 표시 영역의 좌측 상단이 뷰포트 좌측 상단에 맞도록 보정한다. */
-                transform: translateX(100vw) rotate(90deg);
-                transform-origin: top left;
             }
         `;
         document.head.appendChild(runtimeLayoutStyle);
@@ -21618,6 +21871,7 @@
         getCommonFunctions: () => commonFunctions,
         tools: toolsApi,
         leaderboard: leaderboardApi,
+        replay: replayApi,
         randomFloat,
         randomColor,
         translate,
@@ -21654,6 +21908,10 @@
         estimateCombo,
         warningUnits,
         getCanvasOutputSize,
+        setCanvasFitMode,
+        setCanvasFitMargin,
+        getCanvasFit,
+        getScreenLayout,
         toCanvasCoordinates,
         toCanvasLength,
         applyCanvasCoordinateTransform,
