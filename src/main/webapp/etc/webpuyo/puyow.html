@@ -55,8 +55,18 @@
         <script>
             document.addEventListener("DOMContentLoaded", function() {
                 const divTarget = document.getElementById("puyow_target");
+                // 공지사항 경로 설정
 				window.PuyoW.setNoticeFile('https://hjow.github.io/puyow/src/notice/notice_[LANG].txt');
-                window.PuyoW.initialize(divTarget); // 게임 구동
+
+                // FIREBASE 초기화 (선택 사항)
+                let analytics   = null;
+                let performance = null;
+                try { analytics   = firebase.analytics();   } catch(e) { console.error('Firebase Analytics 초기화 중 오류가 발생했습니다.', e); }
+                try { performance = firebase.performance(); } catch(e) { console.error('Firebase Performance 초기화 중 오류가 발생했습니다.', e); }
+                window.PuyoW.setFirebaseServices(analytics, performance);
+
+                // 게임 구동
+                window.PuyoW.initialize(divTarget);
             });
         </script>
     </head>
