@@ -609,8 +609,8 @@ const TEXT_KO = {
   'lobby.short': '돈이 부족하여 {league}에 참여할 수 없습니다.\n필요 금액 : {fee}\n보유 금액 : {money}',
   'lobby.confirmTitle': '참여 확인',
   'lobby.confirm': '{league}에 참여하시겠습니까?\n참가비 {fee}이 보유 금액에서 차감됩니다.',
-  'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 소모형 아이템은 승리·패배와 관계없이 돌려받지 못합니다. 색상과 모양은 사라지지 않습니다. 패배하면 참가비를 잃습니다.',
-  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 사서 보관하거나, 구매 가격의 {itemSell}%에 되팔 수 있다.\n- 게임에 들어갈 때 가진 아이템을 모두 가져가며, 게임이 끝나면 이기든 지든 돌려받지 못한다.\n- 아이템은 종류마다 게임 한 판에 한 번만 쓸 수 있다. 주사위 조작형 아이템(빅 다이즈, 스몰 다이즈)은 둘을 합쳐 한 번이다. 비밀쿠폰으로 얻은 우대권·무전기와는 따로 센다.\n- 쓸 상황이 되면 게임이 사용 여부를 묻는 아이템과, 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템이 있다.\n[아이템 목록]',
+  'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 소모형 아이템은 승리·패배와 관계없이 쓰지 않고 남은 것이 대기실로 돌아오며, 게임에서 사용한 것만 사라집니다. 색상과 모양은 사라지지 않습니다. 패배하면 참가비를 잃습니다.',
+  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 사서 보관하거나, 구매 가격의 {itemSell}%에 되팔 수 있다.\n- 게임에 들어갈 때 가진 소모형 아이템을 모두 가져가며, 게임이 끝나면 이기든 지든 쓰지 않고 남은 아이템은 대기실로 돌아온다. 게임에서 사용한 아이템만 사라진다.\n- 아이템은 종류마다 게임 한 판에 한 번만 쓸 수 있다. 주사위 조작형 아이템(빅 다이즈, 스몰 다이즈)은 둘을 합쳐 한 번이다. 비밀쿠폰으로 얻은 우대권·무전기와는 따로 센다.\n- 쓸 상황이 되면 게임이 사용 여부를 묻는 아이템과, 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템이 있다.\n[아이템 목록]',
   'mcp.items.entry': '- {item} ({price}) : {description} [사용 시점] {when}',
   'mcp.items.guide': '- 대기실의 "상점"(lobby.shop)은 구매 / 판매 탭(items.tab), 분류 버튼(items.filter), 아이템 카드 목록으로 되어 있다. 카드를 누르면(items.pick) 상세 팝업이 뜨고, 수량을 정한 뒤(items.less / items.more / items.max) 구매 또는 판매(items.trade)한다. 상세 팝업은 items.back, 상점은 items.close 로 닫는다.\n- "아이템 확인"(lobby.items)과 게임 중 자기 차례의 "아이템"(game.items)은 보유 아이템 목록을 연다. 게임 중 주사위를 굴릴 차례에는 상세 팝업의 "사용"(items.use)으로 우주여행 초청장과 주사위 조작형 아이템을 쓸 수 있으며, 한 번 더 확인받는다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
   'lobby.shop': '상점',
@@ -621,8 +621,8 @@ const TEXT_KO = {
   'item.noneIn': '이 분류에는 아이템이 없습니다.',
   'item.total': '{kinds}종 · {count}개',
   'item.count': '보유 수량',
-  'item.hint.lobby': '아이템을 누르면 자세한 설명을 볼 수 있고, 색상과 모양, 부적은 그 자리에서 장착할 수 있습니다. 게임에 참여하면 소모형 아이템은 모두 가져가며 게임이 끝나도 돌려받지 못합니다. 색상과 모양, 부적은 사라지지 않습니다.',
-  'item.hint.game': '이번 게임에 가져온 아이템입니다. 아이템을 누르면 자세한 설명을 볼 수 있고, 주사위를 굴릴 차례에 쓰는 아이템은 그 자리에서 사용할 수 있습니다.',
+  'item.hint.lobby': '아이템을 누르면 자세한 설명을 볼 수 있고, 색상과 모양, 부적은 그 자리에서 장착할 수 있습니다. 게임에 참여하면 소모형 아이템은 모두 가져가며, 게임이 끝나면 쓰지 않고 남은 것은 대기실로 돌아옵니다. 게임에서 사용한 아이템만 사라집니다. 색상과 모양, 부적은 사라지지 않습니다.',
+  'item.hint.game': '이번 게임에 가져온 아이템입니다. 아이템을 누르면 자세한 설명을 볼 수 있고, 주사위를 굴릴 차례에 쓰는 아이템은 그 자리에서 사용할 수 있습니다. 쓰지 않은 아이템은 게임이 끝나면 대기실로 돌아갑니다.',
   'item.category.all': '전체',
   'item.category.support': '보조',
   'item.category.travel': '이동',
@@ -1138,8 +1138,8 @@ const TEXT_EN = {
   'lobby.short': 'You do not have enough money to join the {league}.\nRequired : {fee}\nYou have : {money}',
   'lobby.confirmTitle': 'Confirm',
   'lobby.confirm': 'Join the {league}?\nThe entry fee of {fee} will be deducted from your money.',
-  'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Consumable items taken into a game are never returned, whether you win or lose. Colors and shapes are never lost. If you lose, the entry fee is gone.',
-  'mcp.items.rules': '[Item rules]\n- Buy items in the lobby shop and keep them, or sell them back for {itemSell}% of the purchase price.\n- All your items go into a game with you; none are returned afterward, whether you win or lose.\n- Each kind of item can be used only once per game. The dice items (Big Dice, Small Dice) share a single use between them. Secret Coupon passes and radios are counted separately.\n- Some items are offered by the game when the situation arises; others are used from the item list on your turn to roll.\n[Items]',
+  'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Consumable items you take into a game come back to the lobby whether you win or lose, apart from the ones you actually used in it. Colors and shapes are never lost. If you lose, the entry fee is gone.',
+  'mcp.items.rules': '[Item rules]\n- Buy items in the lobby shop and keep them, or sell them back for {itemSell}% of the purchase price.\n- All your consumable items go into a game with you. When it ends, whether you win or lose, the items you did not use come back to the lobby; only the items you used are gone.\n- Each kind of item can be used only once per game. The dice items (Big Dice, Small Dice) share a single use between them. Secret Coupon passes and radios are counted separately.\n- Some items are offered by the game when the situation arises; others are used from the item list on your turn to roll.\n[Items]',
   'mcp.items.entry': '- {item} ({price}) : {description} [When] {when}',
   'mcp.items.guide': '- The lobby "Item Shop" (lobby.shop) has Buy / Sell tabs (items.tab), category buttons (items.filter) and a list of item cards. Press a card (items.pick) to open its detail popup, set the quantity (items.less / items.more / items.max), then buy or sell (items.trade). Close the popup with items.back and the shop with items.close.\n- "My Items" (lobby.items) and the "Items" button on your turn (game.items) open your inventory. In a game, on your turn to roll, "Use" (items.use) in the detail popup uses a Space Travel Invitation or a dice item after one more confirmation.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
   'lobby.shop': 'Item Shop',
@@ -1150,8 +1150,8 @@ const TEXT_EN = {
   'item.noneIn': 'There are no items in this category.',
   'item.total': '{kinds} kind(s) · {count} item(s)',
   'item.count': 'In stock',
-  'item.hint.lobby': 'Click an item to read its details. Colors, shapes and charms can be equipped right there. Consumable items all go into a game with you and are not returned when it ends. Colors, shapes and charms are never lost.',
-  'item.hint.game': 'These are the items you brought into this game. Click an item to read its details. Items used on your turn to roll can be used right there.',
+  'item.hint.lobby': 'Click an item to read its details. Colors, shapes and charms can be equipped right there. Consumable items all go into a game with you; the ones you do not use come back to the lobby when it ends, and only the items you use are gone. Colors, shapes and charms are never lost.',
+  'item.hint.game': 'These are the items you brought into this game. Click an item to read its details. Items used on your turn to roll can be used right there. Items you do not use come back to the lobby when the game ends.',
   'item.category.all': 'All',
   'item.category.support': 'Support',
   'item.category.travel': 'Travel',
@@ -1957,6 +1957,19 @@ function fillItems(items) {
     bag[id] = items[id];
   }
   return bag;
+}
+
+/**
+ * 아이템 주머니 두 개를 합친다. 게임에서 쓰지 않고 남은 아이템을 대기실의 주머니로 돌려줄 때 쓴다.
+ * @param {Object<string, number>} bag 원래 주머니 (바뀌지 않는다.)
+ * @param {Object<string, number>} extra 더할 주머니
+ * @returns {Object<string, number>} 아이템 종류마다 수량을 더한 새 주머니
+ */
+function addItems(bag, extra) {
+  let sum = emptyItems();
+  // 아이템 종류마다 두 주머니의 수량을 더한다.
+  for (let id in sum) sum[id] = (bag[id] || 0) + (extra[id] || 0);
+  return sum;
 }
 
 /**
@@ -4536,6 +4549,7 @@ export class HellmarbleApp extends HellmarbleHost {
   /**
    * 리그 참여를 처리한다. 색상과 모양을 하나씩 장착했는지, 돈이 충분한지 확인하고, 한 번 더 확인받은 뒤 참가비를 차감하고 게임을 시작한다.
    * 장착한 색상과 모양이 게임에서 사용자의 생김새가 되고, 부적을 장착했으면 그 효과가 게임 내내 적용된다.
+   * 대기실의 소모형 아이템은 모두 게임으로 옮겨지며, 게임이 끝나면 쓰지 않고 남은 것이 돌아온다. (`finishGame`)
    * @param {string} id 리그 식별자
    * @returns {Promise<void>}
    */
@@ -5499,8 +5513,9 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 끝난 게임을 정산한다. 승리하면 현금과 땅, 건물의 가치(100%)를 대기실 금액에 더하고 저장한 뒤,
-   * 결과 화면을 거쳐 대기실로 돌아간다.
+   * 끝난 게임을 정산한다. 승리하면 현금과 땅, 건물의 가치(100%)를 대기실 금액에 더한다.
+   * 승패와 관계없이 게임에서 쓰지 않고 남은 소모형 아이템은 대기실의 주머니로 돌려준다. (사용한 아이템만 사라진다.)
+   * 정산을 저장한 뒤, 결과 화면을 거쳐 대기실로 돌아간다.
    * @param {HellmarbleGame} game 끝난 게임
    * @returns {Promise<void>}
    */
@@ -5510,6 +5525,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let cash = human.cash;
     let property = game.propertyValue(human);
     this.slot.money += won ? cash + property : 0;
+    this.slot.items = addItems(this.slot.items, human.items);
     this.slot.game = null;
     this.saveSlot();
     this.refresh();
