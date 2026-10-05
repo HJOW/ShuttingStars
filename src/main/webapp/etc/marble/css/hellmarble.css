@@ -351,6 +351,21 @@ body {
   flex: 1 1 160px;
 }
 
+.hm-item-summary {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  color: var(--hm-muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.hm-store-stock {
+  gap: 4px;
+}
+
 /* 긴 글(JSON)을 입력하거나 보여주는 입력창이다. 일반 텍스트 입력창처럼 동작한다. */
 .hm-textarea {
   min-height: 220px;

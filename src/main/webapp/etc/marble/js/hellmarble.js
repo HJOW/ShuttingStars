@@ -106,7 +106,7 @@ const LOG_LIMIT = 80;
  * 저장 데이터의 형식 버전이다.
  * @type {number}
  */
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 /**
  * 게임 진행을 강제로 중단시킬 때 던지는 신호 객체이다.
  * @type {{stop: boolean}}
@@ -153,6 +153,25 @@ export const PLAYER_STYLES = [
   { color: '#7c3aed', symbol: '■' },
   { color: '#c2570c', symbol: '◆' },
 ];
+
+/**
+ * 대기실에서 사고팔 수 있는 아이템과 구매 가격이다. 가격은 리그 배율이 없는 원 단위이다.
+ * @type {{ pass: { price: number, icon: string }, radio: { price: number, icon: string } }}
+ */
+export const ITEMS = {
+  pass: { price: 200000, icon: '🎟️' },
+  radio: { price: 200000, icon: '📻' },
+};
+/**
+ * 상점에서 아이템을 은행에 되팔 때 돌려받는 구매 가격의 비율이다.
+ * @type {number}
+ */
+export const ITEM_SELL_PERCENT = 70;
+/**
+ * 아이템 수량을 초기화할 때 쓰는 기본 아이템 주머니이다.
+ * @type {Object<string, number>}
+ */
+const EMPTY_ITEMS = { pass: 0, radio: 0 };
 
 /**
  * 칸, 건물, 보관 쿠폰을 나타내는 그림 문자이다.
@@ -448,7 +467,39 @@ const TEXT_KO = {
   'lobby.short': '돈이 부족하여 {league}에 참여할 수 없습니다.\n필요 금액 : {fee}\n보유 금액 : {money}',
   'lobby.confirmTitle': '참여 확인',
   'lobby.confirm': '{league}에 참여하시겠습니까?\n참가비 {fee}이 보유 금액에서 차감됩니다.',
-  'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 모두 돌려받습니다. 패배하면 참가비를 잃습니다.',
+  'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 아이템은 승리·패배와 관계없이 돌려받지 못합니다. 패배하면 참가비를 잃습니다.',
+  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 각각 {itemPrice}에 사서 대기실 금액으로 보관하거나 구매가의 {itemSell}%에 팔 수 있다.\n- 게임에 들어갈 때 모든 아이템을 가져가며, 경기 후에는 이기거나 져도 돌려받지 못한다.\n- 아이템 우대권은 상대 땅의 통행료·이용료 또는 다른 사람 소유 콜롬비아 호의 이용료 중 한 건을 면제하며, 한 판에 한 번만 쓸 수 있다. 비밀쿠폰 우대권과 별도로 쓴다.\n- 아이템 무전기는 무인도에 도착했을 때 또는 갇혀 있는 차례에 사용하여 탈출하고 주사위를 굴리게 하며, 한 판에 한 번만 쓸 수 있다. 비밀쿠폰 무전기와 별도로 쓴다.',
+  'mcp.items.guide': '- 대기실의 "상점"에서는 아이템을 사고팔고 가격과 설명을 확인한다. "아이템 확인"은 보유 목록과 상세 설명을 연다. 게임 중 사용자 차례의 "아이템"도 보유 목록을 연다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
+  'lobby.shop': '상점',
+  'lobby.items': '아이템 확인',
+  'item.title': '아이템',
+  'item.none': '보유한 아이템이 없습니다.',
+  'item.count': '보유 수량',
+  'item.pass.title': '우대권',
+  'item.pass.description': '상대 플레이어에게 낼 통행료와 이용료 또는 콜롬비아 호의 우주여행 이용료를 한 번 면제받습니다. 비밀쿠폰 우대권과 별도로 쓸 수 있으며, 아이템 우대권은 게임 한 판에 한 번만 사용할 수 있습니다. 사용하면 사라집니다.',
+  'item.radio.title': '무전기',
+  'item.radio.description': '무인도에 갇혔을 때 바로 탈출하고 주사위를 굴려 이동합니다. 비밀쿠폰 무전기와 별도로 쓸 수 있으며, 아이템 무전기는 게임 한 판에 한 번만 사용할 수 있습니다. 사용하면 사라집니다.',
+  'store.title': '아이템 상점',
+  'store.balance': '대기실 보유 금액 : {amount}',
+  'store.terms': '구매가는 각 {price}입니다. 판매하면 구매가의 {n}%를 돌려받습니다.',
+  'store.buy': '{item} 구매 · {amount}',
+  'store.sell': '{item} 판매 · {amount}',
+  'store.bought': '{item}을(를) 구매했습니다. 보유 수량 : {n}개',
+  'store.sold': '{item}을(를) 판매했습니다. 돌려받은 금액 : {amount}',
+  'store.short': '돈이 부족하여 {item}을(를) 구매할 수 없습니다.\n필요 금액 : {price}\n보유 금액 : {money}',
+  'store.empty': '판매할 {item}이(가) 없습니다.',
+  'store.detail': '설명 보기 : {item}',
+  'store.priceBuy': '구매 가격',
+  'store.priceSell': '판매 가격 (70%)',
+  'settings.reset': '설정 초기화',
+  'settings.resetTitle': '설정과 저장 데이터 초기화',
+  'settings.resetText': '언어와 다크 모드를 기본 설정으로 되돌리고, 세 슬롯과 아이템을 포함한 모든 저장 데이터를 삭제한 뒤 메인 메뉴로 이동합니다. 계속하시겠습니까?',
+  'settings.resetDoneTitle': '초기화 완료',
+  'settings.resetDone': '설정과 저장 데이터를 초기화했습니다.',
+  'item.use.pass.title': '🎟️ 아이템 우대권 사용',
+  'item.use.pass.text': '{tile}에 낼 {amount}을(를) 한 번 면제받습니다.\n게임에서 이미 아이템 우대권을 사용했다면 추가로 사용할 수 없습니다.',
+  'item.use.radio.title': '📻 아이템 무전기 사용',
+  'item.use.radio.text': '무인도를 탈출하고 주사위를 굴려 이동합니다.\n게임에서 이미 아이템 무전기를 사용했다면 추가로 사용할 수 없습니다.',
   'league.green': 'Green 리그',
   'league.orange': 'Orange 리그',
   'league.red': 'Red 리그',
@@ -472,6 +523,7 @@ const TEXT_KO = {
   'player.boarded': '우주여행 탑승',
   'player.bankrupt': '파산',
   'game.roll': '주사위 굴리기',
+  'game.items': '아이템',
   'game.turn': '{player} 님의 차례',
   'game.fund': '사회복지기금',
   'game.league': '{league} · 배율 {n}배',
@@ -650,6 +702,8 @@ const TEXT_KO = {
   'log.pass': '{player} 님이 우대권을 사용하여 {tile} 통행료·이용료 {amount}을 면제받았습니다.',
   'log.exempt': '{player} 님은 우대권의 효과로 {tile} 통행료·이용료 {amount}을 면제받았습니다.',
   'log.radio': '{player} 님이 무전기를 사용하여 무인도에서 탈출했습니다.',
+  'log.itemPass': '{player} 님이 아이템 우대권을 사용하여 {tile} 이용료 {amount}을 면제받았습니다.',
+  'log.itemRadio': '{player} 님이 아이템 무전기를 사용하여 무인도에서 탈출했습니다.',
   'log.island': '{player} 님이 무인도에 갇혔습니다.',
   'log.islandStay': '{player} 님은 더블이 나오지 않아 무인도에 머뭅니다.',
   'log.islandDouble': '{player} 님이 더블로 무인도에서 탈출했습니다!',
@@ -771,7 +825,39 @@ const TEXT_EN = {
   'lobby.short': 'You do not have enough money to join the {league}.\nRequired : {fee}\nYou have : {money}',
   'lobby.confirmTitle': 'Confirm',
   'lobby.confirm': 'Join the {league}?\nThe entry fee of {fee} will be deducted from your money.',
-  'lobby.note': 'If you win, you get back all your in-game cash plus the full value of your lands and buildings. If you lose, the entry fee is gone.',
+  'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Items taken into a game are never returned, whether you win or lose. If you lose, the entry fee is gone.',
+  'mcp.items.rules': '[Item rules]\n- Buy items from the lobby shop for {itemPrice} each and keep them in your lobby inventory, or sell them for {itemSell}% of the purchase price.\n- Take all your items into a game; no items are returned afterward, whether you win or lose.\n- An item free pass waives one toll or building fee on an opponent\'s land, or the travel fee for another player\'s Columbia ship. It can be used only once per game and separately from Secret Coupon passes.\n- An item radio lets you leave Desert Island and roll on arrival or while trapped. It can be used only once per game and separately from Secret Coupon radios.',
+  'mcp.items.guide': '- In the lobby, "Item Shop" buys and sells items and shows their prices and details. "My Items" shows your inventory. The "Items" button on your turn opens the same inventory.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
+  'lobby.shop': 'Item Shop',
+  'lobby.items': 'My Items',
+  'item.title': 'Items',
+  'item.none': 'You do not have any items.',
+  'item.count': 'In stock',
+  'item.pass.title': 'Free Pass',
+  'item.pass.description': 'Skip one toll or building fee owed to another player, including the Columbia space travel fee. This item works separately from Secret Coupon passes, and you can use an item pass only once per game, no matter how many you own. It is consumed when used.',
+  'item.radio.title': 'Radio',
+  'item.radio.description': 'Escape Desert Island at once and roll the dice to move. This item works separately from Secret Coupon radios, and you can use an item radio only once per game, no matter how many you own. It is consumed when used.',
+  'store.title': 'Item Shop',
+  'store.balance': 'Lobby money : {amount}',
+  'store.terms': 'Each item costs {price}. Selling an item returns {n}% of its purchase price.',
+  'store.buy': 'Buy {item} · {amount}',
+  'store.sell': 'Sell {item} · {amount}',
+  'store.bought': 'Bought {item}. In stock : {n}',
+  'store.sold': 'Sold {item}. Money received : {amount}',
+  'store.short': 'You do not have enough money to buy {item}.\nPrice : {price}\nYou have : {money}',
+  'store.empty': 'You do not have a {item} to sell.',
+  'store.detail': 'View details : {item}',
+  'store.priceBuy': 'Purchase price',
+  'store.priceSell': 'Resale price (70%)',
+  'settings.reset': 'Reset Settings',
+  'settings.resetTitle': 'Reset settings and saved data',
+  'settings.resetText': 'Restore the default language and light theme, delete all three save slots and items, then return to the main menu. Continue?',
+  'settings.resetDoneTitle': 'Reset complete',
+  'settings.resetDone': 'Settings and saved data have been reset.',
+  'item.use.pass.title': '🎟️ Use Item Free Pass',
+  'item.use.pass.text': 'Skip the {amount} owed at {tile}.\nAn item free pass cannot be used again in this game once spent.',
+  'item.use.radio.title': '📻 Use Item Radio',
+  'item.use.radio.text': 'Escape the island and roll the dice to move.\nAn item radio cannot be used again in this game once spent.',
   'league.green': 'Green League',
   'league.orange': 'Orange League',
   'league.red': 'Red League',
@@ -795,6 +881,7 @@ const TEXT_EN = {
   'player.boarded': 'On board',
   'player.bankrupt': 'Bankrupt',
   'game.roll': 'Roll Dice',
+  'game.items': 'Items',
   'game.turn': "{player}'s turn",
   'game.fund': 'Welfare fund',
   'game.league': '{league} · x{n}',
@@ -973,6 +1060,8 @@ const TEXT_EN = {
   'log.pass': '{player} used a free pass and skipped {amount} for {tile}.',
   'log.exempt': "{player} skipped {amount} for {tile} thanks to the free pass.",
   'log.radio': '{player} used a radio and escaped the island.',
+  'log.itemPass': '{player} used an item pass and skipped the {amount} fee at {tile}.',
+  'log.itemRadio': '{player} used an item radio and escaped the island.',
   'log.island': '{player} is stuck on the island.',
   'log.islandStay': '{player} did not roll doubles and stays on the island.',
   'log.islandDouble': '{player} rolled doubles and escaped the island!',
@@ -1334,6 +1423,24 @@ function isCount(value, max) {
 }
 
 /**
+ * 아이템 종류별 수량이 정해진 아이템 목록에 맞고 모두 안전한 정수인지 확인한다.
+ * @param {*} items 확인할 아이템 주머니
+ * @returns {boolean} 올바르면 true
+ */
+function isValidItemBag(items) {
+  if (!items || typeof items !== 'object' || Array.isArray(items)) return false;
+  // 모든 알려진 아이템의 수량을 검사한다.
+  for (let id in ITEMS) {
+    if (!isCount(items[id], Number.MAX_SAFE_INTEGER)) return false;
+  }
+  // 지원하지 않는 종류의 아이템이 섞였는지 확인한다.
+  for (let id in items) {
+    if (!Object.hasOwn(ITEMS, id)) return false;
+  }
+  return true;
+}
+
+/**
  * 게임 진행 상태의 플레이어 목록, 턴 순서, 순서를 정한 주사위가 올바른지 확인한다.
  * @param {Object} game 게임 진행 상태
  * @returns {boolean} 올바르면 true
@@ -1349,6 +1456,9 @@ function isValidPlayers(game) {
     if (!player || typeof player !== 'object' || player.id !== id || player.ai !== (id !== 0)) return false;
     if (!isCount(player.cash, Number.MAX_SAFE_INTEGER) || !isCount(player.position, BOARD_SIZE - 1) || !isCount(player.island, ISLAND_TURNS)) return false;
     if (typeof player.alive !== 'boolean' || typeof player.boarded !== 'boolean' || !player.coupons || typeof player.coupons !== 'object') return false;
+    if (!isValidItemBag(player.items) || !player.usedItems || typeof player.usedItems !== 'object') return false;
+    if (typeof player.usedItems.pass !== 'boolean' || typeof player.usedItems.radio !== 'boolean') return false;
+    if (id !== 0 && (player.items.pass !== 0 || player.items.radio !== 0 || player.usedItems.pass || player.usedItems.radio)) return false;
     if (!game.order.includes(id) || !Array.isArray(roll) || !isCount(roll[0] - 1, 5) || !isCount(roll[1] - 1, 5)) return false;
     if (id === 0 && typeof player.name !== 'string') return false;
     alive += player.alive ? 1 : 0;
@@ -1463,6 +1573,11 @@ export function isValidGame(game) {
 export function normalizeSave(data, fallback, strict) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || !isCount(data.money, Number.MAX_SAFE_INTEGER)) throw new Error('data');
   let name = typeof data.name === 'string' ? data.name.trim().slice(0, NAME_LIMIT) : '';
+  let items = data.items === undefined ? { ...EMPTY_ITEMS } : data.items;
+  if (!isValidItemBag(items)) {
+    if (strict) throw new Error('data');
+    items = { ...EMPTY_ITEMS };
+  }
   let game = data.game === undefined ? null : data.game;
   if (game !== null && !isValidGame(game)) {
     if (strict) throw new Error('data');
@@ -1477,7 +1592,7 @@ export function normalizeSave(data, fallback, strict) {
     game.logs = logs.slice(-LOG_LIMIT);
     game.players[0].name = game.players[0].name.slice(0, NAME_LIMIT) || name || fallback;
   }
-  return { name: name || fallback, money: data.money, game, updated: isCount(data.updated, Number.MAX_SAFE_INTEGER) ? data.updated : 0 };
+  return { name: name || fallback, money: data.money, items, game, updated: isCount(data.updated, Number.MAX_SAFE_INTEGER) ? data.updated : 0 };
 }
 
 /* ==========================================================================
@@ -1706,6 +1821,8 @@ export class HellmarbleAI {
       case 'sell': return this.chooseSale(player, request);
       case 'pass': return this.wantPass(player, request);
       case 'radio': return this.wantRadio(player);
+      case 'itemPass':
+      case 'itemRadio': return false;
       case 'travel': return this.chooseTravel(player);
       default: return true;
     }
@@ -1889,6 +2006,7 @@ export class HellmarbleGame {
   static create(options) {
     let league = LEAGUES[options.league];
     let seed = options.seed === undefined ? Math.floor(Math.random() * 4294967296) : options.seed;
+    let humanItems = isValidItemBag(options.items) ? options.items : EMPTY_ITEMS;
     let state = {
       version: SAVE_VERSION, league: options.league, multiplier: league.multiplier, seed: seed >>> 0,
       players: [], order: [], rolls: [], turn: 0, turns: 0, lands: [], deck: [], fund: 0,
@@ -1900,7 +2018,9 @@ export class HellmarbleGame {
     for (let id = 0; id <= rivals; id++) {
       state.players.push({
         id, name: id === 0 ? options.name : null, ai: id !== 0, cash: START_CASH * league.multiplier, position: TILES.start,
-        alive: true, island: 0, boarded: false, coupons: { pass: 0, radio: 0 }, caution: id === 0 ? 1 : 0.7 + game.random() * 0.6,
+        alive: true, island: 0, boarded: false, coupons: { pass: 0, radio: 0 },
+        items: { pass: id === 0 ? humanItems.pass : 0, radio: id === 0 ? humanItems.radio : 0 }, usedItems: { pass: false, radio: false },
+        caution: id === 0 ? 1 : 0.7 + game.random() * 0.6,
       });
       state.rolls.push([game.rollDie(), game.rollDie()]);
       state.order.push(id);
@@ -2055,6 +2175,19 @@ export class HellmarbleGame {
    */
   saleValue(index) {
     return Math.floor((this.value(index) * SELL_PERCENT) / 100);
+  }
+
+  /**
+   * 아이템 한 개를 소모한다. 사용자는 게임 한 판에 종류별 아이템을 한 번만 쓸 수 있다.
+   * @param {Object} player 사용한 플레이어
+   * @param {string} id 아이템 식별자 ('pass' 또는 'radio')
+   * @returns {boolean} 이번 게임에 처음 사용했고 아이템 한 개를 소비했으면 true
+   */
+  consumeItem(player, id) {
+    if (player.id !== 0 || !ITEMS[id] || player.usedItems[id] || player.items[id] < 1) return false;
+    player.items[id]--;
+    player.usedItems[id] = true;
+    return true;
   }
 
   /**
@@ -2280,6 +2413,12 @@ export class HellmarbleGame {
       this.log('log.pass', { player: player.id, tile: index, amount });
       return true;
     }
+    if (player.items.pass > 0 && !player.usedItems.pass && (await this.decide(player, { type: 'itemPass', index, amount, travel: false }))) {
+      this.consumeItem(player, 'pass');
+      this.exempt = true;
+      this.log('log.itemPass', { player: player.id, tile: index, amount });
+      return true;
+    }
     let paid = await this.pay(player, amount, owner);
     if (paid) this.log('log.toll', { player: player.id, target: owner.id, tile: index, amount });
     return paid;
@@ -2379,6 +2518,11 @@ export class HellmarbleGame {
       case 'island':
         player.island = ISLAND_TURNS;
         this.log('log.island', { player: player.id });
+        if (player.items.radio > 0 && !player.usedItems.radio && (await this.decide(player, { type: 'itemRadio' }))) {
+          this.consumeItem(player, 'radio');
+          player.island = 0;
+          this.log('log.itemRadio', { player: player.id });
+        }
         break;
       case 'fund':
         this.collectFund(player);
@@ -2430,6 +2574,12 @@ export class HellmarbleGame {
     let owner = this.state.lands[TILES.columbia].owner;
     if (owner !== null && owner !== player.id) {
       let amount = this.money(SPACE_FEE);
+      if (player.items.pass > 0 && !player.usedItems.pass && (await this.decide(player, { type: 'itemPass', index: TILES.space, amount, travel: true }))) {
+        this.consumeItem(player, 'pass');
+        this.log('log.itemPass', { player: player.id, tile: TILES.space, amount });
+        this.board(player);
+        return;
+      }
       if (!(await this.pay(player, amount, this.state.players[owner]))) return;
       this.log('log.spaceFee', { player: player.id, target: owner, amount });
     }
@@ -2594,6 +2744,11 @@ export class HellmarbleGame {
       this.state.deck.push('radio');
       player.island = 0;
       this.log('log.radio', { player: player.id });
+    }
+    if (player.island > 1 && player.items.radio > 0 && !player.usedItems.radio && (await this.decide(player, { type: 'itemRadio' }))) {
+      this.consumeItem(player, 'radio');
+      player.island = 0;
+      this.log('log.itemRadio', { player: player.id });
     }
     if (player.island === 1) {
       player.island = 0;
@@ -2909,7 +3064,12 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'name.submit': this.submitName(); break;
       case 'lobby.join': this.joinLeague(value); break;
       case 'lobby.export': this.exportSlot(); break;
+      case 'lobby.shop': this.showItemShop(); break;
+      case 'lobby.items': this.showItemInventory('lobby'); break;
+      case 'shop.detail': this.showItemDetails(value, 'shop'); break;
+      case 'settings.reset': this.resetAllData(); break;
       case 'game.player': this.showPlayer(Number(value)); break;
+      case 'game.items': this.showItemInventory('game'); break;
       case 'settings.language': this.changeSetting('language', value); break;
       case 'settings.dark': this.changeSetting('dark', value === 'on'); break;
       case 'dialog.answer': this.closeDialog(value); break;
@@ -3274,7 +3434,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let input = this.root.querySelector('.hm-input');
     let name = (input ? input.value : '').trim().slice(0, NAME_LIMIT) || this.t('name.default');
     this.slotIndex = this.pendingSlot;
-    this.slot = { name, money: LOBBY_MONEY, game: null, updated: 0 };
+    this.slot = { name, money: LOBBY_MONEY, items: { ...EMPTY_ITEMS }, game: null, updated: 0 };
     this.saveSlot();
     this.showLobby();
   }
@@ -3296,14 +3456,156 @@ export class HellmarbleApp extends HellmarbleHost {
           el('span', { class: 'hm-wallet-label', text: this.t('lobby.money') }),
           el('strong', { class: 'hm-wallet-money', text: this.money(this.slot.money) }),
         ]),
+        el('p', { class: 'hm-item-summary', text: this.t('item.title') + ' · ' + this.itemStockText(this.slot.items) }),
         el('div', { class: 'hm-leagues' }, cards),
         el('p', { class: 'hm-note', text: this.t('lobby.note') }),
         el('div', { class: 'hm-lobby-buttons' }, [
+          button(this.t('lobby.shop'), 'lobby.shop'),
+          button(this.t('lobby.items'), 'lobby.items'),
           button(this.t('lobby.export'), 'lobby.export'),
           button(this.t('common.menu'), 'menu.home'),
         ]),
       ]),
     ]));
+  }
+
+  /**
+   * 아이템 주머니에 든 아이템과 수량을 대기실에서 한 줄로 보여준다.
+   * @param {Object} items 아이템 주머니
+   * @returns {string} 보유 아이템 요약
+   */
+  itemStockText(items) {
+    let stock = [];
+    // 종류별로 보유 중인 아이템을 이름과 수량으로 표시한다.
+    for (let id in ITEMS) {
+      if (items[id] > 0) stock.push(ITEMS[id].icon + ' ' + this.t('item.' + id + '.title') + ' ×' + items[id]);
+    }
+    return stock.length > 0 ? stock.join(' · ') : this.t('item.none');
+  }
+
+  /**
+   * 보유 아이템 목록을 띄운다. 아이템을 누르면 설명과 가치를 확인하고 목록으로 돌아온다.
+   * @param {string} source 목록을 연 화면 ('lobby' 또는 'game')
+   * @returns {Promise<void>}
+   */
+  async showItemInventory(source) {
+    if (source === 'lobby' && (this.screen !== 'lobby' || !this.slot)) return;
+    if (source === 'game' && (this.screen !== 'game' || !this.game || this.game.current.id !== 0 || !['roll', 'travel'].includes(this.mode))) return;
+    // 현재 화면이 유지되는 동안 아이템 선택과 상세 보기를 반복한다.
+    while (this.screen === source && (source !== 'game' || this.game)) {
+      let items = source === 'game' ? this.game.state.players[0].items : this.slot.items;
+      let buttons = [];
+      let body = [source === 'lobby' ? this.infoRow(this.t('lobby.money'), this.money(this.slot.money)) : this.infoRow(this.t('item.count'), this.t('common.count', { n: items.pass + items.radio }))];
+      // 보유한 아이템마다 설명을 여는 선택지를 만든다.
+      for (let id in ITEMS) {
+        if (items[id] < 1) continue;
+        buttons.push({ label: ITEMS[id].icon + ' ' + this.t('item.' + id + '.title') + ' ×' + items[id], value: id, primary: true });
+      }
+      let selected = await this.dialog({ title: this.t('item.title'), text: this.itemStockText(items), body, buttons: [...buttons, { label: this.t('common.close'), value: 'close' }] });
+      if (selected === null || selected === 'close') return;
+      if (!ITEMS[selected]) continue;
+      await this.showItemDetails(selected, source);
+    }
+  }
+
+  /**
+   * 아이템의 사용법을 설명한다. 상점에서 열면 구매가와 판매가도 표시한다.
+   * @param {string} id 아이템 식별자
+   * @param {string} source 정보를 연 화면 ('lobby', 'game', 'shop')
+   * @returns {Promise<void>}
+   */
+  async showItemDetails(id, source) {
+    if (!Object.hasOwn(ITEMS, id)) return;
+    let price = ITEMS[id].price;
+    let rows = [];
+    if (source === 'shop') {
+      rows.push(this.infoRow(this.t('store.priceBuy'), this.money(price)));
+      rows.push(this.infoRow(this.t('store.priceSell'), this.money(Math.floor(price * ITEM_SELL_PERCENT / 100))));
+    }
+    await this.dialog({
+      title: ITEMS[id].icon + ' ' + this.t('item.' + id + '.title'), text: this.t('item.' + id + '.description'),
+      body: rows.length > 0 ? [el('div', { class: 'hm-land-rows' }, rows)] : [],
+      buttons: [{ label: this.t('common.goBack'), value: 'back', primary: true }],
+    });
+  }
+
+  /**
+   * 대기실 상점에서 아이템 구매, 판매 또는 상세 정보 확인을 반복해 처리한다.
+   * @returns {Promise<void>}
+   */
+  async showItemShop() {
+    if (this.screen !== 'lobby' || !this.slot) return;
+    let notice = '';
+    // 상점 화면이 열려 있는 동안 아이템 구매와 판매를 반복한다.
+    while (this.screen === 'lobby') {
+      let buttons = [];
+      let rows = [];
+      // 아이템 종류별 가격과 현재 수량을 보여주고 구매, 판매, 정보 선택지를 만든다.
+      for (let id in ITEMS) {
+        let item = ITEMS[id];
+        let value = Math.floor(item.price * ITEM_SELL_PERCENT / 100);
+        let title = item.icon + ' ' + this.t('item.' + id + '.title');
+        rows.push(this.infoRow(title, '×' + this.slot.items[id]));
+        buttons.push({ label: this.t('store.buy', { item: title, amount: this.money(item.price) }), value: 'buy:' + id, disabled: this.slot.money < item.price });
+        buttons.push({ label: this.t('store.sell', { item: title, amount: this.money(value) }), value: 'sell:' + id, disabled: this.slot.items[id] < 1 });
+        buttons.push({ label: this.t('store.detail', { item: title }), value: 'detail:' + id });
+      }
+      buttons.push({ label: this.t('common.close'), value: 'close', primary: true });
+      let answer = await this.dialog({
+        title: this.t('store.title'), text: [this.t('store.balance', { amount: this.money(this.slot.money) }), this.t('store.terms', { price: this.money(ITEMS.pass.price), n: ITEM_SELL_PERCENT }), notice].filter(Boolean).join('\n'),
+        body: [el('div', { class: 'hm-land-rows hm-store-stock' }, rows)], buttons, stack: true,
+      });
+      if (answer === null || answer === 'close' || this.screen !== 'lobby') {
+        if (this.screen === 'lobby' && this.slot) this.showLobby();
+        return;
+      }
+      let [action, id] = String(answer).split(':');
+      if (!ITEMS[id]) continue;
+      if (action === 'detail') {
+        await this.showItemDetails(id, 'shop');
+        notice = '';
+        continue;
+      }
+      if (action === 'buy') {
+        if (this.slot.money < ITEMS[id].price) {
+          notice = this.t('store.short', { item: this.t('item.' + id + '.title'), price: this.money(ITEMS[id].price), money: this.money(this.slot.money) });
+          continue;
+        }
+        this.slot.money -= ITEMS[id].price;
+        this.slot.items[id]++;
+        notice = this.t('store.bought', { item: this.t('item.' + id + '.title'), n: this.slot.items[id] });
+      } else if (action === 'sell') {
+        if (this.slot.items[id] < 1) {
+          notice = this.t('store.empty', { item: this.t('item.' + id + '.title') });
+          continue;
+        }
+        let proceeds = Math.floor(ITEMS[id].price * ITEM_SELL_PERCENT / 100);
+        this.slot.items[id]--;
+        this.slot.money += proceeds;
+        notice = this.t('store.sold', { item: this.t('item.' + id + '.title'), amount: this.money(proceeds) });
+      }
+      this.saveSlot();
+    }
+  }
+
+  /**
+   * 설정을 기본값으로 되돌리고 세 저장 슬롯을 삭제한 뒤 메인 메뉴를 연다.
+   * @returns {Promise<void>}
+   */
+  async resetAllData() {
+    if (this.screen !== 'settings') return;
+    let confirmed = await this.confirm(this.t('settings.resetTitle'), this.t('settings.resetText'), this.t('settings.reset'), this.t('common.no'));
+    if (!confirmed || this.screen !== 'settings') return;
+    this.storage.remove('settings');
+    // 세 저장 슬롯을 모두 지운다.
+    for (let index = 1; index <= SLOT_COUNT; index++) this.storage.remove('slot.' + index);
+    this.slot = null;
+    this.slotIndex = -1;
+    this.pendingSlot = -1;
+    this.settings = { language: 'ko', dark: false };
+    this.storage.write('settings', this.settings);
+    this.applySettings();
+    this.showMenu();
   }
 
   /**
@@ -3338,7 +3640,8 @@ export class HellmarbleApp extends HellmarbleHost {
     if (!(await this.confirm(this.t('lobby.confirmTitle'), this.t('lobby.confirm', params)))) return;
     if (this.screen !== 'lobby') return;
     this.slot.money -= fee;
-    this.slot.game = HellmarbleGame.create({ league: id, name: this.slot.name });
+    this.slot.game = HellmarbleGame.create({ league: id, name: this.slot.name, items: { ...this.slot.items } });
+    this.slot.items = { ...EMPTY_ITEMS };
     this.saveSlot();
     this.showGame(true);
   }
@@ -3367,6 +3670,7 @@ export class HellmarbleApp extends HellmarbleHost {
           ]),
         ]),
         button(this.t('common.back'), 'menu.home', undefined, 'hm-wide'),
+        button(this.t('settings.reset'), 'settings.reset', undefined, 'hm-danger hm-wide'),
       ]),
     ]));
   }
@@ -3483,6 +3787,7 @@ export class HellmarbleApp extends HellmarbleHost {
       dice: el('div', { class: 'hm-dice' }),
       status: el('p', { class: 'hm-status', attrs: { 'aria-live': 'polite' } }),
       roll: button(this.t('game.roll'), 'game.roll', undefined, 'hm-primary'),
+      items: button(this.t('game.items'), 'game.items'),
       menu: button(this.t('common.menu'), 'game.menu'),
       forfeit: button(this.t('game.forfeit'), 'game.forfeit', undefined, 'hm-danger'),
       fund: el('strong', { class: 'hm-fund-money' }),
@@ -3495,7 +3800,7 @@ export class HellmarbleApp extends HellmarbleHost {
       parts.turn,
       parts.dice,
       parts.status,
-      el('div', { class: 'hm-controls' }, [parts.roll, parts.menu, parts.forfeit]),
+      el('div', { class: 'hm-controls' }, [parts.roll, parts.items, parts.menu, parts.forfeit]),
       el('div', { class: 'hm-fund' }, [el('span', { text: ICONS.fund + ' ' + this.t('game.fund') }), parts.fund]),
     ]);
     this.parts = parts;
@@ -3723,6 +4028,7 @@ export class HellmarbleApp extends HellmarbleHost {
       this.parts.status.textContent = this.statusText();
     }
     this.parts.roll.disabled = this.mode !== 'roll';
+    this.parts.items.disabled = !['roll', 'travel'].includes(this.mode) || this.game.current.id !== 0;
     this.parts.menu.disabled = this.mode === 'busy';
     this.parts.forfeit.disabled = this.mode === 'busy';
     this.parts.fund.textContent = this.money(state.fund);
@@ -4110,12 +4416,12 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   async runTool(key, input, options) {
     let args = input && typeof input === 'object' ? input : {};
-    let amounts = { start: this.money(START_CASH), salary: this.money(SALARY), space: this.money(SPACE_FEE), welfare: this.money(WELFARE_FEE), sell: SELL_PERCENT };
+    let amounts = { start: this.money(START_CASH), salary: this.money(SALARY), space: this.money(SPACE_FEE), welfare: this.money(WELFARE_FEE), sell: SELL_PERCENT, itemPrice: this.money(ITEMS.pass.price), itemSell: ITEM_SELL_PERCENT };
     let result = null;
     try {
       switch (key) {
-        case 'get_rules': result = this.t('mcp.rules', amounts); break;
-        case 'get_guide': result = this.t('mcp.guide'); break;
+        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.t('mcp.items.rules', amounts); break;
+        case 'get_guide': result = this.t('mcp.guide') + '\n' + this.t('mcp.items.guide'); break;
         case 'get_land': result = this.describeLand(Number(args.index)); break;
         case 'act': result = await this.pressAction(String(args.action), args.value); break;
         case 'set_text': result = this.typeText(String(args.text === undefined ? '' : args.text)); break;
@@ -4178,7 +4484,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let state = { screen: this.screen, language: this.settings.language, dark: this.settings.dark, busy: this.isBusy(), title: heading ? heading.textContent : '' };
     if (this.modal) state.dialog = { title: state.title, text: text ? text.textContent : '' };
     if (field) state.input = { value: field.value };
-    if (this.slot && (this.screen === 'lobby' || this.screen === 'game')) state.slot = { number: this.slotIndex + 1, name: this.slot.name, money: this.slot.money };
+    if (this.slot && (this.screen === 'lobby' || this.screen === 'game')) state.slot = { number: this.slotIndex + 1, name: this.slot.name, money: this.slot.money, items: this.screen === 'lobby' ? this.slot.items : this.game.state.players[0].items };
     if (this.game) state.game = this.describeGame();
     state.actions = this.listActions();
     return state;
@@ -4199,6 +4505,7 @@ export class HellmarbleApp extends HellmarbleHost {
       players.push({
         id: player.id, name: this.playerName(player), you: !player.ai, alive: player.alive, cash: player.cash, assets: game.assets(player),
         position: player.position, tile: this.tileName(player.position), island: player.island, boarded: player.boarded, coupons: player.coupons,
+        items: player.items, usedItems: player.usedItems,
       });
     }
     // 소유자가 있는 땅을 정리한다.
@@ -4531,6 +4838,8 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'sell': return this.askSell(player, request);
       case 'pass': return this.askCoupon('pass', { tile: this.tileName(request.index), amount: this.money(request.amount), n: player.coupons.pass });
       case 'radio': return this.askCoupon('radio', { n: player.coupons.radio });
+      case 'itemPass': return this.askGameItem('pass', request);
+      case 'itemRadio': return this.askGameItem('radio', request);
       default: return null;
     }
   }
@@ -4653,6 +4962,17 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   askCoupon(id, params) {
     return this.confirm(ICONS[id] + ' ' + this.t('ask.' + id + '.title'), this.t('ask.' + id + '.text', params), this.t('ask.use'), this.t('ask.keep'));
+  }
+
+  /**
+   * 비밀쿠폰과 따로 보유한 아이템으로 통행료를 면제하거나 무인도에서 탈출할지 묻는다.
+   * @param {string} id 아이템 식별자
+   * @param {Object} request 통행료 요청 정보 (무전기이면 빈 객체)
+   * @returns {Promise<boolean>} 아이템을 사용하면 true
+   */
+  askGameItem(id, request) {
+    let params = request.travel ? { amount: this.money(request.amount), tile: this.t('tile.space') } : { amount: this.money(request.amount || 0), tile: this.tileName(request.index || 0) };
+    return this.confirm(this.t('item.use.' + id + '.title'), this.t('item.use.' + id + '.text', params), this.t('ask.use'), this.t('ask.keep'));
   }
 }
 
