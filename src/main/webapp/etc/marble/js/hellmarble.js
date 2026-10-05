@@ -93,6 +93,11 @@ export const PROPERTY_TYPES = ['city', 'korea', 'special'];
  */
 export const QUIT = 'quit';
 /**
+ * 사용자가 게임 포기를 확정했음을 나타내는 값이다.
+ * @type {string}
+ */
+export const FORFEIT = 'forfeit';
+/**
  * 진행 기록(로그)을 보관하는 최대 개수이다.
  * @type {number}
  */
@@ -411,6 +416,10 @@ const TEXT_KO = {
   'common.ok': '확인',
   'common.back': '뒤로',
   'common.menu': '메인 메뉴',
+  'game.forfeit': '포기',
+  'confirm.forfeit.title': '게임을 포기하시겠습니까?',
+  'confirm.forfeit.text': '포기하면 즉시 패배하며, 참가비를 돌려받을 수 없습니다.',
+  'confirm.forfeit.yes': '포기하고 패배하기',
   'common.none': '없음',
   'common.count': '{n}개',
   'slot.new': '저장 슬롯 선택',
@@ -574,7 +583,7 @@ const TEXT_KO = {
   'result.property': '땅과 건물의 가치',
   'result.reward': '획득 금액',
   'result.lose.title': '패배',
-  'result.lose.text': '지불할 돈을 마련하지 못해 파산했습니다.\n잠시 후 대기실로 돌아갑니다.',
+  'result.lose.text': '이번 게임에서 패배했습니다.\n잠시 후 대기실로 돌아갑니다.',
   'result.lobby': '대기실로',
   'coupon.header': '비밀쿠폰',
   'coupon.drawer': '{player} 님이 뽑은 쿠폰',
@@ -635,6 +644,7 @@ const TEXT_KO = {
   'log.sellAll': '{player} 님은 땅을 모두 매각해도 지불할 돈이 부족합니다.',
   'log.partial': '{player} 님이 남은 돈 {amount}만 지불했습니다.',
   'log.bankrupt': '{player} 님이 파산하여 패배했습니다.',
+  'log.forfeit': '{player} 님이 게임을 포기했습니다.',
   'log.coupon': '{player} 님이 비밀쿠폰 [{coupon}] 을 뽑았습니다.',
   'log.keep': '{player} 님이 [{coupon}] 쿠폰을 보관합니다.',
   'log.pass': '{player} 님이 우대권을 사용하여 {tile} 통행료·이용료 {amount}을 면제받았습니다.',
@@ -729,6 +739,10 @@ const TEXT_EN = {
   'common.ok': 'OK',
   'common.back': 'Back',
   'common.menu': 'Main Menu',
+  'game.forfeit': 'Forfeit',
+  'confirm.forfeit.title': 'Give up this game?',
+  'confirm.forfeit.text': 'Giving up ends the game in defeat. The entry fee will not be refunded.',
+  'confirm.forfeit.yes': 'Give up and lose',
   'common.none': 'None',
   'common.count': '{n}',
   'slot.new': 'Choose a Save Slot',
@@ -892,7 +906,7 @@ const TEXT_EN = {
   'result.property': 'Lands and buildings',
   'result.reward': 'Reward',
   'result.lose.title': 'Defeat',
-  'result.lose.text': 'You could not raise the money and went bankrupt.\nReturning to the lobby shortly.',
+  'result.lose.text': 'You lost this game.\nReturning to the lobby shortly.',
   'result.lobby': 'To the Lobby',
   'coupon.header': 'Secret Coupon',
   'coupon.drawer': 'Drawn by {player}',
@@ -953,6 +967,7 @@ const TEXT_EN = {
   'log.sellAll': '{player} cannot pay even after selling every land.',
   'log.partial': '{player} paid only the remaining {amount}.',
   'log.bankrupt': '{player} went bankrupt and lost.',
+  'log.forfeit': '{player} gave up the game.',
   'log.coupon': '{player} drew the secret coupon [{coupon}].',
   'log.keep': '{player} keeps the [{coupon}] coupon.',
   'log.pass': '{player} used a free pass and skipped {amount} for {tile}.',
@@ -2186,21 +2201,27 @@ export class HellmarbleGame {
    * 모두 매각해도 모자라면 전부 매각하고, 그렇지 않으면 돈이 마련될 때까지 매각할 땅을 선택받는다.
    * @param {Object} player 플레이어
    * @param {number} amount 지불해야 할 금액 (원)
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} 지불 재원을 마련했으면 true, 포기했으면 false
    */
   async raise(player, amount) {
     if (this.liquidation(player) < amount) {
       this.log('log.sellAll', { player: player.id });
       // 가진 땅을 모두 매각한다.
       for (let index of this.owned(player)) this.sell(player, index, SELL_PERCENT);
-      return;
+      return true;
     }
     // 지불할 돈이 마련될 때까지 매각할 땅을 선택받는다.
     while (player.cash < amount) {
       let owned = this.owned(player);
-      let choice = Number(await this.decide(player, { type: 'sell', amount }));
+      let answer = await this.decide(player, { type: 'sell', amount });
+      if (answer === FORFEIT) {
+        this.bankrupt(player, true);
+        return false;
+      }
+      let choice = Number(answer);
       this.sell(player, owned.includes(choice) ? choice : owned[0], SELL_PERCENT);
     }
+    return true;
   }
 
   /**
@@ -2212,7 +2233,7 @@ export class HellmarbleGame {
    */
   async pay(player, amount, creditor) {
     if (amount <= 0) return true;
-    if (player.cash < amount) await this.raise(player, amount);
+    if (player.cash < amount && !(await this.raise(player, amount))) return false;
     let paid = Math.min(player.cash, amount);
     player.cash -= paid;
     if (creditor) creditor.cash += paid;
@@ -2265,10 +2286,11 @@ export class HellmarbleGame {
   }
 
   /**
-   * 플레이어를 파산 처리한다. 남은 땅은 은행으로, 보관하던 쿠폰은 덱 맨 뒤로 돌아간다.
+   * 플레이어를 파산 또는 포기 처리한다. 남은 땅은 은행으로, 보관하던 쿠폰은 덱 맨 뒤로 돌아간다.
    * @param {Object} player 파산한 플레이어
+   * @param {boolean} [voluntary=false] 포기로 인한 패배인지 여부
    */
-  bankrupt(player) {
+  bankrupt(player, voluntary = false) {
     player.alive = false;
     player.boarded = false;
     player.island = 0;
@@ -2287,7 +2309,7 @@ export class HellmarbleGame {
         this.state.deck.push(id);
       }
     }
-    this.log('log.bankrupt', { player: player.id });
+    this.log(voluntary ? 'log.forfeit' : 'log.bankrupt', { player: player.id });
   }
 
   /**
@@ -2587,6 +2609,10 @@ export class HellmarbleGame {
   async playTravel(player) {
     let answer = await this.decide(player, { type: 'travel' });
     if (answer === QUIT) return false;
+    if (answer === FORFEIT) {
+      this.bankrupt(player, true);
+      return true;
+    }
     let target = Number(answer);
     if (!Number.isInteger(target) || target < 0 || target >= BOARD_SIZE || target === player.position) target = (player.position + 1) % BOARD_SIZE;
     player.boarded = false;
@@ -2608,7 +2634,12 @@ export class HellmarbleGame {
     if (player.boarded) return this.playTravel(player);
     // 더블이 나오는 동안 주사위를 다시 굴린다.
     do {
-      if ((await this.decide(player, { type: 'roll', again })) === QUIT) return false;
+      let answer = await this.decide(player, { type: 'roll', again });
+      if (answer === QUIT) return false;
+      if (answer === FORFEIT) {
+        this.bankrupt(player, true);
+        return true;
+      }
       again = await this.playRoll(player);
     } while (again);
     return true;
@@ -2884,6 +2915,7 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'dialog.answer': this.closeDialog(value); break;
       case 'game.roll': this.answer('roll', true); break;
       case 'game.menu': this.answer('', QUIT); break;
+      case 'game.forfeit': this.confirmForfeit(); break;
       case 'game.tile': this.togglePopover(Number(value)); break;
       case 'game.travel': this.answer('travel', Number(value)); break;
       case 'popover.close': this.closePopover(); break;
@@ -2986,7 +3018,8 @@ export class HellmarbleApp extends HellmarbleHost {
     let buttons = el('div', { class: 'hm-modal-buttons' + (config.stack ? ' hm-stack' : '') });
     // 선택지 버튼을 순서대로 만든다.
     for (let item of config.buttons) {
-      let node = button(item.label, 'dialog.answer', item.value, item.primary ? 'hm-primary' : '');
+      let className = (item.primary ? 'hm-primary' : '') + (item.danger ? ' hm-danger' : '');
+      let node = button(item.label, 'dialog.answer', item.value, className);
       node.disabled = Boolean(item.disabled);
       buttons.append(node);
     }
@@ -3030,6 +3063,20 @@ export class HellmarbleApp extends HellmarbleHost {
       buttons: [{ label: yes || this.t('common.yes'), value: 'yes', primary: true }, { label: no || this.t('common.no'), value: 'no' }],
     });
     return answer === 'yes';
+  }
+
+  /**
+   * 사용자에게 게임 포기를 확인받고, 확정하면 현재 차례 입력에 포기 신호를 전달한다.
+   * @returns {Promise<void>}
+   */
+  async confirmForfeit() {
+    let confirmed = await this.confirm(
+      this.t('confirm.forfeit.title'),
+      this.t('confirm.forfeit.text'),
+      this.t('confirm.forfeit.yes'),
+      this.t('common.no'),
+    );
+    if (confirmed) this.answer('', FORFEIT);
   }
 
   /* ------------------------------ 메뉴 화면 ------------------------------ */
@@ -3437,6 +3484,7 @@ export class HellmarbleApp extends HellmarbleHost {
       status: el('p', { class: 'hm-status', attrs: { 'aria-live': 'polite' } }),
       roll: button(this.t('game.roll'), 'game.roll', undefined, 'hm-primary'),
       menu: button(this.t('common.menu'), 'game.menu'),
+      forfeit: button(this.t('game.forfeit'), 'game.forfeit', undefined, 'hm-danger'),
       fund: el('strong', { class: 'hm-fund-money' }),
       players: el('div', { class: 'hm-players' }),
       log: el('ol', { class: 'hm-log' }),
@@ -3447,7 +3495,7 @@ export class HellmarbleApp extends HellmarbleHost {
       parts.turn,
       parts.dice,
       parts.status,
-      el('div', { class: 'hm-controls' }, [parts.roll, parts.menu]),
+      el('div', { class: 'hm-controls' }, [parts.roll, parts.menu, parts.forfeit]),
       el('div', { class: 'hm-fund' }, [el('span', { text: ICONS.fund + ' ' + this.t('game.fund') }), parts.fund]),
     ]);
     this.parts = parts;
@@ -3676,6 +3724,7 @@ export class HellmarbleApp extends HellmarbleHost {
     }
     this.parts.roll.disabled = this.mode !== 'roll';
     this.parts.menu.disabled = this.mode === 'busy';
+    this.parts.forfeit.disabled = this.mode === 'busy';
     this.parts.fund.textContent = this.money(state.fund);
     this.parts.center.classList.toggle('hm-my-turn', this.mode !== 'busy');
     if (!this.rolling) this.renderDice(state.dice[0], state.dice[1]);
@@ -4573,22 +4622,27 @@ export class HellmarbleApp extends HellmarbleHost {
    * 지불할 돈이 부족할 때 매각할 땅을 묻는다. 화면을 음영 처리하고 사용자가 가진 땅의 목록을 보여준다.
    * @param {Object} player 사용자 플레이어
    * @param {Object} request 매각 요청 { amount }
-   * @returns {Promise<number>} 매각할 땅의 칸 번호
+   * @returns {Promise<number|string>} 매각할 땅의 칸 번호 또는 포기 신호
    */
   async askSell(player, request) {
     let game = this.game;
-    let buttons = [];
-    // 가진 땅마다 매각 선택지를 만든다.
-    for (let index of game.owned(player)) {
-      let land = game.state.lands[index];
-      let name = this.tileName(index);
-      // 지어진 건물을 종류별 개수만큼 이름 뒤에 덧붙인다.
-      for (let kind of BUILDINGS) name += ICONS[kind].repeat(land[kind]);
-      buttons.push({ label: this.t('ask.sell.option', { tile: name, amount: this.money(game.saleValue(index)) }), value: index });
+    // 포기를 취소하면 매각 목록을 다시 보여준다.
+    while (true) {
+      let buttons = [];
+      // 가진 땅마다 매각 선택지를 만든다.
+      for (let index of game.owned(player)) {
+        let land = game.state.lands[index];
+        let name = this.tileName(index);
+        // 지어진 건물을 종류별 개수만큼 이름 뒤에 덧붙인다.
+        for (let kind of BUILDINGS) name += ICONS[kind].repeat(land[kind]);
+        buttons.push({ label: this.t('ask.sell.option', { tile: name, amount: this.money(game.saleValue(index)) }), value: index });
+      }
+      buttons.push({ label: this.t('game.forfeit'), value: FORFEIT, danger: true });
+      let params = { amount: this.money(request.amount), cash: this.money(player.cash), short: this.money(request.amount - player.cash), n: SELL_PERCENT };
+      let answer = await this.dialog({ kind: 'sell', title: this.t('ask.sell.title'), text: this.t('ask.sell.text', params), buttons, stack: true });
+      if (answer !== FORFEIT) return Number(answer);
+      if (await this.confirm(this.t('confirm.forfeit.title'), this.t('confirm.forfeit.text'), this.t('confirm.forfeit.yes'), this.t('common.no'))) return FORFEIT;
     }
-    let params = { amount: this.money(request.amount), cash: this.money(player.cash), short: this.money(request.amount - player.cash), n: SELL_PERCENT };
-    let answer = await this.dialog({ kind: 'sell', title: this.t('ask.sell.title'), text: this.t('ask.sell.text', params), buttons, stack: true });
-    return Number(answer);
   }
 
   /**

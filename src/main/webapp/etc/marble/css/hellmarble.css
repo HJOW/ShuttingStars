@@ -118,6 +118,15 @@ body {
   color: var(--hm-accent-ink);
 }
 
+.hm-danger:not(:disabled) {
+  border-color: #e03131;
+  color: #e03131;
+}
+
+.hm-danger:not(:disabled):hover {
+  background: rgba(224, 49, 49, 0.12);
+}
+
 .hm-wide {
   width: 100%;
 }
