@@ -98,6 +98,16 @@ export const QUIT = 'quit';
  */
 export const FORFEIT = 'forfeit';
 /**
+ * 돈 이동 연출에서 돈을 내거나 받는 쪽이 은행임을 나타내는 값이다. 은행은 출발지 칸에 있는 것으로 본다.
+ * @type {string}
+ */
+export const BANK = 'bank';
+/**
+ * 돈 이동 연출에서 돈을 내거나 받는 쪽이 사회복지기금 본부임을 나타내는 값이다.
+ * @type {string}
+ */
+export const FUND = 'fund';
+/**
  * 진행 기록(로그)을 보관하는 최대 개수이다.
  * @type {number}
  */
@@ -106,7 +116,7 @@ const LOG_LIMIT = 80;
  * 저장 데이터의 형식 버전이다.
  * @type {number}
  */
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 5;
 /**
  * 게임 진행을 강제로 중단시킬 때 던지는 신호 객체이다.
  * @type {{stop: boolean}}
@@ -121,10 +131,11 @@ const NAME_LIMIT = 12;
 /**
  * 화면 연출에 쓰이는 시간(밀리초) 기본값이다.
  * dice: 주사위 굴림, step: 일반 이동 1칸 (0.5초), fastStep: 비밀쿠폰/우주여행 이동 1칸 (0.25초),
- * coupon: 비밀쿠폰 표시 (6초), transfer: 플레이어 간 돈 이동, think: 인공지능 판단, pause: 연출 사이 간격, result: 패배 화면 표시
+ * coupon: 비밀쿠폰 표시 (6초), transfer: 플레이어 간 돈 이동, bank: 은행 또는 사회복지기금 본부와의 돈 이동 (자주 일어나므로 조금 짧다),
+ * charm: 부적 효과 발동 표시, think: 인공지능 판단, pause: 연출 사이 간격, result: 패배 화면 표시
  * @type {Object<string, number>}
  */
-export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, think: 700, pause: 500, result: 3500 };
+export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, charm: 1900, think: 700, pause: 500, result: 3500 };
 
 /**
  * 리그별 설정이다. multiplier 는 금액 배율, weights 는 인공지능 플레이어가 1, 2, 3명일 확률의 가중치이다.
@@ -144,34 +155,162 @@ export const LEAGUES = {
 export const LAND_COLORS = { yellow: '#f5c211', blue: '#3b9dea', navy: '#3d4fd6', red: '#e03131', green: '#2f9e44', gold: '#d4a017' };
 
 /**
- * 플레이어 번호 순서대로 쓰는 말의 고유 색과 문양이다.
- * @type {Array<{color: string, symbol: string}>}
+ * 한 게임에 참여할 수 있는 최대 플레이어 수이다. (사용자 1명과 인공지능 최대 3명)
+ * @type {number}
  */
-export const PLAYER_STYLES = [
-  { color: '#d6249f', symbol: '★' },
-  { color: '#0c9aa8', symbol: '▲' },
-  { color: '#7c3aed', symbol: '■' },
-  { color: '#c2570c', symbol: '◆' },
-];
+export const MAX_PLAYERS = 4;
 
 /**
- * 대기실에서 사고팔 수 있는 아이템과 구매 가격이다. 가격은 리그 배율이 없는 원 단위이다.
- * @type {{ pass: { price: number, icon: string }, radio: { price: number, icon: string } }}
+ * 장착형 아이템(플레이어를 나타내는 색상 또는 모양) 한 종류의 정보이다.
+ * @typedef {Object} HellmarbleEquip
+ * @property {string} slot 장착하는 자리 ('color' : 색상, 'shape' : 모양). 상점과 보유 목록의 분류로도 쓴다.
+ * @property {number} price 상점의 구매 가격 (원). 0 이면 처음부터 주어지는 기본 아이템이며 사고팔 수 없다.
+ * @property {string} value 색상이면 '#rrggbb' 형식의 색, 모양이면 말에 그리는 문자
+ * @property {string} [ink] 그 색상 위에 그리는 모양의 글자색 (색상만)
+ * @property {string} [family] 비슷해 보이는 색을 묶은 계열. 인공지능 플레이어의 색을 정할 때 사용자의 색과 같은 계열을 피한다. (색상만)
+ * @property {string} [fill] 금속 색상처럼 단색 대신 말과 소유 표시에 칠하는 CSS 배경 (색상만, 선택)
+ */
+
+/**
+ * 장착형 아이템의 구성이다. 색상과 모양을 하나씩 장착해야 리그에 참여할 수 있으며, 장착한 것이 게임에서 사용자의 말과 땅의 소유 표시에 쓰인다.
+ * 가격이 0 인 것(색상 5종, 모양 4종)은 새 슬롯이 처음부터 가지는 기본 아이템이다.
+ * @type {Object<string, HellmarbleEquip>}
+ */
+export const EQUIPS = {
+  red: { slot: 'color', price: 0, value: '#e03131', ink: '#ffffff', family: 'red' },
+  blue: { slot: 'color', price: 0, value: '#1c7ed6', ink: '#ffffff', family: 'blue' },
+  green: { slot: 'color', price: 0, value: '#2f9e44', ink: '#ffffff', family: 'green' },
+  yellow: { slot: 'color', price: 0, value: '#f5c211', ink: '#232733', family: 'yellow' },
+  purple: { slot: 'color', price: 0, value: '#7c3aed', ink: '#ffffff', family: 'purple' },
+  sky: { slot: 'color', price: 5000000, value: '#4dabf7', ink: '#232733', family: 'blue' },
+  lime: { slot: 'color', price: 5000000, value: '#8ce99a', ink: '#232733', family: 'green' },
+  hotpink: { slot: 'color', price: 5000000, value: '#d6336c', ink: '#ffffff', family: 'red' },
+  pink: { slot: 'color', price: 10000000, value: '#faa2c1', ink: '#232733', family: 'red' },
+  brown: { slot: 'color', price: 10000000, value: '#8d5a2b', ink: '#ffffff', family: 'brown' },
+  graphite: { slot: 'color', price: 20000000, value: '#454a52', ink: '#ffffff', family: 'gray' },
+  bronze: { slot: 'color', price: 50000000, value: '#b0703c', ink: '#ffffff', family: 'brown', fill: 'linear-gradient(135deg, #e6ad76 0%, #b0703c 48%, #77441f 100%)' },
+  silver: { slot: 'color', price: 100000000, value: '#b4bcc8', ink: '#232733', family: 'gray', fill: 'linear-gradient(135deg, #f6f8fb 0%, #b4bcc8 48%, #7d8695 100%)' },
+  gold: { slot: 'color', price: 1000000000, value: '#e0aa0e', ink: '#232733', family: 'yellow', fill: 'linear-gradient(135deg, #fff3ad 0%, #e0aa0e 48%, #a37100 100%)' },
+  star: { slot: 'shape', price: 0, value: '★' },
+  triangle: { slot: 'shape', price: 0, value: '▲' },
+  square: { slot: 'shape', price: 0, value: '■' },
+  diamond: { slot: 'shape', price: 0, value: '◆' },
+  plus: { slot: 'shape', price: 5000000, value: '+' },
+  minus: { slot: 'shape', price: 5000000, value: '−' },
+  times: { slot: 'shape', price: 5000000, value: '×' },
+  divide: { slot: 'shape', price: 5000000, value: '÷' },
+  spa: { slot: 'shape', price: 10000000, value: '♨︎' },
+  club: { slot: 'shape', price: 20000000, value: '♧' },
+  spade: { slot: 'shape', price: 50000000, value: '♤' },
+  heart: { slot: 'shape', price: 100000000, value: '♡' },
+  note: { slot: 'shape', price: 200000000, value: '♪' },
+  notes: { slot: 'shape', price: 500000000, value: '♬' },
+};
+/**
+ * 새 슬롯이 처음에 장착하고 있는 색상과 모양이다. (빨강, 별)
+ * @type {{color: string, shape: string}}
+ */
+export const DEFAULT_LOOK = { color: 'red', shape: 'star' };
+
+/**
+ * 부적의 등급별 설정이다. 일반, 고급, 희귀, 전설의 순서이다.
+ * weight 는 추첨에서 그 등급이 나올 확률의 가중치이다. 고급은 일반의 5분의 1, 희귀는 100분의 1, 전설은 2000분의 1의 확률로 나온다.
+ * sell 은 상점에 팔 때 받는 금액(원)이며, 다른 아이템과 달리 구매 가격의 비율로 정하지 않는다.
+ * @type {Object<string, {weight: number, sell: number}>}
+ */
+export const CHARM_GRADES = {
+  common: { weight: 2000, sell: 100000 },
+  uncommon: { weight: 400, sell: 50000000 },
+  rare: { weight: 20, sell: 200000000 },
+  legend: { weight: 1, sell: 1000000000000 },
+};
+
+/**
+ * 부적 한 종류의 정보이다. 부적은 장착형 아이템이며 장착하면 그 게임 내내 효과가 적용된다.
+ * @typedef {Object} HellmarbleCharm
+ * @property {string} grade 등급 (CHARM_GRADES 의 키)
+ * @property {string} icon 부적을 나타내는 그림 문자
+ * @property {string} effect 효과의 종류 ('double' : 더블 확률 증가, 'discount' : 땅 구매 할인, 'redraw' : 손해 보는 비밀쿠폰 다시 뽑기, 'build' : 건물 무료 건설)
+ * @property {number} chance 효과가 일어날 확률 (%). double 에서는 더블이 나올 확률에 더해지는 값이다.
+ * @property {number} [percent] 땅값을 깎아 주는 비율 (%) (discount 만)
+ * @property {string} [building] 무료로 지어지는 건물의 종류 (build 만)
+ * @property {boolean} [revisit] 땅을 살 때뿐 아니라 자기 땅에 다시 도착했을 때에도 적용되는지 여부 (build 만)
+ */
+
+/**
+ * 부적의 구성이다. 상점에서 직접 살 수 없고 부적 추첨권으로만 얻는다.
+ * @type {Object<string, HellmarbleCharm>}
+ */
+export const CHARMS = {
+  brokendice: { grade: 'common', icon: '🎲', effect: 'double', chance: 10 },
+  oldcoin: { grade: 'common', icon: '🪙', effect: 'discount', chance: 5, percent: 10 },
+  tornlottery: { grade: 'uncommon', icon: '🎫', effect: 'redraw', chance: 10 },
+  realtor: { grade: 'uncommon', icon: '📇', effect: 'build', chance: 20, building: 'villa', revisit: false },
+  scratched: { grade: 'uncommon', icon: '🎟️', effect: 'redraw', chance: 20 },
+  woodendice: { grade: 'uncommon', icon: '🪵', effect: 'double', chance: 15 },
+  memorialcoin: { grade: 'uncommon', icon: '🏅', effect: 'discount', chance: 10, percent: 10 },
+  fortunecookie: { grade: 'rare', icon: '🥠', effect: 'redraw', chance: 30 },
+  lawfirm: { grade: 'rare', icon: '💼', effect: 'build', chance: 10, building: 'building', revisit: true },
+  stock: { grade: 'rare', icon: '📈', effect: 'discount', chance: 10, percent: 25 },
+  president: { grade: 'legend', icon: '🏛️', effect: 'build', chance: 10, building: 'hotel', revisit: true },
+  pendant: { grade: 'legend', icon: '📿', effect: 'redraw', chance: 45 },
+  etf: { grade: 'legend', icon: '📊', effect: 'discount', chance: 10, percent: 50 },
+};
+
+/**
+ * 상점에서 파는 부적 추첨권이다. 사는 즉시 사용되어 draws 개의 부적을 추첨한다. (보관되지 않는다.)
+ * @type {Object<string, {price: number, draws: number, icon: string, badge: string}>}
+ */
+export const CHARM_TICKETS = {
+  charmticket: { price: 100000000, draws: 1, icon: '🧧', badge: '×1' },
+  charmticket10: { price: 900000000, draws: 10, icon: '🧧', badge: '×10' },
+};
+
+/**
+ * 아이템 한 종류의 정보이다.
+ * @typedef {Object} HellmarbleItem
+ * @property {number} price 구매 가격 (원). 리그 배율을 적용하지 않는다.
+ * @property {string} icon 아이템을 나타내는 그림 문자
+ * @property {string} [badge] 그림 문자가 같은 아이템을 구분하려고 그림 위에 덧붙이는 짧은 표시 (예 : 주사위에서 나오는 눈)
+ * @property {string} category 상점과 보유 목록에서 묶어 보여주는 분류 (ITEM_CATEGORIES 의 값)
+ * @property {string} use 사용 방식. 'ask' 는 쓸 상황이 되면 게임이 사용 여부를 묻고, 'turn' 은 주사위를 굴릴 차례에 아이템 목록에서 직접 쓴다.
+ * @property {string} limit 게임 한 판에 한 번이라는 사용 제한을 함께 쓰는 묶음의 이름. 같은 묶음의 아이템은 한 판에 하나만 쓸 수 있다.
+ * @property {string} [effect] 직접 쓰는 아이템의 효과 ('space' : 우주여행 무료 탑승, 'dice' : 주사위 조작)
+ * @property {number[]} [faces] 주사위 조작형 아이템을 썼을 때 주사위에서 나오는 눈
+ */
+
+/**
+ * 대기실에서 사고팔 수 있는 아이템의 구성이다. 여기에 항목을 더하면 상점과 보유 목록에 자동으로 나타난다.
+ * @type {Object<string, HellmarbleItem>}
  */
 export const ITEMS = {
-  pass: { price: 200000, icon: '🎟️' },
-  radio: { price: 200000, icon: '📻' },
+  pass: { price: 300000, icon: '🎟️', category: 'support', use: 'ask', limit: 'pass' },
+  radio: { price: 200000, icon: '📻', category: 'support', use: 'ask', limit: 'radio' },
+  invitation: { price: 200000, icon: '💌', category: 'travel', use: 'turn', limit: 'invitation', effect: 'space' },
+  bigdice: { price: 200000, icon: '🎲', badge: '4~6', category: 'dice', use: 'turn', limit: 'dice', effect: 'dice', faces: [4, 5, 6] },
+  smalldice: { price: 200000, icon: '🎲', badge: '1~3', category: 'dice', use: 'turn', limit: 'dice', effect: 'dice', faces: [1, 2, 3] },
 };
+/**
+ * 아이템의 분류를 화면에 보여주는 순서대로 나열한 것이다.
+ * (support : 보조, travel : 이동, dice : 주사위, color : 장착형 색상, shape : 장착형 모양, charm : 부적과 부적 추첨권)
+ * @type {string[]}
+ */
+export const ITEM_CATEGORIES = ['support', 'travel', 'dice', 'color', 'shape', 'charm'];
 /**
  * 상점에서 아이템을 은행에 되팔 때 돌려받는 구매 가격의 비율이다.
  * @type {number}
  */
 export const ITEM_SELL_PERCENT = 70;
 /**
- * 아이템 수량을 초기화할 때 쓰는 기본 아이템 주머니이다.
- * @type {Object<string, number>}
+ * 상점에서 한 번에 사고팔 수 있는 최대 수량이다.
+ * @type {number}
  */
-const EMPTY_ITEMS = { pass: 0, radio: 0 };
+export const ITEM_BULK = 99;
+/**
+ * 주사위를 굴릴 차례에 아이템을 쓰겠다고 답할 때, 아이템 식별자 앞에 붙이는 말이다. (예 : 'item:bigdice')
+ * @type {string}
+ */
+export const ITEM_PREFIX = 'item:';
 
 /**
  * 칸, 건물, 보관 쿠폰을 나타내는 그림 문자이다.
@@ -180,7 +319,7 @@ const EMPTY_ITEMS = { pass: 0, radio: 0 };
 const ICONS = {
   start: '🏁', coupon: '🎫', space: '🚀', island: '🏝️', fund: '💰', desk: '🧾',
   jeju: '🍊', busan: '🌊', seoul: '👑', concorde: '✈️', columbia: '🛰️',
-  villa: '🏠', building: '🏢', hotel: '🏨', pass: '🎟️', radio: '📻',
+  villa: '🏠', building: '🏢', hotel: '🏨', pass: '🎟️', radio: '📻', bank: '🏦',
 };
 
 /**
@@ -266,6 +405,7 @@ const MCP_TOOLS = {
  * @property {string} [target] 이동할 칸의 식별자
  * @property {number} [steps] 뒤로 이동할 칸 수
  * @property {Object<string, number>} [rates] 건물 종류별 1개당 내는 금액 (원)
+ * @property {boolean} [harm] 뽑은 플레이어에게 바로 손해가 되는 쿠폰인지 여부 (돈을 내거나 땅을 잃거나 무인도로 감). 부적의 다시 뽑기 효과가 본다.
  */
 
 /**
@@ -389,31 +529,33 @@ export const TILES = indexTiles();
  * gain: 은행에서 받음, pay: 은행에 냄, tax: 건물별로 은행에 냄, move: 지정한 칸으로 전진,
  * back: 뒤로 이동, island: 월급 없이 무인도로 이동, space: 무료 우주여행, air: 항공 여행,
  * halfsale: 반액대매출, keep: 보관하는 쿠폰
+ * harm 이 true 인 쿠폰은 뽑은 플레이어에게 바로 손해가 되는 것으로, 부적의 다시 뽑기 효과가 피하려는 대상이다.
  * @type {Object<string, HellmarbleCoupon>}
  */
 export const COUPONS = {
-  welfare: { count: 4, effect: 'move', target: 'desk' },
-  speeding: { count: 4, effect: 'pay', amount: won(5) },
+  welfare: { count: 2, effect: 'move', target: 'desk', harm: true },
+  dividend: { count: 2, effect: 'move', target: 'fund' },
+  speeding: { count: 4, effect: 'pay', amount: won(5), harm: true },
   jeju: { count: 2, effect: 'move', target: 'jeju' },
   busan: { count: 1, effect: 'move', target: 'busan' },
   seoul: { count: 1, effect: 'move', target: 'seoul' },
   pass: { count: 2, effect: 'keep' },
   radio: { count: 2, effect: 'keep' },
-  halfsale: { count: 1, effect: 'halfsale' },
+  halfsale: { count: 1, effect: 'halfsale', harm: true },
   lottery: { count: 3, effect: 'gain', amount: won(50) },
-  study: { count: 4, effect: 'pay', amount: won(10) },
+  study: { count: 4, effect: 'pay', amount: won(10), harm: true },
   invitation: { count: 1, effect: 'space' },
-  security: { count: 2, effect: 'tax', rates: { hotel: won(5), building: won(3), villa: won(1) } },
-  repair: { count: 1, effect: 'tax', rates: { hotel: won(10), building: won(6), villa: won(3) } },
-  incometax: { count: 1, effect: 'tax', rates: { hotel: won(15), building: won(10), villa: won(3) } },
+  security: { count: 2, effect: 'tax', rates: { hotel: won(5), building: won(3), villa: won(1) }, harm: true },
+  repair: { count: 1, effect: 'tax', rates: { hotel: won(10), building: won(6), villa: won(3) }, harm: true },
+  incometax: { count: 1, effect: 'tax', rates: { hotel: won(15), building: won(10), villa: won(3) }, harm: true },
   airtravel: { count: 2, effect: 'air' },
-  hospital: { count: 4, effect: 'pay', amount: won(10) },
+  hospital: { count: 4, effect: 'pay', amount: won(10), harm: true },
   moving: { count: 2, effect: 'back', steps: 3 },
   scholarship: { count: 4, effect: 'gain', amount: won(10) },
   highway: { count: 4, effect: 'move', target: 'start' },
   amateur: { count: 4, effect: 'gain', amount: won(20) },
   pension: { count: 4, effect: 'gain', amount: won(5) },
-  castaway: { count: 2, effect: 'island' },
+  castaway: { count: 2, effect: 'island', harm: true },
 };
 
 /* ==========================================================================
@@ -467,35 +609,199 @@ const TEXT_KO = {
   'lobby.short': '돈이 부족하여 {league}에 참여할 수 없습니다.\n필요 금액 : {fee}\n보유 금액 : {money}',
   'lobby.confirmTitle': '참여 확인',
   'lobby.confirm': '{league}에 참여하시겠습니까?\n참가비 {fee}이 보유 금액에서 차감됩니다.',
-  'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 아이템은 승리·패배와 관계없이 돌려받지 못합니다. 패배하면 참가비를 잃습니다.',
-  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 각각 {itemPrice}에 사서 대기실 금액으로 보관하거나 구매가의 {itemSell}%에 팔 수 있다.\n- 게임에 들어갈 때 모든 아이템을 가져가며, 경기 후에는 이기거나 져도 돌려받지 못한다.\n- 아이템 우대권은 상대 땅의 통행료·이용료 또는 다른 사람 소유 콜롬비아 호의 이용료 중 한 건을 면제하며, 한 판에 한 번만 쓸 수 있다. 비밀쿠폰 우대권과 별도로 쓴다.\n- 아이템 무전기는 무인도에 도착했을 때 또는 갇혀 있는 차례에 사용하여 탈출하고 주사위를 굴리게 하며, 한 판에 한 번만 쓸 수 있다. 비밀쿠폰 무전기와 별도로 쓴다.',
-  'mcp.items.guide': '- 대기실의 "상점"에서는 아이템을 사고팔고 가격과 설명을 확인한다. "아이템 확인"은 보유 목록과 상세 설명을 연다. 게임 중 사용자 차례의 "아이템"도 보유 목록을 연다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
+  'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 소모형 아이템은 승리·패배와 관계없이 돌려받지 못합니다. 색상과 모양은 사라지지 않습니다. 패배하면 참가비를 잃습니다.',
+  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 사서 보관하거나, 구매 가격의 {itemSell}%에 되팔 수 있다.\n- 게임에 들어갈 때 가진 아이템을 모두 가져가며, 게임이 끝나면 이기든 지든 돌려받지 못한다.\n- 아이템은 종류마다 게임 한 판에 한 번만 쓸 수 있다. 주사위 조작형 아이템(빅 다이즈, 스몰 다이즈)은 둘을 합쳐 한 번이다. 비밀쿠폰으로 얻은 우대권·무전기와는 따로 센다.\n- 쓸 상황이 되면 게임이 사용 여부를 묻는 아이템과, 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템이 있다.\n[아이템 목록]',
+  'mcp.items.entry': '- {item} ({price}) : {description} [사용 시점] {when}',
+  'mcp.items.guide': '- 대기실의 "상점"(lobby.shop)은 구매 / 판매 탭(items.tab), 분류 버튼(items.filter), 아이템 카드 목록으로 되어 있다. 카드를 누르면(items.pick) 상세 팝업이 뜨고, 수량을 정한 뒤(items.less / items.more / items.max) 구매 또는 판매(items.trade)한다. 상세 팝업은 items.back, 상점은 items.close 로 닫는다.\n- "아이템 확인"(lobby.items)과 게임 중 자기 차례의 "아이템"(game.items)은 보유 아이템 목록을 연다. 게임 중 주사위를 굴릴 차례에는 상세 팝업의 "사용"(items.use)으로 우주여행 초청장과 주사위 조작형 아이템을 쓸 수 있으며, 한 번 더 확인받는다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
   'lobby.shop': '상점',
   'lobby.items': '아이템 확인',
-  'item.title': '아이템',
+  'item.owned': '보유 아이템',
   'item.none': '보유한 아이템이 없습니다.',
+  'item.noneLobby': '보유한 아이템이 없습니다. 대기실의 상점에서 구매할 수 있습니다.',
+  'item.noneIn': '이 분류에는 아이템이 없습니다.',
+  'item.total': '{kinds}종 · {count}개',
   'item.count': '보유 수량',
+  'item.hint.lobby': '아이템을 누르면 자세한 설명을 볼 수 있고, 색상과 모양, 부적은 그 자리에서 장착할 수 있습니다. 게임에 참여하면 소모형 아이템은 모두 가져가며 게임이 끝나도 돌려받지 못합니다. 색상과 모양, 부적은 사라지지 않습니다.',
+  'item.hint.game': '이번 게임에 가져온 아이템입니다. 아이템을 누르면 자세한 설명을 볼 수 있고, 주사위를 굴릴 차례에 쓰는 아이템은 그 자리에서 사용할 수 있습니다.',
+  'item.category.all': '전체',
+  'item.category.support': '보조',
+  'item.category.travel': '이동',
+  'item.category.dice': '주사위',
+  'item.category.color': '색상',
+  'item.category.shape': '모양',
+  'item.info.when': '사용 시점',
+  'item.info.limit': '사용 제한',
+  'item.info.state': '이번 게임',
+  'item.state.ready': '사용 가능',
+  'item.state.spent': '사용 완료',
+  'item.limit.single': '게임 한 판에 한 번만 쓸 수 있습니다. 여러 개를 가지고 있어도 한 번입니다.',
+  'item.limit.shared': '게임 한 판에 한 번만 쓸 수 있습니다. {items} 가운데 어느 것을 쓰든 합쳐서 한 번입니다.',
+  'lobby.look': '내 말',
+  'lobby.needLook': '색상과 모양을 하나씩 장착해야 리그에 참여할 수 있습니다.\n대기실의 "아이템 확인"에서 가지고 있는 색상과 모양을 장착하세요.',
+  'equip.none.color': '색상 없음',
+  'equip.none.shape': '모양 없음',
+  'equip.slot.color': '색상',
+  'equip.slot.shape': '모양',
+  'equip.color.brief': '말과 땅에 칠해지는 내 색상',
+  'equip.color.description': '게임에서 나를 나타내는 색상입니다. 내 말과 플레이어 카드, 내가 소유한 땅의 표시가 이 색으로 칠해집니다. 장착형 아이템이라 써도 사라지지 않고, 게임이 끝난 뒤에도 그대로 남습니다.',
+  'equip.color.when': '대기실의 아이템 확인 창이나 상점에서 장착합니다. 색상과 모양을 하나씩 장착해야 리그에 참여할 수 있습니다.',
+  'equip.shape.brief': '말과 땅에 그려지는 내 모양',
+  'equip.shape.description': '게임에서 나를 나타내는 모양입니다. 내 말과 내가 소유한 땅의 표시에 이 모양이 그려집니다. 장착형 아이템이라 써도 사라지지 않고, 게임이 끝난 뒤에도 그대로 남습니다.',
+  'equip.shape.when': '대기실의 아이템 확인 창이나 상점에서 장착합니다. 색상과 모양을 하나씩 장착해야 리그에 참여할 수 있습니다.',
+  'equip.limit.basic': '처음부터 주어지는 기본 아이템입니다. 사고팔 수 없으며 사라지지 않습니다.',
+  'equip.limit.extra': '종류마다 하나만 가질 수 있습니다. 소모되지 않지만, 상점에 판매하면 사라집니다.',
+  'equip.info.owned': '보유',
+  'equip.info.state': '장착',
+  'equip.owned': '보유 중',
+  'equip.missing': '보유하지 않음',
+  'equip.on': '장착 중',
+  'equip.off': '장착하지 않음',
+  'equip.equip': '장착',
+  'equip.done': '{item}을(를) 장착했습니다.',
+  'equip.sold': '장착하고 있던 {slot}을(를) 판매했습니다. 다른 {slot}을(를) 장착해야 리그에 참여할 수 있습니다.',
+  'store.have': '이미 가지고 있습니다. 장착형 아이템은 종류마다 하나만 가질 수 있습니다.',
+  'store.boughtOne': '{item}을(를) 구매했습니다.',
+  'store.soldOne': '{item}을(를) 판매하고 {amount}을 받았습니다.',
+  'item.red.title': '빨강',
+  'item.blue.title': '파랑',
+  'item.green.title': '초록',
+  'item.yellow.title': '노랑',
+  'item.purple.title': '보라',
+  'item.sky.title': '하늘색',
+  'item.lime.title': '연한 초록색',
+  'item.hotpink.title': '진한 분홍색',
+  'item.pink.title': '연한 분홍색',
+  'item.brown.title': '갈색',
+  'item.graphite.title': '그라파이트',
+  'item.bronze.title': '브론즈',
+  'item.silver.title': '실버',
+  'item.gold.title': '골드',
+  'item.star.title': '별',
+  'item.triangle.title': '삼각형',
+  'item.square.title': '사각형',
+  'item.diamond.title': '마름모',
+  'item.plus.title': '더하기 (+)',
+  'item.minus.title': '빼기 (−)',
+  'item.times.title': '곱하기 (×)',
+  'item.divide.title': '나누기 (÷)',
+  'item.spa.title': '온천 (♨)',
+  'item.club.title': '클로버 (♧)',
+  'item.spade.title': '스페이드 (♤)',
+  'item.heart.title': '하트 (♡)',
+  'item.note.title': '음표 (♪)',
+  'item.notes.title': '겹음표 (♬)',
+  'mcp.equips.rules': '[장착형 아이템]\n- 색상과 모양이 있으며, 하나씩 장착해야 리그에 참여할 수 있다. 장착한 색상과 모양은 게임에서 사용자의 말과 소유한 땅의 표시에 쓰인다.\n- 처음에는 색상 5종(빨강, 파랑, 초록, 노랑, 보라)과 모양 4종(별, 삼각형, 사각형, 마름모)을 가지고, 빨강과 별을 장착한 채로 시작한다. 이 기본 아이템은 사고팔 수 없다.\n- 상점에서 다른 색상과 모양을 살 수 있다. 종류마다 하나만 가질 수 있고 소모되지 않으며, 팔면 구매 가격의 {itemSell}%를 돌려받고 사라진다. 장착하고 있던 것을 팔면 다른 것을 장착해야 한다.\n- 게임 중에는 바꿀 수 없다. 인공지능 플레이어는 사용자와 겹치지 않는 기본 색상과 모양을 쓴다.\n[상점에서 파는 색상과 모양]',
+  'mcp.equips.entry': '- [{slot}] {item} ({price})',
+  'mcp.equips.guide': '- 색상과 모양(장착형 아이템)은 상점과 "아이템 확인"의 분류 "색상", "모양"에 있다. 카드를 눌러(items.pick) 뜬 상세 팝업에서 "장착"(items.equip)을 누르면 장착된다. 상점에서는 구매와 판매(items.trade)도 한다. 대기실의 "내 말"에 지금 장착한 색상과 모양이 보이며, 둘 중 하나라도 비어 있으면 리그에 참여할 수 없다.',
+  'item.category.charm': '부적',
+  'charm.grade.common': '일반',
+  'charm.grade.uncommon': '고급',
+  'charm.grade.rare': '희귀',
+  'charm.grade.legend': '전설',
+  'charm.info.grade': '등급',
+  'charm.info.sell': '판매 가격',
+  'charm.double.brief': '더블이 나올 확률 +{chance}%',
+  'charm.double.description': '게임에서 주사위를 굴릴 때 더블이 나올 확률이 {chance}% 높아집니다. (보통 주사위라면 약 16.7% → 약 {total}%) 더블이 나오면 주사위를 한 번 더 굴리고, 무인도에 갇혀 있다면 바로 탈출합니다.',
+  'charm.discount.brief': '땅을 살 때 {chance}% 확률로 {percent}% 할인',
+  'charm.discount.description': '게임에서 땅을 살 때 {chance}% 확률로 {percent}% 할인된 값만 냅니다. 할인 전 가격만큼의 돈이 있어야 살 수 있는 것은 그대로입니다. 건물 건설, 통행료와 이용료, 사회복지기금, 비밀쿠폰으로 내는 돈에는 적용되지 않습니다.',
+  'charm.redraw.brief': '손해 보는 비밀쿠폰을 {chance}% 확률로 다시 뽑기',
+  'charm.redraw.description': '게임에서 비밀쿠폰을 뽑을 때, 벌금이나 세금을 내거나 땅을 잃거나 무인도로 가는 것처럼 나에게 바로 손해가 되는 쿠폰이 나올 차례이면 {chance}% 확률로 그 쿠폰을 덱 맨 뒤로 보내고 다시 뽑습니다.',
+  'charm.build.brief': '땅을 살 때 {chance}% 확률로 {building} 무료 건설',
+  'charm.build.description': '게임에서 땅을 살 때 {chance}% 확률로 {building} 한 채가 그 자리에서 무료로 지어집니다. 땅을 막 샀을 때에만 적용되고, 건물을 지을 수 없는 땅에는 적용되지 않습니다.',
+  'charm.build.revisit': '게임에서 땅을 살 때, 그리고 내 땅에 다시 도착했을 때 그 땅에 {building}이(가) 없으면 {chance}% 확률로 {building} 한 채가 무료로 지어집니다. 건물을 지을 수 없는 땅에는 적용되지 않습니다.',
+  'charm.when': '대기실의 아이템 확인 창에서 장착합니다. 한 번에 하나만 장착할 수 있고, 장착하지 않아도 리그에 참여할 수 있습니다. 장착한 부적의 효과는 그 게임 내내 적용됩니다.',
+  'charm.limit': '소모되지 않습니다. 같은 부적을 여러 개 가질 수 있고, 상점에 판매하면 사라집니다.',
+  'charm.unequip': '장착 해제',
+  'charm.undone': '{item}의 장착을 해제했습니다.',
+  'charm.sold': '장착하고 있던 부적을 모두 판매하여 장착이 해제되었습니다.',
+  'charm.shopOnly': '부적은 대기실의 아이템 확인 창에서 장착합니다.',
+  'charm.flash': '{item} 발동!',
+  'charm.flash.double': '더블이 나왔습니다!',
+  'charm.flash.discount': '{tile} 땅값 {percent}% 할인',
+  'charm.flash.build': '{tile}에 {building} 한 채를 무료로 지었습니다.',
+  'charm.flash.redraw': '[{coupon}] 쿠폰을 덱 맨 뒤로 보내고 다시 뽑습니다.',
+  'ticket.brief': '부적 {n}개를 무작위로 획득',
+  'ticket.description': '구매하면 바로 사용되어 부적 {n}개를 무작위로 얻습니다. 이미 가진 부적이 또 나올 수 있습니다. 부적은 따로 살 수 없고 추첨으로만 얻으며, 얻은 부적은 대기실의 아이템 확인 창에서 장착합니다.',
+  'ticket.when': '구매하는 즉시 사용됩니다.',
+  'ticket.limit': '구매 횟수에는 제한이 없습니다. 부적을 하나씩 같은 확률로 따로 추첨합니다.',
+  'ticket.odds': '등급별 확률',
+  'ticket.chance': '{grade} {percent}%',
+  'ticket.draw': '추첨하기',
+  'draw.title': '부적 추첨 결과',
+  'draw.best': '{grade} 등급 획득!',
+  'draw.tally': '{grade} {n}개',
+  'draw.done': '확인',
+  'draw.again': '한 번 더',
+  'item.charmticket.title': '부적 추첨권',
+  'item.charmticket10.title': '부적 10개 추첨권',
+  'item.brokendice.title': '부서진 주사위',
+  'item.oldcoin.title': '낡은 동전',
+  'item.tornlottery.title': '찢어진 복권',
+  'item.realtor.title': '동네 공인중개사 명함',
+  'item.scratched.title': '이미 긁은 복권',
+  'item.woodendice.title': '나무 주사위',
+  'item.memorialcoin.title': '기념 주화',
+  'item.fortunecookie.title': '포춘 쿠키',
+  'item.lawfirm.title': '대형 로펌 명함',
+  'item.stock.title': '주식 증서',
+  'item.president.title': '대통령 명함',
+  'item.pendant.title': '행운의 펜던트',
+  'item.etf.title': '레버리지 ETF 증서',
+  'mcp.charms.rules': '[부적]\n- 부적은 장착형 아이템이다. 하나만 장착할 수 있고 장착하지 않아도 리그에 참여할 수 있다. 장착한 부적의 효과는 그 게임 내내 적용된다. 인공지능 플레이어는 부적을 쓰지 않는다.\n- 상점에서 직접 살 수 없고, 부적 추첨권({ticket})이나 부적 10개 추첨권({ticket10})을 사면 그 자리에서 무작위로 얻는다. 같은 부적이 또 나올 수 있다.\n- 등급은 일반, 고급, 희귀, 전설이 있다. 추첨에서 고급은 일반의 5분의 1, 희귀는 100분의 1, 전설은 2000분의 1의 확률로 나온다. ({odds})\n- 가진 부적은 상점에서 팔 수 있다. 판매 가격은 등급으로 정해진다. ({sells})\n- 부적은 아이템 확인 창에서만 보이고 장착한다. 게임 화면에는 효과가 일어났을 때에만 알림이 뜬다.\n[부적 목록]',
+  'mcp.charms.entry': '- [{grade}] {item} : {brief}',
+  'mcp.charms.guide': '- 부적 추첨 : 상점의 분류 "부적"에서 추첨권 카드를 누르고(items.pick) 상세 팝업의 "추첨하기"(items.trade)를 누르면 돈이 빠지고 추첨 결과가 뜬다. "확인"(items.done)으로 닫는다. 가진 부적은 판매 탭에서 판다.\n- 부적 장착 : "아이템 확인"의 분류 "부적"에서 카드를 누르고 "장착"(items.equip) 또는 "장착 해제"(items.unequip)를 누른다.',
   'item.pass.title': '우대권',
-  'item.pass.description': '상대 플레이어에게 낼 통행료와 이용료 또는 콜롬비아 호의 우주여행 이용료를 한 번 면제받습니다. 비밀쿠폰 우대권과 별도로 쓸 수 있으며, 아이템 우대권은 게임 한 판에 한 번만 사용할 수 있습니다. 사용하면 사라집니다.',
+  'item.pass.brief': '통행료·이용료 한 번 면제',
+  'item.pass.description': '다른 플레이어의 땅에 도착했을 때 내야 하는 통행료와 이용료를 한 번 면제받습니다. 다른 플레이어가 콜롬비아 호를 가지고 있을 때 내는 우주여행 이용료에도 쓸 수 있습니다. 비밀쿠폰으로 얻은 우대권과는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
+  'item.pass.when': '통행료나 이용료를 내야 할 때 게임이 사용할지 물어봅니다.',
   'item.radio.title': '무전기',
-  'item.radio.description': '무인도에 갇혔을 때 바로 탈출하고 주사위를 굴려 이동합니다. 비밀쿠폰 무전기와 별도로 쓸 수 있으며, 아이템 무전기는 게임 한 판에 한 번만 사용할 수 있습니다. 사용하면 사라집니다.',
+  'item.radio.brief': '무인도에서 바로 탈출',
+  'item.radio.description': '무인도에 갇혔을 때 더블을 기다리지 않고 바로 탈출한 뒤 주사위를 굴려 이동합니다. 비밀쿠폰으로 얻은 무전기와는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
+  'item.radio.when': '무인도에 도착했을 때와, 갇혀 있는 동안 주사위를 굴리기 직전에 게임이 사용할지 물어봅니다.',
+  'item.invitation.title': '우주여행 초청장',
+  'item.invitation.brief': '우주여행 무료 탑승',
+  'item.invitation.description': '주사위를 굴리는 대신 우주여행 칸으로 곧바로 이동해 탑승하고 차례를 마칩니다. 콜롬비아 호의 주인이 있어도 이용료를 내지 않으며, 가는 길에 출발지를 지나면 월급도 받습니다. 다음 차례에는 보드의 원하는 칸으로 이동할 수 있습니다. 쓰면 한 개가 사라집니다.',
+  'item.invitation.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용합니다.',
+  'item.bigdice.title': '빅 다이즈',
+  'item.bigdice.brief': '4·5·6만 나오는 주사위',
+  'item.bigdice.description': '이번에 굴리는 주사위 두 개를 4, 5, 6 눈만 나오는 주사위로 바꿉니다. (1, 2, 3 눈이 각각 4, 5, 6 으로 바뀝니다.) 멀리 가고 싶을 때 좋습니다. 효과는 사용한 차례의 주사위 한 번에만 적용되어, 더블이 나와 다시 굴릴 때에는 보통 주사위로 돌아갑니다. 사용하는 즉시 한 개가 사라지며, 그 차례에 주사위를 굴리지 않아도 돌려받지 못합니다.',
+  'item.bigdice.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용한 뒤 주사위를 굴립니다.',
+  'item.smalldice.title': '스몰 다이즈',
+  'item.smalldice.brief': '1·2·3만 나오는 주사위',
+  'item.smalldice.description': '이번에 굴리는 주사위 두 개를 1, 2, 3 눈만 나오는 주사위로 바꿉니다. (4, 5, 6 눈이 각각 1, 2, 3 으로 바뀝니다.) 가까운 칸에 멈추고 싶을 때 좋습니다. 효과는 사용한 차례의 주사위 한 번에만 적용되어, 더블이 나와 다시 굴릴 때에는 보통 주사위로 돌아갑니다. 사용하는 즉시 한 개가 사라지며, 그 차례에 주사위를 굴리지 않아도 돌려받지 못합니다.',
+  'item.smalldice.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용한 뒤 주사위를 굴립니다.',
   'store.title': '아이템 상점',
-  'store.balance': '대기실 보유 금액 : {amount}',
-  'store.terms': '구매가는 각 {price}입니다. 판매하면 구매가의 {n}%를 돌려받습니다.',
-  'store.buy': '{item} 구매 · {amount}',
-  'store.sell': '{item} 판매 · {amount}',
-  'store.bought': '{item}을(를) 구매했습니다. 보유 수량 : {n}개',
-  'store.sold': '{item}을(를) 판매했습니다. 돌려받은 금액 : {amount}',
-  'store.short': '돈이 부족하여 {item}을(를) 구매할 수 없습니다.\n필요 금액 : {price}\n보유 금액 : {money}',
-  'store.empty': '판매할 {item}이(가) 없습니다.',
-  'store.detail': '설명 보기 : {item}',
+  'store.money': '보유 금액',
+  'store.hint': '아이템을 누르면 자세한 설명을 보고 사고팔 수 있습니다. 판매하면 구매 가격의 {n}%를 돌려받습니다.',
+  'store.tab.buy': '구매',
+  'store.tab.sell': '판매',
+  'store.nothing': '판매할 아이템이 없습니다. 구매 탭에서 아이템을 살 수 있습니다.',
+  'store.owned': '보유 ×{n}',
   'store.priceBuy': '구매 가격',
-  'store.priceSell': '판매 가격 (70%)',
+  'store.priceSell': '판매 가격 ({n}%)',
+  'store.quantity': '수량',
+  'store.less': '수량 줄이기',
+  'store.more': '수량 늘리기',
+  'store.max': '최대',
+  'store.total.buy': '결제 금액',
+  'store.total.sell': '받을 금액',
+  'store.buy': '{n}개 구매',
+  'store.sell': '{n}개 판매',
+  'store.bought': '{item} {n}개를 구매했습니다. (보유 {total}개)',
+  'store.sold': '{item} {n}개를 판매하고 {amount}을 받았습니다. (보유 {total}개)',
+  'store.short': '보유 금액이 부족하여 구매할 수 없습니다.',
   'settings.reset': '설정 초기화',
   'settings.resetTitle': '설정과 저장 데이터 초기화',
   'settings.resetText': '언어와 다크 모드를 기본 설정으로 되돌리고, 세 슬롯과 아이템을 포함한 모든 저장 데이터를 삭제한 뒤 메인 메뉴로 이동합니다. 계속하시겠습니까?',
   'settings.resetDoneTitle': '초기화 완료',
   'settings.resetDone': '설정과 저장 데이터를 초기화했습니다.',
+  'item.use': '사용',
+  'item.use.title': '{item} 사용',
+  'item.use.note': '지금 사용하시겠습니까? 사용하는 즉시 한 개가 사라지며 되돌릴 수 없습니다.',
+  'item.block.ask': '직접 사용하는 아이템이 아닙니다. 쓸 상황이 되면 게임이 사용할지 물어봅니다.',
+  'item.block.turn': '주사위를 굴릴 차례에만 사용할 수 있습니다.',
+  'item.block.spent': '이번 게임에서 이미 사용했습니다. 게임 한 판에 한 번만 쓸 수 있습니다.',
+  'item.block.shared': '이번 게임에서 {items} 가운데 하나를 이미 사용했습니다. 합쳐서 한 판에 한 번만 쓸 수 있습니다.',
   'item.use.pass.title': '🎟️ 아이템 우대권 사용',
   'item.use.pass.text': '{tile}에 낼 {amount}을(를) 한 번 면제받습니다.\n게임에서 이미 아이템 우대권을 사용했다면 추가로 사용할 수 없습니다.',
   'item.use.radio.title': '📻 아이템 무전기 사용',
@@ -517,7 +823,6 @@ const TEXT_KO = {
   'player.you': '나',
   'player.cash': '보유 현금',
   'player.lands': '땅 {n}곳',
-  'player.assets': '총 자산 {amount}',
   'player.turn': '차례',
   'player.island': '무인도 (남은 턴 {n})',
   'player.boarded': '우주여행 탑승',
@@ -526,6 +831,7 @@ const TEXT_KO = {
   'game.items': '아이템',
   'game.turn': '{player} 님의 차례',
   'game.fund': '사회복지기금',
+  'game.bank': '은행',
   'game.league': '{league} · 배율 {n}배',
   'game.players': '플레이어',
   'game.log': '진행 기록',
@@ -533,6 +839,7 @@ const TEXT_KO = {
   'game.closeHint': '다시 클릭하면 닫힙니다.',
   'hint.roll': '당신의 차례입니다. 주사위를 굴리세요.',
   'hint.double': '더블! 주사위를 한 번 더 굴리세요.',
+  'hint.loaded': '{item} 적용 중 : 이번 주사위는 {faces} 눈만 나옵니다.',
   'hint.island': '무인도에 갇혀 있습니다. 더블이 나오면 탈출합니다. (남은 턴 {n})',
   'hint.release': '이번 차례에 무인도에서 풀려납니다. 주사위를 굴리세요.',
   'hint.travel': '우주여행! 이동할 칸을 클릭한 뒤 [이곳으로 이동] 을 누르세요.',
@@ -610,7 +917,6 @@ const TEXT_KO = {
   'info.buildings': '건물',
   'info.total': '현재 통행료·이용료 합계',
   'info.sale': '은행 매각 시 ({n}%)',
-  'ask.cash': '보유 현금 : {amount}',
   'ask.buy.title': '땅을 구매하시겠습니까?',
   'ask.buy.yes': '구매 ({amount})',
   'ask.buy.no': '구매하지 않음',
@@ -639,8 +945,10 @@ const TEXT_KO = {
   'result.lobby': '대기실로',
   'coupon.header': '비밀쿠폰',
   'coupon.drawer': '{player} 님이 뽑은 쿠폰',
-  'coupon.welfare.title': '사회복지기금 배당',
+  'coupon.welfare.title': '사회복지기금',
   'coupon.welfare.text': '사회복지기금 접수처로 가시오.\n출발지를 거칠 경우 월급 수령.',
+  'coupon.dividend.title': '사회복지기금 배당',
+  'coupon.dividend.text': '사회복지기금 본부로 가시오.\n출발지를 거칠 경우 월급 수령.',
   'coupon.speeding.title': '과속 운전 벌금',
   'coupon.speeding.text': '과속 운전을 하였으므로 벌금 {amount}을 내시오.',
   'coupon.jeju.title': '관광 여행',
@@ -704,6 +1012,11 @@ const TEXT_KO = {
   'log.radio': '{player} 님이 무전기를 사용하여 무인도에서 탈출했습니다.',
   'log.itemPass': '{player} 님이 아이템 우대권을 사용하여 {tile} 이용료 {amount}을 면제받았습니다.',
   'log.itemRadio': '{player} 님이 아이템 무전기를 사용하여 무인도에서 탈출했습니다.',
+  'log.itemUse': '{player} 님이 아이템 [{item}] 을 사용했습니다.',
+  'log.charmDouble': '{player} 님의 부적 [{item}] 효과로 더블이 나왔습니다.',
+  'log.charmDiscount': '{player} 님이 부적 [{item}] 의 효과로 {tile} 땅값을 {percent}% 할인받았습니다.',
+  'log.charmBuild': '{player} 님의 부적 [{item}] 효과로 {tile}에 {building}이(가) 무료로 지어졌습니다.',
+  'log.charmRedraw': '{player} 님이 부적 [{item}] 의 효과로 [{coupon}] 쿠폰을 덱 맨 뒤로 보내고 다시 뽑습니다.',
   'log.island': '{player} 님이 무인도에 갇혔습니다.',
   'log.islandStay': '{player} 님은 더블이 나오지 않아 무인도에 머뭅니다.',
   'log.islandDouble': '{player} 님이 더블로 무인도에서 탈출했습니다!',
@@ -772,7 +1085,7 @@ const TEXT_KO = {
   'real.concorde': '마하 2로 날아서 런던에서 뉴욕까지 3시간 반이면 가던 초음속 여객기입니다. (최고 기록은 2시간 52분 59초) 서쪽으로 가면 현지 시각으로는 출발한 시각보다 "일찍" 도착했고, 비행 중에는 열 때문에 기체가 15~25cm 늘어났습니다. 20대만 만들어졌고 2003년에 은퇴했습니다.',
   'real.columbia': '1981년 4월 12일, 처음으로 우주에 다녀온 우주왕복선입니다. 첫 비행에서 54시간 반 동안 지구를 37바퀴 돌았으니 한 바퀴에 90분도 안 걸린 셈입니다. 로켓처럼 올라가 비행기처럼 내려왔고 모두 28번의 임무를 수행했습니다. 보드 한 바퀴쯤은 눈 깜짝할 사이입니다.',
   'mcp.rules': '[Hellmarble 플레이 방법]\n- 2~4명이 하는 턴제 보드게임이다. 사용자 1명과 인공지능 1~3명이 참여한다.\n- 모두 같은 돈({start} x 리그 배율)을 가지고 출발지에서 시작한다. 다른 플레이어가 모두 파산하면 승리하고, 사용자가 파산하면 즉시 패배한다.\n- 시작할 때 각자 주사위 2개를 굴려 합이 큰 순서로 차례를 정한다. (동점이면 플레이어 번호가 낮은 쪽이 먼저)\n- 차례가 되면 주사위 2개를 굴려 나온 수만큼 앞으로 이동한다. 출발지를 지나거나 출발지에 멈추면 월급({salary})을 받는다.\n- 더블(두 눈이 같음)이면 도착한 칸의 처리를 마친 뒤 한 번 더 굴린다. 더블이 이어지면 계속 굴린다. 단, 무인도에 갇히거나 우주여행에 탑승하면 차례가 끝난다.\n- 빈 땅(일반 도시, 한국 도시, 특수 시설)에 도착하면 돈이 충분할 때 살 수 있다.\n- 자기 일반 도시에 다시 도착하면 별장(최대 2개), 빌딩(1개), 호텔(1개) 가운데 하나를 지을 수 있다. 한국 도시와 특수 시설에는 지을 수 없다.\n- 남의 땅에 도착하면 통행료와 건물 이용료의 합을 소유자에게 낸다. 우대권이 있으면 써서 면제받을 수 있다.\n- 낼 돈이 모자라면 자기 땅을 은행에 팔아(구매·건설 가격의 {sell}%) 마련해야 하고, 모두 팔아도 모자라면 파산한다.\n- 비밀쿠폰 칸 : 쿠폰 한 장을 뽑아 적힌 대로 한다. 우대권과 무전기는 보관했다가 쓸 수 있다.\n- 우주여행 칸 : 탑승하여 다음 차례에 원하는 칸으로 이동한다. 콜롬비아 호를 다른 플레이어가 가지고 있으면 이용료({space})를 낸다.\n- 무인도 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고(이 더블로는 다시 굴리지 않는다), 아니면 2턴을 쉬고 3턴 째에 이동한다. 무전기를 쓰면 바로 풀려난다.\n- 사회복지기금 접수처 : {welfare}을 낸다. (모자라면 가진 만큼만 내고 파산하지 않는다.) 사회복지기금 본부 : 쌓인 돈을 모두 가져간다.\n- 리그 : Green(배율 1배), Orange(5배), Red(30배). 참가비는 시작 금액과 같고, 배율은 게임 안의 모든 금액에 곱해진다.\n- 승리하면 게임에서 가진 현금과 땅, 건물의 가치(100%)를 대기실 금액으로 받는다. 패배하면 참가비를 잃는다.',
-  'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에 "주사위 굴리기" 또는 "메인 메뉴"(저장하고 나감)를 누른다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
+  'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에는 "주사위 굴리기", "아이템", "메인 메뉴"(저장하고 나감), "포기"를 사용할 수 있다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n  주사위·말 이동·돈 이동 연출 중에는 조작할 수 없으므로 hellmarble_wait 로 다음 입력 시점까지 기다린다. 돈은 플레이어 사이뿐 아니라 은행(출발지 칸)·사회복지기금 본부와 오갈 때도 지폐 이동으로 표시된다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
   'mcp.tiles': '칸 정보 보기 또는 닫기 (value : 0~39)',
   'mcp.unknown': '지금 누를 수 없는 동작입니다. hellmarble_get_state 의 actions 를 확인하세요.',
   'mcp.noInput': '지금 화면에는 글자를 입력할 곳이 없습니다.',
@@ -825,35 +1138,199 @@ const TEXT_EN = {
   'lobby.short': 'You do not have enough money to join the {league}.\nRequired : {fee}\nYou have : {money}',
   'lobby.confirmTitle': 'Confirm',
   'lobby.confirm': 'Join the {league}?\nThe entry fee of {fee} will be deducted from your money.',
-  'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Items taken into a game are never returned, whether you win or lose. If you lose, the entry fee is gone.',
-  'mcp.items.rules': '[Item rules]\n- Buy items from the lobby shop for {itemPrice} each and keep them in your lobby inventory, or sell them for {itemSell}% of the purchase price.\n- Take all your items into a game; no items are returned afterward, whether you win or lose.\n- An item free pass waives one toll or building fee on an opponent\'s land, or the travel fee for another player\'s Columbia ship. It can be used only once per game and separately from Secret Coupon passes.\n- An item radio lets you leave Desert Island and roll on arrival or while trapped. It can be used only once per game and separately from Secret Coupon radios.',
-  'mcp.items.guide': '- In the lobby, "Item Shop" buys and sells items and shows their prices and details. "My Items" shows your inventory. The "Items" button on your turn opens the same inventory.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
+  'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Consumable items taken into a game are never returned, whether you win or lose. Colors and shapes are never lost. If you lose, the entry fee is gone.',
+  'mcp.items.rules': '[Item rules]\n- Buy items in the lobby shop and keep them, or sell them back for {itemSell}% of the purchase price.\n- All your items go into a game with you; none are returned afterward, whether you win or lose.\n- Each kind of item can be used only once per game. The dice items (Big Dice, Small Dice) share a single use between them. Secret Coupon passes and radios are counted separately.\n- Some items are offered by the game when the situation arises; others are used from the item list on your turn to roll.\n[Items]',
+  'mcp.items.entry': '- {item} ({price}) : {description} [When] {when}',
+  'mcp.items.guide': '- The lobby "Item Shop" (lobby.shop) has Buy / Sell tabs (items.tab), category buttons (items.filter) and a list of item cards. Press a card (items.pick) to open its detail popup, set the quantity (items.less / items.more / items.max), then buy or sell (items.trade). Close the popup with items.back and the shop with items.close.\n- "My Items" (lobby.items) and the "Items" button on your turn (game.items) open your inventory. In a game, on your turn to roll, "Use" (items.use) in the detail popup uses a Space Travel Invitation or a dice item after one more confirmation.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
   'lobby.shop': 'Item Shop',
   'lobby.items': 'My Items',
-  'item.title': 'Items',
+  'item.owned': 'My Items',
   'item.none': 'You do not have any items.',
+  'item.noneLobby': 'You do not have any items. You can buy some in the lobby shop.',
+  'item.noneIn': 'There are no items in this category.',
+  'item.total': '{kinds} kind(s) · {count} item(s)',
   'item.count': 'In stock',
+  'item.hint.lobby': 'Click an item to read its details. Colors, shapes and charms can be equipped right there. Consumable items all go into a game with you and are not returned when it ends. Colors, shapes and charms are never lost.',
+  'item.hint.game': 'These are the items you brought into this game. Click an item to read its details. Items used on your turn to roll can be used right there.',
+  'item.category.all': 'All',
+  'item.category.support': 'Support',
+  'item.category.travel': 'Travel',
+  'item.category.dice': 'Dice',
+  'item.category.color': 'Colors',
+  'item.category.shape': 'Shapes',
+  'item.info.when': 'When to use',
+  'item.info.limit': 'Limit',
+  'item.info.state': 'This game',
+  'item.state.ready': 'Ready',
+  'item.state.spent': 'Used',
+  'item.limit.single': 'Can be used only once per game, no matter how many you own.',
+  'item.limit.shared': 'Can be used only once per game. {items} share that single use between them.',
+  'lobby.look': 'My token',
+  'lobby.needLook': 'You must equip one color and one shape to join a league.\nEquip a color and a shape you own in "My Items" in the lobby.',
+  'equip.none.color': 'No color',
+  'equip.none.shape': 'No shape',
+  'equip.slot.color': 'color',
+  'equip.slot.shape': 'shape',
+  'equip.color.brief': 'Your color on tokens and lands',
+  'equip.color.description': 'The color that stands for you in a game. Your token, your player card and the marks on the lands you own are painted in it. It is an equippable item, so using it never consumes it and you keep it after the game.',
+  'equip.color.when': 'Equip it in the lobby item window or in the shop. You need one color and one shape equipped to join a league.',
+  'equip.shape.brief': 'Your shape on tokens and lands',
+  'equip.shape.description': 'The shape that stands for you in a game. It is drawn on your token and on the marks of the lands you own. It is an equippable item, so using it never consumes it and you keep it after the game.',
+  'equip.shape.when': 'Equip it in the lobby item window or in the shop. You need one color and one shape equipped to join a league.',
+  'equip.limit.basic': 'A basic item you have from the start. It cannot be bought or sold and never goes away.',
+  'equip.limit.extra': 'You can own only one of each kind. It is never consumed, but selling it to the shop removes it.',
+  'equip.info.owned': 'Owned',
+  'equip.info.state': 'Equipped',
+  'equip.owned': 'Owned',
+  'equip.missing': 'Not owned',
+  'equip.on': 'Equipped',
+  'equip.off': 'Not equipped',
+  'equip.equip': 'Equip',
+  'equip.done': 'Equipped {item}.',
+  'equip.sold': 'You sold the {slot} you had equipped. Equip another {slot} to join a league.',
+  'store.have': 'You already own this. You can own only one of each equippable item.',
+  'store.boughtOne': 'Bought {item}.',
+  'store.soldOne': 'Sold {item} for {amount}.',
+  'item.red.title': 'Red',
+  'item.blue.title': 'Blue',
+  'item.green.title': 'Green',
+  'item.yellow.title': 'Yellow',
+  'item.purple.title': 'Purple',
+  'item.sky.title': 'Sky Blue',
+  'item.lime.title': 'Light Green',
+  'item.hotpink.title': 'Deep Pink',
+  'item.pink.title': 'Light Pink',
+  'item.brown.title': 'Brown',
+  'item.graphite.title': 'Graphite',
+  'item.bronze.title': 'Bronze',
+  'item.silver.title': 'Silver',
+  'item.gold.title': 'Gold',
+  'item.star.title': 'Star',
+  'item.triangle.title': 'Triangle',
+  'item.square.title': 'Square',
+  'item.diamond.title': 'Diamond',
+  'item.plus.title': 'Plus (+)',
+  'item.minus.title': 'Minus (−)',
+  'item.times.title': 'Times (×)',
+  'item.divide.title': 'Divide (÷)',
+  'item.spa.title': 'Hot Spring (♨)',
+  'item.club.title': 'Club (♧)',
+  'item.spade.title': 'Spade (♤)',
+  'item.heart.title': 'Heart (♡)',
+  'item.note.title': 'Note (♪)',
+  'item.notes.title': 'Notes (♬)',
+  'mcp.equips.rules': '[Equippable items]\n- There are colors and shapes. You must equip one of each to join a league. The equipped color and shape are used in a game for your token and for the marks on the lands you own.\n- You start with 5 colors (Red, Blue, Green, Yellow, Purple) and 4 shapes (Star, Triangle, Square, Diamond), with Red and Star equipped. These basic items cannot be bought or sold.\n- More colors and shapes are sold in the shop. You can own only one of each; they are never consumed; selling one returns {itemSell}% of its price and removes it. If you sell the one you had equipped, you must equip another.\n- They cannot be changed during a game. AI players use basic colors and shapes that do not clash with yours.\n[Colors and shapes sold in the shop]',
+  'mcp.equips.entry': '- [{slot}] {item} ({price})',
+  'mcp.equips.guide': '- Colors and shapes (equippable items) are under the "Colors" and "Shapes" categories of the shop and of "My Items". Press a card (items.pick) and then "Equip" (items.equip) in its detail popup. The shop also buys and sells them (items.trade). "My token" in the lobby shows what is equipped; you cannot join a league while either one is empty.',
+  'item.category.charm': 'Charms',
+  'charm.grade.common': 'Common',
+  'charm.grade.uncommon': 'Uncommon',
+  'charm.grade.rare': 'Rare',
+  'charm.grade.legend': 'Legendary',
+  'charm.info.grade': 'Grade',
+  'charm.info.sell': 'Resale price',
+  'charm.double.brief': 'Doubles chance +{chance}%',
+  'charm.double.description': 'When you roll the dice in a game, your chance of rolling doubles goes up by {chance}%. (With normal dice, about 16.7% → about {total}%) Doubles give you another roll, and get you off the Desert Island at once.',
+  'charm.discount.brief': '{chance}% chance of {percent}% off a land',
+  'charm.discount.description': 'When you buy a land in a game, there is a {chance}% chance that you pay {percent}% less. You still need enough money for the full price to buy it. It does not apply to buildings, tolls and fees, the welfare fund, or payments from Secret Coupons.',
+  'charm.redraw.brief': '{chance}% chance to redraw a bad Secret Coupon',
+  'charm.redraw.description': 'When you draw a Secret Coupon in a game and the next one would hurt you right away, such as a fine, a tax, losing a land or being sent to the Desert Island, there is a {chance}% chance that it goes to the back of the deck and you draw again.',
+  'charm.build.brief': '{chance}% chance of a free {building} on a new land',
+  'charm.build.description': 'When you buy a land in a game, there is a {chance}% chance that one {building} is built on it for free right away. It applies only when you have just bought the land, and not to lands where nothing can be built.',
+  'charm.build.revisit': 'When you buy a land in a game, and whenever you arrive at your own land that has no {building}, there is a {chance}% chance that one {building} is built on it for free. It does not apply to lands where nothing can be built.',
+  'charm.when': 'Equip it in the lobby item window. You can equip only one at a time, and you can join a league without one. The effect of the equipped charm lasts for the whole game.',
+  'charm.limit': 'It is never consumed. You can own several of the same charm, and selling it to the shop removes it.',
+  'charm.unequip': 'Unequip',
+  'charm.undone': 'Unequipped {item}.',
+  'charm.sold': 'You sold every copy of the charm you had equipped, so it is no longer equipped.',
+  'charm.shopOnly': 'Charms are equipped in "My Items" in the lobby.',
+  'charm.flash': '{item} activated!',
+  'charm.flash.double': 'You rolled doubles!',
+  'charm.flash.discount': '{percent}% off {tile}',
+  'charm.flash.build': 'A free {building} was built in {tile}.',
+  'charm.flash.redraw': 'The [{coupon}] coupon goes to the back of the deck. Drawing again.',
+  'ticket.brief': 'Get {n} random charm(s)',
+  'ticket.description': 'It is used the moment you buy it and gives you {n} random charm(s). You may get a charm you already own. Charms cannot be bought directly, only drawn, and you equip them in "My Items" in the lobby.',
+  'ticket.when': 'It is used as soon as you buy it.',
+  'ticket.limit': 'You can buy it as many times as you like. Each charm is drawn separately with the same odds.',
+  'ticket.odds': 'Odds by grade',
+  'ticket.chance': '{grade} {percent}%',
+  'ticket.draw': 'Draw',
+  'draw.title': 'Charm Draw Results',
+  'draw.best': 'You got a {grade} charm!',
+  'draw.tally': '{grade} × {n}',
+  'draw.done': 'OK',
+  'draw.again': 'Draw Again',
+  'item.charmticket.title': 'Charm Ticket',
+  'item.charmticket10.title': '10-Charm Ticket',
+  'item.brokendice.title': 'Broken Dice',
+  'item.oldcoin.title': 'Old Coin',
+  'item.tornlottery.title': 'Torn Lottery Ticket',
+  'item.realtor.title': "Local Realtor's Card",
+  'item.scratched.title': 'Scratched Lottery Ticket',
+  'item.woodendice.title': 'Wooden Dice',
+  'item.memorialcoin.title': 'Commemorative Coin',
+  'item.fortunecookie.title': 'Fortune Cookie',
+  'item.lawfirm.title': 'Big Law Firm Card',
+  'item.stock.title': 'Stock Certificate',
+  'item.president.title': "President's Card",
+  'item.pendant.title': 'Lucky Pendant',
+  'item.etf.title': 'Leveraged ETF Certificate',
+  'mcp.charms.rules': '[Charms]\n- A charm is an equippable item. You can equip only one, and you can join a league without one. The equipped charm works for the whole game. AI players do not use charms.\n- Charms cannot be bought directly. Buying a Charm Ticket ({ticket}) or a 10-Charm Ticket ({ticket10}) in the shop draws random charms on the spot. You may get the same charm again.\n- The grades are Common, Uncommon, Rare and Legendary. In a draw, Uncommon is 1/5 as likely as Common, Rare 1/100 and Legendary 1/2000. ({odds})\n- Charms you own can be sold in the shop for a price set by grade. ({sells})\n- Charms are shown and equipped only in the item window. In the game screen a notice appears only when an effect happens.\n[Charm list]',
+  'mcp.charms.entry': '- [{grade}] {item} : {brief}',
+  'mcp.charms.guide': '- Drawing charms : under the "Charms" category of the shop, press a ticket card (items.pick) and then "Draw" (items.trade) in its detail popup. The money is deducted and the results appear; close them with "OK" (items.done). Sell charms you own on the Sell tab.\n- Equipping a charm : under the "Charms" category of "My Items", press a card and then "Equip" (items.equip) or "Unequip" (items.unequip).',
   'item.pass.title': 'Free Pass',
-  'item.pass.description': 'Skip one toll or building fee owed to another player, including the Columbia space travel fee. This item works separately from Secret Coupon passes, and you can use an item pass only once per game, no matter how many you own. It is consumed when used.',
+  'item.pass.brief': 'Skip one toll and fee',
+  'item.pass.description': "Skip the toll and building fees you owe when you land on another player's land, one time. It also covers the space travel fee charged when another player owns the Columbia. It is kept and used separately from Secret Coupon passes. Using it removes one from your stock.",
+  'item.pass.when': 'The game asks whether to use it when you have to pay a toll or fee.',
   'item.radio.title': 'Radio',
-  'item.radio.description': 'Escape Desert Island at once and roll the dice to move. This item works separately from Secret Coupon radios, and you can use an item radio only once per game, no matter how many you own. It is consumed when used.',
+  'item.radio.brief': 'Escape the island at once',
+  'item.radio.description': 'When you are stuck on the Desert Island, escape at once without waiting for doubles, then roll the dice and move. It is kept and used separately from Secret Coupon radios. Using it removes one from your stock.',
+  'item.radio.when': 'The game asks whether to use it when you land on the island, and before each roll while you are stuck there.',
+  'item.invitation.title': 'Space Travel Invitation',
+  'item.invitation.brief': 'Board space travel for free',
+  'item.invitation.description': 'Instead of rolling the dice, move straight to Space Travel, board, and end your turn. You pay no fee even if someone owns the Columbia, and you collect your salary if you pass Start on the way. On your next turn you can move to any tile on the board. Using it removes one from your stock.',
+  'item.invitation.when': 'Use it yourself from the item list on your turn to roll the dice.',
+  'item.bigdice.title': 'Big Dice',
+  'item.bigdice.brief': 'Dice that roll only 4, 5, 6',
+  'item.bigdice.description': 'Swap both dice for this roll with dice that only show 4, 5 and 6. (Faces 1, 2, 3 become 4, 5, 6.) Handy when you want to go far. The effect covers a single roll on the turn you use it, so if you roll doubles the extra roll uses normal dice again. One is removed from your stock the moment you use it, and it is not returned even if you do not roll that turn.',
+  'item.bigdice.when': 'Use it yourself from the item list on your turn to roll, then roll the dice.',
+  'item.smalldice.title': 'Small Dice',
+  'item.smalldice.brief': 'Dice that roll only 1, 2, 3',
+  'item.smalldice.description': 'Swap both dice for this roll with dice that only show 1, 2 and 3. (Faces 4, 5, 6 become 1, 2, 3.) Handy when you want to stop close by. The effect covers a single roll on the turn you use it, so if you roll doubles the extra roll uses normal dice again. One is removed from your stock the moment you use it, and it is not returned even if you do not roll that turn.',
+  'item.smalldice.when': 'Use it yourself from the item list on your turn to roll, then roll the dice.',
   'store.title': 'Item Shop',
-  'store.balance': 'Lobby money : {amount}',
-  'store.terms': 'Each item costs {price}. Selling an item returns {n}% of its purchase price.',
-  'store.buy': 'Buy {item} · {amount}',
-  'store.sell': 'Sell {item} · {amount}',
-  'store.bought': 'Bought {item}. In stock : {n}',
-  'store.sold': 'Sold {item}. Money received : {amount}',
-  'store.short': 'You do not have enough money to buy {item}.\nPrice : {price}\nYou have : {money}',
-  'store.empty': 'You do not have a {item} to sell.',
-  'store.detail': 'View details : {item}',
+  'store.money': 'Your money',
+  'store.hint': 'Click an item to read its details and buy or sell it. Selling returns {n}% of the purchase price.',
+  'store.tab.buy': 'Buy',
+  'store.tab.sell': 'Sell',
+  'store.nothing': 'You have nothing to sell. You can buy items on the Buy tab.',
+  'store.owned': 'Owned ×{n}',
   'store.priceBuy': 'Purchase price',
-  'store.priceSell': 'Resale price (70%)',
+  'store.priceSell': 'Resale price ({n}%)',
+  'store.quantity': 'Quantity',
+  'store.less': 'Decrease quantity',
+  'store.more': 'Increase quantity',
+  'store.max': 'Max',
+  'store.total.buy': 'Total cost',
+  'store.total.sell': 'You receive',
+  'store.buy': 'Buy {n}',
+  'store.sell': 'Sell {n}',
+  'store.bought': 'Bought {n} × {item}. (In stock : {total})',
+  'store.sold': 'Sold {n} × {item} for {amount}. (In stock : {total})',
+  'store.short': 'You do not have enough money to buy this.',
   'settings.reset': 'Reset Settings',
   'settings.resetTitle': 'Reset settings and saved data',
   'settings.resetText': 'Restore the default language and light theme, delete all three save slots and items, then return to the main menu. Continue?',
   'settings.resetDoneTitle': 'Reset complete',
   'settings.resetDone': 'Settings and saved data have been reset.',
+  'item.use': 'Use',
+  'item.use.title': 'Use {item}',
+  'item.use.note': 'Use it now? One is removed from your stock at once and this cannot be undone.',
+  'item.block.ask': 'This item is not used directly. The game asks whether to use it when the situation arises.',
+  'item.block.turn': 'It can only be used on your turn to roll the dice.',
+  'item.block.spent': 'Already used in this game. It can be used only once per game.',
+  'item.block.shared': 'One of {items} has already been used in this game. They share a single use per game.',
   'item.use.pass.title': '🎟️ Use Item Free Pass',
   'item.use.pass.text': 'Skip the {amount} owed at {tile}.\nAn item free pass cannot be used again in this game once spent.',
   'item.use.radio.title': '📻 Use Item Radio',
@@ -875,7 +1352,6 @@ const TEXT_EN = {
   'player.you': 'You',
   'player.cash': 'Cash',
   'player.lands': '{n} land(s)',
-  'player.assets': 'Total assets {amount}',
   'player.turn': 'Turn',
   'player.island': 'Island ({n} turn(s) left)',
   'player.boarded': 'On board',
@@ -884,6 +1360,7 @@ const TEXT_EN = {
   'game.items': 'Items',
   'game.turn': "{player}'s turn",
   'game.fund': 'Welfare fund',
+  'game.bank': 'Bank',
   'game.league': '{league} · x{n}',
   'game.players': 'Players',
   'game.log': 'Game Log',
@@ -891,6 +1368,7 @@ const TEXT_EN = {
   'game.closeHint': 'Click again to close.',
   'hint.roll': 'It is your turn. Roll the dice.',
   'hint.double': 'Doubles! Roll the dice again.',
+  'hint.loaded': '{item} active : this roll only shows {faces}.',
   'hint.island': 'You are stuck on the island. Roll doubles to escape. ({n} turn(s) left)',
   'hint.release': 'You leave the island this turn. Roll the dice.',
   'hint.travel': 'Space travel! Click a tile, then press [Travel Here].',
@@ -968,7 +1446,6 @@ const TEXT_EN = {
   'info.buildings': 'Buildings',
   'info.total': 'Current toll and fees',
   'info.sale': 'Sale to the bank ({n}%)',
-  'ask.cash': 'Your cash : {amount}',
   'ask.buy.title': 'Buy this land?',
   'ask.buy.yes': 'Buy ({amount})',
   'ask.buy.no': 'Do not buy',
@@ -997,8 +1474,10 @@ const TEXT_EN = {
   'result.lobby': 'To the Lobby',
   'coupon.header': 'Secret Coupon',
   'coupon.drawer': 'Drawn by {player}',
-  'coupon.welfare.title': 'Welfare Fund Dividend',
+  'coupon.welfare.title': 'Welfare Fund',
   'coupon.welfare.text': 'Go to the Welfare Fund Desk.\nCollect your salary if you pass Start.',
+  'coupon.dividend.title': 'Welfare Fund Dividend',
+  'coupon.dividend.text': 'Go to the Welfare Fund HQ.\nCollect your salary if you pass Start.',
   'coupon.speeding.title': 'Speeding Fine',
   'coupon.speeding.text': 'You were caught speeding. Pay a fine of {amount}.',
   'coupon.jeju.title': 'Sightseeing Trip',
@@ -1062,6 +1541,11 @@ const TEXT_EN = {
   'log.radio': '{player} used a radio and escaped the island.',
   'log.itemPass': '{player} used an item pass and skipped the {amount} fee at {tile}.',
   'log.itemRadio': '{player} used an item radio and escaped the island.',
+  'log.itemUse': '{player} used the item [{item}].',
+  'log.charmDouble': "{player}'s charm [{item}] turned the roll into doubles.",
+  'log.charmDiscount': '{player} got {percent}% off {tile} thanks to the charm [{item}].',
+  'log.charmBuild': "{player}'s charm [{item}] built a free {building} in {tile}.",
+  'log.charmRedraw': '{player} sent the [{coupon}] coupon to the back of the deck with the charm [{item}] and draws again.',
   'log.island': '{player} is stuck on the island.',
   'log.islandStay': '{player} did not roll doubles and stays on the island.',
   'log.islandDouble': '{player} rolled doubles and escaped the island!',
@@ -1130,7 +1614,7 @@ const TEXT_EN = {
   'real.concorde': 'A supersonic airliner that cruised at Mach 2 and flew London to New York in about three and a half hours. (The record is 2 hours 52 minutes 59 seconds.) Heading west, you landed "earlier" than you took off by local time, and in flight the heat stretched the airframe by 15 to 25 cm. Only 20 were built, and it retired in 2003.',
   'real.columbia': 'On 12 April 1981 it became the first space shuttle to fly to space. On that first flight it circled the Earth 37 times in 54 and a half hours, less than 90 minutes per lap. It went up like a rocket, came down like an airplane, and flew 28 missions in all. One lap around this board is nothing.',
   'mcp.rules': '[How to play Hellmarble]\n- A turn-based board game for 2 to 4 players: one human and 1 to 3 AI players.\n- Everyone starts on Start with the same cash ({start} x the league multiplier). You win when every other player is bankrupt, and you lose at once if you go bankrupt.\n- At the beginning everyone rolls two dice; turns go from the highest total. (Ties go to the lower player number.)\n- On your turn, roll two dice and move forward by the total. You receive a salary ({salary}) whenever you pass or stop on Start.\n- On doubles you roll again after the tile you landed on is resolved, and keep going while doubles continue. The turn ends, however, if you get stuck on the island or board the space shuttle.\n- If you land on an unowned land (city, Korean city or special facility) and have enough cash, you may buy it.\n- When you land on your own city again, you may build one building: villas (up to 2), a building (1) or a hotel (1). Nothing can be built on Korean cities or special facilities.\n- If you land on a land owned by another player, you pay its toll plus the fees of its buildings. A free pass, if you hold one, lets you skip the payment.\n- If you are short of cash, you must sell your lands to the bank ({sell}% of the purchase and building prices). If that is still not enough, you go bankrupt.\n- Secret Coupon : draw a coupon and do what it says. Free passes and radios can be kept for later.\n- Space Travel : you board and move to any tile on your next turn. If another player owns the Columbia, you pay a fee ({space}).\n- Desert Island : you are stuck. Doubles free you and you move by that roll (those doubles do not give another roll); otherwise you rest for 2 turns and move on the 3rd. A radio frees you at once.\n- Welfare Fund Desk : pay {welfare}. (If short, pay what you have; you do not go bankrupt.) Welfare Fund HQ : take all the money piled up.\n- Leagues : Green (x1), Orange (x5), Red (x30). The entry fee equals the starting cash, and the multiplier applies to every amount in the game.\n- If you win, your in-game cash plus the full value of your lands and buildings is added to your lobby money. If you lose, the entry fee is gone.',
-  'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n- Load : clicking a slot with data offers Load / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn press "Roll Dice" or "Main Menu" (saves and leaves). Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
+  'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n- Load : clicking a slot with data offers Load / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn choose "Roll Dice", "Items", "Main Menu" (saves and leaves), or "Forfeit". Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n  Controls are unavailable during dice, movement, and money transfer animations; call hellmarble_wait until the next input is needed. Money visibly moves between players and also to or from the bank (shown at Start) and Welfare Fund HQ.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
   'mcp.tiles': 'Show or hide the info of a tile (value : 0-39)',
   'mcp.unknown': 'That action cannot be pressed right now. Check the actions of hellmarble_get_state.',
   'mcp.noInput': 'There is no text field on the current screen.',
@@ -1163,7 +1647,7 @@ export function translate(language, key, params) {
 }
 
 /**
- * 금액(원)을 언어에 맞는 문자열로 바꾼다. (예: 12000 → "1만 2천원" 또는 "₩12,000")
+ * 금액(원)을 언어에 맞는 문자열로 바꾼다. (예: 12000 → "1만 2천원" 또는 "₩12,000") 한국어는 조, 억, 만 단위로 끊어 쓴다.
  * @param {number} value 금액 (원)
  * @param {string} language 언어 코드
  * @returns {string} 금액 문자열
@@ -1174,9 +1658,11 @@ export function formatMoney(value, language) {
   let rest = Math.abs(amount);
   if (language === 'en') return sign + '₩' + rest.toLocaleString('en-US');
   let parts = [];
-  let eok = Math.floor(rest / 100000000);
+  let jo = Math.floor(rest / 1000000000000);
+  let eok = Math.floor((rest % 1000000000000) / 100000000);
   let man = Math.floor((rest % 100000000) / 10000);
   let low = rest % 10000;
+  if (jo > 0) parts.push(jo.toLocaleString('ko-KR') + '조');
   if (eok > 0) parts.push(eok.toLocaleString('ko-KR') + '억');
   if (man > 0) parts.push(man.toLocaleString('ko-KR') + '만');
   if (low > 0) parts.push(low % 1000 === 0 ? (low / 1000) + '천' : low.toLocaleString('ko-KR'));
@@ -1191,7 +1677,7 @@ export function formatMoney(value, language) {
  * @returns {string} 짧은 금액 문자열
  */
 export function formatCompact(value, language) {
-  let units = language === 'en' ? [[1000000000, 'B'], [1000000, 'M'], [1000, 'K']] : [[100000000, '억'], [10000, '만'], [1000, '천']];
+  let units = language === 'en' ? [[1000000000000, 'T'], [1000000000, 'B'], [1000000, 'M'], [1000, 'K']] : [[1000000000000, '조'], [100000000, '억'], [10000, '만'], [1000, '천']];
   // 큰 단위부터 살펴 처음으로 맞는 단위로 줄여 쓴다.
   for (let unit of units) {
     if (value >= unit[0]) return (language === 'en' ? '₩' : '') + (Math.round((value / unit[0]) * 10) / 10) + unit[1];
@@ -1280,6 +1766,18 @@ function button(label, action, value, className) {
 function tint(hex, alpha) {
   let value = parseInt(hex.slice(1), 16);
   return 'rgba(' + ((value >> 16) & 255) + ', ' + ((value >> 8) & 255) + ', ' + (value & 255) + ', ' + alpha + ')';
+}
+
+/**
+ * 요소에 플레이어의 색, 그 위에 그리는 문양의 글자색, 칠하는 배경을 CSS 변수로 지정한다.
+ * @param {HTMLElement} node 대상 요소
+ * @param {string} name 변수 이름의 가운데 부분 ('player' 이면 --hm-player, --hm-player-ink, --hm-player-fill)
+ * @param {{color: string, ink: string, fill: string}} style 그릴 값
+ */
+function paint(node, name, style) {
+  node.style.setProperty('--hm-' + name, style.color);
+  node.style.setProperty('--hm-' + name + '-ink', style.ink);
+  node.style.setProperty('--hm-' + name + '-fill', style.fill);
 }
 
 /**
@@ -1423,6 +1921,232 @@ function isCount(value, max) {
 }
 
 /**
+ * 모든 아이템의 수량이 0인 아이템 주머니를 만든다.
+ * @returns {Object<string, number>} 빈 아이템 주머니
+ */
+function emptyItems() {
+  let bag = {};
+  // 아이템 종류마다 수량 0을 넣는다.
+  for (let id in ITEMS) bag[id] = 0;
+  return bag;
+}
+
+/**
+ * 게임 한 판의 아이템 사용 기록을 만든다. 사용 제한 묶음마다 아직 쓰지 않은 상태로 시작한다.
+ * @returns {Object<string, boolean>} 사용 제한 묶음별 사용 여부
+ */
+function freshUsage() {
+  let used = {};
+  // 아이템마다 그 아이템이 속한 사용 제한 묶음을 쓰지 않은 상태로 넣는다.
+  for (let id in ITEMS) used[ITEMS[id].limit] = false;
+  return used;
+}
+
+/**
+ * 저장된 아이템 주머니를 지금의 아이템 구성에 맞춘다. 저장한 뒤에 새로 생긴 아이템은 0개로 채운다.
+ * @param {*} items 저장된 아이템 주머니 (없으면 undefined)
+ * @returns {Object<string, number>|null} 모든 아이템의 수량이 든 주머니. 모르는 아이템이나 올바르지 않은 수량이 있으면 null
+ */
+function fillItems(items) {
+  let bag = emptyItems();
+  if (items === undefined) return bag;
+  if (!items || typeof items !== 'object' || Array.isArray(items)) return null;
+  // 저장된 아이템마다 종류와 수량을 확인하고 옮겨 담는다.
+  for (let id in items) {
+    if (!Object.hasOwn(ITEMS, id) || !isCount(items[id], Number.MAX_SAFE_INTEGER)) return null;
+    bag[id] = items[id];
+  }
+  return bag;
+}
+
+/**
+ * 같은 사용 제한 묶음에 속한 아이템의 식별자 목록을 구한다.
+ * @param {string} limit 사용 제한 묶음의 이름
+ * @returns {string[]} 아이템 식별자 목록
+ */
+function itemsOfLimit(limit) {
+  let list = [];
+  // 모든 아이템을 살펴 같은 묶음에 속한 것을 모은다.
+  for (let id in ITEMS) {
+    if (ITEMS[id].limit === limit) list.push(id);
+  }
+  return list;
+}
+
+/**
+ * 식별자가 장착형 아이템(색상 또는 모양)의 것인지 확인한다.
+ * @param {*} id 확인할 식별자
+ * @returns {boolean} 장착형 아이템이면 true
+ */
+function isEquip(id) {
+  return typeof id === 'string' && Object.hasOwn(EQUIPS, id);
+}
+
+/**
+ * 새 슬롯이 처음에 가지는 장착형 아이템의 보유 목록을 만든다. 가격이 없는 기본 색상과 모양만 하나씩 가진다.
+ * @returns {Object<string, number>} 장착형 아이템 종류별 보유 수 (0 또는 1)
+ */
+function starterEquips() {
+  let owned = {};
+  // 장착형 아이템마다 기본 아이템이면 1, 아니면 0을 넣는다.
+  for (let id in EQUIPS) owned[id] = EQUIPS[id].price === 0 ? 1 : 0;
+  return owned;
+}
+
+/**
+ * 저장된 장착형 아이템의 보유 목록을 지금의 구성에 맞춘다. 장착형 아이템은 종류마다 하나만 가질 수 있다.
+ * 저장한 뒤에 새로 생긴 것은 갖지 않은 것으로 채우고, 사고팔 수 없는 기본 아이템은 항상 가진 것으로 한다.
+ * @param {*} equips 저장된 보유 목록 (없으면 undefined)
+ * @returns {Object<string, number>|null} 모든 장착형 아이템의 보유 수가 든 목록. 모르는 아이템이나 올바르지 않은 수가 있으면 null
+ */
+function fillEquips(equips) {
+  let owned = starterEquips();
+  if (equips === undefined) return owned;
+  if (!equips || typeof equips !== 'object' || Array.isArray(equips)) return null;
+  // 저장된 아이템마다 종류와 보유 수를 확인하고, 기본 아이템이 아닌 것만 옮겨 담는다.
+  for (let id in equips) {
+    if (!isEquip(id) || !isCount(equips[id], 1)) return null;
+    if (EQUIPS[id].price > 0) owned[id] = equips[id];
+  }
+  return owned;
+}
+
+/**
+ * 식별자가 부적의 것인지 확인한다.
+ * @param {*} id 확인할 식별자
+ * @returns {boolean} 부적이면 true
+ */
+function isCharm(id) {
+  return typeof id === 'string' && Object.hasOwn(CHARMS, id);
+}
+
+/**
+ * 식별자가 부적 추첨권의 것인지 확인한다.
+ * @param {*} id 확인할 식별자
+ * @returns {boolean} 부적 추첨권이면 true
+ */
+function isTicket(id) {
+  return typeof id === 'string' && Object.hasOwn(CHARM_TICKETS, id);
+}
+
+/**
+ * 저장된 부적의 보유 수량을 지금의 구성에 맞춘다. 부적은 같은 것을 여러 개 가질 수 있다.
+ * 저장한 뒤에 새로 생긴 부적은 0개로 채운다.
+ * @param {*} charms 저장된 보유 수량 (없으면 undefined)
+ * @returns {Object<string, number>|null} 모든 부적의 수량이 든 목록. 모르는 부적이나 올바르지 않은 수량이 있으면 null
+ */
+function fillCharms(charms) {
+  let owned = {};
+  // 부적 종류마다 수량 0을 넣는다.
+  for (let id in CHARMS) owned[id] = 0;
+  if (charms === undefined) return owned;
+  if (!charms || typeof charms !== 'object' || Array.isArray(charms)) return null;
+  // 저장된 부적마다 종류와 수량을 확인하고 옮겨 담는다.
+  for (let id in charms) {
+    if (!isCharm(id) || !isCount(charms[id], Number.MAX_SAFE_INTEGER)) return null;
+    owned[id] = charms[id];
+  }
+  return owned;
+}
+
+/**
+ * 부적 하나를 추첨한다. 먼저 등급을 가중치에 따라 정하고, 그 등급의 부적 가운데 하나를 같은 확률로 고른다.
+ * 같은 부적이 거듭 나올 수 있으며, 여러 개를 뽑을 때에는 이 함수를 그만큼 따로 부른다. (독립 시행)
+ * @param {Function} random 0 이상 1 미만의 난수를 돌려주는 함수
+ * @returns {string} 뽑힌 부적의 식별자
+ */
+export function drawCharm(random) {
+  let total = 0;
+  let picked = '';
+  let pool = [];
+  // 등급 가중치의 합을 구한다.
+  for (let grade in CHARM_GRADES) total += CHARM_GRADES[grade].weight;
+  let point = random() * total;
+  // 누적 가중치가 난수를 넘어서는 첫 등급을 고른다.
+  for (let grade in CHARM_GRADES) {
+    picked = grade;
+    point -= CHARM_GRADES[grade].weight;
+    if (point < 0) break;
+  }
+  // 그 등급의 부적을 모은다.
+  for (let id in CHARMS) {
+    if (CHARMS[id].grade === picked) pool.push(id);
+  }
+  return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
+}
+
+/**
+ * 저장된 장착 상태를 확인하여 다듬는다. 색상과 모양은 가지고 있는 아이템을 장착했거나 비어 있어야(null) 하고,
+ * 부적은 가지고 있는 것 하나를 장착했거나 비어 있어야 한다.
+ * @param {*} look 저장된 장착 상태 { color, shape, charm } (없으면 undefined)
+ * @param {Object<string, number>} owned 색상과 모양의 보유 목록
+ * @param {Object<string, number>} charms 부적의 보유 수량
+ * @returns {{color: string|null, shape: string|null, charm: string|null}|null} 장착 상태. 저장된 것이 없으면 기본 장착, 올바르지 않으면 null
+ */
+function fillLook(look, owned, charms) {
+  let result = {};
+  if (look === undefined) return { ...DEFAULT_LOOK, charm: null };
+  if (!look || typeof look !== 'object' || Array.isArray(look)) return null;
+  // 색상과 모양 자리마다 장착한 아이템이 그 자리의 것이고 가지고 있는 것인지 확인한다.
+  for (let slot in DEFAULT_LOOK) {
+    let id = look[slot] === undefined ? null : look[slot];
+    if (id !== null && !(isEquip(id) && EQUIPS[id].slot === slot && owned[id] > 0)) return null;
+    result[slot] = id;
+  }
+  result.charm = look.charm === undefined ? null : look.charm;
+  if (result.charm !== null && !(isCharm(result.charm) && charms[result.charm] > 0)) return null;
+  return result;
+}
+
+/**
+ * 플레이어의 생김새(색상과 모양)가 게임에 쓸 수 있는 올바른 것인지 확인한다. 색상과 모양이 모두 정해져 있어야 한다.
+ * @param {*} look 확인할 생김새 { color, shape }
+ * @returns {boolean} 올바르면 true
+ */
+function isValidLook(look) {
+  if (!look || typeof look !== 'object') return false;
+  // 색상과 모양 자리마다 그 자리에 맞는 장착형 아이템인지 확인한다.
+  for (let slot in DEFAULT_LOOK) {
+    if (!isEquip(look[slot]) || EQUIPS[look[slot]].slot !== slot) return false;
+  }
+  return true;
+}
+
+/**
+ * 인공지능 플레이어들의 생김새를 정한다. 기본 색상과 기본 모양 가운데 사용자의 것과 겹치지 않는 것을 차례로 나눠 준다.
+ * 색상은 사용자의 색과 같은 계열(예 : 파랑과 하늘색)도 피하여 서로 헷갈리지 않게 한다.
+ * @param {{color: string, shape: string}} look 사용자의 생김새
+ * @param {number} count 인공지능 플레이어의 수
+ * @returns {Array<{color: string, shape: string}>} 인공지능 플레이어 순서대로의 생김새
+ */
+function rivalLooks(look, count) {
+  let colors = [];
+  let shapes = [];
+  let looks = [];
+  // 기본 아이템 가운데 사용자의 것과 겹치지 않는 색상과 모양을 모은다.
+  for (let id in EQUIPS) {
+    let item = EQUIPS[id];
+    if (item.price > 0) continue;
+    if (item.slot === 'color' && item.family !== EQUIPS[look.color].family) colors.push(id);
+    if (item.slot === 'shape' && id !== look.shape) shapes.push(id);
+  }
+  // 인공지능 플레이어마다 모아 둔 색상과 모양을 하나씩 준다.
+  for (let index = 0; index < count; index++) looks.push({ color: colors[index % colors.length], shape: shapes[index % shapes.length] });
+  return looks;
+}
+
+/**
+ * 생김새(장착한 색상과 모양)를 화면에 그릴 값으로 바꾼다. 장착하지 않은 자리는 회색과 빈 문자로 그린다.
+ * @param {{color: string|null, shape: string|null}} look 생김새
+ * @returns {{color: string, ink: string, fill: string, symbol: string}} 색, 문양의 글자색, 칠하는 배경, 문양 문자
+ */
+export function lookStyle(look) {
+  let color = look && isEquip(look.color) ? EQUIPS[look.color] : { value: '#868e96', ink: '#ffffff' };
+  let shape = look && isEquip(look.shape) ? EQUIPS[look.shape] : { value: '' };
+  return { color: color.value, ink: color.ink, fill: color.fill || color.value, symbol: shape.value };
+}
+
+/**
  * 아이템 종류별 수량이 정해진 아이템 목록에 맞고 모두 안전한 정수인지 확인한다.
  * @param {*} items 확인할 아이템 주머니
  * @returns {boolean} 올바르면 true
@@ -1441,6 +2165,26 @@ function isValidItemBag(items) {
 }
 
 /**
+ * 플레이어의 아이템 수량, 게임 한 판의 사용 기록, 적용 중인 주사위 조작형 아이템이 올바른지 확인한다.
+ * 아이템은 사용자만 가질 수 있으므로 인공지능 플레이어는 모두 비어 있어야 한다.
+ * @param {Object} player 확인할 플레이어
+ * @returns {boolean} 올바르면 true
+ */
+function isValidItemState(player) {
+  let used = player.usedItems;
+  let loaded = player.loaded;
+  if (!isValidItemBag(player.items) || !used || typeof used !== 'object') return false;
+  if (loaded !== null && !(typeof loaded === 'string' && Object.hasOwn(ITEMS, loaded) && ITEMS[loaded].effect === 'dice')) return false;
+  if (loaded !== null && (player.ai || !used[ITEMS[loaded].limit])) return false;
+  // 아이템마다 사용 기록의 형식을 확인하고, 인공지능이 아이템을 가졌거나 쓴 기록이 없는지 확인한다.
+  for (let id in ITEMS) {
+    if (typeof used[ITEMS[id].limit] !== 'boolean') return false;
+    if (player.ai && (player.items[id] !== 0 || used[ITEMS[id].limit])) return false;
+  }
+  return true;
+}
+
+/**
  * 게임 진행 상태의 플레이어 목록, 턴 순서, 순서를 정한 주사위가 올바른지 확인한다.
  * @param {Object} game 게임 진행 상태
  * @returns {boolean} 올바르면 true
@@ -1448,7 +2192,7 @@ function isValidItemBag(items) {
 function isValidPlayers(game) {
   let count = game.players.length;
   let alive = 0;
-  if (count < 2 || count > PLAYER_STYLES.length || game.order.length !== count || game.rolls.length !== count) return false;
+  if (count < 2 || count > MAX_PLAYERS || game.order.length !== count || game.rolls.length !== count) return false;
   // 플레이어마다 번호, 돈, 위치, 상태 값의 형식과 범위를 확인한다.
   for (let id = 0; id < count; id++) {
     let player = game.players[id];
@@ -1456,9 +2200,8 @@ function isValidPlayers(game) {
     if (!player || typeof player !== 'object' || player.id !== id || player.ai !== (id !== 0)) return false;
     if (!isCount(player.cash, Number.MAX_SAFE_INTEGER) || !isCount(player.position, BOARD_SIZE - 1) || !isCount(player.island, ISLAND_TURNS)) return false;
     if (typeof player.alive !== 'boolean' || typeof player.boarded !== 'boolean' || !player.coupons || typeof player.coupons !== 'object') return false;
-    if (!isValidItemBag(player.items) || !player.usedItems || typeof player.usedItems !== 'object') return false;
-    if (typeof player.usedItems.pass !== 'boolean' || typeof player.usedItems.radio !== 'boolean') return false;
-    if (id !== 0 && (player.items.pass !== 0 || player.items.radio !== 0 || player.usedItems.pass || player.usedItems.radio)) return false;
+    if (!isValidItemState(player) || !isValidLook(player.look)) return false;
+    if (player.charm !== null && (player.ai || !isCharm(player.charm))) return false;
     if (!game.order.includes(id) || !Array.isArray(roll) || !isCount(roll[0] - 1, 5) || !isCount(roll[1] - 1, 5)) return false;
     if (id === 0 && typeof player.name !== 'string') return false;
     alive += player.alive ? 1 : 0;
@@ -1567,16 +2310,31 @@ export function isValidGame(game) {
  * 해석된 저장 데이터를 검사하여 슬롯 데이터로 다듬는다. 형식이 올바르지 않으면 오류를 던진다.
  * @param {*} data 해석된 저장 데이터
  * @param {string} fallback 이름이 비어 있을 때 쓸 이름
- * @param {boolean} strict 진행 중인 게임이 올바르지 않을 때 오류로 처리할지 여부 (false 이면 게임만 버린다.)
- * @returns {Object} 슬롯 데이터 { name, money, game, updated }
+ * @param {boolean} strict 아이템이나 진행 중인 게임이 올바르지 않을 때 오류로 처리할지 여부 (false 이면 올바르지 않은 부분만 기본값으로 바꾸거나 버린다.)
+ * @returns {Object} 슬롯 데이터 { name, money, items, equips, charms, equipped, game, updated }
  */
 export function normalizeSave(data, fallback, strict) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || !isCount(data.money, Number.MAX_SAFE_INTEGER)) throw new Error('data');
   let name = typeof data.name === 'string' ? data.name.trim().slice(0, NAME_LIMIT) : '';
-  let items = data.items === undefined ? { ...EMPTY_ITEMS } : data.items;
-  if (!isValidItemBag(items)) {
+  let items = fillItems(data.items);
+  if (items === null) {
     if (strict) throw new Error('data');
-    items = { ...EMPTY_ITEMS };
+    items = emptyItems();
+  }
+  let equips = fillEquips(data.equips);
+  if (equips === null) {
+    if (strict) throw new Error('data');
+    equips = starterEquips();
+  }
+  let charms = fillCharms(data.charms);
+  if (charms === null) {
+    if (strict) throw new Error('data');
+    charms = fillCharms(undefined);
+  }
+  let equipped = fillLook(data.equipped, equips, charms);
+  if (equipped === null) {
+    if (strict) throw new Error('data');
+    equipped = fillLook(undefined, equips, charms);
   }
   let game = data.game === undefined ? null : data.game;
   if (game !== null && !isValidGame(game)) {
@@ -1592,7 +2350,7 @@ export function normalizeSave(data, fallback, strict) {
     game.logs = logs.slice(-LOG_LIMIT);
     game.players[0].name = game.players[0].name.slice(0, NAME_LIMIT) || name || fallback;
   }
-  return { name: name || fallback, money: data.money, items, game, updated: isCount(data.updated, Number.MAX_SAFE_INTEGER) ? data.updated : 0 };
+  return { name: name || fallback, money: data.money, items, equips, charms, equipped, game, updated: isCount(data.updated, Number.MAX_SAFE_INTEGER) ? data.updated : 0 };
 }
 
 /* ==========================================================================
@@ -1717,11 +2475,13 @@ export class HellmarbleHost {
    * 주사위를 굴린 결과를 연출한다.
    * @param {Object} player 주사위를 굴린 플레이어
    * @param {number[]} dice 두 주사위의 눈
+   * @param {number[]|null} [faces] 주사위 조작형 아이템이 적용되었으면 그 주사위에서 나올 수 있는 눈 (아니면 null)
    * @returns {Promise<void>}
    */
-  async dice(player, dice) {
+  async dice(player, dice, faces) {
     void player;
     void dice;
+    void faces;
   }
 
   /**
@@ -1747,9 +2507,10 @@ export class HellmarbleHost {
   }
 
   /**
-   * 한 플레이어가 다른 플레이어에게 돈(통행료, 이용료 등)을 건네는 모습을 연출한다.
-   * @param {Object} payer 돈을 내는 플레이어
-   * @param {Object} receiver 돈을 받는 플레이어
+   * 돈이 오가는 모습을 연출한다. 플레이어끼리(통행료, 이용료)뿐 아니라 은행(땅과 건물의 구매, 매각 대금, 월급, 비밀쿠폰의 납부와 수령),
+   * 사회복지기금 본부(접수처에서의 납부, 본부에서의 수령)와 오가는 돈도 알려 준다.
+   * @param {Object|string} payer 돈을 내는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
+   * @param {Object|string} receiver 돈을 받는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
    * @param {number} amount 건넨 금액 (원)
    * @returns {Promise<void>}
    */
@@ -1757,6 +2518,18 @@ export class HellmarbleHost {
     void payer;
     void receiver;
     void amount;
+  }
+
+  /**
+   * 플레이어가 장착한 부적의 효과가 일어난 것을 연출한다.
+   * @param {Object} player 부적을 장착한 플레이어
+   * @param {Object} info 일어난 효과 { effect : 효과의 종류, charm : 부적 식별자 } 와 효과별 값
+   *   (discount : index, price, paid / build : index, building / redraw : coupon)
+   * @returns {Promise<void>}
+   */
+  async charm(player, info) {
+    void player;
+    void info;
   }
 
   /**
@@ -1772,8 +2545,9 @@ export class HellmarbleHost {
 
   /**
    * 사람 플레이어에게 선택을 요청한다. 기본 구현은 인공지능이 대신 답한다.
+   * roll 요청에는 QUIT, FORFEIT 외에 ITEM_PREFIX 뒤에 아이템 식별자를 붙인 값으로 답하여, 굴리기 전에 그 아이템을 쓸 수 있다.
    * @param {Object} player 선택할 플레이어
-   * @param {Object} request 선택할 내용 (type : roll, travel, radio, buy, build, pass, sell / roll 의 again 은 더블로 다시 굴리는 것인지 여부)
+   * @param {Object} request 선택할 내용 (type : roll, travel, radio, buy, build, pass, sell, itemPass, itemRadio / roll 의 again 은 더블로 다시 굴리는 것인지 여부)
    * @param {HellmarbleGame} game 진행 중인 게임
    * @returns {Promise<*>} 선택 결과
    */
@@ -2000,13 +2774,16 @@ export class HellmarbleGame {
 
   /**
    * 새 게임의 진행 상태를 만든다. 플레이어 구성, 턴 순서, 비밀쿠폰 덱을 정한다.
-   * @param {Object} options 설정 { league : 리그 식별자, name : 사용자 이름, seed : 난수 씨앗(선택), rivals : 인공지능 수(선택) }
+   * 사용자는 장착한 색상과 모양을 쓰고, 인공지능 플레이어는 그와 겹치지 않는 기본 색상과 모양을 쓴다.
+   * @param {Object} options 설정 { league : 리그 식별자, name : 사용자 이름, items : 사용자가 가져갈 아이템 주머니(선택), look : 사용자가 장착한 색상과 모양(선택, 생략 시 기본 장착), charm : 사용자가 장착한 부적(선택), seed : 난수 씨앗(선택), rivals : 인공지능 수(선택) }
    * @returns {Object} 새 게임의 진행 상태
    */
   static create(options) {
     let league = LEAGUES[options.league];
     let seed = options.seed === undefined ? Math.floor(Math.random() * 4294967296) : options.seed;
-    let humanItems = isValidItemBag(options.items) ? options.items : EMPTY_ITEMS;
+    let humanItems = fillItems(options.items) || emptyItems();
+    let look = isValidLook(options.look) ? { color: options.look.color, shape: options.look.shape } : { ...DEFAULT_LOOK };
+    let looks = [look, ...rivalLooks(look, MAX_PLAYERS - 1)];
     let state = {
       version: SAVE_VERSION, league: options.league, multiplier: league.multiplier, seed: seed >>> 0,
       players: [], order: [], rolls: [], turn: 0, turns: 0, lands: [], deck: [], fund: 0,
@@ -2019,7 +2796,7 @@ export class HellmarbleGame {
       state.players.push({
         id, name: id === 0 ? options.name : null, ai: id !== 0, cash: START_CASH * league.multiplier, position: TILES.start,
         alive: true, island: 0, boarded: false, coupons: { pass: 0, radio: 0 },
-        items: { pass: id === 0 ? humanItems.pass : 0, radio: id === 0 ? humanItems.radio : 0 }, usedItems: { pass: false, radio: false },
+        items: id === 0 ? humanItems : emptyItems(), usedItems: freshUsage(), loaded: null, look: looks[id], charm: id === 0 && isCharm(options.charm) ? options.charm : null,
         caution: id === 0 ? 1 : 0.7 + game.random() * 0.6,
       });
       state.rolls.push([game.rollDie(), game.rollDie()]);
@@ -2178,16 +2955,151 @@ export class HellmarbleGame {
   }
 
   /**
-   * 아이템 한 개를 소모한다. 사용자는 게임 한 판에 종류별 아이템을 한 번만 쓸 수 있다.
+   * 플레이어가 이번 게임에서 아이템을 쓸 수 있는지 확인한다.
+   * 아이템을 가지고 있어야 하고, 같은 사용 제한 묶음의 아이템을 이번 게임에서 아직 쓰지 않았어야 한다.
+   * @param {Object} player 쓰려는 플레이어
+   * @param {string} id 아이템 식별자
+   * @returns {boolean} 쓸 수 있으면 true
+   */
+  canUseItem(player, id) {
+    return !player.ai && player.alive && Object.hasOwn(ITEMS, id) && player.items[id] > 0 && !player.usedItems[ITEMS[id].limit];
+  }
+
+  /**
+   * 아이템 한 개를 소모한다. 같은 사용 제한 묶음의 아이템은 게임 한 판에 한 번만 쓸 수 있다.
    * @param {Object} player 사용한 플레이어
-   * @param {string} id 아이템 식별자 ('pass' 또는 'radio')
+   * @param {string} id 아이템 식별자
    * @returns {boolean} 이번 게임에 처음 사용했고 아이템 한 개를 소비했으면 true
    */
   consumeItem(player, id) {
-    if (player.id !== 0 || !ITEMS[id] || player.usedItems[id] || player.items[id] < 1) return false;
+    if (!this.canUseItem(player, id)) return false;
     player.items[id]--;
-    player.usedItems[id] = true;
+    player.usedItems[ITEMS[id].limit] = true;
     return true;
+  }
+
+  /**
+   * 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템을 사용한다. 사용하는 즉시 한 개가 소모된다.
+   * 주사위 조작형 아이템이면 이번 차례에 굴릴 주사위에 적용되도록 표시해 둔다.
+   * @param {Object} player 사용하는 플레이어
+   * @param {string} id 아이템 식별자
+   * @returns {boolean} 사용했으면 true (직접 쓰는 아이템이 아니거나 쓸 수 없으면 false)
+   */
+  useItem(player, id) {
+    if (!Object.hasOwn(ITEMS, id) || ITEMS[id].use !== 'turn' || !this.consumeItem(player, id)) return false;
+    if (ITEMS[id].effect === 'dice') player.loaded = id;
+    this.log('log.itemUse', { player: player.id, item: id });
+    return true;
+  }
+
+  /**
+   * 플레이어가 장착한 부적이 지정한 효과의 것이면 그 부적의 정보를 돌려준다.
+   * @param {Object} player 플레이어
+   * @param {string} effect 효과의 종류 ('double', 'discount', 'redraw', 'build')
+   * @returns {Object|null} 부적의 정보. 그 효과의 부적을 장착하지 않았으면 null
+   */
+  charmOf(player, effect) {
+    let charm = isCharm(player.charm) ? CHARMS[player.charm] : null;
+    return charm && charm.effect === effect ? charm : null;
+  }
+
+  /**
+   * 주어진 확률로 일어나는 일이 이번에 일어나는지 정한다. (부적의 효과에 쓴다.)
+   * @param {number} percent 일어날 확률 (%)
+   * @returns {boolean} 일어나면 true
+   */
+  luck(percent) {
+    return this.random() * 100 < percent;
+  }
+
+  /**
+   * 부적의 효과가 일어난 것을 기록하고 연출한다.
+   * @param {Object} player 부적을 장착한 플레이어
+   * @param {string} key 기록 문구의 키
+   * @param {Object} info 일어난 효과 { effect } 와 효과별 값
+   * @returns {Promise<void>}
+   */
+  async charmed(player, key, info) {
+    let params = { player: player.id, item: player.charm };
+    // 기록 문구에 쓰는 값(칸, 건물, 쿠폰, 할인율)만 옮겨 담는다.
+    for (let name of ['tile', 'building', 'coupon', 'percent']) {
+      if (info[name] !== undefined) params[name] = info[name];
+    }
+    this.log(key, params);
+    await this.call('charm', player, { ...info, charm: player.charm });
+  }
+
+  /**
+   * 땅을 살 때 실제로 낼 금액을 정한다. 할인 부적을 장착했으면 그 확률로 땅값을 깎아 준다.
+   * 살 수 있는지는 할인 전 가격으로 따지므로, 이 함수는 사기로 정한 뒤에 부른다.
+   * @param {Object} player 사는 플레이어
+   * @param {number} index 땅의 칸 번호
+   * @param {number} price 할인 전 가격 (원)
+   * @returns {Promise<number>} 실제로 낼 금액 (원)
+   */
+  async discounted(player, index, price) {
+    let charm = this.charmOf(player, 'discount');
+    if (!charm || !this.luck(charm.chance)) return price;
+    let paid = price - Math.floor((price * charm.percent) / 100);
+    await this.charmed(player, 'log.charmDiscount', { effect: 'discount', tile: index, index, percent: charm.percent, price, paid });
+    return paid;
+  }
+
+  /**
+   * 건물 부적을 장착했으면 그 확률로 건물 한 채를 무료로 짓는다. 건물을 지을 수 있는 일반 도시에서, 그 건물이 아직 없을 때에만 적용된다.
+   * 땅을 막 샀을 때 적용되며, 부적에 따라서는 자기 땅에 다시 도착했을 때에도 적용된다.
+   * @param {Object} player 땅의 주인인 플레이어
+   * @param {number} index 땅의 칸 번호
+   * @param {boolean} revisit 막 산 것이 아니라 자기 땅에 다시 도착한 것인지 여부
+   * @returns {Promise<void>}
+   */
+  async grantBuilding(player, index, revisit) {
+    let charm = this.charmOf(player, 'build');
+    let land = this.state.lands[index];
+    if (!charm || BOARD[index].type !== 'city' || (revisit && !charm.revisit) || land[charm.building] > 0) return;
+    if (!this.luck(charm.chance)) return;
+    land[charm.building]++;
+    await this.charmed(player, 'log.charmBuild', { effect: 'build', tile: index, index, building: charm.building });
+  }
+
+  /**
+   * 비밀쿠폰이 뽑은 플레이어에게 바로 손해가 되는지 확인한다.
+   * 돈을 내거나 땅을 잃거나 무인도로 가는 쿠폰이 해당하며, 건물이 없어 낼 돈이 없거나 팔 땅이 없으면 손해가 아니다.
+   * @param {Object} player 쿠폰을 뽑는 플레이어
+   * @param {string} id 쿠폰 식별자
+   * @returns {boolean} 손해가 되면 true
+   */
+  harms(player, id) {
+    let coupon = COUPONS[id];
+    if (!coupon || !coupon.harm) return false;
+    if (coupon.effect === 'tax') return this.taxAmount(player, coupon.rates) > 0;
+    if (coupon.effect === 'halfsale') return this.owned(player).length > 0;
+    return true;
+  }
+
+  /**
+   * 주사위 두 개를 굴린다. 주사위 조작형 아이템을 쓴 상태이면 그 아이템의 눈만 나오도록 바꾼다.
+   * 굴려 나온 눈을 아이템의 눈 세 가지에 차례로 대응시키므로, 빅 다이즈는 1, 2, 3 이 4, 5, 6 으로, 스몰 다이즈는 4, 5, 6 이 1, 2, 3 으로 바뀐다.
+   * 아이템의 효과는 이 한 번의 굴림으로 끝난다.
+   * 더블 부적을 장착했으면 더블이 나올 확률이 부적의 값만큼 높아진다. 더블이 아닌 눈이 나왔을 때 일정한 확률로 둘째 주사위를 첫째와 같게 맞추며,
+   * 그 확률은 원래 더블이 아닐 확률로 나눈 값이어서 전체 더블 확률이 정확히 부적의 값만큼 늘어난다.
+   * @param {Object} player 굴리는 플레이어
+   * @returns {{dice: number[], faces: number[]|null, lucky: boolean}} 두 주사위의 눈, 아이템이 적용되었으면 그 주사위의 눈 목록, 부적 때문에 더블이 되었는지 여부
+   */
+  throwDice(player) {
+    let faces = player.loaded && ITEMS[player.loaded] ? ITEMS[player.loaded].faces : null;
+    let charm = this.charmOf(player, 'double');
+    let dice = [this.rollDie(), this.rollDie()];
+    let sides = faces ? faces.length : 6;
+    let lucky = false;
+    player.loaded = null;
+    // 아이템이 적용된 주사위는 두 개 모두 그 아이템의 눈으로 바꾼다.
+    for (let index = 0; faces && index < dice.length; index++) dice[index] = faces[(dice[index] - 1) % faces.length];
+    if (charm && dice[0] !== dice[1] && this.luck(charm.chance / (1 - 1 / sides))) {
+      dice[1] = dice[0];
+      lucky = true;
+    }
+    return { dice, faces, lucky };
   }
 
   /**
@@ -2302,17 +3214,32 @@ export class HellmarbleGame {
   }
 
   /**
+   * 돈이 오간 것을 호스트가 연출하도록 알린다. 오간 돈이 없으면 알리지 않는다.
+   * 돈은 이미 옮겨진 뒤에 부르며, 연출이 끝난 뒤에 진행 기록을 남겨 화면의 금액이 지폐가 도착한 다음에 바뀌게 한다.
+   * @param {Object|string} payer 돈을 낸 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
+   * @param {Object|string} receiver 돈을 받은 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
+   * @param {number} amount 오간 금액 (원)
+   * @returns {Promise<void>}
+   */
+  async handover(payer, receiver, amount) {
+    if (amount > 0) await this.call('transfer', payer, receiver, amount);
+  }
+
+  /**
    * 플레이어가 은행에서 돈을 받는다.
    * @param {Object} player 플레이어
    * @param {number} amount 받을 금액 (원)
+   * @returns {Promise<void>}
    */
-  gain(player, amount) {
+  async gain(player, amount) {
     player.cash += amount;
+    await this.handover(BANK, player, amount);
     this.log('log.gain', { player: player.id, amount });
   }
 
   /**
    * 땅을 건물과 함께 은행에 매각한다. 매각 후에는 아무도 소유하지 않은 땅이 된다.
+   * 은행에서 매각 대금이 들어오는 연출은 부르는 쪽에서 요청한다.
    * @param {Object} player 매각하는 플레이어
    * @param {number} index 매각할 땅의 칸 번호
    * @param {number} percent 돌려받는 비율 (%)
@@ -2332,15 +3259,18 @@ export class HellmarbleGame {
   /**
    * 지불할 돈이 모자랄 때 땅을 매각하여 돈을 마련한다.
    * 모두 매각해도 모자라면 전부 매각하고, 그렇지 않으면 돈이 마련될 때까지 매각할 땅을 선택받는다.
+   * 은행에서 들어오는 매각 대금은, 전부 매각할 때에는 합친 금액을 한 번에, 골라서 매각할 때에는 한 곳씩 연출한다.
    * @param {Object} player 플레이어
    * @param {number} amount 지불해야 할 금액 (원)
    * @returns {Promise<boolean>} 지불 재원을 마련했으면 true, 포기했으면 false
    */
   async raise(player, amount) {
     if (this.liquidation(player) < amount) {
+      let total = 0;
       this.log('log.sellAll', { player: player.id });
       // 가진 땅을 모두 매각한다.
-      for (let index of this.owned(player)) this.sell(player, index, SELL_PERCENT);
+      for (let index of this.owned(player)) total += this.sell(player, index, SELL_PERCENT);
+      await this.handover(BANK, player, total);
       return true;
     }
     // 지불할 돈이 마련될 때까지 매각할 땅을 선택받는다.
@@ -2352,13 +3282,14 @@ export class HellmarbleGame {
         return false;
       }
       let choice = Number(answer);
-      this.sell(player, owned.includes(choice) ? choice : owned[0], SELL_PERCENT);
+      await this.handover(BANK, player, this.sell(player, owned.includes(choice) ? choice : owned[0], SELL_PERCENT));
     }
     return true;
   }
 
   /**
    * 플레이어가 돈을 지불한다. 모자라면 땅을 매각하며, 그래도 모자라면 남은 돈만 내고 파산한다.
+   * 낸 돈이 있으면 받는 쪽(다른 플레이어 또는 은행)으로 돈이 가는 모습을 연출한다.
    * @param {Object} player 지불하는 플레이어
    * @param {number} amount 지불할 금액 (원)
    * @param {Object|null} creditor 돈을 받는 플레이어 (은행이면 null)
@@ -2370,7 +3301,7 @@ export class HellmarbleGame {
     let paid = Math.min(player.cash, amount);
     player.cash -= paid;
     if (creditor) creditor.cash += paid;
-    if (creditor && paid > 0) await this.call('transfer', player, creditor, paid);
+    await this.handover(player, creditor || BANK, paid);
     if (paid === amount) return true;
     this.log('log.partial', { player: player.id, amount: paid });
     this.bankrupt(player);
@@ -2413,7 +3344,7 @@ export class HellmarbleGame {
       this.log('log.pass', { player: player.id, tile: index, amount });
       return true;
     }
-    if (player.items.pass > 0 && !player.usedItems.pass && (await this.decide(player, { type: 'itemPass', index, amount, travel: false }))) {
+    if (this.canUseItem(player, 'pass') && (await this.decide(player, { type: 'itemPass', index, amount, travel: false }))) {
       this.consumeItem(player, 'pass');
       this.exempt = true;
       this.log('log.itemPass', { player: player.id, tile: index, amount });
@@ -2452,7 +3383,19 @@ export class HellmarbleGame {
   }
 
   /**
-   * 말을 앞으로 한 칸씩 이동시킨다. 출발지에 닿으면 월급을 받는다.
+   * 출발지에 닿은 플레이어가 은행에서 월급을 받는다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<void>}
+   */
+  async paySalary(player) {
+    let amount = this.money(SALARY);
+    player.cash += amount;
+    await this.handover(BANK, player, amount);
+    this.log('log.salary', { player: player.id, amount });
+  }
+
+  /**
+   * 말을 앞으로 한 칸씩 이동시킨다. 출발지에 닿으면 그 칸에 선 모습을 보여준 뒤에 월급을 받는다.
    * @param {Object} player 이동할 플레이어
    * @param {number} steps 이동할 칸 수
    * @param {boolean} fast 빠른 이동 여부
@@ -2463,11 +3406,8 @@ export class HellmarbleGame {
     // 정해진 칸 수만큼 한 칸씩 전진한다.
     for (let count = 0; count < steps; count++) {
       player.position = (player.position + 1) % BOARD_SIZE;
-      if (player.position === TILES.start && salary) {
-        player.cash += this.money(SALARY);
-        this.log('log.salary', { player: player.id, amount: this.money(SALARY) });
-      }
       await this.call('step', player, fast);
+      if (player.position === TILES.start && salary) await this.paySalary(player);
     }
   }
 
@@ -2518,17 +3458,17 @@ export class HellmarbleGame {
       case 'island':
         player.island = ISLAND_TURNS;
         this.log('log.island', { player: player.id });
-        if (player.items.radio > 0 && !player.usedItems.radio && (await this.decide(player, { type: 'itemRadio' }))) {
+        if (this.canUseItem(player, 'radio') && (await this.decide(player, { type: 'itemRadio' }))) {
           this.consumeItem(player, 'radio');
           player.island = 0;
           this.log('log.itemRadio', { player: player.id });
         }
         break;
       case 'fund':
-        this.collectFund(player);
+        await this.collectFund(player);
         break;
       case 'desk':
-        this.payFund(player);
+        await this.payFund(player);
         break;
       default:
         break;
@@ -2537,6 +3477,7 @@ export class HellmarbleGame {
 
   /**
    * 도시 또는 특수 시설에 도착했을 때의 처리(구매, 건설, 통행료 지불)를 한다.
+   * 사용자가 부적을 장착했으면 땅을 살 때 할인이나 무료 건물이, 자기 땅에 다시 도착했을 때 무료 건물이 주어질 수 있다.
    * @param {Object} player 도착한 플레이어
    * @param {number} index 도착한 칸 번호
    * @returns {Promise<void>}
@@ -2546,9 +3487,12 @@ export class HellmarbleGame {
     if (land.owner === null) {
       let price = this.price(index);
       if (player.cash >= price && (await this.decide(player, { type: 'buy', index, price }))) {
-        player.cash -= price;
+        let paid = await this.discounted(player, index, price);
+        player.cash -= paid;
         land.owner = player.id;
-        this.log('log.buy', { player: player.id, tile: index, amount: price });
+        await this.handover(player, BANK, paid);
+        this.log('log.buy', { player: player.id, tile: index, amount: paid });
+        await this.grantBuilding(player, index, false);
       }
       return;
     }
@@ -2556,13 +3500,16 @@ export class HellmarbleGame {
       await this.payToll(player, index);
       return;
     }
+    await this.grantBuilding(player, index, true);
     let options = this.buildOptions(player, index);
     if (options.length === 0) return;
     let kind = await this.decide(player, { type: 'build', index, options });
     if (!options.includes(kind)) return;
-    player.cash -= this.buildCost(index, kind);
+    let cost = this.buildCost(index, kind);
+    player.cash -= cost;
     land[kind]++;
-    this.log('log.build', { player: player.id, tile: index, building: kind, amount: this.buildCost(index, kind) });
+    await this.handover(player, BANK, cost);
+    this.log('log.build', { player: player.id, tile: index, building: kind, amount: cost });
   }
 
   /**
@@ -2574,7 +3521,7 @@ export class HellmarbleGame {
     let owner = this.state.lands[TILES.columbia].owner;
     if (owner !== null && owner !== player.id) {
       let amount = this.money(SPACE_FEE);
-      if (player.items.pass > 0 && !player.usedItems.pass && (await this.decide(player, { type: 'itemPass', index: TILES.space, amount, travel: true }))) {
+      if (this.canUseItem(player, 'pass') && (await this.decide(player, { type: 'itemPass', index: TILES.space, amount, travel: true }))) {
         this.consumeItem(player, 'pass');
         this.log('log.itemPass', { player: player.id, tile: TILES.space, amount });
         this.board(player);
@@ -2598,34 +3545,46 @@ export class HellmarbleGame {
   /**
    * 사회복지기금 본부에 쌓인 돈을 모두 받는다.
    * @param {Object} player 도착한 플레이어
+   * @returns {Promise<void>}
    */
-  collectFund(player) {
+  async collectFund(player) {
     let amount = this.state.fund;
     if (amount <= 0) return;
     this.state.fund = 0;
     player.cash += amount;
+    await this.handover(FUND, player, amount);
     this.log('log.fundGet', { player: player.id, amount });
   }
 
   /**
-   * 사회복지기금 접수처에 돈을 낸다. 모자라면 가진 돈만 내며 땅을 팔거나 파산하지 않는다.
+   * 사회복지기금 접수처에 돈을 낸다. 모자라면 가진 돈만 내며 땅을 팔거나 파산하지 않는다. 낸 돈은 사회복지기금 본부에 쌓인다.
    * @param {Object} player 도착한 플레이어
+   * @returns {Promise<void>}
    */
-  payFund(player) {
+  async payFund(player) {
     let amount = Math.min(player.cash, this.money(WELFARE_FEE));
     player.cash -= amount;
     this.state.fund += amount;
+    await this.handover(player, FUND, amount);
     this.log('log.fundPay', { player: player.id, amount });
   }
 
   /**
-   * 비밀쿠폰을 한 장 뽑아 보여준 뒤 내용을 이행한다.
+   * 비밀쿠폰을 한 장 뽑아 보여준 뒤 내용을 이행한다. (다시 뽑기 부적을 장착했으면 손해가 되는 쿠폰을 건너뛸 수 있다.)
    * 보관하는 쿠폰은 플레이어가 갖고, 그 밖의 쿠폰은 이행 후 덱 맨 뒤로 돌아간다.
    * @param {Object} player 쿠폰을 뽑는 플레이어
    * @returns {Promise<void>}
    */
   async drawCoupon(player) {
-    let id = this.state.deck.shift();
+    let deck = this.state.deck;
+    let charm = this.charmOf(player, 'redraw');
+    // 다시 뽑기 부적을 장착했으면, 손해가 되는 쿠폰이 나올 차례일 때마다 그 확률로 쿠폰을 덱 맨 뒤로 보내고 다음 것을 뽑는다.
+    for (let tries = 0; charm && tries < deck.length && this.harms(player, deck[0]) && this.luck(charm.chance); tries++) {
+      let skipped = deck.shift();
+      deck.push(skipped);
+      await this.charmed(player, 'log.charmRedraw', { effect: 'redraw', coupon: skipped });
+    }
+    let id = deck.shift();
     let coupon = COUPONS[id];
     this.log('log.coupon', { player: player.id, coupon: id });
     if (coupon.effect === 'keep') {
@@ -2651,7 +3610,7 @@ export class HellmarbleGame {
   async applyCoupon(player, coupon) {
     switch (coupon.effect) {
       case 'gain':
-        this.gain(player, this.money(coupon.amount));
+        await this.gain(player, this.money(coupon.amount));
         break;
       case 'pay':
         await this.payBank(player, this.money(coupon.amount));
@@ -2679,7 +3638,7 @@ export class HellmarbleGame {
         await this.airTravel(player);
         break;
       case 'halfsale':
-        this.halfSale(player);
+        await this.halfSale(player);
         break;
       default:
         break;
@@ -2717,8 +3676,9 @@ export class HellmarbleGame {
   /**
    * 반액대매출 쿠폰을 이행한다. 가진 땅 중 가치(건물 포함)가 가장 높은 곳을 자동으로 골라 50%에 매각한다.
    * @param {Object} player 플레이어
+   * @returns {Promise<void>}
    */
-  halfSale(player) {
+  async halfSale(player) {
     let best = -1;
     // 가진 땅 중 가치가 가장 높은 땅을 찾는다.
     for (let index of this.owned(player)) {
@@ -2728,7 +3688,7 @@ export class HellmarbleGame {
       this.log('log.nothing', { player: player.id });
       return;
     }
-    this.sell(player, best, HALF_PERCENT);
+    await this.handover(BANK, player, this.sell(player, best, HALF_PERCENT));
   }
 
   /**
@@ -2745,7 +3705,7 @@ export class HellmarbleGame {
       player.island = 0;
       this.log('log.radio', { player: player.id });
     }
-    if (player.island > 1 && player.items.radio > 0 && !player.usedItems.radio && (await this.decide(player, { type: 'itemRadio' }))) {
+    if (player.island > 1 && this.canUseItem(player, 'radio') && (await this.decide(player, { type: 'itemRadio' }))) {
       this.consumeItem(player, 'radio');
       player.island = 0;
       this.log('log.itemRadio', { player: player.id });
@@ -2780,6 +3740,7 @@ export class HellmarbleGame {
   /**
    * 한 플레이어의 차례를 진행한다. (주사위 → 이동 → 도착한 칸의 효과)
    * 더블이 나오면 도착한 칸의 처리를 마친 뒤 주사위를 다시 굴리며, 더블이 이어지는 동안 계속 반복한다.
+   * 주사위 조작형 아이템의 효과는 그 차례에만 유효하므로, 쓰고도 굴리지 않은 채 차례가 끝나면 사라진다.
    * @param {Object} player 차례인 플레이어
    * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
    */
@@ -2789,15 +3750,49 @@ export class HellmarbleGame {
     if (player.boarded) return this.playTravel(player);
     // 더블이 나오는 동안 주사위를 다시 굴린다.
     do {
+      let step = await this.beforeRoll(player, again);
+      if (step === QUIT) return false;
+      again = step === 'roll' && (await this.playRoll(player));
+    } while (again);
+    player.loaded = null;
+    return true;
+  }
+
+  /**
+   * 주사위를 굴릴 차례인 플레이어의 답을 받는다. 굴리기 전에 쓰겠다고 한 아이템이 있으면 그 효과를 먼저 적용한다.
+   * 주사위 조작형 아이템은 쓴 뒤에 다시 묻고, 우주여행 초청장은 우주여행 칸으로 보내 탑승시킨 뒤 차례를 끝낸다.
+   * 쓸 수 없는 아이템을 쓰겠다는 답은 주사위를 굴리겠다는 답으로 본다.
+   * @param {Object} player 차례인 플레이어
+   * @param {boolean} again 더블이 나와 주사위를 한 번 더 굴리는 것인지 여부
+   * @returns {Promise<string>} 'roll' (주사위를 굴린다), 'end' (차례가 끝났다), QUIT (메인 메뉴로 나간다)
+   */
+  async beforeRoll(player, again) {
+    // 주사위를 굴리거나 차례를 끝내는 답이 나올 때까지 묻는다.
+    while (true) {
       let answer = await this.decide(player, { type: 'roll', again });
-      if (answer === QUIT) return false;
+      if (answer === QUIT) return QUIT;
       if (answer === FORFEIT) {
         this.bankrupt(player, true);
-        return true;
+        return 'end';
       }
-      again = await this.playRoll(player);
-    } while (again);
-    return true;
+      let id = typeof answer === 'string' && answer.startsWith(ITEM_PREFIX) ? answer.slice(ITEM_PREFIX.length) : '';
+      if (!this.useItem(player, id)) return 'roll';
+      if (ITEMS[id].effect !== 'space') continue;
+      await this.invite(player);
+      return 'end';
+    }
+  }
+
+  /**
+   * 우주여행 초청장 아이템의 효과를 이행한다. 주사위를 굴리지 않고 우주여행 칸으로 이동하여 이용료 없이 탑승한다.
+   * 가는 길에 출발지를 지나면 월급을 받으며, 무인도에 갇혀 있었다면 풀려난다.
+   * @param {Object} player 초청장을 쓴 플레이어
+   * @returns {Promise<void>}
+   */
+  async invite(player) {
+    player.island = 0;
+    await this.moveTo(player, TILES.space, true);
+    this.board(player);
   }
 
   /**
@@ -2812,11 +3807,13 @@ export class HellmarbleGame {
     this.exempt = false;
     await this.release(player);
     let trapped = player.island > 0;
-    let dice = [this.rollDie(), this.rollDie()];
+    let thrown = this.throwDice(player);
+    let dice = thrown.dice;
     let double = dice[0] === dice[1];
     this.state.dice = dice;
-    await this.call('dice', player, dice);
+    await this.call('dice', player, dice, thrown.faces);
     this.log('log.dice', { player: player.id, a: dice[0], b: dice[1], sum: dice[0] + dice[1] });
+    if (thrown.lucky) await this.charmed(player, 'log.charmDouble', { effect: 'double' });
     if (trapped && !double) {
       player.island--;
       this.log('log.islandStay', { player: player.id });
@@ -2895,7 +3892,7 @@ export class HellmarbleApp extends HellmarbleHost {
   /**
    * 애플리케이션을 만든다. 화면은 start() 를 호출해야 그려진다.
    * @param {HTMLElement} root 게임 화면을 그릴 요소
-   * @param {Object} [options] 선택 사항 { storage : 저장소 객체, timings : 연출 시간(밀리초) 덮어쓰기 }
+   * @param {Object} [options] 선택 사항 { storage : 저장소 객체, timings : 연출 시간(밀리초) 덮어쓰기, random : 부적 추첨에 쓸 난수 함수 }
    */
   constructor(root, options) {
     super();
@@ -2903,6 +3900,7 @@ export class HellmarbleApp extends HellmarbleHost {
     this.root = root;
     this.storage = config.storage || new HellmarbleStorage();
     this.timings = Object.assign({}, TIMINGS, config.timings);
+    this.random = typeof config.random === 'function' ? config.random : Math.random;
     this.settings = { language: 'ko', dark: false };
     this.screen = '';
     this.slotMode = 'new';
@@ -2926,6 +3924,7 @@ export class HellmarbleApp extends HellmarbleHost {
     this.lotState = [];
     this.couponGate = null;
     this.request = null;
+    this.itemView = null;
     this.tools = [];
     this.toolAbort = null;
   }
@@ -2949,6 +3948,25 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   money(value) {
     return formatMoney(value, this.settings.language);
+  }
+
+  /**
+   * 금액을 데이터·수치용 글꼴로 보여주는 요소를 만든다. 금액이나 가격만 따로 표시하는 자리에 쓴다.
+   * @param {number} value 금액 (원)
+   * @param {string} [sign] 금액 앞에 붙일 부호
+   * @returns {HTMLElement} 금액 요소
+   */
+  figure(value, sign) {
+    return el('span', { class: 'hm-num', text: (sign || '') + this.money(value) });
+  }
+
+  /**
+   * 플레이어의 생김새(색, 문양)를 화면에 그릴 값으로 구한다.
+   * @param {Object} player 플레이어
+   * @returns {{color: string, ink: string, fill: string, symbol: string}} 색, 문양의 글자색, 칠하는 배경, 문양 문자
+   */
+  styleOf(player) {
+    return lookStyle(player.look);
   }
 
   /**
@@ -3027,11 +4045,13 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * ESC 키를 눌렀을 때의 처리를 한다.
-   * 글을 입력하는 중이면 입력 모드에서 빠져나오고(입력창의 초점을 뗀다), 아니면 열려 있는 땅 정보 창을 닫는다.
+   * 글을 입력하는 중이면 입력 모드에서 빠져나오고(입력창의 초점을 뗀다), 아이템 창이 열려 있으면 상세 팝업부터 차례로 닫으며,
+   * 그 밖에는 열려 있는 땅 정보 창을 닫는다.
    */
   onEscape() {
     let field = document.activeElement;
     if (field instanceof HTMLElement && field.classList.contains('hm-input') && this.root.contains(field)) field.blur();
+    else if (this.itemView) this.onItemAction(this.itemView.detail ? 'back' : 'close');
     else this.closePopover();
   }
 
@@ -3064,12 +4084,11 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'name.submit': this.submitName(); break;
       case 'lobby.join': this.joinLeague(value); break;
       case 'lobby.export': this.exportSlot(); break;
-      case 'lobby.shop': this.showItemShop(); break;
-      case 'lobby.items': this.showItemInventory('lobby'); break;
-      case 'shop.detail': this.showItemDetails(value, 'shop'); break;
+      case 'lobby.shop': this.openItems('shop'); break;
+      case 'lobby.items': this.openItems('lobby'); break;
       case 'settings.reset': this.resetAllData(); break;
       case 'game.player': this.showPlayer(Number(value)); break;
-      case 'game.items': this.showItemInventory('game'); break;
+      case 'game.items': this.openItems('game'); break;
       case 'settings.language': this.changeSetting('language', value); break;
       case 'settings.dark': this.changeSetting('dark', value === 'on'); break;
       case 'dialog.answer': this.closeDialog(value); break;
@@ -3080,7 +4099,9 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'game.travel': this.answer('travel', Number(value)); break;
       case 'popover.close': this.closePopover(); break;
       case 'coupon.close': this.closeCoupon(); break;
-      default: break;
+      default:
+        if (action.startsWith('items.')) this.onItemAction(action.slice(6), value);
+        break;
     }
   }
 
@@ -3205,6 +4226,7 @@ export class HellmarbleApp extends HellmarbleHost {
     if (!this.modal) return;
     let modal = this.modal;
     this.modal = null;
+    if (this.itemView && this.itemView.overlay === modal.overlay) this.itemView = null;
     modal.overlay.remove();
     modal.handle.resolve(value === undefined ? null : value);
   }
@@ -3428,23 +4450,26 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 입력한 이름으로 새 슬롯 데이터를 만들어 저장하고 대기실로 이동한다.
+   * 새 슬롯은 기본 색상 5종과 기본 모양 4종을 가지며, 빨강과 별을 장착한 채로 시작한다. 부적은 가지고 있지 않다.
    */
   submitName() {
     if (this.screen !== 'name') return;
     let input = this.root.querySelector('.hm-input');
     let name = (input ? input.value : '').trim().slice(0, NAME_LIMIT) || this.t('name.default');
     this.slotIndex = this.pendingSlot;
-    this.slot = { name, money: LOBBY_MONEY, items: { ...EMPTY_ITEMS }, game: null, updated: 0 };
+    this.slot = { name, money: LOBBY_MONEY, items: emptyItems(), equips: starterEquips(), charms: fillCharms(undefined), equipped: { ...DEFAULT_LOOK, charm: null }, game: null, updated: 0 };
     this.saveSlot();
     this.showLobby();
   }
 
   /**
-   * 대기실을 보여준다. 보유 금액과 세 가지 리그, 메인 메뉴 버튼이 있다.
+   * 대기실을 보여준다. 보유 금액, 장착한 색상과 모양(내 말), 보유 아이템 수, 세 가지 리그, 상점과 아이템 확인, 메인 메뉴 버튼이 있다.
    */
   showLobby() {
     this.leaveGame();
     this.screen = 'lobby';
+    let totals = this.itemTotals('lobby');
+    let look = this.slot.equipped;
     let cards = [];
     // 리그마다 참여 카드를 만든다.
     for (let id in LEAGUES) cards.push(this.buildLeagueCard(id));
@@ -3456,7 +4481,10 @@ export class HellmarbleApp extends HellmarbleHost {
           el('span', { class: 'hm-wallet-label', text: this.t('lobby.money') }),
           el('strong', { class: 'hm-wallet-money', text: this.money(this.slot.money) }),
         ]),
-        el('p', { class: 'hm-item-summary', text: this.t('item.title') + ' · ' + this.itemStockText(this.slot.items) }),
+        el('div', { class: 'hm-lobby-status' }, [
+          el('p', { class: 'hm-look' + (look.color && look.shape ? '' : ' hm-look-missing') }, [this.buildLookToken(look), el('span', { class: 'hm-look-text', text: this.t('lobby.look') + ' : ' + this.lookText(look) })]),
+          el('p', { class: 'hm-item-total', text: '🎒 ' + this.t('item.owned') + ' : ' + (totals.count > 0 ? this.t('item.total', totals) : this.t('item.none')) }),
+        ]),
         el('div', { class: 'hm-leagues' }, cards),
         el('p', { class: 'hm-note', text: this.t('lobby.note') }),
         el('div', { class: 'hm-lobby-buttons' }, [
@@ -3467,125 +4495,6 @@ export class HellmarbleApp extends HellmarbleHost {
         ]),
       ]),
     ]));
-  }
-
-  /**
-   * 아이템 주머니에 든 아이템과 수량을 대기실에서 한 줄로 보여준다.
-   * @param {Object} items 아이템 주머니
-   * @returns {string} 보유 아이템 요약
-   */
-  itemStockText(items) {
-    let stock = [];
-    // 종류별로 보유 중인 아이템을 이름과 수량으로 표시한다.
-    for (let id in ITEMS) {
-      if (items[id] > 0) stock.push(ITEMS[id].icon + ' ' + this.t('item.' + id + '.title') + ' ×' + items[id]);
-    }
-    return stock.length > 0 ? stock.join(' · ') : this.t('item.none');
-  }
-
-  /**
-   * 보유 아이템 목록을 띄운다. 아이템을 누르면 설명과 가치를 확인하고 목록으로 돌아온다.
-   * @param {string} source 목록을 연 화면 ('lobby' 또는 'game')
-   * @returns {Promise<void>}
-   */
-  async showItemInventory(source) {
-    if (source === 'lobby' && (this.screen !== 'lobby' || !this.slot)) return;
-    if (source === 'game' && (this.screen !== 'game' || !this.game || this.game.current.id !== 0 || !['roll', 'travel'].includes(this.mode))) return;
-    // 현재 화면이 유지되는 동안 아이템 선택과 상세 보기를 반복한다.
-    while (this.screen === source && (source !== 'game' || this.game)) {
-      let items = source === 'game' ? this.game.state.players[0].items : this.slot.items;
-      let buttons = [];
-      let body = [source === 'lobby' ? this.infoRow(this.t('lobby.money'), this.money(this.slot.money)) : this.infoRow(this.t('item.count'), this.t('common.count', { n: items.pass + items.radio }))];
-      // 보유한 아이템마다 설명을 여는 선택지를 만든다.
-      for (let id in ITEMS) {
-        if (items[id] < 1) continue;
-        buttons.push({ label: ITEMS[id].icon + ' ' + this.t('item.' + id + '.title') + ' ×' + items[id], value: id, primary: true });
-      }
-      let selected = await this.dialog({ title: this.t('item.title'), text: this.itemStockText(items), body, buttons: [...buttons, { label: this.t('common.close'), value: 'close' }] });
-      if (selected === null || selected === 'close') return;
-      if (!ITEMS[selected]) continue;
-      await this.showItemDetails(selected, source);
-    }
-  }
-
-  /**
-   * 아이템의 사용법을 설명한다. 상점에서 열면 구매가와 판매가도 표시한다.
-   * @param {string} id 아이템 식별자
-   * @param {string} source 정보를 연 화면 ('lobby', 'game', 'shop')
-   * @returns {Promise<void>}
-   */
-  async showItemDetails(id, source) {
-    if (!Object.hasOwn(ITEMS, id)) return;
-    let price = ITEMS[id].price;
-    let rows = [];
-    if (source === 'shop') {
-      rows.push(this.infoRow(this.t('store.priceBuy'), this.money(price)));
-      rows.push(this.infoRow(this.t('store.priceSell'), this.money(Math.floor(price * ITEM_SELL_PERCENT / 100))));
-    }
-    await this.dialog({
-      title: ITEMS[id].icon + ' ' + this.t('item.' + id + '.title'), text: this.t('item.' + id + '.description'),
-      body: rows.length > 0 ? [el('div', { class: 'hm-land-rows' }, rows)] : [],
-      buttons: [{ label: this.t('common.goBack'), value: 'back', primary: true }],
-    });
-  }
-
-  /**
-   * 대기실 상점에서 아이템 구매, 판매 또는 상세 정보 확인을 반복해 처리한다.
-   * @returns {Promise<void>}
-   */
-  async showItemShop() {
-    if (this.screen !== 'lobby' || !this.slot) return;
-    let notice = '';
-    // 상점 화면이 열려 있는 동안 아이템 구매와 판매를 반복한다.
-    while (this.screen === 'lobby') {
-      let buttons = [];
-      let rows = [];
-      // 아이템 종류별 가격과 현재 수량을 보여주고 구매, 판매, 정보 선택지를 만든다.
-      for (let id in ITEMS) {
-        let item = ITEMS[id];
-        let value = Math.floor(item.price * ITEM_SELL_PERCENT / 100);
-        let title = item.icon + ' ' + this.t('item.' + id + '.title');
-        rows.push(this.infoRow(title, '×' + this.slot.items[id]));
-        buttons.push({ label: this.t('store.buy', { item: title, amount: this.money(item.price) }), value: 'buy:' + id, disabled: this.slot.money < item.price });
-        buttons.push({ label: this.t('store.sell', { item: title, amount: this.money(value) }), value: 'sell:' + id, disabled: this.slot.items[id] < 1 });
-        buttons.push({ label: this.t('store.detail', { item: title }), value: 'detail:' + id });
-      }
-      buttons.push({ label: this.t('common.close'), value: 'close', primary: true });
-      let answer = await this.dialog({
-        title: this.t('store.title'), text: [this.t('store.balance', { amount: this.money(this.slot.money) }), this.t('store.terms', { price: this.money(ITEMS.pass.price), n: ITEM_SELL_PERCENT }), notice].filter(Boolean).join('\n'),
-        body: [el('div', { class: 'hm-land-rows hm-store-stock' }, rows)], buttons, stack: true,
-      });
-      if (answer === null || answer === 'close' || this.screen !== 'lobby') {
-        if (this.screen === 'lobby' && this.slot) this.showLobby();
-        return;
-      }
-      let [action, id] = String(answer).split(':');
-      if (!ITEMS[id]) continue;
-      if (action === 'detail') {
-        await this.showItemDetails(id, 'shop');
-        notice = '';
-        continue;
-      }
-      if (action === 'buy') {
-        if (this.slot.money < ITEMS[id].price) {
-          notice = this.t('store.short', { item: this.t('item.' + id + '.title'), price: this.money(ITEMS[id].price), money: this.money(this.slot.money) });
-          continue;
-        }
-        this.slot.money -= ITEMS[id].price;
-        this.slot.items[id]++;
-        notice = this.t('store.bought', { item: this.t('item.' + id + '.title'), n: this.slot.items[id] });
-      } else if (action === 'sell') {
-        if (this.slot.items[id] < 1) {
-          notice = this.t('store.empty', { item: this.t('item.' + id + '.title') });
-          continue;
-        }
-        let proceeds = Math.floor(ITEMS[id].price * ITEM_SELL_PERCENT / 100);
-        this.slot.items[id]--;
-        this.slot.money += proceeds;
-        notice = this.t('store.sold', { item: this.t('item.' + id + '.title'), amount: this.money(proceeds) });
-      }
-      this.saveSlot();
-    }
   }
 
   /**
@@ -3617,7 +4526,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let league = LEAGUES[id];
     return el('div', { class: 'hm-league', style: { '--hm-league': league.color } }, [
       el('h2', { class: 'hm-league-name', text: this.t('league.' + id) }),
-      this.infoRow(this.t('lobby.fee'), this.money(START_CASH * league.multiplier)),
+      this.infoRow(this.t('lobby.fee'), this.figure(START_CASH * league.multiplier)),
       this.infoRow(this.t('lobby.multiplier'), this.t('lobby.times', { n: league.multiplier })),
       el('p', { class: 'hm-league-rivals', text: this.t('league.' + id + '.rivals') }),
       button(this.t('lobby.join'), 'lobby.join', id, 'hm-primary hm-wide'),
@@ -3625,7 +4534,8 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 리그 참여를 처리한다. 돈을 확인하고, 한 번 더 확인받은 뒤 참가비를 차감하고 게임을 시작한다.
+   * 리그 참여를 처리한다. 색상과 모양을 하나씩 장착했는지, 돈이 충분한지 확인하고, 한 번 더 확인받은 뒤 참가비를 차감하고 게임을 시작한다.
+   * 장착한 색상과 모양이 게임에서 사용자의 생김새가 되고, 부적을 장착했으면 그 효과가 게임 내내 적용된다.
    * @param {string} id 리그 식별자
    * @returns {Promise<void>}
    */
@@ -3633,6 +4543,10 @@ export class HellmarbleApp extends HellmarbleHost {
     if (this.screen !== 'lobby' || !LEAGUES[id]) return;
     let fee = START_CASH * LEAGUES[id].multiplier;
     let params = { league: this.t('league.' + id), fee: this.money(fee), money: this.money(this.slot.money) };
+    if (!this.slot.equipped.color || !this.slot.equipped.shape) {
+      await this.dialog({ title: this.t('lobby.shortTitle'), text: this.t('lobby.needLook'), buttons: [{ label: this.t('common.ok'), value: 'ok', primary: true }] });
+      return;
+    }
     if (this.slot.money < fee) {
       await this.dialog({ title: this.t('lobby.shortTitle'), text: this.t('lobby.short', params), buttons: [{ label: this.t('common.ok'), value: 'ok', primary: true }] });
       return;
@@ -3640,8 +4554,8 @@ export class HellmarbleApp extends HellmarbleHost {
     if (!(await this.confirm(this.t('lobby.confirmTitle'), this.t('lobby.confirm', params)))) return;
     if (this.screen !== 'lobby') return;
     this.slot.money -= fee;
-    this.slot.game = HellmarbleGame.create({ league: id, name: this.slot.name, items: { ...this.slot.items } });
-    this.slot.items = { ...EMPTY_ITEMS };
+    this.slot.game = HellmarbleGame.create({ league: id, name: this.slot.name, items: this.slot.items, look: this.slot.equipped, charm: this.slot.equipped.charm });
+    this.slot.items = emptyItems();
     this.saveSlot();
     this.showGame(true);
   }
@@ -3673,6 +4587,703 @@ export class HellmarbleApp extends HellmarbleHost {
         button(this.t('settings.reset'), 'settings.reset', undefined, 'hm-danger hm-wide'),
       ]),
     ]));
+  }
+
+  /* ------------------------------ 아이템 창 (상점, 보유 목록) ------------------------------ */
+
+  /**
+   * 아이템의 표시 이름을 구한다. (소모형 아이템, 색상과 모양, 부적, 부적 추첨권 모두)
+   * @param {string} id 아이템 식별자
+   * @returns {string} 아이템 이름
+   */
+  itemName(id) {
+    return this.t('item.' + id + '.title');
+  }
+
+  /**
+   * 아이템의 종류를 구한다. 아이템 창은 네 종류를 함께 다루므로, 종류마다 다른 처리는 이 값으로 가른다.
+   * @param {string} id 아이템 식별자
+   * @returns {string} 'item' (게임에 가져가 쓰는 소모형 아이템), 'look' (색상과 모양), 'charm' (부적), 'ticket' (부적 추첨권)
+   */
+  itemKind(id) {
+    if (isCharm(id)) return 'charm';
+    if (isTicket(id)) return 'ticket';
+    return isEquip(id) ? 'look' : 'item';
+  }
+
+  /**
+   * 아이템의 구매 가격을 구한다. 상점에서 살 수 없는 것(기본 색상과 모양, 부적)은 0 이다.
+   * @param {string} id 아이템 식별자
+   * @returns {number} 구매 가격 (원)
+   */
+  itemPrice(id) {
+    switch (this.itemKind(id)) {
+      case 'charm': return 0;
+      case 'ticket': return CHARM_TICKETS[id].price;
+      case 'look': return EQUIPS[id].price;
+      default: return ITEMS[id].price;
+    }
+  }
+
+  /**
+   * 아이템을 상점에 팔 때 한 개당 받는 금액을 구한다. 부적은 등급으로 정해진 금액이고, 그 밖의 아이템은 구매 가격의 일정 비율이다.
+   * 팔 수 없는 것(기본 색상과 모양, 부적 추첨권)은 0 이다.
+   * @param {string} id 아이템 식별자
+   * @returns {number} 판매 금액 (원)
+   */
+  itemResale(id) {
+    if (isCharm(id)) return CHARM_GRADES[CHARMS[id].grade].sell;
+    return isTicket(id) ? 0 : Math.floor((this.itemPrice(id) * ITEM_SELL_PERCENT) / 100);
+  }
+
+  /**
+   * 아이템의 분류를 구한다. 색상과 모양은 장착하는 자리가 곧 분류이고, 부적과 부적 추첨권은 같은 분류이다.
+   * @param {string} id 아이템 식별자
+   * @returns {string} 분류 (ITEM_CATEGORIES 의 값)
+   */
+  itemCategory(id) {
+    switch (this.itemKind(id)) {
+      case 'charm': return 'charm';
+      case 'ticket': return 'charm';
+      case 'look': return EQUIPS[id].slot;
+      default: return ITEMS[id].category;
+    }
+  }
+
+  /**
+   * 아이템을 설명하는 문구를 구한다. 색상끼리, 모양끼리는 같은 문구를 쓰고, 부적은 효과의 종류별 문구에 확률 같은 값을 끼워 넣는다.
+   * @param {string} id 아이템 식별자
+   * @param {string} part 문구의 종류 ('brief' : 한 줄 요약, 'description' : 설명, 'when' : 사용 시점)
+   * @returns {string} 문구
+   */
+  itemText(id, part) {
+    switch (this.itemKind(id)) {
+      case 'charm': return this.charmText(id, part);
+      case 'ticket': return this.t('ticket.' + part, { n: CHARM_TICKETS[id].draws });
+      case 'look': return this.t('equip.' + EQUIPS[id].slot + '.' + part);
+      default: return this.t('item.' + id + '.' + part);
+    }
+  }
+
+  /**
+   * 부적을 설명하는 문구를 구한다. 더블 부적에는 보통 주사위에서 더블이 나올 확률(6분의 1)에 부적의 값을 더한 확률도 알려준다.
+   * @param {string} id 부적 식별자
+   * @param {string} part 문구의 종류 ('brief', 'description', 'when')
+   * @returns {string} 문구
+   */
+  charmText(id, part) {
+    let charm = CHARMS[id];
+    let params = { chance: charm.chance, percent: charm.percent, total: Math.round((100 / 6 + charm.chance) * 10) / 10, building: charm.building ? this.t('building.' + charm.building) : '' };
+    if (part === 'when') return this.t('charm.when');
+    return this.t('charm.' + charm.effect + '.' + (part === 'description' && charm.revisit ? 'revisit' : part), params);
+  }
+
+  /**
+   * 부적의 등급 이름을 구한다.
+   * @param {string} id 부적 식별자
+   * @returns {string} 등급 이름
+   */
+  gradeName(id) {
+    return this.t('charm.grade.' + CHARMS[id].grade);
+  }
+
+  /**
+   * 아이템 창이 다루는 아이템의 식별자 목록을 구한다. 소모형 아이템, 색상과 모양, 부적 추첨권, 부적의 순서로 나열한다.
+   * 게임 중에는 소모형 아이템만 다룬다. (게임 중에는 생김새와 부적을 바꿀 수 없다.)
+   * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
+   * @returns {string[]} 아이템 식별자 목록
+   */
+  itemIds(source) {
+    return source === 'game' ? Object.keys(ITEMS) : [...Object.keys(ITEMS), ...Object.keys(EQUIPS), ...Object.keys(CHARM_TICKETS), ...Object.keys(CHARMS)];
+  }
+
+  /**
+   * 아이템을 몇 개 가지고 있는지 구한다. 게임 중에는 게임에 가져간 것을, 대기실에서는 슬롯에 보관한 것을 센다.
+   * 색상과 모양은 가지고 있으면 1 이고, 부적 추첨권은 사는 즉시 쓰이므로 언제나 0 이다.
+   * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
+   * @param {string} id 아이템 식별자
+   * @returns {number} 가진 개수
+   */
+  itemStock(source, id) {
+    switch (this.itemKind(id)) {
+      case 'charm': return source === 'game' ? 0 : this.slot.charms[id];
+      case 'ticket': return 0;
+      case 'look': return source === 'game' ? 0 : this.slot.equips[id];
+      default: return source === 'game' ? this.game.state.players[0].items[id] : this.slot.items[id];
+    }
+  }
+
+  /**
+   * 가진 아이템의 종류 수와 전체 개수를 센다. 대기실에서는 색상과 모양, 부적도 함께 센다.
+   * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
+   * @returns {{kinds: number, count: number}} 가진 아이템의 종류 수와 전체 개수
+   */
+  itemTotals(source) {
+    let totals = { kinds: 0, count: 0 };
+    // 아이템 종류마다 가진 개수를 더한다.
+    for (let id of this.itemIds(source)) {
+      let stock = this.itemStock(source, id);
+      totals.kinds += stock > 0 ? 1 : 0;
+      totals.count += stock;
+    }
+    return totals;
+  }
+
+  /**
+   * 같은 사용 제한 묶음에 속한 아이템의 이름을 쉼표로 이어 쓴다.
+   * @param {string} limit 사용 제한 묶음의 이름
+   * @returns {string} 아이템 이름을 이은 문자열
+   */
+  itemGroupText(limit) {
+    let names = [];
+    // 묶음에 속한 아이템의 이름을 모은다.
+    for (let id of itemsOfLimit(limit)) names.push(this.itemName(id));
+    return names.join(', ');
+  }
+
+  /**
+   * 아이템을 이번 게임에서 얼마나 쓸 수 있는지 설명하는 문구를 구한다. (상세 팝업의 "사용 제한")
+   * @param {string} id 아이템 식별자
+   * @returns {string} 문구
+   */
+  itemLimitText(id) {
+    switch (this.itemKind(id)) {
+      case 'charm': return this.t('charm.limit');
+      case 'ticket': return this.t('ticket.limit');
+      case 'look': return this.t(EQUIPS[id].price > 0 ? 'equip.limit.extra' : 'equip.limit.basic');
+      default: return itemsOfLimit(ITEMS[id].limit).length > 1 ? this.t('item.limit.shared', { items: this.itemGroupText(ITEMS[id].limit) }) : this.t('item.limit.single');
+    }
+  }
+
+  /**
+   * 아이템을 지금 장착하고 있는지 확인한다. 부적의 장착 여부는 아이템 확인 창에서만 알려준다.
+   * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
+   * @param {string} id 아이템 식별자
+   * @returns {boolean} 장착하고 있으면 true
+   */
+  itemWorn(source, id) {
+    if (source === 'game') return false;
+    if (isEquip(id)) return this.slot.equipped[EQUIPS[id].slot] === id;
+    return isCharm(id) && source === 'lobby' && this.slot.equipped.charm === id;
+  }
+
+  /**
+   * 아이템 창의 현재 탭에 나열할 아이템의 식별자 목록을 구한다. (분류는 적용하지 않은 것이다.)
+   * 상점의 구매 탭에는 살 수 있는 것 전부를, 판매 탭에는 가진 것 가운데 팔 수 있는 것을, 보유 목록에는 가진 것을 나열한다.
+   * 그래서 기본 색상과 모양은 보유 목록에만, 부적은 판매 탭과 보유 목록에만, 부적 추첨권은 구매 탭에만 나온다.
+   * @param {Object} view 아이템 창의 상태
+   * @returns {string[]} 아이템 식별자 목록
+   */
+  listItems(view) {
+    let list = [];
+    // 아이템마다 이 탭에 보일 것인지 확인한다.
+    for (let id of this.itemIds(view.source)) {
+      let stock = this.itemStock(view.source, id);
+      let shown = view.source !== 'shop' ? stock > 0 : view.tab === 'buy' ? this.itemPrice(id) > 0 : stock > 0 && this.itemResale(id) > 0;
+      if (shown) list.push(id);
+    }
+    return list;
+  }
+
+  /**
+   * 상점의 상세 팝업에서 한 번에 사고팔 수 있는 최대 수량을 구한다. 구매는 가진 돈으로 살 수 있는 만큼, 판매는 가진 만큼이다.
+   * 색상과 모양은 종류마다 하나만 가질 수 있으므로 이미 가지고 있으면 살 수 없고, 부적 추첨권은 한 번에 하나씩 산다.
+   * @param {Object} view 아이템 창의 상태
+   * @returns {number} 최대 수량 (사거나 팔 수 없으면 0)
+   */
+  itemLimit(view) {
+    let id = view.detail;
+    let kind = this.itemKind(id);
+    let stock = this.itemStock('shop', id);
+    let most = view.tab === 'buy' ? Math.floor(this.slot.money / this.itemPrice(id)) : stock;
+    if (view.tab === 'buy' && kind === 'look') most = Math.min(most, 1 - stock);
+    if (view.tab === 'buy' && kind === 'ticket') most = Math.min(most, 1);
+    return Math.min(ITEM_BULK, most);
+  }
+
+  /**
+   * 게임 중 아이템 목록에서, 아이템을 지금 직접 사용할 수 없는 이유를 구한다.
+   * @param {string} id 아이템 식별자
+   * @returns {string} 사용할 수 없는 이유를 설명하는 문구. 지금 사용할 수 있으면 빈 문자열
+   */
+  itemBlock(id) {
+    let player = this.game.state.players[0];
+    let item = ITEMS[id];
+    if (player.usedItems[item.limit]) return itemsOfLimit(item.limit).length > 1 ? this.t('item.block.shared', { items: this.itemGroupText(item.limit) }) : this.t('item.block.spent');
+    if (item.use !== 'turn') return this.t('item.block.ask');
+    if (this.mode !== 'roll') return this.t('item.block.turn');
+    return '';
+  }
+
+  /**
+   * 아이템 창(대기실의 상점, 보유 아이템 목록)을 연다.
+   * 창은 분류 버튼과 스크롤되는 아이템 카드 목록으로 이루어지며, 카드를 누르면 그 위에 상세 정보 팝업이 뜬다.
+   * 상점의 상세 팝업에서는 사고팔거나 부적을 추첨하고, 대기실에서는 색상과 모양, 부적을 장착하며, 게임 중에는 주사위를 굴릴 차례에 쓰는 아이템을 사용한다.
+   * @param {string} source 창의 종류 ('shop' : 대기실 상점, 'lobby' : 대기실의 보유 목록, 'game' : 게임 중의 보유 목록)
+   * @param {string} [detail] 창을 열면서 바로 상세 정보를 보여줄 아이템의 식별자
+   * @returns {Promise<void>} 창이 닫히면 이행된다.
+   */
+  async openItems(source, detail) {
+    let allowed = source === 'game'
+      ? this.screen === 'game' && Boolean(this.game) && this.game.current.id === 0 && ['roll', 'travel'].includes(this.mode)
+      : this.screen === 'lobby' && Boolean(this.slot);
+    if (!allowed) return;
+    this.closePopover();
+    this.closeDialog(null);
+    let handle = defer();
+    let win = el('div', { class: 'hm-modal hm-items', attrs: { role: 'dialog', 'aria-modal': 'true' } });
+    let overlay = el('div', { class: 'hm-overlay' }, [win]);
+    let view = { source, tab: source === 'shop' ? 'buy' : 'own', filter: 'all', detail: null, last: '', quantity: 1, notice: '', reveal: null, rewind: false, overlay, win, layer: null, card: null };
+    this.root.append(overlay);
+    this.modal = { overlay, handle };
+    this.itemView = view;
+    if (detail && this.listItems(view).includes(detail)) Object.assign(view, { detail, last: detail });
+    this.renderItems();
+    await handle.promise;
+    if (source !== 'game' && this.screen === 'lobby' && this.slot && !this.modal) this.showLobby();
+  }
+
+  /**
+   * 아이템 창에서 누른 동작을 처리한 뒤 창을 다시 그린다.
+   * @param {string} name 동작 이름 ('items.' 뒤의 부분 : close, tab, filter, pick, back, less, more, max, trade, equip, unequip, done, use)
+   * @param {string} [value] 동작에 딸린 값 (탭, 분류, 아이템 식별자)
+   */
+  onItemAction(name, value) {
+    let view = this.itemView;
+    if (!view) return;
+    switch (name) {
+      case 'close': this.closeDialog('close'); return;
+      case 'use': this.useGameItem(view.detail); return;
+      case 'tab':
+        if (view.source !== 'shop' || !['buy', 'sell'].includes(value)) return;
+        Object.assign(view, { tab: value, filter: 'all', notice: '', rewind: true });
+        break;
+      case 'filter':
+        if (value !== 'all' && !ITEM_CATEGORIES.includes(value)) return;
+        Object.assign(view, { filter: value, rewind: true });
+        break;
+      case 'pick':
+        if (!this.listItems(view).includes(value)) return;
+        Object.assign(view, { detail: value, last: value, quantity: 1, notice: '', reveal: null });
+        break;
+      case 'back': Object.assign(view, { detail: null, reveal: null }); break;
+      case 'done': view.reveal = null; break;
+      case 'less': view.quantity--; break;
+      case 'more': view.quantity++; break;
+      case 'max': view.quantity = ITEM_BULK; break;
+      case 'trade': this.tradeItem(view); break;
+      case 'equip': this.equipItem(view, true); break;
+      case 'unequip': this.equipItem(view, false); break;
+      default: return;
+    }
+    if (view.source === 'shop' && view.detail) view.quantity = Math.min(Math.max(1, view.quantity), Math.max(1, this.itemLimit(view)));
+    this.renderItems();
+  }
+
+  /**
+   * 상점의 상세 팝업에서 정한 수량만큼 아이템을 사거나 판 뒤 저장한다. 결과는 안내 문구로 남긴다.
+   * 부적 추첨권을 사면 그 자리에서 추첨한다. 판매하여 남은 것이 없으면 상세 팝업을 닫으며, 장착하고 있던 것을 다 팔면 그 자리는 비게 된다.
+   * @param {Object} view 아이템 창의 상태
+   */
+  tradeItem(view) {
+    let id = view.detail;
+    if (view.source !== 'shop' || !id || this.screen !== 'lobby' || !this.slot) return;
+    let kind = this.itemKind(id);
+    let bag = kind === 'look' ? this.slot.equips : kind === 'charm' ? this.slot.charms : this.slot.items;
+    let count = Math.min(Math.max(1, view.quantity), this.itemLimit(view));
+    let name = this.itemName(id);
+    if (count < 1) return;
+    if (kind === 'ticket') {
+      this.drawCharms(view);
+      return;
+    }
+    if (view.tab === 'buy') {
+      this.slot.money -= this.itemPrice(id) * count;
+      bag[id] += count;
+      view.notice = kind === 'look' ? this.t('store.boughtOne', { item: name }) : this.t('store.bought', { item: name, n: count, total: bag[id] });
+    } else {
+      let proceeds = this.itemResale(id) * count;
+      bag[id] -= count;
+      this.slot.money += proceeds;
+      view.notice = kind === 'look' ? this.t('store.soldOne', { item: name, amount: this.money(proceeds) }) : this.t('store.sold', { item: name, n: count, amount: this.money(proceeds), total: bag[id] });
+      if (bag[id] < 1) view.detail = null;
+    }
+    if (kind === 'look' && bag[id] < 1 && this.slot.equipped[EQUIPS[id].slot] === id) {
+      this.slot.equipped[EQUIPS[id].slot] = null;
+      view.notice += ' ' + this.t('equip.sold', { slot: this.t('equip.slot.' + EQUIPS[id].slot) });
+    }
+    if (kind === 'charm' && bag[id] < 1 && this.slot.equipped.charm === id) {
+      this.slot.equipped.charm = null;
+      view.notice += ' ' + this.t('charm.sold');
+    }
+    view.quantity = 1;
+    this.saveSlot();
+  }
+
+  /**
+   * 부적 추첨권을 사서 그 자리에서 부적을 추첨한다. 추첨권에 적힌 수만큼 하나씩 따로 추첨하며, 이미 가진 부적이 또 나올 수 있다.
+   * 얻은 부적을 보유 수량에 더해 저장하고, 상세 팝업을 추첨 결과를 보여주는 화면으로 바꾼다.
+   * @param {Object} view 아이템 창의 상태
+   */
+  drawCharms(view) {
+    let ticket = CHARM_TICKETS[view.detail];
+    let drawn = [];
+    if (!ticket || this.slot.money < ticket.price) return;
+    this.slot.money -= ticket.price;
+    // 추첨권에 적힌 수만큼 부적을 하나씩 추첨하여 보유 수량에 더한다.
+    for (let count = 0; count < ticket.draws; count++) {
+      let id = drawCharm(this.random);
+      this.slot.charms[id]++;
+      drawn.push(id);
+    }
+    Object.assign(view, { reveal: drawn, notice: '' });
+    this.saveSlot();
+  }
+
+  /**
+   * 상세 팝업에서 보고 있는 색상, 모양 또는 부적을 장착하거나(부적은 해제도) 한 뒤 저장한다.
+   * 가지고 있는 것만 장착할 수 있으며, 같은 자리에 장착했던 것은 빠진다. 부적은 아이템 확인 창에서만 장착하고 해제한다.
+   * @param {Object} view 아이템 창의 상태
+   * @param {boolean} on 장착하면 true, 장착을 해제하면 false
+   */
+  equipItem(view, on) {
+    let id = view.detail;
+    let kind = this.itemKind(id);
+    if (view.source === 'game' || this.screen !== 'lobby' || !this.slot || this.itemStock(view.source, id) < 1) return;
+    if (kind === 'look' && on) {
+      this.slot.equipped[EQUIPS[id].slot] = id;
+    } else if (kind === 'charm' && view.source === 'lobby' && (on || this.slot.equipped.charm === id)) {
+      this.slot.equipped.charm = on ? id : null;
+    } else {
+      return;
+    }
+    view.notice = this.t(on ? 'equip.done' : 'charm.undone', { item: this.itemName(id) });
+    this.saveSlot();
+  }
+
+  /**
+   * 게임 중 아이템 목록에서 고른 아이템을 사용한다. 한 번 더 확인받은 뒤, 주사위를 굴릴 차례의 입력에 아이템 사용으로 답한다.
+   * 확인을 취소하면 아이템 목록의 상세 팝업으로 돌아간다.
+   * @param {string} id 아이템 식별자
+   * @returns {Promise<void>}
+   */
+  async useGameItem(id) {
+    let game = this.game;
+    if (!game || this.screen !== 'game' || !Object.hasOwn(ITEMS, id) || ITEMS[id].use !== 'turn' || this.itemBlock(id) !== '') return;
+    let confirmed = await this.confirm(
+      ITEMS[id].icon + ' ' + this.t('item.use.title', { item: this.itemName(id) }),
+      this.t('item.' + id + '.description') + '\n\n' + this.t('item.use.note'),
+      this.t('item.use'),
+      this.t('load.cancel'),
+    );
+    if (this.game !== game || this.mode !== 'roll') return;
+    if (confirmed) this.answer('roll', ITEM_PREFIX + id);
+    else this.openItems('game', id);
+  }
+
+  /**
+   * 아이템 창의 내용을 현재 상태(탭, 분류, 고른 아이템, 수량, 안내 문구, 추첨 결과)에 맞게 다시 그린다.
+   * 창과 상세 팝업의 틀은 그대로 두고 안의 내용만 바꾸므로, 다시 그려도 창이 깜빡이지 않는다.
+   * 목록의 스크롤 위치와 초점도 다시 그리기 전의 자리로 되돌린다. 다만 탭이나 분류를 바꿔 목록이 달라졌으면 맨 위부터 보여준다.
+   */
+  renderItems() {
+    let view = this.itemView;
+    if (!view) return;
+    let active = document.activeElement instanceof HTMLElement && view.overlay.contains(document.activeElement) ? document.activeElement : null;
+    let key = active && active.dataset.action ? '[data-action="' + active.dataset.action + '"]' + (active.dataset.value === undefined ? '' : '[data-value="' + active.dataset.value + '"]') : '';
+    let grid = view.win.querySelector('.hm-item-grid');
+    let scroll = grid && !view.rewind ? grid.scrollTop : 0;
+    view.rewind = false;
+    view.win.replaceChildren(...this.buildItemWindow(view));
+    grid = view.win.querySelector('.hm-item-grid');
+    if (grid) grid.scrollTop = scroll;
+    if (view.detail && !view.layer) {
+      view.card = el('div', { class: 'hm-modal hm-item-detail', attrs: { role: 'dialog', 'aria-modal': 'true' } });
+      view.layer = el('div', { class: 'hm-layer' }, [view.card]);
+      view.overlay.append(view.layer);
+    }
+    if (!view.detail && view.layer) {
+      view.layer.remove();
+      view.layer = null;
+      view.card = null;
+    }
+    if (view.card) {
+      view.card.classList.toggle('hm-draw', Boolean(view.reveal));
+      view.card.replaceChildren(...(view.reveal ? this.buildDrawReveal(view) : this.buildItemDetail(view)));
+    }
+    view.win.inert = Boolean(view.detail);
+    let scope = view.layer || view.win;
+    let same = key ? scope.querySelector(key) : null;
+    let fallback = view.layer
+      ? scope.querySelector('.hm-modal-buttons .hm-button:not(:disabled)')
+      : scope.querySelector('.hm-item-card[data-value="' + view.last + '"]') || scope.querySelector('.hm-items-foot .hm-button');
+    let target = same && !same.disabled ? same : fallback;
+    if (target) target.focus({ preventScroll: true });
+  }
+
+  /**
+   * 아이템 창의 내용(제목과 보유 현황, 안내, 탭과 분류 버튼, 아이템 카드 목록, 닫기 버튼)을 만든다.
+   * @param {Object} view 아이템 창의 상태
+   * @returns {HTMLElement[]} 창 안에 넣을 요소 목록
+   */
+  buildItemWindow(view) {
+    let shop = view.source === 'shop';
+    let all = this.listItems(view);
+    let totals = this.itemTotals(view.source);
+    let counts = { all: all.length };
+    let cards = [];
+    let chips = [];
+    let tabs = [];
+    let wallet = [];
+    // 이 창이 다루는 아이템의 분류마다 아이템의 수를 0부터 센다. (게임 중에는 색상, 모양, 부적 분류가 없다.)
+    for (let id of this.itemIds(view.source)) counts[this.itemCategory(id)] = 0;
+    // 이 탭의 아이템을 분류별로 세고, 고른 분류에 속한 것은 카드로 만든다.
+    for (let id of all) {
+      counts[this.itemCategory(id)]++;
+      if (view.filter === 'all' || view.filter === this.itemCategory(id)) cards.push(this.buildItemCard(view, id));
+    }
+    // 전체와 각 분류를 고르는 버튼을 만든다.
+    for (let category of ['all', ...ITEM_CATEGORIES]) {
+      if (counts[category] === undefined) continue;
+      let chip = button(this.t('item.category.' + category) + ' ' + counts[category], 'items.filter', category, 'hm-chip' + (view.filter === category ? ' hm-active' : ''));
+      chip.setAttribute('aria-pressed', String(view.filter === category));
+      chips.push(chip);
+    }
+    // 상점이면 구매 탭과 판매 탭을 만든다.
+    for (let tab of shop ? ['buy', 'sell'] : []) {
+      let node = button(this.t('store.tab.' + tab), 'items.tab', tab, 'hm-tab' + (view.tab === tab ? ' hm-active' : ''));
+      node.setAttribute('aria-pressed', String(view.tab === tab));
+      tabs.push(node);
+    }
+    if (shop) wallet.push(el('span', { class: 'hm-items-stat' }, [el('span', { class: 'hm-items-stat-label', text: this.t('store.money') }), el('strong', { class: 'hm-items-stat-value hm-items-money', text: this.money(this.slot.money) })]));
+    wallet.push(el('span', { class: 'hm-items-stat' }, [el('span', { class: 'hm-items-stat-label', text: this.t('item.owned') }), el('strong', { class: 'hm-items-stat-value hm-items-count', text: this.t('item.total', totals) })]));
+    let empty = all.length > 0 ? 'item.noneIn' : view.tab === 'sell' ? 'store.nothing' : view.source === 'lobby' ? 'item.noneLobby' : 'item.none';
+    let cross = el('button', { class: 'hm-items-x', text: '✕', data: { action: 'items.close' }, attrs: { type: 'button', 'aria-label': this.t('common.close'), title: this.t('common.close') } });
+    return [
+      el('div', { class: 'hm-items-head' }, [
+        el('h2', { class: 'hm-modal-title', text: (shop ? '🛒 ' : '🎒 ') + this.t(shop ? 'store.title' : 'item.owned') }),
+        el('div', { class: 'hm-items-stats' }, wallet),
+        cross,
+      ]),
+      el('p', { class: 'hm-modal-text hm-items-hint', text: shop ? this.t('store.hint', { n: ITEM_SELL_PERCENT }) : this.t('item.hint.' + view.source) }),
+      el('div', { class: 'hm-items-bar' }, [tabs.length > 0 ? el('div', { class: 'hm-tabs' }, tabs) : null, el('div', { class: 'hm-chips' }, chips)]),
+      el('div', { class: 'hm-item-grid' }, cards.length > 0 ? cards : [el('p', { class: 'hm-item-empty', text: this.t(empty) })]),
+      el('div', { class: 'hm-items-foot' }, [
+        el('p', { class: 'hm-items-notice', text: view.notice, attrs: { role: 'status' } }),
+        button(this.t('common.close'), 'items.close', undefined, 'hm-primary'),
+      ]),
+    ];
+  }
+
+  /**
+   * 아이템을 나타내는 그림을 만든다. 그림 문자가 같은 아이템은 덧붙인 표시로 구분한다.
+   * 색상과 모양은 그것을 장착했을 때의 말을 그려서 보여주고(다른 자리에는 지금 장착한 것을 쓴다.), 부적은 등급의 색을 바탕에 깐다.
+   * @param {string} id 아이템 식별자
+   * @returns {HTMLElement} 아이템 그림
+   */
+  buildItemIcon(id) {
+    let kind = this.itemKind(id);
+    if (kind === 'look') {
+      let look = { ...this.slot.equipped, [EQUIPS[id].slot]: id };
+      return el('span', { class: 'hm-item-icon hm-item-icon-look', attrs: { 'aria-hidden': 'true' } }, [this.buildLookToken(look)]);
+    }
+    if (kind === 'charm') return el('span', { class: 'hm-item-icon hm-item-icon-charm hm-grade-' + CHARMS[id].grade, text: CHARMS[id].icon, attrs: { 'aria-hidden': 'true' } });
+    let item = kind === 'ticket' ? CHARM_TICKETS[id] : ITEMS[id];
+    return el('span', { class: 'hm-item-icon hm-item-icon-' + this.itemCategory(id), attrs: { 'aria-hidden': 'true' } }, [item.icon, item.badge ? el('span', { class: 'hm-item-mark', text: item.badge }) : null]);
+  }
+
+  /**
+   * 아이템 목록의 카드 하나를 만든다. 누르면 그 아이템의 상세 팝업이 뜬다.
+   * 상점에서는 가격(판매 탭에서는 판매 가격)을, 게임 중에는 이번 게임에서 이미 썼는지를, 장착형 아이템은 장착 중인지를, 부적은 등급을 함께 보여준다.
+   * @param {Object} view 아이템 창의 상태
+   * @param {string} id 아이템 식별자
+   * @returns {HTMLButtonElement} 아이템 카드
+   */
+  buildItemCard(view, id) {
+    let kind = this.itemKind(id);
+    let owned = this.itemStock(view.source, id);
+    let worn = this.itemWorn(view.source, id);
+    let spent = kind === 'item' && view.source === 'game' && this.game.state.players[0].usedItems[ITEMS[id].limit];
+    let meta = [];
+    if (view.source === 'shop') meta.push(el('span', { class: 'hm-item-price', text: this.money(view.tab === 'sell' ? this.itemResale(id) : this.itemPrice(id)) }));
+    if (kind === 'charm') meta.push(el('span', { class: 'hm-item-flag hm-grade-tag hm-grade-' + CHARMS[id].grade, text: this.gradeName(id) }));
+    if (kind === 'look' && owned > 0 && view.tab === 'buy') meta.push(el('span', { class: 'hm-item-stock', text: this.t('equip.owned') }));
+    if (kind !== 'look' && owned > 0) meta.push(el('span', { class: 'hm-item-stock', text: view.tab === 'buy' ? this.t('store.owned', { n: owned }) : '×' + owned }));
+    if (worn) meta.push(el('span', { class: 'hm-item-flag hm-item-worn', text: this.t('equip.on') }));
+    if (spent) meta.push(el('span', { class: 'hm-item-flag', text: this.t('item.state.spent') }));
+    return el('button', { class: 'hm-item-card' + (spent ? ' hm-item-spent' : '') + (worn ? ' hm-item-on' : ''), data: { action: 'items.pick', value: id }, attrs: { type: 'button' } }, [
+      this.buildItemIcon(id),
+      el('span', { class: 'hm-item-main' }, [
+        el('span', { class: 'hm-item-name', text: this.itemName(id) }),
+        el('span', { class: 'hm-item-brief', text: this.itemText(id, 'brief') }),
+        el('span', { class: 'hm-item-meta' }, meta),
+      ]),
+    ]);
+  }
+
+  /**
+   * 상점의 상세 팝업에서 수량을 정하고 합계를 보는 영역을 만든다. (여러 개를 가질 수 있는 소모형 아이템과 부적에 쓴다.)
+   * @param {Object} view 아이템 창의 상태
+   * @param {number} most 한 번에 사고팔 수 있는 최대 수량
+   * @returns {HTMLElement} 수량 조절 영역
+   */
+  buildItemTrade(view, most) {
+    let unit = view.tab === 'buy' ? this.itemPrice(view.detail) : this.itemResale(view.detail);
+    let less = button('−', 'items.less', undefined, 'hm-step');
+    let more = button('+', 'items.more', undefined, 'hm-step');
+    let max = button(this.t('store.max'), 'items.max', undefined, 'hm-step hm-step-max');
+    less.disabled = view.quantity <= 1;
+    more.disabled = view.quantity >= most;
+    max.disabled = view.quantity >= most;
+    less.setAttribute('aria-label', this.t('store.less'));
+    more.setAttribute('aria-label', this.t('store.more'));
+    return el('div', { class: 'hm-trade' }, [
+      el('div', { class: 'hm-trade-count' }, [el('span', { class: 'hm-trade-label', text: this.t('store.quantity') }), less, el('output', { class: 'hm-trade-number', text: view.quantity }), more, max]),
+      el('div', { class: 'hm-trade-total' }, [el('span', { class: 'hm-trade-label', text: this.t('store.total.' + view.tab) }), el('strong', { class: 'hm-trade-money', text: this.money(unit * view.quantity) })]),
+    ]);
+  }
+
+  /**
+   * 부적 추첨에서 등급별로 나올 확률을 한 줄로 정리한다. (예 : "일반 82.6% · 고급 16.5% · 희귀 0.826% · 전설 0.0413%")
+   * @returns {string} 등급별 확률
+   */
+  drawOdds() {
+    let total = 0;
+    let parts = [];
+    // 등급 가중치의 합을 구한다.
+    for (let grade in CHARM_GRADES) total += CHARM_GRADES[grade].weight;
+    // 등급마다 확률을 유효숫자 세 자리의 백분율로 적는다.
+    for (let grade in CHARM_GRADES) parts.push(this.t('ticket.chance', { grade: this.t('charm.grade.' + grade), percent: Number(((CHARM_GRADES[grade].weight / total) * 100).toPrecision(3)) }));
+    return parts.join(' · ');
+  }
+
+  /**
+   * 아이템 상세 팝업에 넣을 정보 줄(가격, 등급, 보유 수량, 장착 여부)을 만든다. 아이템의 종류와 창에 따라 보여주는 줄이 다르다.
+   * @param {Object} view 아이템 창의 상태
+   * @returns {HTMLElement[]} 정보 줄 목록
+   */
+  buildItemRows(view) {
+    let id = view.detail;
+    let kind = this.itemKind(id);
+    let owned = this.itemStock(view.source, id);
+    let worn = this.itemWorn(view.source, id);
+    let rows = [];
+    if (kind === 'charm') rows.push(this.infoRow(this.t('charm.info.grade'), el('span', { class: 'hm-item-flag hm-grade-tag hm-grade-' + CHARMS[id].grade, text: this.gradeName(id) })));
+    if (view.source === 'shop' && kind !== 'charm') rows.push(this.infoRow(this.t('store.priceBuy'), this.figure(this.itemPrice(id))));
+    if (view.source === 'shop' && (kind === 'item' || kind === 'look')) rows.push(this.infoRow(this.t('store.priceSell', { n: ITEM_SELL_PERCENT }), this.figure(this.itemResale(id))));
+    if (view.source === 'shop' && kind === 'charm') rows.push(this.infoRow(this.t('charm.info.sell'), this.figure(this.itemResale(id))));
+    if (kind === 'look') rows.push(this.infoRow(this.t('equip.info.owned'), this.t(owned > 0 ? 'equip.owned' : 'equip.missing')));
+    if (kind === 'item' || kind === 'charm') rows.push(this.infoRow(this.t('item.count'), this.t('common.count', { n: owned })));
+    if (kind === 'look' || (kind === 'charm' && view.source === 'lobby')) rows.push(this.infoRow(this.t('equip.info.state'), this.t(worn ? 'equip.on' : 'equip.off'), worn));
+    return rows;
+  }
+
+  /**
+   * 아이템 상세 팝업의 내용을 만든다. 설명, 사용 시점과 사용 제한, 가격과 보유 현황을 보여준다.
+   * 상점에서는 사고파는 버튼(여러 개를 가질 수 있는 것은 수량 조절 포함)이나 추첨 버튼을, 장착형 아이템에는 장착 버튼을, 게임 중에는 직접 쓰는 아이템의 사용 버튼을 더한다.
+   * @param {Object} view 아이템 창의 상태
+   * @returns {HTMLElement[]} 상세 팝업 안에 넣을 요소 목록
+   */
+  buildItemDetail(view) {
+    let id = view.detail;
+    let kind = this.itemKind(id);
+    let shop = view.source === 'shop';
+    let game = view.source === 'game';
+    let owned = this.itemStock(view.source, id);
+    let worn = this.itemWorn(view.source, id);
+    let rows = this.buildItemRows(view);
+    let facts = [el('dt', { text: this.t('item.info.when') }), el('dd', { text: this.itemText(id, 'when') }), el('dt', { text: this.t('item.info.limit') }), el('dd', { text: this.itemLimitText(id) })];
+    let buttons = [];
+    let trade = null;
+    let reason = '';
+    if (kind === 'ticket') facts.push(el('dt', { text: this.t('ticket.odds') }), el('dd', { class: 'hm-num', text: this.drawOdds() }));
+    if (shop) {
+      let most = this.itemLimit(view);
+      let label = kind === 'ticket' ? this.t('ticket.draw') : kind === 'look' ? this.t('store.tab.' + view.tab) : this.t('store.' + view.tab, { n: view.quantity });
+      let deal = button(label, 'items.trade', undefined, 'hm-primary');
+      deal.disabled = most < 1;
+      if (most < 1 && view.tab === 'buy') reason = this.t(kind === 'look' && owned > 0 ? 'store.have' : 'store.short');
+      if (shop && kind === 'charm' && reason === '') reason = this.t('charm.shopOnly');
+      if (kind === 'item' || kind === 'charm') trade = this.buildItemTrade(view, most);
+      buttons.push(deal);
+    }
+    if (kind === 'look' && !game && owned > 0) {
+      let wear = button(this.t(worn ? 'equip.on' : 'equip.equip'), 'items.equip', undefined, shop ? '' : 'hm-primary');
+      wear.disabled = worn;
+      buttons.push(wear);
+    }
+    if (kind === 'charm' && view.source === 'lobby') buttons.push(button(this.t(worn ? 'charm.unequip' : 'equip.equip'), worn ? 'items.unequip' : 'items.equip', undefined, worn ? '' : 'hm-primary'));
+    if (game) {
+      let spent = this.game.state.players[0].usedItems[ITEMS[id].limit];
+      reason = this.itemBlock(id);
+      rows.push(this.infoRow(this.t('item.info.state'), this.t(spent ? 'item.state.spent' : 'item.state.ready'), true));
+    }
+    if (game && ITEMS[id].use === 'turn') {
+      let use = button(this.t('item.use'), 'items.use', undefined, 'hm-primary');
+      use.disabled = reason !== '';
+      buttons.push(use);
+    }
+    buttons.push(button(this.t('common.close'), 'items.back'));
+    let nodes = [
+      el('div', { class: 'hm-item-detail-head' }, [
+        this.buildItemIcon(id),
+        el('div', { class: 'hm-item-detail-title' }, [
+          el('h3', { class: 'hm-modal-title', text: this.itemName(id) }),
+          el('span', { class: 'hm-item-tag', text: this.t('item.category.' + this.itemCategory(id)) }),
+        ]),
+      ]),
+      el('p', { class: 'hm-modal-text', text: this.itemText(id, 'description') }),
+      el('dl', { class: 'hm-item-facts' }, facts),
+    ];
+    if (rows.length > 0) nodes.push(el('div', { class: 'hm-land-rows' }, rows));
+    if (trade) nodes.push(trade);
+    nodes.push(el('p', { class: 'hm-items-notice' + (view.notice ? '' : ' hm-items-reason'), text: view.notice || reason, attrs: { role: 'status' } }));
+    nodes.push(el('div', { class: 'hm-modal-buttons' }, buttons));
+    return nodes;
+  }
+
+  /**
+   * 부적 추첨의 결과를 보여주는 화면을 만든다. 뽑힌 부적마다 봉투가 차례로 뒤집히며 등급과 이름이 드러난다.
+   * 봉투가 뒤집히는 차례와 빛나는 효과는 CSS 의 움직임으로 표현하며, 등급이 높을수록 화려하다. (.hm-grade-<등급>)
+   * 모두 드러난 뒤에는 가장 높은 등급과 등급별 개수를 알려주고, 돈이 충분하면 한 번 더 추첨할 수 있다.
+   * @param {Object} view 아이템 창의 상태 (view.reveal 에 뽑힌 부적의 식별자가 순서대로 들어 있다.)
+   * @returns {HTMLElement[]} 상세 팝업 안에 넣을 요소 목록
+   */
+  buildDrawReveal(view) {
+    let grades = Object.keys(CHARM_GRADES);
+    let ticket = CHARM_TICKETS[view.detail];
+    let counts = {};
+    let cards = [];
+    let tally = [];
+    let best = 0;
+    // 뽑힌 부적마다 뒤집히는 봉투를 만들고, 등급별 개수와 가장 높은 등급을 구한다.
+    for (let order = 0; order < view.reveal.length; order++) {
+      let id = view.reveal[order];
+      let grade = CHARMS[id].grade;
+      counts[grade] = (counts[grade] || 0) + 1;
+      best = Math.max(best, grades.indexOf(grade));
+      cards.push(el('div', { class: 'hm-draw-card hm-grade-' + grade, data: { charm: id }, style: { '--hm-order': order } }, [
+        el('span', { class: 'hm-draw-back', text: ticket.icon, attrs: { 'aria-hidden': 'true' } }),
+        el('span', { class: 'hm-draw-front' }, [
+          el('span', { class: 'hm-draw-grade', text: this.gradeName(id) }),
+          el('span', { class: 'hm-draw-icon', text: CHARMS[id].icon, attrs: { 'aria-hidden': 'true' } }),
+          el('span', { class: 'hm-draw-name', text: this.itemName(id) }),
+        ]),
+      ]));
+    }
+    // 높은 등급부터 등급별 개수를 적는다.
+    for (let rank = grades.length - 1; rank >= 0; rank--) {
+      if (counts[grades[rank]]) tally.push(this.t('draw.tally', { grade: this.t('charm.grade.' + grades[rank]), n: counts[grades[rank]] }));
+    }
+    let again = button(this.t('draw.again') + ' · ' + this.money(ticket.price), 'items.trade');
+    again.disabled = this.slot.money < ticket.price;
+    return [
+      el('h3', { class: 'hm-modal-title hm-draw-title', text: '🧧 ' + this.t('draw.title') }),
+      el('div', { class: 'hm-draw-stage hm-draw-' + grades[best] + (cards.length > 1 ? ' hm-draw-many' : ' hm-draw-one'), style: { '--hm-count': cards.length } }, cards),
+      el('p', { class: 'hm-draw-best hm-grade-' + grades[best], style: { '--hm-count': cards.length }, text: this.t('draw.best', { grade: this.t('charm.grade.' + grades[best]) }) }),
+      el('p', { class: 'hm-modal-text hm-draw-summary', style: { '--hm-count': cards.length }, text: cards.length > 1 ? tally.join(' · ') : this.itemText(view.reveal[0], 'brief') }),
+      el('div', { class: 'hm-modal-buttons' }, [again, button(this.t('draw.done'), 'items.done', undefined, 'hm-primary')]),
+    ];
   }
 
   /* ------------------------------ 게임 화면 ------------------------------ */
@@ -3745,7 +5356,7 @@ export class HellmarbleApp extends HellmarbleHost {
       }
     }
     lot.replaceChildren(...houses);
-    if (land.owner !== null) lot.style.setProperty('--hm-owner', PLAYER_STYLES[land.owner].color);
+    if (land.owner !== null) lot.style.setProperty('--hm-owner', this.styleOf(this.game.state.players[land.owner]).color);
     this.lotState[index] = { key, owner: land.owner, villa: land.villa, building: land.building, hotel: land.hotel };
   }
 
@@ -3905,9 +5516,9 @@ export class HellmarbleApp extends HellmarbleHost {
     let leave = [{ label: this.t('result.lobby'), value: 'ok', primary: true }];
     if (won) {
       let rows = [
-        this.infoRow(this.t('result.cash'), this.money(cash)),
-        this.infoRow(this.t('result.property'), this.money(property)),
-        this.infoRow(this.t('result.reward'), '+' + this.money(cash + property), true),
+        this.infoRow(this.t('result.cash'), this.figure(cash)),
+        this.infoRow(this.t('result.property'), this.figure(property)),
+        this.infoRow(this.t('result.reward'), this.figure(cash + property, '+'), true),
       ];
       await this.dialog({ kind: 'win', title: this.t('result.win.title'), text: this.t('result.win.text'), body: [el('div', { class: 'hm-land-rows' }, rows)], buttons: leave });
     } else {
@@ -3958,8 +5569,9 @@ export class HellmarbleApp extends HellmarbleHost {
     let land = game.state.lands[index];
     let owned = Boolean(land && land.owner !== null);
     if (land) parts.sub.textContent = formatCompact(owned ? game.toll(index) : game.price(index), this.settings.language);
-    parts.owner.textContent = owned ? PLAYER_STYLES[land.owner].symbol : '';
-    if (owned) parts.node.style.setProperty('--hm-owner', PLAYER_STYLES[land.owner].color);
+    let mark = owned ? this.styleOf(game.state.players[land.owner]) : null;
+    parts.owner.textContent = mark ? mark.symbol : '';
+    if (mark) paint(parts.node, 'owner', mark);
     parts.node.classList.toggle('hm-owned', owned);
     this.refreshLot(index);
     let tokens = [];
@@ -3968,7 +5580,7 @@ export class HellmarbleApp extends HellmarbleHost {
     for (let player of game.state.players) {
       if (!player.alive || player.position !== index) continue;
       tokens.push(this.buildToken(player));
-      colors.push(PLAYER_STYLES[player.id].color);
+      colors.push(this.styleOf(player).color);
     }
     parts.tokens.replaceChildren(...tokens);
     parts.node.classList.toggle('hm-here', colors.length > 0);
@@ -3988,11 +5600,39 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {HTMLElement} 말 요소
    */
   buildToken(player) {
-    let style = PLAYER_STYLES[player.id];
     let name = 'hm-token';
     if (this.game && !this.intro && !this.game.state.finished && this.game.current.id === player.id) name += ' hm-token-turn';
     if (this.moving === player.id) name += ' hm-token-hop';
-    return el('span', { class: name, text: style.symbol, data: { player: player.id }, style: { '--hm-player': style.color }, attrs: { title: this.playerName(player) } });
+    let token = this.buildLookToken(player.look, name);
+    token.dataset.player = String(player.id);
+    token.title = this.playerName(player);
+    return token;
+  }
+
+  /**
+   * 색상과 모양으로 말 하나를 그린다. 게임의 말과, 대기실과 아이템 창의 미리 보기에 함께 쓴다.
+   * 장착하지 않은 자리가 있으면 회색 바탕 또는 빈 문양으로 그린다.
+   * @param {{color: string|null, shape: string|null}} look 생김새
+   * @param {string} [className] 요소의 클래스 이름 (생략하면 'hm-token')
+   * @returns {HTMLElement} 말 요소
+   */
+  buildLookToken(look, className) {
+    let style = lookStyle(look);
+    let token = el('span', { class: className || 'hm-token', text: style.symbol });
+    paint(token, 'player', style);
+    return token;
+  }
+
+  /**
+   * 장착한 색상과 모양의 이름을 이어 쓴다. 비어 있는 자리는 없다고 적는다.
+   * @param {{color: string|null, shape: string|null}} look 장착 상태
+   * @returns {string} 색상과 모양의 이름
+   */
+  lookText(look) {
+    let names = [];
+    // 색상과 모양 자리마다 장착한 아이템의 이름을 모은다.
+    for (let slot in DEFAULT_LOOK) names.push(look[slot] ? this.itemName(look[slot]) : this.t('equip.none.' + slot));
+    return names.join(' · ');
   }
 
   /**
@@ -4038,15 +5678,17 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 가운데 영역에 보일 안내 문구를 정한다. 사용자의 입력을 기다릴 때에는 할 일을, 그 밖에는 최근 기록을 보여준다.
+   * 주사위 조작형 아이템을 쓴 뒤 굴리기 전이면 어떤 눈이 나오는지도 덧붙인다.
    * @returns {string} 안내 문구
    */
   statusText() {
     let player = this.game.current;
     let logs = this.game.state.logs;
+    let loaded = player.loaded ? ' ' + ITEMS[player.loaded].icon + ' ' + this.t('hint.loaded', { item: this.itemName(player.loaded), faces: ITEMS[player.loaded].faces.join(', ') }) : '';
     if (this.mode === 'travel') return this.t('hint.travel');
-    if (this.mode === 'roll' && player.island > 1) return this.t('hint.island', { n: player.island - 1 });
-    if (this.mode === 'roll' && player.island === 1) return this.t('hint.release');
-    if (this.mode === 'roll') return this.t(this.again ? 'hint.double' : 'hint.roll');
+    if (this.mode === 'roll' && player.island > 1) return this.t('hint.island', { n: player.island - 1 }) + loaded;
+    if (this.mode === 'roll' && player.island === 1) return this.t('hint.release') + loaded;
+    if (this.mode === 'roll') return this.t(this.again ? 'hint.double' : 'hint.roll') + loaded;
     return logs.length > 0 ? this.describe(logs[logs.length - 1]) : '';
   }
 
@@ -4071,6 +5713,7 @@ export class HellmarbleApp extends HellmarbleHost {
       if (turn) badges.push(this.t('player.turn'));
       if (player.island > 0) badges.push(this.t('player.island', { n: player.island - 1 }));
       if (player.boarded) badges.push(this.t('player.boarded'));
+      if (player.loaded) badges.push(ITEMS[player.loaded].icon + ' ' + this.itemName(player.loaded));
       // 보관 중인 쿠폰을 종류별로 표시한다.
       for (let coupon in player.coupons) {
         if (player.coupons[coupon] > 0) badges.push(ICONS[coupon] + ' ' + this.t('coupon.' + coupon + '.title') + ' ×' + player.coupons[coupon]);
@@ -4078,14 +5721,17 @@ export class HellmarbleApp extends HellmarbleHost {
       let chips = [];
       // 상태와 쿠폰 표시를 하나씩 꼬리표로 만든다.
       for (let badge of badges) chips.push(el('span', { class: 'hm-badge', text: badge }));
-      if (!this.cards[id]) this.cards[id] = el('button', { data: { action: 'game.player', value: id }, attrs: { type: 'button' }, style: { '--hm-player': PLAYER_STYLES[id].color } });
+      if (!this.cards[id]) {
+        this.cards[id] = el('button', { data: { action: 'game.player', value: id }, attrs: { type: 'button' } });
+        paint(this.cards[id], 'player', this.styleOf(player));
+      }
       this.cards[id].className = 'hm-player' + (turn ? ' hm-player-turn' : '') + (player.alive ? '' : ' hm-player-out');
       this.cards[id].replaceChildren(
         this.buildToken(player),
         el('span', { class: 'hm-player-main' }, [
           el('span', { class: 'hm-player-name', text: this.playerName(player) + (player.ai ? '' : ' (' + this.t('player.you') + ')') }),
           el('span', { class: 'hm-player-cash', text: this.money(player.cash) }),
-          el('span', { class: 'hm-player-meta', text: this.t('player.lands', { n: game.owned(player).length }) + ' · ' + this.t('player.assets', { amount: this.money(game.assets(player)) }) }),
+          el('span', { class: 'hm-player-meta' }, [this.t('player.lands', { n: game.owned(player).length }) + ' · ' + this.t('playerinfo.assets') + ' ', this.figure(game.assets(player))]),
           el('span', { class: 'hm-badges' }, chips),
         ]),
       );
@@ -4136,17 +5782,17 @@ export class HellmarbleApp extends HellmarbleHost {
       for (let kind of BUILDINGS) name += ICONS[kind].repeat(land[kind]);
       lands.push(el('button', { class: 'hm-land-item', data: { action: 'dialog.answer', value: 'land:' + index }, attrs: { type: 'button' }, style: { '--hm-land': LAND_COLORS[BOARD[index].show] } }, [
         el('span', { class: 'hm-land-item-name', text: name }),
-        el('span', { class: 'hm-land-item-toll', text: this.t('info.toll') + ' ' + this.money(game.toll(index)) }),
+        el('span', { class: 'hm-land-item-toll' }, [this.t('info.toll') + ' ', this.figure(game.toll(index))]),
       ]));
     }
     let status = !player.alive ? this.t('player.bankrupt') : player.island > 0 ? this.t('player.island', { n: player.island - 1 }) : player.boarded ? this.t('player.boarded') : this.t('playerinfo.playing');
     return {
-      kind: 'player', title: PLAYER_STYLES[id].symbol + ' ' + this.playerName(player),
+      kind: 'player', title: this.styleOf(player).symbol + ' ' + this.playerName(player),
       body: [
-        el('div', { class: 'hm-land-rows hm-player-assets', style: { '--hm-player': PLAYER_STYLES[id].color } }, [
-          this.infoRow(this.t('result.cash'), this.money(player.cash)),
-          this.infoRow(this.t('result.property'), this.money(game.propertyValue(player))),
-          this.infoRow(this.t('playerinfo.assets'), this.money(game.assets(player)), true),
+        el('div', { class: 'hm-land-rows hm-player-assets', style: { '--hm-player': this.styleOf(player).color } }, [
+          this.infoRow(this.t('result.cash'), this.figure(player.cash)),
+          this.infoRow(this.t('result.property'), this.figure(game.propertyValue(player))),
+          this.infoRow(this.t('playerinfo.assets'), this.figure(game.assets(player)), true),
           this.infoRow(this.t('playerinfo.coupons'), coupons.length > 0 ? coupons.join('  ') : this.t('common.none')),
           this.infoRow(this.t('playerinfo.status'), status),
         ]),
@@ -4166,7 +5812,7 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   playerLandConfig(id, index) {
     return {
-      kind: 'player', title: PLAYER_STYLES[id].symbol + ' ' + this.playerName(this.game.state.players[id]), body: [this.buildLandInfo(index)],
+      kind: 'player', title: this.styleOf(this.game.state.players[id]).symbol + ' ' + this.playerName(this.game.state.players[id]), body: [this.buildLandInfo(index)],
       buttons: [{ label: this.t('common.goBack'), value: 'list' }, { label: this.t('common.close'), value: 'close', primary: true }],
     };
   }
@@ -4180,7 +5826,7 @@ export class HellmarbleApp extends HellmarbleHost {
     // 가장 최근 기록부터 거꾸로 최대 40개를 목록으로 만든다.
     for (let index = logs.length - 1; index >= 0 && items.length < 40; index--) {
       let owner = logs[index].params.player;
-      items.push(el('li', { class: 'hm-log-item', text: this.describe(logs[index]), style: { '--hm-player': owner === undefined ? 'transparent' : PLAYER_STYLES[owner].color } }));
+      items.push(el('li', { class: 'hm-log-item', text: this.describe(logs[index]), style: { '--hm-player': owner === undefined ? 'transparent' : this.styleOf(this.game.state.players[owner]).color } }));
     }
     this.parts.log.replaceChildren(...items);
   }
@@ -4200,6 +5846,7 @@ export class HellmarbleApp extends HellmarbleHost {
       else if (name === 'tile') params[name] = this.tileName(value);
       else if (name === 'amount') params[name] = this.money(value);
       else if (name === 'coupon') params[name] = this.t('coupon.' + value + '.title');
+      else if (name === 'item') params[name] = this.itemName(value);
       else if (name === 'building') params[name] = this.t('building.' + value);
       else if (name === 'order') params[name] = this.orderText(value);
       else params[name] = value;
@@ -4245,29 +5892,29 @@ export class HellmarbleApp extends HellmarbleHost {
     let prices = [];
     let status = [];
     if (land) {
-      prices.push(this.infoRow(this.t('info.price'), this.money(game.price(index))));
+      prices.push(this.infoRow(this.t('info.price'), this.figure(game.price(index))));
       // 일반 도시이면 건물 종류별 건설비를 넣는다.
       for (let kind of tile.cost ? BUILDINGS : []) {
-        prices.push(this.infoRow(ICONS[kind] + ' ' + this.t('info.cost', { building: this.t('building.' + kind) }), this.money(game.buildCost(index, kind))));
+        prices.push(this.infoRow(ICONS[kind] + ' ' + this.t('info.cost', { building: this.t('building.' + kind) }), this.figure(game.buildCost(index, kind))));
       }
-      prices.push(this.infoRow(this.t('info.toll'), this.money(game.money(tile.toll))));
+      prices.push(this.infoRow(this.t('info.toll'), this.figure(game.money(tile.toll))));
       // 일반 도시이면 건물 종류별 이용료를 넣는다.
       for (let kind of tile.fee ? BUILDINGS : []) {
-        prices.push(this.infoRow(ICONS[kind] + ' ' + this.t(kind === 'villa' ? 'info.feeEach' : 'info.fee', { building: this.t('building.' + kind) }), this.money(game.money(tile.fee[kind]))));
+        prices.push(this.infoRow(ICONS[kind] + ' ' + this.t(kind === 'villa' ? 'info.feeEach' : 'info.fee', { building: this.t('building.' + kind) }), this.figure(game.money(tile.fee[kind]))));
       }
-      if (index === TILES.columbia) prices.push(this.infoRow(this.t('info.spaceFee'), this.money(game.money(SPACE_FEE))));
+      if (index === TILES.columbia) prices.push(this.infoRow(this.t('info.spaceFee'), this.figure(game.money(SPACE_FEE))));
       status.push(this.infoRow(this.t('info.owner'), this.ownerLabel(land.owner)));
       if (tile.cost) status.push(this.infoRow(this.t('info.buildings'), this.buildingText(land)));
-      status.push(this.infoRow(this.t('info.total'), this.money(game.toll(index)), true));
-      if (land.owner !== null) status.push(this.infoRow(this.t('info.sale', { n: SELL_PERCENT }), this.money(game.saleValue(index))));
+      status.push(this.infoRow(this.t('info.total'), this.figure(game.toll(index)), true));
+      if (land.owner !== null) status.push(this.infoRow(this.t('info.sale', { n: SELL_PERCENT }), this.figure(game.saleValue(index))));
     }
-    if (tile.type === 'start') prices.push(this.infoRow(this.t('info.salary'), this.money(game.money(SALARY))));
+    if (tile.type === 'start') prices.push(this.infoRow(this.t('info.salary'), this.figure(game.money(SALARY))));
     if (tile.type === 'space') {
-      prices.push(this.infoRow(this.t('info.spaceFee'), this.money(game.money(SPACE_FEE))));
+      prices.push(this.infoRow(this.t('info.spaceFee'), this.figure(game.money(SPACE_FEE))));
       status.push(this.infoRow(this.tileName(TILES.columbia) + ' ' + this.t('info.owner'), this.ownerLabel(game.state.lands[TILES.columbia].owner)));
     }
-    if (tile.type === 'desk') prices.push(this.infoRow(this.t('info.welfare'), this.money(game.money(WELFARE_FEE))));
-    if (tile.type === 'desk' || tile.type === 'fund') status.push(this.infoRow(this.t('info.fund'), this.money(game.state.fund), true));
+    if (tile.type === 'desk') prices.push(this.infoRow(this.t('info.welfare'), this.figure(game.money(WELFARE_FEE))));
+    if (tile.type === 'desk' || tile.type === 'fund') status.push(this.infoRow(this.t('info.fund'), this.figure(game.state.fund), true));
     return el('div', { class: 'hm-land', style: { '--hm-land': tile.show ? LAND_COLORS[tile.show] : 'var(--hm-muted)' } }, [
       el('div', { class: 'hm-land-head' }, [
         el('span', { class: 'hm-land-name', text: (ICONS[tile.id] ? ICONS[tile.id] + ' ' : '') + this.tileName(index) }),
@@ -4416,12 +6063,12 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   async runTool(key, input, options) {
     let args = input && typeof input === 'object' ? input : {};
-    let amounts = { start: this.money(START_CASH), salary: this.money(SALARY), space: this.money(SPACE_FEE), welfare: this.money(WELFARE_FEE), sell: SELL_PERCENT, itemPrice: this.money(ITEMS.pass.price), itemSell: ITEM_SELL_PERCENT };
+    let amounts = { start: this.money(START_CASH), salary: this.money(SALARY), space: this.money(SPACE_FEE), welfare: this.money(WELFARE_FEE), sell: SELL_PERCENT, itemSell: ITEM_SELL_PERCENT };
     let result = null;
     try {
       switch (key) {
-        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.t('mcp.items.rules', amounts); break;
-        case 'get_guide': result = this.t('mcp.guide') + '\n' + this.t('mcp.items.guide'); break;
+        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.t('mcp.items.rules', amounts) + '\n' + this.itemRules() + '\n' + this.t('mcp.equips.rules', amounts) + '\n' + this.equipRules() + '\n' + this.charmRules(); break;
+        case 'get_guide': result = this.t('mcp.guide') + '\n' + this.t('mcp.items.guide') + '\n' + this.t('mcp.equips.guide') + '\n' + this.t('mcp.charms.guide'); break;
         case 'get_land': result = this.describeLand(Number(args.index)); break;
         case 'act': result = await this.pressAction(String(args.action), args.value); break;
         case 'set_text': result = this.typeText(String(args.text === undefined ? '' : args.text)); break;
@@ -4435,11 +6082,54 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 지금 조작할 수 있는 영역을 구한다. 대화 상자가 떠 있으면 그 안만 조작할 수 있다.
+   * 아이템마다 이름, 가격, 설명, 사용 시점을 한 줄씩 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
+   * @returns {string} 아이템 목록 설명
+   */
+  itemRules() {
+    let lines = [];
+    // 아이템마다 설명 한 줄을 만든다.
+    for (let id in ITEMS) {
+      lines.push(this.t('mcp.items.entry', { item: this.itemName(id), price: this.money(ITEMS[id].price), description: this.t('item.' + id + '.description'), when: this.t('item.' + id + '.when') }));
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * 상점에서 파는 색상과 모양마다 분류, 이름, 가격을 한 줄씩 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
+   * @returns {string} 장착형 아이템 목록 설명
+   */
+  equipRules() {
+    let lines = [];
+    // 상점에서 파는 장착형 아이템마다 설명 한 줄을 만든다.
+    for (let id in EQUIPS) {
+      if (EQUIPS[id].price > 0) lines.push(this.t('mcp.equips.entry', { slot: this.t('item.category.' + EQUIPS[id].slot), item: this.itemName(id), price: this.money(EQUIPS[id].price) }));
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * 부적의 규칙(추첨권의 가격, 등급별 확률과 판매 가격)과 부적마다의 등급, 이름, 효과를 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
+   * @returns {string} 부적 설명
+   */
+  charmRules() {
+    let sells = [];
+    let lines = [];
+    // 등급마다 판매 가격을 적는다.
+    for (let grade in CHARM_GRADES) sells.push(this.t('charm.grade.' + grade) + ' ' + this.money(CHARM_GRADES[grade].sell));
+    // 부적마다 설명 한 줄을 만든다.
+    for (let id in CHARMS) lines.push(this.t('mcp.charms.entry', { grade: this.gradeName(id), item: this.itemName(id), brief: this.itemText(id, 'brief') }));
+    let params = { ticket: this.money(CHARM_TICKETS.charmticket.price), ticket10: this.money(CHARM_TICKETS.charmticket10.price), odds: this.drawOdds(), sells: sells.join(', ') };
+    return this.t('mcp.charms.rules', params) + '\n' + lines.join('\n');
+  }
+
+  /**
+   * 지금 조작할 수 있는 영역을 구한다. 대화 상자가 떠 있으면 그 안만 조작할 수 있고,
+   * 아이템 창 위에 상세 팝업이 떠 있으면 그 팝업 안만 조작할 수 있다.
    * @returns {HTMLElement} 조작할 수 있는 영역
    */
   activeScope() {
-    return this.modal ? this.modal.overlay : this.root;
+    if (!this.modal) return this.root;
+    return this.itemView && this.itemView.layer ? this.itemView.layer : this.modal.overlay;
   }
 
   /**
@@ -4473,7 +6163,7 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 현재 화면의 상황을 정리한다. (화면 종류, 떠 있는 창, 입력란, 누를 수 있는 동작, 게임 진행 상황)
+   * 현재 화면의 상황을 정리한다. (화면 종류, 떠 있는 창, 아이템 창의 상태, 입력란, 누를 수 있는 동작, 게임 진행 상황)
    * @returns {Object} 현재 상황
    */
   describeState() {
@@ -4483,8 +6173,9 @@ export class HellmarbleApp extends HellmarbleHost {
     let field = scope.querySelector('.hm-input');
     let state = { screen: this.screen, language: this.settings.language, dark: this.settings.dark, busy: this.isBusy(), title: heading ? heading.textContent : '' };
     if (this.modal) state.dialog = { title: state.title, text: text ? text.textContent : '' };
+    if (this.itemView) state.itemWindow = { kind: this.itemView.source, tab: this.itemView.tab, category: this.itemView.filter, detail: this.itemView.detail, quantity: this.itemView.quantity, notice: this.itemView.notice, drawn: this.itemView.reveal };
     if (field) state.input = { value: field.value };
-    if (this.slot && (this.screen === 'lobby' || this.screen === 'game')) state.slot = { number: this.slotIndex + 1, name: this.slot.name, money: this.slot.money, items: this.screen === 'lobby' ? this.slot.items : this.game.state.players[0].items };
+    if (this.slot && (this.screen === 'lobby' || this.screen === 'game')) state.slot = { number: this.slotIndex + 1, name: this.slot.name, money: this.slot.money, items: this.screen === 'lobby' ? this.slot.items : this.game.state.players[0].items, equips: this.slot.equips, charms: this.slot.charms, equipped: this.slot.equipped };
     if (this.game) state.game = this.describeGame();
     state.actions = this.listActions();
     return state;
@@ -4505,7 +6196,7 @@ export class HellmarbleApp extends HellmarbleHost {
       players.push({
         id: player.id, name: this.playerName(player), you: !player.ai, alive: player.alive, cash: player.cash, assets: game.assets(player),
         position: player.position, tile: this.tileName(player.position), island: player.island, boarded: player.boarded, coupons: player.coupons,
-        items: player.items, usedItems: player.usedItems,
+        items: player.items, usedItems: player.usedItems, loaded: player.loaded, look: player.look, color: this.styleOf(player).color, symbol: this.styleOf(player).symbol, charm: player.charm,
       });
     }
     // 소유자가 있는 땅을 정리한다.
@@ -4633,26 +6324,29 @@ export class HellmarbleApp extends HellmarbleHost {
    * 주사위를 굴리는 모습을 보여준 뒤 결과를 표시한다.
    * @param {Object} player 주사위를 굴린 플레이어
    * @param {number[]} dice 두 주사위의 눈
+   * @param {number[]|null} [faces] 주사위 조작형 아이템이 적용되었으면 그 주사위에서 나올 수 있는 눈
    * @returns {Promise<void>}
    */
-  async dice(player, dice) {
+  async dice(player, dice, faces) {
     void player;
-    await this.rollDice(dice);
+    await this.rollDice(dice, faces);
     await wait(this.timings.pause);
   }
 
   /**
    * 가운데 영역의 주사위가 구르는 모습을 정해진 시간 동안 보여준 뒤 지정한 눈에서 멈춘다.
    * @param {number[]} dice 멈췄을 때 보일 두 주사위의 눈
+   * @param {number[]|null} [faces] 구르는 동안 보여줄 눈의 목록 (생략하면 1~6)
    * @returns {Promise<void>}
    */
-  async rollDice(dice) {
+  async rollDice(dice, faces) {
     let until = Date.now() + this.timings.dice;
+    let shown = faces && faces.length > 0 ? faces : [1, 2, 3, 4, 5, 6];
     this.rolling = true;
     this.parts.dice.classList.add('hm-rolling');
     // 정해진 시간 동안 임의의 눈을 번갈아 보여준다.
     while (Date.now() < until) {
-      this.renderDice(1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6));
+      this.renderDice(shown[Math.floor(Math.random() * shown.length)], shown[Math.floor(Math.random() * shown.length)]);
       await wait(70);
     }
     this.rolling = false;
@@ -4687,11 +6381,11 @@ export class HellmarbleApp extends HellmarbleHost {
     if (coupon.amount) params.amount = this.money(this.game.money(coupon.amount));
     // 건물별 금액이 있는 쿠폰은 종류별 금액을 문구에 넣는다.
     for (let kind in coupon.rates || {}) params[kind] = this.money(this.game.money(coupon.rates[kind]));
-    let card = el('div', { class: 'hm-coupon', style: { '--hm-coupon-time': this.timings.coupon + 'ms', '--hm-player': PLAYER_STYLES[player.id].color } }, [
+    let card = el('div', { class: 'hm-coupon', style: { '--hm-coupon-time': this.timings.coupon + 'ms', '--hm-player': this.styleOf(player).color } }, [
       el('div', { class: 'hm-coupon-head', text: ICONS.coupon + ' ' + this.t('coupon.header') }),
       el('div', { class: 'hm-coupon-title', text: this.t('coupon.' + id + '.title') }),
       el('p', { class: 'hm-coupon-text', text: this.t(coupon.effect === 'tax' ? 'coupon.tax.text' : 'coupon.' + id + '.text', params) }),
-      el('div', { class: 'hm-coupon-drawer', text: this.t('coupon.drawer', { player: this.playerName(player) }) }),
+      el('div', { class: 'hm-coupon-drawer' }, [this.buildLookToken(player.look), this.t('coupon.drawer', { player: this.playerName(player) })]),
       button(this.t('common.close'), 'coupon.close', undefined, 'hm-coupon-close'),
       el('div', { class: 'hm-coupon-bar' }),
     ]);
@@ -4710,54 +6404,86 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 한 플레이어가 다른 플레이어에게 돈(통행료, 이용료 등)을 건네는 모습을 보여준다.
-   * 누가 누구에게 얼마를 주는지 보드 가운데에 크게 띄우고, 내는 플레이어의 말에서 지폐가 나와 받는 플레이어의 말로 날아가게 한다.
-   * 두 플레이어의 카드도 각각 내는 쪽과 받는 쪽으로 강조한다.
-   * @param {Object} payer 돈을 내는 플레이어
-   * @param {Object} receiver 돈을 받는 플레이어
+   * 돈이 오가는 모습을 보여준다. 플레이어끼리(통행료, 이용료)는 물론 은행, 사회복지기금 본부와 오가는 돈도 같은 방식으로 보여준다.
+   * 누가 누구에게 얼마를 주는지 보드 가운데에 크게 띄우고, 내는 쪽에서 지폐가 나와 받는 쪽으로 날아가게 한다.
+   * 지폐가 드나드는 자리는 플레이어는 말, 은행은 출발지 칸, 사회복지기금 본부는 그 칸이며, 은행과 본부의 칸은 연출하는 동안 테두리를 빛낸다.
+   * 플레이어의 카드도 각각 내는 쪽과 받는 쪽으로 강조한다. 은행·본부와의 돈 이동은 자주 일어나므로 조금 짧게 보여준다.
+   * @param {Object|string} payer 돈을 내는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
+   * @param {Object|string} receiver 돈을 받는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
    * @param {number} amount 건넨 금액 (원)
    * @returns {Promise<void>}
    */
   async transfer(payer, receiver, amount) {
-    let duration = this.timings.transfer;
+    let offices = [this.officeTile(payer), this.officeTile(receiver)];
+    let office = offices[0] >= 0 ? payer : offices[1] >= 0 ? receiver : null;
+    let duration = office ? this.timings.bank : this.timings.transfer;
     if (!(duration > 0) || !this.game || !this.parts.center) return;
-    let banner = el('div', { class: 'hm-transfer', style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
-      el('span', { class: 'hm-transfer-side' }, [this.buildToken(payer), this.playerName(payer)]),
+    let banner = el('div', { class: 'hm-transfer' + (office ? ' hm-transfer-' + office : ''), style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+      this.transferSide(payer),
       el('span', { class: 'hm-transfer-arrow', text: '➜' }),
-      el('span', { class: 'hm-transfer-side' }, [this.buildToken(receiver), this.playerName(receiver)]),
+      this.transferSide(receiver),
       el('strong', { class: 'hm-transfer-amount', text: this.money(amount) }),
     ]);
     let flying = this.flyBills(payer, receiver, amount, duration);
-    let cards = [this.cards[payer.id], this.cards[receiver.id]];
+    let cards = [offices[0] < 0 ? this.cards[payer.id] : null, offices[1] < 0 ? this.cards[receiver.id] : null];
+    let tile = office ? this.tiles[Math.max(offices[0], offices[1])].node : null;
     this.parts.center.append(banner);
     if (cards[0]) cards[0].classList.add('hm-player-pay');
     if (cards[1]) cards[1].classList.add('hm-player-get');
+    if (tile) tile.classList.add('hm-tile-' + office);
     await wait(duration);
     banner.remove();
     // 날린 지폐와 금액 표시를 화면에서 치운다.
     for (let node of flying) node.remove();
     if (cards[0]) cards[0].classList.remove('hm-player-pay');
     if (cards[1]) cards[1].classList.remove('hm-player-get');
+    if (tile) tile.classList.remove('hm-tile-' + office);
   }
 
   /**
-   * 보드 위에서 플레이어의 말이 있는 화면상의 위치를 구한다.
-   * @param {Object} player 플레이어
-   * @returns {{x: number, y: number, size: number}} 말의 가운데 좌표와 칸의 크기 (픽셀)
+   * 돈을 내거나 받는 쪽이 은행 또는 사회복지기금 본부이면 그곳이 있는 칸을 알려 준다. 은행은 출발지 칸에 있는 것으로 본다.
+   * @param {Object|string} party 플레이어, 또는 은행(BANK)·사회복지기금 본부(FUND)
+   * @returns {number} 칸 번호 (플레이어이면 -1)
    */
-  tokenPoint(player) {
-    let parts = this.tiles[player.position];
-    let token = parts.tokens.querySelector('[data-player="' + player.id + '"]') || parts.node;
-    let rect = token.getBoundingClientRect();
+  officeTile(party) {
+    if (party === BANK) return TILES.start;
+    if (party === FUND) return TILES.fund;
+    return -1;
+  }
+
+  /**
+   * 돈 이동 안내 띠에 넣을, 돈을 내거나 받는 쪽의 표시를 만든다. 플레이어는 말과 이름, 은행과 사회복지기금 본부는 그림 문자와 이름이다.
+   * @param {Object|string} party 플레이어, 또는 은행(BANK)·사회복지기금 본부(FUND)
+   * @returns {HTMLElement} 만들어진 요소
+   */
+  transferSide(party) {
+    if (this.officeTile(party) < 0) return el('span', { class: 'hm-transfer-side' }, [this.buildToken(party), this.playerName(party)]);
+    return el('span', { class: 'hm-transfer-side' }, [
+      el('span', { class: 'hm-transfer-icon', text: party === BANK ? ICONS.bank : ICONS.fund, attrs: { 'aria-hidden': 'true' } }),
+      this.t(party === BANK ? 'game.bank' : 'tile.fund'),
+    ]);
+  }
+
+  /**
+   * 돈을 내거나 받는 쪽이 보드 위에 있는 화면상의 위치를 구한다. 플레이어는 말, 은행과 사회복지기금 본부는 그곳이 있는 칸의 가운데이다.
+   * @param {Object|string} party 플레이어, 또는 은행(BANK)·사회복지기금 본부(FUND)
+   * @returns {{x: number, y: number, size: number}} 가운데 좌표와 칸의 크기 (픽셀)
+   */
+  partyPoint(party) {
+    let office = this.officeTile(party);
+    let parts = this.tiles[office < 0 ? party.position : office];
+    let token = office < 0 ? parts.tokens.querySelector('[data-player="' + party.id + '"]') : null;
+    let rect = (token || parts.node).getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, size: parts.node.getBoundingClientRect().width };
   }
 
   /**
-   * 내는 플레이어의 말에서 받는 플레이어의 말까지 지폐 여러 장을 시차를 두고 포물선으로 날린다.
-   * 내는 쪽에는 빠져나간 금액을, 받는 쪽에는 들어온 금액을 띄운다. 금액이 클수록 지폐가 많이 날아간다.
+   * 내는 쪽에서 받는 쪽까지 지폐 여러 장을 시차를 두고 포물선으로 날린다. 금액이 클수록 지폐가 많이 날아간다.
+   * 내는 플레이어에게는 빠져나간 금액을, 받는 쪽에는 들어온 금액을 띄운다.
+   * 은행이나 사회복지기금 본부가 내는 쪽일 때에는 그 칸에 금액을 띄우지 않는다. (월급처럼 받는 플레이어가 같은 칸에 서 있는 경우가 많아 겹치기 때문이다.)
    * 움직임을 줄이도록 설정한 사용자에게는 금액 표시만 보여주며, 움직임 기능이 없는 브라우저에서는 건너뛴다.
-   * @param {Object} payer 돈을 내는 플레이어
-   * @param {Object} receiver 돈을 받는 플레이어
+   * @param {Object|string} payer 돈을 내는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
+   * @param {Object|string} receiver 돈을 받는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
    * @param {number} amount 건넨 금액 (원)
    * @param {number} duration 연출 전체의 시간 (밀리초)
    * @returns {HTMLElement[]} 화면에 띄운 요소 목록 (연출이 끝나면 치워야 한다.)
@@ -4765,11 +6491,11 @@ export class HellmarbleApp extends HellmarbleHost {
   flyBills(payer, receiver, amount, duration) {
     let nodes = [];
     try {
-      let from = this.tokenPoint(payer);
-      let to = this.tokenPoint(receiver);
+      let from = this.partyPoint(payer);
+      let to = this.partyPoint(receiver);
       let distance = Math.hypot(to.x - from.x, to.y - from.y);
       let count = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 6 + Math.min(10, Math.round((amount / this.game.money(START_CASH)) * 40));
-      nodes.push(el('span', { class: 'hm-float hm-float-pay', text: '-' + this.money(amount), style: { left: from.x + 'px', top: from.y + 'px', '--hm-time': duration + 'ms' } }));
+      if (this.officeTile(payer) < 0) nodes.push(el('span', { class: 'hm-float hm-float-pay', text: '-' + this.money(amount), style: { left: from.x + 'px', top: from.y + 'px', '--hm-time': duration + 'ms' } }));
       nodes.push(el('span', { class: 'hm-float hm-float-get', text: '+' + this.money(amount), style: { left: to.x + 'px', top: to.y + 'px', '--hm-time': duration + 'ms' } }));
       // 지폐를 한 장씩 만들어 조금씩 다른 길로, 시차를 두고 날린다.
       for (let index = 0; index < count; index++) {
@@ -4793,7 +6519,54 @@ export class HellmarbleApp extends HellmarbleHost {
       // 움직임을 표현할 수 없는 브라우저에서는 만들어진 것까지만 보여준다.
     }
     this.root.append(...nodes);
+    // 화면에 붙인 금액 표시가 화면 밖으로 나가지 않도록 자리를 잡는다.
+    for (let node of nodes) {
+      if (node.classList.contains('hm-float')) this.fitFloat(node);
+    }
     return nodes;
+  }
+
+  /**
+   * 금액 표시가 화면 밖으로 나가지 않도록 자리를 잡는다. (사회복지기금 본부처럼 보드 맨 윗줄이나 가장자리에서 띄우는 경우)
+   * 위쪽에 떠오를 자리가 없으면 아래로 떠오르게 하고, 좌우로 넘치면 화면 안으로 당긴다.
+   * 이미 시작된 움직임은 방향을 바꿔도 따라오지 않으므로, 크기를 재고 방향을 정하는 동안에는 움직임을 꺼 두었다가 다시 켠다.
+   * @param {HTMLElement} node 화면에 붙인 금액 표시
+   */
+  fitFloat(node) {
+    node.style.animation = 'none';
+    let half = node.offsetWidth / 2 + 4;
+    let width = document.documentElement.clientWidth;
+    if (parseFloat(node.style.top) < node.offsetHeight * 2.6) node.classList.add('hm-float-down');
+    if (width > half * 2) node.style.left = Math.max(half, Math.min(parseFloat(node.style.left), width - half)) + 'px';
+    node.style.animation = '';
+  }
+
+  /**
+   * 사용자가 장착한 부적의 효과가 일어난 것을 보드 가운데에 잠깐 크게 보여준다. 부적의 등급에 따라 빛의 색이 다르다.
+   * 땅값 할인은 원래 가격에 줄을 긋고 깎인 가격을 함께 보여주며, 이 연출이 끝난 뒤에 깎인 금액만 빠져나간다.
+   * 부적은 아이템 확인 창에서만 보이므로, 게임 화면에는 효과가 일어난 이 순간과 진행 기록에만 나타난다.
+   * @param {Object} player 부적을 장착한 플레이어
+   * @param {Object} info 일어난 효과 { effect, charm } 와 효과별 값 (discount : index, price, paid / build : index, building / redraw : coupon)
+   * @returns {Promise<void>}
+   */
+  async charm(player, info) {
+    let duration = this.timings.charm;
+    let charm = CHARMS[info.charm];
+    void player;
+    if (!(duration > 0) || !charm || !this.game || !this.parts.center) return;
+    let params = {
+      tile: info.index === undefined ? '' : this.tileName(info.index), percent: charm.percent,
+      building: info.building ? this.t('building.' + info.building) : '', coupon: info.coupon ? this.t('coupon.' + info.coupon + '.title') : '',
+    };
+    let banner = el('div', { class: 'hm-charm-flash hm-grade-' + charm.grade, style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+      el('span', { class: 'hm-charm-flash-icon', text: charm.icon, attrs: { 'aria-hidden': 'true' } }),
+      el('strong', { class: 'hm-charm-flash-title', text: this.t('charm.flash', { item: this.itemName(info.charm) }) }),
+      el('span', { class: 'hm-charm-flash-text', text: this.t('charm.flash.' + info.effect, params) }),
+      info.effect === 'discount' ? el('span', { class: 'hm-charm-flash-price' }, [el('s', { class: 'hm-num', text: this.money(info.price) }), el('span', { text: '➜' }), this.figure(info.paid)]) : null,
+    ]);
+    this.parts.center.append(banner);
+    await wait(duration);
+    banner.remove();
   }
 
   /**
@@ -4890,7 +6663,7 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {HTMLElement} 보유 현금 표시
    */
   cashLine(player) {
-    return el('p', { class: 'hm-cash-line', text: this.t('ask.cash', { amount: this.money(player.cash) }) });
+    return el('p', { class: 'hm-cash-line' }, [this.t('player.cash') + ' : ', this.figure(player.cash)]);
   }
 
   /**
@@ -4986,6 +6759,7 @@ export class HellmarbleApp extends HellmarbleHost {
  * @param {Object} [options] 선택 사항
  * @param {Object} [options.storage] 저장소 객체. read(key), write(key, value), remove(key) 를 구현하면 localStorage 대신 쓸 수 있다.
  * @param {Object} [options.timings] 연출 시간(밀리초). TIMINGS 의 일부 항목만 덮어쓸 수 있다.
+ * @param {Function} [options.random] 부적 추첨에 쓸 난수 함수 (0 이상 1 미만). 생략하면 Math.random 을 쓴다.
  * @returns {HellmarbleApp} 실행 중인 애플리케이션
  */
 export function initHellmarble(root, options) {
