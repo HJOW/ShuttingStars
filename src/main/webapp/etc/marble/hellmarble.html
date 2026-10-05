@@ -1,18 +1,38 @@
 <!doctype html>
+<!--
+  Hellmarble : 웹으로 즐기는 보드게임의 화면이다. 게임은 js/hellmarble.js 가 그린다.
+
+  Copyright 2026 HJOW
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#123d36">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Hellmarble</title>
-  <link rel="stylesheet" href="css/hellmarble.css">
+  <meta name="theme-color" content="#ece6d8"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎲%3C/text%3E%3C/svg%3E"/>
+  <link rel="stylesheet" href="css/hellmarble.css"/>
 </head>
 <body>
   <div id="app"></div>
-  <noscript>게임을 실행하려면 JavaScript를 활성화하세요.</noscript>
+  <noscript>게임을 실행하려면 JavaScript를 지원하는 브라우저가 필요합니다..</noscript>
   <script type="module">
-    import { initializeHellmarble } from './js/hellmarble.js';
-    window.hellmarble = initializeHellmarble(document.getElementById('app'));
+    import { initHellmarble } from './js/hellmarble.js';
+    // 게임은 스스로 초기화하지 않으므로 여기에서 초기화 함수를 호출한다.
+    window.hellmarble = initHellmarble(document.getElementById('app'));
   </script>
 </body>
 </html>

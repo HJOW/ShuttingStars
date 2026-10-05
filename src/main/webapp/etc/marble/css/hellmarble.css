@@ -1,8 +1,1664 @@
 @charset "UTF-8";
-:root{font-family:"Malgun Gothic", "Apple SD Gothic Neo",system-ui,sans-serif;color:#263c35;background:#f5f3ec;--bg:#f5f3ec;--surface:#fffdf7;--text:#263c35;--muted:#78827b;--line:#dedfd4;--accent:#194d40;--tile:#fffdf5;--shadow:0 24px 65px #173a2912;color-scheme:light}
-:root[data-theme=dark]{--bg:#14221e;--surface:#20312b;--text:#eef1e7;--muted:#a7b4a8;--line:#3b4c43;--accent:#a4d8b8;--tile:#27352d;--shadow:0 24px 65px #0003;color-scheme:dark}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);padding:13px 20px;font-weight:600;transition:background .15s,transform .15s,box-shadow .15s}button:hover:not(:disabled){background:var(--bg);box-shadow:0 3px 12px #0001}button:active:not(:disabled){transform:translateY(1px)}button:disabled{cursor:default;opacity:.45}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #d8ac50;outline-offset:3px}.primary{background:#225744;color:#fff;border-color:#225744}.primary:hover:not(:disabled){background:#163e31}.quiet{background:transparent;border-color:transparent;color:var(--muted)}a{color:inherit}h1,h2,p{margin-top:0}h1{font-size:clamp(28px,3.2vw,46px);line-height:1.28;letter-spacing:-1.7px;margin-bottom:20px}h2{letter-spacing:-.7px}p{line-height:1.85;color:var(--muted)}small{color:var(--muted)}.eyebrow{display:block;font-size:11px;letter-spacing:2px;font-weight:700;color:var(--muted);margin-bottom:14px}.topbar{height:86px;margin:0 auto;max-width:1440px;padding:0 42px;display:flex;align-items:center;gap:30px;border-bottom:1px solid var(--line)}.wordmark{text-decoration:none;font-size:19px;font-weight:900;letter-spacing:-.6px;white-space:nowrap}.wordmark span{font-weight:500}.wordmark i{font-size:10px;color:#d7a64b;vertical-align:super;margin-left:4px}.top-note{font-size:12px;color:var(--muted)}.edition{margin-left:auto;font-size:10px;letter-spacing:2px;color:var(--muted)}footer{max-width:1440px;margin:0 auto;padding:24px 42px;font-size:10px;letter-spacing:1.4px;color:var(--muted)}footer span{padding:0 10px}.hero{min-height:calc(100svh - 158px);max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:60px;padding:72px 52px}.hero-copy h1{font-size:clamp(36px,4vw,56px);line-height:1.35;margin:24px 0}.hero-copy p{font-size:15px;margin-bottom:36px}.menu-actions{display:flex;gap:10px;flex-wrap:wrap}.menu-actions .primary{min-width:160px}.hero-facts{display:flex;gap:25px;margin-top:50px;font-size:10px;letter-spacing:1px;color:var(--muted)}.hero-art{aspect-ratio:1;position:relative;background:radial-gradient(ellipse,#c6d7bd66,transparent 68%)}.orbit{position:absolute;inset:8%;border:1px solid #b6bdac;border-radius:32px;transform:rotate(-12deg);background:#173e34;box-shadow:24px 28px 0 #dacbae55,0 25px 45px #173e3420}.art-center{position:absolute;inset:18%;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;transform:rotate(12deg)}.art-center strong{width:100%;text-align:center;color:#e9e7d9;font-size:22px;letter-spacing:2px;font-weight:500;line-height:1.5}.art-dice{color:#f9f4dd;font-size:110px;line-height:1;filter:drop-shadow(0 8px 5px #0003);transform:rotate(-12deg)}.art-dice.second{margin-top:24px;transform:rotate(14deg);color:#dfb862}.mini-city{position:absolute;padding:20px 12px;background:#f9f6e8;color:#293d32;font-size:9px;font-weight:700;letter-spacing:1px;text-align:center;min-width:70px;border-top:5px solid #d1a538;border-radius:5px;box-shadow:0 6px 12px #0002}.c1{left:-20px;top:25%}.c2{right:15%;top:-20px;border-top-color:#c76855}.c3{right:-20px;bottom:20%;border-top-color:#b5a550}.c4{left:15%;bottom:-20px;border-top-color:#637fbc}.page{max-width:1150px;margin:0 auto;min-height:calc(100svh - 160px);padding:60px 36px}.page.narrow{max-width:600px}.slot-grid,.league-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin:35px 0}.slot-card,.league-card,.settings-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:var(--shadow)}.slot-card p{min-height:65px;overflow-wrap:anywhere}.slot-card h2{font-size:26px}.slot-card button,.league-card button{width:100%}.page-heading{display:flex;justify-content:space-between;align-items:center;gap:25px}.page-heading p{margin-bottom:0}.wallet{text-align:right;padding:20px 28px;background:var(--surface);border:1px solid var(--line);border-radius:14px;white-space:nowrap}.wallet small,.wallet strong{display:block}.wallet strong{font-size:27px;margin-top:8px;letter-spacing:-1px}.league-card{position:relative;overflow:hidden;padding-top:38px}.league-card:before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--league)}.league-card.green{--league:#4f9c70}.league-card.orange{--league:#dba144}.league-card.red{--league:#be5f58}.league-card h2{font-size:40px;font-weight:500;margin:18px 0 12px}.league-card>p{font-size:12px}.league-card>small{display:block;margin-top:16px;font-size:11px}.league-dot{width:11px;height:11px;background:var(--league);border-radius:50%;display:block;margin-bottom:20px}.league-fee{padding:20px 0;margin-bottom:12px;border-top:1px solid var(--line)}.league-fee small,.league-fee strong{display:block}.league-fee strong{font-size:24px;margin-top:10px}.warning{color:#bf7741}.settings-card{margin:25px 0}.settings-card label{display:block;margin-bottom:10px}.settings-card select{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);margin-bottom:25px}.settings-card .toggle{display:flex;justify-content:space-between;align-items:center;padding-top:20px;border-top:1px solid var(--line)}.settings-card input{width:20px;height:20px;accent-color:#225744}.settings-card p{font-size:12px;margin:25px 0 0}form{padding:25px 0}form label{display:block;margin-bottom:12px}form input{width:100%;padding:15px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--text);font-size:20px}form p{font-size:12px;margin:15px 0 28px}.game-page{max-width:1320px;margin:0 auto;padding:24px 36px 0}.game-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.game-heading .eyebrow{margin-bottom:6px}.game-heading h1{font-size:26px;margin-bottom:0}.turn-badge{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:9px 16px;letter-spacing:1px}.game-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:24px;align-items:start}.board{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));grid-template-rows:repeat(11,minmax(0,1fr));aspect-ratio:1;width:min(100%,calc(100svh - 208px));min-width:540px;justify-self:center;border:9px solid #123d33;border-radius:18px;background:#194a3c;gap:2px;position:relative;box-shadow:0 12px 30px #143a2920;overflow:hidden}.tile{padding:3px 2px;border:0;border-top:5px solid var(--strip,#d2c8b0);border-radius:2px;color:var(--text);background:var(--tile);font-size:9px;display:flex;align-items:center;justify-content:space-around;flex-direction:column;min-width:0;position:relative;overflow:hidden;gap:1px;line-height:1.2}.tile.yellow{--strip:#d3b34c}.tile.blue{--strip:#60a1c7}.tile.navy{--strip:#606d9c}.tile.red{--strip:#bf6157}.tile.green{--strip:#6a9b69}.tile.gold{--strip:#d9ac3b;background:color-mix(in srgb,var(--tile) 75%,#d7ae40)}.tile.corner{--strip:#b7a96f;font-weight:700}.tile small{font-size:8px;white-space:nowrap}.tile-name{word-break:keep-all;font-weight:600;text-align:center;overflow-wrap:anywhere}.tile.owned{box-shadow:inset 0 -3px var(--owner)}.tile:disabled{opacity:1}.tile:hover:not(:disabled),.tile.selected{background:color-mix(in srgb,var(--tile) 70%,#e5c77a);box-shadow:inset 0 0 0 2px #d5b56a;z-index:1}.tile.destination{cursor:crosshair;box-shadow:inset 0 0 0 1px #b8ca78}.tile-buildings{font-size:9px;line-height:1;color:var(--muted)}.tile-tokens{display:flex;gap:1px;flex-wrap:wrap;justify-content:center;min-height:12px}.token{width:24px;height:24px;display:inline-flex;justify-content:center;align-items:center;border-radius:50%;color:var(--token);background:var(--surface);border:1px solid var(--token);font-size:15px;flex-shrink:0;line-height:1}.token.small{width:12px;height:12px;font-size:9px;background:var(--tile);border:none}.board-center{grid-row:2 / 11;grid-column:2 / 11;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:#f0eddf;padding:18px;background:radial-gradient(circle at 50% 50%,#3a705549,transparent 70%)}.board-center .eyebrow{color:#aac1a4;font-size:10px;letter-spacing:3px;margin-bottom:6px}.board-center h2{font-size:clamp(20px,2.5vw,30px);margin-bottom:0;overflow-wrap:anywhere;max-width:95%}.turn-status{font-size:12px;color:#b8c6ad;margin:0;line-height:1.5}.dice{display:flex;gap:18px;margin:8px 0;font-size:clamp(55px,6vw,80px);line-height:1;color:#f9f4de;text-shadow:0 4px 8px #0002}.dice span:nth-child(2){color:#e0bd73}.dice.rolling{animation:shake .15s infinite alternate}.roll-button{background:#e3c177;color:#173f31;border-color:#e3c177;padding:11px 24px;min-width:160px}.roll-button:hover:not(:disabled){background:#f0d69d}.fund-display{display:flex;gap:12px;align-items:center;border-top:1px solid #ffffff24;margin-top:15px;padding-top:18px}.fund-display small{color:#a7bea1;font-size:11px}.fund-display strong{font-size:14px}.board-help{font-size:10px;color:#92ad94;margin-top:15px}.board-center .quiet{font-size:11px;color:#c0ceb6;padding:6px 10px}.game-sidebar{display:flex;flex-direction:column;gap:18px}.player-list{display:flex;flex-direction:column;gap:8px}.player-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 16px}.player-card.current{border-color:#7c9b70;box-shadow:0 0 0 1px #7c9b70}.player-card.eliminated{opacity:.5}.player-heading{display:flex;align-items:center;gap:9px;font-size:13px}.player-heading strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.player-heading small{margin-left:auto;font-size:9px}.player-cash{display:block;font-size:20px;margin:8px 0 5px;letter-spacing:-.5px}.player-meta{font-size:10px;color:var(--muted)}.player-cards{display:flex;gap:4px;flex-wrap:wrap}.inventory{font-size:9px;background:var(--bg);padding:3px 6px;border-radius:5px;margin-top:7px}.activity{padding:5px 10px}.activity .eyebrow{font-size:10px;margin-bottom:12px}.activity ol{padding:0;list-style:none;margin:0}.activity li{font-size:10px;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.tile-details{position:absolute;inset:13% 15%;background:var(--surface);border:1px solid var(--line);border-radius:14px;z-index:4;padding:22px;box-shadow:0 20px 45px #0004;overflow:auto}.tile-details h2{font-size:22px;margin-bottom:15px;padding-right:20px}.close-detail{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:18px;border:0;background:transparent}.asset-table{border-collapse:collapse;width:100%;font-size:12px}.asset-table th,.asset-table td{padding:10px 4px;border-bottom:1px solid var(--line)}.asset-table th{text-align:left;font-weight:500;color:var(--muted);width:50%}.asset-table td{text-align:right}.asset-table td small{display:block;font-size:10px;margin-top:3px}.asset-table .total th,.asset-table .total td{font-weight:700;color:var(--text)}.tile-details p{font-size:12px;line-height:1.7;margin-top:12px}.modal-backdrop{position:fixed;inset:0;background:#0c231bc4;z-index:20;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(5px)}.modal{background:var(--surface);border:1px solid var(--line);border-radius:18px;width:100%;max-width:510px;max-height:90svh;overflow:auto;padding:30px;box-shadow:0 25px 100px #0004}.modal h2{font-size:26px;margin-bottom:18px}.modal p{font-size:13px;margin:12px 0;overflow-wrap:anywhere}.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}.modal-actions button{flex:1;min-width:130px;padding:12px;font-size:12px}.coupon-modal{border-top:7px solid #d0b363}.coupon-modal h2{margin-top:22px}.coupon-modal .modal-body>p:first-child{font-size:17px;color:var(--text);line-height:1.8;margin:25px 0}.coupon-multiplier{font-size:11px!important}.coupon-timer{height:4px;background:#d1b36e;margin:25px 0 12px;transform-origin:left;animation:countdown var(--duration) linear forwards}.coupon-modal>small{font-size:11px}.notice,.save-error{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:90vw;border-radius:10px;padding:12px 18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 30px #0003;z-index:30;font-size:12px;display:flex;align-items:center;gap:10px}.notice .quiet{padding:2px 6px}.save-error{bottom:75px;border-color:#b35244;color:#b35244}.save-error button{padding:7px 12px;white-space:nowrap}.result{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}.result-symbol{font-size:85px;color:#c49a44;margin-bottom:20px}.result p{margin-bottom:8px}.result small{margin-top:20px}@keyframes shake{from{transform:rotate(-4deg) translateY(-2px)}to{transform:rotate(4deg) translateY(2px)}}@keyframes countdown{to{transform:scaleX(0)}}
-@media(min-width:1400px){.tile{font-size:11px}.tile small{font-size:9px}.tile .token.small{font-size:11px;width:15px;height:15px}}
-@media(max-width:1020px){.board{width:100%;min-width:0}.game-layout{grid-template-columns:minmax(0,1fr) 215px;gap:16px}.game-page{padding:24px 20px 0}.player-card{padding:10px 12px}.player-cash{font-size:18px}.board-center{gap:6px}.board-help{margin-top:8px}.fund-display{margin-top:8px;padding-top:12px}.hero{gap:30px;padding:50px 36px}.hero-facts{gap:14px}.hero-art{min-width:280px}.league-card,.slot-card{padding:24px}}
-@media(max-width:760px){.topbar{height:70px;padding:0 20px}.top-note{display:none}.edition{font-size:8px}.hero{grid-template-columns:1fr;padding:45px 25px;gap:40px;min-height:0}.hero-copy{text-align:center}.hero-copy h1{font-size:36px}.menu-actions,.hero-facts{justify-content:center}.hero-facts{margin-top:30px}.hero-art{width:min(360px,90%);margin:auto}.slot-grid,.league-grid{grid-template-columns:1fr;gap:16px}.page{padding:40px 24px}.page-heading{align-items:start;flex-direction:column}.wallet{text-align:left;width:100%}.league-card{padding:24px}.league-card h2{font-size:32px}.league-dot{margin-bottom:12px}.game-layout{grid-template-columns:1fr}.game-page{padding:18px 8px 0}.game-heading{padding:0 10px}.game-heading h1{font-size:23px}.board{border-width:5px;border-radius:10px;gap:1px}.tile{font-size:clamp(6px,1.7vw,10px);border-top-width:4px;padding:2px 0;gap:0}.tile small{font-size:clamp(5px,1.35vw,8px)}.tile-name{word-break:break-all}.tile .token.small{width:9px;height:9px;font-size:8px}.tile-tokens{min-height:9px}.tile-buildings{font-size:7px}.board-center{padding:6px;gap:5px}.board-center h2{font-size:22px}.board-center .eyebrow{margin-bottom:0;font-size:8px}.dice{font-size:60px;margin:0;gap:12px}.turn-status{font-size:10px}.roll-button{padding:8px 14px;font-size:11px;min-width:130px}.fund-display{margin-top:5px;padding-top:8px}.fund-display small,.fund-display strong{font-size:10px}.board-help{font-size:8px;margin-top:5px}.board-center .quiet{font-size:9px;padding:4px}.game-sidebar{padding:0 8px}.player-list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.player-cash{font-size:18px}.activity{padding:10px 4px}.activity ol{display:grid;grid-template-columns:repeat(2,1fr);gap:0 12px}.tile-details{inset:10% 10%;padding:18px}.tile-details h2{font-size:18px}.asset-table{font-size:10px}.asset-table th,.asset-table td{padding:6px 2px}.tile-details p{font-size:10px}.modal{padding:24px}.modal h2{font-size:23px}footer{padding:25px 20px;font-size:8px;letter-spacing:.5px}.notice,.save-error{width:90vw}.save-error{font-size:10px}}
-@media(prefers-reduced-motion:reduce){.dice.rolling{animation:none}button{transition:none}.coupon-timer{animation:none}}
+/*
+ * Hellmarble 화면 스타일이다.
+ * 화면의 요소는 모두 hellmarble.js 가 만들며, 이 파일은 그 모양만 정한다.
+ * 보드 안쪽의 크기는 보드 너비에 비례하는 단위(cqw)를 써서 화면 크기에 맞게 함께 커지고 작아진다.
+ *
+ * Copyright 2026 HJOW
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+body {
+  margin: 0;
+}
+
+/* ---------- 색상 (밝은 화면 / 어두운 화면) ---------- */
+
+.hm-root {
+  --hm-bg: #ece6d8;
+  --hm-surface: #fffdf7;
+  --hm-surface-2: #f4eee0;
+  --hm-text: #232733;
+  --hm-muted: #6a6f7d;
+  --hm-line: #d6cdb8;
+  --hm-accent: #0f766e;
+  --hm-accent-ink: #ffffff;
+  --hm-tile: #fffdf7;
+  --hm-corner: #f1e9d6;
+  --hm-felt-a: #dcefe6;
+  --hm-felt-b: #c5e0d4;
+  --hm-paper: #fff7dc;
+  --hm-shadow: 0 16px 40px rgba(60, 50, 20, 0.16);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--hm-bg);
+  color: var(--hm-text);
+  font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+.hm-root[data-theme="dark"] {
+  --hm-bg: #0f1219;
+  --hm-surface: #1a1f2a;
+  --hm-surface-2: #232937;
+  --hm-text: #e9ecf3;
+  --hm-muted: #9aa3b5;
+  --hm-line: #364054;
+  --hm-accent: #2cc7b5;
+  --hm-accent-ink: #05211e;
+  --hm-tile: #232a38;
+  --hm-corner: #2b3344;
+  --hm-felt-a: #17242b;
+  --hm-felt-b: #1d3136;
+  --hm-paper: #2c2818;
+  --hm-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.hm-root *,
+.hm-root *::before,
+.hm-root *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- 버튼 ---------- */
+
+.hm-button {
+  appearance: none;
+  padding: 12px 18px;
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  color: var(--hm-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.hm-button:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.hm-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.hm-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hm-button:focus-visible,
+.hm-tile:focus-visible,
+.hm-slot:focus-visible,
+.hm-player:focus-visible,
+.hm-land-item:focus-visible,
+.hm-input:focus-visible {
+  outline: 3px solid var(--hm-accent);
+  outline-offset: 2px;
+}
+
+.hm-primary,
+.hm-active {
+  border-color: var(--hm-accent);
+  background: var(--hm-accent);
+  color: var(--hm-accent-ink);
+}
+
+.hm-wide {
+  width: 100%;
+}
+
+/* ---------- 메뉴, 슬롯, 대기실, 설정 화면 ---------- */
+
+.hm-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+
+.hm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 560px);
+  padding: 32px;
+  border: 1px solid var(--hm-line);
+  border-radius: 22px;
+  background: var(--hm-surface);
+  box-shadow: var(--hm-shadow);
+}
+
+.hm-lobby {
+  width: min(100%, 900px);
+}
+
+.hm-menu {
+  align-items: center;
+  width: min(100%, 420px);
+  text-align: center;
+}
+
+.hm-logo-dice {
+  display: flex;
+  gap: 12px;
+  transform: rotate(-8deg);
+}
+
+.hm-logo {
+  margin: 4px 0 0;
+  font-size: clamp(34px, 9vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hm-heading {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.hm-tagline {
+  margin: 0;
+  color: var(--hm-muted);
+}
+
+.hm-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.hm-menu-list .hm-button {
+  padding: 15px 18px;
+  font-size: 18px;
+}
+
+.hm-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hm-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 136px;
+  padding: 16px;
+  border: 2px solid var(--hm-line);
+  border-radius: 16px;
+  background: var(--hm-surface-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.08s ease;
+}
+
+.hm-slot:hover:not(:disabled) {
+  border-color: var(--hm-accent);
+  transform: translateY(-2px);
+}
+
+.hm-slot:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hm-slot-blank {
+  border-style: dashed;
+  background: transparent;
+}
+
+.hm-slot-title {
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hm-slot-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-slot-money {
+  font-weight: 700;
+}
+
+.hm-slot-state,
+.hm-slot-empty {
+  color: var(--hm-muted);
+  font-size: 14px;
+}
+
+.hm-form {
+  width: min(100%, 440px);
+}
+
+.hm-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  color: var(--hm-text);
+  font: inherit;
+  font-size: 18px;
+}
+
+.hm-wallet {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--hm-surface-2);
+}
+
+.hm-wallet-label {
+  color: var(--hm-muted);
+  font-weight: 700;
+}
+
+.hm-wallet-money {
+  font-size: clamp(22px, 5vw, 30px);
+  font-weight: 900;
+}
+
+.hm-leagues {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hm-league {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 2px solid var(--hm-league);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--hm-league) 9%, var(--hm-surface));
+}
+
+.hm-league .hm-row {
+  padding: 3px 0;
+}
+
+.hm-league-name {
+  margin: 0 0 4px;
+  color: var(--hm-league);
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.hm-league-rivals {
+  flex: 1;
+  margin: 4px 0 8px;
+  color: var(--hm-muted);
+  font-size: 13px;
+}
+
+.hm-note {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 14px;
+}
+
+.hm-lobby-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hm-lobby-buttons .hm-button {
+  flex: 1 1 160px;
+}
+
+/* 긴 글(JSON)을 입력하거나 보여주는 입력창이다. 일반 텍스트 입력창처럼 동작한다. */
+.hm-textarea {
+  min-height: 220px;
+  overflow: auto;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, "D2Coding", monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre;
+  resize: vertical;
+}
+
+.hm-modal.hm-modal-wide {
+  width: min(100%, 680px);
+}
+
+.hm-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-setting-label {
+  font-weight: 700;
+}
+
+.hm-segment {
+  display: flex;
+  gap: 6px;
+}
+
+.hm-segment .hm-button {
+  padding: 9px 16px;
+}
+
+/* ---------- 대화 상자 (화면 음영 처리) ---------- */
+
+.hm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 10, 16, 0.62);
+  animation: hm-fade 0.15s ease-out;
+}
+
+.hm-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, 460px);
+  max-height: 100%;
+  padding: 22px;
+  overflow: auto;
+  border: 1px solid var(--hm-line);
+  border-radius: 20px;
+  background: var(--hm-surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  animation: hm-pop 0.18s ease-out;
+}
+
+.hm-modal-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.hm-modal-text {
+  margin: 0;
+  color: var(--hm-muted);
+  white-space: pre-line;
+}
+
+.hm-modal-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.hm-modal-buttons .hm-button {
+  flex: 1 1 auto;
+}
+
+.hm-modal-buttons.hm-stack {
+  flex-direction: column;
+}
+
+.hm-modal-win .hm-modal-title {
+  color: var(--hm-accent);
+  font-size: 34px;
+  text-align: center;
+}
+
+.hm-modal-lose .hm-modal-title {
+  color: #e03131;
+  font-size: 34px;
+  text-align: center;
+}
+
+.hm-modal-win .hm-modal-text,
+.hm-modal-lose .hm-modal-text {
+  text-align: center;
+}
+
+.hm-modal-sell {
+  border-color: #e03131;
+}
+
+.hm-cash-line {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.hm-order-row {
+  display: grid;
+  grid-template-columns: 22px 30px minmax(0, 1fr) auto 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-order-rank {
+  color: var(--hm-muted);
+  font-weight: 900;
+}
+
+.hm-order-name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-order-dice {
+  display: flex;
+  gap: 6px;
+}
+
+.hm-order-dice .hm-die {
+  --hm-size: 28px;
+}
+
+.hm-order-sum {
+  font-weight: 900;
+  text-align: right;
+}
+
+/* ---------- 땅 정보 카드 (확대 창과 구매·건설 창이 함께 쓴다) ---------- */
+
+.hm-land {
+  overflow: hidden;
+  border: 1px solid var(--hm-line);
+  border-top: 14px solid var(--hm-land);
+  border-radius: 14px;
+  background: var(--hm-surface);
+  text-align: left;
+}
+
+.hm-land-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 0;
+}
+
+.hm-land-name {
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.hm-land-type {
+  flex: none;
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hm-land-desc {
+  margin: 0;
+  padding: 4px 14px 8px;
+  color: var(--hm-muted);
+  font-size: 13px;
+}
+
+.hm-land-rows {
+  padding: 6px 0;
+  border-top: 1px solid var(--hm-line);
+}
+
+.hm-land-status {
+  border-top-style: dashed;
+  background: var(--hm-surface-2);
+}
+
+.hm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 14px;
+  font-size: 14px;
+}
+
+.hm-row-label {
+  color: var(--hm-muted);
+}
+
+.hm-row-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+.hm-row-strong .hm-row-value {
+  color: var(--hm-accent);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.hm-owner-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hm-owner-label .hm-token {
+  --hm-size: 20px;
+}
+
+.hm-popover {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  padding: 8px;
+  overflow: auto;
+  border-radius: 18px;
+  background: var(--hm-surface);
+  box-shadow: 0 0 0 2px var(--hm-accent), 0 22px 60px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  animation: hm-zoom 0.16s ease-out;
+}
+
+/* 땅의 현실 정보를 재미있게 소개하는 글이다. */
+.hm-land-real {
+  margin: 0;
+  padding: 8px 14px 10px;
+  border-top: 1px dashed var(--hm-line);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hm-land-real strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--hm-accent);
+  font-size: 12px;
+}
+
+/* 플레이어 팝업 : 자산 요약과 소유한 땅 목록 */
+.hm-player-assets {
+  border: 1px solid var(--hm-line);
+  border-left: 8px solid var(--hm-player);
+  border-radius: 12px;
+}
+
+.hm-list-title {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.hm-land-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 6px;
+  max-height: 38vh;
+  overflow: auto;
+}
+
+.hm-land-item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--hm-line);
+  border-left: 8px solid var(--hm-land);
+  border-radius: 10px;
+  background: var(--hm-surface-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hm-land-item:hover {
+  filter: brightness(1.05);
+}
+
+.hm-land-item-name {
+  font-weight: 800;
+}
+
+.hm-land-item-toll {
+  flex: none;
+  color: var(--hm-muted);
+  font-size: 13px;
+}
+
+.hm-popover-hint {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- 게임 화면 배치 ---------- */
+
+/* 가로로 긴 화면에서는 보드를 화면 높이에 맞추고 옆에 플레이어와 기록을 둔다. */
+.hm-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 14px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 12px;
+}
+
+.hm-board-wrap {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+}
+
+.hm-board {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  grid-template-rows: repeat(11, minmax(0, 1fr));
+  gap: 2px;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--hm-line);
+  box-shadow: var(--hm-shadow);
+  container-type: inline-size;
+}
+
+/* ---------- 보드의 칸 ---------- */
+
+.hm-tile {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.5cqw;
+  background-color: var(--hm-tile);
+  color: var(--hm-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hm-tile:hover {
+  filter: brightness(1.07);
+}
+
+.hm-side-corner {
+  background-color: var(--hm-corner);
+}
+
+/* 땅의 색상은 보드 중앙을 바라보는 쪽 테두리에 표시한다. */
+.hm-tile-color {
+  position: absolute;
+  background: var(--hm-land);
+}
+
+.hm-side-bottom .hm-tile-color {
+  inset: 0 0 auto 0;
+  height: 15%;
+}
+
+.hm-side-top .hm-tile-color {
+  inset: auto 0 0 0;
+  height: 15%;
+}
+
+.hm-side-left .hm-tile-color {
+  inset: 0 0 0 auto;
+  width: 15%;
+}
+
+.hm-side-right .hm-tile-color {
+  inset: 0 auto 0 0;
+  width: 15%;
+}
+
+.hm-tile-body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15cqw;
+  padding: 0.35cqw;
+  text-align: center;
+}
+
+.hm-side-bottom .hm-tile-body {
+  top: 15%;
+  bottom: 19%;
+}
+
+.hm-side-top .hm-tile-body {
+  top: 19%;
+  bottom: 15%;
+}
+
+.hm-side-left .hm-tile-body {
+  right: 15%;
+  bottom: 19%;
+}
+
+.hm-side-right .hm-tile-body {
+  bottom: 19%;
+  left: 15%;
+}
+
+.hm-tile-icon {
+  font-size: clamp(9px, 1.7cqw, 26px);
+  line-height: 1.1;
+}
+
+.hm-side-corner .hm-tile-icon {
+  font-size: clamp(11px, 2.6cqw, 38px);
+}
+
+.hm-tile-name {
+  font-size: clamp(6px, 1.32cqw, 17px);
+  font-weight: 800;
+  line-height: 1.12;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.hm-tile-sub {
+  color: var(--hm-muted);
+  font-size: clamp(6px, 1.18cqw, 15px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* 소유자는 칸의 바깥쪽 가장자리에 소유자의 색 띠와 문양, 건물로 표시한다. */
+.hm-tile-owner {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: 19%;
+  overflow: hidden;
+  background: var(--hm-owner);
+  color: #ffffff;
+  font-size: clamp(6px, 1.2cqw, 15px);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hm-owned .hm-tile-owner {
+  display: flex;
+}
+
+.hm-side-top .hm-tile-owner {
+  inset: 0 0 auto 0;
+}
+
+.hm-side-left .hm-tile-owner {
+  right: 15%;
+}
+
+.hm-side-right .hm-tile-owner {
+  left: 15%;
+}
+
+/* 말이 서 있는 칸은 그 플레이어의 색으로 배경을 칠하고 굵은 테두리를 두른다. */
+.hm-tile.hm-here {
+  background-image: var(--hm-here);
+}
+
+.hm-tile.hm-here::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0.32cqw solid var(--hm-here-edge);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 말이 놓일 자리를 비우기 위해 이름을 위쪽으로 올리고 가격과 그림 문자는 숨긴다. */
+.hm-tile.hm-here .hm-tile-body {
+  justify-content: flex-start;
+}
+
+.hm-tile.hm-here .hm-tile-sub,
+.hm-tile.hm-here:not(.hm-side-corner) .hm-tile-icon {
+  display: none;
+}
+
+.hm-tile-open {
+  z-index: 2;
+  outline: 0.35cqw solid var(--hm-accent);
+}
+
+.hm-tile-tokens {
+  position: absolute;
+  inset: auto 0 21% 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hm-side-top .hm-tile-tokens {
+  bottom: 17%;
+}
+
+.hm-side-left .hm-tile-tokens {
+  right: 15%;
+}
+
+.hm-side-right .hm-tile-tokens {
+  left: 15%;
+}
+
+.hm-side-corner .hm-tile-tokens {
+  bottom: 5%;
+}
+
+.hm-tile-tokens .hm-token + .hm-token {
+  margin-left: -0.45cqw;
+}
+
+/* ---------- 말과 주사위 ---------- */
+
+.hm-token {
+  --hm-size: 28px;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--hm-size);
+  height: var(--hm-size);
+  border: calc(var(--hm-size) * 0.09) solid #ffffff;
+  border-radius: 50%;
+  background: var(--hm-player);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: calc(var(--hm-size) * 0.52);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hm-board .hm-token {
+  --hm-size: 2.5cqw;
+}
+
+.hm-board .hm-token-turn {
+  animation: hm-pulse 1.1s ease-in-out infinite;
+}
+
+.hm-board .hm-token-hop {
+  animation: hm-hop 0.22s ease-out;
+}
+
+.hm-die {
+  --hm-size: 46px;
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: var(--hm-size);
+  height: var(--hm-size);
+  padding: calc(var(--hm-size) * 0.15);
+  border-radius: 20%;
+  background: #ffffff;
+  box-shadow: inset 0 calc(var(--hm-size) * -0.07) 0 rgba(0, 0, 0, 0.14), 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hm-pip {
+  margin: 10%;
+  border-radius: 50%;
+}
+
+.hm-pip-on {
+  background: #1f2430;
+}
+
+.hm-rolling .hm-die {
+  animation: hm-shake 0.28s linear infinite;
+}
+
+/* ---------- 보드 가운데 영역 ---------- */
+
+.hm-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  grid-row: 2 / 11;
+  grid-column: 2 / 11;
+  gap: 1.5cqw;
+  padding: 3cqw;
+  overflow: hidden;
+  border-radius: 0.8cqw;
+  background: radial-gradient(circle at 50% 35%, var(--hm-felt-a), var(--hm-felt-b));
+  text-align: center;
+}
+
+.hm-brand {
+  font-size: clamp(14px, 4.6cqw, 60px);
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  line-height: 1;
+  text-indent: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.hm-league-tag {
+  padding: 0.4cqw 1.4cqw;
+  border-radius: 99px;
+  background: var(--hm-league);
+  color: #ffffff;
+  font-size: clamp(9px, 1.5cqw, 18px);
+  font-weight: 800;
+}
+
+.hm-turn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1cqw;
+  margin-top: 1cqw;
+  font-size: clamp(11px, 2.4cqw, 30px);
+  font-weight: 900;
+}
+
+.hm-center .hm-turn .hm-token {
+  --hm-size: 3.4cqw;
+  animation: none;
+}
+
+.hm-dice {
+  display: flex;
+  gap: 2cqw;
+}
+
+.hm-center .hm-die {
+  --hm-size: clamp(26px, 8cqw, 96px);
+}
+
+.hm-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 88%;
+  min-height: 3em;
+  margin: 0;
+  font-size: clamp(10px, 1.75cqw, 21px);
+  font-weight: 600;
+}
+
+.hm-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.2cqw;
+}
+
+.hm-center .hm-button {
+  padding: 0.7em 1.5em;
+  font-size: clamp(11px, 1.9cqw, 22px);
+}
+
+.hm-center.hm-my-turn .hm-primary:not(:disabled) {
+  animation: hm-glow 1.2s ease-in-out infinite;
+}
+
+.hm-fund {
+  display: flex;
+  align-items: baseline;
+  gap: 1cqw;
+  font-size: clamp(9px, 1.6cqw, 19px);
+}
+
+.hm-fund-money {
+  font-size: 1.25em;
+  font-weight: 900;
+}
+
+/* 비밀쿠폰은 보드 가운데에 정해진 시간 동안 표시되며, 아래쪽 띠가 남은 시간을 보여준다. */
+.hm-coupon {
+  position: absolute;
+  inset: 13% 12%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4cqw;
+  padding: 3cqw 4cqw;
+  overflow: hidden;
+  border: 0.45cqw solid var(--hm-player);
+  border-radius: 2cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, 0.4);
+  animation: hm-pop 0.22s ease-out;
+}
+
+.hm-coupon-head {
+  color: var(--hm-muted);
+  font-size: clamp(9px, 1.6cqw, 19px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.hm-coupon-title {
+  font-size: clamp(14px, 3.6cqw, 44px);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.hm-coupon-text {
+  margin: 0;
+  font-size: clamp(10px, 1.95cqw, 23px);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.hm-coupon-drawer {
+  color: var(--hm-player);
+  font-size: clamp(9px, 1.6cqw, 19px);
+  font-weight: 800;
+}
+
+.hm-coupon-bar {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1cqw;
+  background: var(--hm-player);
+  transform-origin: left center;
+  animation: hm-countdown var(--hm-coupon-time) linear forwards;
+}
+
+.hm-coupon-close {
+  margin-top: 0.4cqw;
+}
+
+/* ---------- 보드 위의 건물 ---------- */
+
+/*
+ * 건물은 도시 칸에서 보드 중앙 쪽으로 바로 붙은 터에, 땅 위에 똑바로 서 있는 모습으로 그린다.
+ * 터의 바닥선은 소유자의 색이다. 건물의 높이는 격자 한 칸의 절반을 넘지 않게 하여 이웃한 터와 겹치지 않는다.
+ */
+.hm-lot {
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.2cqw;
+  padding: 0 0.3cqw;
+  border-bottom: 0.38cqw solid var(--hm-owner);
+  border-radius: 0 0 0.3cqw 0.3cqw;
+  filter: drop-shadow(0 0.3cqw 0.25cqw rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+
+.hm-lot:empty {
+  display: none;
+}
+
+.hm-lot-bottom {
+  align-self: end;
+  justify-self: center;
+}
+
+.hm-lot-top {
+  align-self: start;
+  justify-self: center;
+  margin-top: 0.2cqw;
+}
+
+.hm-lot-left {
+  align-self: center;
+  justify-self: start;
+  margin-left: 0.2cqw;
+}
+
+.hm-lot-right {
+  align-self: center;
+  justify-self: end;
+  margin-right: 0.2cqw;
+}
+
+/* 모서리 옆의 옆줄 칸은 윗줄, 아랫줄 칸의 터와 같은 자리를 쓰므로 위아래로 비켜 놓는다. */
+.hm-lot-low {
+  align-self: end;
+  margin-bottom: 0.3cqw;
+}
+
+.hm-lot-high {
+  align-self: start;
+  margin-top: 0.3cqw;
+}
+
+.hm-house {
+  position: relative;
+  flex: none;
+}
+
+/* 방금 지은 건물은 땅에서 솟아오른다. */
+.hm-house-new {
+  transform-origin: 50% 100%;
+  animation: hm-build 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* 별장 : 주황 지붕의 작은 집 */
+.hm-house-villa {
+  width: 1.7cqw;
+  height: 1.05cqw;
+  margin-top: 0.8cqw;
+  border: 0.12cqw solid #6b3f17;
+  border-bottom: 0;
+  background: linear-gradient(90deg, #ffe8bf 0 60%, #e6c284 60%);
+}
+
+.hm-house-villa::before {
+  content: "";
+  position: absolute;
+  right: -0.32cqw;
+  bottom: 100%;
+  left: -0.32cqw;
+  height: 0.8cqw;
+  background: linear-gradient(90deg, #f76707 0 55%, #c2410c 55%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.hm-house-villa::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0.4cqw;
+  height: 0.58cqw;
+  background: #6b3f17;
+  transform: translateX(-50%);
+}
+
+/* 빌딩 : 창문이 줄지어 있는 파란 건물 */
+.hm-house-building {
+  width: 1.9cqw;
+  height: 2.8cqw;
+  margin-top: 0.3cqw;
+  border: 0.12cqw solid #173f86;
+  border-bottom: 0;
+  background-color: #2f6fe0;
+  background-image: linear-gradient(90deg, #2f6fe0 0.22cqw, transparent 0.22cqw), linear-gradient(#2f6fe0 0.24cqw, #fff3b0 0.24cqw);
+  background-size: 0.56cqw 0.62cqw;
+}
+
+.hm-house-building::before {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 100%;
+  left: 22%;
+  height: 0.3cqw;
+  background: #173f86;
+}
+
+/* 호텔 : 금색 간판을 올린 높은 빨간 건물 */
+.hm-house-hotel {
+  width: 2.1cqw;
+  height: 3.2cqw;
+  margin-top: 0.55cqw;
+  border: 0.12cqw solid #7a1414;
+  border-bottom: 0;
+  background-color: #e03131;
+  background-image: linear-gradient(90deg, #e03131 0.24cqw, transparent 0.24cqw), linear-gradient(#e03131 0.24cqw, #ffe066 0.24cqw);
+  background-size: 0.6cqw 0.6cqw;
+}
+
+.hm-house-hotel::before {
+  content: "H";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  padding: 0 0.32cqw;
+  border-radius: 0.2cqw 0.2cqw 0 0;
+  background: #f59f00;
+  color: #5c1a00;
+  font-size: 0.5cqw;
+  font-weight: 900;
+  line-height: 0.55cqw;
+  transform: translateX(-50%);
+}
+
+.hm-house-hotel::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0.55cqw;
+  height: 0.6cqw;
+  background: #7a1414;
+  transform: translateX(-50%);
+}
+
+/* ---------- 플레이어 간 돈 이동 ---------- */
+
+/* 누가 누구에게 얼마를 주는지 보드 가운데에 크게 띄운다. */
+.hm-transfer {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4cqw 1.2cqw;
+  width: max-content;
+  max-width: 78%;
+  padding: 1.3cqw 2.4cqw;
+  border: 0.4cqw solid #2f9e44;
+  border-radius: 1.8cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 1.5cqw 4cqw rgba(0, 0, 0, 0.4);
+  font-size: clamp(11px, 2cqw, 24px);
+  font-weight: 800;
+  transform: translateX(-50%);
+  animation: hm-drop 0.25s ease-out;
+}
+
+.hm-transfer-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6cqw;
+}
+
+.hm-center .hm-transfer .hm-token {
+  --hm-size: 3cqw;
+  animation: none;
+}
+
+.hm-transfer-arrow {
+  color: #2f9e44;
+  font-size: 1.4em;
+  animation: hm-nudge 0.6s ease-in-out infinite;
+}
+
+.hm-transfer-amount {
+  flex-basis: 100%;
+  color: #2b8a3e;
+  font-size: 1.8em;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* 내는 플레이어의 말에서 받는 플레이어의 말로 날아가는 지폐이다. 움직임은 스크립트가 정한다. */
+.hm-bill {
+  position: fixed;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  width: 2.3em;
+  height: 1.25em;
+  border: 0.09em solid #0b5d1e;
+  border-radius: 0.18em;
+  background: linear-gradient(135deg, #d3f9d8, #51cf66 45%, #2f9e44);
+  box-shadow: 0 0.15em 0.45em rgba(0, 0, 0, 0.45), inset 0 0 0 0.13em rgba(255, 255, 255, 0.6);
+  color: #0b5d1e;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 내는 쪽에서 빠져나간 금액과 받는 쪽에 들어온 금액을 말 위에 띄운다. */
+.hm-float {
+  position: fixed;
+  z-index: 46;
+  padding: 0.15em 0.65em;
+  border: 2px solid #ffffff;
+  border-radius: 99px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  font-size: clamp(13px, 1.5vw, 22px);
+  font-weight: 900;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: hm-float-pay var(--hm-time) ease-out both;
+}
+
+.hm-float-pay {
+  background: #e03131;
+}
+
+.hm-float-get {
+  background: #2f9e44;
+  animation-name: hm-float-get;
+}
+
+.hm-player-pay {
+  animation: hm-flash-pay 0.6s ease-in-out 3;
+}
+
+.hm-player-get {
+  animation: hm-flash-get 0.6s ease-in-out 3;
+}
+
+/* ---------- 보드 옆 영역 (플레이어, 진행 기록) ---------- */
+
+.hm-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.hm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--hm-line);
+  border-radius: 16px;
+  background: var(--hm-surface);
+}
+
+.hm-panel-log {
+  flex: 1;
+  min-height: 170px;
+}
+
+.hm-panel-title {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hm-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 플레이어 카드는 누르면 자산과 소유한 땅 목록이 뜨는 버튼이다. */
+.hm-player {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--hm-player) 11%, var(--hm-surface));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hm-player:hover {
+  filter: brightness(1.04);
+}
+
+.hm-player-name,
+.hm-player-cash,
+.hm-player-meta {
+  display: block;
+}
+
+.hm-player-turn {
+  border-color: var(--hm-player);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hm-player) 28%, transparent);
+}
+
+.hm-player-out {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.hm-player-main {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.hm-player-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-player-cash {
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.hm-player-meta {
+  color: var(--hm-muted);
+  font-size: 12px;
+}
+
+.hm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.hm-badges:empty {
+  display: none;
+}
+
+.hm-badge {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--hm-player);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hm-log {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  font-size: 13px;
+}
+
+.hm-log-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--hm-line);
+  border-left: 4px solid var(--hm-player);
+}
+
+.hm-log-item:first-child {
+  background: var(--hm-surface-2);
+  font-weight: 700;
+}
+
+/* ---------- 세로로 긴 화면 : 보드를 화면 너비에 맞추고 그 아래에 플레이어와 기록을 둔다. ---------- */
+
+@media (orientation: portrait) {
+  .hm-game {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 6px;
+  }
+
+  .hm-side {
+    overflow: visible;
+  }
+
+  .hm-board-wrap {
+    container-type: inline-size;
+  }
+
+  .hm-board {
+    gap: 1px;
+    width: 100cqw;
+    height: 100cqw;
+    padding: 2px;
+  }
+
+  .hm-log {
+    max-height: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hm-card {
+    padding: 22px 18px;
+  }
+
+  .hm-slots,
+  .hm-leagues {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hm-slot {
+    min-height: 0;
+  }
+}
+
+/* ---------- 움직임 ---------- */
+
+@keyframes hm-fade {
+  from { opacity: 0; }
+}
+
+@keyframes hm-pop {
+  from { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes hm-zoom {
+  from { opacity: 0; transform: scale(0.4); }
+}
+
+@keyframes hm-hop {
+  from { transform: translateY(-45%) scale(1.25); }
+}
+
+@keyframes hm-pulse {
+  50% { box-shadow: 0 0 0 0.5cqw color-mix(in srgb, var(--hm-player) 45%, transparent), 0 1px 4px rgba(0, 0, 0, 0.5); }
+}
+
+@keyframes hm-shake {
+  25% { transform: rotate(-14deg) translateY(-6%); }
+  75% { transform: rotate(14deg) translateY(4%); }
+}
+
+@keyframes hm-glow {
+  50% { box-shadow: 0 0 0 0.9cqw color-mix(in srgb, var(--hm-accent) 30%, transparent); }
+}
+
+@keyframes hm-countdown {
+  to { transform: scaleX(0); }
+}
+
+@keyframes hm-build {
+  from { opacity: 0.3; transform: scale(0.6, 0); }
+}
+
+@keyframes hm-drop {
+  from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+}
+
+@keyframes hm-nudge {
+  50% { transform: translateX(0.35em); }
+}
+
+@keyframes hm-float-pay {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  12% { opacity: 1; transform: translate(-50%, -150%) scale(1.15); }
+  75% { opacity: 1; transform: translate(-50%, -200%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -250%) scale(1); }
+}
+
+@keyframes hm-float-get {
+  0%, 45% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  58% { opacity: 1; transform: translate(-50%, -150%) scale(1.3); }
+  90% { opacity: 1; transform: translate(-50%, -200%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -250%) scale(1); }
+}
+
+@keyframes hm-flash-pay {
+  50% { background: color-mix(in srgb, #e03131 38%, var(--hm-surface)); }
+}
+
+@keyframes hm-flash-get {
+  50% { background: color-mix(in srgb, #2f9e44 38%, var(--hm-surface)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-root *,
+  .hm-root *::before,
+  .hm-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hm-coupon-bar {
+    display: none;
+  }
+
+  /* 움직임을 줄인 경우에도 금액 표시는 연출 시간 동안 그대로 보여준다. */
+  .hm-root .hm-float {
+    opacity: 1;
+    transform: translate(-50%, -180%);
+    animation: none !important;
+  }
+}

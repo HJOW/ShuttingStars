@@ -1,0 +1,12 @@
+{
+  "name": "Hellmarble - 웹 보드게임",
+  "short_name": "Hellmarble",
+  "description": "브라우저에서 즐기는 턴제 보드게임",
+  "lang": "ko",
+  "start_url": "./hellmarble.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ece6d8",
+  "theme_color": "#ece6d8",
+  "icons": []
+}
