@@ -332,9 +332,10 @@ body {
   font-weight: 900;
 }
 
+/* 리그 카드는 보이는 리그의 수(--hm-league-count)만큼 한 줄에 나란히 놓는다. */
 .hm-leagues {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--hm-league-count, 3), minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -1238,6 +1239,36 @@ body {
   text-align: right;
 }
 
+/* 우대권 사용 창 : 지불할 금액을 글에서 떼어 한 줄로 강조한다. */
+.hm-due {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 2px solid #e03131;
+  border-radius: 12px;
+  background: rgba(224, 49, 49, 0.1);
+  font-weight: 800;
+}
+
+.hm-due .hm-num {
+  color: #e03131;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.hm-root[data-theme="dark"] .hm-due {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.14);
+}
+
+.hm-root[data-theme="dark"] .hm-due .hm-num {
+  color: #ff8787;
+}
+
 .hm-order-row {
   display: grid;
   grid-template-columns: 22px 30px minmax(0, 1fr) auto 28px;
@@ -1766,6 +1797,90 @@ body {
   animation: hm-shake 0.28s linear infinite;
 }
 
+/*
+ * 우주선 : 우주여행에 탑승한 플레이어가 목적지를 고르는 차례에 주사위 자리에 놓는다. 크기는 주사위와 같은 --hm-size 를 따른다.
+ * 불꽃, 양쪽 날개, 창문이 달린 몸통을 겹쳐 그리며, 제자리에서 떠 있는 것처럼 살짝 오르내린다.
+ */
+.hm-ship {
+  --hm-size: 46px;
+  position: relative;
+  display: inline-block;
+  width: calc(var(--hm-size) * 1.1);
+  height: var(--hm-size);
+  filter: drop-shadow(0 calc(var(--hm-size) * 0.06) calc(var(--hm-size) * 0.08) rgba(0, 0, 0, 0.35));
+  animation: hm-ship-hover 1.6s ease-in-out infinite;
+}
+
+.hm-ship-body {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 40%;
+  height: 76%;
+  overflow: hidden;
+  border-radius: 50% 50% 20% 20% / 64% 64% 12% 12%;
+  background: linear-gradient(90deg, #ced4da, #ffffff 42%, #adb5bd);
+  transform: translateX(-50%);
+}
+
+/* 몸통 꼭대기의 빨간 머리 부분 */
+.hm-ship-body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 30%;
+  background: linear-gradient(90deg, #c92a2a, #ff6b6b 42%, #a51111);
+}
+
+.hm-ship-window {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  width: 46%;
+  aspect-ratio: 1;
+  border: calc(var(--hm-size) * 0.035) solid #495057;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d0ebff, #1c7ed6 70%);
+  transform: translateX(-50%);
+}
+
+.hm-ship-fin {
+  position: absolute;
+  bottom: 22%;
+  width: 22%;
+  height: 34%;
+  background: #e03131;
+}
+
+.hm-ship-fin-left {
+  left: 13%;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.hm-ship-fin-right {
+  right: 13%;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.hm-ship-flame {
+  position: absolute;
+  top: 72%;
+  left: 50%;
+  width: 24%;
+  height: 30%;
+  background: linear-gradient(#ffe066, #ff922b 55%, rgba(224, 49, 49, 0.2));
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform: translateX(-50%);
+  transform-origin: 50% 0;
+  animation: hm-ship-flame 0.22s ease-in-out infinite alternate;
+}
+
+.hm-center .hm-ship {
+  --hm-size: clamp(26px, 8cqw, 96px);
+}
+
 /* ---------- 보드 가운데 영역 ---------- */
 
 .hm-center {
@@ -1931,10 +2046,19 @@ body {
 /* ---------- 보드 위의 건물 ---------- */
 
 /*
- * 건물은 도시 칸에서 보드 중앙 쪽으로 바로 붙은 터에, 땅 위에 똑바로 서 있는 모습으로 그린다.
- * 터의 바닥선은 소유자의 색이다. 건물의 높이는 격자 한 칸의 절반을 넘지 않게 하여 이웃한 터와 겹치지 않는다.
+ * 건물은 도시 칸에서 보드 중앙 쪽으로 바로 붙은 터에, 칸에 바닥을 대고 보드 중앙을 바라보며 서 있는 모습으로 그린다.
+ * 터는 아랫줄(1면)의 것을 기준으로 그리고, 왼쪽 줄(2면)은 시계 방향으로 90도, 윗줄(3면)은 180도, 오른쪽 줄(4면)은 시계 반대 방향으로 90도 돌린다.
+ * 터의 바닥선은 소유자의 색이다. 터는 그 칸의 가운데에 놓는다.
+ * 보드 모서리 옆에서는 옆줄의 칸과 윗줄(아랫줄)의 칸이 같은 자리를 쓴다. 이 두 터는 키가 작은 별장을 모서리에 가까운 쪽에 두고(.hm-lot-flip),
+ * 건물이 겹치게 되면 스크립트가 두 터를 자기 칸 안에서 모서리에서 먼 쪽으로 밀고(translate 속성. transform 과 따로 적용된다.),
+ * 그래도 겹치면 별장만 줄여 그린다. (--hm-villa 는 별장의 크기 비율이다. 빌딩과 호텔의 크기는 바꾸지 않는다.)
+ * --hm-shade-x / --hm-shade-y 는 돌린 뒤에도 그림자가 화면의 아래쪽으로 지도록 정하는 그림자의 방향이다.
  */
 .hm-lot {
+  --hm-villa: 1;
+  --hm-shade-x: 0cqw;
+  --hm-shade-y: 0.3cqw;
+  position: relative;
   z-index: 2;
   display: flex;
   align-items: flex-end;
@@ -1943,7 +2067,7 @@ body {
   padding: 0 0.3cqw;
   border-bottom: 0.38cqw solid var(--hm-owner);
   border-radius: 0 0 0.3cqw 0.3cqw;
-  filter: drop-shadow(0 0.3cqw 0.25cqw rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(var(--hm-shade-x) var(--hm-shade-y) 0.25cqw rgba(0, 0, 0, 0.45));
   pointer-events: none;
 }
 
@@ -1951,38 +2075,47 @@ body {
   display: none;
 }
 
+/* 건물의 순서를 뒤집어 별장이 반대쪽 끝에 오게 한다. (모서리 옆의 터에서 별장을 모서리 쪽에 두는 데 쓴다.) */
+.hm-lot-flip {
+  flex-direction: row-reverse;
+}
+
 .hm-lot-bottom {
   align-self: end;
   justify-self: center;
 }
 
+/* 윗줄 : 뒤집어서 바닥이 위쪽의 칸에 닿고 지붕이 아래(보드 중앙)를 향한다. */
 .hm-lot-top {
+  --hm-shade-y: -0.3cqw;
   align-self: start;
   justify-self: center;
   margin-top: 0.2cqw;
+  transform: rotate(180deg);
 }
 
+/*
+ * 왼쪽 줄 : 시계 방향으로 90도 돌려 바닥이 왼쪽의 칸에 닿고 지붕이 오른쪽(보드 중앙)을 향한다.
+ * 돌려도 배치에 쓰이는 크기는 눕히기 전의 것이므로, 돌린 뒤의 모습이 칸에 붙도록 터의 폭과 높이의 절반만큼 옮긴다.
+ * (바깥쪽 translateX 는 화면의 방향으로 폭의 절반을, 안쪽 translateY 는 돌린 뒤의 방향으로 높이의 절반을 옮긴다.)
+ */
 .hm-lot-left {
+  --hm-shade-x: 0.3cqw;
+  --hm-shade-y: 0cqw;
   align-self: center;
   justify-self: start;
   margin-left: 0.2cqw;
+  transform: translateX(-50%) rotate(90deg) translateY(-50%);
 }
 
+/* 오른쪽 줄 : 시계 반대 방향으로 90도 돌려 바닥이 오른쪽의 칸에 닿고 지붕이 왼쪽(보드 중앙)을 향한다. */
 .hm-lot-right {
+  --hm-shade-x: -0.3cqw;
+  --hm-shade-y: 0cqw;
   align-self: center;
   justify-self: end;
   margin-right: 0.2cqw;
-}
-
-/* 모서리 옆의 옆줄 칸은 윗줄, 아랫줄 칸의 터와 같은 자리를 쓰므로 위아래로 비켜 놓는다. */
-.hm-lot-low {
-  align-self: end;
-  margin-bottom: 0.3cqw;
-}
-
-.hm-lot-high {
-  align-self: start;
-  margin-top: 0.3cqw;
+  transform: translateX(50%) rotate(-90deg) translateY(-50%);
 }
 
 .hm-house {
@@ -1990,17 +2123,17 @@ body {
   flex: none;
 }
 
-/* 방금 지은 건물은 땅에서 솟아오른다. */
+/* 방금 지은 건물은 땅에서 솟아오른다. (터를 돌려 놓은 면에서는 칸에서 보드 중앙 쪽으로 솟는다.) */
 .hm-house-new {
   transform-origin: 50% 100%;
   animation: hm-build 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 
-/* 별장 : 주황 지붕의 작은 집 */
+/* 별장 : 주황 지붕의 작은 집. 자리가 모자란 터에서는 --hm-villa 의 비율로 줄여 그린다. */
 .hm-house-villa {
-  width: 1.7cqw;
-  height: 1.05cqw;
-  margin-top: 0.8cqw;
+  width: calc(1.7cqw * var(--hm-villa));
+  height: calc(1.05cqw * var(--hm-villa));
+  margin-top: calc(0.8cqw * var(--hm-villa));
   border: 0.12cqw solid #6b3f17;
   border-bottom: 0;
   background: linear-gradient(90deg, #ffe8bf 0 60%, #e6c284 60%);
@@ -2009,10 +2142,10 @@ body {
 .hm-house-villa::before {
   content: "";
   position: absolute;
-  right: -0.32cqw;
+  right: calc(-0.32cqw * var(--hm-villa));
   bottom: 100%;
-  left: -0.32cqw;
-  height: 0.8cqw;
+  left: calc(-0.32cqw * var(--hm-villa));
+  height: calc(0.8cqw * var(--hm-villa));
   background: linear-gradient(90deg, #f76707 0 55%, #c2410c 55%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
@@ -2022,8 +2155,8 @@ body {
   position: absolute;
   bottom: 0;
   left: 50%;
-  width: 0.4cqw;
-  height: 0.58cqw;
+  width: calc(0.4cqw * var(--hm-villa));
+  height: calc(0.58cqw * var(--hm-villa));
   background: #6b3f17;
   transform: translateX(-50%);
 }
@@ -2186,6 +2319,170 @@ body {
 }
 
 /*
+ * 큰 금액이 오갈 때의 돈 이동이다. 안내 띠를 금빛으로 강조하고 금액을 더 크게 보여주며, 지폐에 금빛 지폐를 섞는다.
+ * 받는 쪽에서는 돈이 쏟아져 들어온 것을 터지는 빛(.hm-burst)으로 알린다.
+ */
+.hm-transfer-big {
+  border-width: 0.55cqw;
+  border-color: #f59f00;
+  box-shadow: 0 0 0 0.5cqw rgba(245, 159, 0, 0.35), 0 0 5cqw 1.4cqw rgba(255, 212, 59, 0.7), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.4);
+  animation: hm-drop 0.25s ease-out, hm-transfer-big 0.7s ease-in-out 0.25s infinite;
+}
+
+.hm-transfer-big .hm-transfer-amount {
+  color: #e67700;
+  font-size: 2.3em;
+  text-shadow: 0 0 1.2cqw rgba(255, 212, 59, 0.9);
+  animation: hm-charm-beat 0.7s ease-in-out infinite;
+}
+
+.hm-bill-gold {
+  border-color: #7a4b00;
+  background: linear-gradient(135deg, #fff3bf, #ffd43b 45%, #f59f00);
+  color: #7a4b00;
+}
+
+.hm-float-big {
+  border-color: #ffe066;
+  font-size: clamp(16px, 2vw, 30px);
+  box-shadow: 0 0 0 3px rgba(255, 212, 59, 0.5), 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+
+.hm-burst {
+  position: fixed;
+  z-index: 44;
+  width: calc(var(--hm-size) * 1.9);
+  height: calc(var(--hm-size) * 1.9);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 243, 191, 0.95) 0 18%, rgba(255, 212, 59, 0.75) 38%, rgba(245, 159, 0, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: hm-burst calc(var(--hm-time) * 0.3) ease-out calc(var(--hm-time) * 0.42) 2 both;
+}
+
+/* ---------- 우대권·무전기 사용 ---------- */
+
+/*
+ * 누군가 우대권이나 무전기를 사용했을 때 보드 가운데에 잠깐 띄우는 알림이다. 우대권은 초록, 무전기는 주황(--hm-use)으로 빛난다.
+ * 보드 위에서는 사용한 플레이어의 말에서 빛의 고리(.hm-ring)가 퍼지고, 효과가 일어난 칸에 도장(.hm-stamp)이 찍힌다.
+ */
+.hm-use-pass {
+  --hm-use: #0ca678;
+}
+
+.hm-use-radio {
+  --hm-use: #f08c00;
+}
+
+.hm-use-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5cqw;
+  width: max-content;
+  max-width: 82%;
+  padding: 2cqw 3.2cqw;
+  border: 0.45cqw solid var(--hm-use);
+  border-radius: 2cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 0 0 0.5cqw color-mix(in srgb, var(--hm-use) 35%, transparent), 0 0 5cqw 1.2cqw color-mix(in srgb, var(--hm-use) 65%, transparent), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45);
+  font-size: clamp(11px, 2cqw, 24px);
+  font-weight: 800;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: hm-charm-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both, hm-use-shine 1.1s ease-in-out 0.45s infinite;
+  pointer-events: none;
+}
+
+.hm-use-flash-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqw;
+  color: var(--hm-muted);
+  font-size: 0.85em;
+}
+
+.hm-center .hm-use-flash .hm-token {
+  --hm-size: 3cqw;
+  animation: none;
+}
+
+.hm-use-flash-icon {
+  font-size: clamp(22px, 5cqw, 60px);
+  line-height: 1.1;
+  animation: hm-use-wave 0.5s ease-in-out 0.3s 3;
+}
+
+.hm-use-flash-title {
+  color: var(--hm-use);
+  font-size: 1.25em;
+  font-weight: 900;
+}
+
+.hm-use-flash-source {
+  padding: 0.1em 0.9em;
+  border-radius: 99px;
+  background: var(--hm-use);
+  color: #ffffff;
+  font-size: 0.75em;
+}
+
+.hm-use-flash-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 1cqw;
+  font-size: 1.3em;
+  font-weight: 900;
+}
+
+.hm-use-flash-amount s {
+  color: var(--hm-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+}
+
+.hm-use-flash-amount strong {
+  color: var(--hm-use);
+  animation: hm-charm-beat 0.6s ease-in-out 0.5s 2;
+}
+
+.hm-ring {
+  position: fixed;
+  z-index: 44;
+  width: calc(var(--hm-size) * 0.5);
+  height: calc(var(--hm-size) * 0.5);
+  border: calc(var(--hm-size) * 0.06) solid var(--hm-use);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: hm-ring 0.9s ease-out calc(var(--hm-order) * 0.25s) 2 both;
+}
+
+.hm-stamp {
+  position: fixed;
+  z-index: 45;
+  padding: 0.1em 0.5em;
+  border: 0.14em solid var(--hm-use);
+  border-radius: 0.35em;
+  background: color-mix(in srgb, var(--hm-paper) 88%, transparent);
+  box-shadow: 0 0.15em 0.5em rgba(0, 0, 0, 0.35);
+  color: var(--hm-use);
+  font-size: calc(var(--hm-size) * 0.3);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  animation: hm-stamp 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) 0.35s both;
+}
+
+/*
  * 사용자가 장착한 부적의 효과가 일어났을 때 보드 가운데에 잠깐 띄우는 알림이다. 등급의 색으로 빛난다.
  * 땅값 할인은 원래 가격에 줄을 긋고 깎인 가격을 크게 보여준다.
  */
@@ -2211,6 +2508,15 @@ body {
   transform: translate(-50%, -50%);
   animation: hm-charm-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both, hm-charm-shine 1.1s ease-in-out 0.45s infinite;
   pointer-events: none;
+}
+
+/* 누구의 부적인지 말과 이름으로 알린다. */
+.hm-charm-flash-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqw;
+  color: var(--hm-muted);
+  font-size: 0.85em;
 }
 
 .hm-charm-flash-icon {
@@ -2505,6 +2811,15 @@ body {
   75% { transform: rotate(14deg) translateY(4%); }
 }
 
+@keyframes hm-ship-hover {
+  50% { transform: translateY(-7%); }
+}
+
+@keyframes hm-ship-flame {
+  from { transform: translateX(-50%) scaleY(0.7); }
+  to { transform: translateX(-50%) scaleY(1.15); }
+}
+
 @keyframes hm-glow {
   50% { box-shadow: 0 0 0 0.9cqw color-mix(in srgb, var(--hm-accent) 30%, transparent); }
 }
@@ -2595,6 +2910,34 @@ body {
 
 @keyframes hm-draw-beat {
   50% { transform: scale(1.08); }
+}
+
+@keyframes hm-transfer-big {
+  50% { box-shadow: 0 0 0 0.9cqw rgba(245, 159, 0, 0.45), 0 0 8cqw 2.6cqw rgba(255, 212, 59, 0.85), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.4); }
+}
+
+@keyframes hm-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+}
+
+@keyframes hm-use-shine {
+  50% { box-shadow: 0 0 0 0.9cqw color-mix(in srgb, var(--hm-use) 45%, transparent), 0 0 8cqw 2.4cqw color-mix(in srgb, var(--hm-use) 80%, transparent), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45); }
+}
+
+@keyframes hm-use-wave {
+  25% { transform: rotate(-14deg) scale(1.15); }
+  75% { transform: rotate(14deg) scale(1.15); }
+}
+
+@keyframes hm-ring {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(5); }
+}
+
+@keyframes hm-stamp {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(2.6); }
 }
 
 @keyframes hm-charm-pop {

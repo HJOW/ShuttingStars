@@ -123,6 +123,21 @@ const SAVE_VERSION = 5;
  */
 const STOP = { stop: true };
 /**
+ * 같은 자리를 쓰는 두 터의 건물 사이에 두어야 하는 간격이다. (보드 너비의 백분율, cqw)
+ * @type {number}
+ */
+const LOT_GAP = 0.25;
+/**
+ * 같은 자리를 쓰는 두 터가 겹칠 때 별장을 줄여 보는 크기 비율이다. 앞에서부터 차례로 써 보고, 겹치지 않게 되는 첫 비율을 쓴다.
+ * @type {number[]}
+ */
+const LOT_SCALES = [1, 0.9, 0.8, 0.7, 0.6, 0.5];
+/**
+ * 같은 자리를 쓰는 두 터를 밀어 볼 때, 가운데에서 칸의 끝까지를 나누는 단계의 수이다.
+ * @type {number}
+ */
+const LOT_STEPS = 10;
+/**
  * 사용자 이름의 최대 글자 수이다.
  * @type {number}
  */
@@ -132,20 +147,38 @@ const NAME_LIMIT = 12;
  * 화면 연출에 쓰이는 시간(밀리초) 기본값이다.
  * dice: 주사위 굴림, step: 일반 이동 1칸 (0.5초), fastStep: 비밀쿠폰/우주여행 이동 1칸 (0.25초),
  * coupon: 비밀쿠폰 표시 (6초), transfer: 플레이어 간 돈 이동, bank: 은행 또는 사회복지기금 본부와의 돈 이동 (자주 일어나므로 조금 짧다),
+ * boost: 큰 금액이 오갈 때 돈 이동에 더하는 시간, use: 우대권 또는 무전기 사용 표시,
  * charm: 부적 효과 발동 표시, think: 인공지능 판단, pause: 연출 사이 간격, result: 패배 화면 표시
  * @type {Object<string, number>}
  */
-export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, charm: 1900, think: 700, pause: 500, result: 3500 };
+export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, boost: 200, use: 1700, charm: 1900, think: 700, pause: 500, result: 3500 };
 
 /**
- * 리그별 설정이다. multiplier 는 금액 배율, weights 는 인공지능 플레이어가 1, 2, 3명일 확률의 가중치이다.
- * 참가비는 START_CASH 에 배율을 곱한 금액이다.
- * @type {Object<string, {multiplier: number, weights: number[], color: string}>}
+ * 돈 이동을 더 크게 연출하기 시작하는 금액이다. (원, 리그 배율을 적용하기 전의 값) 오간 돈이 이 금액 이상이면 지폐를 훨씬 많이 날린다.
+ * @type {number}
+ */
+export const BIG_TRANSFER = 1500000;
+/**
+ * 큰 금액이 오갈 때 날리는 지폐의 수이다. (보통의 돈 이동은 금액에 따라 6장에서 16장을 날린다.)
+ * @type {number}
+ */
+const BIG_BILLS = 44;
+
+/**
+ * 리그별 설정이다. 적힌 순서대로 대기실에 나온다.
+ * multiplier 는 금액 배율, fee 는 참가비(원), cash 는 게임을 시작할 때 모든 플레이어가 가지는 돈(원),
+ * weights 는 인공지능 플레이어가 1, 2, 3명일 확률의 가중치이다. (가중치가 0 인 인원으로는 진행하지 않는다.)
+ * reward 는 정해진 승리 보상(원)이며, null 이면 게임에서 가진 돈과 땅, 건물의 가치를 얻는다.
+ * hideFrom 은 대기실 보유 금액이 이 값 이상이면 리그를 보여주지 않는 기준(원)이며, null 이면 언제나 보여준다.
+ * items 는 소모형 아이템을 게임에 가져가 쓸 수 있는지 여부이다.
+ * rivalCharms 는 인공지능 한 명이 장착하고 시작하는 부적의 등급 목록이며, 비어 있으면 인공지능은 부적을 쓰지 않는다.
+ * @type {Object<string, {multiplier: number, fee: number, cash: number, weights: number[], color: string, reward: number|null, hideFrom: number|null, items: boolean, rivalCharms: string[]}>}
  */
 export const LEAGUES = {
-  green: { multiplier: 1, weights: [1, 2, 1], color: '#2f9e44' },
-  orange: { multiplier: 5, weights: [1, 1, 2], color: '#f08c00' },
-  red: { multiplier: 30, weights: [1, 2, 4], color: '#e03131' },
+  white: { multiplier: 1, fee: 0, cash: 1000000, weights: [1, 0, 0], color: '#868e96', reward: 3000000, hideFrom: 5000000, items: false, rivalCharms: [] },
+  green: { multiplier: 1, fee: 3000000, cash: 3000000, weights: [1, 2, 1], color: '#2f9e44', reward: null, hideFrom: null, items: true, rivalCharms: [] },
+  orange: { multiplier: 5, fee: 15000000, cash: 15000000, weights: [1, 1, 2], color: '#f08c00', reward: null, hideFrom: null, items: true, rivalCharms: [] },
+  red: { multiplier: 30, fee: 90000000, cash: 90000000, weights: [1, 2, 4], color: '#e03131', reward: null, hideFrom: null, items: true, rivalCharms: ['common', 'uncommon'] },
 };
 
 /**
@@ -230,9 +263,9 @@ export const CHARM_GRADES = {
  * @typedef {Object} HellmarbleCharm
  * @property {string} grade 등급 (CHARM_GRADES 의 키)
  * @property {string} icon 부적을 나타내는 그림 문자
- * @property {string} effect 효과의 종류 ('double' : 더블 확률 증가, 'discount' : 땅 구매 할인, 'redraw' : 손해 보는 비밀쿠폰 다시 뽑기, 'build' : 건물 무료 건설)
+ * @property {string} effect 효과의 종류 ('double' : 더블 확률 증가, 'discount' : 땅 구매 할인, 'toll' : 통행료·이용료 할인, 'redraw' : 손해 보는 비밀쿠폰 다시 뽑기, 'build' : 건물 무료 건설)
  * @property {number} chance 효과가 일어날 확률 (%). double 에서는 더블이 나올 확률에 더해지는 값이다.
- * @property {number} [percent] 땅값을 깎아 주는 비율 (%) (discount 만)
+ * @property {number} [percent] 땅값 또는 통행료·이용료를 깎아 주는 비율 (%) (discount, toll 만)
  * @property {string} [building] 무료로 지어지는 건물의 종류 (build 만)
  * @property {boolean} [revisit] 땅을 살 때뿐 아니라 자기 땅에 다시 도착했을 때에도 적용되는지 여부 (build 만)
  */
@@ -244,18 +277,28 @@ export const CHARM_GRADES = {
 export const CHARMS = {
   brokendice: { grade: 'common', icon: '🎲', effect: 'double', chance: 10 },
   oldcoin: { grade: 'common', icon: '🪙', effect: 'discount', chance: 5, percent: 10 },
+  expiredvoucher: { grade: 'common', icon: '🏷️', effect: 'toll', chance: 5, percent: 5 },
   tornlottery: { grade: 'uncommon', icon: '🎫', effect: 'redraw', chance: 10 },
   realtor: { grade: 'uncommon', icon: '📇', effect: 'build', chance: 20, building: 'villa', revisit: false },
   scratched: { grade: 'uncommon', icon: '🎟️', effect: 'redraw', chance: 20 },
   woodendice: { grade: 'uncommon', icon: '🪵', effect: 'double', chance: 15 },
   memorialcoin: { grade: 'uncommon', icon: '🏅', effect: 'discount', chance: 10, percent: 10 },
+  mysteryvoucher: { grade: 'uncommon', icon: '🎁', effect: 'toll', chance: 7, percent: 7 },
   fortunecookie: { grade: 'rare', icon: '🥠', effect: 'redraw', chance: 30 },
   lawfirm: { grade: 'rare', icon: '💼', effect: 'build', chance: 10, building: 'building', revisit: true },
   stock: { grade: 'rare', icon: '📈', effect: 'discount', chance: 10, percent: 25 },
+  expresscard: { grade: 'rare', icon: '💳', effect: 'toll', chance: 10, percent: 10 },
   president: { grade: 'legend', icon: '🏛️', effect: 'build', chance: 10, building: 'hotel', revisit: true },
   pendant: { grade: 'legend', icon: '📿', effect: 'redraw', chance: 45 },
   etf: { grade: 'legend', icon: '📊', effect: 'discount', chance: 10, percent: 50 },
+  blackcard: { grade: 'legend', icon: '🖤', effect: 'toll', chance: 15, percent: 15 },
 };
+
+/**
+ * 새 슬롯이 처음부터 하나 가지고 장착한 채로 시작하는 부적이다. (낡은 동전) 이미 저장된 슬롯에는 소급하여 주지 않는다.
+ * @type {string}
+ */
+export const STARTER_CHARM = 'oldcoin';
 
 /**
  * 상점에서 파는 부적 추첨권이다. 사는 즉시 사용되어 draws 개의 부적을 추첨한다. (보관되지 않는다.)
@@ -592,7 +635,8 @@ const TEXT_KO = {
   'slot.lobby': '대기실',
   'slot.playing': '{league} 진행 중',
   'slot.overwriteTitle': '덮어쓰기 확인',
-  'slot.overwrite': '슬롯 {n}에 이미 저장된 데이터가 있습니다.\n덮어쓰시겠습니까?',
+  'slot.overwrite': '슬롯 {n}에 이미 저장된 데이터가 있습니다.\n덮어쓰시겠습니까?\n덮어쓰지 않고 저장된 데이터를 불러올 수도 있습니다.',
+  'slot.overwriteYes': '덮어쓰기',
   'name.title': '이름 / 닉네임 입력',
   'name.hint': '게임에서 사용할 이름을 입력하세요. (최대 {n}자)',
   'name.default': '플레이어',
@@ -601,6 +645,9 @@ const TEXT_KO = {
   'lobby.welcome': '{name} 님, 참여할 리그를 선택하세요.',
   'lobby.money': '보유 금액',
   'lobby.fee': '참가비',
+  'lobby.free': '무료',
+  'lobby.cash': '시작 자금',
+  'lobby.reward': '승리 보상',
   'lobby.multiplier': '금액 배율',
   'lobby.times': '{n}배',
   'lobby.rivals': '상대',
@@ -609,20 +656,24 @@ const TEXT_KO = {
   'lobby.short': '돈이 부족하여 {league}에 참여할 수 없습니다.\n필요 금액 : {fee}\n보유 금액 : {money}',
   'lobby.confirmTitle': '참여 확인',
   'lobby.confirm': '{league}에 참여하시겠습니까?\n참가비 {fee}이 보유 금액에서 차감됩니다.',
+  'lobby.confirmFree': '{league}에 참여하시겠습니까?\n참가비는 없습니다.',
+  'lobby.noItems': '이 리그에서는 소모형 아이템을 사용할 수 없습니다. 가진 아이템은 대기실에 그대로 둡니다.',
+  'lobby.whiteNote': '{league}는 보유 금액이 {limit} 미만일 때에만 나타납니다. 참가비 없이 {cash}으로 시작하며, 승리하면 {reward}을 받고 패배해도 잃는 돈이 없습니다. 소모형 아이템은 사용할 수 없습니다.',
   'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 소모형 아이템은 승리·패배와 관계없이 쓰지 않고 남은 것이 대기실로 돌아오며, 게임에서 사용한 것만 사라집니다. 색상과 모양은 사라지지 않습니다. 패배하면 참가비를 잃습니다.',
   'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 사서 보관하거나, 구매 가격의 {itemSell}%에 되팔 수 있다.\n- 게임에 들어갈 때 가진 소모형 아이템을 모두 가져가며, 게임이 끝나면 이기든 지든 쓰지 않고 남은 아이템은 대기실로 돌아온다. 게임에서 사용한 아이템만 사라진다.\n- 아이템은 종류마다 게임 한 판에 한 번만 쓸 수 있다. 주사위 조작형 아이템(빅 다이즈, 스몰 다이즈)은 둘을 합쳐 한 번이다. 비밀쿠폰으로 얻은 우대권·무전기와는 따로 센다.\n- 쓸 상황이 되면 게임이 사용 여부를 묻는 아이템과, 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템이 있다.\n[아이템 목록]',
   'mcp.items.entry': '- {item} ({price}) : {description} [사용 시점] {when}',
-  'mcp.items.guide': '- 대기실의 "상점"(lobby.shop)은 구매 / 판매 탭(items.tab), 분류 버튼(items.filter), 아이템 카드 목록으로 되어 있다. 카드를 누르면(items.pick) 상세 팝업이 뜨고, 수량을 정한 뒤(items.less / items.more / items.max) 구매 또는 판매(items.trade)한다. 상세 팝업은 items.back, 상점은 items.close 로 닫는다.\n- "아이템 확인"(lobby.items)과 게임 중 자기 차례의 "아이템"(game.items)은 보유 아이템 목록을 연다. 게임 중 주사위를 굴릴 차례에는 상세 팝업의 "사용"(items.use)으로 우주여행 초청장과 주사위 조작형 아이템을 쓸 수 있으며, 한 번 더 확인받는다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
+  'mcp.items.guide': '- 대기실의 "상점"(lobby.shop)은 구매 / 판매 탭(items.tab), 분류 버튼(items.filter), 아이템 카드 목록으로 되어 있다. 카드를 누르면(items.pick) 상세 팝업이 뜨고, 수량을 정한 뒤(items.less / items.more / items.max) 구매 또는 판매(items.trade)한다. 상세 팝업은 items.back, 상점은 items.close 로 닫는다.\n- "아이템 확인"(lobby.items)과 게임 중 자기 차례의 "아이템"(game.items)은 보유 아이템 목록을 연다. 게임 중 주사위를 굴릴 차례에는 상세 팝업의 "사용"(items.use)으로 우주여행 초청장과 주사위 조작형 아이템을 쓸 수 있으며, 한 번 더 확인받는다.\n- 통행료·이용료를 낼 때 우대권이 있으면 창 하나가 뜬다. 창의 글에 지불할 금액이 함께 적혀 있고, 가진 것에 따라 "비밀쿠폰 우대권 사용"(dialog.answer, coupon), "아이템 우대권 사용"(dialog.answer, item), "사용하지 않음"(dialog.answer, no) 가운데 고른다.\n- 무인도에서 무전기가 있을 때에도 창 하나가 떠서 "비밀쿠폰 무전기 사용"(coupon), "아이템 무전기 사용"(item), "사용하지 않음"(no) 가운데 고른다. 무인도에 막 도착했을 때에는 아이템 무전기만 쓸 수 있다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
   'lobby.shop': '상점',
   'lobby.items': '아이템 확인',
   'item.owned': '보유 아이템',
   'item.none': '보유한 아이템이 없습니다.',
+  'item.hint.barred': '{league}에서는 소모형 아이템을 사용할 수 없습니다. 가진 아이템은 대기실에 그대로 있습니다. 가진 부적의 자세한 설명은 여기에서 볼 수 있습니다.',
   'item.noneLobby': '보유한 아이템이 없습니다. 대기실의 상점에서 구매할 수 있습니다.',
   'item.noneIn': '이 분류에는 아이템이 없습니다.',
   'item.total': '{kinds}종 · {count}개',
   'item.count': '보유 수량',
   'item.hint.lobby': '아이템을 누르면 자세한 설명을 볼 수 있고, 색상과 모양, 부적은 그 자리에서 장착할 수 있습니다. 게임에 참여하면 소모형 아이템은 모두 가져가며, 게임이 끝나면 쓰지 않고 남은 것은 대기실로 돌아옵니다. 게임에서 사용한 아이템만 사라집니다. 색상과 모양, 부적은 사라지지 않습니다.',
-  'item.hint.game': '이번 게임에 가져온 아이템입니다. 아이템을 누르면 자세한 설명을 볼 수 있고, 주사위를 굴릴 차례에 쓰는 아이템은 그 자리에서 사용할 수 있습니다. 쓰지 않은 아이템은 게임이 끝나면 대기실로 돌아갑니다.',
+  'item.hint.game': '이번 게임에 가져온 아이템입니다. 아이템을 누르면 자세한 설명을 볼 수 있고, 주사위를 굴릴 차례에 쓰는 아이템은 그 자리에서 사용할 수 있습니다. 쓰지 않은 아이템은 게임이 끝나면 대기실로 돌아갑니다. 가진 부적의 자세한 설명도 여기에서 볼 수 있습니다.',
   'item.category.all': '전체',
   'item.category.support': '보조',
   'item.category.travel': '이동',
@@ -704,6 +755,8 @@ const TEXT_KO = {
   'charm.double.description': '게임에서 주사위를 굴릴 때 더블이 나올 확률이 {chance}% 높아집니다. (보통 주사위라면 약 16.7% → 약 {total}%) 더블이 나오면 주사위를 한 번 더 굴리고, 무인도에 갇혀 있다면 바로 탈출합니다.',
   'charm.discount.brief': '땅을 살 때 {chance}% 확률로 {percent}% 할인',
   'charm.discount.description': '게임에서 땅을 살 때 {chance}% 확률로 {percent}% 할인된 값만 냅니다. 할인 전 가격만큼의 돈이 있어야 살 수 있는 것은 그대로입니다. 건물 건설, 통행료와 이용료, 사회복지기금, 비밀쿠폰으로 내는 돈에는 적용되지 않습니다.',
+  'charm.toll.brief': '통행료·이용료를 낼 때 {chance}% 확률로 {percent}% 할인',
+  'charm.toll.description': '게임에서 다른 플레이어에게 통행료나 이용료(우주여행 이용료 포함)를 내야 할 때 {chance}% 확률로 {percent}% 할인된 금액만 냅니다. 돈이 모자라 땅을 매각해야 하는 경우에도 매각하기 전에 먼저 할인됩니다. 땅 구매와 건물 건설, 사회복지기금, 비밀쿠폰으로 은행에 내는 돈에는 적용되지 않습니다.',
   'charm.redraw.brief': '손해 보는 비밀쿠폰을 {chance}% 확률로 다시 뽑기',
   'charm.redraw.description': '게임에서 비밀쿠폰을 뽑을 때, 벌금이나 세금을 내거나 땅을 잃거나 무인도로 가는 것처럼 나에게 바로 손해가 되는 쿠폰이 나올 차례이면 {chance}% 확률로 그 쿠폰을 덱 맨 뒤로 보내고 다시 뽑습니다.',
   'charm.build.brief': '땅을 살 때 {chance}% 확률로 {building} 무료 건설',
@@ -715,9 +768,20 @@ const TEXT_KO = {
   'charm.undone': '{item}의 장착을 해제했습니다.',
   'charm.sold': '장착하고 있던 부적을 모두 판매하여 장착이 해제되었습니다.',
   'charm.shopOnly': '부적은 대기실의 아이템 확인 창에서 장착합니다.',
+  'charm.gameOnly': '게임 중에는 부적을 바꿀 수 없습니다. 이번 게임에는 참여할 때 장착하고 있던 부적이 적용됩니다.',
+  'use.pass.title': '우대권 사용!',
+  'use.pass.text': '{tile} 통행료·이용료 면제',
+  'use.pass.travel': '{tile} 이용료 면제',
+  'use.pass.stamp': '면제',
+  'use.radio.title': '무전기 사용!',
+  'use.radio.text': '무인도에서 탈출합니다.',
+  'use.radio.stamp': '탈출',
+  'use.source.coupon': '비밀쿠폰',
+  'use.source.item': '아이템',
   'charm.flash': '{item} 발동!',
   'charm.flash.double': '더블이 나왔습니다!',
   'charm.flash.discount': '{tile} 땅값 {percent}% 할인',
+  'charm.flash.toll': '{tile} 통행료·이용료 {percent}% 할인',
   'charm.flash.build': '{tile}에 {building} 한 채를 무료로 지었습니다.',
   'charm.flash.redraw': '[{coupon}] 쿠폰을 덱 맨 뒤로 보내고 다시 뽑습니다.',
   'ticket.brief': '부적 {n}개를 무작위로 획득',
@@ -736,18 +800,27 @@ const TEXT_KO = {
   'item.charmticket10.title': '부적 10개 추첨권',
   'item.brokendice.title': '부서진 주사위',
   'item.oldcoin.title': '낡은 동전',
+  'item.expiredvoucher.title': '사용기한 지난 상품권',
   'item.tornlottery.title': '찢어진 복권',
   'item.realtor.title': '동네 공인중개사 명함',
   'item.scratched.title': '이미 긁은 복권',
   'item.woodendice.title': '나무 주사위',
   'item.memorialcoin.title': '기념 주화',
+  'item.mysteryvoucher.title': '정체불명의 상품권',
   'item.fortunecookie.title': '포춘 쿠키',
   'item.lawfirm.title': '대형 로펌 명함',
   'item.stock.title': '주식 증서',
+  'item.expresscard.title': '익스프레스 카드',
   'item.president.title': '대통령 명함',
   'item.pendant.title': '행운의 펜던트',
   'item.etf.title': '레버리지 ETF 증서',
-  'mcp.charms.rules': '[부적]\n- 부적은 장착형 아이템이다. 하나만 장착할 수 있고 장착하지 않아도 리그에 참여할 수 있다. 장착한 부적의 효과는 그 게임 내내 적용된다. 인공지능 플레이어는 부적을 쓰지 않는다.\n- 상점에서 직접 살 수 없고, 부적 추첨권({ticket})이나 부적 10개 추첨권({ticket10})을 사면 그 자리에서 무작위로 얻는다. 같은 부적이 또 나올 수 있다.\n- 등급은 일반, 고급, 희귀, 전설이 있다. 추첨에서 고급은 일반의 5분의 1, 희귀는 100분의 1, 전설은 2000분의 1의 확률로 나온다. ({odds})\n- 가진 부적은 상점에서 팔 수 있다. 판매 가격은 등급으로 정해진다. ({sells})\n- 부적은 아이템 확인 창에서만 보이고 장착한다. 게임 화면에는 효과가 일어났을 때에만 알림이 뜬다.\n[부적 목록]',
+  'item.blackcard.title': '블랙 카드',
+  'mcp.leagues.rules': '[리그]\n- 대기실에서 리그를 골라 참여한다. 참가비를 내고 시작하며, 승리하면 게임에서 가진 돈과 땅, 건물의 가치를 대기실 금액으로 얻고 패배하면 참가비를 잃는다. 금액 배율은 월급, 땅값, 건설비, 통행료와 이용료, 비밀쿠폰의 금액에 모두 적용된다.',
+  'mcp.leagues.entry': '- {league} : 참가비 {fee}, 시작 자금 {cash}, 금액 배율 {n}배, {rivals}.',
+  'mcp.leagues.reward': '승리 보상은 {reward}으로 정해져 있고 그 밖의 보상은 없다.',
+  'mcp.leagues.hidden': '대기실 보유 금액이 {limit} 이상이면 리그 목록에 나타나지 않는다.',
+  'mcp.leagues.noItems': '소모형 아이템을 쓸 수 없다. (색상, 모양, 부적과 비밀쿠폰은 그대로 쓴다.)',
+  'mcp.charms.rules': '[부적]\n- 부적은 장착형 아이템이다. 하나만 장착할 수 있고 장착하지 않아도 리그에 참여할 수 있다. 장착한 부적의 효과는 그 게임 내내 적용된다. 인공지능 플레이어는 Red 리그에서만 한 명이 일반 또는 고급 부적 하나를 장착한다.\n- 상점에서 직접 살 수 없고, 부적 추첨권({ticket})이나 부적 10개 추첨권({ticket10})을 사면 그 자리에서 무작위로 얻는다. 같은 부적이 또 나올 수 있다.\n- 새로 시작한 슬롯은 {starter} 하나를 가지고 장착한 채로 시작한다. (이미 저장된 슬롯에는 주지 않는다.)\n- 등급은 일반, 고급, 희귀, 전설이 있다. 추첨에서 고급은 일반의 5분의 1, 희귀는 100분의 1, 전설은 2000분의 1의 확률로 나온다. ({odds})\n- 가진 부적은 상점에서 팔 수 있다. 판매 가격은 등급으로 정해진다. ({sells})\n- 부적의 자세한 설명은 아이템 확인 창(대기실의 "아이템 확인", 게임 중의 "아이템")에서만 볼 수 있고, 장착은 대기실에서만 한다. 게임 중 플레이어 정보 창(game.player)에는 그 플레이어가 장착한 부적의 이름만 나온다. 그 밖에는 효과가 일어났을 때에만 알림이 뜬다.\n[부적 목록]',
   'mcp.charms.entry': '- [{grade}] {item} : {brief}',
   'mcp.charms.guide': '- 부적 추첨 : 상점의 분류 "부적"에서 추첨권 카드를 누르고(items.pick) 상세 팝업의 "추첨하기"(items.trade)를 누르면 돈이 빠지고 추첨 결과가 뜬다. "확인"(items.done)으로 닫는다. 가진 부적은 판매 탭에서 판다.\n- 부적 장착 : "아이템 확인"의 분류 "부적"에서 카드를 누르고 "장착"(items.equip) 또는 "장착 해제"(items.unequip)를 누른다.',
   'item.pass.title': '우대권',
@@ -802,16 +875,14 @@ const TEXT_KO = {
   'item.block.turn': '주사위를 굴릴 차례에만 사용할 수 있습니다.',
   'item.block.spent': '이번 게임에서 이미 사용했습니다. 게임 한 판에 한 번만 쓸 수 있습니다.',
   'item.block.shared': '이번 게임에서 {items} 가운데 하나를 이미 사용했습니다. 합쳐서 한 판에 한 번만 쓸 수 있습니다.',
-  'item.use.pass.title': '🎟️ 아이템 우대권 사용',
-  'item.use.pass.text': '{tile}에 낼 {amount}을(를) 한 번 면제받습니다.\n게임에서 이미 아이템 우대권을 사용했다면 추가로 사용할 수 없습니다.',
-  'item.use.radio.title': '📻 아이템 무전기 사용',
-  'item.use.radio.text': '무인도를 탈출하고 주사위를 굴려 이동합니다.\n게임에서 이미 아이템 무전기를 사용했다면 추가로 사용할 수 없습니다.',
+  'league.white': 'White 리그',
   'league.green': 'Green 리그',
   'league.orange': 'Orange 리그',
   'league.red': 'Red 리그',
+  'league.white.rivals': '인공지능 1명 (1:1 대결)',
   'league.green.rivals': '인공지능 1~3명 (2명일 확률이 높음)',
   'league.orange.rivals': '인공지능 1~3명 (3명일 확률이 높음)',
-  'league.red.rivals': '인공지능 1~3명 (3명일 확률이 높고 1명은 드묾)',
+  'league.red.rivals': '인공지능 1~3명 (3명일 확률이 높고 1명은 드묾), 그중 한 명은 일반 또는 고급 부적 장착',
   'settings.title': '설정',
   'settings.language': '언어',
   'settings.dark': '다크 모드',
@@ -930,18 +1001,26 @@ const TEXT_KO = {
   'ask.sell.text': '지불할 금액 : {amount}\n보유 현금 : {cash}\n부족한 금액 : {short}\n\n지불할 돈이 마련될 때까지 매각할 땅을 선택하세요. (구매·건설 가격의 {n}%를 돌려받습니다.)',
   'ask.sell.option': '{tile} 매각 (+{amount})',
   'ask.pass.title': '우대권 사용',
-  'ask.pass.text': '{tile}의 통행료·이용료는 {amount}입니다.\n우대권을 사용하여 면제받으시겠습니까? (보유 {n}장)',
+  'ask.pass.text': '{tile}의 통행료·이용료를 내야 합니다.\n우대권을 사용하면 이 금액을 내지 않습니다.',
+  'ask.pass.travel': '{tile} 이용료를 내야 합니다.\n아이템 우대권을 사용하면 이 금액을 내지 않습니다.',
+  'ask.pass.due': '지불할 금액',
+  'ask.pass.coupon': '비밀쿠폰 우대권 사용 (보유 {n}장)',
+  'ask.pass.item': '아이템 우대권 사용 (보유 {n}개 · 게임당 1회)',
   'ask.radio.title': '무전기 사용',
-  'ask.radio.text': '무전기를 사용하여 무인도에서 즉시 탈출하시겠습니까? (보유 {n}장)',
-  'ask.use': '사용',
+  'ask.radio.text': '무인도에 갇혀 있습니다.\n무전기를 사용하면 즉시 탈출하여 주사위를 굴려 이동합니다.',
+  'ask.radio.arrival': '무인도에 도착했습니다.\n아이템 무전기를 사용하면 갇히지 않고, 다음 차례에 주사위를 굴려 이동합니다.',
+  'ask.radio.coupon': '비밀쿠폰 무전기 사용 (보유 {n}장)',
+  'ask.radio.item': '아이템 무전기 사용 (보유 {n}개 · 게임당 1회)',
   'ask.keep': '사용하지 않음',
   'result.win.title': '승리!',
   'result.win.text': '다른 플레이어가 모두 파산했습니다.\n게임에서 가진 돈과 땅, 건물의 가치를 모두 얻습니다.',
+  'result.win.fixed': '다른 플레이어가 모두 파산했습니다.\n{league}의 승리 보상은 정해져 있습니다. (게임에서 가진 돈과 땅은 보상에 들어가지 않습니다.)',
   'result.cash': '보유 현금',
   'result.property': '땅과 건물의 가치',
   'result.reward': '획득 금액',
   'result.lose.title': '패배',
   'result.lose.text': '이번 게임에서 패배했습니다.\n잠시 후 대기실로 돌아갑니다.',
+  'result.lose.free': '이번 게임에서 패배했습니다. 잃은 돈은 없습니다.\n잠시 후 대기실로 돌아갑니다.',
   'result.lobby': '대기실로',
   'coupon.header': '비밀쿠폰',
   'coupon.drawer': '{player} 님이 뽑은 쿠폰',
@@ -1015,6 +1094,7 @@ const TEXT_KO = {
   'log.itemUse': '{player} 님이 아이템 [{item}] 을 사용했습니다.',
   'log.charmDouble': '{player} 님의 부적 [{item}] 효과로 더블이 나왔습니다.',
   'log.charmDiscount': '{player} 님이 부적 [{item}] 의 효과로 {tile} 땅값을 {percent}% 할인받았습니다.',
+  'log.charmToll': '{player} 님이 부적 [{item}] 의 효과로 {tile} 통행료·이용료를 {percent}% 할인받았습니다.',
   'log.charmBuild': '{player} 님의 부적 [{item}] 효과로 {tile}에 {building}이(가) 무료로 지어졌습니다.',
   'log.charmRedraw': '{player} 님이 부적 [{item}] 의 효과로 [{coupon}] 쿠폰을 덱 맨 뒤로 보내고 다시 뽑습니다.',
   'log.island': '{player} 님이 무인도에 갇혔습니다.',
@@ -1034,6 +1114,7 @@ const TEXT_KO = {
   'export.done': '저장 데이터를 JSON 텍스트로 클립보드에 복사했습니다.',
   'export.manual': '클립보드에 복사하지 못했습니다. 아래 내용을 직접 복사하세요.',
   'load.load': '불러오기',
+  'load.copy': 'JSON 복사',
   'load.delete': '삭제',
   'load.cancel': '취소',
   'load.summary': '{name}\n보유 금액 : {money}\n{state}',
@@ -1050,6 +1131,7 @@ const TEXT_KO = {
   'import.failData': '저장 데이터의 내용이 올바르지 않습니다.',
   'playerinfo.assets': '총 자산',
   'playerinfo.coupons': '보관 쿠폰',
+  'playerinfo.charm': '장착한 부적',
   'playerinfo.status': '상태',
   'playerinfo.playing': '진행 중',
   'playerinfo.lands': '소유한 땅 ({n}곳)',
@@ -1084,8 +1166,8 @@ const TEXT_KO = {
   'real.seoul': '1394년 조선이 도읍을 옮긴 뒤로 630년 넘게 수도 자리를 지키고 있습니다. 한강 공원 어디에 앉아 있어도 치킨이 찾아오는 도시이기도 하죠. 이 보드에서 가장 비싼 땅인 이유는 통행료를 한 번 내 보면 알게 됩니다.',
   'real.concorde': '마하 2로 날아서 런던에서 뉴욕까지 3시간 반이면 가던 초음속 여객기입니다. (최고 기록은 2시간 52분 59초) 서쪽으로 가면 현지 시각으로는 출발한 시각보다 "일찍" 도착했고, 비행 중에는 열 때문에 기체가 15~25cm 늘어났습니다. 20대만 만들어졌고 2003년에 은퇴했습니다.',
   'real.columbia': '1981년 4월 12일, 처음으로 우주에 다녀온 우주왕복선입니다. 첫 비행에서 54시간 반 동안 지구를 37바퀴 돌았으니 한 바퀴에 90분도 안 걸린 셈입니다. 로켓처럼 올라가 비행기처럼 내려왔고 모두 28번의 임무를 수행했습니다. 보드 한 바퀴쯤은 눈 깜짝할 사이입니다.',
-  'mcp.rules': '[Hellmarble 플레이 방법]\n- 2~4명이 하는 턴제 보드게임이다. 사용자 1명과 인공지능 1~3명이 참여한다.\n- 모두 같은 돈({start} x 리그 배율)을 가지고 출발지에서 시작한다. 다른 플레이어가 모두 파산하면 승리하고, 사용자가 파산하면 즉시 패배한다.\n- 시작할 때 각자 주사위 2개를 굴려 합이 큰 순서로 차례를 정한다. (동점이면 플레이어 번호가 낮은 쪽이 먼저)\n- 차례가 되면 주사위 2개를 굴려 나온 수만큼 앞으로 이동한다. 출발지를 지나거나 출발지에 멈추면 월급({salary})을 받는다.\n- 더블(두 눈이 같음)이면 도착한 칸의 처리를 마친 뒤 한 번 더 굴린다. 더블이 이어지면 계속 굴린다. 단, 무인도에 갇히거나 우주여행에 탑승하면 차례가 끝난다.\n- 빈 땅(일반 도시, 한국 도시, 특수 시설)에 도착하면 돈이 충분할 때 살 수 있다.\n- 자기 일반 도시에 다시 도착하면 별장(최대 2개), 빌딩(1개), 호텔(1개) 가운데 하나를 지을 수 있다. 한국 도시와 특수 시설에는 지을 수 없다.\n- 남의 땅에 도착하면 통행료와 건물 이용료의 합을 소유자에게 낸다. 우대권이 있으면 써서 면제받을 수 있다.\n- 낼 돈이 모자라면 자기 땅을 은행에 팔아(구매·건설 가격의 {sell}%) 마련해야 하고, 모두 팔아도 모자라면 파산한다.\n- 비밀쿠폰 칸 : 쿠폰 한 장을 뽑아 적힌 대로 한다. 우대권과 무전기는 보관했다가 쓸 수 있다.\n- 우주여행 칸 : 탑승하여 다음 차례에 원하는 칸으로 이동한다. 콜롬비아 호를 다른 플레이어가 가지고 있으면 이용료({space})를 낸다.\n- 무인도 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고(이 더블로는 다시 굴리지 않는다), 아니면 2턴을 쉬고 3턴 째에 이동한다. 무전기를 쓰면 바로 풀려난다.\n- 사회복지기금 접수처 : {welfare}을 낸다. (모자라면 가진 만큼만 내고 파산하지 않는다.) 사회복지기금 본부 : 쌓인 돈을 모두 가져간다.\n- 리그 : Green(배율 1배), Orange(5배), Red(30배). 참가비는 시작 금액과 같고, 배율은 게임 안의 모든 금액에 곱해진다.\n- 승리하면 게임에서 가진 현금과 땅, 건물의 가치(100%)를 대기실 금액으로 받는다. 패배하면 참가비를 잃는다.',
-  'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에는 "주사위 굴리기", "아이템", "메인 메뉴"(저장하고 나감), "포기"를 사용할 수 있다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n  주사위·말 이동·돈 이동 연출 중에는 조작할 수 없으므로 hellmarble_wait 로 다음 입력 시점까지 기다린다. 돈은 플레이어 사이뿐 아니라 은행(출발지 칸)·사회복지기금 본부와 오갈 때도 지폐 이동으로 표시된다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
+  'mcp.rules': '[Hellmarble 플레이 방법]\n- 2~4명이 하는 턴제 보드게임이다. 사용자 1명과 인공지능 1~3명이 참여한다.\n- 모두 같은 돈(리그마다 다르다. 아래 [리그] 참고)을 가지고 출발지에서 시작한다. 다른 플레이어가 모두 파산하면 승리하고, 사용자가 파산하면 즉시 패배한다.\n- 시작할 때 각자 주사위 2개를 굴려 합이 큰 순서로 차례를 정한다. (동점이면 플레이어 번호가 낮은 쪽이 먼저)\n- 차례가 되면 주사위 2개를 굴려 나온 수만큼 앞으로 이동한다. 출발지를 지나거나 출발지에 멈추면 월급({salary})을 받는다.\n- 더블(두 눈이 같음)이면 도착한 칸의 처리를 마친 뒤 한 번 더 굴린다. 더블이 이어지면 계속 굴린다. 단, 무인도에 갇히거나 우주여행에 탑승하면 차례가 끝난다.\n- 빈 땅(일반 도시, 한국 도시, 특수 시설)에 도착하면 돈이 충분할 때 살 수 있다.\n- 자기 일반 도시에 다시 도착하면 별장(최대 2개), 빌딩(1개), 호텔(1개) 가운데 하나를 지을 수 있다. 한국 도시와 특수 시설에는 지을 수 없다.\n- 남의 땅에 도착하면 통행료와 건물 이용료의 합을 소유자에게 낸다. 우대권이 있으면 써서 면제받을 수 있다.\n- 낼 돈이 모자라면 자기 땅을 은행에 팔아(구매·건설 가격의 {sell}%) 마련해야 하고, 모두 팔아도 모자라면 파산한다.\n- 비밀쿠폰 칸 : 쿠폰 한 장을 뽑아 적힌 대로 한다. 우대권과 무전기는 보관했다가 쓸 수 있다.\n- 우주여행 칸 : 탑승하여 다음 차례에 원하는 칸으로 이동한다. 콜롬비아 호를 다른 플레이어가 가지고 있으면 이용료({space})를 낸다.\n- 무인도 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고(이 더블로는 다시 굴리지 않는다), 아니면 2턴을 쉬고 3턴 째에 이동한다. 무전기를 쓰면 바로 풀려난다.\n- 사회복지기금 접수처 : {welfare}을 낸다. (모자라면 가진 만큼만 내고 파산하지 않는다.) 사회복지기금 본부 : 쌓인 돈을 모두 가져간다.\n- 리그 : Green(배율 1배), Orange(5배), Red(30배). 참가비는 시작 금액과 같고, 배율은 게임 안의 모든 금액에 곱해진다.\n- 승리하면 게임에서 가진 현금과 땅, 건물의 가치(100%)를 대기실 금액으로 받는다. 패배하면 참가비를 잃는다.',
+  'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n  게임 시작에서 데이터가 있는 슬롯을 누르면 덮어쓰기 / 불러오기 / 취소를 고른다. 불러오기를 고르면 덮어쓰지 않고 그 슬롯을 불러온다.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / JSON 복사 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다. "JSON 복사"는 그 슬롯의 저장 데이터를 클립보드에 복사한다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에는 "주사위 굴리기", "아이템", "메인 메뉴"(저장하고 나감), "포기"를 사용할 수 있다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n  주사위·말 이동·돈 이동 연출 중에는 조작할 수 없으므로 hellmarble_wait 로 다음 입력 시점까지 기다린다. 돈은 플레이어 사이뿐 아니라 은행(출발지 칸)·사회복지기금 본부와 오갈 때도 지폐 이동으로 표시된다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
   'mcp.tiles': '칸 정보 보기 또는 닫기 (value : 0~39)',
   'mcp.unknown': '지금 누를 수 없는 동작입니다. hellmarble_get_state 의 actions 를 확인하세요.',
   'mcp.noInput': '지금 화면에는 글자를 입력할 곳이 없습니다.',
@@ -1121,7 +1203,8 @@ const TEXT_EN = {
   'slot.lobby': 'In the lobby',
   'slot.playing': '{league} in progress',
   'slot.overwriteTitle': 'Overwrite?',
-  'slot.overwrite': 'Slot {n} already has saved data.\nDo you want to overwrite it?',
+  'slot.overwrite': 'Slot {n} already has saved data.\nDo you want to overwrite it?\nYou can also load the saved data instead.',
+  'slot.overwriteYes': 'Overwrite',
   'name.title': 'Enter Your Name',
   'name.hint': 'Enter the name to use in the game. (up to {n} characters)',
   'name.default': 'Player',
@@ -1130,6 +1213,9 @@ const TEXT_EN = {
   'lobby.welcome': '{name}, choose a league to join.',
   'lobby.money': 'Your money',
   'lobby.fee': 'Entry fee',
+  'lobby.free': 'Free',
+  'lobby.cash': 'Starting cash',
+  'lobby.reward': 'Win reward',
   'lobby.multiplier': 'Money multiplier',
   'lobby.times': 'x{n}',
   'lobby.rivals': 'Opponents',
@@ -1138,20 +1224,24 @@ const TEXT_EN = {
   'lobby.short': 'You do not have enough money to join the {league}.\nRequired : {fee}\nYou have : {money}',
   'lobby.confirmTitle': 'Confirm',
   'lobby.confirm': 'Join the {league}?\nThe entry fee of {fee} will be deducted from your money.',
+  'lobby.confirmFree': 'Join the {league}?\nThere is no entry fee.',
+  'lobby.noItems': 'Consumable items cannot be used in this league. Your items stay in the lobby.',
+  'lobby.whiteNote': 'The {league} appears only while you have less than {limit}. It has no entry fee and starts you with {cash}; winning pays {reward} and losing costs nothing. Consumable items cannot be used.',
   'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Consumable items you take into a game come back to the lobby whether you win or lose, apart from the ones you actually used in it. Colors and shapes are never lost. If you lose, the entry fee is gone.',
   'mcp.items.rules': '[Item rules]\n- Buy items in the lobby shop and keep them, or sell them back for {itemSell}% of the purchase price.\n- All your consumable items go into a game with you. When it ends, whether you win or lose, the items you did not use come back to the lobby; only the items you used are gone.\n- Each kind of item can be used only once per game. The dice items (Big Dice, Small Dice) share a single use between them. Secret Coupon passes and radios are counted separately.\n- Some items are offered by the game when the situation arises; others are used from the item list on your turn to roll.\n[Items]',
   'mcp.items.entry': '- {item} ({price}) : {description} [When] {when}',
-  'mcp.items.guide': '- The lobby "Item Shop" (lobby.shop) has Buy / Sell tabs (items.tab), category buttons (items.filter) and a list of item cards. Press a card (items.pick) to open its detail popup, set the quantity (items.less / items.more / items.max), then buy or sell (items.trade). Close the popup with items.back and the shop with items.close.\n- "My Items" (lobby.items) and the "Items" button on your turn (game.items) open your inventory. In a game, on your turn to roll, "Use" (items.use) in the detail popup uses a Space Travel Invitation or a dice item after one more confirmation.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
+  'mcp.items.guide': '- The lobby "Item Shop" (lobby.shop) has Buy / Sell tabs (items.tab), category buttons (items.filter) and a list of item cards. Press a card (items.pick) to open its detail popup, set the quantity (items.less / items.more / items.max), then buy or sell (items.trade). Close the popup with items.back and the shop with items.close.\n- "My Items" (lobby.items) and the "Items" button on your turn (game.items) open your inventory. In a game, on your turn to roll, "Use" (items.use) in the detail popup uses a Space Travel Invitation or a dice item after one more confirmation.\n- When a toll or fee is due and you hold a free pass, a single window appears. Its text includes the amount due, and depending on what you hold you choose "Use Coupon Free Pass" (dialog.answer, coupon), "Use Item Free Pass" (dialog.answer, item) or "Do not use" (dialog.answer, no).\n- On the island, holding a radio also opens a single window offering "Use Coupon Radio" (coupon), "Use Item Radio" (item) or "Do not use" (no). Right after landing on the island only an item radio can be used.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
   'lobby.shop': 'Item Shop',
   'lobby.items': 'My Items',
   'item.owned': 'My Items',
   'item.none': 'You do not have any items.',
+  'item.hint.barred': 'Consumable items cannot be used in the {league}. Your items are still in the lobby. You can read the details of the charms you own here.',
   'item.noneLobby': 'You do not have any items. You can buy some in the lobby shop.',
   'item.noneIn': 'There are no items in this category.',
   'item.total': '{kinds} kind(s) · {count} item(s)',
   'item.count': 'In stock',
   'item.hint.lobby': 'Click an item to read its details. Colors, shapes and charms can be equipped right there. Consumable items all go into a game with you; the ones you do not use come back to the lobby when it ends, and only the items you use are gone. Colors, shapes and charms are never lost.',
-  'item.hint.game': 'These are the items you brought into this game. Click an item to read its details. Items used on your turn to roll can be used right there. Items you do not use come back to the lobby when the game ends.',
+  'item.hint.game': 'These are the items you brought into this game. Click an item to read its details. Items used on your turn to roll can be used right there. Items you do not use come back to the lobby when the game ends. You can also read the details of the charms you own here.',
   'item.category.all': 'All',
   'item.category.support': 'Support',
   'item.category.travel': 'Travel',
@@ -1233,6 +1323,8 @@ const TEXT_EN = {
   'charm.double.description': 'When you roll the dice in a game, your chance of rolling doubles goes up by {chance}%. (With normal dice, about 16.7% → about {total}%) Doubles give you another roll, and get you off the Desert Island at once.',
   'charm.discount.brief': '{chance}% chance of {percent}% off a land',
   'charm.discount.description': 'When you buy a land in a game, there is a {chance}% chance that you pay {percent}% less. You still need enough money for the full price to buy it. It does not apply to buildings, tolls and fees, the welfare fund, or payments from Secret Coupons.',
+  'charm.toll.brief': '{chance}% chance of {percent}% off a toll or fee',
+  'charm.toll.description': 'When you owe another player a toll or fee in a game (the space travel fee included), there is a {chance}% chance that you pay {percent}% less. If you are short of cash, the discount is applied before you have to sell any land. It does not apply to buying lands, buildings, the welfare fund, or payments to the bank from Secret Coupons.',
   'charm.redraw.brief': '{chance}% chance to redraw a bad Secret Coupon',
   'charm.redraw.description': 'When you draw a Secret Coupon in a game and the next one would hurt you right away, such as a fine, a tax, losing a land or being sent to the Desert Island, there is a {chance}% chance that it goes to the back of the deck and you draw again.',
   'charm.build.brief': '{chance}% chance of a free {building} on a new land',
@@ -1244,9 +1336,20 @@ const TEXT_EN = {
   'charm.undone': 'Unequipped {item}.',
   'charm.sold': 'You sold every copy of the charm you had equipped, so it is no longer equipped.',
   'charm.shopOnly': 'Charms are equipped in "My Items" in the lobby.',
+  'charm.gameOnly': 'Charms cannot be changed during a game. The charm you had equipped when you joined applies to this game.',
+  'use.pass.title': 'Free Pass used!',
+  'use.pass.text': 'Toll and fees for {tile} waived',
+  'use.pass.travel': 'Fee for {tile} waived',
+  'use.pass.stamp': 'FREE',
+  'use.radio.title': 'Radio used!',
+  'use.radio.text': 'Escaping the island.',
+  'use.radio.stamp': 'ESCAPE',
+  'use.source.coupon': 'Secret Coupon',
+  'use.source.item': 'Item',
   'charm.flash': '{item} activated!',
   'charm.flash.double': 'You rolled doubles!',
   'charm.flash.discount': '{percent}% off {tile}',
+  'charm.flash.toll': '{percent}% off the toll and fees for {tile}',
   'charm.flash.build': 'A free {building} was built in {tile}.',
   'charm.flash.redraw': 'The [{coupon}] coupon goes to the back of the deck. Drawing again.',
   'ticket.brief': 'Get {n} random charm(s)',
@@ -1265,18 +1368,27 @@ const TEXT_EN = {
   'item.charmticket10.title': '10-Charm Ticket',
   'item.brokendice.title': 'Broken Dice',
   'item.oldcoin.title': 'Old Coin',
+  'item.expiredvoucher.title': 'Expired Gift Voucher',
   'item.tornlottery.title': 'Torn Lottery Ticket',
   'item.realtor.title': "Local Realtor's Card",
   'item.scratched.title': 'Scratched Lottery Ticket',
   'item.woodendice.title': 'Wooden Dice',
   'item.memorialcoin.title': 'Commemorative Coin',
+  'item.mysteryvoucher.title': 'Mystery Gift Voucher',
   'item.fortunecookie.title': 'Fortune Cookie',
   'item.lawfirm.title': 'Big Law Firm Card',
   'item.stock.title': 'Stock Certificate',
+  'item.expresscard.title': 'Express Card',
   'item.president.title': "President's Card",
   'item.pendant.title': 'Lucky Pendant',
   'item.etf.title': 'Leveraged ETF Certificate',
-  'mcp.charms.rules': '[Charms]\n- A charm is an equippable item. You can equip only one, and you can join a league without one. The equipped charm works for the whole game. AI players do not use charms.\n- Charms cannot be bought directly. Buying a Charm Ticket ({ticket}) or a 10-Charm Ticket ({ticket10}) in the shop draws random charms on the spot. You may get the same charm again.\n- The grades are Common, Uncommon, Rare and Legendary. In a draw, Uncommon is 1/5 as likely as Common, Rare 1/100 and Legendary 1/2000. ({odds})\n- Charms you own can be sold in the shop for a price set by grade. ({sells})\n- Charms are shown and equipped only in the item window. In the game screen a notice appears only when an effect happens.\n[Charm list]',
+  'item.blackcard.title': 'Black Card',
+  'mcp.leagues.rules': '[Leagues]\n- Choose a league in the lobby. You pay the entry fee to start; if you win you get your in-game cash plus the full value of your lands and buildings as lobby money, and if you lose the fee is gone. The money multiplier applies to salaries, land prices, building costs, tolls and fees, and coupon amounts.',
+  'mcp.leagues.entry': '- {league} : entry fee {fee}, starting cash {cash}, money multiplier x{n}, {rivals}.',
+  'mcp.leagues.reward': 'The win reward is fixed at {reward} and nothing else is paid.',
+  'mcp.leagues.hidden': 'It does not appear in the league list while your lobby money is {limit} or more.',
+  'mcp.leagues.noItems': 'Consumable items cannot be used. (Colors, shapes, charms and secret coupons work as usual.)',
+  'mcp.charms.rules': '[Charms]\n- A charm is an equippable item. You can equip only one, and you can join a league without one. The equipped charm works for the whole game. Among AI players, only one in the Red League has a Common or Uncommon charm.\n- Charms cannot be bought directly. Buying a Charm Ticket ({ticket}) or a 10-Charm Ticket ({ticket10}) in the shop draws random charms on the spot. You may get the same charm again.\n- A newly started slot begins with one {starter}, already equipped. (Slots saved earlier do not receive one.)\n- The grades are Common, Uncommon, Rare and Legendary. In a draw, Uncommon is 1/5 as likely as Common, Rare 1/100 and Legendary 1/2000. ({odds})\n- Charms you own can be sold in the shop for a price set by grade. ({sells})\n- Charm details can be read only in the item window ("My Items" in the lobby, "Items" during a game), and charms are equipped only in the lobby. During a game the player info window (game.player) shows just the name of the charm that player has equipped. Otherwise a notice appears only when an effect happens.\n[Charm list]',
   'mcp.charms.entry': '- [{grade}] {item} : {brief}',
   'mcp.charms.guide': '- Drawing charms : under the "Charms" category of the shop, press a ticket card (items.pick) and then "Draw" (items.trade) in its detail popup. The money is deducted and the results appear; close them with "OK" (items.done). Sell charms you own on the Sell tab.\n- Equipping a charm : under the "Charms" category of "My Items", press a card and then "Equip" (items.equip) or "Unequip" (items.unequip).',
   'item.pass.title': 'Free Pass',
@@ -1331,16 +1443,14 @@ const TEXT_EN = {
   'item.block.turn': 'It can only be used on your turn to roll the dice.',
   'item.block.spent': 'Already used in this game. It can be used only once per game.',
   'item.block.shared': 'One of {items} has already been used in this game. They share a single use per game.',
-  'item.use.pass.title': '🎟️ Use Item Free Pass',
-  'item.use.pass.text': 'Skip the {amount} owed at {tile}.\nAn item free pass cannot be used again in this game once spent.',
-  'item.use.radio.title': '📻 Use Item Radio',
-  'item.use.radio.text': 'Escape the island and roll the dice to move.\nAn item radio cannot be used again in this game once spent.',
+  'league.white': 'White League',
   'league.green': 'Green League',
   'league.orange': 'Orange League',
   'league.red': 'Red League',
+  'league.white.rivals': '1 AI player (one on one)',
   'league.green.rivals': '1-3 AI players (2 is most likely)',
   'league.orange.rivals': '1-3 AI players (3 is most likely)',
-  'league.red.rivals': '1-3 AI players (3 is most likely, 1 is rare)',
+  'league.red.rivals': '1-3 AI players (3 is most likely, 1 is rare); one of them has a Common or Uncommon charm',
   'settings.title': 'Settings',
   'settings.language': 'Language',
   'settings.dark': 'Dark mode',
@@ -1459,18 +1569,26 @@ const TEXT_EN = {
   'ask.sell.text': 'Amount due : {amount}\nYour cash : {cash}\nShortfall : {short}\n\nChoose lands to sell until you can pay. (You get back {n}% of the purchase and building prices.)',
   'ask.sell.option': 'Sell {tile} (+{amount})',
   'ask.pass.title': 'Use Free Pass',
-  'ask.pass.text': 'The toll and fees for {tile} are {amount}.\nUse a free pass to skip the payment? (You have {n})',
+  'ask.pass.text': 'You owe the toll and fees for {tile}.\nUsing a free pass skips this payment.',
+  'ask.pass.travel': 'You owe the fee for {tile}.\nUsing an item free pass skips this payment.',
+  'ask.pass.due': 'Amount due',
+  'ask.pass.coupon': 'Use Coupon Free Pass (have {n})',
+  'ask.pass.item': 'Use Item Free Pass (have {n} · once per game)',
   'ask.radio.title': 'Use Radio',
-  'ask.radio.text': 'Use a radio to escape the island right now? (You have {n})',
-  'ask.use': 'Use',
+  'ask.radio.text': 'You are stuck on the island.\nUsing a radio lets you escape at once and roll the dice to move.',
+  'ask.radio.arrival': 'You have landed on the island.\nUsing an item radio keeps you from being stuck, so you roll and move on your next turn.',
+  'ask.radio.coupon': 'Use Coupon Radio (have {n})',
+  'ask.radio.item': 'Use Item Radio (have {n} · once per game)',
   'ask.keep': 'Do not use',
   'result.win.title': 'Victory!',
   'result.win.text': 'All the other players went bankrupt.\nYou get your in-game cash plus the full value of your lands and buildings.',
+  'result.win.fixed': 'All the other players went bankrupt.\nThe {league} pays a fixed reward. (Your in-game cash and lands are not part of it.)',
   'result.cash': 'Cash',
   'result.property': 'Lands and buildings',
   'result.reward': 'Reward',
   'result.lose.title': 'Defeat',
   'result.lose.text': 'You lost this game.\nReturning to the lobby shortly.',
+  'result.lose.free': 'You lost this game, but it cost you nothing.\nReturning to the lobby shortly.',
   'result.lobby': 'To the Lobby',
   'coupon.header': 'Secret Coupon',
   'coupon.drawer': 'Drawn by {player}',
@@ -1544,6 +1662,7 @@ const TEXT_EN = {
   'log.itemUse': '{player} used the item [{item}].',
   'log.charmDouble': "{player}'s charm [{item}] turned the roll into doubles.",
   'log.charmDiscount': '{player} got {percent}% off {tile} thanks to the charm [{item}].',
+  'log.charmToll': '{player} got {percent}% off the toll and fees for {tile} thanks to the charm [{item}].',
   'log.charmBuild': "{player}'s charm [{item}] built a free {building} in {tile}.",
   'log.charmRedraw': '{player} sent the [{coupon}] coupon to the back of the deck with the charm [{item}] and draws again.',
   'log.island': '{player} is stuck on the island.',
@@ -1563,6 +1682,7 @@ const TEXT_EN = {
   'export.done': 'Your save data was copied to the clipboard as JSON text.',
   'export.manual': 'Could not copy to the clipboard. Please copy the text below yourself.',
   'load.load': 'Load',
+  'load.copy': 'Copy JSON',
   'load.delete': 'Delete',
   'load.cancel': 'Cancel',
   'load.summary': '{name}\nMoney : {money}\n{state}',
@@ -1579,6 +1699,7 @@ const TEXT_EN = {
   'import.failData': 'The contents of the save data are not valid.',
   'playerinfo.assets': 'Total assets',
   'playerinfo.coupons': 'Coupons held',
+  'playerinfo.charm': 'Equipped charm',
   'playerinfo.status': 'Status',
   'playerinfo.playing': 'Playing',
   'playerinfo.lands': 'Lands owned ({n})',
@@ -1613,8 +1734,8 @@ const TEXT_EN = {
   'real.seoul': 'The capital for more than 630 years, ever since the Joseon dynasty moved here in 1394. It is also a city where fried chicken will find you anywhere in the Han River parks. Why is it the priciest land on this board? Pay the toll once and you will know.',
   'real.concorde': 'A supersonic airliner that cruised at Mach 2 and flew London to New York in about three and a half hours. (The record is 2 hours 52 minutes 59 seconds.) Heading west, you landed "earlier" than you took off by local time, and in flight the heat stretched the airframe by 15 to 25 cm. Only 20 were built, and it retired in 2003.',
   'real.columbia': 'On 12 April 1981 it became the first space shuttle to fly to space. On that first flight it circled the Earth 37 times in 54 and a half hours, less than 90 minutes per lap. It went up like a rocket, came down like an airplane, and flew 28 missions in all. One lap around this board is nothing.',
-  'mcp.rules': '[How to play Hellmarble]\n- A turn-based board game for 2 to 4 players: one human and 1 to 3 AI players.\n- Everyone starts on Start with the same cash ({start} x the league multiplier). You win when every other player is bankrupt, and you lose at once if you go bankrupt.\n- At the beginning everyone rolls two dice; turns go from the highest total. (Ties go to the lower player number.)\n- On your turn, roll two dice and move forward by the total. You receive a salary ({salary}) whenever you pass or stop on Start.\n- On doubles you roll again after the tile you landed on is resolved, and keep going while doubles continue. The turn ends, however, if you get stuck on the island or board the space shuttle.\n- If you land on an unowned land (city, Korean city or special facility) and have enough cash, you may buy it.\n- When you land on your own city again, you may build one building: villas (up to 2), a building (1) or a hotel (1). Nothing can be built on Korean cities or special facilities.\n- If you land on a land owned by another player, you pay its toll plus the fees of its buildings. A free pass, if you hold one, lets you skip the payment.\n- If you are short of cash, you must sell your lands to the bank ({sell}% of the purchase and building prices). If that is still not enough, you go bankrupt.\n- Secret Coupon : draw a coupon and do what it says. Free passes and radios can be kept for later.\n- Space Travel : you board and move to any tile on your next turn. If another player owns the Columbia, you pay a fee ({space}).\n- Desert Island : you are stuck. Doubles free you and you move by that roll (those doubles do not give another roll); otherwise you rest for 2 turns and move on the 3rd. A radio frees you at once.\n- Welfare Fund Desk : pay {welfare}. (If short, pay what you have; you do not go bankrupt.) Welfare Fund HQ : take all the money piled up.\n- Leagues : Green (x1), Orange (x5), Red (x30). The entry fee equals the starting cash, and the multiplier applies to every amount in the game.\n- If you win, your in-game cash plus the full value of your lands and buildings is added to your lobby money. If you lose, the entry fee is gone.',
-  'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n- Load : clicking a slot with data offers Load / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn choose "Roll Dice", "Items", "Main Menu" (saves and leaves), or "Forfeit". Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n  Controls are unavailable during dice, movement, and money transfer animations; call hellmarble_wait until the next input is needed. Money visibly moves between players and also to or from the bank (shown at Start) and Welfare Fund HQ.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
+  'mcp.rules': '[How to play Hellmarble]\n- A turn-based board game for 2 to 4 players: one human and 1 to 3 AI players.\n- Everyone starts on Start with the same cash. (It depends on the league; see [Leagues] below.) You win when every other player is bankrupt, and you lose at once if you go bankrupt.\n- At the beginning everyone rolls two dice; turns go from the highest total. (Ties go to the lower player number.)\n- On your turn, roll two dice and move forward by the total. You receive a salary ({salary}) whenever you pass or stop on Start.\n- On doubles you roll again after the tile you landed on is resolved, and keep going while doubles continue. The turn ends, however, if you get stuck on the island or board the space shuttle.\n- If you land on an unowned land (city, Korean city or special facility) and have enough cash, you may buy it.\n- When you land on your own city again, you may build one building: villas (up to 2), a building (1) or a hotel (1). Nothing can be built on Korean cities or special facilities.\n- If you land on a land owned by another player, you pay its toll plus the fees of its buildings. A free pass, if you hold one, lets you skip the payment.\n- If you are short of cash, you must sell your lands to the bank ({sell}% of the purchase and building prices). If that is still not enough, you go bankrupt.\n- Secret Coupon : draw a coupon and do what it says. Free passes and radios can be kept for later.\n- Space Travel : you board and move to any tile on your next turn. If another player owns the Columbia, you pay a fee ({space}).\n- Desert Island : you are stuck. Doubles free you and you move by that roll (those doubles do not give another roll); otherwise you rest for 2 turns and move on the 3rd. A radio frees you at once.\n- Welfare Fund Desk : pay {welfare}. (If short, pay what you have; you do not go bankrupt.) Welfare Fund HQ : take all the money piled up.\n- Leagues : Green (x1), Orange (x5), Red (x30). The entry fee equals the starting cash, and the multiplier applies to every amount in the game.\n- If you win, your in-game cash plus the full value of your lands and buildings is added to your lobby money. If you lose, the entry fee is gone.',
+  'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n  In New Game, clicking a slot with data offers Overwrite / Load / Cancel. Load opens that slot without overwriting it.\n- Load : clicking a slot with data offers Load / Copy JSON / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel. "Copy JSON" copies that slot\'s save data to the clipboard.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn choose "Roll Dice", "Items", "Main Menu" (saves and leaves), or "Forfeit". Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n  Controls are unavailable during dice, movement, and money transfer animations; call hellmarble_wait until the next input is needed. Money visibly moves between players and also to or from the bank (shown at Start) and Welfare Fund HQ.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
   'mcp.tiles': 'Show or hide the info of a tile (value : 0-39)',
   'mcp.unknown': 'That action cannot be pressed right now. Check the actions of hellmarble_get_state.',
   'mcp.noInput': 'There is no text field on the current screen.',
@@ -2063,6 +2184,17 @@ function fillCharms(charms) {
 }
 
 /**
+ * 새 슬롯이 처음에 가지는 부적의 보유 수량을 만든다. 시작 부적(낡은 동전) 하나만 가진다.
+ * 새로 만드는 슬롯에만 쓰며, 이미 저장된 슬롯의 수량은 fillCharms 가 그대로 옮긴다. (소급 적용하지 않는다.)
+ * @returns {Object<string, number>} 모든 부적의 수량이 든 목록
+ */
+function starterCharms() {
+  let owned = fillCharms(undefined);
+  owned[STARTER_CHARM] = 1;
+  return owned;
+}
+
+/**
  * 부적 하나를 추첨한다. 먼저 등급을 가중치에 따라 정하고, 그 등급의 부적 가운데 하나를 같은 확률로 고른다.
  * 같은 부적이 거듭 나올 수 있으며, 여러 개를 뽑을 때에는 이 함수를 그만큼 따로 부른다. (독립 시행)
  * @param {Function} random 0 이상 1 미만의 난수를 돌려주는 함수
@@ -2179,33 +2311,38 @@ function isValidItemBag(items) {
 
 /**
  * 플레이어의 아이템 수량, 게임 한 판의 사용 기록, 적용 중인 주사위 조작형 아이템이 올바른지 확인한다.
- * 아이템은 사용자만 가질 수 있으므로 인공지능 플레이어는 모두 비어 있어야 한다.
+ * 아이템은 사용자만 가질 수 있으므로 인공지능 플레이어는 모두 비어 있어야 한다. 소모형 아이템을 쓸 수 없는 리그에서는 사용자도 그렇다.
  * @param {Object} player 확인할 플레이어
+ * @param {boolean} bare 아이템을 가지거나 쓴 기록이 없어야 하는 플레이어인지 여부
  * @returns {boolean} 올바르면 true
  */
-function isValidItemState(player) {
+function isValidItemState(player, bare) {
   let used = player.usedItems;
   let loaded = player.loaded;
   if (!isValidItemBag(player.items) || !used || typeof used !== 'object') return false;
   if (loaded !== null && !(typeof loaded === 'string' && Object.hasOwn(ITEMS, loaded) && ITEMS[loaded].effect === 'dice')) return false;
-  if (loaded !== null && (player.ai || !used[ITEMS[loaded].limit])) return false;
-  // 아이템마다 사용 기록의 형식을 확인하고, 인공지능이 아이템을 가졌거나 쓴 기록이 없는지 확인한다.
+  if (loaded !== null && (bare || !used[ITEMS[loaded].limit])) return false;
+  // 아이템마다 사용 기록의 형식을 확인하고, 아이템을 쓸 수 없는 플레이어가 아이템을 가졌거나 쓴 기록이 없는지 확인한다.
   for (let id in ITEMS) {
     if (typeof used[ITEMS[id].limit] !== 'boolean') return false;
-    if (player.ai && (player.items[id] !== 0 || used[ITEMS[id].limit])) return false;
+    if (bare && (player.items[id] !== 0 || used[ITEMS[id].limit])) return false;
   }
   return true;
 }
 
 /**
  * 게임 진행 상태의 플레이어 목록, 턴 순서, 순서를 정한 주사위가 올바른지 확인한다.
+ * 플레이어 수, 소모형 아이템, 인공지능의 부적은 그 리그의 설정에 맞아야 한다. (리그가 올바른지는 먼저 확인되어 있어야 한다.)
  * @param {Object} game 게임 진행 상태
  * @returns {boolean} 올바르면 true
  */
 function isValidPlayers(game) {
+  let league = LEAGUES[game.league];
   let count = game.players.length;
   let alive = 0;
+  let charmed = 0;
   if (count < 2 || count > MAX_PLAYERS || game.order.length !== count || game.rolls.length !== count) return false;
+  if (!(league.weights[count - 2] > 0)) return false;
   // 플레이어마다 번호, 돈, 위치, 상태 값의 형식과 범위를 확인한다.
   for (let id = 0; id < count; id++) {
     let player = game.players[id];
@@ -2213,14 +2350,16 @@ function isValidPlayers(game) {
     if (!player || typeof player !== 'object' || player.id !== id || player.ai !== (id !== 0)) return false;
     if (!isCount(player.cash, Number.MAX_SAFE_INTEGER) || !isCount(player.position, BOARD_SIZE - 1) || !isCount(player.island, ISLAND_TURNS)) return false;
     if (typeof player.alive !== 'boolean' || typeof player.boarded !== 'boolean' || !player.coupons || typeof player.coupons !== 'object') return false;
-    if (!isValidItemState(player) || !isValidLook(player.look)) return false;
-    if (player.charm !== null && (player.ai || !isCharm(player.charm))) return false;
+    if (!isValidItemState(player, player.ai || !league.items) || !isValidLook(player.look)) return false;
+    if (player.charm !== null && !isCharm(player.charm)) return false;
+    if (player.ai && player.charm !== null && !league.rivalCharms.includes(CHARMS[player.charm].grade)) return false;
+    charmed += player.ai && player.charm !== null ? 1 : 0;
     if (!game.order.includes(id) || !Array.isArray(roll) || !isCount(roll[0] - 1, 5) || !isCount(roll[1] - 1, 5)) return false;
     if (id === 0 && typeof player.name !== 'string') return false;
     alive += player.alive ? 1 : 0;
   }
   let current = game.players[game.order[game.turn]];
-  return alive >= 2 && game.players[0].alive && isCount(game.turn, count - 1) && Boolean(current) && current.alive;
+  return charmed <= 1 && alive >= 2 && game.players[0].alive && isCount(game.turn, count - 1) && Boolean(current) && current.alive;
 }
 
 /**
@@ -2534,6 +2673,18 @@ export class HellmarbleHost {
   }
 
   /**
+   * 플레이어가 우대권 또는 무전기를 사용한 것을 연출한다. 비밀쿠폰으로 보관하던 것과 아이템으로 가져온 것 모두 알린다.
+   * @param {Object} player 사용한 플레이어
+   * @param {Object} info 사용한 것 { kind : 'pass' (우대권) 또는 'radio' (무전기), source : 'coupon' (비밀쿠폰) 또는 'item' (아이템) } 과 종류별 값
+   *   (pass : index 면제받은 칸, amount 면제받은 금액, travel 우주여행 이용료인지 여부 / radio : arrival 무인도에 막 도착한 것인지 여부)
+   * @returns {Promise<void>}
+   */
+  async use(player, info) {
+    void player;
+    void info;
+  }
+
+  /**
    * 플레이어가 장착한 부적의 효과가 일어난 것을 연출한다.
    * @param {Object} player 부적을 장착한 플레이어
    * @param {Object} info 일어난 효과 { effect : 효과의 종류, charm : 부적 식별자 } 와 효과별 값
@@ -2560,7 +2711,9 @@ export class HellmarbleHost {
    * 사람 플레이어에게 선택을 요청한다. 기본 구현은 인공지능이 대신 답한다.
    * roll 요청에는 QUIT, FORFEIT 외에 ITEM_PREFIX 뒤에 아이템 식별자를 붙인 값으로 답하여, 굴리기 전에 그 아이템을 쓸 수 있다.
    * @param {Object} player 선택할 플레이어
-   * @param {Object} request 선택할 내용 (type : roll, travel, radio, buy, build, pass, sell, itemPass, itemRadio / roll 의 again 은 더블로 다시 굴리는 것인지 여부)
+   * pass 요청은 { index, amount, travel, coupon, item }, radio 요청은 { arrival, coupon, item } 이며 coupon 과 item 은 비밀쿠폰의 것과 아이템의 것을 각각 쓸 수 있는지이다.
+   * 'coupon' 또는 'item' 으로 답하면 그 우대권이나 무전기를 쓰고, 그 밖의 값은 쓰지 않는다. (true 는 비밀쿠폰의 것을 쓰겠다는 답으로 본다.)
+   * @param {Object} request 선택할 내용 (type : roll, travel, radio, buy, build, pass, sell / roll 의 again 은 더블로 다시 굴리는 것인지 여부)
    * @param {HellmarbleGame} game 진행 중인 게임
    * @returns {Promise<*>} 선택 결과
    */
@@ -2608,8 +2761,6 @@ export class HellmarbleAI {
       case 'sell': return this.chooseSale(player, request);
       case 'pass': return this.wantPass(player, request);
       case 'radio': return this.wantRadio(player);
-      case 'itemPass':
-      case 'itemRadio': return false;
       case 'travel': return this.chooseTravel(player);
       default: return true;
     }
@@ -2694,7 +2845,7 @@ export class HellmarbleAI {
   }
 
   /**
-   * 우대권을 쓸지 결정한다. 월급 이상의 큰 금액이거나 현금으로 낼 수 없을 때 쓴다.
+   * 비밀쿠폰 우대권을 쓸지 결정한다. 월급 이상의 큰 금액이거나 현금으로 낼 수 없을 때 쓴다. (아이템 우대권은 쓰지 않는다.)
    * @param {Object} player 판단할 플레이어
    * @param {Object} request 우대권 요청 { index, amount }
    * @returns {boolean} 사용 여부
@@ -2704,7 +2855,7 @@ export class HellmarbleAI {
   }
 
   /**
-   * 무전기를 쓸지 결정한다. 보드가 아직 위험하지 않을 때에만 써서 탈출한다.
+   * 비밀쿠폰 무전기를 쓸지 결정한다. 보드가 아직 위험하지 않을 때에만 써서 탈출한다. (아이템 무전기는 쓰지 않는다.)
    * @param {Object} player 판단할 플레이어
    * @returns {boolean} 사용 여부
    */
@@ -2788,13 +2939,14 @@ export class HellmarbleGame {
   /**
    * 새 게임의 진행 상태를 만든다. 플레이어 구성, 턴 순서, 비밀쿠폰 덱을 정한다.
    * 사용자는 장착한 색상과 모양을 쓰고, 인공지능 플레이어는 그와 겹치지 않는 기본 색상과 모양을 쓴다.
+   * 시작하는 돈과 인공지능의 수, 소모형 아이템을 가져갈 수 있는지, 인공지능 한 명이 부적을 장착하는지는 리그의 설정(LEAGUES)을 따른다.
    * @param {Object} options 설정 { league : 리그 식별자, name : 사용자 이름, items : 사용자가 가져갈 아이템 주머니(선택), look : 사용자가 장착한 색상과 모양(선택, 생략 시 기본 장착), charm : 사용자가 장착한 부적(선택), seed : 난수 씨앗(선택), rivals : 인공지능 수(선택) }
    * @returns {Object} 새 게임의 진행 상태
    */
   static create(options) {
     let league = LEAGUES[options.league];
     let seed = options.seed === undefined ? Math.floor(Math.random() * 4294967296) : options.seed;
-    let humanItems = fillItems(options.items) || emptyItems();
+    let humanItems = (league.items && fillItems(options.items)) || emptyItems();
     let look = isValidLook(options.look) ? { color: options.look.color, shape: options.look.shape } : { ...DEFAULT_LOOK };
     let looks = [look, ...rivalLooks(look, MAX_PLAYERS - 1)];
     let state = {
@@ -2803,11 +2955,12 @@ export class HellmarbleGame {
       dice: [1, 1], logs: [], finished: false, winner: null,
     };
     let game = new HellmarbleGame(state);
-    let rivals = options.rivals || game.pickWeighted(league.weights) + 1;
+    let rivals = league.weights[options.rivals - 1] > 0 ? options.rivals : game.pickWeighted(league.weights) + 1;
+    let pool = [];
     // 사용자(0번)와 인공지능 플레이어를 만들고 턴 순서를 정할 주사위를 굴린다.
     for (let id = 0; id <= rivals; id++) {
       state.players.push({
-        id, name: id === 0 ? options.name : null, ai: id !== 0, cash: START_CASH * league.multiplier, position: TILES.start,
+        id, name: id === 0 ? options.name : null, ai: id !== 0, cash: league.cash, position: TILES.start,
         alive: true, island: 0, boarded: false, coupons: { pass: 0, radio: 0 },
         items: id === 0 ? humanItems : emptyItems(), usedItems: freshUsage(), loaded: null, look: looks[id], charm: id === 0 && isCharm(options.charm) ? options.charm : null,
         caution: id === 0 ? 1 : 0.7 + game.random() * 0.6,
@@ -2833,6 +2986,11 @@ export class HellmarbleGame {
       for (let count = 0; count < COUPONS[id].count; count++) state.deck.push(id);
     }
     game.shuffle(state.deck);
+    // 인공지능이 장착할 수 있는 등급의 부적을 모은다. (그런 등급을 정해 두지 않은 리그에서는 하나도 모이지 않는다.)
+    for (let id in CHARMS) {
+      if (league.rivalCharms.includes(CHARMS[id].grade)) pool.push(id);
+    }
+    if (pool.length > 0) state.players[1 + Math.floor(game.random() * rivals)].charm = pool[Math.floor(game.random() * pool.length)];
     game.log('log.order', { order: state.order.slice() });
     return state;
   }
@@ -3008,7 +3166,7 @@ export class HellmarbleGame {
   /**
    * 플레이어가 장착한 부적이 지정한 효과의 것이면 그 부적의 정보를 돌려준다.
    * @param {Object} player 플레이어
-   * @param {string} effect 효과의 종류 ('double', 'discount', 'redraw', 'build')
+   * @param {string} effect 효과의 종류 ('double', 'discount', 'toll', 'redraw', 'build')
    * @returns {Object|null} 부적의 정보. 그 효과의 부적을 장착하지 않았으면 null
    */
   charmOf(player, effect) {
@@ -3055,6 +3213,23 @@ export class HellmarbleGame {
     if (!charm || !this.luck(charm.chance)) return price;
     let paid = price - Math.floor((price * charm.percent) / 100);
     await this.charmed(player, 'log.charmDiscount', { effect: 'discount', tile: index, index, percent: charm.percent, price, paid });
+    return paid;
+  }
+
+  /**
+   * 다른 플레이어에게 통행료·이용료로 실제로 낼 금액을 정한다. 통행료 할인 부적을 장착했으면 그 확률로 금액을 깎아 준다.
+   * 낼 돈이 모자라 땅을 매각해야 하는지는 깎인 금액으로 따지므로, 이 함수는 지불하기 전에(우대권 사용 여부를 묻기 전에) 부른다.
+   * 땅 구매와 건물 건설, 사회복지기금, 은행에 내는 돈에는 쓰지 않는다.
+   * @param {Object} player 지불하는 플레이어
+   * @param {number} index 돈을 낼 칸 번호
+   * @param {number} amount 할인 전 금액 (원)
+   * @returns {Promise<number>} 실제로 낼 금액 (원)
+   */
+  async tollCut(player, index, amount) {
+    let charm = this.charmOf(player, 'toll');
+    if (!charm || amount <= 0 || !this.luck(charm.chance)) return amount;
+    let paid = amount - Math.floor((amount * charm.percent) / 100);
+    await this.charmed(player, 'log.charmToll', { effect: 'toll', tile: index, index, percent: charm.percent, price: amount, paid });
     return paid;
   }
 
@@ -3338,7 +3513,67 @@ export class HellmarbleGame {
   }
 
   /**
-   * 다른 플레이어의 땅에 대한 통행료·이용료를 지불한다. 우대권이 있으면 먼저 사용 여부를 확인한다.
+   * 내야 할 통행료·이용료를 우대권으로 면제받을지 한 번에 묻는다.
+   * 비밀쿠폰 우대권과 아이템 우대권을 모두 쓸 수 있으면 한 요청에서 둘 중 하나를 고르게 하고, 쓸 수 있는 것이 없으면 묻지 않는다.
+   * 비밀쿠폰 우대권은 우주여행 이용료에는 쓸 수 없다.
+   * @param {Object} player 지불하는 플레이어
+   * @param {number} index 돈을 낼 칸 번호
+   * @param {number} amount 내야 할 금액 (원)
+   * @param {boolean} travel 우주여행 이용료인지 여부
+   * @returns {Promise<string|null>} 쓰기로 한 우대권 ('coupon' 은 비밀쿠폰, 'item' 은 아이템), 쓰지 않으면 null
+   */
+  async choosePass(player, index, amount, travel) {
+    let coupon = !travel && player.coupons.pass > 0;
+    let item = this.canUseItem(player, 'pass');
+    if (!coupon && !item) return null;
+    return this.sourceOf(await this.decide(player, { type: 'pass', index, amount, travel, coupon, item }), coupon, item);
+  }
+
+  /**
+   * 우대권 또는 무전기 요청의 답을, 실제로 쓸 수 있는 것으로 가린다.
+   * true 는 비밀쿠폰의 것을 쓰겠다는 답으로 본다. (예 / 아니오로 답하는 호스트와 인공지능을 위한 것이다.)
+   * @param {*} answer 요청에 대한 답
+   * @param {boolean} coupon 비밀쿠폰의 것을 쓸 수 있는지 여부
+   * @param {boolean} item 아이템의 것을 쓸 수 있는지 여부
+   * @returns {string|null} 'coupon', 'item', 쓰지 않으면 null
+   */
+  sourceOf(answer, coupon, item) {
+    if ((answer === true || answer === 'coupon') && coupon) return 'coupon';
+    if (answer === 'item' && item) return 'item';
+    return null;
+  }
+
+  /**
+   * 무인도에서 무전기로 탈출할지 한 번에 묻고, 쓰기로 한 무전기를 소모하여 갇힘을 푼다.
+   * 비밀쿠폰 무전기와 아이템 무전기를 모두 쓸 수 있으면 한 요청에서 둘 중 하나를 고르게 하고, 쓸 수 있는 것이 없으면 묻지 않는다.
+   * 무인도에 막 도착했을 때에는 아이템 무전기만 쓸 수 있다. (비밀쿠폰 무전기는 갇힌 뒤 주사위를 굴리기 전에 쓴다.)
+   * @param {Object} player 무인도에 있는 플레이어
+   * @param {boolean} arrival 무인도에 막 도착한 것인지 여부
+   * @returns {Promise<void>}
+   */
+  async useRadio(player, arrival) {
+    let coupon = !arrival && player.coupons.radio > 0;
+    let item = this.canUseItem(player, 'radio');
+    if (!coupon && !item) return;
+    let choice = this.sourceOf(await this.decide(player, { type: 'radio', arrival, coupon, item }), coupon, item);
+    if (choice === 'coupon') {
+      player.coupons.radio--;
+      this.state.deck.push('radio');
+      player.island = 0;
+      await this.call('use', player, { kind: 'radio', source: 'coupon', arrival });
+      this.log('log.radio', { player: player.id });
+    }
+    if (choice === 'item') {
+      this.consumeItem(player, 'radio');
+      player.island = 0;
+      await this.call('use', player, { kind: 'radio', source: 'item', arrival });
+      this.log('log.itemRadio', { player: player.id });
+    }
+  }
+
+  /**
+   * 다른 플레이어의 땅에 대한 통행료·이용료를 지불한다. 우대권(비밀쿠폰, 아이템)이 있으면 먼저 사용 여부를 한 번에 확인한다.
+   * 통행료 할인 부적의 효과는 그보다 먼저 따져서, 우대권을 쓸지 물을 때와 돈이 모자라 땅을 매각할 때 모두 깎인 금액을 기준으로 한다.
    * @param {Object} player 지불하는 플레이어
    * @param {number} index 통행료를 낼 땅의 칸 번호
    * @returns {Promise<boolean>} 파산하지 않았으면 true
@@ -3350,16 +3585,20 @@ export class HellmarbleGame {
       this.log('log.exempt', { player: player.id, tile: index, amount });
       return true;
     }
-    if (player.coupons.pass > 0 && (await this.decide(player, { type: 'pass', index, amount }))) {
+    amount = await this.tollCut(player, index, amount);
+    let choice = await this.choosePass(player, index, amount, false);
+    if (choice === 'coupon') {
       player.coupons.pass--;
       this.state.deck.push('pass');
       this.exempt = true;
+      await this.call('use', player, { kind: 'pass', source: 'coupon', index, amount, travel: false });
       this.log('log.pass', { player: player.id, tile: index, amount });
       return true;
     }
-    if (this.canUseItem(player, 'pass') && (await this.decide(player, { type: 'itemPass', index, amount, travel: false }))) {
+    if (choice === 'item') {
       this.consumeItem(player, 'pass');
       this.exempt = true;
+      await this.call('use', player, { kind: 'pass', source: 'item', index, amount, travel: false });
       this.log('log.itemPass', { player: player.id, tile: index, amount });
       return true;
     }
@@ -3471,11 +3710,7 @@ export class HellmarbleGame {
       case 'island':
         player.island = ISLAND_TURNS;
         this.log('log.island', { player: player.id });
-        if (this.canUseItem(player, 'radio') && (await this.decide(player, { type: 'itemRadio' }))) {
-          this.consumeItem(player, 'radio');
-          player.island = 0;
-          this.log('log.itemRadio', { player: player.id });
-        }
+        await this.useRadio(player, true);
         break;
       case 'fund':
         await this.collectFund(player);
@@ -3533,9 +3768,10 @@ export class HellmarbleGame {
   async arriveSpace(player) {
     let owner = this.state.lands[TILES.columbia].owner;
     if (owner !== null && owner !== player.id) {
-      let amount = this.money(SPACE_FEE);
-      if (this.canUseItem(player, 'pass') && (await this.decide(player, { type: 'itemPass', index: TILES.space, amount, travel: true }))) {
+      let amount = await this.tollCut(player, TILES.space, this.money(SPACE_FEE));
+      if ((await this.choosePass(player, TILES.space, amount, true)) === 'item') {
         this.consumeItem(player, 'pass');
+        await this.call('use', player, { kind: 'pass', source: 'item', index: TILES.space, amount, travel: true });
         this.log('log.itemPass', { player: player.id, tile: TILES.space, amount });
         this.board(player);
         return;
@@ -3706,23 +3942,13 @@ export class HellmarbleGame {
 
   /**
    * 무인도에 갇힌 플레이어가 주사위를 굴리기 전에 풀려나는 경우를 처리한다.
-   * 무전기가 있으면 사용 여부를 확인하여 즉시 탈출시키고, 3턴 째이면 갇힘을 푼다.
+   * 무전기(비밀쿠폰, 아이템)가 있으면 사용 여부를 한 번에 확인하여 즉시 탈출시키고, 3턴 째이면 갇힘을 푼다.
    * 이렇게 먼저 풀려난 뒤에 굴리는 주사위는 일반 주사위와 같다.
    * @param {Object} player 플레이어
    * @returns {Promise<void>}
    */
   async release(player) {
-    if (player.island > 1 && player.coupons.radio > 0 && (await this.decide(player, { type: 'radio' }))) {
-      player.coupons.radio--;
-      this.state.deck.push('radio');
-      player.island = 0;
-      this.log('log.radio', { player: player.id });
-    }
-    if (player.island > 1 && this.canUseItem(player, 'radio') && (await this.decide(player, { type: 'itemRadio' }))) {
-      this.consumeItem(player, 'radio');
-      player.island = 0;
-      this.log('log.itemRadio', { player: player.id });
-    }
+    if (player.island > 1) await this.useRadio(player, false);
     if (player.island === 1) {
       player.island = 0;
       this.log('log.islandFree', { player: player.id });
@@ -3929,12 +4155,15 @@ export class HellmarbleApp extends HellmarbleHost {
     this.parts = {};
     this.moving = -1;
     this.rolling = false;
+    this.flight = false;
     this.again = false;
     this.intro = false;
     this.cards = [];
     this.cardOrder = '';
     this.lots = [];
     this.lotState = [];
+    this.lotPairs = [];
+    this.lotsMoved = false;
     this.couponGate = null;
     this.request = null;
     this.itemView = null;
@@ -4339,6 +4568,7 @@ export class HellmarbleApp extends HellmarbleHost {
   /**
    * 슬롯을 선택했을 때의 처리를 한다.
    * 불러오기에서는 선택지를 제공하고, 새 게임에서는 덮어쓰기를 확인한 뒤 이름 입력으로 넘어간다.
+   * 덮어쓰기 확인 창에서는 덮어쓰기 / 불러오기 / 취소 가운데 고르며, 불러오기를 고르면 덮어쓰지 않고 그 슬롯을 불러온다.
    * @param {number} index 슬롯 순번 (0부터)
    * @returns {Promise<void>}
    */
@@ -4349,14 +4579,38 @@ export class HellmarbleApp extends HellmarbleHost {
       await this.chooseLoad(index, saved);
       return;
     }
-    if (saved && !(await this.confirm(this.t('slot.overwriteTitle'), this.t('slot.overwrite', { n: index + 1 })))) return;
+    if (saved) {
+      let answer = await this.dialog({
+        title: this.t('slot.overwriteTitle'), text: this.t('slot.overwrite', { n: index + 1 }),
+        buttons: [{ label: this.t('slot.overwriteYes'), value: 'yes', primary: true }, { label: this.t('load.load'), value: 'load' }, { label: this.t('load.cancel'), value: 'no' }],
+      });
+      if (this.screen !== 'slots') return;
+      if (answer === 'load') {
+        this.loadSlot(index, saved);
+        return;
+      }
+      if (answer !== 'yes') return;
+    }
     if (this.screen === 'slots') this.showName(index);
   }
 
   /**
+   * 슬롯의 저장 데이터를 불러와, 진행 중인 게임이 있으면 게임 화면으로, 없으면 대기실로 들어간다.
+   * @param {number} index 슬롯 순번 (0부터)
+   * @param {Object} saved 슬롯에 저장된 데이터
+   */
+  loadSlot(index, saved) {
+    this.slotIndex = index;
+    this.slot = saved;
+    if (saved.game) this.showGame(false);
+    else this.showLobby();
+  }
+
+  /**
    * 불러오기 화면에서 슬롯을 눌렀을 때의 선택지를 제공한다.
-   * 데이터가 있는 슬롯은 불러오기 / 삭제 / 취소, 빈 슬롯은 JSON 불러오기 / 취소 가운데 고른다.
+   * 데이터가 있는 슬롯은 불러오기 / JSON 복사 / 삭제 / 취소, 빈 슬롯은 JSON 불러오기 / 취소 가운데 고른다.
    * 취소하면 불러오기 화면에 그대로 남고, 삭제는 한 번 더 확인받은 뒤 슬롯을 비운다.
+   * JSON 복사는 대기실의 JSON 내보내기와 같이 저장 데이터를 클립보드에 넣고 불러오기 화면에 남는다.
    * @param {number} index 슬롯 순번 (0부터)
    * @param {Object|null} saved 슬롯에 저장된 데이터 (빈 슬롯이면 null)
    * @returns {Promise<void>}
@@ -4371,14 +4625,15 @@ export class HellmarbleApp extends HellmarbleHost {
     let state = saved.game ? this.t('slot.playing', { league: this.t('league.' + saved.game.league) }) : this.t('slot.lobby');
     let answer = await this.dialog({
       title, text: this.t('load.summary', { name: saved.name, money: this.money(saved.money), state }),
-      buttons: [{ label: this.t('load.load'), value: 'load', primary: true }, { label: this.t('load.delete'), value: 'delete' }, { label: this.t('load.cancel'), value: 'cancel' }],
+      buttons: [{ label: this.t('load.load'), value: 'load', primary: true }, { label: this.t('load.copy'), value: 'copy' }, { label: this.t('load.delete'), value: 'delete' }, { label: this.t('load.cancel'), value: 'cancel' }],
     });
     if (this.screen !== 'slots') return;
     if (answer === 'load') {
-      this.slotIndex = index;
-      this.slot = saved;
-      if (saved.game) this.showGame(false);
-      else this.showLobby();
+      this.loadSlot(index, saved);
+      return;
+    }
+    if (answer === 'copy') {
+      await this.exportSlot(saved);
       return;
     }
     if (answer !== 'delete' || !(await this.confirm(this.t('load.deleteTitle'), this.t('load.deleteText', { n: index + 1 }), this.t('load.delete'), this.t('load.cancel')))) return;
@@ -4424,15 +4679,19 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 현재 슬롯의 저장 데이터를 JSON 텍스트로 바꿔 클립보드에 복사한다.
+   * 슬롯의 저장 데이터를 JSON 텍스트로 바꿔 클립보드에 복사한다.
+   * 대기실에서는 현재 슬롯을, 불러오기 화면에서는 고른 슬롯을 복사한다.
    * 복사할 수 없는 브라우저에서는 직접 복사할 수 있도록 내용을 창에 보여준다.
+   * @param {Object} [saved] 복사할 저장 데이터 (주지 않으면 현재 슬롯)
    * @returns {Promise<void>}
    */
-  async exportSlot() {
-    if (this.screen !== 'lobby' || !this.slot) return;
-    let text = JSON.stringify(this.slot, null, 2);
+  async exportSlot(saved) {
+    let data = saved || this.slot;
+    let screen = this.screen;
+    if ((screen !== 'lobby' && screen !== 'slots') || !data) return;
+    let text = JSON.stringify(data, null, 2);
     let copied = await copyText(text);
-    if (this.screen !== 'lobby') return;
+    if (this.screen !== screen) return;
     let area = el('textarea', { class: 'hm-input hm-textarea', attrs: { rows: 9, readonly: '', spellcheck: 'false', 'aria-label': this.t('export.title') } });
     area.value = text;
     await this.dialog({
@@ -4463,20 +4722,22 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 입력한 이름으로 새 슬롯 데이터를 만들어 저장하고 대기실로 이동한다.
-   * 새 슬롯은 기본 색상 5종과 기본 모양 4종을 가지며, 빨강과 별을 장착한 채로 시작한다. 부적은 가지고 있지 않다.
+   * 새 슬롯은 기본 색상 5종과 기본 모양 4종을 가지며, 빨강과 별을 장착한 채로 시작한다.
+   * 부적은 낡은 동전 하나를 가지고 장착한 채로 시작한다.
    */
   submitName() {
     if (this.screen !== 'name') return;
     let input = this.root.querySelector('.hm-input');
     let name = (input ? input.value : '').trim().slice(0, NAME_LIMIT) || this.t('name.default');
     this.slotIndex = this.pendingSlot;
-    this.slot = { name, money: LOBBY_MONEY, items: emptyItems(), equips: starterEquips(), charms: fillCharms(undefined), equipped: { ...DEFAULT_LOOK, charm: null }, game: null, updated: 0 };
+    this.slot = { name, money: LOBBY_MONEY, items: emptyItems(), equips: starterEquips(), charms: starterCharms(), equipped: { ...DEFAULT_LOOK, charm: STARTER_CHARM }, game: null, updated: 0 };
     this.saveSlot();
     this.showLobby();
   }
 
   /**
-   * 대기실을 보여준다. 보유 금액, 장착한 색상과 모양(내 말), 보유 아이템 수, 세 가지 리그, 상점과 아이템 확인, 메인 메뉴 버튼이 있다.
+   * 대기실을 보여준다. 보유 금액, 장착한 색상과 모양(내 말), 보유 아이템 수, 리그 목록, 상점과 아이템 확인, 메인 메뉴 버튼이 있다.
+   * 리그는 보유 금액으로 참여할 수 있는 것만 보여준다. (White 리그는 보유 금액이 적을 때에만 나타난다.)
    */
   showLobby() {
     this.leaveGame();
@@ -4484,8 +4745,14 @@ export class HellmarbleApp extends HellmarbleHost {
     let totals = this.itemTotals('lobby');
     let look = this.slot.equipped;
     let cards = [];
-    // 리그마다 참여 카드를 만든다.
-    for (let id in LEAGUES) cards.push(this.buildLeagueCard(id));
+    let notes = [el('p', { class: 'hm-note', text: this.t('lobby.note') })];
+    // 지금 보유 금액으로 보이는 리그마다 참여 카드를 만들고, 승리 보상이 정해진 리그는 안내를 덧붙인다.
+    for (let id in LEAGUES) {
+      if (!this.leagueOpen(id)) continue;
+      let league = LEAGUES[id];
+      cards.push(this.buildLeagueCard(id));
+      if (league.reward !== null && league.hideFrom !== null) notes.push(el('p', { class: 'hm-note hm-league-note', text: this.t('lobby.whiteNote', { league: this.t('league.' + id), limit: this.money(league.hideFrom), cash: this.money(league.cash), reward: this.money(league.reward) }) }));
+    }
     this.mount(el('div', { class: 'hm-page' }, [
       el('div', { class: 'hm-card hm-lobby' }, [
         el('h1', { class: 'hm-heading', text: this.t('lobby.title') }),
@@ -4498,8 +4765,8 @@ export class HellmarbleApp extends HellmarbleHost {
           el('p', { class: 'hm-look' + (look.color && look.shape ? '' : ' hm-look-missing') }, [this.buildLookToken(look), el('span', { class: 'hm-look-text', text: this.t('lobby.look') + ' : ' + this.lookText(look) })]),
           el('p', { class: 'hm-item-total', text: '🎒 ' + this.t('item.owned') + ' : ' + (totals.count > 0 ? this.t('item.total', totals) : this.t('item.none')) }),
         ]),
-        el('div', { class: 'hm-leagues' }, cards),
-        el('p', { class: 'hm-note', text: this.t('lobby.note') }),
+        el('div', { class: 'hm-leagues', style: { '--hm-league-count': cards.length } }, cards),
+        ...notes,
         el('div', { class: 'hm-lobby-buttons' }, [
           button(this.t('lobby.shop'), 'lobby.shop'),
           button(this.t('lobby.items'), 'lobby.items'),
@@ -4531,16 +4798,30 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 리그 하나의 참여 카드를 만든다.
+   * 리그가 지금 대기실의 리그 목록에 보이고 참여할 수 있는지 확인한다.
+   * 보유 금액의 기준(hideFrom)이 있는 리그는 보유 금액이 그보다 적을 때에만 보인다.
+   * @param {string} id 리그 식별자
+   * @returns {boolean} 보이면 true
+   */
+  leagueOpen(id) {
+    let league = LEAGUES[id];
+    return Boolean(league) && Boolean(this.slot) && (league.hideFrom === null || this.slot.money < league.hideFrom);
+  }
+
+  /**
+   * 리그 하나의 참여 카드를 만든다. 참가비, 금액 배율, 인공지능의 수를 보여주고,
+   * 시작 자금이 참가비와 다르거나 승리 보상이 정해진 리그는 그것도 함께 보여준다.
    * @param {string} id 리그 식별자
    * @returns {HTMLElement} 리그 카드
    */
   buildLeagueCard(id) {
     let league = LEAGUES[id];
-    return el('div', { class: 'hm-league', style: { '--hm-league': league.color } }, [
+    return el('div', { class: 'hm-league', style: { '--hm-league': league.color }, data: { league: id } }, [
       el('h2', { class: 'hm-league-name', text: this.t('league.' + id) }),
-      this.infoRow(this.t('lobby.fee'), this.figure(START_CASH * league.multiplier)),
+      this.infoRow(this.t('lobby.fee'), league.fee > 0 ? this.figure(league.fee) : this.t('lobby.free')),
+      league.cash !== league.fee ? this.infoRow(this.t('lobby.cash'), this.figure(league.cash)) : null,
       this.infoRow(this.t('lobby.multiplier'), this.t('lobby.times', { n: league.multiplier })),
+      league.reward !== null ? this.infoRow(this.t('lobby.reward'), this.figure(league.reward)) : null,
       el('p', { class: 'hm-league-rivals', text: this.t('league.' + id + '.rivals') }),
       button(this.t('lobby.join'), 'lobby.join', id, 'hm-primary hm-wide'),
     ]);
@@ -4550,12 +4831,14 @@ export class HellmarbleApp extends HellmarbleHost {
    * 리그 참여를 처리한다. 색상과 모양을 하나씩 장착했는지, 돈이 충분한지 확인하고, 한 번 더 확인받은 뒤 참가비를 차감하고 게임을 시작한다.
    * 장착한 색상과 모양이 게임에서 사용자의 생김새가 되고, 부적을 장착했으면 그 효과가 게임 내내 적용된다.
    * 대기실의 소모형 아이템은 모두 게임으로 옮겨지며, 게임이 끝나면 쓰지 않고 남은 것이 돌아온다. (`finishGame`)
+   * 소모형 아이템을 쓸 수 없는 리그에서는 아이템을 옮기지 않고 대기실에 그대로 둔다. 참가비가 없는 리그는 돈을 차감하지 않는다.
    * @param {string} id 리그 식별자
    * @returns {Promise<void>}
    */
   async joinLeague(id) {
-    if (this.screen !== 'lobby' || !LEAGUES[id]) return;
-    let fee = START_CASH * LEAGUES[id].multiplier;
+    if (this.screen !== 'lobby' || !this.leagueOpen(id)) return;
+    let league = LEAGUES[id];
+    let fee = league.fee;
     let params = { league: this.t('league.' + id), fee: this.money(fee), money: this.money(this.slot.money) };
     if (!this.slot.equipped.color || !this.slot.equipped.shape) {
       await this.dialog({ title: this.t('lobby.shortTitle'), text: this.t('lobby.needLook'), buttons: [{ label: this.t('common.ok'), value: 'ok', primary: true }] });
@@ -4565,11 +4848,12 @@ export class HellmarbleApp extends HellmarbleHost {
       await this.dialog({ title: this.t('lobby.shortTitle'), text: this.t('lobby.short', params), buttons: [{ label: this.t('common.ok'), value: 'ok', primary: true }] });
       return;
     }
-    if (!(await this.confirm(this.t('lobby.confirmTitle'), this.t('lobby.confirm', params)))) return;
-    if (this.screen !== 'lobby') return;
+    let question = this.t(fee > 0 ? 'lobby.confirm' : 'lobby.confirmFree', params) + (league.items ? '' : '\n' + this.t('lobby.noItems'));
+    if (!(await this.confirm(this.t('lobby.confirmTitle'), question))) return;
+    if (this.screen !== 'lobby' || !this.leagueOpen(id)) return;
     this.slot.money -= fee;
     this.slot.game = HellmarbleGame.create({ league: id, name: this.slot.name, items: this.slot.items, look: this.slot.equipped, charm: this.slot.equipped.charm });
-    this.slot.items = emptyItems();
+    if (league.items) this.slot.items = emptyItems();
     this.saveSlot();
     this.showGame(true);
   }
@@ -4703,16 +4987,16 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 아이템 창이 다루는 아이템의 식별자 목록을 구한다. 소모형 아이템, 색상과 모양, 부적 추첨권, 부적의 순서로 나열한다.
-   * 게임 중에는 소모형 아이템만 다룬다. (게임 중에는 생김새와 부적을 바꿀 수 없다.)
+   * 게임 중에는 소모형 아이템과 부적만 다룬다. 부적은 자세한 설명을 보여줄 뿐이며, 게임 중에는 생김새와 부적을 바꿀 수 없다.
    * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
    * @returns {string[]} 아이템 식별자 목록
    */
   itemIds(source) {
-    return source === 'game' ? Object.keys(ITEMS) : [...Object.keys(ITEMS), ...Object.keys(EQUIPS), ...Object.keys(CHARM_TICKETS), ...Object.keys(CHARMS)];
+    return source === 'game' ? [...Object.keys(ITEMS), ...Object.keys(CHARMS)] : [...Object.keys(ITEMS), ...Object.keys(EQUIPS), ...Object.keys(CHARM_TICKETS), ...Object.keys(CHARMS)];
   }
 
   /**
-   * 아이템을 몇 개 가지고 있는지 구한다. 게임 중에는 게임에 가져간 것을, 대기실에서는 슬롯에 보관한 것을 센다.
+   * 아이템을 몇 개 가지고 있는지 구한다. 게임 중에는 게임에 가져간 것을, 대기실에서는 슬롯에 보관한 것을 센다. 부적은 게임에 가져가지 않으므로 언제나 슬롯에 보관한 것을 센다.
    * 색상과 모양은 가지고 있으면 1 이고, 부적 추첨권은 사는 즉시 쓰이므로 언제나 0 이다.
    * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
    * @param {string} id 아이템 식별자
@@ -4720,7 +5004,7 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   itemStock(source, id) {
     switch (this.itemKind(id)) {
-      case 'charm': return source === 'game' ? 0 : this.slot.charms[id];
+      case 'charm': return this.slot.charms[id];
       case 'ticket': return 0;
       case 'look': return source === 'game' ? 0 : this.slot.equips[id];
       default: return source === 'game' ? this.game.state.players[0].items[id] : this.slot.items[id];
@@ -4728,7 +5012,7 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 가진 아이템의 종류 수와 전체 개수를 센다. 대기실에서는 색상과 모양, 부적도 함께 센다.
+   * 가진 아이템의 종류 수와 전체 개수를 센다. 부적도 함께 세며, 대기실에서는 색상과 모양도 센다.
    * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
    * @returns {{kinds: number, count: number}} 가진 아이템의 종류 수와 전체 개수
    */
@@ -4771,12 +5055,13 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 아이템을 지금 장착하고 있는지 확인한다. 부적의 장착 여부는 아이템 확인 창에서만 알려준다.
+   * 게임 중에는 이번 게임에 적용되는 부적(참여할 때 장착하고 있던 것)을 장착한 것으로 본다.
    * @param {string} source 창의 종류 ('shop', 'lobby', 'game')
    * @param {string} id 아이템 식별자
    * @returns {boolean} 장착하고 있으면 true
    */
   itemWorn(source, id) {
-    if (source === 'game') return false;
+    if (source === 'game') return isCharm(id) && this.game.state.players[0].charm === id;
     if (isEquip(id)) return this.slot.equipped[EQUIPS[id].slot] === id;
     return isCharm(id) && source === 'lobby' && this.slot.equipped.charm === id;
   }
@@ -5049,7 +5334,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let chips = [];
     let tabs = [];
     let wallet = [];
-    // 이 창이 다루는 아이템의 분류마다 아이템의 수를 0부터 센다. (게임 중에는 색상, 모양, 부적 분류가 없다.)
+    // 이 창이 다루는 아이템의 분류마다 아이템의 수를 0부터 센다. (게임 중에는 색상과 모양 분류가 없다.)
     for (let id of this.itemIds(view.source)) counts[this.itemCategory(id)] = 0;
     // 이 탭의 아이템을 분류별로 세고, 고른 분류에 속한 것은 카드로 만든다.
     for (let id of all) {
@@ -5079,7 +5364,7 @@ export class HellmarbleApp extends HellmarbleHost {
         el('div', { class: 'hm-items-stats' }, wallet),
         cross,
       ]),
-      el('p', { class: 'hm-modal-text hm-items-hint', text: shop ? this.t('store.hint', { n: ITEM_SELL_PERCENT }) : this.t('item.hint.' + view.source) }),
+      el('p', { class: 'hm-modal-text hm-items-hint', text: shop ? this.t('store.hint', { n: ITEM_SELL_PERCENT }) : this.itemHint(view.source) }),
       el('div', { class: 'hm-items-bar' }, [tabs.length > 0 ? el('div', { class: 'hm-tabs' }, tabs) : null, el('div', { class: 'hm-chips' }, chips)]),
       el('div', { class: 'hm-item-grid' }, cards.length > 0 ? cards : [el('p', { class: 'hm-item-empty', text: this.t(empty) })]),
       el('div', { class: 'hm-items-foot' }, [
@@ -5188,7 +5473,7 @@ export class HellmarbleApp extends HellmarbleHost {
     if (view.source === 'shop' && kind === 'charm') rows.push(this.infoRow(this.t('charm.info.sell'), this.figure(this.itemResale(id))));
     if (kind === 'look') rows.push(this.infoRow(this.t('equip.info.owned'), this.t(owned > 0 ? 'equip.owned' : 'equip.missing')));
     if (kind === 'item' || kind === 'charm') rows.push(this.infoRow(this.t('item.count'), this.t('common.count', { n: owned })));
-    if (kind === 'look' || (kind === 'charm' && view.source === 'lobby')) rows.push(this.infoRow(this.t('equip.info.state'), this.t(worn ? 'equip.on' : 'equip.off'), worn));
+    if (kind === 'look' || (kind === 'charm' && view.source !== 'shop')) rows.push(this.infoRow(this.t('equip.info.state'), this.t(worn ? 'equip.on' : 'equip.off'), worn));
     return rows;
   }
 
@@ -5227,12 +5512,13 @@ export class HellmarbleApp extends HellmarbleHost {
       buttons.push(wear);
     }
     if (kind === 'charm' && view.source === 'lobby') buttons.push(button(this.t(worn ? 'charm.unequip' : 'equip.equip'), worn ? 'items.unequip' : 'items.equip', undefined, worn ? '' : 'hm-primary'));
-    if (game) {
+    if (game && kind === 'charm') reason = this.t('charm.gameOnly');
+    if (game && kind === 'item') {
       let spent = this.game.state.players[0].usedItems[ITEMS[id].limit];
       reason = this.itemBlock(id);
       rows.push(this.infoRow(this.t('item.info.state'), this.t(spent ? 'item.state.spent' : 'item.state.ready'), true));
     }
-    if (game && ITEMS[id].use === 'turn') {
+    if (game && kind === 'item' && ITEMS[id].use === 'turn') {
       let use = button(this.t('item.use'), 'items.use', undefined, 'hm-primary');
       use.disabled = reason !== '';
       buttons.push(use);
@@ -5310,6 +5596,7 @@ export class HellmarbleApp extends HellmarbleHost {
     this.leaveGame();
     this.screen = 'game';
     this.intro = Boolean(intro);
+    this.flight = false;
     this.cards = [];
     this.cardOrder = '';
     this.game = new HellmarbleGame(this.slot.game, this);
@@ -5328,6 +5615,8 @@ export class HellmarbleApp extends HellmarbleHost {
       this.lots.push(BOARD[index].type === 'city' ? this.buildLot(index) : null);
       if (this.lots[index]) board.append(this.lots[index]);
     }
+    this.lotPairs = this.pairLots();
+    this.lotsMoved = true;
     this.mount(el('div', { class: 'hm-game' }, [el('div', { class: 'hm-board-wrap' }, [board]), this.buildSide()]));
     this.refresh();
     this.runGame(intro);
@@ -5335,22 +5624,153 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 도시 한 칸의 건물이 세워질 터를 만든다.
-   * 터는 칸에서 보드 중앙 쪽으로 바로 붙은 격자 자리에 놓이며, 건물은 그 위에 똑바로 서 있는 모습으로 그려진다.
-   * 모서리 옆의 옆줄 칸(위에서 둘째 줄, 아래에서 둘째 줄)은 윗줄, 아랫줄 칸의 터와 같은 자리를 쓰므로 위아래로 비켜 놓는다.
+   * 터는 칸에서 보드 중앙 쪽으로 바로 붙은 격자 자리에 놓이며, 건물은 칸에 바닥을 대고 보드 중앙을 바라보며 서 있는 모습으로 그려진다.
+   * (아랫줄은 똑바로, 왼쪽 줄은 오른쪽으로 누워서, 윗줄은 뒤집혀서, 오른쪽 줄은 왼쪽으로 누워서 선다. 돌리는 것은 CSS 의 .hm-lot-<면> 이 한다.)
+   * 터는 그 칸의 가운데에 놓인다. 모서리 옆에서 같은 자리를 쓰는 두 터가 겹치게 되면 fitLots 가 자리와 별장의 크기를 맞춘다.
    * @param {number} index 칸 번호
    * @returns {HTMLElement} 건물 터 요소
    */
   buildLot(index) {
     let place = placeTile(index);
-    let flank = place.side === 'left' || place.side === 'right';
     let row = place.side === 'bottom' ? 10 : place.side === 'top' ? 2 : place.row;
     let column = place.side === 'left' ? 2 : place.side === 'right' ? 10 : place.column;
-    let shift = flank && place.row === 2 ? ' hm-lot-low' : flank && place.row === 10 ? ' hm-lot-high' : '';
-    return el('div', { class: 'hm-lot hm-lot-' + place.side + shift, data: { tile: index }, style: { 'grid-row': row, 'grid-column': column }, attrs: { 'aria-hidden': 'true' } });
+    return el('div', { class: 'hm-lot hm-lot-' + place.side, data: { tile: index }, style: { 'grid-row': row, 'grid-column': column }, attrs: { 'aria-hidden': 'true' } });
+  }
+
+  /**
+   * 같은 격자 자리를 함께 쓰는 터의 짝을 찾는다. 보드 모서리 양옆의 두 칸(옆줄의 칸과 윗줄 또는 아랫줄의 칸)에 모두 터가 있으면 짝이다.
+   * 짝을 이루는 터는 키가 작은 별장을 모서리에 가까운 쪽 끝에 둔다. 두 터가 만나는 곳에 낮은 건물이 오게 하여 겹치는 일을 줄이기 위해서이다.
+   * 그러려고 건물의 순서를 뒤집어야 하는 터에는 hm-lot-flip 을 붙인다. (터를 돌려 놓은 방향에 따라 별장이 놓이는 쪽이 다르기 때문이다.)
+   * @returns {Object[][]} 짝의 목록. 짝은 두 터의 정보 { index : 칸 번호, side : 칸이 놓인 면, flip : 건물의 순서를 뒤집었는지, x, y : 모서리에서 멀어지는 방향 (-1, 0, 1) } 로 이루어진다.
+   */
+  pairLots() {
+    let pairs = [];
+    // 네 모서리마다 그 양옆의 칸에 터가 둘 다 있는지 살핀다.
+    for (let corner = 0; corner < BOARD_SIZE; corner += BOARD_SIZE / 4) {
+      let ends = [(corner + BOARD_SIZE - 1) % BOARD_SIZE, corner + 1];
+      let pair = [];
+      if (!this.lots[ends[0]] || !this.lots[ends[1]]) continue;
+      // 두 터마다 모서리가 어느 쪽에 있는지 살펴, 별장이 그쪽에 오도록 건물의 순서를 정한다.
+      for (let index of ends) {
+        let place = placeTile(index);
+        let x = Math.sign(place.column - placeTile(corner).column);
+        let y = Math.sign(place.row - placeTile(corner).row);
+        let flip = place.side === 'bottom' ? x < 0 : place.side === 'top' ? x > 0 : place.side === 'left' ? y < 0 : y > 0;
+        this.lots[index].classList.toggle('hm-lot-flip', flip);
+        pair.push({ index, side: place.side, flip, x, y });
+      }
+      pairs.push(pair);
+    }
+    return pairs;
+  }
+
+  /**
+   * 터 하나에 놓인 건물들의 자리와 높이를 잰다. 터를 돌려 놓기 전의 배치 값을 쓰므로 어느 면의 터이든 같은 방식으로 잰다.
+   * 자리(start)는 터의 모서리에 가까운 쪽 끝에서부터, 높이(reach)는 터가 붙어 있는 칸의 가장자리에서부터 잰 것이다. (건물의 지붕과 간판까지 포함한다.)
+   * 맨 앞의 조각은 터의 바닥선이다.
+   * @param {Object} entry 터의 정보 (pairLots 가 만든 것)
+   * @returns {{room: number, length: number, parts: Array<{start: number, reach: number}>}} 칸의 길이, 터의 길이, 바닥선과 건물들의 자리와 높이 (픽셀)
+   */
+  measureLot(entry) {
+    let lot = this.lots[entry.index];
+    let tile = this.tiles[entry.index].node;
+    let style = getComputedStyle(lot);
+    let edge = parseFloat(style.getPropertyValue('margin-' + entry.side)) || 0;
+    let length = lot.offsetWidth;
+    let parts = [{ start: 0, reach: edge + (parseFloat(style.borderBottomWidth) || 0) }];
+    // 건물마다 모서리 쪽 끝에서의 거리와, 칸의 가장자리에서 건물 꼭대기까지의 높이를 잰다.
+    for (let house of lot.children) {
+      let start = entry.flip ? length - house.offsetLeft - house.offsetWidth : house.offsetLeft;
+      parts.push({ start, reach: edge + lot.offsetHeight - house.offsetTop + (parseFloat(getComputedStyle(house).marginTop) || 0) });
+    }
+    return { room: entry.side === 'left' || entry.side === 'right' ? tile.offsetHeight : tile.offsetWidth, length, parts };
+  }
+
+  /**
+   * 같은 자리를 쓰는 두 터가 주어진 자리에 놓였을 때 건물이 서로 겹치는지 확인한다.
+   * 한 터의 조각은 모서리에서 start 만큼 떨어진 곳부터 놓이고 칸의 가장자리에서 reach 만큼 솟아 있다.
+   * 두 터는 서로 직각으로 놓여 있으므로, 두 조각은 서로의 높이가 상대의 시작 자리보다 멀리 뻗을 때 겹친다.
+   * @param {Object} first 한 터를 잰 값 (measureLot)
+   * @param {Object} second 다른 터를 잰 값
+   * @param {number} near 첫 터의 모서리 쪽 끝이 모서리에서 떨어진 거리 (픽셀)
+   * @param {number} far 둘째 터의 모서리 쪽 끝이 모서리에서 떨어진 거리 (픽셀)
+   * @param {number} gap 두 조각 사이에 두어야 하는 간격 (픽셀)
+   * @returns {boolean} 겹치면 true
+   */
+  lotsCollide(first, second, near, far, gap) {
+    // 첫 터의 조각마다 둘째 터의 모든 조각과 견주어 본다.
+    for (let one of first.parts) {
+      // 둘째 터의 조각을 하나씩 살핀다.
+      for (let other of second.parts) {
+        if (near + one.start < other.reach + gap && far + other.start < one.reach + gap) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 같은 자리를 쓰는 두 터를 각자의 칸 안에서 모서리에서 먼 쪽으로 얼마나 밀어야 겹치지 않는지 구한다.
+   * 가운데에 둔 자리에서 칸의 끝에 닿는 자리까지를 LOT_STEPS 단계로 나누어 모든 조합을 살피고, 겹치지 않는 것 가운데 가장 덜 미는 것을 고른다.
+   * @param {Object} first 한 터를 잰 값 (measureLot)
+   * @param {Object} second 다른 터를 잰 값
+   * @param {number} gap 두 터의 건물 사이에 두어야 하는 간격 (픽셀)
+   * @returns {{slides: number[], clear: boolean}} 두 터를 밀 거리(픽셀)와 겹치지 않게 되었는지 여부. 어떻게 밀어도 겹치면 끝까지 민 거리와 false 를 돌려준다.
+   */
+  spreadLots(first, second, gap) {
+    let room = [Math.max(0, (first.room - first.length) / 2), Math.max(0, (second.room - second.length) / 2)];
+    let best = null;
+    // 첫 터를 미는 정도를 한 단계씩 늘려 본다.
+    for (let one = 0; one <= LOT_STEPS; one++) {
+      // 둘째 터를 미는 정도를 한 단계씩 늘려 본다.
+      for (let other = 0; other <= LOT_STEPS; other++) {
+        let slides = [(room[0] * one) / LOT_STEPS, (room[1] * other) / LOT_STEPS];
+        let cost = slides[0] + slides[1] + Math.abs(slides[0] - slides[1]) / 1000;
+        if (best && best.cost <= cost) continue;
+        if (!this.lotsCollide(first, second, room[0] + slides[0], room[1] + slides[1], gap)) best = { slides, cost };
+      }
+    }
+    return best ? { slides: best.slides, clear: true } : { slides: room, clear: false };
+  }
+
+  /**
+   * 같은 자리를 함께 쓰는 두 터의 건물이 겹치지 않게 자리와 별장의 크기를 맞춘다. 겹치지 않으면 두 터 모두 칸의 가운데에 원래 크기로 둔다.
+   * 겹치면 먼저 두 터를 각자의 칸 안에서 모서리에서 먼 쪽으로 밀어 보고, 그래도 겹치면 별장만 한 단계씩 줄여 가며 다시 밀어 본다. (LOT_SCALES)
+   * 빌딩과 호텔의 크기는 바꾸지 않으며, 터가 자기 칸을 벗어나 옆 칸으로 넘어가지 않는다.
+   * 미는 거리는 화면 크기가 바뀌어도 맞도록 보드 너비에 대한 비율(cqw)로 적는다.
+   * 건물 구성이 바뀐 뒤에만 다시 맞추며, 보드가 아직 화면에 그려지지 않았으면 다음 기회로 미룬다.
+   */
+  fitLots() {
+    let board = this.lotPairs.length > 0 ? this.lots[this.lotPairs[0][0].index].parentElement : null;
+    let width = board ? board.clientWidth : 0;
+    if (!this.lotsMoved || !(width > 0)) return;
+    this.lotsMoved = false;
+    // 짝마다 별장의 크기와 두 터의 자리를 정한다.
+    for (let pair of this.lotPairs) {
+      let lots = [this.lots[pair[0].index], this.lots[pair[1].index]];
+      let slides = [0, 0];
+      // 별장을 원래 크기부터 한 단계씩 줄여 가며, 두 터가 겹치지 않게 되는 자리를 찾는다. 한쪽에 건물이 없으면 원래대로 두고 끝낸다.
+      for (let scale of LOT_SCALES) {
+        // 두 터의 별장 크기를 정하고 밀어 둔 것을 되돌린다.
+        for (let lot of lots) {
+          lot.style.setProperty('--hm-villa', scale);
+          lot.style.translate = '';
+        }
+        if (lots[0].childElementCount === 0 || lots[1].childElementCount === 0) break;
+        let fit = this.spreadLots(this.measureLot(pair[0]), this.measureLot(pair[1]), (width * LOT_GAP) / 100);
+        slides = fit.slides;
+        if (fit.clear) break;
+      }
+      // 정한 거리만큼 두 터를 모서리에서 먼 쪽으로 민다.
+      for (let turn = 0; turn < pair.length; turn++) {
+        let far = (slides[turn] / width) * 100;
+        if (far > 0) lots[turn].style.translate = (pair[turn].x * far).toFixed(3) + 'cqw ' + (pair[turn].y * far).toFixed(3) + 'cqw';
+      }
+    }
   }
 
   /**
    * 도시 한 칸의 터에 지어진 건물을 그린다. 건물 구성이 바뀌었을 때에만 다시 그리며, 방금 새로 지은 건물은 솟아오르는 움직임을 준다.
+   * 건물 구성이 바뀌면, 같은 자리를 쓰는 터와 겹치는지 다시 살펴야 한다고 표시해 둔다. (fitLots)
    * @param {number} index 칸 번호
    */
   refreshLot(index) {
@@ -5370,6 +5790,7 @@ export class HellmarbleApp extends HellmarbleHost {
       }
     }
     lot.replaceChildren(...houses);
+    this.lotsMoved = true;
     if (land.owner !== null) lot.style.setProperty('--hm-owner', this.styleOf(this.game.state.players[land.owner]).color);
     this.lotState[index] = { key, owner: land.owner, villa: land.villa, building: land.building, hotel: land.hotel };
   }
@@ -5514,6 +5935,7 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 끝난 게임을 정산한다. 승리하면 현금과 땅, 건물의 가치(100%)를 대기실 금액에 더한다.
+   * 승리 보상이 정해진 리그에서는 그 금액만 더하고, 게임에서 가진 돈과 땅은 보상에 넣지 않는다.
    * 승패와 관계없이 게임에서 쓰지 않고 남은 소모형 아이템은 대기실의 주머니로 돌려준다. (사용한 아이템만 사라진다.)
    * 정산을 저장한 뒤, 결과 화면을 거쳐 대기실로 돌아간다.
    * @param {HellmarbleGame} game 끝난 게임
@@ -5521,10 +5943,13 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   async finishGame(game) {
     let human = game.state.players[0];
+    let league = LEAGUES[game.state.league];
+    let name = this.t('league.' + game.state.league);
     let won = game.state.winner === human.id;
     let cash = human.cash;
     let property = game.propertyValue(human);
-    this.slot.money += won ? cash + property : 0;
+    let reward = league.reward !== null ? league.reward : cash + property;
+    this.slot.money += won ? reward : 0;
     this.slot.items = addItems(this.slot.items, human.items);
     this.slot.game = null;
     this.saveSlot();
@@ -5532,13 +5957,13 @@ export class HellmarbleApp extends HellmarbleHost {
     let leave = [{ label: this.t('result.lobby'), value: 'ok', primary: true }];
     if (won) {
       let rows = [
-        this.infoRow(this.t('result.cash'), this.figure(cash)),
-        this.infoRow(this.t('result.property'), this.figure(property)),
-        this.infoRow(this.t('result.reward'), this.figure(cash + property, '+'), true),
+        league.reward === null ? this.infoRow(this.t('result.cash'), this.figure(cash)) : null,
+        league.reward === null ? this.infoRow(this.t('result.property'), this.figure(property)) : null,
+        this.infoRow(this.t('result.reward'), this.figure(reward, '+'), true),
       ];
-      await this.dialog({ kind: 'win', title: this.t('result.win.title'), text: this.t('result.win.text'), body: [el('div', { class: 'hm-land-rows' }, rows)], buttons: leave });
+      await this.dialog({ kind: 'win', title: this.t('result.win.title'), text: this.t(league.reward === null ? 'result.win.text' : 'result.win.fixed', { league: name }), body: [el('div', { class: 'hm-land-rows' }, rows)], buttons: leave });
     } else {
-      await Promise.race([this.dialog({ kind: 'lose', title: this.t('result.lose.title'), text: this.t('result.lose.text'), buttons: leave }), wait(this.timings.result)]);
+      await Promise.race([this.dialog({ kind: 'lose', title: this.t('result.lose.title'), text: this.t(league.fee > 0 ? 'result.lose.text' : 'result.lose.free'), buttons: leave }), wait(this.timings.result)]);
     }
     if (this.game === game) this.showLobby();
   }
@@ -5567,6 +5992,7 @@ export class HellmarbleApp extends HellmarbleHost {
     if (!this.game || this.screen !== 'game') return;
     // 모든 칸의 소유자, 건물, 말 표시를 갱신한다.
     for (let index = 0; index < BOARD_SIZE; index++) this.refreshTile(index);
+    this.fitLots();
     this.refreshCenter();
     this.refreshPlayers();
     this.refreshLog();
@@ -5664,6 +6090,27 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
+   * 우주선 하나를 만든다. 우주여행에 탑승한 플레이어가 주사위를 굴리는 대신 목적지를 고르는 차례에, 주사위 자리에 놓는다.
+   * 불꽃, 양쪽 날개, 창문이 달린 몸통으로 이루어지며 모양은 CSS 로 그린다.
+   * @returns {HTMLElement} 우주선 요소
+   */
+  buildShip() {
+    return el('span', { class: 'hm-ship', attrs: { role: 'img', 'aria-label': this.t('tile.space') } }, [
+      el('span', { class: 'hm-ship-flame' }),
+      el('span', { class: 'hm-ship-fin hm-ship-fin-left' }),
+      el('span', { class: 'hm-ship-fin hm-ship-fin-right' }),
+      el('span', { class: 'hm-ship-body' }, [el('span', { class: 'hm-ship-window' })]),
+    ]);
+  }
+
+  /**
+   * 가운데 영역의 주사위 자리에 우주선을 그린다. 이미 그려져 있으면 그대로 둔다. (다시 그리면 움직임이 처음부터 다시 시작된다.)
+   */
+  renderShip() {
+    if (!this.parts.dice.querySelector('.hm-ship')) this.parts.dice.replaceChildren(this.buildShip());
+  }
+
+  /**
    * 가운데 영역의 주사위 두 개를 지정한 눈으로 그린다.
    * @param {number} first 첫째 주사위의 눈
    * @param {number} second 둘째 주사위의 눈
@@ -5674,6 +6121,7 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 가운데 영역(차례, 주사위, 안내 문구, 버튼, 사회복지기금)을 갱신한다.
+   * 우주여행에 탑승한 플레이어의 차례에는 주사위를 굴리지 않으므로, 주사위 자리에 우주선을 보여준다.
    */
   refreshCenter() {
     if (!this.game || !this.parts.center) return;
@@ -5689,7 +6137,8 @@ export class HellmarbleApp extends HellmarbleHost {
     this.parts.forfeit.disabled = this.mode === 'busy';
     this.parts.fund.textContent = this.money(state.fund);
     this.parts.center.classList.toggle('hm-my-turn', this.mode !== 'busy');
-    if (!this.rolling) this.renderDice(state.dice[0], state.dice[1]);
+    if (this.flight && !this.rolling) this.renderShip();
+    else if (!this.rolling) this.renderDice(state.dice[0], state.dice[1]);
   }
 
   /**
@@ -5810,6 +6259,7 @@ export class HellmarbleApp extends HellmarbleHost {
           this.infoRow(this.t('result.property'), this.figure(game.propertyValue(player))),
           this.infoRow(this.t('playerinfo.assets'), this.figure(game.assets(player)), true),
           this.infoRow(this.t('playerinfo.coupons'), coupons.length > 0 ? coupons.join('  ') : this.t('common.none')),
+          this.infoRow(this.t('playerinfo.charm'), isCharm(player.charm) ? CHARMS[player.charm].icon + ' ' + this.itemName(player.charm) : this.t('common.none')),
           this.infoRow(this.t('playerinfo.status'), status),
         ]),
         el('h3', { class: 'hm-list-title', text: this.t('playerinfo.lands', { n: owned.length }) }),
@@ -6083,7 +6533,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let result = null;
     try {
       switch (key) {
-        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.t('mcp.items.rules', amounts) + '\n' + this.itemRules() + '\n' + this.t('mcp.equips.rules', amounts) + '\n' + this.equipRules() + '\n' + this.charmRules(); break;
+        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.leagueRules() + '\n' + this.t('mcp.items.rules', amounts) + '\n' + this.itemRules() + '\n' + this.t('mcp.equips.rules', amounts) + '\n' + this.equipRules() + '\n' + this.charmRules(); break;
         case 'get_guide': result = this.t('mcp.guide') + '\n' + this.t('mcp.items.guide') + '\n' + this.t('mcp.equips.guide') + '\n' + this.t('mcp.charms.guide'); break;
         case 'get_land': result = this.describeLand(Number(args.index)); break;
         case 'act': result = await this.pressAction(String(args.action), args.value); break;
@@ -6124,6 +6574,35 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
+   * 리그마다의 참가비, 시작 자금, 금액 배율, 인공지능의 수와 그 리그만의 규칙을 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
+   * @returns {string} 리그 설명
+   */
+  leagueRules() {
+    let lines = [];
+    // 리그마다 설명 한 줄을 만들고, 그 리그에만 있는 규칙을 뒤에 덧붙인다.
+    for (let id in LEAGUES) {
+      let league = LEAGUES[id];
+      let line = this.t('mcp.leagues.entry', { league: this.t('league.' + id), fee: league.fee > 0 ? this.money(league.fee) : this.t('lobby.free'), cash: this.money(league.cash), n: league.multiplier, rivals: this.t('league.' + id + '.rivals') });
+      if (league.reward !== null) line += ' ' + this.t('mcp.leagues.reward', { reward: this.money(league.reward) });
+      if (league.hideFrom !== null) line += ' ' + this.t('mcp.leagues.hidden', { limit: this.money(league.hideFrom) });
+      if (!league.items) line += ' ' + this.t('mcp.leagues.noItems');
+      lines.push(line);
+    }
+    return this.t('mcp.leagues.rules') + '\n' + lines.join('\n');
+  }
+
+  /**
+   * 아이템 창의 안내 문구를 구한다. 소모형 아이템을 쓸 수 없는 리그의 게임에서는 그 사실을 알린다.
+   * @param {string} source 창의 종류 ('lobby' 또는 'game')
+   * @returns {string} 안내 문구
+   */
+  itemHint(source) {
+    let league = source === 'game' && this.game ? this.game.state.league : '';
+    if (league !== '' && !LEAGUES[league].items) return this.t('item.hint.barred', { league: this.t('league.' + league) });
+    return this.t('item.hint.' + source);
+  }
+
+  /**
    * 부적의 규칙(추첨권의 가격, 등급별 확률과 판매 가격)과 부적마다의 등급, 이름, 효과를 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
    * @returns {string} 부적 설명
    */
@@ -6134,7 +6613,7 @@ export class HellmarbleApp extends HellmarbleHost {
     for (let grade in CHARM_GRADES) sells.push(this.t('charm.grade.' + grade) + ' ' + this.money(CHARM_GRADES[grade].sell));
     // 부적마다 설명 한 줄을 만든다.
     for (let id in CHARMS) lines.push(this.t('mcp.charms.entry', { grade: this.gradeName(id), item: this.itemName(id), brief: this.itemText(id, 'brief') }));
-    let params = { ticket: this.money(CHARM_TICKETS.charmticket.price), ticket10: this.money(CHARM_TICKETS.charmticket10.price), odds: this.drawOdds(), sells: sells.join(', ') };
+    let params = { ticket: this.money(CHARM_TICKETS.charmticket.price), ticket10: this.money(CHARM_TICKETS.charmticket10.price), odds: this.drawOdds(), sells: sells.join(', '), starter: this.itemName(STARTER_CHARM) };
     return this.t('mcp.charms.rules', params) + '\n' + lines.join('\n');
   }
 
@@ -6186,9 +6665,10 @@ export class HellmarbleApp extends HellmarbleHost {
     let scope = this.activeScope();
     let heading = scope.querySelector('.hm-modal-title, .hm-heading, .hm-logo');
     let text = scope.querySelector('.hm-modal-text');
+    let due = scope.querySelector('.hm-due');
     let field = scope.querySelector('.hm-input');
     let state = { screen: this.screen, language: this.settings.language, dark: this.settings.dark, busy: this.isBusy(), title: heading ? heading.textContent : '' };
-    if (this.modal) state.dialog = { title: state.title, text: text ? text.textContent : '' };
+    if (this.modal) state.dialog = { title: state.title, text: (text ? text.textContent : '') + (due ? '\n' + due.firstChild.textContent + ' : ' + due.lastChild.textContent : '') };
     if (this.itemView) state.itemWindow = { kind: this.itemView.source, tab: this.itemView.tab, category: this.itemView.filter, detail: this.itemView.detail, quantity: this.itemView.quantity, notice: this.itemView.notice, drawn: this.itemView.reveal };
     if (field) state.input = { value: field.value };
     if (this.slot && (this.screen === 'lobby' || this.screen === 'game')) state.slot = { number: this.slotIndex + 1, name: this.slot.name, money: this.slot.money, items: this.screen === 'lobby' ? this.slot.items : this.game.state.players[0].items, equips: this.slot.equips, charms: this.slot.charms, equipped: this.slot.equipped };
@@ -6316,11 +6796,13 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 차례가 시작될 때 화면을 갱신한다. 사용자의 차례가 되면 열려 있던 땅 정보 창을 자동으로 닫는다.
+   * 우주여행에 탑승한 채로 맞는 차례인지 기억해 두어, 그 차례가 끝날 때까지 주사위 자리에 우주선을 보여준다.
    * @param {Object} player 차례가 된 플레이어
    * @returns {Promise<void>}
    */
   async turnStart(player) {
     this.moving = -1;
+    this.flight = Boolean(player.boarded);
     if (!player.ai) this.closePopover();
     this.refresh();
   }
@@ -6424,6 +6906,7 @@ export class HellmarbleApp extends HellmarbleHost {
    * 누가 누구에게 얼마를 주는지 보드 가운데에 크게 띄우고, 내는 쪽에서 지폐가 나와 받는 쪽으로 날아가게 한다.
    * 지폐가 드나드는 자리는 플레이어는 말, 은행은 출발지 칸, 사회복지기금 본부는 그 칸이며, 은행과 본부의 칸은 연출하는 동안 테두리를 빛낸다.
    * 플레이어의 카드도 각각 내는 쪽과 받는 쪽으로 강조한다. 은행·본부와의 돈 이동은 자주 일어나므로 조금 짧게 보여준다.
+   * 오간 돈이 큰 금액(BIG_TRANSFER 에 리그 배율을 곱한 금액 이상)이면 시간을 조금 더 들여 지폐를 훨씬 많이 날리고 안내 띠도 금빛으로 강조한다.
    * @param {Object|string} payer 돈을 내는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
    * @param {Object|string} receiver 돈을 받는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
    * @param {number} amount 건넨 금액 (원)
@@ -6432,15 +6915,17 @@ export class HellmarbleApp extends HellmarbleHost {
   async transfer(payer, receiver, amount) {
     let offices = [this.officeTile(payer), this.officeTile(receiver)];
     let office = offices[0] >= 0 ? payer : offices[1] >= 0 ? receiver : null;
-    let duration = office ? this.timings.bank : this.timings.transfer;
-    if (!(duration > 0) || !this.game || !this.parts.center) return;
-    let banner = el('div', { class: 'hm-transfer' + (office ? ' hm-transfer-' + office : ''), style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+    let usual = office ? this.timings.bank : this.timings.transfer;
+    if (!(usual > 0) || !this.game || !this.parts.center) return;
+    let big = amount >= this.game.money(BIG_TRANSFER);
+    let duration = usual + (big ? Math.max(0, this.timings.boost) : 0);
+    let banner = el('div', { class: 'hm-transfer' + (office ? ' hm-transfer-' + office : '') + (big ? ' hm-transfer-big' : ''), style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
       this.transferSide(payer),
       el('span', { class: 'hm-transfer-arrow', text: '➜' }),
       this.transferSide(receiver),
       el('strong', { class: 'hm-transfer-amount', text: this.money(amount) }),
     ]);
-    let flying = this.flyBills(payer, receiver, amount, duration);
+    let flying = this.flyBills(payer, receiver, amount, duration, big);
     let cards = [offices[0] < 0 ? this.cards[payer.id] : null, offices[1] < 0 ? this.cards[receiver.id] : null];
     let tile = office ? this.tiles[Math.max(offices[0], offices[1])].node : null;
     this.parts.center.append(banner);
@@ -6495,6 +6980,7 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 내는 쪽에서 받는 쪽까지 지폐 여러 장을 시차를 두고 포물선으로 날린다. 금액이 클수록 지폐가 많이 날아간다.
+   * 큰 금액이면 지폐를 세 배 가까이 많이, 더 넓게 퍼뜨려 날리고(금빛 지폐가 섞인다), 받는 쪽에서는 돈이 쏟아져 들어온 것을 터지는 빛으로 알린다.
    * 내는 플레이어에게는 빠져나간 금액을, 받는 쪽에는 들어온 금액을 띄운다.
    * 은행이나 사회복지기금 본부가 내는 쪽일 때에는 그 칸에 금액을 띄우지 않는다. (월급처럼 받는 플레이어가 같은 칸에 서 있는 경우가 많아 겹치기 때문이다.)
    * 움직임을 줄이도록 설정한 사용자에게는 금액 표시만 보여주며, 움직임 기능이 없는 브라우저에서는 건너뛴다.
@@ -6502,21 +6988,25 @@ export class HellmarbleApp extends HellmarbleHost {
    * @param {Object|string} receiver 돈을 받는 쪽 (플레이어, 은행이면 BANK, 사회복지기금 본부이면 FUND)
    * @param {number} amount 건넨 금액 (원)
    * @param {number} duration 연출 전체의 시간 (밀리초)
+   * @param {boolean} [big=false] 큰 금액이어서 더 크게 연출할지 여부
    * @returns {HTMLElement[]} 화면에 띄운 요소 목록 (연출이 끝나면 치워야 한다.)
    */
-  flyBills(payer, receiver, amount, duration) {
+  flyBills(payer, receiver, amount, duration, big = false) {
     let nodes = [];
     try {
       let from = this.partyPoint(payer);
       let to = this.partyPoint(receiver);
       let distance = Math.hypot(to.x - from.x, to.y - from.y);
-      let count = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 6 + Math.min(10, Math.round((amount / this.game.money(START_CASH)) * 40));
-      if (this.officeTile(payer) < 0) nodes.push(el('span', { class: 'hm-float hm-float-pay', text: '-' + this.money(amount), style: { left: from.x + 'px', top: from.y + 'px', '--hm-time': duration + 'ms' } }));
-      nodes.push(el('span', { class: 'hm-float hm-float-get', text: '+' + this.money(amount), style: { left: to.x + 'px', top: to.y + 'px', '--hm-time': duration + 'ms' } }));
+      let still = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let count = still ? 0 : big ? BIG_BILLS : 6 + Math.min(10, Math.round((amount / this.game.money(START_CASH)) * 40));
+      let tag = big ? ' hm-float-big' : '';
+      if (this.officeTile(payer) < 0) nodes.push(el('span', { class: 'hm-float hm-float-pay' + tag, text: '-' + this.money(amount), style: { left: from.x + 'px', top: from.y + 'px', '--hm-time': duration + 'ms' } }));
+      nodes.push(el('span', { class: 'hm-float hm-float-get' + tag, text: '+' + this.money(amount), style: { left: to.x + 'px', top: to.y + 'px', '--hm-time': duration + 'ms' } }));
+      if (big && !still) nodes.push(el('span', { class: 'hm-burst', style: { left: to.x + 'px', top: to.y + 'px', '--hm-size': to.size + 'px', '--hm-time': duration + 'ms' } }));
       // 지폐를 한 장씩 만들어 조금씩 다른 길로, 시차를 두고 날린다.
       for (let index = 0; index < count; index++) {
-        let bill = el('span', { class: 'hm-bill', text: '₩', style: { left: from.x + 'px', top: from.y + 'px', 'font-size': Math.max(11, from.size * 0.2) + 'px' } });
-        let sway = (index % 2 === 0 ? 1 : -1) * (10 + ((index * 17) % 40));
+        let bill = el('span', { class: 'hm-bill' + (big && index % 3 === 0 ? ' hm-bill-gold' : ''), text: '₩', style: { left: from.x + 'px', top: from.y + 'px', 'font-size': Math.max(11, from.size * (big ? 0.24 : 0.2)) + 'px' } });
+        let sway = (index % 2 === 0 ? 1 : -1) * (10 + ((index * 17) % (big ? 110 : 40)));
         let controlX = (to.x - from.x) / 2 + sway;
         let controlY = (to.y - from.y) / 2 - Math.max(90, distance * 0.45) - Math.abs(sway);
         let frames = [];
@@ -6558,27 +7048,82 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 사용자가 장착한 부적의 효과가 일어난 것을 보드 가운데에 잠깐 크게 보여준다. 부적의 등급에 따라 빛의 색이 다르다.
-   * 땅값 할인은 원래 가격에 줄을 긋고 깎인 가격을 함께 보여주며, 이 연출이 끝난 뒤에 깎인 금액만 빠져나간다.
-   * 부적은 아이템 확인 창에서만 보이므로, 게임 화면에는 효과가 일어난 이 순간과 진행 기록에만 나타난다.
+   * 누군가 우대권이나 무전기를 사용한 것을 보드 가운데에 잠깐 크게 보여준다. 사용자와 인공지능, 비밀쿠폰과 아이템을 가리지 않는다.
+   * 누가 무엇을 썼는지와 그 효과(면제받은 칸과 금액, 무인도 탈출)를 알리고, 보드 위에서는 사용한 플레이어의 말에서 빛의 고리가 퍼지며
+   * 효과가 일어난 칸(우대권은 면제받은 칸, 무전기는 무인도)에 도장을 찍는다.
+   * @param {Object} player 사용한 플레이어
+   * @param {Object} info 사용한 것 { kind, source } 와 종류별 값 (pass : index, amount, travel / radio : arrival)
+   * @returns {Promise<void>}
+   */
+  async use(player, info) {
+    let duration = this.timings.use;
+    if (!(duration > 0) || !this.game || !this.parts.center || !ICONS[info.kind]) return;
+    let index = info.kind === 'pass' ? info.index : player.position;
+    let text = info.kind === 'pass' ? this.t(info.travel ? 'use.pass.travel' : 'use.pass.text', { tile: this.tileName(index) }) : this.t('use.radio.text');
+    let banner = el('div', { class: 'hm-use-flash hm-use-' + info.kind, style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+      el('span', { class: 'hm-use-flash-owner' }, [this.buildToken(player), this.playerName(player)]),
+      el('span', { class: 'hm-use-flash-icon', text: ICONS[info.kind], attrs: { 'aria-hidden': 'true' } }),
+      el('strong', { class: 'hm-use-flash-title', text: this.t('use.' + info.kind + '.title') }),
+      el('span', { class: 'hm-use-flash-source', text: this.t('use.source.' + info.source) }),
+      el('span', { class: 'hm-use-flash-text', text }),
+      info.kind === 'pass' ? el('span', { class: 'hm-use-flash-amount' }, [el('s', { class: 'hm-num', text: this.money(info.amount) }), el('span', { text: '➜' }), el('strong', { text: this.t('use.pass.stamp') })]) : null,
+    ]);
+    let marks = this.markUse(player, info.kind, index, duration);
+    this.parts.center.append(banner);
+    await wait(duration);
+    banner.remove();
+    // 보드 위에 띄운 빛의 고리와 도장을 치운다.
+    for (let node of marks) node.remove();
+  }
+
+  /**
+   * 우대권이나 무전기를 사용한 것을 보드 위에 표시한다. 사용한 플레이어의 말에서 빛의 고리 세 개가 차례로 퍼지고, 효과가 일어난 칸에 도장이 찍힌다.
+   * 자리를 구할 수 없는 경우에는 만들어진 것까지만 보여준다.
+   * @param {Object} player 사용한 플레이어
+   * @param {string} kind 사용한 것 ('pass' 또는 'radio')
+   * @param {number} index 효과가 일어난 칸 번호
+   * @param {number} duration 연출 전체의 시간 (밀리초)
+   * @returns {HTMLElement[]} 화면에 띄운 요소 목록 (연출이 끝나면 치워야 한다.)
+   */
+  markUse(player, kind, index, duration) {
+    let nodes = [];
+    try {
+      let from = this.partyPoint(player);
+      let rect = this.tiles[index].node.getBoundingClientRect();
+      let style = { '--hm-size': from.size + 'px', '--hm-time': duration + 'ms' };
+      // 말에서 퍼져 나가는 빛의 고리를 시차를 두고 세 개 만든다.
+      for (let order = 0; order < 3; order++) nodes.push(el('span', { class: 'hm-ring hm-use-' + kind, style: { ...style, left: from.x + 'px', top: from.y + 'px', '--hm-order': order } }));
+      nodes.push(el('span', { class: 'hm-stamp hm-use-' + kind, text: this.t('use.' + kind + '.stamp'), style: { ...style, left: rect.left + rect.width / 2 + 'px', top: rect.top + rect.height / 2 + 'px' } }));
+    } catch (error) {
+      // 자리를 구할 수 없으면 만들어진 것까지만 보여준다.
+    }
+    this.root.append(...nodes);
+    return nodes;
+  }
+
+  /**
+   * 장착한 부적의 효과가 일어난 것을 보드 가운데에 잠깐 크게 보여준다. 부적의 등급에 따라 빛의 색이 다르다.
+   * 인공지능도 부적을 장착하는 리그가 있으므로, 누구의 부적인지 말과 이름으로 함께 알린다.
+   * 땅값 할인과 통행료·이용료 할인은 원래 금액에 줄을 긋고 깎인 금액을 함께 보여주며, 이 연출이 끝난 뒤에 깎인 금액만 빠져나간다.
+   * 부적의 자세한 설명은 아이템 확인 창에서만 보이며, 게임 화면에는 플레이어 정보 창의 이름과 효과가 일어난 이 순간, 진행 기록에만 나타난다.
    * @param {Object} player 부적을 장착한 플레이어
-   * @param {Object} info 일어난 효과 { effect, charm } 와 효과별 값 (discount : index, price, paid / build : index, building / redraw : coupon)
+   * @param {Object} info 일어난 효과 { effect, charm } 와 효과별 값 (discount, toll : index, price, paid / build : index, building / redraw : coupon)
    * @returns {Promise<void>}
    */
   async charm(player, info) {
     let duration = this.timings.charm;
     let charm = CHARMS[info.charm];
-    void player;
     if (!(duration > 0) || !charm || !this.game || !this.parts.center) return;
     let params = {
       tile: info.index === undefined ? '' : this.tileName(info.index), percent: charm.percent,
       building: info.building ? this.t('building.' + info.building) : '', coupon: info.coupon ? this.t('coupon.' + info.coupon + '.title') : '',
     };
     let banner = el('div', { class: 'hm-charm-flash hm-grade-' + charm.grade, style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+      el('span', { class: 'hm-charm-flash-owner' }, [this.buildToken(player), this.playerName(player)]),
       el('span', { class: 'hm-charm-flash-icon', text: charm.icon, attrs: { 'aria-hidden': 'true' } }),
       el('strong', { class: 'hm-charm-flash-title', text: this.t('charm.flash', { item: this.itemName(info.charm) }) }),
       el('span', { class: 'hm-charm-flash-text', text: this.t('charm.flash.' + info.effect, params) }),
-      info.effect === 'discount' ? el('span', { class: 'hm-charm-flash-price' }, [el('s', { class: 'hm-num', text: this.money(info.price) }), el('span', { text: '➜' }), this.figure(info.paid)]) : null,
+      info.effect === 'discount' || info.effect === 'toll' ? el('span', { class: 'hm-charm-flash-price' }, [el('s', { class: 'hm-num', text: this.money(info.price) }), el('span', { text: '➜' }), this.figure(info.paid)]) : null,
     ]);
     this.parts.center.append(banner);
     await wait(duration);
@@ -6625,10 +7170,8 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'buy': return this.askBuy(player, request);
       case 'build': return this.askBuild(player, request);
       case 'sell': return this.askSell(player, request);
-      case 'pass': return this.askCoupon('pass', { tile: this.tileName(request.index), amount: this.money(request.amount), n: player.coupons.pass });
-      case 'radio': return this.askCoupon('radio', { n: player.coupons.radio });
-      case 'itemPass': return this.askGameItem('pass', request);
-      case 'itemRadio': return this.askGameItem('radio', request);
+      case 'pass': return this.askPass(player, request);
+      case 'radio': return this.askRadio(player, request);
       default: return null;
     }
   }
@@ -6744,24 +7287,50 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 보관 중인 쿠폰(우대권 또는 무전기)의 사용 여부를 묻는다.
-   * @param {string} id 쿠폰 식별자 ('pass' 또는 'radio')
-   * @param {Object} params 문구에 끼워 넣을 값
-   * @returns {Promise<boolean>} 사용 여부
+   * 내야 할 통행료·이용료를 우대권으로 면제받을지 창 하나로 묻는다.
+   * 지불할 금액을 따로 한 줄로 강조하고, 쓸 수 있는 우대권마다(비밀쿠폰, 아이템) 선택지를 하나씩 두며 마지막에 사용하지 않는 선택지를 둔다.
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 우대권 요청 { index, amount, travel, coupon, item }
+   * @returns {Promise<string|null>} 'coupon' (비밀쿠폰 우대권), 'item' (아이템 우대권), 쓰지 않으면 null
    */
-  askCoupon(id, params) {
-    return this.confirm(ICONS[id] + ' ' + this.t('ask.' + id + '.title'), this.t('ask.' + id + '.text', params), this.t('ask.use'), this.t('ask.keep'));
+  async askPass(player, request) {
+    let due = el('p', { class: 'hm-due' }, [el('span', { class: 'hm-due-label', text: this.t('ask.pass.due') }), this.figure(request.amount)]);
+    let answer = await this.dialog({
+      kind: 'pass', title: ICONS.pass + ' ' + this.t('ask.pass.title'), text: this.t(request.travel ? 'ask.pass.travel' : 'ask.pass.text', { tile: this.tileName(request.index) }),
+      body: [due, this.cashLine(player)], buttons: this.sourceButtons('pass', player, request), stack: true,
+    });
+    return answer === 'coupon' || answer === 'item' ? answer : null;
   }
 
   /**
-   * 비밀쿠폰과 따로 보유한 아이템으로 통행료를 면제하거나 무인도에서 탈출할지 묻는다.
-   * @param {string} id 아이템 식별자
-   * @param {Object} request 통행료 요청 정보 (무전기이면 빈 객체)
-   * @returns {Promise<boolean>} 아이템을 사용하면 true
+   * 무인도에서 무전기로 탈출할지 창 하나로 묻는다.
+   * 쓸 수 있는 무전기마다(비밀쿠폰, 아이템) 선택지를 하나씩 두며 마지막에 사용하지 않는 선택지를 둔다.
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 무전기 요청 { arrival, coupon, item }
+   * @returns {Promise<string|null>} 'coupon' (비밀쿠폰 무전기), 'item' (아이템 무전기), 쓰지 않으면 null
    */
-  askGameItem(id, request) {
-    let params = request.travel ? { amount: this.money(request.amount), tile: this.t('tile.space') } : { amount: this.money(request.amount || 0), tile: this.tileName(request.index || 0) };
-    return this.confirm(this.t('item.use.' + id + '.title'), this.t('item.use.' + id + '.text', params), this.t('ask.use'), this.t('ask.keep'));
+  async askRadio(player, request) {
+    let answer = await this.dialog({
+      kind: 'radio', title: ICONS.radio + ' ' + this.t('ask.radio.title'), text: this.t(request.arrival ? 'ask.radio.arrival' : 'ask.radio.text'),
+      buttons: this.sourceButtons('radio', player, request), stack: true,
+    });
+    return answer === 'coupon' || answer === 'item' ? answer : null;
+  }
+
+  /**
+   * 우대권 또는 무전기 사용 창의 선택지를 만든다.
+   * 비밀쿠폰의 것, 아이템의 것 순서로 쓸 수 있는 것만 넣고 마지막에 사용하지 않는 선택지를 둔다.
+   * @param {string} id 우대권이면 'pass', 무전기이면 'radio'
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 요청 { coupon, item }
+   * @returns {Object[]} 대화 상자의 선택지 목록
+   */
+  sourceButtons(id, player, request) {
+    let buttons = [];
+    if (request.coupon) buttons.push({ label: this.t('ask.' + id + '.coupon', { n: player.coupons[id] }), value: 'coupon', primary: true });
+    if (request.item) buttons.push({ label: this.t('ask.' + id + '.item', { n: player.items[id] }), value: 'item', primary: true });
+    buttons.push({ label: this.t('ask.keep'), value: 'no' });
+    return buttons;
   }
 }
 
