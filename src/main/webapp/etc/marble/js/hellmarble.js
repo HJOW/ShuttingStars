@@ -148,10 +148,17 @@ const NAME_LIMIT = 12;
  * dice: 주사위 굴림, step: 일반 이동 1칸 (0.5초), fastStep: 비밀쿠폰/우주여행 이동 1칸 (0.25초),
  * coupon: 비밀쿠폰 표시 (6초), transfer: 플레이어 간 돈 이동, bank: 은행 또는 사회복지기금 본부와의 돈 이동 (자주 일어나므로 조금 짧다),
  * boost: 큰 금액이 오갈 때 돈 이동에 더하는 시간, use: 우대권 또는 무전기 사용 표시,
- * charm: 부적 효과 발동 표시, think: 인공지능 판단, pause: 연출 사이 간격, result: 패배 화면 표시
+ * charm: 부적 효과 발동 표시, defeat: 패배한 플레이어의 말이 폭발과 함께 보드 밖으로 튕겨나가는 모습,
+ * think: 인공지능 판단, pause: 연출 사이 간격, result: 패배 화면 표시
  * @type {Object<string, number>}
  */
-export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, boost: 200, use: 1700, charm: 1900, think: 700, pause: 500, result: 3500 };
+export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, boost: 200, use: 1700, charm: 1900, defeat: 1800, think: 700, pause: 500, result: 3500 };
+
+/**
+ * 패배한 플레이어의 말이 폭발할 때 사방으로 튀는 불티의 수이다.
+ * @type {number}
+ */
+const BLAST_SPARKS = 16;
 
 /**
  * 돈 이동을 더 크게 연출하기 시작하는 금액이다. (원, 리그 배율을 적용하기 전의 값) 오간 돈이 이 금액 이상이면 지폐를 훨씬 많이 날린다.
@@ -362,7 +369,7 @@ export const ITEM_PREFIX = 'item:';
 const ICONS = {
   start: '🏁', coupon: '🎫', space: '🚀', island: '🏝️', fund: '💰', desk: '🧾',
   jeju: '🍊', busan: '🌊', seoul: '👑', concorde: '✈️', columbia: '🛰️',
-  villa: '🏠', building: '🏢', hotel: '🏨', pass: '🎟️', radio: '📻', bank: '🏦',
+  villa: '🏠', building: '🏢', hotel: '🏨', pass: '🎟️', radio: '📻', bank: '🏦', defeat: '💥',
 };
 
 /**
@@ -778,6 +785,8 @@ const TEXT_KO = {
   'use.radio.stamp': '탈출',
   'use.source.coupon': '비밀쿠폰',
   'use.source.item': '아이템',
+  'defeat.bankrupt.title': '{player}님이 파산하였습니다.',
+  'defeat.forfeit.title': '{player}님이 포기하였습니다.',
   'charm.flash': '{item} 발동!',
   'charm.flash.double': '더블이 나왔습니다!',
   'charm.flash.discount': '{tile} 땅값 {percent}% 할인',
@@ -1167,7 +1176,7 @@ const TEXT_KO = {
   'real.concorde': '마하 2로 날아서 런던에서 뉴욕까지 3시간 반이면 가던 초음속 여객기입니다. (최고 기록은 2시간 52분 59초) 서쪽으로 가면 현지 시각으로는 출발한 시각보다 "일찍" 도착했고, 비행 중에는 열 때문에 기체가 15~25cm 늘어났습니다. 20대만 만들어졌고 2003년에 은퇴했습니다.',
   'real.columbia': '1981년 4월 12일, 처음으로 우주에 다녀온 우주왕복선입니다. 첫 비행에서 54시간 반 동안 지구를 37바퀴 돌았으니 한 바퀴에 90분도 안 걸린 셈입니다. 로켓처럼 올라가 비행기처럼 내려왔고 모두 28번의 임무를 수행했습니다. 보드 한 바퀴쯤은 눈 깜짝할 사이입니다.',
   'mcp.rules': '[Hellmarble 플레이 방법]\n- 2~4명이 하는 턴제 보드게임이다. 사용자 1명과 인공지능 1~3명이 참여한다.\n- 모두 같은 돈(리그마다 다르다. 아래 [리그] 참고)을 가지고 출발지에서 시작한다. 다른 플레이어가 모두 파산하면 승리하고, 사용자가 파산하면 즉시 패배한다.\n- 시작할 때 각자 주사위 2개를 굴려 합이 큰 순서로 차례를 정한다. (동점이면 플레이어 번호가 낮은 쪽이 먼저)\n- 차례가 되면 주사위 2개를 굴려 나온 수만큼 앞으로 이동한다. 출발지를 지나거나 출발지에 멈추면 월급({salary})을 받는다.\n- 더블(두 눈이 같음)이면 도착한 칸의 처리를 마친 뒤 한 번 더 굴린다. 더블이 이어지면 계속 굴린다. 단, 무인도에 갇히거나 우주여행에 탑승하면 차례가 끝난다.\n- 빈 땅(일반 도시, 한국 도시, 특수 시설)에 도착하면 돈이 충분할 때 살 수 있다.\n- 자기 일반 도시에 다시 도착하면 별장(최대 2개), 빌딩(1개), 호텔(1개) 가운데 하나를 지을 수 있다. 한국 도시와 특수 시설에는 지을 수 없다.\n- 남의 땅에 도착하면 통행료와 건물 이용료의 합을 소유자에게 낸다. 우대권이 있으면 써서 면제받을 수 있다.\n- 낼 돈이 모자라면 자기 땅을 은행에 팔아(구매·건설 가격의 {sell}%) 마련해야 하고, 모두 팔아도 모자라면 파산한다.\n- 비밀쿠폰 칸 : 쿠폰 한 장을 뽑아 적힌 대로 한다. 우대권과 무전기는 보관했다가 쓸 수 있다.\n- 우주여행 칸 : 탑승하여 다음 차례에 원하는 칸으로 이동한다. 콜롬비아 호를 다른 플레이어가 가지고 있으면 이용료({space})를 낸다.\n- 무인도 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고(이 더블로는 다시 굴리지 않는다), 아니면 2턴을 쉬고 3턴 째에 이동한다. 무전기를 쓰면 바로 풀려난다.\n- 사회복지기금 접수처 : {welfare}을 낸다. (모자라면 가진 만큼만 내고 파산하지 않는다.) 사회복지기금 본부 : 쌓인 돈을 모두 가져간다.\n- 리그 : Green(배율 1배), Orange(5배), Red(30배). 참가비는 시작 금액과 같고, 배율은 게임 안의 모든 금액에 곱해진다.\n- 승리하면 게임에서 가진 현금과 땅, 건물의 가치(100%)를 대기실 금액으로 받는다. 패배하면 참가비를 잃는다.',
-  'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n  게임 시작에서 데이터가 있는 슬롯을 누르면 덮어쓰기 / 불러오기 / 취소를 고른다. 불러오기를 고르면 덮어쓰지 않고 그 슬롯을 불러온다.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / JSON 복사 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다. "JSON 복사"는 그 슬롯의 저장 데이터를 클립보드에 복사한다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에는 "주사위 굴리기", "아이템", "메인 메뉴"(저장하고 나감), "포기"를 사용할 수 있다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n  주사위·말 이동·돈 이동 연출 중에는 조작할 수 없으므로 hellmarble_wait 로 다음 입력 시점까지 기다린다. 돈은 플레이어 사이뿐 아니라 은행(출발지 칸)·사회복지기금 본부와 오갈 때도 지폐 이동으로 표시된다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
+  'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n  게임 시작에서 데이터가 있는 슬롯을 누르면 덮어쓰기 / 불러오기 / 취소를 고른다. 불러오기를 고르면 덮어쓰지 않고 그 슬롯을 불러온다.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / JSON 복사 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다. "JSON 복사"는 그 슬롯의 저장 데이터를 클립보드에 복사한다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에는 "주사위 굴리기", "아이템", "메인 메뉴"(저장하고 나감), "포기"를 사용할 수 있다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n  주사위·말 이동·돈 이동·패배 연출 중에는 조작할 수 없으므로 hellmarble_wait 로 다음 입력 시점까지 기다린다. 돈은 플레이어 사이뿐 아니라 은행(출발지 칸)·사회복지기금 본부와 오갈 때도 지폐 이동으로 표시된다. 누군가 패배하면(파산, 포기) 그 플레이어의 말이 폭발과 함께 보드 밖으로 튕겨나가는 연출이 나온 뒤 진행된다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
   'mcp.tiles': '칸 정보 보기 또는 닫기 (value : 0~39)',
   'mcp.unknown': '지금 누를 수 없는 동작입니다. hellmarble_get_state 의 actions 를 확인하세요.',
   'mcp.noInput': '지금 화면에는 글자를 입력할 곳이 없습니다.',
@@ -1346,6 +1355,8 @@ const TEXT_EN = {
   'use.radio.stamp': 'ESCAPE',
   'use.source.coupon': 'Secret Coupon',
   'use.source.item': 'Item',
+  'defeat.bankrupt.title': '{player} went bankrupt.',
+  'defeat.forfeit.title': '{player} forfeited.',
   'charm.flash': '{item} activated!',
   'charm.flash.double': 'You rolled doubles!',
   'charm.flash.discount': '{percent}% off {tile}',
@@ -1735,7 +1746,7 @@ const TEXT_EN = {
   'real.concorde': 'A supersonic airliner that cruised at Mach 2 and flew London to New York in about three and a half hours. (The record is 2 hours 52 minutes 59 seconds.) Heading west, you landed "earlier" than you took off by local time, and in flight the heat stretched the airframe by 15 to 25 cm. Only 20 were built, and it retired in 2003.',
   'real.columbia': 'On 12 April 1981 it became the first space shuttle to fly to space. On that first flight it circled the Earth 37 times in 54 and a half hours, less than 90 minutes per lap. It went up like a rocket, came down like an airplane, and flew 28 missions in all. One lap around this board is nothing.',
   'mcp.rules': '[How to play Hellmarble]\n- A turn-based board game for 2 to 4 players: one human and 1 to 3 AI players.\n- Everyone starts on Start with the same cash. (It depends on the league; see [Leagues] below.) You win when every other player is bankrupt, and you lose at once if you go bankrupt.\n- At the beginning everyone rolls two dice; turns go from the highest total. (Ties go to the lower player number.)\n- On your turn, roll two dice and move forward by the total. You receive a salary ({salary}) whenever you pass or stop on Start.\n- On doubles you roll again after the tile you landed on is resolved, and keep going while doubles continue. The turn ends, however, if you get stuck on the island or board the space shuttle.\n- If you land on an unowned land (city, Korean city or special facility) and have enough cash, you may buy it.\n- When you land on your own city again, you may build one building: villas (up to 2), a building (1) or a hotel (1). Nothing can be built on Korean cities or special facilities.\n- If you land on a land owned by another player, you pay its toll plus the fees of its buildings. A free pass, if you hold one, lets you skip the payment.\n- If you are short of cash, you must sell your lands to the bank ({sell}% of the purchase and building prices). If that is still not enough, you go bankrupt.\n- Secret Coupon : draw a coupon and do what it says. Free passes and radios can be kept for later.\n- Space Travel : you board and move to any tile on your next turn. If another player owns the Columbia, you pay a fee ({space}).\n- Desert Island : you are stuck. Doubles free you and you move by that roll (those doubles do not give another roll); otherwise you rest for 2 turns and move on the 3rd. A radio frees you at once.\n- Welfare Fund Desk : pay {welfare}. (If short, pay what you have; you do not go bankrupt.) Welfare Fund HQ : take all the money piled up.\n- Leagues : Green (x1), Orange (x5), Red (x30). The entry fee equals the starting cash, and the multiplier applies to every amount in the game.\n- If you win, your in-game cash plus the full value of your lands and buildings is added to your lobby money. If you lose, the entry fee is gone.',
-  'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n  In New Game, clicking a slot with data offers Overwrite / Load / Cancel. Load opens that slot without overwriting it.\n- Load : clicking a slot with data offers Load / Copy JSON / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel. "Copy JSON" copies that slot\'s save data to the clipboard.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn choose "Roll Dice", "Items", "Main Menu" (saves and leaves), or "Forfeit". Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n  Controls are unavailable during dice, movement, and money transfer animations; call hellmarble_wait until the next input is needed. Money visibly moves between players and also to or from the bank (shown at Start) and Welfare Fund HQ.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
+  'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n  In New Game, clicking a slot with data offers Overwrite / Load / Cancel. Load opens that slot without overwriting it.\n- Load : clicking a slot with data offers Load / Copy JSON / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel. "Copy JSON" copies that slot\'s save data to the clipboard.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn choose "Roll Dice", "Items", "Main Menu" (saves and leaves), or "Forfeit". Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n  Controls are unavailable during dice, movement, money transfer, and defeat animations; call hellmarble_wait until the next input is needed. Money visibly moves between players and also to or from the bank (shown at Start) and Welfare Fund HQ. When someone is defeated (bankruptcy or giving up), their token explodes and is blown off the board before the game goes on.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
   'mcp.tiles': 'Show or hide the info of a tile (value : 0-39)',
   'mcp.unknown': 'That action cannot be pressed right now. Check the actions of hellmarble_get_state.',
   'mcp.noInput': 'There is no text field on the current screen.',
@@ -2697,6 +2708,18 @@ export class HellmarbleHost {
   }
 
   /**
+   * 플레이어가 패배한 것(파산 또는 포기)을 연출한다. 사용자와 인공지능을 가리지 않는다.
+   * 그 플레이어는 이미 패배 처리되어 땅과 보관 쿠폰을 잃은 뒤이며, 진행 기록은 이 연출이 끝난 뒤에 남는다.
+   * @param {Object} player 패배한 플레이어
+   * @param {boolean} voluntary 포기로 인한 패배인지 여부
+   * @returns {Promise<void>}
+   */
+  async defeat(player, voluntary) {
+    void player;
+    void voluntary;
+  }
+
+  /**
    * 인공지능 플레이어가 판단하는 동안의 시간을 연출한다.
    * @param {Object} player 판단 중인 플레이어
    * @param {Object} request 판단할 내용
@@ -3466,7 +3489,7 @@ export class HellmarbleGame {
       let owned = this.owned(player);
       let answer = await this.decide(player, { type: 'sell', amount });
       if (answer === FORFEIT) {
-        this.bankrupt(player, true);
+        await this.bankrupt(player, true);
         return false;
       }
       let choice = Number(answer);
@@ -3492,7 +3515,7 @@ export class HellmarbleGame {
     await this.handover(player, creditor || BANK, paid);
     if (paid === amount) return true;
     this.log('log.partial', { player: player.id, amount: paid });
-    this.bankrupt(player);
+    await this.bankrupt(player);
     return false;
   }
 
@@ -3609,10 +3632,12 @@ export class HellmarbleGame {
 
   /**
    * 플레이어를 파산 또는 포기 처리한다. 남은 땅은 은행으로, 보관하던 쿠폰은 덱 맨 뒤로 돌아간다.
+   * 패배 처리를 마친 뒤 호스트가 패배를 연출하도록 알리고, 연출이 끝난 뒤에 진행 기록을 남긴다.
    * @param {Object} player 파산한 플레이어
    * @param {boolean} [voluntary=false] 포기로 인한 패배인지 여부
+   * @returns {Promise<void>}
    */
-  bankrupt(player, voluntary = false) {
+  async bankrupt(player, voluntary = false) {
     player.alive = false;
     player.boarded = false;
     player.island = 0;
@@ -3631,6 +3656,7 @@ export class HellmarbleGame {
         this.state.deck.push(id);
       }
     }
+    await this.call('defeat', player, voluntary);
     this.log(voluntary ? 'log.forfeit' : 'log.bankrupt', { player: player.id });
   }
 
@@ -3964,7 +3990,7 @@ export class HellmarbleGame {
     let answer = await this.decide(player, { type: 'travel' });
     if (answer === QUIT) return false;
     if (answer === FORFEIT) {
-      this.bankrupt(player, true);
+      await this.bankrupt(player, true);
       return true;
     }
     let target = Number(answer);
@@ -4011,7 +4037,7 @@ export class HellmarbleGame {
       let answer = await this.decide(player, { type: 'roll', again });
       if (answer === QUIT) return QUIT;
       if (answer === FORFEIT) {
-        this.bankrupt(player, true);
+        await this.bankrupt(player, true);
         return 'end';
       }
       let id = typeof answer === 'string' && answer.startsWith(ITEM_PREFIX) ? answer.slice(ITEM_PREFIX.length) : '';
@@ -7096,6 +7122,115 @@ export class HellmarbleApp extends HellmarbleHost {
       nodes.push(el('span', { class: 'hm-stamp hm-use-' + kind, text: this.t('use.' + kind + '.stamp'), style: { ...style, left: rect.left + rect.width / 2 + 'px', top: rect.top + rect.height / 2 + 'px' } }));
     } catch (error) {
       // 자리를 구할 수 없으면 만들어진 것까지만 보여준다.
+    }
+    this.root.append(...nodes);
+    return nodes;
+  }
+
+  /**
+   * 누군가 패배한 것(파산 또는 포기)을 보여준다. 사용자와 인공지능을 가리지 않는다.
+   * 패배한 플레이어의 말이 서 있던 자리에서 폭발이 일어나고, 말은 빙글빙글 돌며 보드 바깥으로 튕겨나간다.
+   * 폭발하는 순간 화면을 갱신하여 칸에 있던 말과 그 플레이어의 땅, 건물을 함께 치우고, 보드가 잠깐 흔들리며 그 칸과 플레이어의 카드가 붉게 번쩍인다.
+   * 보드 가운데에는 누가 어떻게 패배했는지를 알리는 알림을 띄운다. 진행 기록은 이 연출이 끝난 뒤에 남는다.
+   * @param {Object} player 패배한 플레이어
+   * @param {boolean} voluntary 포기로 인한 패배인지 여부
+   * @returns {Promise<void>}
+   */
+  async defeat(player, voluntary) {
+    let duration = this.timings.defeat;
+    if (!(duration > 0) || !this.game || !this.parts.center) return;
+    let kind = voluntary ? 'forfeit' : 'bankrupt';
+    let tile = this.tiles[player.position].node;
+    let board = tile.parentNode;
+    let debris = this.blowAway(player, duration);
+    let banner = el('div', { class: 'hm-defeat-flash', style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+      el('span', { class: 'hm-defeat-flash-icon', text: ICONS.defeat, attrs: { 'aria-hidden': 'true' } }),
+      el('strong', { class: 'hm-defeat-flash-title', text: this.t('defeat.' + kind + '.title', { player: this.playerName(player) }) }),
+    ]);
+    this.refresh();
+    this.parts.center.append(banner);
+    tile.classList.add('hm-tile-blast');
+    if (debris.length > 0) board.classList.add('hm-board-quake');
+    if (this.cards[player.id]) this.cards[player.id].classList.add('hm-player-pay');
+    await wait(duration);
+    banner.remove();
+    // 보드 위에 띄운 폭발과 튕겨나간 말을 치운다.
+    for (let node of debris) node.remove();
+    tile.classList.remove('hm-tile-blast');
+    board.classList.remove('hm-board-quake');
+    if (this.cards[player.id]) this.cards[player.id].classList.remove('hm-player-pay');
+  }
+
+  /**
+   * 패배한 플레이어의 말을 그 자리에서 터뜨려 보드 바깥으로 날려 보낸다.
+   * 말이 서 있던 자리에 불덩이와 충격파, 연기를 띄우고 불티를 사방으로 튀긴 뒤, 말과 똑같이 생긴 것을 만들어 보드 중앙에서 먼 쪽으로 날린다.
+   * 날아가는 말은 처음에는 제자리에서 크게 솟아오르고(보는 쪽으로 튀어 오르는 모습), 이어서 빙글빙글 돌며 보드를 벗어나 화면 밖으로 떨어진다.
+   * 날아가는 거리는 그 방향의 화면 끝까지로 잡아, 화면 끝이 가깝든 멀든 말이 화면을 벗어나는 순간에 움직임이 끝나게 한다.
+   * 칸에 있던 진짜 말은 부르는 쪽이 화면을 갱신하여 치우므로, 그 전에 불러서 말의 자리와 크기를 재야 한다.
+   * 움직임을 줄이도록 설정한 사용자에게는 아무것도 띄우지 않으며, 움직임 기능이 없는 브라우저에서는 만들어진 것까지만 보여준다.
+   * @param {Object} player 패배한 플레이어
+   * @param {number} duration 연출 전체의 시간 (밀리초)
+   * @returns {HTMLElement[]} 화면에 띄운 요소 목록 (연출이 끝나면 치워야 한다.)
+   */
+  blowAway(player, duration) {
+    let nodes = [];
+    try {
+      if (globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) return nodes;
+      let parts = this.tiles[player.position];
+      let from = this.partyPoint(player);
+      let piece = parts.tokens.querySelector('[data-player="' + player.id + '"]');
+      let size = piece ? piece.getBoundingClientRect().width : from.size * 0.3;
+      let board = parts.node.parentNode.getBoundingClientRect();
+      let look = this.styleOf(player);
+      let spot = { left: from.x + 'px', top: from.y + 'px', '--hm-size': from.size + 'px', '--hm-time': duration + 'ms' };
+      let colors = [look.color, '#ffd43b', '#ff922b', '#fa5252'];
+      nodes.push(el('span', { class: 'hm-blast-smoke', style: spot }), el('span', { class: 'hm-blast-wave', style: spot }), el('span', { class: 'hm-blast', style: spot }));
+      // 불티를 조금씩 다른 방향과 거리로 사방에 튀긴다. 네 개에 하나는 말의 색으로 하여 말의 조각처럼 보이게 한다.
+      for (let index = 0; index < BLAST_SPARKS; index++) {
+        let angle = ((index + ((index * 37) % 10) / 10 - 0.5) / BLAST_SPARKS) * Math.PI * 2;
+        let far = from.size * (0.8 + ((index * 53) % 80) / 100);
+        nodes.push(el('span', { class: 'hm-spark', style: { ...spot, '--hm-spark': colors[index % colors.length], '--hm-dx': Math.cos(angle) * far + 'px', '--hm-dy': Math.sin(angle) * far + 'px' } }));
+      }
+      let awayX = from.x - (board.left + board.width / 2);
+      let awayY = from.y - (board.top + board.height / 2);
+      let away = Math.hypot(awayX, awayY) || 1;
+      let unitX = awayX / away;
+      let unitY = awayY / away;
+      let width = document.documentElement.clientWidth;
+      let height = document.documentElement.clientHeight;
+      let exitX = unitX > 0 ? (width - from.x) / unitX : unitX < 0 ? -from.x / unitX : Infinity;
+      let exitY = unitY > 0 ? (height - from.y) / unitY : unitY < 0 ? -from.y / unitY : Infinity;
+      let reach = Math.max(Math.min(exitX, exitY) + size * 2.5, from.size * 1.5);
+      let spin = player.id % 2 === 0 ? 1 : -1;
+      let drift = spin * Math.min(reach * 0.35, board.width * 0.12);
+      let margin = size * 2.5;
+      let endX = from.x + unitX * reach - unitY * drift;
+      let endY = from.y + unitY * reach + unitX * drift;
+      // 옆으로 비껴가는 정도까지 반영해, 말 전체가 화면 밖으로 나갈 때까지 거리를 늘린다.
+      while (endX >= -margin && endX <= width + margin && endY >= -margin && endY <= height + margin) {
+        reach += Math.max(size * 0.5, board.width * 0.01);
+        drift = spin * Math.min(reach * 0.35, board.width * 0.12);
+        endX = from.x + unitX * reach - unitY * drift;
+        endY = from.y + unitY * reach + unitX * drift;
+      }
+      let token = this.buildLookToken(player.look, 'hm-token hm-token-out');
+      let frames = [];
+      Object.assign(token.style, { left: from.x + 'px', top: from.y + 'px' });
+      token.style.setProperty('--hm-size', size + 'px');
+      // 날아가는 길 위의 점을 차례로 구한다. 나아간 거리는 뒤로 갈수록 빠르게 늘고, 크기는 솟았다가 떨어지며, 길은 옆으로 조금씩 비껴간다.
+      for (let step = 0; step <= 12; step++) {
+        let t = step / 12;
+        let gone = reach * Math.pow(t, 1.8);
+        let bend = drift * t;
+        let x = unitX * gone - unitY * bend;
+        let y = unitY * gone + unitX * bend;
+        let scale = 1 + 1.9 * Math.sin(Math.PI * Math.pow(t, 0.6));
+        frames.push({ transform: 'translate(-50%, -50%) translate(' + x + 'px, ' + y + 'px) scale(' + scale + ') rotate(' + spin * 1080 * t + 'deg)', opacity: t > 0.85 ? (1 - t) / 0.15 : 1 });
+      }
+      token.animate(frames, { duration: duration * 0.78, delay: duration * 0.04, easing: 'linear', fill: 'both' });
+      nodes.push(token);
+    } catch (error) {
+      // 움직임을 표현할 수 없는 브라우저에서는 만들어진 것까지만 보여준다.
     }
     this.root.append(...nodes);
     return nodes;
