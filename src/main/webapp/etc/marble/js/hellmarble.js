@@ -48,6 +48,47 @@ export const WELFARE_FEE = 150000;
  */
 export const SPACE_FEE = 200000;
 /**
+ * 우주여행 코스에서 출발지(지구)를 지나거나 지구에 멈출 때 받는 기본 월급(원)이다.
+ * @type {number}
+ */
+export const SPACE_SALARY = 300000;
+/**
+ * 우주여행 코스에서 타임머신 소유자에게 내는 시간여행 기본 이용료(원)이다.
+ * @type {number}
+ */
+export const TIME_FEE = 300000;
+/**
+ * 우주여행 코스에서 모인 기금이 없는 우주조난기지에 도착했을 때 내는 기본 금액(원)이다.
+ * @type {number}
+ */
+export const RESCUE_FEE = 200000;
+/**
+ * 우주여행 코스에서 기지를 한 번 증축하는 기본 비용(원)이다. 어느 별이나 같다.
+ * @type {number}
+ */
+export const ANNEX_COST = 100000;
+/**
+ * 우주여행 코스에서 기지를 한 번 증축할 때마다 오르는 기본 이용료(원)이다. 어느 별이나 같다.
+ * @type {number}
+ */
+export const ANNEX_FEE = 100000;
+/**
+ * 우주여행 코스에서 기지를 끝까지(BUILD_LIMIT.annex 번) 증축했을 때 이용료가 추가로 더 오르는 기본 금액(원)이다. 어느 별이나 같다.
+ * @type {number}
+ */
+export const ANNEX_BONUS = 200000;
+/**
+ * 우주여행 코스에서 시간여행에 탑승한 뒤, 또는 블랙홀에서 3턴 째에 풀려난 뒤 굴린 주사위의 합이 이 값 이상이어야 뜻대로 된다.
+ * (시간여행은 원하는 칸으로 이동하고, 블랙홀은 땅을 반납하지 않는다.)
+ * @type {number}
+ */
+export const SAFE_SUM = 4;
+/**
+ * 우주여행 코스에서 시간여행에 탑승한 뒤 굴린 주사위의 합이 모자랄 때 앞으로 이동하는 칸 수이다.
+ * @type {number}
+ */
+export const TIME_SLIP = 5;
+/**
  * 저장 슬롯을 새로 만들 때 대기실에 지급되는 금액(원)이다.
  * @type {number}
  */
@@ -78,15 +119,16 @@ export const ISLAND_TURNS = 3;
  */
 export const BUILDINGS = ['villa', 'building', 'hotel'];
 /**
- * 도시 하나에 지을 수 있는 건물 종류별 최대 개수이다.
+ * 땅 하나에 지을 수 있는 건물 종류별 최대 개수이다. (세계여행 코스의 별장, 빌딩, 호텔과 우주여행 코스의 기지, 기지의 증축)
+ * 증축(annex)은 따로 서는 건물이 아니라 그 별의 기지를 키우는 것이어서, 증축한 기지도 기지 하나로 센다.
  * @type {Object<string, number>}
  */
-export const BUILD_LIMIT = { villa: 2, building: 1, hotel: 1 };
+export const BUILD_LIMIT = { villa: 2, building: 1, hotel: 1, base: 1, annex: 3 };
 /**
- * 구매할 수 있는 땅의 종류 목록이다. (일반 도시, 한국 도시, 특수 시설)
+ * 구매할 수 있는 땅의 종류 목록이다. (세계여행 코스의 일반 도시, 한국 도시, 특수 시설과 우주여행 코스의 별)
  * @type {string[]}
  */
-export const PROPERTY_TYPES = ['city', 'korea', 'special'];
+export const PROPERTY_TYPES = ['city', 'korea', 'special', 'star'];
 /**
  * 사용자가 차례 진행 대신 메인 메뉴로 나가기를 선택했음을 나타내는 값이다.
  * @type {string}
@@ -113,10 +155,16 @@ export const FUND = 'fund';
  */
 const LOG_LIMIT = 80;
 /**
- * 저장 데이터의 형식 버전이다.
+ * 저장 데이터의 형식 버전이다. 슬롯 데이터와 그 안의 게임 진행 상태에 함께 적는다.
+ * 저장 데이터의 모양을 바꾸면 이 값을 올리고, 바로 앞 버전의 데이터를 새 모양으로 바꾸는 함수를 SAVE_UPGRADES 에 더한다.
  * @type {number}
  */
-const SAVE_VERSION = 5;
+export const SAVE_VERSION = 8;
+/**
+ * 버전 표기가 없는 저장 데이터를 취급하는 버전이다. 슬롯 데이터에 버전을 적기 시작하기 바로 전의 형식이다.
+ * @type {number}
+ */
+export const LEGACY_VERSION = 5;
 /**
  * 게임 진행을 강제로 중단시킬 때 던지는 신호 객체이다.
  * @type {{stop: boolean}}
@@ -149,10 +197,11 @@ const NAME_LIMIT = 12;
  * coupon: 비밀쿠폰 표시 (6초), transfer: 플레이어 간 돈 이동, bank: 은행 또는 사회복지기금 본부와의 돈 이동 (자주 일어나므로 조금 짧다),
  * boost: 큰 금액이 오갈 때 돈 이동에 더하는 시간, use: 우대권 또는 무전기 사용 표시,
  * charm: 부적 효과 발동 표시, defeat: 패배한 플레이어의 말이 폭발과 함께 보드 밖으로 튕겨나가는 모습,
+ * notice: 우주여행 코스의 카드 효과 같은 사건 알림 표시, cast: 카드의 효과로 굴리는 주사위의 굴림,
  * think: 인공지능 판단, pause: 연출 사이 간격, result: 패배 화면 표시
  * @type {Object<string, number>}
  */
-export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, boost: 200, use: 1700, charm: 1900, defeat: 1800, think: 700, pause: 500, result: 3500 };
+export const TIMINGS = { dice: 900, step: 500, fastStep: 250, coupon: 6000, transfer: 1800, bank: 1200, boost: 200, use: 1700, charm: 1900, defeat: 1800, notice: 1600, cast: 700, think: 700, pause: 500, result: 3500 };
 
 /**
  * 패배한 플레이어의 말이 폭발할 때 사방으로 튀는 불티의 수이다.
@@ -173,26 +222,29 @@ const BIG_BILLS = 44;
 
 /**
  * 리그별 설정이다. 적힌 순서대로 대기실에 나온다.
+ * course 는 그 리그가 진행되는 코스(COURSES 의 키 : 'world' 세계여행 코스, 'space' 우주여행 코스)이다.
  * multiplier 는 금액 배율, fee 는 참가비(원), cash 는 게임을 시작할 때 모든 플레이어가 가지는 돈(원),
  * weights 는 인공지능 플레이어가 1, 2, 3명일 확률의 가중치이다. (가중치가 0 인 인원으로는 진행하지 않는다.)
  * reward 는 정해진 승리 보상(원)이며, null 이면 게임에서 가진 돈과 땅, 건물의 가치를 얻는다.
  * hideFrom 은 대기실 보유 금액이 이 값 이상이면 리그를 보여주지 않는 기준(원)이며, null 이면 언제나 보여준다.
  * items 는 소모형 아이템을 게임에 가져가 쓸 수 있는지 여부이다.
  * rivalCharms 는 인공지능 한 명이 장착하고 시작하는 부적의 등급 목록이며, 비어 있으면 인공지능은 부적을 쓰지 않는다.
- * @type {Object<string, {multiplier: number, fee: number, cash: number, weights: number[], color: string, reward: number|null, hideFrom: number|null, items: boolean, rivalCharms: string[]}>}
+ * @type {Object<string, {course: string, multiplier: number, fee: number, cash: number, weights: number[], color: string, reward: number|null, hideFrom: number|null, items: boolean, rivalCharms: string[]}>}
  */
 export const LEAGUES = {
-  white: { multiplier: 1, fee: 0, cash: 1000000, weights: [1, 0, 0], color: '#868e96', reward: 3000000, hideFrom: 5000000, items: false, rivalCharms: [] },
-  green: { multiplier: 1, fee: 3000000, cash: 3000000, weights: [1, 2, 1], color: '#2f9e44', reward: null, hideFrom: null, items: true, rivalCharms: [] },
-  orange: { multiplier: 5, fee: 15000000, cash: 15000000, weights: [1, 1, 2], color: '#f08c00', reward: null, hideFrom: null, items: true, rivalCharms: [] },
-  red: { multiplier: 30, fee: 90000000, cash: 90000000, weights: [1, 2, 4], color: '#e03131', reward: null, hideFrom: null, items: true, rivalCharms: ['common', 'uncommon'] },
+  white: { course: 'world', multiplier: 1, fee: 0, cash: 1000000, weights: [1, 0, 0], color: '#868e96', reward: 3000000, hideFrom: 5000000, items: false, rivalCharms: [] },
+  green: { course: 'world', multiplier: 1, fee: 3000000, cash: 3000000, weights: [1, 2, 1], color: '#2f9e44', reward: null, hideFrom: null, items: true, rivalCharms: [] },
+  orange: { course: 'world', multiplier: 5, fee: 15000000, cash: 15000000, weights: [1, 1, 2], color: '#f08c00', reward: null, hideFrom: null, items: true, rivalCharms: [] },
+  red: { course: 'world', multiplier: 30, fee: 90000000, cash: 90000000, weights: [1, 2, 4], color: '#e03131', reward: null, hideFrom: null, items: true, rivalCharms: ['common', 'uncommon'] },
+  purple: { course: 'space', multiplier: 1, fee: 4000000, cash: 4000000, weights: [1, 2, 1], color: '#7950f2', reward: null, hideFrom: null, items: true, rivalCharms: [] },
+  black: { course: 'space', multiplier: 20, fee: 80000000, cash: 80000000, weights: [1, 1, 2], color: '#495057', reward: null, hideFrom: null, items: true, rivalCharms: ['common', 'uncommon'] },
 };
 
 /**
  * 땅 색상 이름에 대응하는 화면 표시 색이다.
  * @type {Object<string, string>}
  */
-export const LAND_COLORS = { yellow: '#f5c211', blue: '#3b9dea', navy: '#3d4fd6', red: '#e03131', green: '#2f9e44', gold: '#d4a017' };
+export const LAND_COLORS = { yellow: '#f5c211', blue: '#3b9dea', navy: '#3d4fd6', red: '#e03131', green: '#2f9e44', gold: '#d4a017', purple: '#9c36b5', gray: '#868e96' };
 
 /**
  * 한 게임에 참여할 수 있는 최대 플레이어 수이다. (사용자 1명과 인공지능 최대 3명)
@@ -275,6 +327,7 @@ export const CHARM_GRADES = {
  * @property {number} [percent] 땅값 또는 통행료·이용료를 깎아 주는 비율 (%) (discount, toll 만)
  * @property {string} [building] 무료로 지어지는 건물의 종류 (build 만)
  * @property {boolean} [revisit] 땅을 살 때뿐 아니라 자기 땅에 다시 도착했을 때에도 적용되는지 여부 (build 만)
+ * @property {number} [base] 우주여행 코스에서 건물 대신 기지 하나가 무료로 지어질 확률 (%) (build 만. 그 코스에는 별장, 빌딩, 호텔이 없어 효과가 이렇게 바뀐다.)
  */
 
 /**
@@ -286,16 +339,16 @@ export const CHARMS = {
   oldcoin: { grade: 'common', icon: '🪙', effect: 'discount', chance: 5, percent: 10 },
   expiredvoucher: { grade: 'common', icon: '🏷️', effect: 'toll', chance: 5, percent: 5 },
   tornlottery: { grade: 'uncommon', icon: '🎫', effect: 'redraw', chance: 10 },
-  realtor: { grade: 'uncommon', icon: '📇', effect: 'build', chance: 20, building: 'villa', revisit: false },
+  realtor: { grade: 'uncommon', icon: '📇', effect: 'build', chance: 20, building: 'villa', revisit: false, base: 10 },
   scratched: { grade: 'uncommon', icon: '🎟️', effect: 'redraw', chance: 20 },
   woodendice: { grade: 'uncommon', icon: '🪵', effect: 'double', chance: 15 },
   memorialcoin: { grade: 'uncommon', icon: '🏅', effect: 'discount', chance: 10, percent: 10 },
   mysteryvoucher: { grade: 'uncommon', icon: '🎁', effect: 'toll', chance: 7, percent: 7 },
   fortunecookie: { grade: 'rare', icon: '🥠', effect: 'redraw', chance: 30 },
-  lawfirm: { grade: 'rare', icon: '💼', effect: 'build', chance: 10, building: 'building', revisit: true },
+  lawfirm: { grade: 'rare', icon: '💼', effect: 'build', chance: 10, building: 'building', revisit: true, base: 15 },
   stock: { grade: 'rare', icon: '📈', effect: 'discount', chance: 10, percent: 25 },
   expresscard: { grade: 'rare', icon: '💳', effect: 'toll', chance: 10, percent: 10 },
-  president: { grade: 'legend', icon: '🏛️', effect: 'build', chance: 10, building: 'hotel', revisit: true },
+  president: { grade: 'legend', icon: '🏛️', effect: 'build', chance: 10, building: 'hotel', revisit: true, base: 20 },
   pendant: { grade: 'legend', icon: '📿', effect: 'redraw', chance: 45 },
   etf: { grade: 'legend', icon: '📊', effect: 'discount', chance: 10, percent: 50 },
   blackcard: { grade: 'legend', icon: '🖤', effect: 'toll', chance: 15, percent: 15 },
@@ -324,8 +377,10 @@ export const CHARM_TICKETS = {
  * @property {string} [badge] 그림 문자가 같은 아이템을 구분하려고 그림 위에 덧붙이는 짧은 표시 (예 : 주사위에서 나오는 눈)
  * @property {string} category 상점과 보유 목록에서 묶어 보여주는 분류 (ITEM_CATEGORIES 의 값)
  * @property {string} use 사용 방식. 'ask' 는 쓸 상황이 되면 게임이 사용 여부를 묻고, 'turn' 은 주사위를 굴릴 차례에 아이템 목록에서 직접 쓴다.
- * @property {string} limit 게임 한 판에 한 번이라는 사용 제한을 함께 쓰는 묶음의 이름. 같은 묶음의 아이템은 한 판에 하나만 쓸 수 있다.
- * @property {string} [effect] 직접 쓰는 아이템의 효과 ('space' : 우주여행 무료 탑승, 'dice' : 주사위 조작)
+ * @property {string} limit 게임 한 판의 사용 횟수 제한을 함께 쓰는 묶음의 이름. 같은 묶음의 아이템은 합쳐서 정해진 횟수까지만 쓸 수 있다.
+ * @property {number} [uses] 게임 한 판에 쓸 수 있는 횟수 (생략하면 1). 같은 묶음의 아이템은 같은 값을 적는다.
+ * @property {string} [course] 쓸 수 있는 코스 (COURSES 의 키). 생략하면 어느 코스에서나 쓸 수 있다. 쓸 수 없는 코스의 게임에는 가져가지 않는다.
+ * @property {string} [effect] 직접 쓰는 아이템의 효과 ('space' : 우주여행 무료 탑승, 'time' : 시간여행 무료 탑승, 'dice' : 주사위 조작)
  * @property {number[]} [faces] 주사위 조작형 아이템을 썼을 때 주사위에서 나오는 눈
  */
 
@@ -334,9 +389,12 @@ export const CHARM_TICKETS = {
  * @type {Object<string, HellmarbleItem>}
  */
 export const ITEMS = {
-  pass: { price: 300000, icon: '🎟️', category: 'support', use: 'ask', limit: 'pass' },
-  radio: { price: 200000, icon: '📻', category: 'support', use: 'ask', limit: 'radio' },
-  invitation: { price: 200000, icon: '💌', category: 'travel', use: 'turn', limit: 'invitation', effect: 'space' },
+  pass: { price: 300000, icon: '🎟️', category: 'support', use: 'ask', limit: 'pass', course: 'world' },
+  radio: { price: 200000, icon: '📻', category: 'support', use: 'ask', limit: 'radio', course: 'world' },
+  invitation: { price: 200000, icon: '💌', category: 'travel', use: 'turn', limit: 'invitation', course: 'world', effect: 'space' },
+  timeinvite: { price: 200000, icon: '📨', category: 'travel', use: 'turn', limit: 'timeinvite', course: 'space', effect: 'time' },
+  angel: { price: 400000, icon: '👼', category: 'support', use: 'ask', limit: 'angel', uses: 2, course: 'space' },
+  escape: { price: 200000, icon: '🛸', category: 'support', use: 'ask', limit: 'escape', course: 'space' },
   bigdice: { price: 200000, icon: '🎲', badge: '4~6', category: 'dice', use: 'turn', limit: 'dice', effect: 'dice', faces: [4, 5, 6] },
   smalldice: { price: 200000, icon: '🎲', badge: '1~3', category: 'dice', use: 'turn', limit: 'dice', effect: 'dice', faces: [1, 2, 3] },
 };
@@ -370,6 +428,8 @@ const ICONS = {
   start: '🏁', coupon: '🎫', space: '🚀', island: '🏝️', fund: '💰', desk: '🧾',
   jeju: '🍊', busan: '🌊', seoul: '👑', concorde: '✈️', columbia: '🛰️',
   villa: '🏠', building: '🏢', hotel: '🏨', pass: '🎟️', radio: '📻', bank: '🏦', defeat: '💥',
+  earth: '🌍', telepathy: '🔮', neuron: '🧠', timetravel: '⏳', blackhole: '🕳️', rescue: '🛟', halley: '☄️', timemachine: '🕰️',
+  moon: '🌙', saturn: '🪐', vega: '💜', altair: '💜', base: '📡', annex: '🔧', angel: '👼', escape: '🛸', dice: '🎲', notice: '✨',
 };
 
 /**
@@ -437,25 +497,32 @@ const MCP_TOOLS = {
  * 보드 한 칸의 정보이다. 구매할 수 없는 기능 칸(출발지, 비밀쿠폰 등)에는 색상과 금액 항목이 없다.
  * @typedef {Object} HellmarbleTile
  * @property {string} id 칸 식별자
- * @property {string} type 칸 종류 (city, korea, special, start, coupon, space, island, fund, desk)
+ * @property {string} type 칸 종류 (세계여행 코스 : city, korea, special, start, coupon, space, island, fund, desk /
+ *   우주여행 코스 : star, special, start, telepathy, neuron, timetravel, blackhole, rescue, halley)
  * @property {string} [color] 땅 색상 이름 (규칙상의 색)
  * @property {string} [show] 화면에 보일 색상 이름
  * @property {number} [price] 땅 구매가 (원)
- * @property {number} [toll] 기본 통행료 (원)
- * @property {Object<string, number>} [cost] 건물 종류별 건설비 (원). 일반 도시에만 있다.
- * @property {Object<string, number>} [fee] 건물 종류별 이용료 (원). 일반 도시에만 있다.
+ * @property {number} [toll] 기본 통행료 (원). 별에서는 기지가 없을 때의 이용료이다.
+ * @property {Object<string, number>} [cost] 건물 종류별 건설비 (원). 일반 도시와 별에만 있다.
+ * @property {Object<string, number>} [fee] 건물 종류별 이용료 (원). 일반 도시에서는 통행료에 더하는 금액이고, 별에서는 기지가 있을 때의 이용료 전체이다.
  */
 
 /**
- * 비밀쿠폰 한 종류의 정보이다.
+ * 카드 한 종류의 정보이다. 세계여행 코스의 비밀쿠폰과 우주여행 코스의 텔레파시 카드, 뉴런의 골짜기 카드가 이 모양을 함께 쓴다.
  * @typedef {Object} HellmarbleCoupon
  * @property {number} count 덱에 들어가는 장수
- * @property {string} effect 효과의 종류 (gain, pay, tax, move, back, island, space, air, halfsale, keep)
+ * @property {string} effect 효과의 종류 (비밀쿠폰 : gain, pay, tax, move, back, island, space, air, halfsale, keep / 우주여행 코스의 카드는 TELEPATHY 와 NEURON 의 설명 참고)
  * @property {number} [amount] 받거나 내는 기본 금액 (원)
  * @property {string} [target] 이동할 칸의 식별자
- * @property {number} [steps] 뒤로 이동할 칸 수
+ * @property {number} [steps] 이동할 칸 수 (뒤로 이동하는 카드의 칸 수, 케플러의 조화의 법칙에서는 별 하나당 칸 수)
  * @property {Object<string, number>} [rates] 건물 종류별 1개당 내는 금액 (원)
- * @property {boolean} [harm] 뽑은 플레이어에게 바로 손해가 되는 쿠폰인지 여부 (돈을 내거나 땅을 잃거나 무인도로 감). 부적의 다시 뽑기 효과가 본다.
+ * @property {number} [bare] 기지가 없는 별 하나당 내는 금액 (원)
+ * @property {number} [built] 기지가 있는 별 하나당 내는 금액 (원)
+ * @property {number} [pay] 조건에 걸렸을 때 내는 금액 (원)
+ * @property {number} [gain] 조건에 걸리지 않았을 때 받는 금액 (원)
+ * @property {number} [need] 효과를 얻는 데 필요한 주사위 눈의 합
+ * @property {number} [range] 효과가 미치는 앞뒤 칸의 수
+ * @property {boolean} [harm] 뽑은 플레이어에게 바로 손해가 되는 카드인지 여부 (돈을 내거나 땅이나 기지를 잃거나 갇힘). 부적의 다시 뽑기 효과가 본다.
  */
 
 /**
@@ -499,16 +566,34 @@ function estate(id, type, price, toll, show) {
 }
 
 /**
- * 구매할 수 없는 기능 칸(출발지, 비밀쿠폰 등)의 정보를 만든다.
- * @param {string} id 칸 식별자이자 종류
- * @returns {Object} 칸 정보
+ * 우주여행 코스에서 기지를 지을 수 있는 별(행성 또는 별자리)의 땅 정보를 만든다.
+ * 기지의 증축 비용과 증축 한 번에 오르는 이용료는 어느 별이나 같다. (ANNEX_COST, ANNEX_FEE)
+ * @param {string} id 땅 식별자
+ * @param {string} color 땅 색상 이름
+ * @param {number} price 땅 구매가 (만원)
+ * @param {number} base 기지 건설비 (만원)
+ * @param {number[]} fees 기지가 없을 때와 있을 때의 이용료 (만원)
+ * @returns {Object} 땅 정보
  */
-function spot(id) {
-  return { id, type: id };
+function star(id, color, price, base, fees) {
+  return {
+    id, type: 'star', color, show: color, price: won(price), toll: won(fees[0]),
+    cost: { base: won(base), annex: ANNEX_COST }, fee: { base: won(fees[1]), annex: ANNEX_FEE },
+  };
 }
 
 /**
- * 보드의 구성이다. 출발지(0번)부터 진행 방향 순서대로 40칸을 나열한다.
+ * 구매할 수 없는 기능 칸(출발지, 비밀쿠폰 등)의 정보를 만든다.
+ * @param {string} id 칸 식별자
+ * @param {string} [type] 칸 종류 (생략하면 식별자와 같다.)
+ * @returns {Object} 칸 정보
+ */
+function spot(id, type) {
+  return { id, type: type || id };
+}
+
+/**
+ * 세계여행 코스의 보드 구성이다. 출발지(0번)부터 진행 방향 순서대로 40칸을 나열한다.
  * 1면: 0~10, 2면: 10~20, 3면: 20~30, 4면: 30~0 이며 모서리 칸은 두 면이 공유한다.
  * @type {HellmarbleTile[]}
  */
@@ -556,23 +641,89 @@ export const BOARD = [
 ];
 
 /**
+ * 우주여행 코스의 보드 구성이다. 지구(출발지, 0번)부터 진행 방향 순서대로 40칸을 나열한다.
+ * 1면: 0~10, 2면: 10~20, 3면: 20~30, 4면: 30~0 이며 모서리 칸은 두 면이 공유한다.
+ * 별의 금액은 순서대로 땅 구매, 기지 건설, 기지가 없을 때의 이용료, 기지가 있을 때의 이용료이다.
+ * @type {HellmarbleTile[]}
+ */
+export const SPACE_BOARD = [
+  spot('earth', 'start'),
+  star('moon', 'yellow', 10, 5, [5, 20]),
+  spot('telepathy'),
+  star('mars', 'yellow', 15, 8, [10, 25]),
+  star('jupiter', 'yellow', 30, 15, [20, 45]),
+  star('vega', 'purple', 50, 25, [35, 80]),
+  star('saturn', 'yellow', 30, 15, [20, 45]),
+  spot('telepathy'),
+  star('uranus', 'yellow', 15, 8, [10, 25]),
+  star('neptune', 'yellow', 15, 8, [10, 25]),
+  spot('timetravel'),
+  star('aries', 'red', 25, 13, [16, 40]),
+  star('taurus', 'red', 30, 15, [20, 45]),
+  spot('telepathy'),
+  star('gemini', 'red', 40, 20, [27, 60]),
+  spot('neuron'),
+  star('cancer', 'red', 45, 23, [30, 70]),
+  { id: 'timemachine', type: 'special', color: 'gray', show: 'gray', price: won(50), toll: won(30) },
+  star('leo', 'red', 50, 25, [35, 80]),
+  star('virgo', 'red', 60, 30, [40, 100]),
+  spot('blackhole'),
+  star('libra', 'blue', 60, 30, [40, 100]),
+  star('scorpius', 'blue', 50, 25, [35, 80]),
+  spot('telepathy'),
+  star('sagittarius', 'blue', 45, 23, [30, 70]),
+  star('altair', 'purple', 50, 25, [35, 80]),
+  star('capricornus', 'blue', 40, 20, [27, 60]),
+  star('aquarius', 'blue', 30, 15, [20, 45]),
+  star('pisces', 'blue', 25, 13, [16, 40]),
+  spot('telepathy'),
+  spot('rescue'),
+  star('ursamajor', 'green', 30, 15, [15, 45]),
+  star('andromeda', 'green', 40, 20, [27, 60]),
+  spot('telepathy'),
+  star('orion', 'green', 40, 20, [27, 60]),
+  spot('neuron'),
+  star('cygnus', 'green', 30, 15, [15, 45]),
+  spot('halley'),
+  star('mercury', 'yellow', 10, 5, [5, 20]),
+  star('venus', 'yellow', 10, 5, [5, 20]),
+];
+
+/**
  * 칸 식별자로 칸 번호를 찾을 수 있는 표를 만든다. (같은 식별자가 여럿이면 첫 칸을 쓴다.)
+ * @param {HellmarbleTile[]} board 보드의 칸 목록
  * @returns {Object<string, number>} 식별자별 칸 번호
  */
-function indexTiles() {
+function indexTiles(board) {
   let table = {};
   // 보드의 모든 칸을 순회하며 식별자별 첫 칸 번호를 기록한다.
-  for (let index = 0; index < BOARD.length; index++) {
-    if (table[BOARD[index].id] === undefined) table[BOARD[index].id] = index;
+  for (let index = 0; index < board.length; index++) {
+    if (table[board[index].id] === undefined) table[board[index].id] = index;
   }
   return table;
 }
 
 /**
- * 칸 식별자별 칸 번호이다. (예: TILES.island 는 무인도의 칸 번호)
+ * 세계여행 코스의 칸 식별자별 칸 번호이다. (예: TILES.island 는 무인도의 칸 번호)
  * @type {Object<string, number>}
  */
-export const TILES = indexTiles();
+export const TILES = indexTiles(BOARD);
+/**
+ * 우주여행 코스의 칸 식별자별 칸 번호이다. (예: SPACE_TILES.blackhole 은 블랙홀의 칸 번호)
+ * @type {Object<string, number>}
+ */
+export const SPACE_TILES = indexTiles(SPACE_BOARD);
+/**
+ * 우주여행 코스에서 한 플레이어가 함께 가질 수 없는 두 별(직녀성, 견우성)의 식별자이다.
+ * 두 별 모두 주인이 생기면 두 주인은 지구로 이동하여 월급을 받고 기지를 지을 기회를 얻는다.
+ * @type {string[]}
+ */
+export const LOVERS = ['vega', 'altair'];
+/**
+ * 뉴런의 골짜기 카드 "조디악의 선물"에서 주사위 눈의 수(1~12)에 대응하는 별의 식별자이다.
+ * @type {string[]}
+ */
+export const ZODIAC = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpius', 'sagittarius', 'capricornus', 'aquarius', 'pisces'];
 
 /**
  * 비밀쿠폰의 구성이다. count 는 장수, effect 는 효과의 종류이다.
@@ -607,6 +758,158 @@ export const COUPONS = {
   pension: { count: 4, effect: 'gain', amount: won(5) },
   castaway: { count: 2, effect: 'island', harm: true },
 };
+
+/**
+ * 우주여행 코스의 텔레파시 카드 구성이다. (53장) count 는 장수, effect 는 효과의 종류이다.
+ * gain: 은행에서 받음, pay: 은행에 냄, bases: 기지 수만큼 받음, basepay: 기지 수만큼 냄, ecology: 별마다 냄(기지 유무에 따라 다름),
+ * rescue: 우주조난기지로 가서 기금을 받음, lovers: 견우성 또는 직녀성을 무료로 얻음, luckydice: 주사위 1개의 눈만큼 받음,
+ * party: 다른 플레이어를 화성으로 보냄, blackhole: 블랙홀로 이동, valley: 뉴런의 골짜기 칸으로 이동, move: 지정한 칸으로 전진,
+ * machinefix: 타임머신의 주인에게서 받음, rob: 다른 모든 플레이어에게서 받음, offcourse: 돈을 내고 뒤로 이동, reverse: 주사위 1개의 눈만큼 뒤로 이동,
+ * basereturn: 기지 하나를 반납, roundtrip: 보드를 한 바퀴 돎, timetravel: 무료 시간여행, keep: 보관하는 카드
+ * harm 이 true 인 카드는 뽑은 플레이어에게 바로 손해가 되는 것으로, 부적의 다시 뽑기 효과가 피하려는 대상이다.
+ * @type {Object<string, HellmarbleCoupon>}
+ */
+export const TELEPATHY = {
+  architecture: { count: 1, effect: 'bases', amount: won(10) },
+  ecology: { count: 1, effect: 'ecology', bare: won(5), built: won(10), harm: true },
+  rescue: { count: 2, effect: 'rescue' },
+  lovers: { count: 1, effect: 'lovers' },
+  meteorite: { count: 4, effect: 'gain', amount: won(30) },
+  luckydice: { count: 2, effect: 'luckydice', amount: won(10) },
+  cosmos: { count: 2, effect: 'gain', amount: won(50) },
+  party: { count: 1, effect: 'party', target: 'mars' },
+  fear: { count: 1, effect: 'blackhole', harm: true },
+  virus: { count: 4, effect: 'pay', amount: won(25), harm: true },
+  waste: { count: 1, effect: 'basepay', amount: won(5), harm: true },
+  baserepair: { count: 1, effect: 'basepay', amount: won(5), harm: true },
+  valley: { count: 2, effect: 'valley' },
+  recall: { count: 2, effect: 'move', target: 'earth' },
+  asteroid: { count: 1, effect: 'basepay', amount: won(10), harm: true },
+  machinefix: { count: 2, effect: 'machinefix', amount: won(30) },
+  spectrumgun: { count: 1, effect: 'rob', amount: won(10) },
+  offcourse: { count: 2, effect: 'offcourse', amount: won(25), steps: 3, harm: true },
+  peace: { count: 4, effect: 'gain', amount: won(50) },
+  basereturn: { count: 1, effect: 'basereturn', harm: true },
+  roundtrip: { count: 2, effect: 'roundtrip' },
+  timeticket: { count: 2, effect: 'timetravel' },
+  robot: { count: 4, effect: 'gain', amount: won(50) },
+  pirates: { count: 1, effect: 'basereturn', harm: true },
+  reverse: { count: 3, effect: 'reverse' },
+  escape: { count: 3, effect: 'keep' },
+  angel: { count: 2, effect: 'keep' },
+};
+
+/**
+ * 우주여행 코스의 뉴런의 골짜기 카드 구성이다. (28장) count 는 장수, effect 는 효과의 종류이며 카드마다 고유한 효과를 가진다.
+ * huygens: 토성으로 가서 주사위로 빼앗기를 겨룸, apollo: 달에 들렀다가 지구로 돌아와 월급을 받음, newton: 가장 가까운 주인 없는 별로 이동,
+ * freebase: 자기 별에 기지를 무료로 건설, einstein: 눈이 가장 낮은 플레이어의 가장 비싼 별과 자기의 가장 싼 별을 교환,
+ * psychic: 자기 별과 주인 없는 별을 교환, doppler: 별이 가장 많으면 내고 아니면 받음, zodiac: 주사위 눈에 해당하는 별자리로 이동,
+ * moravec: 원하는 칸으로 이동, copernicus: 지구로 가서 월급을 받고 한 번 더 굴림, kepler: 가진 별의 수에 비례해 전진,
+ * shapley: 앞뒤의 별 주인들에게서 측정료를 받음, humboldt: 눈이 가장 낮은 플레이어의 가장 싼 땅을 반납시킴,
+ * spectrum: 주사위 2개의 합이 need 이상이면 기지를 무료로 건설, mobius: 눈이 가장 높은 플레이어와 함께 전진,
+ * contract: 별이 가장 많은 플레이어와 별을 교환, pascal: 남의 별로 가서 주사위로 이용료를 겨룸
+ * @type {Object<string, HellmarbleCoupon>}
+ */
+export const NEURON = {
+  huygens: { count: 1, effect: 'huygens', target: 'saturn' },
+  apollo: { count: 2, effect: 'apollo', target: 'moon' },
+  newton: { count: 2, effect: 'newton' },
+  appleseed: { count: 2, effect: 'freebase' },
+  einstein: { count: 1, effect: 'einstein' },
+  psychic: { count: 1, effect: 'psychic' },
+  doppler: { count: 2, effect: 'doppler', pay: won(30), gain: won(70), harm: true },
+  zodiac: { count: 2, effect: 'zodiac' },
+  moravec: { count: 2, effect: 'moravec' },
+  copernicus: { count: 2, effect: 'copernicus' },
+  kepler: { count: 2, effect: 'kepler', steps: 2 },
+  shapley: { count: 2, effect: 'shapley', amount: won(20), range: 5 },
+  humboldt: { count: 1, effect: 'humboldt' },
+  spectrum: { count: 2, effect: 'spectrum', need: 7 },
+  mobius: { count: 2, effect: 'mobius' },
+  contract: { count: 1, effect: 'contract' },
+  pascal: { count: 1, effect: 'pascal', amount: won(30) },
+};
+
+/**
+ * 코스 하나의 구성(보드와 카드, 그 코스만의 값과 이름의 묶음)이다. 리그마다 어느 코스로 진행하는지 정해져 있다. (LEAGUES 의 course)
+ * 여기에는 값만 둔다. 그 코스만의 규칙은 HellmarbleGame 을 상속한 엔진 클래스에, 판단은 HellmarbleAI 를 상속한 인공지능 클래스에 구현하며,
+ * 코스와 엔진 클래스는 ENGINES 가 이어 준다.
+ * @typedef {Object} HellmarbleCourse
+ * @property {HellmarbleTile[]} board 보드의 칸 목록 (40칸)
+ * @property {Object<string, number>} tiles 칸 식별자별 칸 번호
+ * @property {number} salary 출발지에서 받는 기본 월급 (원)
+ * @property {string[]} buildings 땅에 지을 수 있는 건물 종류 (가치가 낮은 순서). 우주여행 코스에서는 기지와, 그 기지를 키우는 증축(annex)이다.
+ * @property {string} deck 주 카드 덱의 이름 ('coupon' : 비밀쿠폰, 'telepathy' : 텔레파시 카드). 진행 상태의 deck 에 들어가며 그 이름의 칸에서 뽑는다.
+ * @property {Object<string, HellmarbleCoupon>} cards 주 카드 덱의 구성
+ * @property {Object<string, HellmarbleCoupon>} valley 둘째 카드 덱(뉴런의 골짜기 카드)의 구성. 진행 상태의 valley 에 들어가며, 없는 코스에서는 비어 있다.
+ * @property {string[]} keeps 플레이어가 보관할 수 있는 카드의 식별자 목록
+ * @property {number} start 출발지의 칸 번호. 은행도 이 칸에 있는 것으로 본다.
+ * @property {number} fund 기금이 쌓이는 칸의 번호 (사회복지기금 본부, 우주조난기지)
+ * @property {number} trap 갇히는 칸의 번호 (무인도, 블랙홀)
+ * @property {boolean} leftover 주인 없는 땅에 건물이 남아 있을 수 있는지 여부 (저장 데이터를 검사할 때 쓴다.)
+ * @property {boolean} flight 탑승한 다음 차례에 주사위를 굴리지 않고 곧바로 목적지를 고르는지 여부 (화면이 그 차례에 주사위 대신 우주선을 보여준다.)
+ *   이 값이 false 인 코스에서도 플레이어의 direct 가 켜진 탑승(우주여행 코스의 시간여행 초청장)은 주사위 없이 목적지를 고른다.
+ * @property {string} fundIcon 쌓인 기금을 나타내는 그림 문자의 이름 (ICONS 의 키)
+ * @property {Object<string, string|Object<string, string>>} logs 공통 규칙이 남기는 진행 기록 가운데 코스마다 문구가 다른 것의 키.
+ *   board : 탑승, fund : 쌓인 기금 수령, stay : 갇힌 채 차례를 보냄, flee : 더블로 탈출, free : 3턴 째에 풀려남, toll : 통행료·이용료 지불,
+ *   keep : 카드를 보관, draw : 카드를 뽑음 (덱의 이름별), barred : 가질 수 없는 땅에 도착함 (그런 땅이 있는 코스에만 있다.),
+ *   built : 자기 땅에 건물을 지음 (건물 종류별. 공통 문구 log.build 와 다르게 적어야 하는 종류만 적으며, 그런 종류가 없는 코스에는 없다.)
+ * @property {Object<string, string>} words 화면이 보여주는 글 가운데 코스마다 다른 것의 문구 키.
+ *   fund : 쌓인 기금의 이름, trapped : 갇힌 상태의 꼬리표, boarded : 탑승 상태의 꼬리표, kept : 보관한 카드의 이름, card : 보관한 카드의 출처,
+ *   toll : 내야 하는 돈의 이름, total : 지금 내야 하는 돈의 이름, build : 건설 창의 문구 앞부분, trapHint : 갇힌 차례의 안내, freeHint : 풀려나는 차례의 안내,
+ *   aboard : 탑승한 채 주사위를 굴리는 차례의 안내 (그런 차례가 없는 코스에는 없다.), travelHint : 탑승한 뒤 주사위 없이 목적지를 고르는 차례의 안내,
+ *   ship : 그 차례에 주사위 자리에 보여주는 우주선이 무엇인지 읽어 주는 이름 (탑승하는 칸의 이름)
+ */
+
+/**
+ * 코스의 구성이다. world 는 세계여행 코스, space 는 우주여행 코스이다. 적힌 순서대로 대기실에 나온다.
+ * @type {Object<string, HellmarbleCourse>}
+ */
+export const COURSES = {
+  world: {
+    board: BOARD, tiles: TILES, salary: SALARY, buildings: BUILDINGS, deck: 'coupon', cards: COUPONS, valley: {}, keeps: ['pass', 'radio'],
+    start: TILES.start, fund: TILES.fund, trap: TILES.island, leftover: false, flight: true, fundIcon: 'fund',
+    logs: { board: 'log.board', fund: 'log.fundGet', stay: 'log.islandStay', flee: 'log.islandDouble', free: 'log.islandFree', toll: 'log.toll', keep: 'log.keep', draw: { coupon: 'log.coupon' } },
+    words: {
+      fund: 'game.fund', trapped: 'player.island', boarded: 'player.boarded', kept: 'playerinfo.coupons', card: 'use.source.coupon',
+      toll: 'info.toll', total: 'info.total', build: 'ask.build', trapHint: 'hint.island', freeHint: 'hint.release', travelHint: 'hint.travel', ship: 'tile.space',
+    },
+  },
+  space: {
+    board: SPACE_BOARD, tiles: SPACE_TILES, salary: SPACE_SALARY, buildings: ['base', 'annex'], deck: 'telepathy', cards: TELEPATHY, valley: NEURON, keeps: ['angel', 'escape'],
+    start: SPACE_TILES.earth, fund: SPACE_TILES.rescue, trap: SPACE_TILES.blackhole, leftover: true, flight: false, fundIcon: 'rescue',
+    logs: {
+      board: 'log.timeBoard', fund: 'log.rescueGet', stay: 'log.blackholeStay', flee: 'log.blackholeDouble', free: 'log.blackholeFree', toll: 'log.fee', keep: 'log.keepCard',
+      barred: 'log.loversBlock', draw: { telepathy: 'log.card.telepathy', neuron: 'log.card.neuron' }, built: { annex: 'log.annex' },
+    },
+    words: {
+      fund: 'game.fund.space', trapped: 'player.blackhole', boarded: 'player.timetravel', kept: 'playerinfo.cards', card: 'use.source.card',
+      toll: 'info.usage', total: 'info.totalFee', build: 'ask.base', trapHint: 'hint.blackhole', freeHint: 'hint.parole', aboard: 'hint.timeroll',
+      travelHint: 'hint.timetravel', ship: 'tile.timetravel',
+    },
+  },
+};
+
+/**
+ * 리그가 진행되는 코스의 구성을 구한다.
+ * @param {string} league 리그 식별자
+ * @returns {HellmarbleCourse} 코스의 구성 (모르는 리그이면 세계여행 코스)
+ */
+export function courseOf(league) {
+  return COURSES[Object.hasOwn(LEAGUES, league) ? LEAGUES[league].course : 'world'];
+}
+
+/**
+ * 카드 식별자가 어느 덱의 카드인지 찾는다. 카드 식별자는 모든 코스와 덱을 통틀어 겹치지 않는다. (보관하는 카드와 같은 이름의 아이템은 따로 다룬다.)
+ * @param {string} id 카드 식별자
+ * @returns {{deck: string, card: HellmarbleCoupon}|null} 덱의 이름('coupon', 'telepathy', 'neuron')과 카드 정보. 모르는 카드이면 null
+ */
+export function findCard(id) {
+  if (Object.hasOwn(COUPONS, id)) return { deck: 'coupon', card: COUPONS[id] };
+  if (Object.hasOwn(TELEPATHY, id)) return { deck: 'telepathy', card: TELEPATHY[id] };
+  if (Object.hasOwn(NEURON, id)) return { deck: 'neuron', card: NEURON[id] };
+  return null;
+}
 
 /* ==========================================================================
  * 3. 다국어 문구
@@ -667,8 +970,8 @@ const TEXT_KO = {
   'lobby.noItems': '이 리그에서는 소모형 아이템을 사용할 수 없습니다. 가진 아이템은 대기실에 그대로 둡니다.',
   'lobby.whiteNote': '{league}는 보유 금액이 {limit} 미만일 때에만 나타납니다. 참가비 없이 {cash}으로 시작하며, 승리하면 {reward}을 받고 패배해도 잃는 돈이 없습니다. 소모형 아이템은 사용할 수 없습니다.',
   'lobby.note': '승리하면 게임에서 가진 돈과 땅, 건물의 가치를 돌려받습니다. 게임에 가져간 소모형 아이템은 승리·패배와 관계없이 쓰지 않고 남은 것이 대기실로 돌아오며, 게임에서 사용한 것만 사라집니다. 색상과 모양은 사라지지 않습니다. 패배하면 참가비를 잃습니다.',
-  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 사서 보관하거나, 구매 가격의 {itemSell}%에 되팔 수 있다.\n- 게임에 들어갈 때 가진 소모형 아이템을 모두 가져가며, 게임이 끝나면 이기든 지든 쓰지 않고 남은 아이템은 대기실로 돌아온다. 게임에서 사용한 아이템만 사라진다.\n- 아이템은 종류마다 게임 한 판에 한 번만 쓸 수 있다. 주사위 조작형 아이템(빅 다이즈, 스몰 다이즈)은 둘을 합쳐 한 번이다. 비밀쿠폰으로 얻은 우대권·무전기와는 따로 센다.\n- 쓸 상황이 되면 게임이 사용 여부를 묻는 아이템과, 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템이 있다.\n[아이템 목록]',
-  'mcp.items.entry': '- {item} ({price}) : {description} [사용 시점] {when}',
+  'mcp.items.rules': '[아이템 규칙]\n- 대기실 상점에서 아이템을 사서 보관하거나, 구매 가격의 {itemSell}%에 되팔 수 있다.\n- 게임에 들어갈 때 그 코스에서 쓸 수 있는 소모형 아이템을 모두 가져가며(다른 코스에서만 쓰는 아이템은 대기실에 남는다), 게임이 끝나면 이기든 지든 쓰지 않고 남은 아이템은 대기실로 돌아온다. 게임에서 사용한 아이템만 사라진다.\n- 아이템은 종류마다 게임 한 판에 한 번만 쓸 수 있다. (천사의 빛은 두 번까지) 주사위 조작형 아이템(빅 다이즈, 스몰 다이즈)은 둘을 합쳐 한 번이다. 비밀쿠폰이나 텔레파시 카드로 얻은 것(우대권, 무전기, 천사의 빛, 블랙홀 탈출포트)과는 따로 센다.\n- 쓸 상황이 되면 게임이 사용 여부를 묻는 아이템과, 주사위를 굴릴 차례에 아이템 목록에서 직접 쓰는 아이템이 있다.\n[아이템 목록]',
+  'mcp.items.entry': '- {item} ({price}, 사용 코스 : {course}) : {description} [사용 시점] {when}',
   'mcp.items.guide': '- 대기실의 "상점"(lobby.shop)은 구매 / 판매 탭(items.tab), 분류 버튼(items.filter), 아이템 카드 목록으로 되어 있다. 카드를 누르면(items.pick) 상세 팝업이 뜨고, 수량을 정한 뒤(items.less / items.more / items.max) 구매 또는 판매(items.trade)한다. 상세 팝업은 items.back, 상점은 items.close 로 닫는다.\n- "아이템 확인"(lobby.items)과 게임 중 자기 차례의 "아이템"(game.items)은 보유 아이템 목록을 연다. 게임 중 주사위를 굴릴 차례에는 상세 팝업의 "사용"(items.use)으로 우주여행 초청장과 주사위 조작형 아이템을 쓸 수 있으며, 한 번 더 확인받는다.\n- 통행료·이용료를 낼 때 우대권이 있으면 창 하나가 뜬다. 창의 글에 지불할 금액이 함께 적혀 있고, 가진 것에 따라 "비밀쿠폰 우대권 사용"(dialog.answer, coupon), "아이템 우대권 사용"(dialog.answer, item), "사용하지 않음"(dialog.answer, no) 가운데 고른다.\n- 무인도에서 무전기가 있을 때에도 창 하나가 떠서 "비밀쿠폰 무전기 사용"(coupon), "아이템 무전기 사용"(item), "사용하지 않음"(no) 가운데 고른다. 무인도에 막 도착했을 때에는 아이템 무전기만 쓸 수 있다.\n- 설정의 "설정 초기화"는 확인 후 언어와 화면을 기본값으로 되돌리고 저장 슬롯 세 개를 비운 뒤 메인 메뉴로 간다.',
   'lobby.shop': '상점',
   'lobby.items': '아이템 확인',
@@ -679,7 +982,7 @@ const TEXT_KO = {
   'item.noneIn': '이 분류에는 아이템이 없습니다.',
   'item.total': '{kinds}종 · {count}개',
   'item.count': '보유 수량',
-  'item.hint.lobby': '아이템을 누르면 자세한 설명을 볼 수 있고, 색상과 모양, 부적은 그 자리에서 장착할 수 있습니다. 게임에 참여하면 소모형 아이템은 모두 가져가며, 게임이 끝나면 쓰지 않고 남은 것은 대기실로 돌아옵니다. 게임에서 사용한 아이템만 사라집니다. 색상과 모양, 부적은 사라지지 않습니다.',
+  'item.hint.lobby': '아이템을 누르면 자세한 설명을 볼 수 있고, 색상과 모양, 부적은 그 자리에서 장착할 수 있습니다. 게임에 참여하면 그 코스에서 쓸 수 있는 소모형 아이템을 모두 가져가며, 게임이 끝나면 쓰지 않고 남은 것은 대기실로 돌아옵니다. 게임에서 사용한 아이템만 사라집니다. 색상과 모양, 부적은 사라지지 않습니다.',
   'item.hint.game': '이번 게임에 가져온 아이템입니다. 아이템을 누르면 자세한 설명을 볼 수 있고, 주사위를 굴릴 차례에 쓰는 아이템은 그 자리에서 사용할 수 있습니다. 쓰지 않은 아이템은 게임이 끝나면 대기실로 돌아갑니다. 가진 부적의 자세한 설명도 여기에서 볼 수 있습니다.',
   'item.category.all': '전체',
   'item.category.support': '보조',
@@ -769,6 +1072,7 @@ const TEXT_KO = {
   'charm.build.brief': '땅을 살 때 {chance}% 확률로 {building} 무료 건설',
   'charm.build.description': '게임에서 땅을 살 때 {chance}% 확률로 {building} 한 채가 그 자리에서 무료로 지어집니다. 땅을 막 샀을 때에만 적용되고, 건물을 지을 수 없는 땅에는 적용되지 않습니다.',
   'charm.build.revisit': '게임에서 땅을 살 때, 그리고 내 땅에 다시 도착했을 때 그 땅에 {building}이(가) 없으면 {chance}% 확률로 {building} 한 채가 무료로 지어집니다. 건물을 지을 수 없는 땅에는 적용되지 않습니다.',
+  'charm.build.space': '우주여행 코스에서는 건물 대신 {base}% 확률로 기지 하나가 무료로 지어지는 효과로 바뀝니다. (기지를 지을 수 있는 별에만 적용됩니다.)',
   'charm.when': '대기실의 아이템 확인 창에서 장착합니다. 한 번에 하나만 장착할 수 있고, 장착하지 않아도 리그에 참여할 수 있습니다. 장착한 부적의 효과는 그 게임 내내 적용됩니다.',
   'charm.limit': '소모되지 않습니다. 같은 부적을 여러 개 가질 수 있고, 상점에 판매하면 사라집니다.',
   'charm.unequip': '장착 해제',
@@ -834,23 +1138,27 @@ const TEXT_KO = {
   'mcp.charms.guide': '- 부적 추첨 : 상점의 분류 "부적"에서 추첨권 카드를 누르고(items.pick) 상세 팝업의 "추첨하기"(items.trade)를 누르면 돈이 빠지고 추첨 결과가 뜬다. "확인"(items.done)으로 닫는다. 가진 부적은 판매 탭에서 판다.\n- 부적 장착 : "아이템 확인"의 분류 "부적"에서 카드를 누르고 "장착"(items.equip) 또는 "장착 해제"(items.unequip)를 누른다.',
   'item.pass.title': '우대권',
   'item.pass.brief': '통행료·이용료 한 번 면제',
-  'item.pass.description': '다른 플레이어의 땅에 도착했을 때 내야 하는 통행료와 이용료를 한 번 면제받습니다. 다른 플레이어가 콜롬비아 호를 가지고 있을 때 내는 우주여행 이용료에도 쓸 수 있습니다. 비밀쿠폰으로 얻은 우대권과는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
+  'item.pass.description': '세계여행 코스에서만 쓸 수 있습니다. 다른 플레이어의 땅에 도착했을 때 내야 하는 통행료와 이용료를 한 번 면제받습니다. 다른 플레이어가 콜롬비아 호를 가지고 있을 때 내는 우주여행 이용료에도 쓸 수 있습니다. 비밀쿠폰으로 얻은 우대권과는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
   'item.pass.when': '통행료나 이용료를 내야 할 때 게임이 사용할지 물어봅니다.',
   'item.radio.title': '무전기',
   'item.radio.brief': '무인도에서 바로 탈출',
-  'item.radio.description': '무인도에 갇혔을 때 더블을 기다리지 않고 바로 탈출한 뒤 주사위를 굴려 이동합니다. 비밀쿠폰으로 얻은 무전기와는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
+  'item.radio.description': '세계여행 코스에서만 쓸 수 있습니다. 무인도에 갇혔을 때 더블을 기다리지 않고 바로 탈출한 뒤 주사위를 굴려 이동합니다. 비밀쿠폰으로 얻은 무전기와는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
   'item.radio.when': '무인도에 도착했을 때와, 갇혀 있는 동안 주사위를 굴리기 직전에 게임이 사용할지 물어봅니다.',
   'item.invitation.title': '우주여행 초청장',
   'item.invitation.brief': '우주여행 무료 탑승',
-  'item.invitation.description': '주사위를 굴리는 대신 우주여행 칸으로 곧바로 이동해 탑승하고 차례를 마칩니다. 콜롬비아 호의 주인이 있어도 이용료를 내지 않으며, 가는 길에 출발지를 지나면 월급도 받습니다. 다음 차례에는 보드의 원하는 칸으로 이동할 수 있습니다. 쓰면 한 개가 사라집니다.',
+  'item.invitation.description': '세계여행 코스에서만 쓸 수 있습니다. 주사위를 굴리는 대신 우주여행 칸으로 곧바로 이동해 탑승하고 차례를 마칩니다. 콜롬비아 호의 주인이 있어도 이용료를 내지 않으며, 가는 길에 출발지를 지나면 월급도 받습니다. 다음 차례에는 보드의 원하는 칸으로 이동할 수 있습니다. 쓰면 한 개가 사라집니다.',
   'item.invitation.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용합니다.',
+  'item.timeinvite.title': '시간여행 초청장',
+  'item.timeinvite.brief': '시간여행 무료 탑승',
+  'item.timeinvite.description': '우주여행 코스에서만 쓸 수 있습니다. 주사위를 굴리는 대신 시간여행 칸으로 곧바로 이동해 탑승하고 차례를 마칩니다. 타임머신의 주인이 있어도 이용료를 내지 않으며, 가는 길에 지구를 지나면 월급도 받습니다. 다음 차례에는 주사위를 굴리지 않고 보드의 원하는 칸으로 바로 이동할 수 있습니다. 텔레파시 카드의 타임머신 초청장과는 따로 셉니다. 쓰면 한 개가 사라집니다.',
+  'item.timeinvite.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용합니다.',
   'item.bigdice.title': '빅 다이즈',
   'item.bigdice.brief': '4·5·6만 나오는 주사위',
-  'item.bigdice.description': '이번에 굴리는 주사위 두 개를 4, 5, 6 눈만 나오는 주사위로 바꿉니다. (1, 2, 3 눈이 각각 4, 5, 6 으로 바뀝니다.) 멀리 가고 싶을 때 좋습니다. 효과는 사용한 차례의 주사위 한 번에만 적용되어, 더블이 나와 다시 굴릴 때에는 보통 주사위로 돌아갑니다. 사용하는 즉시 한 개가 사라지며, 그 차례에 주사위를 굴리지 않아도 돌려받지 못합니다.',
+  'item.bigdice.description': '어느 코스에서나 쓸 수 있습니다. 이번에 굴리는 주사위 두 개를 4, 5, 6 눈만 나오는 주사위로 바꿉니다. (1, 2, 3 눈이 각각 4, 5, 6 으로 바뀝니다.) 멀리 가고 싶을 때 좋습니다. 효과는 사용한 차례의 주사위 한 번에만 적용되어, 더블이 나와 다시 굴릴 때에는 보통 주사위로 돌아갑니다. 사용하는 즉시 한 개가 사라지며, 그 차례에 주사위를 굴리지 않아도 돌려받지 못합니다.',
   'item.bigdice.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용한 뒤 주사위를 굴립니다.',
   'item.smalldice.title': '스몰 다이즈',
   'item.smalldice.brief': '1·2·3만 나오는 주사위',
-  'item.smalldice.description': '이번에 굴리는 주사위 두 개를 1, 2, 3 눈만 나오는 주사위로 바꿉니다. (4, 5, 6 눈이 각각 1, 2, 3 으로 바뀝니다.) 가까운 칸에 멈추고 싶을 때 좋습니다. 효과는 사용한 차례의 주사위 한 번에만 적용되어, 더블이 나와 다시 굴릴 때에는 보통 주사위로 돌아갑니다. 사용하는 즉시 한 개가 사라지며, 그 차례에 주사위를 굴리지 않아도 돌려받지 못합니다.',
+  'item.smalldice.description': '어느 코스에서나 쓸 수 있습니다. 이번에 굴리는 주사위 두 개를 1, 2, 3 눈만 나오는 주사위로 바꿉니다. (4, 5, 6 눈이 각각 1, 2, 3 으로 바뀝니다.) 가까운 칸에 멈추고 싶을 때 좋습니다. 효과는 사용한 차례의 주사위 한 번에만 적용되어, 더블이 나와 다시 굴릴 때에는 보통 주사위로 돌아갑니다. 사용하는 즉시 한 개가 사라지며, 그 차례에 주사위를 굴리지 않아도 돌려받지 못합니다.',
   'item.smalldice.when': '내가 주사위를 굴릴 차례에 아이템 목록에서 직접 사용한 뒤 주사위를 굴립니다.',
   'store.title': '아이템 상점',
   'store.money': '보유 금액',
@@ -923,6 +1231,7 @@ const TEXT_KO = {
   'hint.island': '무인도에 갇혀 있습니다. 더블이 나오면 탈출합니다. (남은 턴 {n})',
   'hint.release': '이번 차례에 무인도에서 풀려납니다. 주사위를 굴리세요.',
   'hint.travel': '우주여행! 이동할 칸을 클릭한 뒤 [이곳으로 이동] 을 누르세요.',
+  'hint.timetravel': '시간여행! 주사위를 굴리지 않고 이동합니다. 이동할 칸을 클릭한 뒤 [이곳으로 이동] 을 누르세요.',
   'hint.wait': '{player} 님이 차례를 진행하고 있습니다.',
   'intro.rolling': '{player} 님이 턴 순서를 정할 주사위를 굴립니다.',
   'intro.title': '턴 순서 결정',
@@ -1138,6 +1447,7 @@ const TEXT_KO = {
   'import.failTitle': '불러오기 실패',
   'import.failParse': 'JSON 형식이 올바르지 않습니다.',
   'import.failData': '저장 데이터의 내용이 올바르지 않습니다.',
+  'import.failVersion': '이 게임이 지원하지 않는 버전의 저장 데이터입니다. (더 새로운 버전의 게임에서 만든 데이터일 수 있습니다.)',
   'playerinfo.assets': '총 자산',
   'playerinfo.coupons': '보관 쿠폰',
   'playerinfo.charm': '장착한 부적',
@@ -1175,7 +1485,348 @@ const TEXT_KO = {
   'real.seoul': '1394년 조선이 도읍을 옮긴 뒤로 630년 넘게 수도 자리를 지키고 있습니다. 한강 공원 어디에 앉아 있어도 치킨이 찾아오는 도시이기도 하죠. 이 보드에서 가장 비싼 땅인 이유는 통행료를 한 번 내 보면 알게 됩니다.',
   'real.concorde': '마하 2로 날아서 런던에서 뉴욕까지 3시간 반이면 가던 초음속 여객기입니다. (최고 기록은 2시간 52분 59초) 서쪽으로 가면 현지 시각으로는 출발한 시각보다 "일찍" 도착했고, 비행 중에는 열 때문에 기체가 15~25cm 늘어났습니다. 20대만 만들어졌고 2003년에 은퇴했습니다.',
   'real.columbia': '1981년 4월 12일, 처음으로 우주에 다녀온 우주왕복선입니다. 첫 비행에서 54시간 반 동안 지구를 37바퀴 돌았으니 한 바퀴에 90분도 안 걸린 셈입니다. 로켓처럼 올라가 비행기처럼 내려왔고 모두 28번의 임무를 수행했습니다. 보드 한 바퀴쯤은 눈 깜짝할 사이입니다.',
-  'mcp.rules': '[Hellmarble 플레이 방법]\n- 2~4명이 하는 턴제 보드게임이다. 사용자 1명과 인공지능 1~3명이 참여한다.\n- 모두 같은 돈(리그마다 다르다. 아래 [리그] 참고)을 가지고 출발지에서 시작한다. 다른 플레이어가 모두 파산하면 승리하고, 사용자가 파산하면 즉시 패배한다.\n- 시작할 때 각자 주사위 2개를 굴려 합이 큰 순서로 차례를 정한다. (동점이면 플레이어 번호가 낮은 쪽이 먼저)\n- 차례가 되면 주사위 2개를 굴려 나온 수만큼 앞으로 이동한다. 출발지를 지나거나 출발지에 멈추면 월급({salary})을 받는다.\n- 더블(두 눈이 같음)이면 도착한 칸의 처리를 마친 뒤 한 번 더 굴린다. 더블이 이어지면 계속 굴린다. 단, 무인도에 갇히거나 우주여행에 탑승하면 차례가 끝난다.\n- 빈 땅(일반 도시, 한국 도시, 특수 시설)에 도착하면 돈이 충분할 때 살 수 있다.\n- 자기 일반 도시에 다시 도착하면 별장(최대 2개), 빌딩(1개), 호텔(1개) 가운데 하나를 지을 수 있다. 한국 도시와 특수 시설에는 지을 수 없다.\n- 남의 땅에 도착하면 통행료와 건물 이용료의 합을 소유자에게 낸다. 우대권이 있으면 써서 면제받을 수 있다.\n- 낼 돈이 모자라면 자기 땅을 은행에 팔아(구매·건설 가격의 {sell}%) 마련해야 하고, 모두 팔아도 모자라면 파산한다.\n- 비밀쿠폰 칸 : 쿠폰 한 장을 뽑아 적힌 대로 한다. 우대권과 무전기는 보관했다가 쓸 수 있다.\n- 우주여행 칸 : 탑승하여 다음 차례에 원하는 칸으로 이동한다. 콜롬비아 호를 다른 플레이어가 가지고 있으면 이용료({space})를 낸다.\n- 무인도 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고(이 더블로는 다시 굴리지 않는다), 아니면 2턴을 쉬고 3턴 째에 이동한다. 무전기를 쓰면 바로 풀려난다.\n- 사회복지기금 접수처 : {welfare}을 낸다. (모자라면 가진 만큼만 내고 파산하지 않는다.) 사회복지기금 본부 : 쌓인 돈을 모두 가져간다.\n- 리그 : Green(배율 1배), Orange(5배), Red(30배). 참가비는 시작 금액과 같고, 배율은 게임 안의 모든 금액에 곱해진다.\n- 승리하면 게임에서 가진 현금과 땅, 건물의 가치(100%)를 대기실 금액으로 받는다. 패배하면 참가비를 잃는다.',
+  'course.world': '세계여행 코스',
+  'course.space': '우주여행 코스',
+  'lobby.course': '코스',
+  'lobby.otherItems': '이 코스에서 쓸 수 없는 소모형 아이템은 가져가지 않고 대기실에 그대로 둡니다.',
+  'league.purple': 'Purple 리그',
+  'league.black': 'Black 리그',
+  'league.purple.rivals': '인공지능 1~3명 (2명일 확률이 높음)',
+  'league.black.rivals': '인공지능 1~3명 (3명일 확률이 높음), 그중 한 명은 일반 또는 고급 부적 장착',
+  'item.info.course': '사용 코스',
+  'item.course.any': '모든 코스',
+  'item.limit.times': '게임 한 판에 {n}번까지 쓸 수 있습니다. 여러 개를 가지고 있어도 {n}번까지입니다.',
+  'item.state.left': '{n}번 더 사용 가능',
+  'item.block.spentTimes': '이번 게임에서 이미 {n}번 사용했습니다. 게임 한 판에 {n}번까지만 쓸 수 있습니다.',
+  'item.angel.title': '천사의 빛',
+  'item.angel.brief': '이용료 면제 · 블랙홀 탈출 · 해로운 카드 면제',
+  'item.angel.description': '우주여행 코스에서 나를 지켜 주는 아이템입니다. 다른 플레이어의 별이나 특수시설에 내야 하는 이용료(시간여행 이용료 포함)를 한 번 면제받거나, 블랙홀에 빠졌을 때 바로 탈출하거나, 텔레파시 카드와 뉴런의 골짜기 카드의 해로운 효과(천사의 빛으로 면제받을 수 있다고 적힌 것)를 한 번 면제받습니다. 텔레파시 카드로 얻은 천사의 빛과는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
+  'item.angel.when': '이용료를 내야 할 때, 블랙홀에 빠졌을 때, 면제받을 수 있는 해로운 카드 효과가 일어날 때 게임이 사용할지 물어봅니다.',
+  'item.escape.title': '블랙홀 탈출포트',
+  'item.escape.brief': '블랙홀에서 바로 탈출',
+  'item.escape.description': '우주여행 코스에서 블랙홀에 빠졌을 때 더블을 기다리지 않고 바로 탈출합니다. 탈출한 뒤에는 보통 차례처럼 주사위를 굴려 이동하며, 주사위의 합이 작아도 별을 반납하지 않습니다. 텔레파시 카드로 얻은 블랙홀 탈출포트와는 따로 보관되고 따로 쓰입니다. 쓰면 한 개가 사라집니다.',
+  'item.escape.when': '블랙홀에 도착했을 때와, 갇혀 있는 동안 주사위를 굴리기 직전에 게임이 사용할지 물어봅니다.',
+  'tile.earth': '지구',
+  'tile.moon': '달',
+  'tile.telepathy': '텔레파시 카드',
+  'tile.mars': '화성',
+  'tile.jupiter': '목성',
+  'tile.vega': '직녀성',
+  'tile.saturn': '토성',
+  'tile.uranus': '천왕성',
+  'tile.neptune': '해왕성',
+  'tile.timetravel': '시간여행',
+  'tile.aries': '양자리',
+  'tile.taurus': '황소자리',
+  'tile.gemini': '쌍둥이자리',
+  'tile.neuron': '뉴런의 골짜기',
+  'tile.cancer': '게자리',
+  'tile.timemachine': '타임머신',
+  'tile.leo': '사자자리',
+  'tile.virgo': '처녀자리',
+  'tile.blackhole': '블랙홀',
+  'tile.libra': '천칭자리',
+  'tile.scorpius': '전갈자리',
+  'tile.sagittarius': '궁수자리',
+  'tile.altair': '견우성',
+  'tile.capricornus': '염소자리',
+  'tile.aquarius': '물병자리',
+  'tile.pisces': '물고기자리',
+  'tile.rescue': '우주조난기지',
+  'tile.ursamajor': '큰곰자리',
+  'tile.andromeda': '안드로메다',
+  'tile.orion': '오리온자리',
+  'tile.cygnus': '백조자리',
+  'tile.halley': '핼리혜성',
+  'tile.mercury': '수성',
+  'tile.venus': '금성',
+  'type.star': '별',
+  'type.telepathy': '텔레파시 카드',
+  'type.neuron': '뉴런의 골짜기 카드',
+  'type.timetravel': '시간여행',
+  'type.blackhole': '블랙홀',
+  'type.rescue': '우주조난기지',
+  'type.halley': '핼리혜성',
+  'desc.star': '구매한 뒤 다시 도착하면 기지를 하나 지을 수 있습니다. 기지를 지으면 이용료가 크게 오릅니다. 기지가 있는 별에 다시 도착하면 기지를 증축할 수 있습니다. (세 번까지, 도착할 때마다 한 번씩. 끝까지 증축하면 이용료가 더 크게 오릅니다.)',
+  'desc.earth': '모든 플레이어가 이곳에서 시작합니다. 이곳을 지나거나 멈추면 월급을 받습니다. 지나가지 않고 이곳에 멈추면, 자기 별 하나를 골라 기지를 짓거나(기지가 없는 별) 기지를 한 번 증축할 수도 있습니다. (건설비나 증축 비용을 냅니다.)',
+  'desc.telepathy': '텔레파시 카드를 한 장 뽑아 적힌 내용대로 이행합니다.',
+  'desc.neuron': '뉴런의 골짜기 카드를 한 장 뽑아 적힌 내용대로 이행합니다.',
+  'desc.timetravel': '도착하면 탑승 상태가 됩니다. 다음 차례에 주사위 2개를 굴려 합이 4 이상이면 원하는 칸으로 이동하고(출발지를 지나도 월급 없음), 3 이하이면 5칸 앞으로 이동합니다. 타임머신의 소유자가 있으면 이용료를 지불해야 합니다.',
+  'desc.blackhole': '도착하면 갇힙니다. 더블이 나오면 즉시 탈출하고, 그렇지 않으면 2턴을 쉰 뒤 3턴 째에 풀려납니다. 풀려난 차례에 굴린 주사위의 합이 3 이하이면 가진 땅 하나를 은행에 반납하고 이동합니다.',
+  'desc.rescue': '모인 기금이 있으면 모두 가져가고, 없으면 기금을 납부합니다. 돈이 부족하면 가진 만큼만 냅니다.',
+  'desc.halley': '도착하면 화성 옆의 텔레파시 카드 칸으로 이동합니다. 출발지를 지나도 월급을 받지 못합니다.',
+  'desc.timemachine': '특수시설입니다. 기지를 지을 수 없습니다. 소유하면 시간여행 칸에 도착한 다른 플레이어에게 시간여행 이용료를 받습니다.',
+  'desc.vega': '별입니다. 기지를 하나 짓고 세 번까지 증축할 수 있습니다. 견우성과 함께 가질 수 없으며, 견우성과 직녀성 모두 주인이 생기면 두 주인은 지구로 이동해 월급을 받고 자기 별 하나에 기지를 짓거나 증축할 기회를 얻습니다.',
+  'desc.altair': '별입니다. 기지를 하나 짓고 세 번까지 증축할 수 있습니다. 직녀성과 함께 가질 수 없으며, 견우성과 직녀성 모두 주인이 생기면 두 주인은 지구로 이동해 월급을 받고 자기 별 하나에 기지를 짓거나 증축할 기회를 얻습니다.',
+  'building.base': '기지',
+  'building.annex': '기지 증축',
+  'info.feeBare': '이용료 (기지 없음)',
+  'info.feeBase': '이용료 (기지 있음)',
+  'info.usage': '이용료',
+  'info.timeFee': '시간여행 이용료',
+  'info.rescue': '납부 금액 (모인 기금이 없을 때)',
+  'info.totalFee': '현재 이용료',
+  'info.base': '기지',
+  'info.built': '건설됨',
+  'info.leftover': '건설됨 (구매하면 함께 얻음)',
+  'info.annex': '증축',
+  'info.annexCount': '{n}회 (최대 {limit}회)',
+  'info.feeAnnex': '증축 1회당 이용료 인상',
+  'info.feeFull': '최대({limit}회) 증축 시 추가 인상',
+  'info.cost.annex': '{building} (1회당, 최대 {limit}회)',
+  'game.fund.space': '우주조난기금',
+  'hint.blackhole': '블랙홀에 갇혀 있습니다. 더블이 나오면 탈출합니다. (남은 턴 {n})',
+  'hint.parole': '이번 차례에 블랙홀에서 풀려납니다. 주사위의 합이 3 이하이면 땅 하나를 반납합니다.',
+  'hint.timeroll': '시간여행! 주사위를 굴려 합이 4 이상이면 원하는 칸으로 이동합니다.',
+  'hint.pick': '이동할 칸을 클릭한 뒤 [이곳으로 이동] 을 누르세요.',
+  'player.blackhole': '블랙홀 (남은 턴 {n})',
+  'player.timetravel': '시간여행 탑승',
+  'card.header.telepathy': '텔레파시 카드',
+  'card.header.neuron': '뉴런의 골짜기 카드',
+  'card.drawer': '{player} 님이 뽑은 카드',
+  'card.architecture.title': '아름다운 건축상',
+  'card.architecture.text': '우주에서 가장 아름다운 건축물로 선정되었습니다.\n상금을 받습니다. (자신의 모든 별의 기지 수 × {amount})',
+  'card.ecology.title': '우주환경 부담금',
+  'card.ecology.text': '우주 환경 부담금을 다음과 같이 지불합니다.\n기지가 없는 별 하나당 {bare}\n기지가 있는 별 하나당 {built}',
+  'card.rescue.title': '우주조난기지',
+  'card.rescue.text': '우주 여행 중 식량이 모두 떨어졌습니다. 우주조난기지로 가서 모인 기금을 받습니다.\n(모여 있는 기금이 없어도 기금을 내지 않습니다.)',
+  'card.lovers.title': '견우와 직녀',
+  'card.lovers.text': '견우성과 직녀성 중 주인이 없는 곳 가운데 원하는 한 곳으로 이동하여 무료로 그 별을 얻습니다.\n(두 별 모두 주인이 있다면 아무 일도 일어나지 않습니다.)',
+  'card.meteorite.title': '운석 발견',
+  'card.meteorite.text': '우주 탐사 중 대형 운석을 발견하였습니다. 운석을 판매하여 수입금을 얻습니다.\n(은행에서 {amount} 수령)',
+  'card.luckydice.title': '주사위의 행운',
+  'card.luckydice.text': '주사위 1개를 던져, 나온 눈의 수 × {amount}을 받습니다.',
+  'card.cosmos.title': '코스모스 상',
+  'card.cosmos.text': '우주 개척 및 우주 기술 발전에 크게 기여하였으므로, 올해의 코스모스상을 수여합니다.\n(상금 {amount})',
+  'card.party.title': '우주파티 초대권',
+  'card.party.text': '화성에서 개최하는 환상의 우주파티에 초대받았습니다. 하지만 바쁜 일정으로 참석할 수 없습니다.\n다른 플레이어 중 1명을 선택하여 화성으로 강제로 보냅니다.\n(출발지를 지나도 월급을 받지 못함)',
+  'card.fear.title': '공포의 블랙홀',
+  'card.fear.text': '블랙홀에 빠졌습니다.\n(블랙홀로 이동, 출발지를 지나도 월급을 받지 못함)',
+  'card.virus.title': '바이러스 감염',
+  'card.virus.text': '우주 여행 중 C-2021 바이러스에 감염되었습니다. 감마선 치료를 받으세요.\n(치료비 {amount} 지불)',
+  'card.waste.title': '폐기물 처리',
+  'card.waste.text': '기지 건설 과정에서 폐기물이 발생하였습니다. 처리비용을 지불하세요.\n(자신이 보유한 모든 별의 기지 수 × {amount} 지불)',
+  'card.baserepair.title': '우주기지 수리',
+  'card.baserepair.text': '정기적으로 우주 기지를 수리해야 합니다.\n(자신이 보유한 모든 별의 기지 수 × {amount} 지불)',
+  'card.valley.title': '뉴런의 골짜기',
+  'card.valley.text': '원하는 뉴런의 골짜기 칸으로 이동하세요.\n지구(출발지)를 지나면 월급을 받습니다.',
+  'card.recall.title': '지구 귀환 명령',
+  'card.recall.text': '휴식이 필요해 보입니다.\n지구(출발지)로 이동하세요. (월급 수령 가능)',
+  'card.asteroid.title': '소행성 충돌',
+  'card.asteroid.text': '소행성 충돌로 모든 기지가 파괴되었습니다. 모든 기지를 수리해야 합니다.\n(자신이 보유한 모든 별의 기지 수 × {amount} 지불)',
+  'card.machinefix.title': '타임머신 수리',
+  'card.machinefix.text': '타임머신을 수리했습니다.\n타임머신의 주인에게서 수리비 {amount}을 받습니다.\n(주인이 없으면 은행에서 받습니다. 주인은 천사의 빛으로 면제받을 수 있습니다.)',
+  'card.spectrumgun.title': '스펙트럼 건 개발',
+  'card.spectrumgun.text': '어떠한 물질이든 파괴할 수 있는 스펙트럼 건을 개발하였습니다.\n이를 이용해 다른 모든 플레이어에게서 {amount}씩 강탈합니다.\n(천사의 빛으로 면제받을 수 있습니다.)',
+  'card.offcourse.title': '우주항로 이탈',
+  'card.offcourse.text': '기계 결함으로 항로를 이탈했습니다. 수리비 {amount}을 지불하고, {steps}칸 뒤로 이동합니다.\n(뒤로 이동하면서 출발지를 지나도 월급을 받지 못함)',
+  'card.peace.title': '우주 평화상',
+  'card.peace.text': '우주 평화에 기여한 공이 크므로 상금을 수여합니다.\n(상금 {amount})',
+  'card.basereturn.title': '우주기지 반납',
+  'card.basereturn.text': '기지 건설 과정에서 우주 연방국의 규칙을 위반했습니다. 자신의 기지 1개를 반납하세요.\n(천사의 빛으로 면제받을 수 있습니다.)',
+  'card.roundtrip.title': '우주왕복 초대권',
+  'card.roundtrip.text': '우주를 한 바퀴 돌며 월급과, 적립된 우주조난기금을 받으세요.\n(제자리에 다시 도착하며, 텔레파시 카드를 다시 뽑지는 않습니다.)',
+  'card.timeticket.title': '타임머신 초청장',
+  'card.timeticket.text': '타임머신 초청장을 받았습니다. 즉시 시간여행 탑승장으로 가세요.\n(무료이므로 타임머신의 주인이 있어도 이용료를 내지 않습니다. 가는 길에 출발지를 지나도 월급을 받지 못함)',
+  'card.robot.title': '무인 로봇 탐사 대회',
+  'card.robot.text': '무인 로봇 탐사 대회에서 우승하였습니다.\n우승 상금 {amount}을 받습니다.',
+  'card.pirates.title': '우주해적 출몰',
+  'card.pirates.text': '우주의 해적 하이에나가 출몰하였습니다. 자신의 기지 1개를 반납하세요.\n(천사의 빛으로 면제받을 수 있습니다.)',
+  'card.reverse.title': '역추진',
+  'card.reverse.text': '주사위 1개를 굴려 눈 수만큼 뒤로 이동하세요.\n(뒤로 이동하면서 지구를 지나도 월급을 받지 못합니다.)',
+  'card.escape.title': '블랙홀 탈출포트',
+  'card.escape.text': '이 카드는 보관할 수 있습니다.\n블랙홀에 빠졌을 때 즉시 탈출하는 데 사용할 수 있습니다.\n1회 사용 후 소모됩니다.',
+  'card.angel.title': '천사의 빛',
+  'card.angel.text': '이 카드는 보관할 수 있습니다.\n블랙홀에 빠졌을 때 즉시 탈출하거나, 이용료를 내야 할 때 면제받는 데 사용할 수 있습니다.\n일부 카드의 해로운 효과도 면제받을 수 있습니다. 1회 사용 후 소모됩니다.',
+  'card.huygens.title': '하위헌스의 암호문',
+  'card.huygens.text': '토성의 고리를 발견하였습니다. 토성으로 가세요.\n토성의 주인이 있으면 서로 주사위 1개를 굴려, 당신의 눈이 더 크면 토성을 빼앗고(기지 포함) 주인의 눈이 더 크면 이용료를 지불합니다.\n주인이 없으면 토성을 구입할 수 있습니다. (주인은 천사의 빛으로 취소 가능)',
+  'card.apollo.title': '아폴로 계획',
+  'card.apollo.text': '일단 달로 이동하세요.\n달의 주인이 있으면 이용료를 지불하고, 없으면 달을 구입할 수 있습니다.\n그 뒤 지구(출발지)로 이동해 월급을 받으세요.',
+  'card.newton.title': '뉴턴의 만유인력의 법칙',
+  'card.newton.text': '현재의 위치에서 진행 방향으로 가장 가까운, 주인이 없는 별로 이동하고 그 별을 구입할 수 있습니다.\n(가는 길에 출발지를 지나도 월급을 받지 못함)',
+  'card.appleseed.title': '애플시드의 개척정신',
+  'card.appleseed.text': '자신의 별 중 기지가 건설되지 않은 별을 선택하여 기지를 무료로 건설할 수 있습니다.',
+  'card.einstein.title': '아인슈타인의 상대성 이론',
+  'card.einstein.text': '다른 플레이어들이 주사위 1개씩을 굴립니다.\n눈이 가장 낮은 플레이어의 가장 비싼 별과, 자신의 가장 싼 별을 서로 교환합니다.\n(기지째 교환. 상대는 천사의 빛으로 취소할 수 있습니다.)',
+  'card.psychic.title': '초능력',
+  'card.psychic.text': '자신이 소유한 별 한 곳과, 주인이 없는 별 한 곳을 교환합니다.\n(반드시 교환해야 하며, 기지는 별에 그대로 남습니다.)',
+  'card.doppler.title': '도플러 효과',
+  'card.doppler.text': '자신의 별 개수가 다른 모든 플레이어보다 많으면 {pay}을 은행에 지불합니다. (천사의 빛으로 면제 가능)\n그렇지 않으면 {gain}을 은행에서 받습니다.',
+  'card.zodiac.title': '조디악의 선물',
+  'card.zodiac.text': '주사위를 1개 또는 2개 던져, 나온 수에 해당하는 별자리로 이동합니다.\n1 양 · 2 황소 · 3 쌍둥이 · 4 게 · 5 사자 · 6 처녀\n7 천칭 · 8 전갈 · 9 궁수 · 10 염소 · 11 물병 · 12 물고기\n(출발지를 지나도 월급을 받지 못함)',
+  'card.moravec.title': '모라비트의 항법',
+  'card.moravec.text': '원하는 곳으로 이동하세요.\n(출발지를 지나도 월급을 받지 못함. 단, 출발지로 이동하면 월급을 받습니다.)',
+  'card.copernicus.title': '코페르니쿠스의 지동설',
+  'card.copernicus.text': '"그래도 지구는 돕니다."\n즉시 지구(출발지)로 간 뒤 월급을 받고 주사위를 한 번 더 굴립니다.',
+  'card.kepler.title': '케플러의 조화의 법칙',
+  'card.kepler.text': '지금 가지고 있는 별의 수 × {steps} 만큼 앞으로 이동하세요.',
+  'card.shapley.title': '샤프레이의 성단거리측정',
+  'card.shapley.text': '현재 위치의 앞뒤 {range}칸 안에 있는 별의 주인들에게서 측정료 {amount}씩을 받습니다.\n(별의 수와 관계없이 플레이어당 한 번. 천사의 빛으로 면제받을 수 있습니다.)',
+  'card.humboldt.title': '홈 볼트의 지적',
+  'card.humboldt.text': '"유성, 원석, 우주진 등이 우주를 공포로 몰아넣고 있습니다. 이곳을 찾아내어 반납시킵시다."\n다른 플레이어들이 주사위 1개씩을 던져, 가장 낮은 눈이 나온 플레이어의 가장 싼 땅을 은행에 반납시킵니다.\n(천사의 빛으로 면제받을 수 있습니다.)',
+  'card.spectrum.title': '스펙트럼 매직',
+  'card.spectrum.text': '주사위 2개를 던져 눈의 합이 {need} 이상이면, 가지고 있는 별 하나를 선택해 무료로 기지를 건설할 수 있습니다.',
+  'card.mobius.title': '뫼비우스의 띠',
+  'card.mobius.text': '다른 플레이어들이 주사위 1개씩을 던집니다.\n눈이 가장 높은 플레이어가 주사위 2개를 던지고, 자신과 그 플레이어 모두 그 눈의 합만큼 앞으로 이동합니다.\n(블랙홀에 갇혀 있어도 탈출하여 이동합니다.)',
+  'card.contract.title': '뒤바뀐 우주계약서',
+  'card.contract.text': '별이 가장 많은 다른 플레이어의 별과 자신의 별을 서로 교환합니다.\n자신의 별은 원하는 것을 고르고, 상대의 별은 무작위로 뽑습니다.\n(상대는 천사의 빛으로 무효화할 수 있습니다.)',
+  'card.pascal.title': '파스칼과 페르마의 확률',
+  'card.pascal.text': '다른 플레이어의 별 중 원하는 곳으로 가서, 그 주인과 주사위 1개씩을 굴립니다.\n자신의 눈이 더 크면 주인에게서 그 별의 이용료를 받고, 같거나 작으면 주인에게 {amount}을 지불합니다.\n(어느 쪽이든 천사의 빛으로 면제받을 수 있습니다.)',
+  'ask.base.title': '기지를 건설하시겠습니까?',
+  'ask.base.text': '별 하나에 기지를 하나만 지을 수 있습니다. 기지를 지은 뒤 이 별에 다시 도착하면 증축할 수 있습니다.',
+  'ask.base.no': '건설하지 않음',
+  'ask.annex.title': '기지를 증축하시겠습니까?',
+  'ask.annex.text': '증축할 때마다 이 별의 이용료가 {fee}씩 오르고, 끝까지({limit}번) 증축하면 {bonus} 더 오릅니다.\n증축은 {limit}번까지, 한 번 도착할 때마다 한 번만 할 수 있습니다. (지금까지 {n}번 증축)',
+  'ask.annex.option': '{building} ({amount}) · 이용료 {from} → {to}',
+  'ask.annex.no': '증축하지 않음',
+  'ask.angel.title': '천사의 빛 사용',
+  'ask.angel.fee': '{tile}의 이용료를 내야 합니다.\n천사의 빛을 사용하면 이 금액을 내지 않습니다.',
+  'ask.angel.timefee': '타임머신의 주인에게 시간여행 이용료를 내야 합니다.\n천사의 빛을 사용하면 이 금액을 내지 않고 탑승합니다.',
+  'ask.angel.pay': '[{card}] 카드의 효과로 은행에 돈을 내야 합니다.\n천사의 빛을 사용하면 이 금액을 내지 않습니다.',
+  'ask.angel.claim': '[{card}] 카드의 효과로 {target} 님에게 돈을 내야 합니다.\n천사의 빛을 사용하면 이 금액을 내지 않습니다.',
+  'ask.angel.base': '[{card}] 카드의 효과로 기지 하나를 반납해야 합니다.\n천사의 빛을 사용하면 반납하지 않습니다.',
+  'ask.angel.steal': '[{card}] 카드의 효과로 {target} 님에게 {tile}을(를) 빼앗기게 되었습니다.\n천사의 빛을 사용하면 빼앗기지 않습니다.',
+  'ask.angel.swap': '[{card}] 카드의 효과로 내 {tile}과(와) {target} 님의 {other}이(가) 교환됩니다.\n천사의 빛을 사용하면 교환하지 않습니다.',
+  'ask.angel.land': '[{card}] 카드의 효과로 {tile}을(를) 은행에 반납해야 합니다.\n천사의 빛을 사용하면 반납하지 않습니다.',
+  'ask.angel.coupon': '텔레파시 카드 천사의 빛 사용 (보유 {n}장)',
+  'ask.angel.item': '아이템 천사의 빛 사용 (보유 {n}개 · 이번 게임 {left}번 남음)',
+  'ask.escape.title': '블랙홀 탈출',
+  'ask.escape.arrival': '블랙홀에 빠졌습니다.\n블랙홀 탈출포트나 천사의 빛을 사용하면 갇히지 않고, 다음 차례에 주사위를 굴려 이동합니다.',
+  'ask.escape.text': '블랙홀에 갇혀 있습니다.\n블랙홀 탈출포트나 천사의 빛을 사용하면 즉시 탈출하여 주사위를 굴려 이동합니다.',
+  'ask.escape.last': '이번 차례에 블랙홀에서 풀려나지만, 주사위의 합이 3 이하이면 땅 하나를 반납해야 합니다.\n블랙홀 탈출포트나 천사의 빛을 사용하면 반납하지 않습니다.',
+  'ask.escape.coupon': '텔레파시 카드 블랙홀 탈출포트 사용 (보유 {n}장)',
+  'ask.escape.item': '아이템 블랙홀 탈출포트 사용 (보유 {n}개 · 게임당 1회)',
+  'ask.pick.blackhole.title': '반납할 땅 선택',
+  'ask.pick.blackhole.text': '블랙홀에서 풀려났지만 주사위의 합이 3 이하입니다.\n은행에 반납할 땅을 하나 고르세요. (돌려받는 돈은 없습니다.)',
+  'ask.pick.basereturn.title': '반납할 기지 선택',
+  'ask.pick.basereturn.text': '[{card}] 카드의 효과로 기지 하나를 반납해야 합니다.\n기지를 반납할 별을 고르세요. (증축한 기지는 증축도 함께 사라집니다.)',
+  'ask.pick.freebase.title': '기지 무료 건설',
+  'ask.pick.freebase.text': '[{card}] 카드의 효과로 기지 하나를 무료로 지을 수 있습니다.\n기지를 지을 별을 고르세요.',
+  'ask.pick.reunion.title': '견우와 직녀의 만남',
+  'ask.pick.reunion.text': '견우성과 직녀성의 주인이 모두 나타났습니다!\n가진 별 하나를 골라 기지를 짓거나(기지가 없는 별) 기지를 한 번 증축할 수 있습니다. (건설비나 증축 비용을 냅니다.)',
+  'ask.pick.earth.title': '지구 도착',
+  'ask.pick.earth.text': '지구에 도착했습니다!\n내 별 하나를 골라 기지를 짓거나(기지가 없는 별) 기지를 한 번 증축할 수 있습니다. (건설비나 증축 비용을 냅니다.)',
+  'ask.pick.valley.title': '뉴런의 골짜기 선택',
+  'ask.pick.valley.text': '이동할 뉴런의 골짜기 칸을 고르세요.',
+  'ask.pick.lovers.title': '견우와 직녀',
+  'ask.pick.lovers.text': '무료로 얻을 별을 고르세요. 그 별로 이동합니다.',
+  'ask.pick.give.title': '내줄 별 선택',
+  'ask.pick.give.text': '[{card}] 카드의 효과로 내 별 하나를 내주어야 합니다.\n내줄 별을 고르세요.',
+  'ask.pick.take.title': '얻을 별 선택',
+  'ask.pick.take.text': '내준 별 대신 얻을, 주인이 없는 별을 고르세요.',
+  'ask.pick.pascal.title': '찾아갈 별 선택',
+  'ask.pick.pascal.text': '찾아갈 다른 플레이어의 별을 고르세요.\n주사위에서 이기면 그 별의 이용료를 받습니다.',
+  'ask.pick.moravec.title': '모라비트의 항법',
+  'ask.pick.moravec.text': '이동할 칸을 보드에서 고르세요.',
+  'ask.pick.timetravel.title': '시간여행',
+  'ask.pick.timetravel.text': '이동할 칸을 보드에서 고르세요.',
+  'ask.pick.skip': '선택하지 않음',
+  'ask.pick.value': '가치 {amount}',
+  'ask.pick.fee': '이용료 {amount}',
+  'ask.pick.cost': '건설비 {amount}',
+  'ask.pick.annex': '증축 {amount}',
+  'ask.pick.rise': '이용료 {from} → {to}',
+  'ask.pick.owner': '{player} · 이용료 {amount}',
+  'ask.target.title': '보낼 플레이어 선택',
+  'ask.target.text': '[{card}] 카드의 효과로 화성에 보낼 플레이어를 고르세요.',
+  'ask.dicecount.title': '주사위 개수 선택',
+  'ask.dicecount.text': '주사위를 1개 던지면 1~6번(양자리~처녀자리), 2개 던지면 2~12번(황소자리~물고기자리) 별자리로 이동합니다.',
+  'ask.dicecount.one': '주사위 1개',
+  'ask.dicecount.two': '주사위 2개',
+  'use.angel.title': '천사의 빛 사용!',
+  'use.angel.fee': '{tile} 이용료 면제',
+  'use.angel.escape': '블랙홀에서 탈출합니다.',
+  'use.angel.card': '[{card}] 카드의 해로운 효과를 면했습니다.',
+  'use.angel.stamp': '면제',
+  'use.escape.title': '블랙홀 탈출포트 사용!',
+  'use.escape.text': '블랙홀에서 탈출합니다.',
+  'use.escape.stamp': '탈출',
+  'use.source.card': '텔레파시 카드',
+  'cast.rolling': '{player} 님이 주사위를 굴립니다.',
+  'log.card.telepathy': '{player} 님이 텔레파시 카드 [{coupon}] 을 뽑았습니다.',
+  'log.card.neuron': '{player} 님이 뉴런의 골짜기 카드 [{coupon}] 을 뽑았습니다.',
+  'log.keepCard': '{player} 님이 [{coupon}] 카드를 보관합니다.',
+  'log.fee': '{player} 님이 {target} 님에게 {tile} 이용료 {amount}을 지불했습니다.',
+  'log.timeFee': '{player} 님이 {target} 님에게 시간여행 이용료 {amount}을 지불했습니다.',
+  'log.timeBoard': '{player} 님이 시간여행에 탑승했습니다. 다음 차례에 주사위를 굴려 목적지를 정합니다.',
+  'log.timeGo': '{player} 님의 시간여행 목적지 : {tile}',
+  'log.timeInvite': '{player} 님이 시간여행 초청장으로 시간여행에 탑승했습니다. 다음 차례에 주사위를 굴리지 않고 원하는 칸으로 이동합니다.',
+  'log.reverse': '{player} 님이 역추진으로 {n}칸 뒤로 이동합니다.',
+  'log.timeSlip': '{player} 님은 주사위의 합이 작아 {n}칸 앞으로 이동합니다.',
+  'log.blackhole': '{player} 님이 블랙홀에 빠졌습니다.',
+  'log.blackholeStay': '{player} 님은 더블이 나오지 않아 블랙홀에 머뭅니다.',
+  'log.blackholeDouble': '{player} 님이 더블로 블랙홀에서 탈출했습니다!',
+  'log.blackholeFree': '{player} 님이 블랙홀에서 풀려났습니다.',
+  'log.surrender': '{player} 님이 주사위의 합이 작아 {tile}을(를) 은행에 반납했습니다.',
+  'log.escape': '{player} 님이 블랙홀 탈출포트를 사용하여 블랙홀에서 탈출했습니다.',
+  'log.itemEscape': '{player} 님이 아이템 블랙홀 탈출포트를 사용하여 블랙홀에서 탈출했습니다.',
+  'log.angelEscape': '{player} 님이 천사의 빛을 사용하여 블랙홀에서 탈출했습니다.',
+  'log.itemAngelEscape': '{player} 님이 아이템 천사의 빛을 사용하여 블랙홀에서 탈출했습니다.',
+  'log.angelFee': '{player} 님이 천사의 빛을 사용하여 {tile} 이용료 {amount}을 면제받았습니다.',
+  'log.itemAngelFee': '{player} 님이 아이템 천사의 빛을 사용하여 {tile} 이용료 {amount}을 면제받았습니다.',
+  'log.angel': '{player} 님이 천사의 빛을 사용하여 [{coupon}] 카드의 해로운 효과를 면했습니다.',
+  'log.itemAngel': '{player} 님이 아이템 천사의 빛을 사용하여 [{coupon}] 카드의 해로운 효과를 면했습니다.',
+  'log.rescuePay': '{player} 님이 우주조난기지에 기금 {amount}을 납부했습니다.',
+  'log.rescueGet': '{player} 님이 우주조난기지에 모인 기금 {amount}을 받았습니다.',
+  'log.rescueNone': '우주조난기지에 모인 기금이 없어 {player} 님은 아무것도 받지 못했습니다.',
+  'log.halley': '{player} 님이 핼리혜성을 타고 화성 옆의 텔레파시 카드 칸으로 이동합니다.',
+  'log.cast': '{player} 님이 주사위를 굴렸습니다 : {n}',
+  'log.castTie': '눈이 같아 주사위를 다시 굴립니다.',
+  'log.loversBlock': '{player} 님은 견우성과 직녀성을 함께 가질 수 없어 {tile}을(를) 구매할 수 없습니다.',
+  'log.loversCancel': '견우성과 직녀성을 한 플레이어가 함께 가질 수 없어 {player} 님이 뽑은 카드의 효과가 취소되었습니다.',
+  'log.reunion': '견우성과 직녀성의 주인이 모두 나타났습니다! {player} 님과 {target} 님이 지구로 이동하여 월급을 받습니다.',
+  'log.freeLand': '{player} 님이 {tile}을(를) 무료로 얻었습니다.',
+  'log.freeBase': '{player} 님이 {tile}에 기지를 무료로 건설했습니다.',
+  'log.baseLost': '{player} 님이 {tile}의 기지를 반납했습니다.',
+  'log.annex': '{player} 님이 {tile}의 기지를 증축했습니다. ({amount})',
+  'log.landLost': '{player} 님이 {tile}을(를) 은행에 반납했습니다.',
+  'log.steal': '{player} 님이 주사위에서 이겨 {target} 님의 {tile}을(를) 빼앗았습니다!',
+  'log.stealFail': '{player} 님이 주사위에서 져 {target} 님에게 {tile} 이용료를 냅니다.',
+  'log.swap': '{player} 님의 {tile}과(와) {target} 님의 {other}이(가) 서로 교환되었습니다.',
+  'log.swapFree': '{player} 님이 {tile}을(를) 내놓고 주인이 없던 {other}을(를) 얻었습니다.',
+  'log.claim': '{player} 님이 {target} 님에게 {amount}을 지불했습니다.',
+  'log.spectrumFail': '{player} 님은 주사위의 합이 {n}보다 작아 기지를 얻지 못했습니다.',
+  'log.zodiac': '{player} 님이 {tile}(으)로 이동합니다.',
+  'log.party': '{player} 님이 {target} 님을 화성으로 보냅니다.',
+  'log.roundtrip': '{player} 님이 우주를 한 바퀴 돕니다.',
+  'log.bonusRoll': '{player} 님이 주사위를 한 번 더 굴립니다.',
+  'log.mobius': '{player} 님과 {target} 님이 {n}칸씩 앞으로 이동합니다.',
+  'log.kepler': '{player} 님이 가진 별의 수에 따라 {n}칸 앞으로 이동합니다.',
+  'log.pascalWin': '{player} 님이 주사위에서 이겨 {target} 님에게서 {tile} 이용료를 받습니다.',
+  'log.pascalLose': '{player} 님이 주사위에서 이기지 못해 {target} 님에게 돈을 냅니다.',
+  'log.contest': '{player} 님이 주사위 눈으로 뽑혔습니다.',
+  'log.noEffect': '{player} 님이 뽑은 [{coupon}] 카드는 조건이 맞지 않아 아무 일도 일어나지 않았습니다.',
+  'playerinfo.cards': '보관 카드',
+  'real.moon': '지구에서 평균 38만 4천 km 떨어져 있습니다. 1969년 아폴로 11호가 처음으로 사람을 내려놓았고, 지금까지 달 표면을 걸어 본 사람은 12명뿐입니다. 공기가 없어서 그때의 발자국이 아직도 남아 있다고 하니, 이 땅을 사도 청소는 안 해도 됩니다.',
+  'real.mars': '태양계에서 가장 높은 화산인 올림푸스 산이 있습니다. 높이가 약 22km로 에베레스트의 두 배를 훌쩍 넘습니다. 하루는 24시간 37분쯤이라 지구와 비슷해서, 이사 가도 시차 적응은 금방입니다. 다만 붉은 먼지는 각오해야 합니다.',
+  'real.jupiter': '태양계에서 가장 큰 행성으로, 지구가 1,300개쯤 들어갈 부피입니다. 대적점이라 불리는 거대한 폭풍은 150년이 넘도록 관측되고 있습니다. 하루가 10시간도 안 될 만큼 빨리 돌아서, 여기서는 월급날이 눈 깜짝할 사이에 돌아옵니다.',
+  'real.saturn': '아름다운 고리로 유명합니다. 고리는 대부분 얼음 조각으로 이루어져 있습니다. 평균 밀도가 물보다 낮아서, 충분히 큰 욕조만 있다면 물에 뜰 것이라는 농담이 있습니다. 욕조를 구하는 것은 주인의 몫입니다.',
+  'real.uranus': '자전축이 약 98도 기울어져 있어 옆으로 누운 채 태양을 돕니다. 1781년 윌리엄 허셜이 발견한, 망원경으로 찾은 첫 행성입니다. 태양을 한 바퀴 도는 데 84년이 걸리니, 이곳의 생일 파티는 평생 한 번이면 충분합니다.',
+  'real.neptune': '1846년에 발견된 행성으로, 눈으로 먼저 찾은 것이 아니라 계산으로 위치를 먼저 맞힌 것으로 유명합니다. 태양계에서 가장 빠른 바람이 불어 시속 2,000km에 이르기도 합니다. 우산은 소용없습니다.',
+  'real.vega': '거문고자리에서 가장 밝은 별로, 지구에서 약 25광년 떨어져 있습니다. 밤하늘에서 다섯 번째로 밝은 별입니다. 약 1만 2천 년 뒤에는 북극성 자리를 물려받을 예정이라, 미리 사 두면 장기 투자가 됩니다.',
+  'real.altair': '독수리자리에서 가장 밝은 별로, 지구에서 약 17광년 떨어져 있습니다. 자전이 아주 빨라 9시간쯤에 한 바퀴를 돌고, 그 탓에 적도 쪽이 불룩합니다. 칠월칠석에 직녀를 만나러 가느라 바쁜 모양입니다.',
+  'real.aries': '황도 12궁의 첫 번째 별자리입니다. 가장 밝은 별은 하말이며, 그리스 신화의 황금 양털을 가진 숫양에서 왔습니다. 약 2천 년 전에는 춘분점이 이곳에 있어서 별자리 달력의 맨 앞자리를 차지했습니다. 지금도 줄은 맨 앞에 섭니다.',
+  'real.taurus': '붉은 눈처럼 빛나는 알데바란과, 맨눈으로도 보이는 플레이아데스 성단이 있습니다. 1054년에 관측된 초신성의 흔적인 게성운도 이 별자리에 있습니다. 볼거리가 많아 관광 수입이 기대됩니다.',
+  'real.gemini': '쌍둥이 형제 카스토르와 폴룩스의 이름을 딴 두 밝은 별이 나란히 있습니다. 매년 12월 중순에는 쌍둥이자리 유성우가 쏟아집니다. 둘이 함께 와도 이용료는 한 번만 받습니다.',
+  'real.cancer': '황도 12궁 가운데 가장 어두운 별자리입니다. 대신 한가운데에 벌집 성단(프레세페)이 있어 맑은 밤에는 맨눈으로도 뿌옇게 보입니다. 눈에 잘 띄지 않아 조용히 살기 좋습니다.',
+  'real.leo': '사자의 심장에 해당하는 밝은 별 레굴루스가 있습니다. 머리 부분은 물음표를 뒤집은 모양이라 낫이라고도 부릅니다. 매년 11월에는 사자자리 유성우가 찾아옵니다. 손님이 하늘에서 떨어지는 셈입니다.',
+  'real.virgo': '황도 12궁 가운데 가장 큰 별자리이고, 전체 88개 별자리 중에서도 두 번째로 큽니다. 가장 밝은 별은 스피카입니다. 은하가 천 개 넘게 모인 처녀자리 은하단도 이 방향에 있으니 땅값이 비쌀 만합니다.',
+  'real.libra': '황도 12궁 가운데 유일하게 살아 있는 것이 아닌 물건, 저울을 나타내는 별자리입니다. 옛날에는 전갈자리의 집게발로 여겨졌습니다. 공정한 거래를 약속하지만 이용료는 깎아 주지 않습니다.',
+  'real.scorpius': '전갈의 심장 자리에 붉은 초거성 안타레스가 있습니다. 안타레스라는 이름은 화성의 맞수라는 뜻으로, 화성만큼 붉게 보여서 붙었습니다. 꼬리 쪽은 조심해서 지나가세요.',
+  'real.sagittarius': '우리 은하의 중심이 이 별자리 방향에 있습니다. 밝은 별들을 이으면 주전자 모양이 되어 주전자라는 별명도 있습니다. 은하 중심가의 땅이니 전망은 최고입니다.',
+  'real.capricornus': '상반신은 염소, 하반신은 물고기인 바다 염소의 모습입니다. 황도 12궁 가운데 게자리 다음으로 어두운 별자리입니다. 남회귀선을 영어로 염소자리 회귀선이라 부르는 것도 이 별자리에서 왔습니다. 이름값은 톡톡히 하는 셈입니다.',
+  'real.aquarius': '물병에서 물을 쏟는 사람의 모습을 한 별자리입니다. 지구에서 가장 가까운 행성상 성운 가운데 하나인 나선 성운이 이곳에 있습니다. 주변에는 물고기자리, 고래자리처럼 물과 관련된 별자리가 모여 있어 수도 요금 걱정은 없습니다.',
+  'real.pisces': '끈으로 이어진 두 마리 물고기의 모습입니다. 지금은 춘분점이 이 별자리에 있어서, 봄에 태양이 하늘의 적도를 건너는 자리가 바로 이곳입니다. 물고기 두 마리가 지키는 땅이니 낚시는 삼가 주세요.',
+  'real.ursamajor': '북두칠성이 바로 이 별자리의 일부입니다. 국자 끝의 두 별을 이은 선을 다섯 배 늘이면 북극성을 찾을 수 있습니다. 88개 별자리 중 세 번째로 넓습니다. 길을 잃을 걱정은 없는 땅입니다.',
+  'real.andromeda': '맨눈으로 볼 수 있는 가장 먼 천체 가운데 하나인 안드로메다 은하가 있습니다. 약 250만 광년 떨어져 있으며, 수십억 년 뒤에는 우리 은하와 만날 것으로 예상됩니다. 이웃사촌이 될 날을 느긋하게 기다리면 됩니다.',
+  'real.orion': '나란히 놓인 세 별, 오리온의 허리띠로 쉽게 찾을 수 있습니다. 붉은 베텔게우스와 푸른 리겔이 대각선으로 마주 보고, 허리띠 아래에는 별이 태어나는 오리온 대성운이 있습니다. 겨울 밤하늘의 대표 관광지입니다.',
+  'real.cygnus': '밝은 별들이 십자 모양을 이루어 북십자성이라고도 부릅니다. 꼬리의 별 데네브는 직녀성, 견우성과 함께 여름철 대삼각형을 이룹니다. 처음으로 널리 인정받은 블랙홀 후보 백조자리 X-1 도 이곳에 있으니 발밑을 조심하세요.',
+  'real.mercury': '태양에 가장 가까운 행성으로, 88일 만에 태양을 한 바퀴 돕니다. 태양계 행성 가운데 가장 작습니다. 대기가 거의 없어 낮에는 섭씨 400도를 넘고 밤에는 영하 170도 아래로 떨어집니다. 냉난방비는 각오하세요.',
+  'real.venus': '하루가 1년보다 깁니다. 자전에 243일, 공전에 225일이 걸리기 때문입니다. 게다가 다른 행성과 반대 방향으로 돌아서 해가 서쪽에서 뜹니다. 두꺼운 이산화탄소 대기 탓에 태양계에서 가장 뜨거운 행성이기도 합니다.',
+  'real.timemachine': '아직 현실에는 없습니다. 타임머신이라는 말은 1895년 H. G. 웰스의 소설 제목으로 널리 퍼졌습니다. 다만 빠르게 움직이면 시간이 느리게 간다는 것은 실험으로 확인된 사실이라, 우주 비행사들은 아주 조금 미래로 다녀온 셈입니다.',
+  'mcp.space.rules': '[우주여행 코스 (Purple 리그, Black 리그)]\n- 보드와 카드가 세계여행 코스와 다르다. 땅은 별(행성, 별자리)과 특수시설(타임머신)이고, 월급은 {salary}이다. 차례의 진행, 더블, 구매와 매각({sell}%), 파산의 규칙은 같다.\n- 별 : 사서 다시 도착하면 기지를 하나 지을 수 있다. 이용료는 기지가 없을 때와 있을 때가 다르다. 특수시설에는 기지를 지을 수 없다.\n- 기지의 증축 : 기지가 있는 자기 별에 다시 도착하면 기지를 증축할 수 있다. 별마다 {annexLimit}번까지, 도착할 때마다 한 번씩만 한다. 비용은 어느 별이나 {annexCost}이고 증축할 때마다 그 별의 이용료가 {annexFee}씩 오르며, 끝까지({annexLimit}번) 증축하면 추가로 {annexBonus} 더 오른다. 증축한 기지도 기지 하나로 세며, 기지를 반납하면 증축도 함께 사라진다.\n- 지구(출발지) : 지나거나 멈추면 월급을 받는다. 지나가지 않고 멈추면 월급과 별도로, 자기 별 하나를 골라 기지를 짓거나(기지가 없는 별) 기지를 한 번 증축할 수 있다. (둘 가운데 하나만 한다. 건설비나 증축 비용을 낸다. 하지 않아도 된다.)\n- 견우성과 직녀성은 한 플레이어가 함께 가질 수 없다. 두 별 모두 주인이 생기면 두 주인은 곧바로 지구로 이동해 월급을 받고, 각자 가진 별 하나를 골라 기지를 짓거나 한 번 증축할 수 있다. (건설비나 증축 비용을 낸다.)\n- 텔레파시 카드 칸, 뉴런의 골짜기 카드 칸 : 카드를 한 장 뽑아 적힌 대로 한다. 텔레파시 카드의 "천사의 빛"과 "블랙홀 탈출포트"는 보관했다가 쓴다.\n- 천사의 빛 : 이용료(시간여행 이용료 포함)를 한 번 면제받거나, 블랙홀에서 바로 탈출하거나, 카드에 면제받을 수 있다고 적힌 해로운 효과를 한 번 면제받는다.\n- 시간여행 칸 : 탑승한다. 타임머신을 다른 플레이어가 가지고 있으면 이용료({time})를 낸다. 다음 차례에 주사위 2개를 굴려 합이 4 이상이면 원하는 칸으로 이동하고(출발지를 지나도 월급 없음, 지구에 도착하면 월급을 받음), 3 이하이면 5칸 앞으로 이동한다. 아이템 시간여행 초청장으로 탑승했으면 다음 차례에 주사위를 굴리지 않고 곧바로 원하는 칸으로 이동한다.\n- 블랙홀 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고, 아니면 2턴을 쉬고 3턴 째에 풀려난다. 풀려난 차례에 굴린 주사위의 합이 3 이하이면 가진 땅 하나를 골라 은행에 반납한 뒤(돌려받는 돈 없음) 이동하며, 이 차례의 더블은 효과가 없다. 블랙홀 탈출포트나 천사의 빛을 쓰면 바로 풀려나고 땅도 반납하지 않는다.\n- 우주조난기지 칸 : 모인 기금이 있으면 모두 가져가고, 없으면 {rescue}을 낸다. (모자라면 가진 만큼만)\n- 핼리혜성 칸 : 화성 옆의 텔레파시 카드 칸으로 이동하여 카드를 뽑는다. (월급 없음)\n- 카드 가운데에는 주사위를 굴려 상대를 정하거나, 별을 교환하거나 빼앗거나 반납시키는 것이 있다. 견우성과 직녀성을 한 플레이어가 갖게 되는 교환은 취소된다.',
+  'mcp.space.guide': '[우주여행 코스의 화면]\n- 대기실의 리그 목록은 코스별로 나뉘어 있다. Purple 리그와 Black 리그가 우주여행 코스이다.\n- 시간여행에 탑승한 다음 차례에는 먼저 "주사위 굴리기"를 누른다. 합이 4 이상이면 보드의 칸을 눌러 "이곳으로 이동"(game.travel)을 누른다. 모라비트의 항법 카드도 같은 방식으로 칸을 고른다. 이때에는 메인 메뉴와 포기를 누를 수 없다.\n- 아이템 시간여행 초청장으로 탑승한 다음 차례에는 주사위를 굴리지 않는다. 주사위 자리에 우주선이 보이며, 곧바로 보드의 칸을 눌러 "이곳으로 이동"(game.travel)을 누른다. 이때에는 메인 메뉴와 포기를 누를 수 있다.\n- 카드의 효과로 별이나 플레이어, 주사위 개수를 골라야 할 때에는 선택지가 든 창이 뜬다. (dialog.answer)\n- 기지가 있는 자기 별에 도착하면 건설 창 대신 증축 여부를 묻는 창이 뜬다. (dialog.answer 의 value 가 annex 이면 증축, skip 이면 하지 않음) 지구에 멈추면 기지를 짓거나 증축할 별을 고르는 창이 뜬다. (지을 수 있는 별이 없으면 뜨지 않는다. 선택지의 value 는 칸 번호이고, 기지가 없는 별은 기지 건설, 기지가 있는 별은 증축이다.)\n- 천사의 빛이나 블랙홀 탈출포트를 쓸 수 있는 상황이 되면 사용 여부를 묻는 창이 뜬다. 텔레파시 카드로 얻은 것과 아이템으로 가져온 것의 선택지가 따로 나온다. 다른 플레이어의 차례에도 내가 손해를 보게 되면 이 창이 뜰 수 있다.\n- 텔레파시 카드와 뉴런의 골짜기 카드도 6초 동안 표시되며 "닫기"(coupon.close)로 바로 닫을 수 있다.',
+  'mcp.rules': '[Hellmarble 플레이 방법]\n- 2~4명이 하는 턴제 보드게임이다. 사용자 1명과 인공지능 1~3명이 참여한다.\n- 모두 같은 돈(리그마다 다르다. 아래 [리그] 참고)을 가지고 출발지에서 시작한다. 다른 플레이어가 모두 파산하면 승리하고, 사용자가 파산하면 즉시 패배한다.\n- 시작할 때 각자 주사위 2개를 굴려 합이 큰 순서로 차례를 정한다. (동점이면 플레이어 번호가 낮은 쪽이 먼저)\n- 차례가 되면 주사위 2개를 굴려 나온 수만큼 앞으로 이동한다. 출발지를 지나거나 출발지에 멈추면 월급({salary})을 받는다.\n- 더블(두 눈이 같음)이면 도착한 칸의 처리를 마친 뒤 한 번 더 굴린다. 더블이 이어지면 계속 굴린다. 단, 무인도에 갇히거나 우주여행에 탑승하면 차례가 끝난다.\n- 빈 땅(일반 도시, 한국 도시, 특수 시설)에 도착하면 돈이 충분할 때 살 수 있다.\n- 자기 일반 도시에 다시 도착하면 별장(최대 2개), 빌딩(1개), 호텔(1개) 가운데 하나를 지을 수 있다. 한국 도시와 특수 시설에는 지을 수 없다.\n- 남의 땅에 도착하면 통행료와 건물 이용료의 합을 소유자에게 낸다. 우대권이 있으면 써서 면제받을 수 있다.\n- 낼 돈이 모자라면 자기 땅을 은행에 팔아(구매·건설 가격의 {sell}%) 마련해야 하고, 모두 팔아도 모자라면 파산한다.\n- 비밀쿠폰 칸 : 쿠폰 한 장을 뽑아 적힌 대로 한다. 우대권과 무전기는 보관했다가 쓸 수 있다.\n- 우주여행 칸 : 탑승하여 다음 차례에 원하는 칸으로 이동한다. 콜롬비아 호를 다른 플레이어가 가지고 있으면 이용료({space})를 낸다.\n- 무인도 칸 : 갇힌다. 더블이 나오면 탈출하여 그 눈만큼 이동하고(이 더블로는 다시 굴리지 않는다), 아니면 2턴을 쉬고 3턴 째에 이동한다. 무전기를 쓰면 바로 풀려난다.\n- 사회복지기금 접수처 : {welfare}을 낸다. (모자라면 가진 만큼만 내고 파산하지 않는다.) 사회복지기금 본부 : 쌓인 돈을 모두 가져간다.\n- 코스는 세계여행 코스(White, Green, Orange, Red 리그)와 우주여행 코스(Purple, Black 리그) 두 가지이다. 위의 칸과 비밀쿠폰 설명은 세계여행 코스의 것이며, 우주여행 코스는 아래에 따로 설명한다. 배율은 게임 안의 모든 금액에 곱해진다. (리그마다의 참가비와 배율은 [리그] 참고)\n- 승리하면 게임에서 가진 현금과 땅, 건물의 가치(100%)를 대기실 금액으로 받는다. 패배하면 참가비를 잃는다.',
   'mcp.guide': '[화면 사용 방법]\n- 메인 메뉴 : 게임 시작(저장 슬롯 선택 → 이름 입력 → 대기실), 불러오기, 설정.\n  게임 시작에서 데이터가 있는 슬롯을 누르면 덮어쓰기 / 불러오기 / 취소를 고른다. 불러오기를 고르면 덮어쓰지 않고 그 슬롯을 불러온다.\n- 불러오기 : 데이터가 있는 슬롯을 누르면 불러오기 / JSON 복사 / 삭제 / 취소, 빈 슬롯을 누르면 JSON 불러오기 / 취소를 고른다. "JSON 복사"는 그 슬롯의 저장 데이터를 클립보드에 복사한다.\n- 대기실 : 리그를 골라 참여한다. (한 번 더 확인받는다.) "JSON 내보내기"는 저장 데이터를 클립보드에 복사한다.\n- 게임 : 자기 차례에는 "주사위 굴리기", "아이템", "메인 메뉴"(저장하고 나감), "포기"를 사용할 수 있다. 구매, 건설, 매각, 쿠폰 사용은 화면에 뜨는 창에서 고른다.\n  칸을 누르면 땅 정보가 뜨고 다시 누르면 닫힌다. 플레이어를 누르면 자산과 소유한 땅 목록이 뜬다.\n  우주여행에 탑승한 차례에는 칸을 누른 뒤 "이곳으로 이동"을 누른다.\n  비밀쿠폰은 6초 동안 표시되며 "닫기"(coupon.close)를 누르면 바로 닫고 진행한다.\n  주사위·말 이동·돈 이동·패배 연출 중에는 조작할 수 없으므로 hellmarble_wait 로 다음 입력 시점까지 기다린다. 돈은 플레이어 사이뿐 아니라 은행(출발지 칸)·사회복지기금 본부와 오갈 때도 지폐 이동으로 표시된다. 누군가 패배하면(파산, 포기) 그 플레이어의 말이 폭발과 함께 보드 밖으로 튕겨나가는 연출이 나온 뒤 진행된다.\n- 설정 : 언어(한국어 / English)와 다크 모드를 고른다.\n\n[WebMCP 도구 사용 순서]\n1. hellmarble_get_state 로 현재 화면과 지금 누를 수 있는 동작(actions) 목록을 본다.\n2. hellmarble_act 에 그 목록의 action 과 value 를 그대로 넘겨서 누른다. 창(dialog)이 떠 있으면 창 안의 동작만 누를 수 있다.\n3. 글자를 입력해야 하면(이름, JSON) hellmarble_set_text 로 입력한 뒤 해당 동작을 누른다.\n4. 주사위를 굴리거나 선택을 한 뒤에는 hellmarble_wait 로 다음 입력 차례가 될 때까지 기다린다.\n5. 칸의 자세한 정보는 hellmarble_get_land 로 본다. (index 0 = 출발지, 진행 방향으로 39까지)\n- 금액은 모두 원 단위 정수이다.',
   'mcp.tiles': '칸 정보 보기 또는 닫기 (value : 0~39)',
   'mcp.unknown': '지금 누를 수 없는 동작입니다. hellmarble_get_state 의 actions 를 확인하세요.',
@@ -1237,8 +1888,8 @@ const TEXT_EN = {
   'lobby.noItems': 'Consumable items cannot be used in this league. Your items stay in the lobby.',
   'lobby.whiteNote': 'The {league} appears only while you have less than {limit}. It has no entry fee and starts you with {cash}; winning pays {reward} and losing costs nothing. Consumable items cannot be used.',
   'lobby.note': 'If you win, you get back your in-game cash plus the full value of your lands and buildings. Consumable items you take into a game come back to the lobby whether you win or lose, apart from the ones you actually used in it. Colors and shapes are never lost. If you lose, the entry fee is gone.',
-  'mcp.items.rules': '[Item rules]\n- Buy items in the lobby shop and keep them, or sell them back for {itemSell}% of the purchase price.\n- All your consumable items go into a game with you. When it ends, whether you win or lose, the items you did not use come back to the lobby; only the items you used are gone.\n- Each kind of item can be used only once per game. The dice items (Big Dice, Small Dice) share a single use between them. Secret Coupon passes and radios are counted separately.\n- Some items are offered by the game when the situation arises; others are used from the item list on your turn to roll.\n[Items]',
-  'mcp.items.entry': '- {item} ({price}) : {description} [When] {when}',
+  'mcp.items.rules': '[Item rules]\n- Buy items in the lobby shop and keep them, or sell them back for {itemSell}% of the purchase price.\n- All your consumable items that can be used on that course go into a game with you (items for the other course stay in the lobby). When it ends, whether you win or lose, the items you did not use come back to the lobby; only the items you used are gone.\n- Each kind of item can be used only once per game (Angel\'s Light: twice). The dice items (Big Dice, Small Dice) share a single use between them. Kept coupons and cards (passes, radios, Angel\'s Light, Escape Pods) are counted separately.\n- Some items are offered by the game when the situation arises; others are used from the item list on your turn to roll.\n[Items]',
+  'mcp.items.entry': '- {item} ({price}, course : {course}) : {description} [When] {when}',
   'mcp.items.guide': '- The lobby "Item Shop" (lobby.shop) has Buy / Sell tabs (items.tab), category buttons (items.filter) and a list of item cards. Press a card (items.pick) to open its detail popup, set the quantity (items.less / items.more / items.max), then buy or sell (items.trade). Close the popup with items.back and the shop with items.close.\n- "My Items" (lobby.items) and the "Items" button on your turn (game.items) open your inventory. In a game, on your turn to roll, "Use" (items.use) in the detail popup uses a Space Travel Invitation or a dice item after one more confirmation.\n- When a toll or fee is due and you hold a free pass, a single window appears. Its text includes the amount due, and depending on what you hold you choose "Use Coupon Free Pass" (dialog.answer, coupon), "Use Item Free Pass" (dialog.answer, item) or "Do not use" (dialog.answer, no).\n- On the island, holding a radio also opens a single window offering "Use Coupon Radio" (coupon), "Use Item Radio" (item) or "Do not use" (no). Right after landing on the island only an item radio can be used.\n- "Reset Settings" on the settings screen asks first, restores the default language and theme, clears all three save slots, and returns to the main menu.',
   'lobby.shop': 'Item Shop',
   'lobby.items': 'My Items',
@@ -1249,7 +1900,7 @@ const TEXT_EN = {
   'item.noneIn': 'There are no items in this category.',
   'item.total': '{kinds} kind(s) · {count} item(s)',
   'item.count': 'In stock',
-  'item.hint.lobby': 'Click an item to read its details. Colors, shapes and charms can be equipped right there. Consumable items all go into a game with you; the ones you do not use come back to the lobby when it ends, and only the items you use are gone. Colors, shapes and charms are never lost.',
+  'item.hint.lobby': 'Click an item to read its details. Colors, shapes and charms can be equipped right there. Consumable items that can be used on that course all go into a game with you; the ones you do not use come back to the lobby when it ends, and only the items you use are gone. Colors, shapes and charms are never lost.',
   'item.hint.game': 'These are the items you brought into this game. Click an item to read its details. Items used on your turn to roll can be used right there. Items you do not use come back to the lobby when the game ends. You can also read the details of the charms you own here.',
   'item.category.all': 'All',
   'item.category.support': 'Support',
@@ -1339,6 +1990,7 @@ const TEXT_EN = {
   'charm.build.brief': '{chance}% chance of a free {building} on a new land',
   'charm.build.description': 'When you buy a land in a game, there is a {chance}% chance that one {building} is built on it for free right away. It applies only when you have just bought the land, and not to lands where nothing can be built.',
   'charm.build.revisit': 'When you buy a land in a game, and whenever you arrive at your own land that has no {building}, there is a {chance}% chance that one {building} is built on it for free. It does not apply to lands where nothing can be built.',
+  'charm.build.space': 'On the Space Tour Course this becomes a {base}% chance of one free base instead. (It applies only to stars, where a base can be built.)',
   'charm.when': 'Equip it in the lobby item window. You can equip only one at a time, and you can join a league without one. The effect of the equipped charm lasts for the whole game.',
   'charm.limit': 'It is never consumed. You can own several of the same charm, and selling it to the shop removes it.',
   'charm.unequip': 'Unequip',
@@ -1404,23 +2056,27 @@ const TEXT_EN = {
   'mcp.charms.guide': '- Drawing charms : under the "Charms" category of the shop, press a ticket card (items.pick) and then "Draw" (items.trade) in its detail popup. The money is deducted and the results appear; close them with "OK" (items.done). Sell charms you own on the Sell tab.\n- Equipping a charm : under the "Charms" category of "My Items", press a card and then "Equip" (items.equip) or "Unequip" (items.unequip).',
   'item.pass.title': 'Free Pass',
   'item.pass.brief': 'Skip one toll and fee',
-  'item.pass.description': "Skip the toll and building fees you owe when you land on another player's land, one time. It also covers the space travel fee charged when another player owns the Columbia. It is kept and used separately from Secret Coupon passes. Using it removes one from your stock.",
+  'item.pass.description': "World Tour Course only. Skip the toll and building fees you owe when you land on another player's land, one time. It also covers the space travel fee charged when another player owns the Columbia. It is kept and used separately from Secret Coupon passes. Using it removes one from your stock.",
   'item.pass.when': 'The game asks whether to use it when you have to pay a toll or fee.',
   'item.radio.title': 'Radio',
   'item.radio.brief': 'Escape the island at once',
-  'item.radio.description': 'When you are stuck on the Desert Island, escape at once without waiting for doubles, then roll the dice and move. It is kept and used separately from Secret Coupon radios. Using it removes one from your stock.',
+  'item.radio.description': 'World Tour Course only. When you are stuck on the Desert Island, escape at once without waiting for doubles, then roll the dice and move. It is kept and used separately from Secret Coupon radios. Using it removes one from your stock.',
   'item.radio.when': 'The game asks whether to use it when you land on the island, and before each roll while you are stuck there.',
   'item.invitation.title': 'Space Travel Invitation',
   'item.invitation.brief': 'Board space travel for free',
-  'item.invitation.description': 'Instead of rolling the dice, move straight to Space Travel, board, and end your turn. You pay no fee even if someone owns the Columbia, and you collect your salary if you pass Start on the way. On your next turn you can move to any tile on the board. Using it removes one from your stock.',
+  'item.invitation.description': 'World Tour Course only. Instead of rolling the dice, move straight to Space Travel, board, and end your turn. You pay no fee even if someone owns the Columbia, and you collect your salary if you pass Start on the way. On your next turn you can move to any tile on the board. Using it removes one from your stock.',
   'item.invitation.when': 'Use it yourself from the item list on your turn to roll the dice.',
+  'item.timeinvite.title': 'Time Travel Invitation',
+  'item.timeinvite.brief': 'Board time travel for free',
+  'item.timeinvite.description': 'Space Tour Course only. Instead of rolling the dice, move straight to Time Travel, board, and end your turn. You pay no fee even if someone owns the Time Machine, and you collect your salary if you pass Earth on the way. On your next turn you move straight to any tile on the board without rolling the dice. It is counted separately from the Time Machine Invitation Telepathy card. Using it removes one from your stock.',
+  'item.timeinvite.when': 'Use it yourself from the item list on your turn to roll the dice.',
   'item.bigdice.title': 'Big Dice',
   'item.bigdice.brief': 'Dice that roll only 4, 5, 6',
-  'item.bigdice.description': 'Swap both dice for this roll with dice that only show 4, 5 and 6. (Faces 1, 2, 3 become 4, 5, 6.) Handy when you want to go far. The effect covers a single roll on the turn you use it, so if you roll doubles the extra roll uses normal dice again. One is removed from your stock the moment you use it, and it is not returned even if you do not roll that turn.',
+  'item.bigdice.description': 'Usable on any course. Swap both dice for this roll with dice that only show 4, 5 and 6. (Faces 1, 2, 3 become 4, 5, 6.) Handy when you want to go far. The effect covers a single roll on the turn you use it, so if you roll doubles the extra roll uses normal dice again. One is removed from your stock the moment you use it, and it is not returned even if you do not roll that turn.',
   'item.bigdice.when': 'Use it yourself from the item list on your turn to roll, then roll the dice.',
   'item.smalldice.title': 'Small Dice',
   'item.smalldice.brief': 'Dice that roll only 1, 2, 3',
-  'item.smalldice.description': 'Swap both dice for this roll with dice that only show 1, 2 and 3. (Faces 4, 5, 6 become 1, 2, 3.) Handy when you want to stop close by. The effect covers a single roll on the turn you use it, so if you roll doubles the extra roll uses normal dice again. One is removed from your stock the moment you use it, and it is not returned even if you do not roll that turn.',
+  'item.smalldice.description': 'Usable on any course. Swap both dice for this roll with dice that only show 1, 2 and 3. (Faces 4, 5, 6 become 1, 2, 3.) Handy when you want to stop close by. The effect covers a single roll on the turn you use it, so if you roll doubles the extra roll uses normal dice again. One is removed from your stock the moment you use it, and it is not returned even if you do not roll that turn.',
   'item.smalldice.when': 'Use it yourself from the item list on your turn to roll, then roll the dice.',
   'store.title': 'Item Shop',
   'store.money': 'Your money',
@@ -1493,6 +2149,7 @@ const TEXT_EN = {
   'hint.island': 'You are stuck on the island. Roll doubles to escape. ({n} turn(s) left)',
   'hint.release': 'You leave the island this turn. Roll the dice.',
   'hint.travel': 'Space travel! Click a tile, then press [Travel Here].',
+  'hint.timetravel': 'Time travel! No dice this turn. Click a tile, then press [Travel Here].',
   'hint.wait': '{player} is taking a turn.',
   'intro.rolling': '{player} rolls for the turn order.',
   'intro.title': 'Turn Order',
@@ -1708,6 +2365,7 @@ const TEXT_EN = {
   'import.failTitle': 'Import Failed',
   'import.failParse': 'The text is not valid JSON.',
   'import.failData': 'The contents of the save data are not valid.',
+  'import.failVersion': 'This save data is in a version this game does not support. (It may have been made by a newer version of the game.)',
   'playerinfo.assets': 'Total assets',
   'playerinfo.coupons': 'Coupons held',
   'playerinfo.charm': 'Equipped charm',
@@ -1745,7 +2403,348 @@ const TEXT_EN = {
   'real.seoul': 'The capital for more than 630 years, ever since the Joseon dynasty moved here in 1394. It is also a city where fried chicken will find you anywhere in the Han River parks. Why is it the priciest land on this board? Pay the toll once and you will know.',
   'real.concorde': 'A supersonic airliner that cruised at Mach 2 and flew London to New York in about three and a half hours. (The record is 2 hours 52 minutes 59 seconds.) Heading west, you landed "earlier" than you took off by local time, and in flight the heat stretched the airframe by 15 to 25 cm. Only 20 were built, and it retired in 2003.',
   'real.columbia': 'On 12 April 1981 it became the first space shuttle to fly to space. On that first flight it circled the Earth 37 times in 54 and a half hours, less than 90 minutes per lap. It went up like a rocket, came down like an airplane, and flew 28 missions in all. One lap around this board is nothing.',
-  'mcp.rules': '[How to play Hellmarble]\n- A turn-based board game for 2 to 4 players: one human and 1 to 3 AI players.\n- Everyone starts on Start with the same cash. (It depends on the league; see [Leagues] below.) You win when every other player is bankrupt, and you lose at once if you go bankrupt.\n- At the beginning everyone rolls two dice; turns go from the highest total. (Ties go to the lower player number.)\n- On your turn, roll two dice and move forward by the total. You receive a salary ({salary}) whenever you pass or stop on Start.\n- On doubles you roll again after the tile you landed on is resolved, and keep going while doubles continue. The turn ends, however, if you get stuck on the island or board the space shuttle.\n- If you land on an unowned land (city, Korean city or special facility) and have enough cash, you may buy it.\n- When you land on your own city again, you may build one building: villas (up to 2), a building (1) or a hotel (1). Nothing can be built on Korean cities or special facilities.\n- If you land on a land owned by another player, you pay its toll plus the fees of its buildings. A free pass, if you hold one, lets you skip the payment.\n- If you are short of cash, you must sell your lands to the bank ({sell}% of the purchase and building prices). If that is still not enough, you go bankrupt.\n- Secret Coupon : draw a coupon and do what it says. Free passes and radios can be kept for later.\n- Space Travel : you board and move to any tile on your next turn. If another player owns the Columbia, you pay a fee ({space}).\n- Desert Island : you are stuck. Doubles free you and you move by that roll (those doubles do not give another roll); otherwise you rest for 2 turns and move on the 3rd. A radio frees you at once.\n- Welfare Fund Desk : pay {welfare}. (If short, pay what you have; you do not go bankrupt.) Welfare Fund HQ : take all the money piled up.\n- Leagues : Green (x1), Orange (x5), Red (x30). The entry fee equals the starting cash, and the multiplier applies to every amount in the game.\n- If you win, your in-game cash plus the full value of your lands and buildings is added to your lobby money. If you lose, the entry fee is gone.',
+  'course.world': 'World Tour Course',
+  'course.space': 'Space Tour Course',
+  'lobby.course': 'Course',
+  'lobby.otherItems': 'Consumable items that cannot be used on this course are not taken along; they stay in the lobby.',
+  'league.purple': 'Purple League',
+  'league.black': 'Black League',
+  'league.purple.rivals': '1-3 AI players (2 is most likely)',
+  'league.black.rivals': '1-3 AI players (3 is most likely); one of them has a Common or Uncommon charm',
+  'item.info.course': 'Course',
+  'item.course.any': 'Any course',
+  'item.limit.times': 'Can be used up to {n} times per game, no matter how many you own.',
+  'item.state.left': '{n} more use(s) left',
+  'item.block.spentTimes': 'Already used {n} times in this game. It can be used only {n} times per game.',
+  'item.angel.title': "Angel's Light",
+  'item.angel.brief': 'Waive a fee, escape the black hole, or cancel a harmful card',
+  'item.angel.description': "Your guardian on the Space Tour Course. Use it once to skip the fee you owe on another player's star or special facility (the time travel fee included), to escape the Black Hole at once, or to cancel a harmful Telepathy or Neuron Valley card effect that says Angel's Light can waive it. It is kept and used separately from the Angel's Light Telepathy card. Using it removes one from your stock.",
+  'item.angel.when': 'The game asks whether to use it when you owe a fee, when you fall into the Black Hole, and when a harmful card effect that it can waive is about to hit you.',
+  'item.escape.title': 'Black Hole Escape Pod',
+  'item.escape.brief': 'Escape the black hole at once',
+  'item.escape.description': 'When you fall into the Black Hole on the Space Tour Course, escape at once without waiting for doubles. After escaping you roll and move as on a normal turn, and you do not give up a star even if the roll is low. It is kept and used separately from the Black Hole Escape Pod Telepathy card. Using it removes one from your stock.',
+  'item.escape.when': 'The game asks whether to use it when you land on the Black Hole, and before each roll while you are stuck there.',
+  'tile.earth': 'Earth',
+  'tile.moon': 'Moon',
+  'tile.telepathy': 'Telepathy Card',
+  'tile.mars': 'Mars',
+  'tile.jupiter': 'Jupiter',
+  'tile.vega': 'Vega',
+  'tile.saturn': 'Saturn',
+  'tile.uranus': 'Uranus',
+  'tile.neptune': 'Neptune',
+  'tile.timetravel': 'Time Travel',
+  'tile.aries': 'Aries',
+  'tile.taurus': 'Taurus',
+  'tile.gemini': 'Gemini',
+  'tile.neuron': 'Neuron Valley',
+  'tile.cancer': 'Cancer',
+  'tile.timemachine': 'Time Machine',
+  'tile.leo': 'Leo',
+  'tile.virgo': 'Virgo',
+  'tile.blackhole': 'Black Hole',
+  'tile.libra': 'Libra',
+  'tile.scorpius': 'Scorpius',
+  'tile.sagittarius': 'Sagittarius',
+  'tile.altair': 'Altair',
+  'tile.capricornus': 'Capricornus',
+  'tile.aquarius': 'Aquarius',
+  'tile.pisces': 'Pisces',
+  'tile.rescue': 'Space Rescue Base',
+  'tile.ursamajor': 'Ursa Major',
+  'tile.andromeda': 'Andromeda',
+  'tile.orion': 'Orion',
+  'tile.cygnus': 'Cygnus',
+  'tile.halley': "Halley's Comet",
+  'tile.mercury': 'Mercury',
+  'tile.venus': 'Venus',
+  'type.star': 'Star',
+  'type.telepathy': 'Telepathy Card',
+  'type.neuron': 'Neuron Valley Card',
+  'type.timetravel': 'Time Travel',
+  'type.blackhole': 'Black Hole',
+  'type.rescue': 'Space Rescue Base',
+  'type.halley': "Halley's Comet",
+  'desc.star': 'After buying it, you may build one base when you land here again. A base raises the fee a lot. Landing again on a star that has a base lets you expand the base. (Up to three times, once per landing. A fully expanded base raises the fee even more.)',
+  'desc.earth': 'Every player starts here. You receive a salary whenever you pass or stop here. If you stop here instead of passing, you may also choose one of your stars and either build a base on it (if it has none) or expand its base once. (You pay the building or expansion cost.)',
+  'desc.telepathy': 'Draw a Telepathy card and do what it says.',
+  'desc.neuron': 'Draw a Neuron Valley card and do what it says.',
+  'desc.timetravel': 'You board the time machine. On your next turn you roll two dice: on 4 or more you move to any tile (no salary for passing Earth), on 3 or less you move 5 tiles ahead. If someone owns the Time Machine, you must pay the fee.',
+  'desc.blackhole': 'You are stuck here. Roll doubles to escape at once; otherwise you rest for 2 turns and are released on the 3rd. If the roll on that turn totals 3 or less, you give one of your lands back to the bank before moving.',
+  'desc.rescue': 'If a fund has piled up you take it all; if not, you pay into the fund. If you are short, you pay only what you have.',
+  'desc.halley': 'You are carried to the Telepathy Card tile next to Mars. You get no salary for passing Earth.',
+  'desc.timemachine': 'A special facility. No base can be built here. Its owner collects the time travel fee from other players who land on Time Travel.',
+  'desc.vega': 'A star. You may build one base and expand it up to three times. It cannot be owned together with Altair. When both Vega and Altair have owners, the two owners move to Earth, receive a salary, and may each build or expand a base on one of their stars.',
+  'desc.altair': 'A star. You may build one base and expand it up to three times. It cannot be owned together with Vega. When both Vega and Altair have owners, the two owners move to Earth, receive a salary, and may each build or expand a base on one of their stars.',
+  'building.base': 'Base',
+  'building.annex': 'Base expansion',
+  'info.feeBare': 'Fee (no base)',
+  'info.feeBase': 'Fee (with a base)',
+  'info.usage': 'Fee',
+  'info.timeFee': 'Time travel fee',
+  'info.rescue': 'Payment (when the fund is empty)',
+  'info.totalFee': 'Current fee',
+  'info.base': 'Base',
+  'info.built': 'Built',
+  'info.leftover': 'Built (comes with the purchase)',
+  'info.annex': 'Expansions',
+  'info.annexCount': '{n} (up to {limit})',
+  'info.feeAnnex': 'Fee increase per expansion',
+  'info.feeFull': 'Extra increase at full expansion ({limit})',
+  'info.cost.annex': '{building} (each, up to {limit})',
+  'game.fund.space': 'Space Rescue Fund',
+  'hint.blackhole': 'You are stuck in the Black Hole. Roll doubles to escape. ({n} turn(s) left)',
+  'hint.parole': 'You leave the Black Hole this turn. If the roll totals 3 or less, you give back one land.',
+  'hint.timeroll': 'Time travel! Roll the dice: on 4 or more you move to any tile.',
+  'hint.pick': 'Click a tile, then press [Travel Here].',
+  'player.blackhole': 'Black Hole ({n} turn(s) left)',
+  'player.timetravel': 'Time travel boarded',
+  'card.header.telepathy': 'Telepathy Card',
+  'card.header.neuron': 'Neuron Valley Card',
+  'card.drawer': 'Drawn by {player}',
+  'card.architecture.title': 'Beautiful Architecture Award',
+  'card.architecture.text': 'Your work was chosen as the most beautiful architecture in space.\nYou receive prize money. (Number of bases on all your stars x {amount})',
+  'card.ecology.title': 'Space Environment Levy',
+  'card.ecology.text': 'Pay the space environment levy as follows.\n{bare} for each of your stars without a base\n{built} for each of your stars with a base',
+  'card.rescue.title': 'Space Rescue Base',
+  'card.rescue.text': 'You ran out of food on your journey. Go to the Space Rescue Base and take the fund piled up there.\n(You do not pay into the fund even if it is empty.)',
+  'card.lovers.title': 'Altair and Vega',
+  'card.lovers.text': 'Move to whichever of Altair and Vega has no owner (your choice) and get that star for free.\n(If both stars have owners, nothing happens.)',
+  'card.meteorite.title': 'Meteorite Found',
+  'card.meteorite.text': 'You found a huge meteorite while exploring space and sold it.\n(Receive {amount} from the bank.)',
+  'card.luckydice.title': 'Lucky Die',
+  'card.luckydice.text': 'Roll one die and receive the number rolled x {amount}.',
+  'card.cosmos.title': 'Cosmos Award',
+  'card.cosmos.text': 'For your great contribution to space exploration and technology, you receive this year\'s Cosmos Award.\n(Prize money {amount})',
+  'card.party.title': 'Space Party Invitation',
+  'card.party.text': 'You are invited to a fantastic space party on Mars, but you are too busy to go.\nChoose another player and send them to Mars by force.\n(No salary for passing Earth.)',
+  'card.fear.title': 'Black Hole of Terror',
+  'card.fear.text': 'You have fallen into the Black Hole.\n(Move to the Black Hole. No salary for passing Earth.)',
+  'card.virus.title': 'Virus Infection',
+  'card.virus.text': 'You caught the C-2021 virus on your journey. Get gamma-ray treatment.\n(Pay {amount} for treatment.)',
+  'card.waste.title': 'Waste Disposal',
+  'card.waste.text': 'Building your bases produced waste. Pay for its disposal.\n(Pay the number of bases on all your stars x {amount}.)',
+  'card.baserepair.title': 'Space Base Maintenance',
+  'card.baserepair.text': 'Space bases must be maintained regularly.\n(Pay the number of bases on all your stars x {amount}.)',
+  'card.valley.title': 'Neuron Valley',
+  'card.valley.text': 'Move to the Neuron Valley tile of your choice.\nYou receive a salary if you pass Earth.',
+  'card.recall.title': 'Return to Earth',
+  'card.recall.text': 'You look like you need a rest.\nMove to Earth. (You receive your salary.)',
+  'card.asteroid.title': 'Asteroid Impact',
+  'card.asteroid.text': 'An asteroid impact has wrecked all your bases. They all need repairs.\n(Pay the number of bases on all your stars x {amount}.)',
+  'card.machinefix.title': 'Time Machine Repair',
+  'card.machinefix.text': "You repaired the Time Machine.\nReceive a repair fee of {amount} from its owner.\n(If it has no owner, the bank pays. The owner may waive it with Angel's Light.)",
+  'card.spectrumgun.title': 'Spectrum Gun',
+  'card.spectrumgun.text': "You have developed the Spectrum Gun, which can destroy any material.\nUse it to take {amount} from every other player.\n(They may waive it with Angel's Light.)",
+  'card.offcourse.title': 'Off Course',
+  'card.offcourse.text': 'A mechanical fault has taken you off course. Pay {amount} for repairs and move back {steps} tiles.\n(No salary for passing Earth while moving back.)',
+  'card.peace.title': 'Space Peace Prize',
+  'card.peace.text': 'For your great contribution to peace in space, you are awarded prize money.\n(Prize money {amount})',
+  'card.basereturn.title': 'Base Confiscated',
+  'card.basereturn.text': "You broke the rules of the Space Federation while building a base. Give back one of your bases.\n(You may waive it with Angel's Light.)",
+  'card.roundtrip.title': 'Round Trip Invitation',
+  'card.roundtrip.text': 'Go once around space, collecting your salary and the Space Rescue Fund on the way.\n(You end on the same tile and do not draw another Telepathy card.)',
+  'card.timeticket.title': 'Time Machine Invitation',
+  'card.timeticket.text': 'You received an invitation to the Time Machine. Go to Time Travel at once.\n(It is free, so you pay no fee even if the Time Machine has an owner. No salary for passing Earth on the way.)',
+  'card.robot.title': 'Robot Exploration Contest',
+  'card.robot.text': 'You won the unmanned robot exploration contest.\nReceive prize money of {amount}.',
+  'card.pirates.title': 'Space Pirates',
+  'card.pirates.text': "The space pirates called the Hyenas have appeared. Give back one of your bases.\n(You may waive it with Angel's Light.)",
+  'card.reverse.title': 'Reverse Thrust',
+  'card.reverse.text': 'Roll one die and move back that many tiles.\n(No salary for passing Earth while moving back.)',
+  'card.escape.title': 'Black Hole Escape Pod',
+  'card.escape.text': 'You may keep this card.\nUse it to escape at once when you fall into the Black Hole.\nIt is used up after one use.',
+  'card.angel.title': "Angel's Light",
+  'card.angel.text': 'You may keep this card.\nUse it to escape the Black Hole at once, or to skip a fee you owe.\nIt can also waive the harmful effect of some cards. It is used up after one use.',
+  'card.huygens.title': "Huygens' Cipher",
+  'card.huygens.text': "You have discovered Saturn's rings. Go to Saturn.\nIf Saturn has an owner, each of you rolls one die: if yours is higher you take Saturn (base included); if the owner's is higher you pay the fee.\nIf it has no owner you may buy it. (The owner may cancel this with Angel's Light.)",
+  'card.apollo.title': 'Apollo Program',
+  'card.apollo.text': 'First, move to the Moon.\nIf the Moon has an owner you pay the fee; if not, you may buy it.\nThen move to Earth and receive your salary.',
+  'card.newton.title': "Newton's Law of Gravitation",
+  'card.newton.text': 'Move to the nearest star ahead of you that has no owner. You may buy it.\n(No salary for passing Earth on the way.)',
+  'card.appleseed.title': "Appleseed's Pioneer Spirit",
+  'card.appleseed.text': 'Choose one of your stars that has no base and build a base there for free.',
+  'card.einstein.title': "Einstein's Relativity",
+  'card.einstein.text': "The other players each roll one die.\nThe most expensive star of the player with the lowest roll is swapped with your cheapest star.\n(Bases go with the stars. That player may cancel this with Angel's Light.)",
+  'card.psychic.title': 'Psychic Power',
+  'card.psychic.text': 'Swap one of your stars with a star that has no owner.\n(The swap is mandatory, and bases stay on their stars.)',
+  'card.doppler.title': 'Doppler Effect',
+  'card.doppler.text': "If you own more stars than every other player, pay {pay} to the bank. (Angel's Light can waive it.)\nOtherwise, receive {gain} from the bank.",
+  'card.zodiac.title': 'Gift of the Zodiac',
+  'card.zodiac.text': 'Roll one die or two, and move to the constellation of that number.\n1 Aries · 2 Taurus · 3 Gemini · 4 Cancer · 5 Leo · 6 Virgo\n7 Libra · 8 Scorpius · 9 Sagittarius · 10 Capricornus · 11 Aquarius · 12 Pisces\n(No salary for passing Earth.)',
+  'card.moravec.title': "Moravec's Navigation",
+  'card.moravec.text': 'Move to any tile you like.\n(No salary for passing Earth, but you do receive it if you move to Earth itself.)',
+  'card.copernicus.title': "Copernicus' Heliocentrism",
+  'card.copernicus.text': '"And yet the Earth moves."\nGo to Earth at once, receive your salary and roll the dice once more.',
+  'card.kepler.title': "Kepler's Harmonic Law",
+  'card.kepler.text': 'Move forward by the number of stars you own x {steps}.',
+  'card.shapley.title': "Shapley's Cluster Survey",
+  'card.shapley.text': "Collect a survey fee of {amount} from each owner of a star within {range} tiles ahead of or behind you.\n(Once per player, however many stars. They may waive it with Angel's Light.)",
+  'card.humboldt.title': "Humboldt's Remark",
+  'card.humboldt.text': "\"Meteors, rocks and cosmic dust are terrorising space. Let us find the source and have it returned.\"\nThe other players each roll one die, and the cheapest land of the player with the lowest roll goes back to the bank.\n(That player may waive it with Angel's Light.)",
+  'card.spectrum.title': 'Spectrum Magic',
+  'card.spectrum.text': 'Roll two dice. If they total {need} or more, choose one of your stars and build a base there for free.',
+  'card.mobius.title': 'Mobius Strip',
+  'card.mobius.text': 'The other players each roll one die.\nThe player with the highest roll then rolls two dice, and both you and that player move forward by the total.\n(A player stuck in the Black Hole escapes and moves.)',
+  'card.contract.title': 'Swapped Space Contract',
+  'card.contract.text': "Swap one of your stars with a star of the other player who owns the most stars.\nYou choose your own star; theirs is picked at random.\n(That player may cancel this with Angel's Light.)",
+  'card.pascal.title': 'Pascal and Fermat',
+  'card.pascal.text': "Go to a star owned by another player, and each of you rolls one die.\nIf yours is higher, the owner pays you that star's fee; if it is equal or lower, you pay the owner {amount}.\n(Either side may waive it with Angel's Light.)",
+  'ask.base.title': 'Build a base?',
+  'ask.base.text': 'Each star can hold only one base. Once it is built, you can expand it when you land on this star again.',
+  'ask.base.no': 'Do not build',
+  'ask.annex.title': 'Expand the base?',
+  'ask.annex.text': "Each expansion raises this star's fee by {fee}, and the last one (number {limit}) adds {bonus} more.\nA base can be expanded {limit} times, only once per landing. (Expanded {n} time(s) so far)",
+  'ask.annex.option': '{building} ({amount}) · fee {from} → {to}',
+  'ask.annex.no': 'Do not expand',
+  'ask.angel.title': "Use Angel's Light",
+  'ask.angel.fee': "You owe the fee for {tile}.\nUsing Angel's Light skips this payment.",
+  'ask.angel.timefee': "You owe the time travel fee to the owner of the Time Machine.\nUsing Angel's Light lets you board without paying.",
+  'ask.angel.pay': "The [{card}] card makes you pay the bank.\nUsing Angel's Light skips this payment.",
+  'ask.angel.claim': "The [{card}] card makes you pay {target}.\nUsing Angel's Light skips this payment.",
+  'ask.angel.base': "The [{card}] card makes you give back one base.\nUsing Angel's Light lets you keep it.",
+  'ask.angel.steal': "The [{card}] card lets {target} take {tile} from you.\nUsing Angel's Light lets you keep it.",
+  'ask.angel.swap': "The [{card}] card swaps your {tile} with {target}'s {other}.\nUsing Angel's Light cancels the swap.",
+  'ask.angel.land': "The [{card}] card makes you give {tile} back to the bank.\nUsing Angel's Light lets you keep it.",
+  'ask.angel.coupon': "Use Card Angel's Light (have {n})",
+  'ask.angel.item': "Use Item Angel's Light (have {n} · {left} use(s) left this game)",
+  'ask.escape.title': 'Escape the Black Hole',
+  'ask.escape.arrival': "You have fallen into the Black Hole.\nUsing an Escape Pod or Angel's Light keeps you from being stuck, so you roll and move on your next turn.",
+  'ask.escape.text': "You are stuck in the Black Hole.\nUsing an Escape Pod or Angel's Light lets you escape at once and roll the dice to move.",
+  'ask.escape.last': "You leave the Black Hole this turn, but if the roll totals 3 or less you must give back one land.\nUsing an Escape Pod or Angel's Light spares you that.",
+  'ask.escape.coupon': 'Use Card Escape Pod (have {n})',
+  'ask.escape.item': 'Use Item Escape Pod (have {n} · once per game)',
+  'ask.pick.blackhole.title': 'Choose a land to give back',
+  'ask.pick.blackhole.text': 'You left the Black Hole, but the roll totals 3 or less.\nChoose one land to give back to the bank. (You get no money for it.)',
+  'ask.pick.basereturn.title': 'Choose a base to give back',
+  'ask.pick.basereturn.text': 'The [{card}] card makes you give back one base.\nChoose the star whose base you give back. (An expanded base loses its expansions too.)',
+  'ask.pick.freebase.title': 'Free base',
+  'ask.pick.freebase.text': 'The [{card}] card lets you build one base for free.\nChoose the star to build it on.',
+  'ask.pick.reunion.title': 'Altair meets Vega',
+  'ask.pick.reunion.text': 'Both Altair and Vega now have owners!\nYou may choose one of your stars and either build a base on it (if it has none) or expand its base once. (You pay the building or expansion cost.)',
+  'ask.pick.earth.title': 'Landed on Earth',
+  'ask.pick.earth.text': 'You have landed on Earth!\nYou may choose one of your stars and either build a base on it (if it has none) or expand its base once. (You pay the building or expansion cost.)',
+  'ask.pick.valley.title': 'Choose a Neuron Valley',
+  'ask.pick.valley.text': 'Choose the Neuron Valley tile to move to.',
+  'ask.pick.lovers.title': 'Altair and Vega',
+  'ask.pick.lovers.text': 'Choose the star to get for free. You move there.',
+  'ask.pick.give.title': 'Choose a star to give up',
+  'ask.pick.give.text': 'The [{card}] card makes you give up one of your stars.\nChoose the star to give up.',
+  'ask.pick.take.title': 'Choose a star to take',
+  'ask.pick.take.text': 'Choose the ownerless star you take in return.',
+  'ask.pick.pascal.title': 'Choose a star to visit',
+  'ask.pick.pascal.text': "Choose another player's star to visit.\nIf you win the roll, you collect that star's fee.",
+  'ask.pick.moravec.title': "Moravec's Navigation",
+  'ask.pick.moravec.text': 'Choose the tile to move to on the board.',
+  'ask.pick.timetravel.title': 'Time Travel',
+  'ask.pick.timetravel.text': 'Choose the tile to move to on the board.',
+  'ask.pick.skip': 'Choose nothing',
+  'ask.pick.value': 'worth {amount}',
+  'ask.pick.fee': 'fee {amount}',
+  'ask.pick.cost': 'cost {amount}',
+  'ask.pick.annex': 'expansion {amount}',
+  'ask.pick.rise': 'fee {from} → {to}',
+  'ask.pick.owner': '{player} · fee {amount}',
+  'ask.target.title': 'Choose a player to send',
+  'ask.target.text': 'The [{card}] card lets you send a player to Mars. Choose who goes.',
+  'ask.dicecount.title': 'How many dice?',
+  'ask.dicecount.text': 'With one die you move to constellation 1-6 (Aries to Virgo); with two dice, to constellation 2-12 (Taurus to Pisces).',
+  'ask.dicecount.one': 'One die',
+  'ask.dicecount.two': 'Two dice',
+  'use.angel.title': "Angel's Light used!",
+  'use.angel.fee': 'Fee for {tile} waived',
+  'use.angel.escape': 'Escaping the Black Hole.',
+  'use.angel.card': 'The harmful effect of [{card}] is waived.',
+  'use.angel.stamp': 'WAIVED',
+  'use.escape.title': 'Escape Pod used!',
+  'use.escape.text': 'Escaping the Black Hole.',
+  'use.escape.stamp': 'ESCAPE',
+  'use.source.card': 'Telepathy Card',
+  'cast.rolling': '{player} rolls the dice.',
+  'log.card.telepathy': '{player} drew the Telepathy card [{coupon}].',
+  'log.card.neuron': '{player} drew the Neuron Valley card [{coupon}].',
+  'log.keepCard': '{player} keeps the [{coupon}] card.',
+  'log.fee': '{player} paid {target} a fee of {amount} for {tile}.',
+  'log.timeFee': '{player} paid {target} a time travel fee of {amount}.',
+  'log.timeBoard': '{player} boarded the time machine and will roll for a destination next turn.',
+  'log.timeGo': "{player}'s time travel destination : {tile}",
+  'log.timeInvite': '{player} boarded the time machine with a Time Travel Invitation and will move to any tile next turn without rolling.',
+  'log.reverse': '{player} moves back {n} tile(s) with Reverse Thrust.',
+  'log.timeSlip': '{player} rolled too low and moves {n} tiles ahead.',
+  'log.blackhole': '{player} fell into the Black Hole.',
+  'log.blackholeStay': '{player} did not roll doubles and stays in the Black Hole.',
+  'log.blackholeDouble': '{player} rolled doubles and escaped the Black Hole!',
+  'log.blackholeFree': '{player} was released from the Black Hole.',
+  'log.surrender': '{player} rolled too low and gave {tile} back to the bank.',
+  'log.escape': '{player} used an Escape Pod and escaped the Black Hole.',
+  'log.itemEscape': '{player} used an item Escape Pod and escaped the Black Hole.',
+  'log.angelEscape': "{player} used Angel's Light and escaped the Black Hole.",
+  'log.itemAngelEscape': "{player} used an item Angel's Light and escaped the Black Hole.",
+  'log.angelFee': "{player} used Angel's Light and skipped the {amount} fee for {tile}.",
+  'log.itemAngelFee': "{player} used an item Angel's Light and skipped the {amount} fee for {tile}.",
+  'log.angel': "{player} used Angel's Light and avoided the harmful effect of [{coupon}].",
+  'log.itemAngel': "{player} used an item Angel's Light and avoided the harmful effect of [{coupon}].",
+  'log.rescuePay': '{player} paid {amount} into the Space Rescue Fund.',
+  'log.rescueGet': '{player} collected the Space Rescue Fund of {amount}.',
+  'log.rescueNone': 'The Space Rescue Fund is empty, so {player} received nothing.',
+  'log.halley': "{player} rides Halley's Comet to the Telepathy Card tile next to Mars.",
+  'log.cast': '{player} rolled : {n}',
+  'log.castTie': 'The rolls are tied, so the dice are rolled again.',
+  'log.loversBlock': '{player} cannot buy {tile}, because Altair and Vega cannot be owned together.',
+  'log.loversCancel': "The effect of {player}'s card was cancelled, because Altair and Vega cannot be owned by one player.",
+  'log.reunion': 'Both Altair and Vega now have owners! {player} and {target} move to Earth and receive a salary.',
+  'log.freeLand': '{player} got {tile} for free.',
+  'log.freeBase': '{player} built a base on {tile} for free.',
+  'log.baseLost': '{player} gave back the base on {tile}.',
+  'log.annex': '{player} expanded the base on {tile}. ({amount})',
+  'log.landLost': '{player} gave {tile} back to the bank.',
+  'log.steal': '{player} won the roll and took {tile} from {target}!',
+  'log.stealFail': '{player} lost the roll and pays {target} the fee for {tile}.',
+  'log.swap': "{player}'s {tile} and {target}'s {other} were swapped.",
+  'log.swapFree': '{player} gave up {tile} and took the ownerless {other}.',
+  'log.claim': '{player} paid {target} {amount}.',
+  'log.spectrumFail': '{player} rolled less than {n} and gets no base.',
+  'log.zodiac': '{player} moves to {tile}.',
+  'log.party': '{player} sends {target} to Mars.',
+  'log.roundtrip': '{player} goes once around space.',
+  'log.bonusRoll': '{player} rolls the dice once more.',
+  'log.mobius': '{player} and {target} each move {n} tiles ahead.',
+  'log.kepler': '{player} moves {n} tiles ahead for the stars owned.',
+  'log.pascalWin': '{player} won the roll and collects the fee for {tile} from {target}.',
+  'log.pascalLose': '{player} did not win the roll and pays {target}.',
+  'log.contest': '{player} was picked by the dice.',
+  'log.noEffect': 'The [{coupon}] card drawn by {player} had no effect, because its conditions were not met.',
+  'playerinfo.cards': 'Cards held',
+  'real.moon': 'It lies about 384,000 km from Earth on average. Apollo 11 put the first people on it in 1969, and only 12 people have ever walked on its surface. With no air to disturb them, their footprints are still there, so if you buy this land you will not need to clean it.',
+  'real.mars': 'It is home to Olympus Mons, the tallest volcano in the solar system. At about 22 km high it is well over twice the height of Mount Everest. A day lasts about 24 hours and 37 minutes, so the jet lag is mild if you move here. Do expect some red dust.',
+  'real.jupiter': 'The largest planet in the solar system; about 1,300 Earths would fit inside it. Its giant storm, the Great Red Spot, has been watched for more than 150 years. It spins so fast that a day lasts less than 10 hours, so payday comes around in no time.',
+  'real.saturn': 'Famous for its beautiful rings, which are made mostly of chunks of ice. Its average density is lower than that of water, so the old joke says it would float if you had a big enough bathtub. Finding the bathtub is the owner\'s job.',
+  'real.uranus': 'Its axis is tilted by about 98 degrees, so it rolls around the Sun lying on its side. William Herschel found it in 1781, the first planet discovered with a telescope. One trip around the Sun takes 84 years, so one birthday party per lifetime is plenty here.',
+  'real.neptune': 'Discovered in 1846, it is famous for having been located by calculation before anyone saw it. It has the fastest winds in the solar system, reaching around 2,000 km/h. An umbrella will not help.',
+  'real.vega': 'The brightest star in Lyra, about 25 light-years from Earth, and the fifth-brightest star in the night sky. In about 12,000 years it will take over as the North Star, so buying early counts as a long-term investment.',
+  'real.altair': 'The brightest star in Aquila, about 17 light-years from Earth. It spins very fast, once in about 9 hours, which makes it bulge at the equator. It seems to be in a hurry to meet Vega on the seventh night of the seventh month.',
+  'real.aries': 'The first constellation of the zodiac. Its brightest star is Hamal, and it comes from the ram with the Golden Fleece in Greek myth. About 2,000 years ago the spring equinox point lay here, which put it at the head of the star calendar. It still likes to stand first in line.',
+  'real.taurus': 'It holds Aldebaran, glowing like a red eye, and the Pleiades cluster, visible to the naked eye. The Crab Nebula, the remains of a supernova seen in 1054, is here too. With so much to see, tourism income looks promising.',
+  'real.gemini': 'Two bright stars named after the twin brothers Castor and Pollux sit side by side. Every year in mid-December the Geminid meteor shower pours down. Even if two visitors arrive together, the fee is collected only once.',
+  'real.cancer': 'The faintest constellation of the zodiac. In its middle, however, lies the Beehive Cluster (Praesepe), a hazy patch visible to the naked eye on a clear night. Being hard to spot makes it a quiet place to live.',
+  'real.leo': 'It holds the bright star Regulus, the heart of the lion. Its head looks like a backwards question mark and is nicknamed the Sickle. The Leonid meteor shower visits every November, so the guests arrive from the sky.',
+  'real.virgo': 'The largest constellation of the zodiac and the second largest of all 88 constellations. Its brightest star is Spica. The Virgo Cluster, with more than a thousand galaxies, lies in this direction too, so no wonder the land is expensive.',
+  'real.libra': 'The only constellation of the zodiac that shows an object, a pair of scales, rather than a living thing. Long ago it was seen as the claws of Scorpius. It promises fair dealing but gives no discount on the fee.',
+  'real.scorpius': 'The red supergiant Antares sits at the scorpion\'s heart. The name Antares means rival of Mars, because it looks just as red as Mars. Mind the tail as you pass.',
+  'real.sagittarius': 'The centre of our galaxy lies in the direction of this constellation. Its bright stars form the shape of a teapot, which gives it the nickname the Teapot. As downtown land in the Milky Way, it has the best view.',
+  'real.capricornus': 'A sea goat: the front half of a goat with the tail of a fish. It is the second-faintest constellation of the zodiac, after Cancer. The Tropic of Capricorn takes its name from this constellation, so it certainly earns its keep in fame.',
+  'real.aquarius': 'A figure pouring water from a jar. The Helix Nebula, one of the closest planetary nebulae to Earth, is found here. Its neighbours include Pisces and Cetus, other watery constellations, so there is no need to worry about the water bill.',
+  'real.pisces': 'Two fish joined by a cord. The spring equinox point now lies in this constellation; it is where the Sun crosses the celestial equator each spring. Two fish guard this land, so please refrain from fishing.',
+  'real.ursamajor': 'The Big Dipper is part of this constellation. Extend the line through the two stars at the end of the bowl about five times and you reach the North Star. It is the third largest of the 88 constellations. You will not get lost on this land.',
+  'real.andromeda': 'It holds the Andromeda Galaxy, one of the most distant objects visible to the naked eye. It is about 2.5 million light-years away and is expected to meet our own galaxy in a few billion years. Just wait patiently for the new neighbours.',
+  'real.orion': 'Easy to find by the three stars in a row that form Orion\'s Belt. Red Betelgeuse and blue Rigel face each other diagonally, and below the belt lies the Orion Nebula, where stars are being born. It is the top attraction of the winter night sky.',
+  'real.cygnus': 'Its bright stars form a cross, so it is also called the Northern Cross. Deneb, the star at the tail, forms the Summer Triangle with Vega and Altair. Cygnus X-1, the first widely accepted black hole candidate, is here as well, so watch your step.',
+  'real.mercury': 'The planet closest to the Sun, circling it in just 88 days, and the smallest planet in the solar system. With almost no atmosphere, it goes above 400°C by day and below -170°C by night. Be ready for the heating and cooling bills.',
+  'real.venus': 'A day here is longer than a year: it takes 243 days to spin once and 225 days to go around the Sun. It also spins the opposite way to most planets, so the Sun rises in the west. Its thick carbon dioxide atmosphere makes it the hottest planet in the solar system.',
+  'real.timemachine': 'It does not exist yet. The term became popular through the title of the 1895 novel by H. G. Wells. Still, experiments have confirmed that time runs slower when you move fast, so astronauts have in fact travelled a tiny bit into the future.',
+  'mcp.space.rules': "[Space Tour Course (Purple League, Black League)]\n- The board and the cards differ from the World Tour Course. Lands are stars (planets and constellations) and a special facility (the Time Machine), and the salary is {salary}. Turns, doubles, buying, selling ({sell}%) and bankruptcy work the same way.\n- Star : after buying it you may build one base when you land on it again. The fee differs with and without a base. Nothing can be built on the special facility.\n- Base expansion : when you land again on your own star that has a base, you may expand the base. Each star allows {annexLimit} expansions, only one per landing. It costs {annexCost} on every star and each expansion raises that star's fee by {annexFee}; the last one (number {annexLimit}) adds {annexBonus} more. An expanded base still counts as one base, and giving back a base removes its expansions too.\n- Earth (Start) : you receive a salary whenever you pass or stop here. If you stop here instead of passing, apart from the salary you may choose one of your stars and either build a base on it (if it has none) or expand its base once. (Only one of the two. You pay the building or expansion cost. It is optional.)\n- Altair and Vega cannot be owned by the same player. When both have owners, the two owners move to Earth at once, receive a salary, and may each choose one of their stars and either build a base on it or expand its base once. (They pay the building or expansion cost.)\n- Telepathy Card and Neuron Valley Card tiles : draw a card and do what it says. The Telepathy cards \"Angel's Light\" and \"Black Hole Escape Pod\" can be kept for later.\n- Angel's Light : skips one fee (the time travel fee included), or frees you from the Black Hole at once, or waives one harmful card effect that says it can be waived.\n- Time Travel : you board. If another player owns the Time Machine, you pay a fee ({time}). On your next turn you roll two dice: on 4 or more you move to any tile (no salary for passing Earth, but you receive it if you land on Earth); on 3 or less you move 5 tiles ahead. If you boarded with the Time Travel Invitation item, on your next turn you move straight to any tile without rolling.\n- Black Hole : you are stuck. Doubles free you and you move by that roll; otherwise you rest for 2 turns and are released on the 3rd. If the roll on that turn totals 3 or less, you choose one of your lands and give it back to the bank (for no money) before moving, and doubles have no effect on that turn. An Escape Pod or Angel's Light frees you at once and spares you the land.\n- Space Rescue Base : if a fund has piled up you take it all; if not, you pay {rescue}. (If short, pay what you have.)\n- Halley's Comet : you move to the Telepathy Card tile next to Mars and draw a card. (No salary.)\n- Some cards use dice rolls to pick an opponent, or swap, take or return stars. A swap that would give Altair and Vega to one player is cancelled.",
+  'mcp.space.guide': "[Screens of the Space Tour Course]\n- In the lobby the leagues are grouped by course. The Purple and Black leagues use the Space Tour Course.\n- On the turn after boarding Time Travel, press \"Roll Dice\" first. On 4 or more, click a tile on the board and press \"Travel Here\" (game.travel). The Moravec's Navigation card picks a tile the same way. Main Menu and Forfeit cannot be pressed at that moment.\n- On the turn after boarding with the Time Travel Invitation item, no dice are rolled. A spaceship is shown in place of the dice, and you click a tile on the board and press \"Travel Here\" (game.travel) right away. Main Menu and Forfeit can be pressed at that moment.\n- When a card needs you to choose a star, a player or the number of dice, a window with the choices appears. (dialog.answer)\n- When you land on your own star that already has a base, a window asks whether to expand it instead of the building window. (dialog.answer with the value annex expands, skip does not.) When you stop on Earth, a window lets you choose a star to build a base on or to expand. (It does not appear when there is no star you can build on. The value of each choice is the tile number; a star without a base gets a base, a star with a base gets one expansion.)\n- When Angel's Light or an Escape Pod can be used, a window asks whether to use it, with separate choices for the Telepathy card and for the item. It may also appear during another player's turn, when you are about to take a loss.\n- Telepathy and Neuron Valley cards also stay on screen for 6 seconds; press \"Close\" (coupon.close) to dismiss them at once.",
+  'mcp.rules': '[How to play Hellmarble]\n- A turn-based board game for 2 to 4 players: one human and 1 to 3 AI players.\n- Everyone starts on Start with the same cash. (It depends on the league; see [Leagues] below.) You win when every other player is bankrupt, and you lose at once if you go bankrupt.\n- At the beginning everyone rolls two dice; turns go from the highest total. (Ties go to the lower player number.)\n- On your turn, roll two dice and move forward by the total. You receive a salary ({salary}) whenever you pass or stop on Start.\n- On doubles you roll again after the tile you landed on is resolved, and keep going while doubles continue. The turn ends, however, if you get stuck on the island or board the space shuttle.\n- If you land on an unowned land (city, Korean city or special facility) and have enough cash, you may buy it.\n- When you land on your own city again, you may build one building: villas (up to 2), a building (1) or a hotel (1). Nothing can be built on Korean cities or special facilities.\n- If you land on a land owned by another player, you pay its toll plus the fees of its buildings. A free pass, if you hold one, lets you skip the payment.\n- If you are short of cash, you must sell your lands to the bank ({sell}% of the purchase and building prices). If that is still not enough, you go bankrupt.\n- Secret Coupon : draw a coupon and do what it says. Free passes and radios can be kept for later.\n- Space Travel : you board and move to any tile on your next turn. If another player owns the Columbia, you pay a fee ({space}).\n- Desert Island : you are stuck. Doubles free you and you move by that roll (those doubles do not give another roll); otherwise you rest for 2 turns and move on the 3rd. A radio frees you at once.\n- Welfare Fund Desk : pay {welfare}. (If short, pay what you have; you do not go bankrupt.) Welfare Fund HQ : take all the money piled up.\n- There are two courses: the World Tour Course (White, Green, Orange and Red leagues) and the Space Tour Course (Purple and Black leagues). The tiles and Secret Coupons above belong to the World Tour Course; the Space Tour Course is described separately below. The multiplier applies to every amount in the game. (See [Leagues] for each league\'s entry fee and multiplier.)\n- If you win, your in-game cash plus the full value of your lands and buildings is added to your lobby money. If you lose, the entry fee is gone.',
   'mcp.guide': '[How to use the screens]\n- Main menu : New Game (choose a save slot → enter a name → lobby), Load, Settings.\n  In New Game, clicking a slot with data offers Overwrite / Load / Cancel. Load opens that slot without overwriting it.\n- Load : clicking a slot with data offers Load / Copy JSON / Delete / Cancel; clicking an empty slot offers Import JSON / Cancel. "Copy JSON" copies that slot\'s save data to the clipboard.\n- Lobby : choose a league to join. (You are asked to confirm.) "Export JSON" copies the save data to the clipboard.\n- Game : on your turn choose "Roll Dice", "Items", "Main Menu" (saves and leaves), or "Forfeit". Buying, building, selling and coupon use are chosen in the window that appears.\n  Click a tile to see its land info and click again to close it. Click a player to see their assets and lands.\n  On a space travel turn, click a tile and then press "Travel Here".\n  A secret coupon stays on screen for 6 seconds; press "Close" (coupon.close) to dismiss it at once.\n  Controls are unavailable during dice, movement, money transfer, and defeat animations; call hellmarble_wait until the next input is needed. Money visibly moves between players and also to or from the bank (shown at Start) and Welfare Fund HQ. When someone is defeated (bankruptcy or giving up), their token explodes and is blown off the board before the game goes on.\n- Settings : choose the language (한국어 / English) and dark mode.\n\n[How to use the WebMCP tools]\n1. Call hellmarble_get_state to see the current screen and the list of actions you can press now.\n2. Call hellmarble_act with the action and value taken from that list. While a dialog is open, only the actions inside it can be pressed.\n3. When text is needed (a name or JSON), call hellmarble_set_text first and then press the matching action.\n4. After rolling the dice or making a choice, call hellmarble_wait until the game needs your input again.\n5. Call hellmarble_get_land for the details of a tile. (index 0 = Start, up to 39 in the direction of travel)\n- All amounts are integers in Korean won.',
   'mcp.tiles': 'Show or hide the info of a tile (value : 0-39)',
   'mcp.unknown': 'That action cannot be pressed right now. Check the actions of hellmarble_get_state.',
@@ -2064,14 +3063,54 @@ function emptyItems() {
 }
 
 /**
- * 게임 한 판의 아이템 사용 기록을 만든다. 사용 제한 묶음마다 아직 쓰지 않은 상태로 시작한다.
- * @returns {Object<string, boolean>} 사용 제한 묶음별 사용 여부
+ * 게임 한 판의 아이템 사용 기록을 만든다. 사용 제한 묶음마다 아직 한 번도 쓰지 않은 상태로 시작한다.
+ * @returns {Object<string, number>} 사용 제한 묶음별 사용 횟수
  */
 function freshUsage() {
   let used = {};
-  // 아이템마다 그 아이템이 속한 사용 제한 묶음을 쓰지 않은 상태로 넣는다.
-  for (let id in ITEMS) used[ITEMS[id].limit] = false;
+  // 아이템마다 그 아이템이 속한 사용 제한 묶음의 사용 횟수를 0 으로 넣는다.
+  for (let id in ITEMS) used[ITEMS[id].limit] = 0;
   return used;
+}
+
+/**
+ * 사용 제한 묶음의 아이템을 게임 한 판에 몇 번까지 쓸 수 있는지 구한다.
+ * @param {string} limit 사용 제한 묶음의 이름
+ * @returns {number} 게임 한 판에 쓸 수 있는 횟수 (모르는 묶음이면 0)
+ */
+export function limitUses(limit) {
+  let ids = itemsOfLimit(limit);
+  return ids.length > 0 ? ITEMS[ids[0]].uses || 1 : 0;
+}
+
+/**
+ * 아이템을 그 리그의 게임에서 쓸 수 있는지 확인한다. 소모형 아이템을 쓸 수 없는 리그이거나, 다른 코스에서만 쓰는 아이템이면 쓸 수 없다.
+ * @param {string} id 아이템 식별자
+ * @param {string} league 리그 식별자
+ * @returns {boolean} 쓸 수 있으면 true
+ */
+export function itemFits(id, league) {
+  let config = LEAGUES[league];
+  return Boolean(config) && config.items && Object.hasOwn(ITEMS, id) && (!ITEMS[id].course || ITEMS[id].course === config.course);
+}
+
+/**
+ * 대기실의 아이템 주머니를 그 리그의 게임에 가져갈 것과 대기실에 남겨 둘 것으로 나눈다.
+ * 그 리그에서 쓸 수 있는 아이템만 가져가고, 쓸 수 없는 아이템은 대기실에 그대로 둔다.
+ * @param {*} items 대기실의 아이템 주머니
+ * @param {string} league 리그 식별자
+ * @returns {{taken: Object<string, number>, left: Object<string, number>}} 게임에 가져갈 주머니와 대기실에 남길 주머니
+ */
+export function splitItems(items, league) {
+  let bag = fillItems(items) || emptyItems();
+  let taken = emptyItems();
+  let left = emptyItems();
+  // 아이템마다 그 리그에서 쓸 수 있으면 가져갈 주머니에, 아니면 남길 주머니에 담는다.
+  for (let id in bag) {
+    if (itemFits(id, league)) taken[id] = bag[id];
+    else left[id] = bag[id];
+  }
+  return { taken, left };
 }
 
 /**
@@ -2332,11 +3371,11 @@ function isValidItemState(player, bare) {
   let loaded = player.loaded;
   if (!isValidItemBag(player.items) || !used || typeof used !== 'object') return false;
   if (loaded !== null && !(typeof loaded === 'string' && Object.hasOwn(ITEMS, loaded) && ITEMS[loaded].effect === 'dice')) return false;
-  if (loaded !== null && (bare || !used[ITEMS[loaded].limit])) return false;
-  // 아이템마다 사용 기록의 형식을 확인하고, 아이템을 쓸 수 없는 플레이어가 아이템을 가졌거나 쓴 기록이 없는지 확인한다.
+  if (loaded !== null && (bare || !(used[ITEMS[loaded].limit] > 0))) return false;
+  // 아이템마다 사용 횟수가 한도 안의 정수인지 확인하고, 아이템을 쓸 수 없는 플레이어가 아이템을 가졌거나 쓴 기록이 없는지 확인한다.
   for (let id in ITEMS) {
-    if (typeof used[ITEMS[id].limit] !== 'boolean') return false;
-    if (bare && (player.items[id] !== 0 || used[ITEMS[id].limit])) return false;
+    if (!isCount(used[ITEMS[id].limit], limitUses(ITEMS[id].limit))) return false;
+    if (bare && (player.items[id] !== 0 || used[ITEMS[id].limit] !== 0)) return false;
   }
   return true;
 }
@@ -2360,7 +3399,8 @@ function isValidPlayers(game) {
     let roll = game.rolls[id];
     if (!player || typeof player !== 'object' || player.id !== id || player.ai !== (id !== 0)) return false;
     if (!isCount(player.cash, Number.MAX_SAFE_INTEGER) || !isCount(player.position, BOARD_SIZE - 1) || !isCount(player.island, ISLAND_TURNS)) return false;
-    if (typeof player.alive !== 'boolean' || typeof player.boarded !== 'boolean' || !player.coupons || typeof player.coupons !== 'object') return false;
+    if (typeof player.alive !== 'boolean' || typeof player.boarded !== 'boolean' || typeof player.direct !== 'boolean') return false;
+    if (!player.coupons || typeof player.coupons !== 'object' || Array.isArray(player.coupons)) return false;
     if (!isValidItemState(player, player.ai || !league.items) || !isValidLook(player.look)) return false;
     if (player.charm !== null && !isCharm(player.charm)) return false;
     if (player.ai && player.charm !== null && !league.rivalCharms.includes(CHARMS[player.charm].grade)) return false;
@@ -2374,57 +3414,80 @@ function isValidPlayers(game) {
 }
 
 /**
- * 게임 진행 상태의 땅 소유 정보가 올바른지 확인한다.
+ * 게임 진행 상태의 땅 소유 정보가 그 리그의 코스에 맞게 올바른지 확인한다.
+ * 건물은 건물을 지을 수 있는 땅에만 있어야 한다. 주인 없는 땅에 건물이 남아 있을 수 있는지는 코스의 구성(leftover)을 따른다.
+ * (세계여행 코스에서는 주인이 있는 땅에만 건물이 있고, 우주여행 코스에서는 카드의 효과로 주인 없는 별에 기지가 남아 있을 수 있다.)
+ * 공통 형식을 확인한 뒤, 그 코스만의 규칙에 어긋나지 않는지는 코스의 엔진에 묻는다. (HellmarbleGame.sound : 우주여행 코스의 견우성과 직녀성)
  * @param {Object} game 게임 진행 상태
  * @returns {boolean} 올바르면 true
  */
 function isValidLands(game) {
-  if (game.lands.length !== BOARD_SIZE) return false;
+  let course = courseOf(game.league);
+  if (game.lands.length !== course.board.length) return false;
   // 칸마다 소유자와 건물 개수의 형식과 범위를 확인한다.
-  for (let index = 0; index < BOARD_SIZE; index++) {
-    let tile = BOARD[index];
+  for (let index = 0; index < course.board.length; index++) {
+    let tile = course.board[index];
     let land = game.lands[index];
+    let built = 0;
     if (!PROPERTY_TYPES.includes(tile.type)) {
       if (land !== null) return false;
       continue;
     }
     if (!land || typeof land !== 'object') return false;
     if (land.owner !== null && (!isCount(land.owner, game.players.length - 1) || !game.players[land.owner].alive)) return false;
-    // 건물 종류별 개수가 한도를 넘지 않는지 확인한다.
-    for (let kind of BUILDINGS) {
+    // 건물 종류별 개수가 한도를 넘지 않는지 확인하고 지어진 건물의 수를 센다.
+    for (let kind of course.buildings) {
       if (!isCount(land[kind], BUILD_LIMIT[kind])) return false;
+      built += land[kind];
     }
-    if (land.villa + land.building + land.hotel > 0 && (land.owner === null || tile.type !== 'city')) return false;
+    if (built > 0 && (!tile.cost || (land.owner === null && !course.leftover))) return false;
+  }
+  return engineOf(game.league).sound(game);
+}
+
+/**
+ * 카드 덱 하나가 정해진 구성(덱과 보관 중인 카드를 합쳐 종류별 장수)과 같은지 확인한다.
+ * @param {*} deck 덱에 든 카드의 식별자 목록
+ * @param {Object<string, HellmarbleCoupon>} cards 덱의 구성
+ * @param {Object<string, number>} kept 플레이어들이 보관 중인 카드의 종류별 장수
+ * @returns {boolean} 올바르면 true
+ */
+function isValidCards(deck, cards, kept) {
+  let counts = { ...kept };
+  // 덱에 든 카드를 종류별로 센다.
+  for (let id of deck) {
+    if (!Object.hasOwn(cards, id)) return false;
+    counts[id] = (counts[id] || 0) + 1;
+  }
+  // 종류별 장수가 정해진 구성과 같은지 확인한다.
+  for (let id in cards) {
+    if (counts[id] !== cards[id].count) return false;
   }
   return true;
 }
 
 /**
- * 게임 진행 상태의 비밀쿠폰이 정해진 구성(덱과 보관 중인 쿠폰을 합쳐 종류별 장수)과 같은지 확인한다.
+ * 게임 진행 상태의 카드(세계여행 코스의 비밀쿠폰, 우주여행 코스의 텔레파시 카드와 뉴런의 골짜기 카드)가 그 코스의 구성과 같은지 확인한다.
+ * 플레이어는 그 코스에서 보관할 수 있는 카드만 보관할 수 있다.
  * @param {Object} game 게임 진행 상태
  * @returns {boolean} 올바르면 true
  */
 function isValidDeck(game) {
-  let counts = {};
-  // 덱에 든 쿠폰을 종류별로 센다.
-  for (let id of game.deck) {
-    if (!Object.keys(COUPONS).includes(id)) return false;
-    counts[id] = (counts[id] || 0) + 1;
-  }
-  // 플레이어가 보관 중인 쿠폰을 더한다.
+  let course = courseOf(game.league);
+  let kept = {};
+  // 플레이어가 보관 중인 카드를 종류별로 더한다.
   for (let player of game.players) {
-    // 보관할 수 있는 쿠폰 종류별로 장수를 확인하고 더한다.
+    // 보관한 카드마다 그 코스에서 보관할 수 있는 것인지와 장수를 확인한다.
     for (let id in player.coupons) {
-      if (!Object.keys(COUPONS).includes(id) || COUPONS[id].effect !== 'keep' || !isCount(player.coupons[id], COUPONS[id].count)) return false;
-      counts[id] = (counts[id] || 0) + player.coupons[id];
+      if (!course.keeps.includes(id) || !isCount(player.coupons[id], course.cards[id].count)) return false;
+      kept[id] = (kept[id] || 0) + player.coupons[id];
     }
-    if (player.coupons.pass === undefined || player.coupons.radio === undefined) return false;
+    // 보관할 수 있는 카드의 자리가 모두 있는지 확인한다.
+    for (let id of course.keeps) {
+      if (player.coupons[id] === undefined) return false;
+    }
   }
-  // 종류별 장수가 정해진 구성과 같은지 확인한다.
-  for (let id in COUPONS) {
-    if (counts[id] !== COUPONS[id].count) return false;
-  }
-  return true;
+  return isValidCards(game.deck, course.cards, kept) && isValidCards(game.valley, course.valley, {});
 }
 
 /**
@@ -2439,7 +3502,7 @@ function isValidLog(entry, players) {
   for (let name in entry.params) {
     let value = entry.params[name];
     if ((name === 'player' || name === 'target') && !isCount(value, players - 1)) return false;
-    if (name === 'tile' && !isCount(value, BOARD_SIZE - 1)) return false;
+    if ((name === 'tile' || name === 'other') && !isCount(value, BOARD_SIZE - 1)) return false;
     if (name !== 'order' && value !== null && typeof value === 'object') return false;
     if (name !== 'order') continue;
     if (!Array.isArray(value)) return false;
@@ -2459,7 +3522,7 @@ function isValidLog(entry, players) {
 export function isValidGame(game) {
   if (!game || typeof game !== 'object' || game.version !== SAVE_VERSION || game.finished !== false) return false;
   // 목록이어야 하는 항목이 모두 배열인지 확인한다.
-  for (let key of ['players', 'order', 'rolls', 'lands', 'deck', 'dice', 'logs']) {
+  for (let key of ['players', 'order', 'rolls', 'lands', 'deck', 'valley', 'dice', 'logs']) {
     if (!Array.isArray(game[key])) return false;
   }
   let league = Object.keys(LEAGUES).includes(game.league) ? LEAGUES[game.league] : null;
@@ -2470,14 +3533,129 @@ export function isValidGame(game) {
 }
 
 /**
+ * 버전 5 의 저장 데이터를 버전 6 의 모양으로 바꾼다. 버전 5 는 슬롯 데이터에 버전을 적기 전의 마지막 형식이다.
+ * 버전 6 에서는 우주여행 코스가 생겨 진행 상태에 뉴런의 골짜기 카드 덱(valley)이 더해졌고, 아이템의 사용 기록이 사용 여부(true / false)에서 사용 횟수로 바뀌었으며,
+ * 새 아이템(천사의 빛, 블랙홀 탈출포트)의 자리가 플레이어의 아이템 주머니와 사용 기록에 더해졌다.
+ * 버전 5 의 게임은 모두 세계여행 코스의 것이므로 덱과 땅, 보관 쿠폰은 그대로 쓴다. 진행 중인 게임이 버전 5 가 아니면 손대지 않는다. (나중의 검사에서 걸러진다.)
+ * @param {Object} data 버전 5 의 저장 데이터 (직접 고친다.)
+ * @returns {Object} 버전 6 의 저장 데이터
+ */
+function upgradeFrom5(data) {
+  let game = data.game;
+  if (!game || typeof game !== 'object' || game.version !== 5 || !Array.isArray(game.players)) return data;
+  game.version = 6;
+  if (game.valley === undefined) game.valley = [];
+  // 플레이어마다 아이템의 사용 기록을 횟수로 바꾸고 새 아이템의 자리를 더한다.
+  for (let player of game.players) {
+    if (!player || typeof player !== 'object') continue;
+    let used = player.usedItems && typeof player.usedItems === 'object' ? player.usedItems : {};
+    let usage = { angel: 0, escape: 0 };
+    // 사용 제한 묶음마다 사용 여부를 사용 횟수(쓴 적이 있으면 1, 없으면 0)로 바꾼다.
+    for (let limit in used) usage[limit] = used[limit] === true ? 1 : used[limit] === false ? 0 : used[limit];
+    player.usedItems = usage;
+    if (!player.items || typeof player.items !== 'object' || Array.isArray(player.items)) continue;
+    // 버전 6 에서 생긴 아이템을 0개로 채운다.
+    for (let id of ['angel', 'escape']) {
+      if (player.items[id] === undefined) player.items[id] = 0;
+    }
+  }
+  return data;
+}
+
+/**
+ * 버전 6 의 저장 데이터를 버전 7 의 모양으로 바꾼다.
+ * 버전 7 에서는 우주여행 코스의 기지를 증축할 수 있게 되어, 그 코스의 땅 소유 정보에 증축 횟수(annex)가 더해졌다.
+ * 버전 6 의 게임에는 증축이 없었으므로 0 으로 채운다. 세계여행 코스의 게임은 땅의 모양이 그대로여서 버전 표기만 올린다.
+ * 진행 중인 게임이 버전 6 이 아니면 손대지 않는다. (나중의 검사에서 걸러진다.)
+ * @param {Object} data 버전 6 의 저장 데이터 (직접 고친다.)
+ * @returns {Object} 버전 7 의 저장 데이터
+ */
+function upgradeFrom6(data) {
+  let game = data.game;
+  if (!game || typeof game !== 'object' || game.version !== 6 || !Array.isArray(game.lands)) return data;
+  game.version = 7;
+  let kinds = Object.keys(LEAGUES).includes(game.league) ? courseOf(game.league).buildings : [];
+  // 구매할 수 있는 칸마다, 그 코스의 건물 종류 가운데 자리가 없는 것(버전 7 에서 생긴 증축)을 0 으로 채운다.
+  for (let land of game.lands) {
+    if (!land || typeof land !== 'object') continue;
+    // 건물 종류별로 자리가 있는지 확인한다.
+    for (let kind of kinds) {
+      if (land[kind] === undefined) land[kind] = 0;
+    }
+  }
+  return data;
+}
+
+/**
+ * 버전 7 의 저장 데이터를 버전 8 의 모양으로 바꾼다. 버전 8 에서는 세 가지가 더해졌다.
+ * 아이템 시간여행 초청장이 생겨 플레이어의 아이템 주머니와 사용 기록에 그 자리(timeinvite)가 더해졌고,
+ * 그 아이템으로 탑승하면 다음 차례에 주사위 없이 목적지를 고르므로 플레이어에 그 표시(direct)가 더해졌으며,
+ * 우주여행 코스의 텔레파시 카드에 역추진 3장이 더해졌다. 진행 중이던 우주여행 코스의 게임에는 역추진을 덱에 고르게 끼워 넣는다.
+ * (난수를 쓰지 않고 덱을 같은 간격으로 나눈 자리에 넣는다. 뽑힐 차례였던 카드들의 순서는 그대로이다.)
+ * 진행 중인 게임이 버전 7 이 아니면 손대지 않는다. (나중의 검사에서 걸러진다.)
+ * @param {Object} data 버전 7 의 저장 데이터 (직접 고친다.)
+ * @returns {Object} 버전 8 의 저장 데이터
+ */
+function upgradeFrom7(data) {
+  let game = data.game;
+  if (!game || typeof game !== 'object' || game.version !== 7 || !Array.isArray(game.players)) return data;
+  game.version = 8;
+  // 플레이어마다 새 표시와 새 아이템의 자리를 더한다.
+  for (let player of game.players) {
+    if (!player || typeof player !== 'object') continue;
+    if (player.direct === undefined) player.direct = false;
+    // 아이템 주머니와 사용 기록에 시간여행 초청장의 자리를 0 으로 채운다.
+    for (let bag of [player.items, player.usedItems]) {
+      if (bag && typeof bag === 'object' && !Array.isArray(bag) && bag.timeinvite === undefined) bag.timeinvite = 0;
+    }
+  }
+  let cards = Object.keys(LEAGUES).includes(game.league) ? courseOf(game.league).cards : {};
+  if (!Object.hasOwn(cards, 'reverse') || !Array.isArray(game.deck) || game.deck.includes('reverse')) return data;
+  let size = game.deck.length;
+  let count = cards.reverse.count;
+  // 역추진을 장수만큼, 원래의 덱을 같은 간격으로 나눈 자리에 끼워 넣는다. (앞에서 끼운 만큼 자리가 밀린다.)
+  for (let turn = 0; turn < count; turn++) game.deck.splice(Math.floor((size * (turn + 1)) / (count + 1)) + turn, 0, 'reverse');
+  return data;
+}
+
+/**
+ * 저장 데이터를 한 버전 위의 형식으로 바꾸는 함수의 표이다. 키는 바꾸기 전의 버전이다.
+ * 저장 데이터의 모양을 바꿔 SAVE_VERSION 을 올릴 때마다, 바로 앞 버전을 새 버전으로 바꾸는 함수를 여기에 더한다.
+ * @type {Object<number, Function>}
+ */
+const SAVE_UPGRADES = { 5: upgradeFrom5, 6: upgradeFrom6, 7: upgradeFrom7 };
+
+/**
+ * 저장 데이터를 지금의 형식 버전(SAVE_VERSION)으로 변환한다.
+ * 버전 표기가 없는 데이터는 표기를 시작하기 전의 형식(LEGACY_VERSION)으로 취급하며, 한 버전씩 차례로 올린다.
+ * 변환할 수 없는 버전(표기를 시작하기 전의 형식보다 오래되었거나, 이 프로그램이 아는 것보다 새로운 버전)이면 오류를 던진다.
+ * @param {Object} data 해석된 저장 데이터 (직접 고친다.)
+ * @returns {Object} 지금 버전으로 바뀐 저장 데이터
+ */
+export function migrateSave(data) {
+  let version = data.version === undefined ? LEGACY_VERSION : data.version;
+  let saved = data;
+  if (!Number.isInteger(version) || version < LEGACY_VERSION || version > SAVE_VERSION) throw new Error('version');
+  // 지금 버전이 될 때까지 한 버전씩 올린다.
+  while (version < SAVE_VERSION) {
+    saved = SAVE_UPGRADES[version](saved);
+    version++;
+  }
+  saved.version = SAVE_VERSION;
+  return saved;
+}
+
+/**
  * 해석된 저장 데이터를 검사하여 슬롯 데이터로 다듬는다. 형식이 올바르지 않으면 오류를 던진다.
+ * 이전 버전의 저장 데이터(버전 표기가 없는 것 포함)는 먼저 지금의 형식으로 변환한다. (`migrateSave`)
  * @param {*} data 해석된 저장 데이터
  * @param {string} fallback 이름이 비어 있을 때 쓸 이름
  * @param {boolean} strict 아이템이나 진행 중인 게임이 올바르지 않을 때 오류로 처리할지 여부 (false 이면 올바르지 않은 부분만 기본값으로 바꾸거나 버린다.)
- * @returns {Object} 슬롯 데이터 { name, money, items, equips, charms, equipped, game, updated }
+ * @returns {Object} 슬롯 데이터 { version, name, money, items, equips, charms, equipped, game, updated }
  */
 export function normalizeSave(data, fallback, strict) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || !isCount(data.money, Number.MAX_SAFE_INTEGER)) throw new Error('data');
+  data = migrateSave(data);
   let name = typeof data.name === 'string' ? data.name.trim().slice(0, NAME_LIMIT) : '';
   let items = fillItems(data.items);
   if (items === null) {
@@ -2513,7 +3691,7 @@ export function normalizeSave(data, fallback, strict) {
     game.logs = logs.slice(-LOG_LIMIT);
     game.players[0].name = game.players[0].name.slice(0, NAME_LIMIT) || name || fallback;
   }
-  return { name: name || fallback, money: data.money, items, equips, charms, equipped, game, updated: isCount(data.updated, Number.MAX_SAFE_INTEGER) ? data.updated : 0 };
+  return { version: SAVE_VERSION, name: name || fallback, money: data.money, items, equips, charms, equipped, game, updated: isCount(data.updated, Number.MAX_SAFE_INTEGER) ? data.updated : 0 };
 }
 
 /* ==========================================================================
@@ -2720,6 +3898,27 @@ export class HellmarbleHost {
   }
 
   /**
+   * 카드의 효과로 플레이어가 주사위를 굴린 것을 연출한다. 이동하려고 굴리는 주사위(dice)와 달리 1개 또는 2개를 굴리며, 누가 굴렸는지를 함께 알린다.
+   * @param {Object} player 주사위를 굴린 플레이어
+   * @param {number[]} dice 굴린 주사위의 눈 (1개 또는 2개)
+   * @returns {Promise<void>}
+   */
+  async cast(player, dice) {
+    void player;
+    void dice;
+  }
+
+  /**
+   * 우주여행 코스에서 일어난 사건(별을 빼앗거나 교환하거나 반납함, 기지를 무료로 지음, 견우성과 직녀성의 주인이 모두 나타남 등)을 잠깐 크게 알린다.
+   * 같은 내용이 진행 기록에도 남으며, 알림의 문장은 진행 기록과 같은 방식({ key, params })으로 만든다.
+   * @param {Object} entry 알릴 내용 { key : 문구의 키, params : 문구에 담을 값 }
+   * @returns {Promise<void>}
+   */
+  async notice(entry) {
+    void entry;
+  }
+
+  /**
    * 인공지능 플레이어가 판단하는 동안의 시간을 연출한다.
    * @param {Object} player 판단 중인 플레이어
    * @param {Object} request 판단할 내용
@@ -2736,7 +3935,12 @@ export class HellmarbleHost {
    * @param {Object} player 선택할 플레이어
    * pass 요청은 { index, amount, travel, coupon, item }, radio 요청은 { arrival, coupon, item } 이며 coupon 과 item 은 비밀쿠폰의 것과 아이템의 것을 각각 쓸 수 있는지이다.
    * 'coupon' 또는 'item' 으로 답하면 그 우대권이나 무전기를 쓰고, 그 밖의 값은 쓰지 않는다. (true 는 비밀쿠폰의 것을 쓰겠다는 답으로 본다.)
-   * @param {Object} request 선택할 내용 (type : roll, travel, radio, buy, build, pass, sell / roll 의 again 은 더블로 다시 굴리는 것인지 여부)
+   * 우주여행 코스에서는 다음 요청이 더 있다.
+   * angel 요청은 { reason, coupon, item } 과 사유별 값(amount, index, target, other, card)이며 답은 pass 요청과 같다. (천사의 빛으로 손해를 면할지)
+   * escape 요청은 { arrival, last, escape : { coupon, item }, angel : { coupon, item } } 이며 'escape.coupon', 'escape.item', 'angel.coupon', 'angel.item' 가운데 하나로 답하면 그것을 써서 블랙홀에서 탈출한다.
+   * pick 요청은 { reason, options : 고를 수 있는 칸 번호 목록, optional : 고르지 않아도 되는지, map : 보드에서 고르는지, card } 이며 칸 번호(고르지 않으면 null)로 답한다.
+   * target 요청은 { reason, options : 고를 수 있는 플레이어 번호 목록, card } 이며 플레이어 번호로 답한다. dicecount 요청은 굴릴 주사위의 수(1 또는 2)로 답한다.
+   * @param {Object} request 선택할 내용 (type : roll, travel, radio, buy, build, pass, sell, angel, escape, pick, target, dicecount / roll 의 again 은 더블로 다시 굴리는 것인지 여부)
    * @param {HellmarbleGame} game 진행 중인 게임
    * @returns {Promise<*>} 선택 결과
    */
@@ -2758,7 +3962,8 @@ export class HellmarbleHost {
  * ========================================================================== */
 
 /**
- * 인공지능 플레이어의 판단을 담당한다.
+ * 인공지능 플레이어의 판단을 담당한다. 어느 코스에서나 같은 판단(구매, 건설, 매각, 칸 고르기)을 여기에 두는 상위 클래스이며,
+ * 코스만의 판단은 이 클래스를 상속한 코스별 인공지능(HellmarbleWorldAI, HellmarbleSpaceAI)이 더한다. 엔진이 자기 코스의 인공지능을 만든다. (HellmarbleGame.createAI)
  * 비상금(위험 대비 현금)을 남겨 두는 범위 안에서 땅을 사고 건물을 지으며,
  * 돈이 모자랄 때에는 수입이 가장 적은 땅부터 매각한다.
  */
@@ -2772,19 +3977,17 @@ export class HellmarbleAI {
   }
 
   /**
-   * 요청의 종류에 맞는 판단을 내린다.
+   * 요청의 종류에 맞는 판단을 내린다. 여기에서는 어느 코스에나 있는 요청을 다루며, 코스만의 요청은 하위 클래스가 이 메소드를 재정의하여 먼저 다룬다.
    * @param {Object} player 판단할 플레이어
    * @param {Object} request 판단할 내용
-   * @returns {*} 판단 결과
+   * @returns {*} 판단 결과 (모르는 요청에는 true)
    */
   decide(player, request) {
     switch (request.type) {
       case 'buy': return this.wantBuy(player, request);
       case 'build': return this.chooseBuild(player, request);
       case 'sell': return this.chooseSale(player, request);
-      case 'pass': return this.wantPass(player, request);
-      case 'radio': return this.wantRadio(player);
-      case 'travel': return this.chooseTravel(player);
+      case 'pick': return this.choosePick(player, request);
       default: return true;
     }
   }
@@ -2811,7 +4014,7 @@ export class HellmarbleAI {
    * @returns {number} 비상금 (원)
    */
   reserve(player) {
-    let wanted = Math.max(this.game.money(SALARY) * 1.5, this.threat(player) * 0.6) * (player.caution || 1);
+    let wanted = Math.max(this.game.salary * 1.5, this.threat(player) * 0.6) * (player.caution || 1);
     return Math.round(Math.min(wanted, player.cash * 0.5));
   }
 
@@ -2833,9 +4036,10 @@ export class HellmarbleAI {
    */
   chooseBuild(player, request) {
     let reserve = this.reserve(player);
-    // 이용료가 높은 건물(호텔 → 빌딩 → 별장)부터 지을 수 있는지 살펴본다.
-    for (let position = BUILDINGS.length - 1; position >= 0; position--) {
-      let kind = BUILDINGS[position];
+    let kinds = this.game.course.buildings;
+    // 이용료가 높은 건물(호텔 → 빌딩 → 별장, 우주여행 코스에서는 기지)부터 지을 수 있는지 살펴본다.
+    for (let position = kinds.length - 1; position >= 0; position--) {
+      let kind = kinds[position];
       if (request.options.includes(kind) && player.cash - this.game.buildCost(request.index, kind) >= reserve) return kind;
     }
     return null;
@@ -2868,13 +4072,142 @@ export class HellmarbleAI {
   }
 
   /**
+   * 원하는 칸으로 이동할 때의 목적지로서 어떤 칸이 갖는 기대 가치를 계산한다.
+   * 구매할 수 있는 땅은 여기에서 따지고(빈 땅이면 살 만한지, 남의 땅이면 낼 돈, 자기 땅이면 지을 건물), 그 밖의 칸은 코스마다 다르므로 spotScore 에 맡긴다.
+   * @param {Object} player 판단할 플레이어
+   * @param {number} index 살펴볼 칸 번호
+   * @param {boolean} passing 가는 길에 출발지를 지나기만 해도 월급을 받는지 여부 (false 이면 출발지에 도착할 때에만 받는다.)
+   * @returns {number} 기대 가치 (원 단위의 어림값)
+   */
+  travelScore(player, index, passing) {
+    let game = this.game;
+    let tile = game.board[index];
+    let land = game.state.lands[index];
+    let bonus = (passing ? index < player.position : index === game.course.start) ? game.salary : 0;
+    if (land) {
+      if (land.owner === null) {
+        if (!game.canOwn(player, index) || player.cash - game.price(index) < this.reserve(player)) return bonus;
+        return bonus + game.money(tile.toll) * 3 + game.price(index) * 0.2 + this.potential(tile);
+      }
+      if (land.owner !== player.id) return bonus - game.toll(index);
+      let choice = this.chooseBuild(player, { index, options: game.buildOptions(player, index) });
+      return bonus + (choice ? game.tollAfter(index, choice) - game.toll(index) : 0);
+    }
+    return this.spotScore(player, tile, bonus);
+  }
+
+  /**
+   * 빈 땅을 샀을 때 나중에 건물을 지어 더 얻게 될 수입의 어림값을 구한다. 건물의 종류가 코스마다 다르므로 하위 클래스가 정한다.
+   * @param {HellmarbleTile} tile 살펴볼 땅
+   * @returns {number} 어림값 (원). 여기에서는 건물을 따지지 않아 0 이다.
+   */
+  potential(tile) {
+    void tile;
+    return 0;
+  }
+
+  /**
+   * 구매할 수 없는 칸(카드 칸, 기금이 쌓이는 칸, 갇히는 칸 등)에 도착했을 때의 기대 가치를 구한다. 칸의 종류가 코스마다 다르므로 하위 클래스가 정한다.
+   * @param {Object} player 판단할 플레이어
+   * @param {HellmarbleTile} tile 살펴볼 칸
+   * @param {number} bonus 그 칸으로 가면서 받게 되는 월급 (원)
+   * @returns {number} 기대 가치 (원 단위의 어림값). 여기에서는 칸의 효과를 따지지 않아 월급뿐이다.
+   */
+  spotScore(player, tile, bonus) {
+    void player;
+    void tile;
+    return bonus;
+  }
+
+  /**
+   * 엔진이 칸 하나를 골라 달라고 할 때(HellmarbleGame.pick) 고를 칸을 결정한다. 사유마다 점수를 매겨 가장 높은 칸을 고른다.
+   * @param {Object} player 판단할 플레이어
+   * @param {Object} request 선택 요청 { reason, options, optional }
+   * @returns {number|null} 고른 칸 번호 (고를 만한 칸이 없으면 null)
+   */
+  choosePick(player, request) {
+    let best = null;
+    let bestScore = -Infinity;
+    // 고를 수 있는 칸마다 점수를 매겨 가장 높은 칸을 고른다.
+    for (let index of request.options) {
+      let score = this.pickScore(player, request.reason, index);
+      if (score > bestScore) {
+        best = index;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * 칸 하나를 골라야 할 때 그 칸이 갖는 점수를 매긴다. 고르는 사유가 코스마다 다르므로 하위 클래스가 정한다.
+   * @param {Object} player 판단할 플레이어
+   * @param {string} reason 고르는 사유
+   * @param {number} index 살펴볼 칸 번호
+   * @returns {number} 점수 (높을수록 고르기 좋다.) 여기에서는 사유를 따지지 않아 모두 0 이며, 그래서 첫 칸을 고르게 된다.
+   */
+  pickScore(player, reason, index) {
+    void player;
+    void reason;
+    void index;
+    return 0;
+  }
+}
+
+/**
+ * 세계여행 코스의 인공지능이다. 공통 판단(HellmarbleAI)에 우대권과 무전기를 쓸지, 우주여행으로 어디에 갈지에 대한 판단을 더한다.
+ */
+export class HellmarbleWorldAI extends HellmarbleAI {
+  /**
+   * 요청의 종류에 맞는 판단을 내린다. 세계여행 코스만의 요청(우대권, 무전기, 우주여행의 목적지)을 먼저 다루고 나머지는 공통 판단에 맡긴다.
+   * @param {Object} player 판단할 플레이어
+   * @param {Object} request 판단할 내용
+   * @returns {*} 판단 결과
+   */
+  decide(player, request) {
+    switch (request.type) {
+      case 'pass': return this.wantPass(player, request);
+      case 'radio': return this.wantRadio(player);
+      case 'travel': return this.chooseTravel(player);
+      default: return super.decide(player, request);
+    }
+  }
+
+  /**
+   * 빈 도시를 샀을 때 나중에 건물을 지어 더 얻게 될 수입의 어림값을 구한다. 빌딩 이용료의 일부로 어림한다.
+   * @param {HellmarbleTile} tile 살펴볼 땅
+   * @returns {number} 어림값 (원). 건물을 지을 수 없는 땅이면 0
+   */
+  potential(tile) {
+    return tile.type === 'city' ? this.game.money(tile.fee.building) * 0.3 : 0;
+  }
+
+  /**
+   * 세계여행 코스의 구매할 수 없는 칸(비밀쿠폰, 사회복지기금 본부와 접수처, 무인도)에 도착했을 때의 기대 가치를 구한다.
+   * @param {Object} player 판단할 플레이어
+   * @param {HellmarbleTile} tile 살펴볼 칸
+   * @param {number} bonus 그 칸으로 가면서 받게 되는 월급 (원)
+   * @returns {number} 기대 가치 (원 단위의 어림값)
+   */
+  spotScore(player, tile, bonus) {
+    let game = this.game;
+    switch (tile.type) {
+      case 'coupon': return bonus + game.money(won(3));
+      case 'fund': return bonus + game.state.fund;
+      case 'desk': return bonus - Math.min(player.cash, game.money(WELFARE_FEE));
+      case 'island': return bonus - game.salary * 2;
+      default: return bonus;
+    }
+  }
+
+  /**
    * 비밀쿠폰 우대권을 쓸지 결정한다. 월급 이상의 큰 금액이거나 현금으로 낼 수 없을 때 쓴다. (아이템 우대권은 쓰지 않는다.)
    * @param {Object} player 판단할 플레이어
    * @param {Object} request 우대권 요청 { index, amount }
    * @returns {boolean} 사용 여부
    */
   wantPass(player, request) {
-    return request.amount >= this.game.money(SALARY) || request.amount > player.cash;
+    return request.amount >= this.game.salary || request.amount > player.cash;
   }
 
   /**
@@ -2897,7 +4230,7 @@ export class HellmarbleAI {
     // 현재 칸을 뺀 모든 칸의 기대 가치를 계산하여 가장 좋은 칸을 고른다.
     for (let index = 0; index < BOARD_SIZE; index++) {
       if (index === player.position) continue;
-      let score = this.travelScore(player, index);
+      let score = this.travelScore(player, index, true);
       if (score > bestScore) {
         best = index;
         bestScore = score;
@@ -2905,35 +4238,189 @@ export class HellmarbleAI {
     }
     return best;
   }
+}
+
+/**
+ * 우주여행 코스의 인공지능이다. 공통 판단(HellmarbleAI)에 천사의 빛과 블랙홀 탈출포트를 쓸지, 카드의 효과로 어느 칸이나 어느 플레이어를 고를지에 대한 판단을 더한다.
+ */
+export class HellmarbleSpaceAI extends HellmarbleAI {
+  /**
+   * 요청의 종류에 맞는 판단을 내린다. 우주여행 코스만의 요청(천사의 빛, 블랙홀 탈출, 플레이어 고르기, 주사위의 수)을 먼저 다루고 나머지는 공통 판단에 맡긴다.
+   * @param {Object} player 판단할 플레이어
+   * @param {Object} request 판단할 내용
+   * @returns {*} 판단 결과
+   */
+  decide(player, request) {
+    switch (request.type) {
+      case 'angel': return this.wantAngel(player, request);
+      case 'escape': return this.chooseEscape(player, request);
+      case 'target': return this.chooseTarget(player, request);
+      case 'dicecount': return this.chooseDiceCount(player);
+      case 'travel': return this.chooseTravel(player);
+      default: return super.decide(player, request);
+    }
+  }
 
   /**
-   * 우주여행의 목적지로서 어떤 칸이 갖는 기대 가치를 계산한다.
+   * 빈 별을 샀을 때 나중에 기지를 지어 더 얻게 될 수입의 어림값을 구한다. 기지가 있을 때의 이용료의 일부로 어림한다.
+   * @param {HellmarbleTile} tile 살펴볼 땅
+   * @returns {number} 어림값 (원). 기지를 지을 수 없는 땅이면 0
+   */
+  potential(tile) {
+    return tile.type === 'star' ? this.game.money(tile.fee.base) * 0.3 : 0;
+  }
+
+  /**
+   * 자기 별 하나에 지금 지을 차례가 된 것(기지가 없으면 기지, 있으면 증축)을 지었을 때 이용료가 얼마나 오르는지 구한다.
+   * 비상금을 남기고 그 비용을 낼 수 없거나 더 지을 것이 없는 별은 지을 만하지 않은 것으로 본다.
    * @param {Object} player 판단할 플레이어
-   * @param {number} index 살펴볼 칸 번호
+   * @param {number} index 별의 칸 번호
+   * @returns {number} 오르는 이용료 (원). 지을 만하지 않으면 -Infinity
+   */
+  workGain(player, index) {
+    let game = this.game;
+    let kind = game.buildKinds(index)[0];
+    if (game.state.lands[index][kind] >= BUILD_LIMIT[kind] || player.cash - game.buildCost(index, kind) < this.reserve(player)) return -Infinity;
+    return game.tollAfter(index, kind) - game.toll(index);
+  }
+
+  /**
+   * 지구에 멈췄을 때 기지를 짓거나 증축하여 더 얻게 될 수입의 어림값을 구한다.
+   * 비상금을 남기고 비용을 낼 수 있는 자기 별 가운데 이용료가 가장 많이 오르는 별의 인상분이다.
+   * @param {Object} player 판단할 플레이어
+   * @returns {number} 어림값 (원). 지을 만한 별이 없으면 0
+   */
+  earthGain(player) {
+    let best = 0;
+    // 자기 별마다 지금 지을 수 있는 것으로 이용료가 얼마나 오르는지 살펴 가장 큰 것을 고른다.
+    for (let index of this.game.stars(player)) best = Math.max(best, this.workGain(player, index));
+    return best;
+  }
+
+  /**
+   * 시간여행 초청장으로 탑승한 다음 차례에 이동할 칸을 결정한다. 현재 칸을 뺀 모든 칸의 기대 가치를 견주어 가장 좋은 칸을 고른다.
+   * (가는 길에 지구를 지나도 월급이 없고, 지구에 도착할 때에만 월급을 받는 것으로 따진다.)
+   * @param {Object} player 판단할 플레이어
+   * @returns {number} 이동할 칸 번호
+   */
+  chooseTravel(player) {
+    let options = [];
+    // 현재 칸을 뺀 모든 칸을 후보로 삼는다.
+    for (let index = 0; index < BOARD_SIZE; index++) {
+      if (index !== player.position) options.push(index);
+    }
+    return this.choosePick(player, { reason: 'timetravel', options });
+  }
+
+  /**
+   * 우주여행 코스의 구매할 수 없는 칸(지구, 텔레파시 카드, 핼리혜성, 뉴런의 골짜기, 우주조난기지, 블랙홀)에 도착했을 때의 기대 가치를 구한다.
+   * 지구에 멈추면 기지가 없는 자기 별에 기지를 지을 수 있으므로 그만큼을 더한다.
+   * @param {Object} player 판단할 플레이어
+   * @param {HellmarbleTile} tile 살펴볼 칸
+   * @param {number} bonus 그 칸으로 가면서 받게 되는 월급 (원)
    * @returns {number} 기대 가치 (원 단위의 어림값)
    */
-  travelScore(player, index) {
+  spotScore(player, tile, bonus) {
     let game = this.game;
-    let tile = BOARD[index];
-    let land = game.state.lands[index];
-    let bonus = index < player.position ? game.money(SALARY) : 0;
-    if (land) {
-      if (land.owner === null) {
-        if (player.cash - game.price(index) < this.reserve(player)) return bonus;
-        let potential = tile.type === 'city' ? game.money(tile.fee.building) * 0.3 : 0;
-        return bonus + game.money(tile.toll) * 3 + game.price(index) * 0.2 + potential;
-      }
-      if (land.owner !== player.id) return bonus - game.toll(index);
-      let choice = this.chooseBuild(player, { index, options: game.buildOptions(player, index) });
-      return bonus + (choice ? game.money(tile.fee[choice]) : 0);
-    }
     switch (tile.type) {
-      case 'coupon': return bonus + game.money(won(3));
-      case 'fund': return bonus + game.state.fund;
-      case 'desk': return bonus - Math.min(player.cash, game.money(WELFARE_FEE));
-      case 'island': return bonus - game.money(SALARY) * 2;
+      case 'start': return bonus + this.earthGain(player);
+      case 'telepathy': return bonus + game.money(won(10));
+      case 'halley': return bonus + game.money(won(10));
+      case 'neuron': return bonus + game.money(won(8));
+      case 'rescue': return bonus + (game.state.fund > 0 ? game.state.fund : -Math.min(player.cash, game.money(RESCUE_FEE)));
+      case 'blackhole': return bonus - game.salary * 2;
       default: return bonus;
     }
+  }
+
+  /**
+   * 천사의 빛(텔레파시 카드로 보관한 것)을 써서 손해를 면할지 결정한다. 월급 이상의 큰 손해이거나 현금으로 감당할 수 없을 때 쓴다. (아이템 천사의 빛은 쓰지 않는다.)
+   * @param {Object} player 판단할 플레이어
+   * @param {Object} request 천사의 빛 요청 { reason, amount : 면하게 되는 손해의 크기(원) }
+   * @returns {boolean} 사용 여부
+   */
+  wantAngel(player, request) {
+    return request.amount >= this.game.salary || request.amount > player.cash;
+  }
+
+  /**
+   * 블랙홀에서 탈출하는 데 무엇을 쓸지 결정한다. 텔레파시 카드로 보관한 블랙홀 탈출포트만 쓰며, 보드가 아직 위험하지 않거나 땅을 반납할 수도 있는 3턴 째일 때 쓴다.
+   * (천사의 빛은 더 큰 손해를 막는 데 쓰려고 아낀다.)
+   * @param {Object} player 판단할 플레이어
+   * @param {Object} request 탈출 요청 { arrival, last, escape : { coupon, item }, angel : { coupon, item } }
+   * @returns {string|null} 쓸 것 ('escape.coupon'), 쓰지 않으면 null
+   */
+  chooseEscape(player, request) {
+    return request.escape.coupon && (request.last || this.threat(player) < player.cash * 0.3) ? 'escape.coupon' : null;
+  }
+
+  /**
+   * 칸 하나를 골라야 할 때 그 칸이 갖는 점수를 사유에 맞게 매긴다. 점수가 높을수록 고르기 좋은 칸이다.
+   * 잃는 것(반납, 내주기)은 값이 싼 것을, 얻는 것(기지 건설, 별 얻기)은 이익이 큰 것을 고르도록 매긴다.
+   * @param {Object} player 판단할 플레이어
+   * @param {string} reason 고르는 사유 (blackhole, give, basereturn, freebase, reunion, earth, take, pascal, valley, lovers, moravec, timetravel)
+   * @param {number} index 살펴볼 칸 번호
+   * @returns {number} 점수 (고르면 안 되는 칸은 -Infinity)
+   */
+  pickScore(player, reason, index) {
+    let game = this.game;
+    let tile = game.board[index];
+    switch (reason) {
+      case 'blackhole': return -game.value(index);
+      case 'give': return -game.value(index);
+      case 'basereturn': return -game.toll(index);
+      case 'freebase': return tile.fee.base - tile.toll;
+      case 'reunion': return this.workGain(player, index);
+      case 'earth': return this.workGain(player, index);
+      case 'take': return game.value(index);
+      case 'pascal': return game.toll(index);
+      case 'valley': return (index < player.position ? BOARD_SIZE : 0) - ((index - player.position + BOARD_SIZE) % BOARD_SIZE);
+      case 'moravec': return this.travelScore(player, index, false);
+      case 'timetravel': return this.travelScore(player, index, false);
+      default: return 0;
+    }
+  }
+
+  /**
+   * 카드의 효과로 다른 플레이어 한 명을 골라야 할 때(우주파티 초대권) 고를 플레이어를 결정한다.
+   * 보내질 칸에서 이용료를 내게 될 플레이어를 우선하고, 그 가운데 현금이 가장 많은 플레이어를 고른다.
+   * @param {Object} player 판단할 플레이어
+   * @param {Object} request 선택 요청 { reason, options : 플레이어 번호 목록, index : 보내질 칸 번호 }
+   * @returns {number} 고른 플레이어의 번호
+   */
+  chooseTarget(player, request) {
+    void player;
+    let game = this.game;
+    let land = game.state.lands[request.index];
+    let owner = land ? land.owner : null;
+    let best = request.options[0];
+    let bestScore = -Infinity;
+    // 고를 수 있는 플레이어마다 이용료를 내게 되는지와 현금을 살펴 가장 손해를 입힐 수 있는 플레이어를 고른다.
+    for (let id of request.options) {
+      let rival = game.state.players[id];
+      let score = (owner !== null && owner !== id ? game.toll(request.index) : 0) + rival.cash / 1000;
+      if (score > bestScore) {
+        best = id;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * 조디악의 선물 카드에서 주사위를 1개 던질지 2개 던질지 결정한다. 도착하게 될 별자리들의 기대 가치를 눈이 나올 확률로 평균하여 더 좋은 쪽을 고른다.
+   * @param {Object} player 판단할 플레이어
+   * @returns {number} 던질 주사위의 수 (1 또는 2)
+   */
+  chooseDiceCount(player) {
+    let game = this.game;
+    let one = 0;
+    let two = 0;
+    // 주사위 1개의 눈(1~6)마다 도착할 별자리의 기대 가치를 더한다.
+    for (let face = 1; face <= 6; face++) one += this.travelScore(player, game.tiles[ZODIAC[face - 1]], false) / 6;
+    // 주사위 2개의 합(2~12)마다 그 합이 나올 경우의 수를 곱해 기대 가치를 더한다.
+    for (let sum = 2; sum <= 12; sum++) two += (this.travelScore(player, game.tiles[ZODIAC[sum - 1]], false) * (6 - Math.abs(sum - 7))) / 36;
+    return two > one ? 2 : 1;
   }
 }
 
@@ -2942,49 +4429,94 @@ export class HellmarbleAI {
  * ========================================================================== */
 
 /**
- * Hellmarble 의 규칙을 진행하는 엔진이다.
+ * Hellmarble 의 규칙을 진행하는 엔진이다. 어느 코스에서나 같은 규칙을 여기에 두는 상위 클래스이며,
+ * 코스만의 규칙은 이 클래스를 상속한 코스별 엔진(HellmarbleWorldGame, HellmarbleSpaceGame)이 더한다.
  * 진행 상태(state)는 그대로 저장할 수 있는 단순한 객체이며, 화면과 입력은 호스트에게 맡긴다.
+ *
+ * 여기에 있는 것 : 차례의 진행(주사위, 이동, 더블), 땅의 구매·건설·매각과 통행료·이용료 지불, 파산, 월급, 아이템과 부적,
+ * 카드를 뽑아 이행하는 뼈대, 갇히고 탑승하는 뼈대, 승패의 판정.
+ * 하위 클래스가 재정의하여 채우는 곳 : createAI (인공지능), toll (내야 할 금액), buildKinds (지을 차례가 된 건물), gift (부적이 지어 주는 건물), hurts (손해가 되는 카드),
+ * waive (통행료·이용료의 면제), visit (코스만의 칸에 도착), acquired (땅을 얻은 뒤), applyCard (코스만의 카드 효과), itemEffect (직접 쓰는 아이템),
+ * release (갇힌 플레이어가 풀려나는 경우), paroled (풀려난 굴림의 뒤처리), playStep (주사위를 굴리는 한 번의 진행).
+ * 엔진은 직접 만들지 않고 HellmarbleGame.open 으로 만든다. 그래야 그 게임의 코스에 맞는 하위 클래스가 만들어진다.
  */
 export class HellmarbleGame {
   /**
-   * 게임 엔진을 만든다.
+   * 게임 엔진을 만든다. 보통은 직접 부르지 않고 HellmarbleGame.open 으로 그 코스의 엔진을 만든다.
    * @param {Object} state 게임 진행 상태 (HellmarbleGame.create 로 만들거나 저장된 것을 불러온다.)
    * @param {HellmarbleHost} [host] 화면 연출과 사용자 입력 담당 (생략 시 연출 없이 진행)
    */
   constructor(state, host) {
     this.state = state;
     this.host = host || new HellmarbleHost();
-    this.ai = new HellmarbleAI(this);
+    this.ai = this.createAI();
     this.stopped = false;
     this.exempt = false;
+    this.parole = false;
+    this.bonus = false;
+    this.drawn = [];
   }
 
   /**
-   * 새 게임의 진행 상태를 만든다. 플레이어 구성, 턴 순서, 비밀쿠폰 덱을 정한다.
+   * 진행 상태에 맞는 코스의 엔진을 만든다. 리그가 진행되는 코스(LEAGUES 의 course)의 엔진 클래스(ENGINES)를 고른다.
+   * @param {Object} state 게임 진행 상태 (HellmarbleGame.create 로 만들거나 저장된 것을 불러온다.)
+   * @param {HellmarbleHost} [host] 화면 연출과 사용자 입력 담당 (생략 시 연출 없이 진행)
+   * @returns {HellmarbleGame} 그 코스의 엔진
+   */
+  static open(state, host) {
+    return new (engineOf(state.league))(state, host);
+  }
+
+  /**
+   * 이 엔진이 쓸 인공지능을 만든다. 코스별 엔진이 재정의하여 자기 코스의 인공지능을 만든다.
+   * @returns {HellmarbleAI} 인공지능
+   */
+  createAI() {
+    return new HellmarbleAI(this);
+  }
+
+  /**
+   * 저장된 진행 상태가 이 코스만의 규칙에 어긋나지 않는지 확인한다. (공통 형식은 isValidGame 이 따로 검사한다.) 코스별 엔진이 재정의한다.
+   * @param {Object} state 게임 진행 상태
+   * @returns {boolean} 어긋나지 않으면 true
+   */
+  static sound(state) {
+    void state;
+    return true;
+  }
+
+  /**
+   * 새 게임의 진행 상태를 만든다. 플레이어 구성, 턴 순서, 카드 덱(비밀쿠폰 또는 텔레파시 카드와 뉴런의 골짜기 카드)을 정한다.
+   * 보드와 카드는 리그의 코스(세계여행 코스, 우주여행 코스)를 따른다.
    * 사용자는 장착한 색상과 모양을 쓰고, 인공지능 플레이어는 그와 겹치지 않는 기본 색상과 모양을 쓴다.
    * 시작하는 돈과 인공지능의 수, 소모형 아이템을 가져갈 수 있는지, 인공지능 한 명이 부적을 장착하는지는 리그의 설정(LEAGUES)을 따른다.
+   * 아이템은 그 리그에서 쓸 수 있는 것만 가져간다. (소모형 아이템을 쓸 수 없는 리그, 다른 코스에서만 쓰는 아이템은 가져가지 않는다.)
    * @param {Object} options 설정 { league : 리그 식별자, name : 사용자 이름, items : 사용자가 가져갈 아이템 주머니(선택), look : 사용자가 장착한 색상과 모양(선택, 생략 시 기본 장착), charm : 사용자가 장착한 부적(선택), seed : 난수 씨앗(선택), rivals : 인공지능 수(선택) }
    * @returns {Object} 새 게임의 진행 상태
    */
   static create(options) {
     let league = LEAGUES[options.league];
+    let course = COURSES[league.course];
     let seed = options.seed === undefined ? Math.floor(Math.random() * 4294967296) : options.seed;
-    let humanItems = (league.items && fillItems(options.items)) || emptyItems();
+    let humanItems = splitItems(options.items, options.league).taken;
     let look = isValidLook(options.look) ? { color: options.look.color, shape: options.look.shape } : { ...DEFAULT_LOOK };
     let looks = [look, ...rivalLooks(look, MAX_PLAYERS - 1)];
     let state = {
       version: SAVE_VERSION, league: options.league, multiplier: league.multiplier, seed: seed >>> 0,
-      players: [], order: [], rolls: [], turn: 0, turns: 0, lands: [], deck: [], fund: 0,
+      players: [], order: [], rolls: [], turn: 0, turns: 0, lands: [], deck: [], valley: [], fund: 0,
       dice: [1, 1], logs: [], finished: false, winner: null,
     };
-    let game = new HellmarbleGame(state);
+    let game = HellmarbleGame.open(state);
     let rivals = league.weights[options.rivals - 1] > 0 ? options.rivals : game.pickWeighted(league.weights) + 1;
     let pool = [];
     // 사용자(0번)와 인공지능 플레이어를 만들고 턴 순서를 정할 주사위를 굴린다.
     for (let id = 0; id <= rivals; id++) {
+      let kept = {};
+      // 그 코스에서 보관할 수 있는 카드의 자리를 0장으로 만든다.
+      for (let card of course.keeps) kept[card] = 0;
       state.players.push({
-        id, name: id === 0 ? options.name : null, ai: id !== 0, cash: league.cash, position: TILES.start,
-        alive: true, island: 0, boarded: false, coupons: { pass: 0, radio: 0 },
+        id, name: id === 0 ? options.name : null, ai: id !== 0, cash: league.cash, position: course.start,
+        alive: true, island: 0, boarded: false, direct: false, coupons: kept,
         items: id === 0 ? humanItems : emptyItems(), usedItems: freshUsage(), loaded: null, look: looks[id], charm: id === 0 && isCharm(options.charm) ? options.charm : null,
         caution: id === 0 ? 1 : 0.7 + game.random() * 0.6,
       });
@@ -3001,14 +4533,25 @@ export class HellmarbleGame {
       return (state.rolls[b][0] + state.rolls[b][1]) - (state.rolls[a][0] + state.rolls[a][1]) || a - b;
     }
     state.order.sort(compare);
-    // 구매할 수 있는 칸마다 소유 정보를 만든다.
-    for (let tile of BOARD) state.lands.push(PROPERTY_TYPES.includes(tile.type) ? { owner: null, villa: 0, building: 0, hotel: 0 } : null);
-    // 비밀쿠폰을 종류별 장수만큼 덱에 넣는다.
-    for (let id in COUPONS) {
-      // 같은 쿠폰을 정해진 장수만큼 반복해서 넣는다.
-      for (let count = 0; count < COUPONS[id].count; count++) state.deck.push(id);
+    // 구매할 수 있는 칸마다 소유 정보(소유자와 그 코스의 건물 종류별 개수)를 만든다.
+    for (let tile of course.board) {
+      let land = { owner: null };
+      // 그 코스에서 지을 수 있는 건물의 개수를 0 으로 넣는다.
+      for (let kind of course.buildings) land[kind] = 0;
+      state.lands.push(PROPERTY_TYPES.includes(tile.type) ? land : null);
+    }
+    // 주 카드 덱(비밀쿠폰 또는 텔레파시 카드)에 카드를 종류별 장수만큼 넣는다.
+    for (let id in course.cards) {
+      // 같은 카드를 정해진 장수만큼 반복해서 넣는다.
+      for (let count = 0; count < course.cards[id].count; count++) state.deck.push(id);
     }
     game.shuffle(state.deck);
+    // 둘째 카드 덱(뉴런의 골짜기 카드)에 카드를 종류별 장수만큼 넣는다. 이 덱이 없는 코스에서는 비어 있다.
+    for (let id in course.valley) {
+      // 같은 카드를 정해진 장수만큼 반복해서 넣는다.
+      for (let count = 0; count < course.valley[id].count; count++) state.valley.push(id);
+    }
+    game.shuffle(state.valley);
     // 인공지능이 장착할 수 있는 등급의 부적을 모은다. (그런 등급을 정해 두지 않은 리그에서는 하나도 모이지 않는다.)
     for (let id in CHARMS) {
       if (league.rivalCharms.includes(CHARMS[id].grade)) pool.push(id);
@@ -3024,6 +4567,38 @@ export class HellmarbleGame {
    */
   get current() {
     return this.state.players[this.state.order[this.state.turn]];
+  }
+
+  /**
+   * 이 게임이 진행되는 코스의 구성이다. 리그에 따라 정해진다.
+   * @returns {HellmarbleCourse} 코스의 구성
+   */
+  get course() {
+    return courseOf(this.state.league);
+  }
+
+  /**
+   * 이 게임의 보드(40칸)이다.
+   * @returns {HellmarbleTile[]} 보드의 칸 목록
+   */
+  get board() {
+    return this.course.board;
+  }
+
+  /**
+   * 이 게임의 보드에서 칸 식별자로 칸 번호를 찾는 표이다.
+   * @returns {Object<string, number>} 식별자별 칸 번호
+   */
+  get tiles() {
+    return this.course.tiles;
+  }
+
+  /**
+   * 출발지에서 받는 월급이다. (리그 배율 적용)
+   * @returns {number} 월급 (원)
+   */
+  get salary() {
+    return this.money(this.course.salary);
   }
 
   /**
@@ -3094,7 +4669,7 @@ export class HellmarbleGame {
    * @returns {number} 구매가 (원)
    */
   price(index) {
-    return this.money(BOARD[index].price);
+    return this.money(this.board[index].price);
   }
 
   /**
@@ -3104,23 +4679,32 @@ export class HellmarbleGame {
    * @returns {number} 건설비 (원)
    */
   buildCost(index, kind) {
-    return this.money(BOARD[index].cost[kind]);
+    return this.money(this.board[index].cost[kind]);
   }
 
   /**
-   * 땅의 통행료와 지어진 모든 건물의 이용료를 합산한다.
+   * 땅에 도착한 다른 플레이어가 내야 하는 금액을 구한다. 여기에서는 건물을 따지지 않은 기본 금액이며,
+   * 지어진 건물에 따라 금액이 달라지는 방식은 코스마다 다르므로 코스별 엔진이 재정의한다.
    * @param {number} index 칸 번호
-   * @returns {number} 통행료와 이용료의 합 (원)
+   * @returns {number} 내야 하는 금액 (원)
    */
   toll(index) {
-    let tile = BOARD[index];
+    return this.money(this.board[index].toll);
+  }
+
+  /**
+   * 이 땅에 그 종류의 건물을 하나 더 지은 뒤에 다른 플레이어가 내야 하는 금액을 구한다. (건설이나 증축을 묻는 창과 인공지능이 지은 뒤의 금액을 알리거나 견주는 데 쓴다.)
+   * 건물에 따라 금액이 달라지는 방식이 코스마다 다르므로, 건물을 잠깐 더해 toll 로 구한 뒤 되돌린다. 진행 상태는 바뀌지 않는다.
+   * @param {number} index 칸 번호
+   * @param {string} kind 건물 종류
+   * @returns {number} 지은 뒤에 내야 하는 금액 (원)
+   */
+  tollAfter(index, kind) {
     let land = this.state.lands[index];
-    let total = tile.toll;
-    if (tile.type === 'city') {
-      // 지어진 건물의 이용료를 종류별로 더한다.
-      for (let kind of BUILDINGS) total += tile.fee[kind] * land[kind];
-    }
-    return this.money(total);
+    land[kind]++;
+    let amount = this.toll(index);
+    land[kind]--;
+    return amount;
   }
 
   /**
@@ -3129,13 +4713,11 @@ export class HellmarbleGame {
    * @returns {number} 가치 (원)
    */
   value(index) {
-    let tile = BOARD[index];
+    let tile = this.board[index];
     let land = this.state.lands[index];
     let total = tile.price;
-    if (tile.type === 'city') {
-      // 지어진 건물의 건설비를 종류별로 더한다.
-      for (let kind of BUILDINGS) total += tile.cost[kind] * land[kind];
-    }
+    // 건물을 지을 수 있는 땅이면 지어진 건물의 건설비를 종류별로 더한다.
+    for (let kind of tile.cost ? this.course.buildings : []) total += tile.cost[kind] * land[kind];
     return this.money(total);
   }
 
@@ -3150,25 +4732,25 @@ export class HellmarbleGame {
 
   /**
    * 플레이어가 이번 게임에서 아이템을 쓸 수 있는지 확인한다.
-   * 아이템을 가지고 있어야 하고, 같은 사용 제한 묶음의 아이템을 이번 게임에서 아직 쓰지 않았어야 한다.
+   * 이 게임의 리그와 코스에서 쓸 수 있는 아이템이어야 하고, 가지고 있어야 하며, 같은 사용 제한 묶음의 아이템을 이번 게임에서 쓴 횟수가 한도보다 적어야 한다.
    * @param {Object} player 쓰려는 플레이어
    * @param {string} id 아이템 식별자
    * @returns {boolean} 쓸 수 있으면 true
    */
   canUseItem(player, id) {
-    return !player.ai && player.alive && Object.hasOwn(ITEMS, id) && player.items[id] > 0 && !player.usedItems[ITEMS[id].limit];
+    return !player.ai && player.alive && itemFits(id, this.state.league) && player.items[id] > 0 && player.usedItems[ITEMS[id].limit] < limitUses(ITEMS[id].limit);
   }
 
   /**
-   * 아이템 한 개를 소모한다. 같은 사용 제한 묶음의 아이템은 게임 한 판에 한 번만 쓸 수 있다.
+   * 아이템 한 개를 소모한다. 같은 사용 제한 묶음의 아이템은 게임 한 판에 정해진 횟수(대부분 한 번)까지만 쓸 수 있다.
    * @param {Object} player 사용한 플레이어
    * @param {string} id 아이템 식별자
-   * @returns {boolean} 이번 게임에 처음 사용했고 아이템 한 개를 소비했으면 true
+   * @returns {boolean} 쓸 수 있어서 아이템 한 개를 소비했으면 true
    */
   consumeItem(player, id) {
     if (!this.canUseItem(player, id)) return false;
     player.items[id]--;
-    player.usedItems[ITEMS[id].limit] = true;
+    player.usedItems[ITEMS[id].limit]++;
     return true;
   }
 
@@ -3257,8 +4839,9 @@ export class HellmarbleGame {
   }
 
   /**
-   * 건물 부적을 장착했으면 그 확률로 건물 한 채를 무료로 짓는다. 건물을 지을 수 있는 일반 도시에서, 그 건물이 아직 없을 때에만 적용된다.
+   * 건물 부적을 장착했으면 그 확률로 건물 한 채를 무료로 짓는다. 건물을 지을 수 있는 땅에서, 그 건물이 아직 없을 때에만 적용된다.
    * 땅을 막 샀을 때 적용되며, 부적에 따라서는 자기 땅에 다시 도착했을 때에도 적용된다.
+   * 어떤 건물을 얼마의 확률로 지어 주는지는 코스마다 다르므로 gift 가 정한다. (세계여행 코스는 부적에 적힌 건물, 우주여행 코스는 기지)
    * @param {Object} player 땅의 주인인 플레이어
    * @param {number} index 땅의 칸 번호
    * @param {boolean} revisit 막 산 것이 아니라 자기 땅에 다시 도착한 것인지 여부
@@ -3266,25 +4849,50 @@ export class HellmarbleGame {
    */
   async grantBuilding(player, index, revisit) {
     let charm = this.charmOf(player, 'build');
+    let gift = charm ? this.gift(charm, index) : null;
     let land = this.state.lands[index];
-    if (!charm || BOARD[index].type !== 'city' || (revisit && !charm.revisit) || land[charm.building] > 0) return;
-    if (!this.luck(charm.chance)) return;
-    land[charm.building]++;
-    await this.charmed(player, 'log.charmBuild', { effect: 'build', tile: index, index, building: charm.building });
+    if (!gift || (revisit && !charm.revisit) || land[gift.building] > 0) return;
+    if (!this.luck(gift.chance)) return;
+    land[gift.building]++;
+    await this.charmed(player, 'log.charmBuild', { effect: 'build', tile: index, index, building: gift.building });
   }
 
   /**
-   * 비밀쿠폰이 뽑은 플레이어에게 바로 손해가 되는지 확인한다.
-   * 돈을 내거나 땅을 잃거나 무인도로 가는 쿠폰이 해당하며, 건물이 없어 낼 돈이 없거나 팔 땅이 없으면 손해가 아니다.
-   * @param {Object} player 쿠폰을 뽑는 플레이어
-   * @param {string} id 쿠폰 식별자
+   * 건물 부적이 이 땅에 지어 줄 건물과 그 확률을 구한다. 건물의 종류가 코스마다 다르므로 코스별 엔진이 재정의한다.
+   * @param {HellmarbleCharm} charm 장착한 건물 부적
+   * @param {number} index 땅의 칸 번호
+   * @returns {{building: string, chance: number}|null} 지어 줄 건물의 종류와 확률(%). 이 땅에 적용되지 않으면 null (여기에서는 언제나 null 이다.)
+   */
+  gift(charm, index) {
+    void charm;
+    void index;
+    return null;
+  }
+
+  /**
+   * 카드(비밀쿠폰, 텔레파시 카드, 뉴런의 골짜기 카드)가 뽑은 플레이어에게 바로 손해가 되는지 확인한다.
+   * 돈을 내거나 땅이나 기지를 잃거나 갇히는 카드가 해당하며, 건물이나 기지, 별이 없어 낼 돈이나 잃을 것이 없으면 손해가 아니다.
+   * @param {Object} player 카드를 뽑는 플레이어
+   * @param {string} id 카드 식별자
    * @returns {boolean} 손해가 되면 true
    */
   harms(player, id) {
-    let coupon = COUPONS[id];
-    if (!coupon || !coupon.harm) return false;
-    if (coupon.effect === 'tax') return this.taxAmount(player, coupon.rates) > 0;
-    if (coupon.effect === 'halfsale') return this.owned(player).length > 0;
+    let found = findCard(id);
+    let card = found ? found.card : null;
+    if (!card || !card.harm) return false;
+    return this.hurts(player, card);
+  }
+
+  /**
+   * 손해가 되는 카드로 표시된 카드(harm)가 지금 이 플레이어에게 실제로 손해가 되는지 확인한다.
+   * 낼 돈이나 잃을 것이 없으면 손해가 아닌 카드가 있으며, 그런 카드는 코스마다 다르므로 코스별 엔진이 재정의한다.
+   * @param {Object} player 카드를 뽑는 플레이어
+   * @param {HellmarbleCoupon} card 카드 정보
+   * @returns {boolean} 손해가 되면 true (여기에서는 언제나 true 이다.)
+   */
+  hurts(player, card) {
+    void player;
+    void card;
     return true;
   }
 
@@ -3294,12 +4902,14 @@ export class HellmarbleGame {
    * 아이템의 효과는 이 한 번의 굴림으로 끝난다.
    * 더블 부적을 장착했으면 더블이 나올 확률이 부적의 값만큼 높아진다. 더블이 아닌 눈이 나왔을 때 일정한 확률로 둘째 주사위를 첫째와 같게 맞추며,
    * 그 확률은 원래 더블이 아닐 확률로 나눈 값이어서 전체 더블 확률이 정확히 부적의 값만큼 늘어난다.
+   * 더블이 도움이 되지 않는 굴림(우주여행 코스에서 눈의 합만 따지는 시간여행의 굴림, 블랙홀에서 3턴 째에 풀려난 뒤의 굴림)에서는 부적의 효과를 따지지 않는다.
    * @param {Object} player 굴리는 플레이어
+   * @param {boolean} [plain=false] 더블 부적의 효과를 따지지 않을지 여부
    * @returns {{dice: number[], faces: number[]|null, lucky: boolean}} 두 주사위의 눈, 아이템이 적용되었으면 그 주사위의 눈 목록, 부적 때문에 더블이 되었는지 여부
    */
-  throwDice(player) {
+  throwDice(player, plain = false) {
     let faces = player.loaded && ITEMS[player.loaded] ? ITEMS[player.loaded].faces : null;
-    let charm = this.charmOf(player, 'double');
+    let charm = plain ? null : this.charmOf(player, 'double');
     let dice = [this.rollDie(), this.rollDie()];
     let sides = faces ? faces.length : 6;
     let lucky = false;
@@ -3362,7 +4972,61 @@ export class HellmarbleGame {
   }
 
   /**
-   * 플레이어가 지금 이 도시에 지을 수 있는 건물의 종류를 구한다. (최대 개수 미만이고 돈이 충분한 것)
+   * 패배하지 않은 다른 플레이어의 목록을 구한다.
+   * @param {Object} player 기준이 되는 플레이어
+   * @returns {Object[]} 다른 플레이어 목록 (플레이어 번호 순서)
+   */
+  rivals(player) {
+    let list = [];
+    // 자신을 뺀 생존 플레이어를 모은다.
+    for (let rival of this.state.players) {
+      if (rival.alive && rival.id !== player.id) list.push(rival);
+    }
+    return list;
+  }
+
+  /**
+   * 땅의 목록에서 가치(땅값과 건설비의 합)가 가장 낮거나 가장 높은 땅을 찾는다. 가치가 같으면 칸 번호가 낮은 쪽을 고른다.
+   * @param {number[]} list 칸 번호 목록
+   * @param {boolean} dearest 가장 비싼 땅을 찾으면 true, 가장 싼 땅을 찾으면 false
+   * @returns {number} 찾은 땅의 칸 번호 (목록이 비어 있으면 -1)
+   */
+  extreme(list, dearest) {
+    let best = -1;
+    // 목록의 땅을 하나씩 견주어 가치가 가장 낮은(또는 높은) 땅을 찾는다.
+    for (let index of list) {
+      if (best < 0 || (dearest ? this.value(index) > this.value(best) : this.value(index) < this.value(best))) best = index;
+    }
+    return best;
+  }
+
+  /**
+   * 플레이어가 이 땅을 가질 수 있는지 확인한다. 가질 수 없는 땅은 사지 못하며, 인공지능도 그런 땅은 사러 가지 않는다.
+   * 가질 수 있는 땅을 제한하는 규칙이 있는 코스는 코스별 엔진이 재정의한다. (우주여행 코스의 견우성과 직녀성)
+   * @param {Object} player 플레이어
+   * @param {number} index 땅의 칸 번호
+   * @returns {boolean} 가질 수 있으면 true (여기에서는 제한이 없어 언제나 true 이다.)
+   */
+  canOwn(player, index) {
+    void player;
+    void index;
+    return true;
+  }
+
+  /**
+   * 이 땅에 지금 지을 차례가 된 건물의 종류를 구한다. 돈과 최대 개수는 따지지 않는다. (그것은 buildOptions 가 따진다.)
+   * 여기에서는 그 코스의 건물 전부이며, 먼저 지어야 하는 건물이 있는 코스는 코스별 엔진이 재정의한다. (우주여행 코스 : 기지가 있어야 증축할 수 있다.)
+   * @param {number} index 칸 번호
+   * @returns {string[]} 건물 종류 목록
+   */
+  buildKinds(index) {
+    void index;
+    return this.course.buildings;
+  }
+
+  /**
+   * 플레이어가 지금 이 땅에 지을 수 있는 건물의 종류를 구한다. (지을 차례가 된 건물 가운데 최대 개수 미만이고 돈이 충분한 것)
+   * 세계여행 코스의 일반 도시에는 별장, 빌딩, 호텔을, 우주여행 코스의 별에는 기지를, 기지가 있는 별에는 증축을 할 수 있다.
    * @param {Object} player 플레이어
    * @param {number} index 칸 번호
    * @returns {string[]} 지을 수 있는 건물 종류 목록
@@ -3370,9 +5034,9 @@ export class HellmarbleGame {
   buildOptions(player, index) {
     let options = [];
     let land = this.state.lands[index];
-    if (BOARD[index].type !== 'city' || !land || land.owner !== player.id) return options;
+    if (!this.board[index].cost || !land || land.owner !== player.id) return options;
     // 건물 종류별로 지을 수 있는지 확인한다.
-    for (let kind of BUILDINGS) {
+    for (let kind of this.buildKinds(index)) {
       if (land[kind] < BUILD_LIMIT[kind] && player.cash >= this.buildCost(index, kind)) options.push(kind);
     }
     return options;
@@ -3449,6 +5113,29 @@ export class HellmarbleGame {
   }
 
   /**
+   * 땅을 주인 없는 빈 땅으로 되돌린다. 지어진 건물도 모두 없앤다. (매각, 반납, 패배한 플레이어의 땅)
+   * @param {number} index 땅의 칸 번호
+   */
+  vacate(index) {
+    let land = this.state.lands[index];
+    land.owner = null;
+    // 지어진 건물을 모두 없앤다.
+    for (let kind of this.course.buildings) land[kind] = 0;
+  }
+
+  /**
+   * 사건을 호스트가 잠깐 크게 알리도록 한 뒤 진행 기록에 남긴다. (우주여행 코스에서 별을 빼앗거나 교환하거나 반납하는 일처럼 눈에 띄어야 하는 일에 쓴다.)
+   * 상태는 이미 바뀐 뒤에 부르며, 알림이 끝난 뒤에 진행 기록을 남긴다.
+   * @param {string} key 문구의 키
+   * @param {Object} params 문구에 담을 값
+   * @returns {Promise<void>}
+   */
+  async announce(key, params) {
+    await this.call('notice', { key, params });
+    this.log(key, params);
+  }
+
+  /**
    * 땅을 건물과 함께 은행에 매각한다. 매각 후에는 아무도 소유하지 않은 땅이 된다.
    * 은행에서 매각 대금이 들어오는 연출은 부르는 쪽에서 요청한다.
    * @param {Object} player 매각하는 플레이어
@@ -3457,11 +5144,8 @@ export class HellmarbleGame {
    * @returns {number} 돌려받은 금액 (원)
    */
   sell(player, index, percent) {
-    let land = this.state.lands[index];
     let amount = Math.floor((this.value(index) * percent) / 100);
-    land.owner = null;
-    // 지어진 건물을 모두 없앤다.
-    for (let kind of BUILDINGS) land[kind] = 0;
+    this.vacate(index);
     player.cash += amount;
     this.log(percent === HALF_PERCENT ? 'log.halfsale' : 'log.sell', { player: player.id, tile: index, amount });
     return amount;
@@ -3536,23 +5220,6 @@ export class HellmarbleGame {
   }
 
   /**
-   * 내야 할 통행료·이용료를 우대권으로 면제받을지 한 번에 묻는다.
-   * 비밀쿠폰 우대권과 아이템 우대권을 모두 쓸 수 있으면 한 요청에서 둘 중 하나를 고르게 하고, 쓸 수 있는 것이 없으면 묻지 않는다.
-   * 비밀쿠폰 우대권은 우주여행 이용료에는 쓸 수 없다.
-   * @param {Object} player 지불하는 플레이어
-   * @param {number} index 돈을 낼 칸 번호
-   * @param {number} amount 내야 할 금액 (원)
-   * @param {boolean} travel 우주여행 이용료인지 여부
-   * @returns {Promise<string|null>} 쓰기로 한 우대권 ('coupon' 은 비밀쿠폰, 'item' 은 아이템), 쓰지 않으면 null
-   */
-  async choosePass(player, index, amount, travel) {
-    let coupon = !travel && player.coupons.pass > 0;
-    let item = this.canUseItem(player, 'pass');
-    if (!coupon && !item) return null;
-    return this.sourceOf(await this.decide(player, { type: 'pass', index, amount, travel, coupon, item }), coupon, item);
-  }
-
-  /**
    * 우대권 또는 무전기 요청의 답을, 실제로 쓸 수 있는 것으로 가린다.
    * true 는 비밀쿠폰의 것을 쓰겠다는 답으로 본다. (예 / 아니오로 답하는 호스트와 인공지능을 위한 것이다.)
    * @param {*} answer 요청에 대한 답
@@ -3567,36 +5234,9 @@ export class HellmarbleGame {
   }
 
   /**
-   * 무인도에서 무전기로 탈출할지 한 번에 묻고, 쓰기로 한 무전기를 소모하여 갇힘을 푼다.
-   * 비밀쿠폰 무전기와 아이템 무전기를 모두 쓸 수 있으면 한 요청에서 둘 중 하나를 고르게 하고, 쓸 수 있는 것이 없으면 묻지 않는다.
-   * 무인도에 막 도착했을 때에는 아이템 무전기만 쓸 수 있다. (비밀쿠폰 무전기는 갇힌 뒤 주사위를 굴리기 전에 쓴다.)
-   * @param {Object} player 무인도에 있는 플레이어
-   * @param {boolean} arrival 무인도에 막 도착한 것인지 여부
-   * @returns {Promise<void>}
-   */
-  async useRadio(player, arrival) {
-    let coupon = !arrival && player.coupons.radio > 0;
-    let item = this.canUseItem(player, 'radio');
-    if (!coupon && !item) return;
-    let choice = this.sourceOf(await this.decide(player, { type: 'radio', arrival, coupon, item }), coupon, item);
-    if (choice === 'coupon') {
-      player.coupons.radio--;
-      this.state.deck.push('radio');
-      player.island = 0;
-      await this.call('use', player, { kind: 'radio', source: 'coupon', arrival });
-      this.log('log.radio', { player: player.id });
-    }
-    if (choice === 'item') {
-      this.consumeItem(player, 'radio');
-      player.island = 0;
-      await this.call('use', player, { kind: 'radio', source: 'item', arrival });
-      this.log('log.itemRadio', { player: player.id });
-    }
-  }
-
-  /**
-   * 다른 플레이어의 땅에 대한 통행료·이용료를 지불한다. 우대권(비밀쿠폰, 아이템)이 있으면 먼저 사용 여부를 한 번에 확인한다.
-   * 통행료 할인 부적의 효과는 그보다 먼저 따져서, 우대권을 쓸지 물을 때와 돈이 모자라 땅을 매각할 때 모두 깎인 금액을 기준으로 한다.
+   * 다른 플레이어의 땅에 대한 통행료·이용료를 지불한다. 내기 전에 그 코스의 방법으로 면제받을 수 있으면 사용 여부를 확인한다. (waive)
+   * 통행료 할인 부적의 효과는 그보다 먼저 따져서, 면제받을지 물을 때와 돈이 모자라 땅을 매각할 때 모두 깎인 금액을 기준으로 한다.
+   * 면제 상태(exempt)이면 묻지도 내지도 않는다. (세계여행 코스에서 우대권을 쓴 뒤 같은 굴림 안에서 이어지는 통행료)
    * @param {Object} player 지불하는 플레이어
    * @param {number} index 통행료를 낼 땅의 칸 번호
    * @returns {Promise<boolean>} 파산하지 않았으면 true
@@ -3609,25 +5249,25 @@ export class HellmarbleGame {
       return true;
     }
     amount = await this.tollCut(player, index, amount);
-    let choice = await this.choosePass(player, index, amount, false);
-    if (choice === 'coupon') {
-      player.coupons.pass--;
-      this.state.deck.push('pass');
-      this.exempt = true;
-      await this.call('use', player, { kind: 'pass', source: 'coupon', index, amount, travel: false });
-      this.log('log.pass', { player: player.id, tile: index, amount });
-      return true;
-    }
-    if (choice === 'item') {
-      this.consumeItem(player, 'pass');
-      this.exempt = true;
-      await this.call('use', player, { kind: 'pass', source: 'item', index, amount, travel: false });
-      this.log('log.itemPass', { player: player.id, tile: index, amount });
-      return true;
-    }
+    if (await this.waive(player, index, amount)) return true;
     let paid = await this.pay(player, amount, owner);
-    if (paid) this.log('log.toll', { player: player.id, target: owner.id, tile: index, amount });
+    if (paid) this.log(this.course.logs.toll, { player: player.id, target: owner.id, tile: index, amount });
     return paid;
+  }
+
+  /**
+   * 내야 할 통행료·이용료를 면제받을지 플레이어에게 확인하고, 면제받기로 하면 그 처리를 한다.
+   * 면제받는 방법이 코스마다 다르므로 코스별 엔진이 재정의한다. (세계여행 코스의 우대권, 우주여행 코스의 천사의 빛)
+   * @param {Object} player 지불하는 플레이어
+   * @param {number} index 돈을 낼 땅의 칸 번호
+   * @param {number} amount 내야 할 금액 (원)
+   * @returns {Promise<boolean>} 면제받았으면 true (여기에서는 면제받을 방법이 없어 언제나 false 이다.)
+   */
+  async waive(player, index, amount) {
+    void player;
+    void index;
+    void amount;
+    return false;
   }
 
   /**
@@ -3640,14 +5280,10 @@ export class HellmarbleGame {
   async bankrupt(player, voluntary = false) {
     player.alive = false;
     player.boarded = false;
+    player.direct = false;
     player.island = 0;
     // 남아 있는 땅과 건물을 모두 은행으로 돌려보낸다.
-    for (let index of this.owned(player)) {
-      let land = this.state.lands[index];
-      land.owner = null;
-      // 지어진 건물을 모두 없앤다.
-      for (let kind of BUILDINGS) land[kind] = 0;
-    }
+    for (let index of this.owned(player)) this.vacate(index);
     // 보관하던 쿠폰을 종류별로 덱 맨 뒤로 돌려보낸다.
     for (let id in player.coupons) {
       // 같은 종류의 쿠폰을 한 장씩 덱으로 옮긴다.
@@ -3666,7 +5302,7 @@ export class HellmarbleGame {
    * @returns {Promise<void>}
    */
   async paySalary(player) {
-    let amount = this.money(SALARY);
+    let amount = this.salary;
     player.cash += amount;
     await this.handover(BANK, player, amount);
     this.log('log.salary', { player: player.id, amount });
@@ -3685,7 +5321,7 @@ export class HellmarbleGame {
     for (let count = 0; count < steps; count++) {
       player.position = (player.position + 1) % BOARD_SIZE;
       await this.call('step', player, fast);
-      if (player.position === TILES.start && salary) await this.paySalary(player);
+      if (player.position === this.course.start && salary) await this.paySalary(player);
     }
   }
 
@@ -3715,43 +5351,35 @@ export class HellmarbleGame {
   }
 
   /**
-   * 도착한 칸의 효과를 적용한다.
+   * 도착한 칸의 효과를 적용한다. 구매할 수 있는 땅과 주 카드 덱의 칸은 어느 코스에서나 같은 방식으로 처리하고,
+   * 그 밖의 칸(갇히는 칸, 탑승하는 칸, 기금이 쌓이는 칸 등)은 코스마다 다르므로 visit 에 맡긴다. 월급은 이동하면서 받으므로 여기에서는 주지 않으며,
+   * 출발지에 멈췄을 때의 효과가 있는 코스는 그것도 visit 에서 처리한다. (우주여행 코스 : 지구에 멈추면 기지를 지을 수 있다.)
    * @param {Object} player 도착한 플레이어
    * @returns {Promise<void>}
    */
   async arrive(player) {
     if (!player.alive) return;
-    switch (BOARD[player.position].type) {
-      case 'city':
-      case 'korea':
-      case 'special':
-        await this.arriveProperty(player, player.position);
-        break;
-      case 'coupon':
-        await this.drawCoupon(player);
-        break;
-      case 'space':
-        await this.arriveSpace(player);
-        break;
-      case 'island':
-        player.island = ISLAND_TURNS;
-        this.log('log.island', { player: player.id });
-        await this.useRadio(player, true);
-        break;
-      case 'fund':
-        await this.collectFund(player);
-        break;
-      case 'desk':
-        await this.payFund(player);
-        break;
-      default:
-        break;
-    }
+    let tile = this.board[player.position];
+    if (PROPERTY_TYPES.includes(tile.type)) await this.arriveProperty(player, player.position);
+    else if (tile.type === this.course.deck) await this.drawCoupon(player);
+    else await this.visit(player, tile);
   }
 
   /**
-   * 도시 또는 특수 시설에 도착했을 때의 처리(구매, 건설, 통행료 지불)를 한다.
-   * 사용자가 부적을 장착했으면 땅을 살 때 할인이나 무료 건물이, 자기 땅에 다시 도착했을 때 무료 건물이 주어질 수 있다.
+   * 그 코스만의 칸에 도착했을 때의 효과를 적용한다. 코스별 엔진이 재정의한다.
+   * @param {Object} player 도착한 플레이어
+   * @param {HellmarbleTile} tile 도착한 칸
+   * @returns {Promise<void>}
+   */
+  async visit(player, tile) {
+    void player;
+    void tile;
+  }
+
+  /**
+   * 구매할 수 있는 땅(도시, 별, 특수 시설)에 도착했을 때의 처리(구매, 건설, 통행료·이용료 지불)를 한다.
+   * 부적을 장착했으면 땅을 살 때 할인이나 무료 건물이, 자기 땅에 다시 도착했을 때 무료 건물이 주어질 수 있다.
+   * 그 코스의 규칙으로 가질 수 없는 땅(canOwn)이면 사지 못하고, 땅을 산 뒤에는 그 코스만의 후속 처리(acquired)를 한다.
    * @param {Object} player 도착한 플레이어
    * @param {number} index 도착한 칸 번호
    * @returns {Promise<void>}
@@ -3760,6 +5388,10 @@ export class HellmarbleGame {
     let land = this.state.lands[index];
     if (land.owner === null) {
       let price = this.price(index);
+      if (!this.canOwn(player, index)) {
+        this.log(this.course.logs.barred, { player: player.id, tile: index });
+        return;
+      }
       if (player.cash >= price && (await this.decide(player, { type: 'buy', index, price }))) {
         let paid = await this.discounted(player, index, price);
         player.cash -= paid;
@@ -3767,6 +5399,7 @@ export class HellmarbleGame {
         await this.handover(player, BANK, paid);
         this.log('log.buy', { player: player.id, tile: index, amount: paid });
         await this.grantBuilding(player, index, false);
+        await this.acquired(player, index);
       }
       return;
     }
@@ -3780,45 +5413,37 @@ export class HellmarbleGame {
     let kind = await this.decide(player, { type: 'build', index, options });
     if (!options.includes(kind)) return;
     let cost = this.buildCost(index, kind);
+    let special = this.course.logs.built;
     player.cash -= cost;
     land[kind]++;
     await this.handover(player, BANK, cost);
-    this.log('log.build', { player: player.id, tile: index, building: kind, amount: cost });
+    this.log(special && special[kind] ? special[kind] : 'log.build', { player: player.id, tile: index, building: kind, amount: cost });
   }
 
   /**
-   * 우주여행 칸에 도착했을 때의 처리를 한다. 콜롬비아 호의 소유자가 남이면 이용료를 내고 탑승한다.
-   * @param {Object} player 도착한 플레이어
+   * 플레이어가 땅을 사서 주인이 된 뒤에 그 코스만의 후속 처리를 한다. 코스별 엔진이 재정의한다. (우주여행 코스 : 견우성과 직녀성의 주인이 모두 생겼으면 두 주인이 만난다.)
+   * @param {Object} player 땅을 산 플레이어
+   * @param {number} index 산 땅의 칸 번호
    * @returns {Promise<void>}
    */
-  async arriveSpace(player) {
-    let owner = this.state.lands[TILES.columbia].owner;
-    if (owner !== null && owner !== player.id) {
-      let amount = await this.tollCut(player, TILES.space, this.money(SPACE_FEE));
-      if ((await this.choosePass(player, TILES.space, amount, true)) === 'item') {
-        this.consumeItem(player, 'pass');
-        await this.call('use', player, { kind: 'pass', source: 'item', index: TILES.space, amount, travel: true });
-        this.log('log.itemPass', { player: player.id, tile: TILES.space, amount });
-        this.board(player);
-        return;
-      }
-      if (!(await this.pay(player, amount, this.state.players[owner]))) return;
-      this.log('log.spaceFee', { player: player.id, target: owner, amount });
-    }
-    this.board(player);
+  async acquired(player, index) {
+    void player;
+    void index;
   }
 
   /**
-   * 플레이어를 우주여행 탑승 상태로 만든다.
+   * 플레이어를 탑승 상태로 만든다. (세계여행 코스의 우주여행, 우주여행 코스의 시간여행) 탑승한 다음 차례의 진행은 코스별 엔진이 정한다.
+   * 보통의 탑승이므로, 주사위 없이 목적지를 고르는 탑승의 표시(direct : 우주여행 코스의 시간여행 초청장)는 지운다.
    * @param {Object} player 탑승할 플레이어
    */
-  board(player) {
+  embark(player) {
     player.boarded = true;
-    this.log('log.board', { player: player.id });
+    player.direct = false;
+    this.log(this.course.logs.board, { player: player.id });
   }
 
   /**
-   * 사회복지기금 본부에 쌓인 돈을 모두 받는다.
+   * 쌓인 기금을 모두 받는다. (세계여행 코스의 사회복지기금 본부, 우주여행 코스의 우주조난기지) 쌓인 기금이 없으면 아무 일도 없다.
    * @param {Object} player 도착한 플레이어
    * @returns {Promise<void>}
    */
@@ -3828,61 +5453,76 @@ export class HellmarbleGame {
     this.state.fund = 0;
     player.cash += amount;
     await this.handover(FUND, player, amount);
-    this.log('log.fundGet', { player: player.id, amount });
+    this.log(this.course.logs.fund, { player: player.id, amount });
   }
 
   /**
-   * 사회복지기금 접수처에 돈을 낸다. 모자라면 가진 돈만 내며 땅을 팔거나 파산하지 않는다. 낸 돈은 사회복지기금 본부에 쌓인다.
-   * @param {Object} player 도착한 플레이어
-   * @returns {Promise<void>}
-   */
-  async payFund(player) {
-    let amount = Math.min(player.cash, this.money(WELFARE_FEE));
-    player.cash -= amount;
-    this.state.fund += amount;
-    await this.handover(player, FUND, amount);
-    this.log('log.fundPay', { player: player.id, amount });
-  }
-
-  /**
-   * 비밀쿠폰을 한 장 뽑아 보여준 뒤 내용을 이행한다. (다시 뽑기 부적을 장착했으면 손해가 되는 쿠폰을 건너뛸 수 있다.)
-   * 보관하는 쿠폰은 플레이어가 갖고, 그 밖의 쿠폰은 이행 후 덱 맨 뒤로 돌아간다.
-   * @param {Object} player 쿠폰을 뽑는 플레이어
+   * 그 코스의 주 카드 덱에서 카드를 한 장 뽑아 이행한다. (세계여행 코스의 비밀쿠폰, 우주여행 코스의 텔레파시 카드)
+   * @param {Object} player 카드를 뽑는 플레이어
    * @returns {Promise<void>}
    */
   async drawCoupon(player) {
-    let deck = this.state.deck;
+    await this.drawCard(player, this.course.deck);
+  }
+
+  /**
+   * 카드를 한 장 뽑아 보여준 뒤 내용을 이행한다. (다시 뽑기 부적을 장착했으면 손해가 되는 카드를 건너뛸 수 있다.)
+   * 보관하는 카드는 플레이어가 갖고, 그 밖의 카드는 이행 후 그 덱의 맨 뒤로 돌아간다.
+   * 이행하는 동안에는 그 카드의 식별자를 기억해 두어, 카드의 효과로 묻는 요청과 기록에 어떤 카드 때문인지 알릴 수 있게 한다.
+   * @param {Object} player 카드를 뽑는 플레이어
+   * @param {string} name 덱의 이름. 그 코스의 주 카드 덱(COURSES 의 deck : 'coupon' 비밀쿠폰, 'telepathy' 텔레파시 카드)이면 진행 상태의 deck 에서,
+   *   다른 이름('neuron' 뉴런의 골짜기 카드)이면 둘째 덱인 valley 에서 뽑는다.
+   * @returns {Promise<void>}
+   */
+  async drawCard(player, name) {
+    let second = name !== this.course.deck;
+    let deck = second ? this.state.valley : this.state.deck;
+    let cards = second ? this.course.valley : this.course.cards;
     let charm = this.charmOf(player, 'redraw');
-    // 다시 뽑기 부적을 장착했으면, 손해가 되는 쿠폰이 나올 차례일 때마다 그 확률로 쿠폰을 덱 맨 뒤로 보내고 다음 것을 뽑는다.
+    if (deck.length === 0) return;
+    // 다시 뽑기 부적을 장착했으면, 손해가 되는 카드가 나올 차례일 때마다 그 확률로 카드를 덱 맨 뒤로 보내고 다음 것을 뽑는다.
     for (let tries = 0; charm && tries < deck.length && this.harms(player, deck[0]) && this.luck(charm.chance); tries++) {
       let skipped = deck.shift();
       deck.push(skipped);
       await this.charmed(player, 'log.charmRedraw', { effect: 'redraw', coupon: skipped });
     }
     let id = deck.shift();
-    let coupon = COUPONS[id];
-    this.log('log.coupon', { player: player.id, coupon: id });
+    let coupon = cards[id];
+    this.log(this.course.logs.draw[name], { player: player.id, coupon: id });
     if (coupon.effect === 'keep') {
       player.coupons[id]++;
       await this.call('coupon', player, id);
-      this.log('log.keep', { player: player.id, coupon: id });
+      this.log(this.course.logs.keep, { player: player.id, coupon: id });
       return;
     }
+    this.drawn.push(id);
     try {
       await this.call('coupon', player, id);
-      await this.applyCoupon(player, coupon);
+      await this.applyCoupon(player, coupon, id);
     } finally {
-      this.state.deck.push(id);
+      this.drawn.pop();
+      deck.push(id);
     }
   }
 
   /**
-   * 비밀쿠폰의 효과를 이행한다.
-   * @param {Object} player 쿠폰을 뽑은 플레이어
-   * @param {Object} coupon 쿠폰 정보
+   * 카드의 조건이 맞지 않아 아무 일도 일어나지 않았음을 기록한다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   */
+  idle(player, id) {
+    this.log('log.noEffect', { player: player.id, coupon: id });
+  }
+
+  /**
+   * 카드(비밀쿠폰, 텔레파시 카드, 뉴런의 골짜기 카드)의 효과를 이행한다.
+   * 어느 코스의 카드에나 있는 효과(은행에서 받음, 은행에 냄, 지정한 칸으로 전진, 뒤로 이동)는 여기에서 이행하고, 그 밖의 효과는 applyCard 에 맡긴다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
    * @returns {Promise<void>}
    */
-  async applyCoupon(player, coupon) {
+  async applyCoupon(player, coupon, id) {
     switch (coupon.effect) {
       case 'gain':
         await this.gain(player, this.money(coupon.amount));
@@ -3890,142 +5530,197 @@ export class HellmarbleGame {
       case 'pay':
         await this.payBank(player, this.money(coupon.amount));
         break;
-      case 'tax':
-        await this.payBank(player, this.taxAmount(player, coupon.rates));
-        break;
       case 'move':
-        await this.moveTo(player, TILES[coupon.target], true);
+        await this.moveTo(player, this.tiles[coupon.target], true);
         await this.arrive(player);
         break;
       case 'back':
         await this.moveBack(player, coupon.steps);
         await this.arrive(player);
         break;
-      case 'island':
-        await this.moveTo(player, TILES.island, false);
-        await this.arrive(player);
-        break;
-      case 'space':
-        await this.moveTo(player, TILES.space, true);
-        this.board(player);
-        break;
-      case 'air':
-        await this.airTravel(player);
-        break;
-      case 'halfsale':
-        await this.halfSale(player);
-        break;
       default:
+        await this.applyCard(player, coupon, id);
         break;
     }
   }
 
   /**
-   * 건물별로 내야 하는 금액(방범비, 건물수리비, 정기종합소득세)을 계산한다.
-   * @param {Object} player 플레이어
-   * @param {Object} rates 건물 종류별 1개당 금액 (원)
-   * @returns {number} 내야 할 금액 (원)
-   */
-  taxAmount(player, rates) {
-    let total = 0;
-    // 가진 땅마다 지어진 건물의 금액을 더한다.
-    for (let index of this.owned(player)) {
-      // 건물 종류별로 개수만큼 금액을 더한다.
-      for (let kind of BUILDINGS) total += rates[kind] * this.state.lands[index][kind];
-    }
-    return this.money(total);
-  }
-
-  /**
-   * 항공 여행 쿠폰을 이행한다. 콩코드 여객기 이용료를 낸 뒤 타이페이로 이동한다.
-   * @param {Object} player 플레이어
+   * 그 코스의 카드에만 있는 효과를 이행한다. 코스별 엔진이 재정의한다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
    * @returns {Promise<void>}
    */
-  async airTravel(player) {
-    let owner = this.state.lands[TILES.concorde].owner;
-    if (owner !== null && owner !== player.id && !(await this.payToll(player, TILES.concorde))) return;
-    await this.moveTo(player, TILES.taipei, true);
-    await this.arrive(player);
+  async applyCard(player, coupon, id) {
+    void player;
+    void coupon;
+    void id;
   }
 
   /**
-   * 반액대매출 쿠폰을 이행한다. 가진 땅 중 가치(건물 포함)가 가장 높은 곳을 자동으로 골라 50%에 매각한다.
-   * @param {Object} player 플레이어
+   * 카드의 효과로 주사위를 굴린다. (이동하려고 굴리는 것이 아니므로 아이템이나 부적의 효과를 따지지 않는다.)
+   * @param {Object} player 굴리는 플레이어
+   * @param {number} count 굴릴 주사위의 수 (1 또는 2)
+   * @returns {Promise<number>} 나온 눈의 합
+   */
+  async cast(player, count) {
+    let dice = [];
+    let sum = 0;
+    // 주사위를 정해진 수만큼 굴려 눈을 더한다.
+    for (let index = 0; index < count; index++) {
+      dice.push(this.rollDie());
+      sum += dice[index];
+    }
+    await this.call('cast', player, dice);
+    this.log('log.cast', { player: player.id, n: sum });
+    return sum;
+  }
+
+  /**
+   * 여러 플레이어가 주사위를 1개씩 굴려 눈이 가장 낮은(또는 가장 높은) 한 명을 뽑는다. 그 눈이 여럿이면 모두 다시 굴린다.
+   * @param {Object[]} players 주사위를 굴릴 플레이어 목록 (한 명 이상)
+   * @param {boolean} highest 눈이 가장 높은 플레이어를 뽑으면 true, 가장 낮은 플레이어를 뽑으면 false
+   * @returns {Promise<Object>} 뽑힌 플레이어
+   */
+  async contest(players, highest) {
+    // 한 명으로 정해질 때까지 모두 다시 굴린다.
+    while (true) {
+      let rolls = [];
+      let picked = [];
+      // 플레이어마다 주사위를 1개 굴린다.
+      for (let rival of players) rolls.push(await this.cast(rival, 1));
+      let mark = highest ? Math.max(...rolls) : Math.min(...rolls);
+      // 가장 낮은(또는 높은) 눈이 나온 플레이어를 모은다.
+      for (let index = 0; index < players.length; index++) {
+        if (rolls[index] === mark) picked.push(players[index]);
+      }
+      if (picked.length === 1) {
+        this.log('log.contest', { player: picked[0].id });
+        return picked[0];
+      }
+      this.log('log.castTie', {});
+    }
+  }
+
+  /**
+   * 두 플레이어가 주사위를 1개씩 굴려 눈을 겨룬다.
+   * @param {Object} first 첫째 플레이어 (카드를 뽑은 쪽)
+   * @param {Object} second 둘째 플레이어
+   * @param {boolean} again 눈이 같으면 다시 굴릴지 여부
+   * @returns {Promise<number[]>} 두 플레이어의 눈
+   */
+  async duel(first, second, again) {
+    // 승부가 날 때까지(또는 한 번만) 굴린다.
+    while (true) {
+      let rolls = [await this.cast(first, 1), await this.cast(second, 1)];
+      if (!again || rolls[0] !== rolls[1]) return rolls;
+      this.log('log.castTie', {});
+    }
+  }
+
+  /**
+   * 플레이어에게 칸 하나를 고르게 한다. 고를 수 있는 칸이 없으면 묻지 않는다.
+   * 꼭 골라야 하는 선택에서 올바르지 않은 답이 오면 첫 칸을 고른 것으로 본다.
+   * @param {Object} player 고르는 플레이어
+   * @param {string} reason 고르는 사유 (blackhole, basereturn, freebase, reunion, earth, valley, lovers, give, take, pascal, moravec, timetravel)
+   * @param {number[]} options 고를 수 있는 칸 번호 목록
+   * @param {boolean} optional 고르지 않아도 되는지 여부
+   * @returns {Promise<number|null>} 고른 칸 번호 (고르지 않았거나 고를 칸이 없으면 null)
+   */
+  async pick(player, reason, options, optional) {
+    if (options.length === 0) return null;
+    let card = this.drawn.length > 0 ? this.drawn[this.drawn.length - 1] : null;
+    let answer = await this.decide(player, { type: 'pick', reason, options, optional, map: reason === 'moravec' || reason === 'timetravel', card });
+    let choice = answer === null || answer === undefined || answer === '' ? NaN : Number(answer);
+    if (options.includes(choice)) return choice;
+    return optional ? null : options[0];
+  }
+
+  /**
+   * 말을 지정한 칸까지 앞으로 빠르게 이동시키되, 가는 길에 출발지를 지나도 월급을 주지 않고 출발지에 도착했을 때에만 월급을 준다.
+   * (우주여행 코스의 시간여행과 모라비트의 항법)
+   * @param {Object} player 이동할 플레이어
+   * @param {number} target 도착할 칸 번호
    * @returns {Promise<void>}
    */
-  async halfSale(player) {
-    let best = -1;
-    // 가진 땅 중 가치가 가장 높은 땅을 찾는다.
-    for (let index of this.owned(player)) {
-      if (best < 0 || this.value(index) > this.value(best)) best = index;
-    }
-    if (best < 0) {
-      this.log('log.nothing', { player: player.id });
-      return;
-    }
-    await this.handover(BANK, player, this.sell(player, best, HALF_PERCENT));
+  async warp(player, target) {
+    await this.moveTo(player, target, false);
+    if (target === this.course.start) await this.paySalary(player);
   }
 
   /**
-   * 무인도에 갇힌 플레이어가 주사위를 굴리기 전에 풀려나는 경우를 처리한다.
-   * 무전기(비밀쿠폰, 아이템)가 있으면 사용 여부를 한 번에 확인하여 즉시 탈출시키고, 3턴 째이면 갇힘을 푼다.
-   * 이렇게 먼저 풀려난 뒤에 굴리는 주사위는 일반 주사위와 같다.
+   * 갇힌 플레이어(무인도, 블랙홀)가 주사위를 굴리기 전에 풀려나는 경우를 처리한다.
+   * 어느 코스에서나 갇힌 지 3턴 째(남은 턴이 1)이면 갇힘이 풀린다. 그보다 먼저 탈출하는 방법(무전기, 블랙홀 탈출포트, 천사의 빛)과
+   * 풀려난 뒤의 굴림에 붙는 조건(parole)은 코스마다 다르므로 코스별 엔진이 재정의하여 더한다.
+   * 이렇게 먼저 풀려난 뒤에 굴리는 주사위는, 조건이 붙지 않았으면 일반 주사위와 같다.
    * @param {Object} player 플레이어
    * @returns {Promise<void>}
    */
   async release(player) {
-    if (player.island > 1) await this.useRadio(player, false);
-    if (player.island === 1) {
-      player.island = 0;
-      this.log('log.islandFree', { player: player.id });
-    }
-  }
-
-  /**
-   * 우주여행 탑승 상태인 플레이어의 차례를 진행한다. 원하는 칸을 골라 이동한다.
-   * @param {Object} player 플레이어
-   * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
-   */
-  async playTravel(player) {
-    let answer = await this.decide(player, { type: 'travel' });
-    if (answer === QUIT) return false;
-    if (answer === FORFEIT) {
-      await this.bankrupt(player, true);
-      return true;
-    }
-    let target = Number(answer);
-    if (!Number.isInteger(target) || target < 0 || target >= BOARD_SIZE || target === player.position) target = (player.position + 1) % BOARD_SIZE;
-    player.boarded = false;
-    this.log('log.travel', { player: player.id, tile: target });
-    await this.moveTo(player, target, true);
-    await this.arrive(player);
-    return true;
+    if (player.island !== 1) return;
+    player.island = 0;
+    this.log(this.course.logs.free, { player: player.id });
   }
 
   /**
    * 한 플레이어의 차례를 진행한다. (주사위 → 이동 → 도착한 칸의 효과)
    * 더블이 나오면 도착한 칸의 처리를 마친 뒤 주사위를 다시 굴리며, 더블이 이어지는 동안 계속 반복한다.
    * 주사위 조작형 아이템의 효과는 그 차례에만 유효하므로, 쓰고도 굴리지 않은 채 차례가 끝나면 사라진다.
+   * 탑승한 플레이어의 차례처럼 진행이 다른 차례는 코스별 엔진이 이 메소드나 playStep 을 재정의하여 다룬다.
    * @param {Object} player 차례인 플레이어
    * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
    */
   async playTurn(player) {
-    let again = false;
     this.exempt = false;
-    if (player.boarded) return this.playTravel(player);
-    // 더블이 나오는 동안 주사위를 다시 굴린다.
+    this.bonus = false;
+    return this.playRolls(player, false);
+  }
+
+  /**
+   * 주사위를 굴리는 진행을, 더블이 나오는 동안(또는 카드의 효과로 한 번 더 굴리게 된 동안) 되풀이한다.
+   * 보통은 차례의 처음부터 부르며(playTurn), 주사위 없이 이동한 뒤 카드의 효과로 한 번 더 굴리게 된 코스별 진행이 이어서 부르기도 한다.
+   * @param {Object} player 차례인 플레이어
+   * @param {boolean} again 처음 굴리는 것이 아니라 한 번 더 굴리는 것인지 여부
+   * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
+   */
+  async playRolls(player, again) {
+    // 더블이 나오는 동안(또는 카드의 효과로 한 번 더 굴리게 된 동안) 주사위를 다시 굴린다.
     do {
       let step = await this.beforeRoll(player, again);
       if (step === QUIT) return false;
-      again = step === 'roll' && (await this.playRoll(player));
+      again = step === 'roll' && (await this.playStep(player));
     } while (again);
     player.loaded = null;
     return true;
   }
 
   /**
+   * 주사위를 굴리겠다는 답을 받은 뒤의 한 번의 진행을 한다. 보통은 주사위를 굴려 이동하는 것(playRoll)이며,
+   * 굴린 주사위를 다르게 쓰는 차례가 있는 코스는 코스별 엔진이 재정의한다. (우주여행 코스에서 시간여행에 탑승한 차례)
+   * @param {Object} player 차례인 플레이어
+   * @returns {Promise<boolean>} 주사위를 한 번 더 굴려야 하면 true
+   */
+  playStep(player) {
+    return this.playRoll(player);
+  }
+
+  /**
+   * 카드의 효과(코페르니쿠스의 지동설)로 주사위를 한 번 더 굴리게 되었는지 확인하고 그 표시를 지운다.
+   * 패배했거나 갇혔거나 탑승한 플레이어는 다시 굴리지 않는다.
+   * @param {Object} player 차례인 플레이어
+   * @returns {boolean} 주사위를 한 번 더 굴려야 하면 true
+   */
+  takeBonus(player) {
+    let bonus = this.bonus;
+    this.bonus = false;
+    if (!bonus || !player.alive || player.island > 0 || player.boarded) return false;
+    this.log('log.bonusRoll', { player: player.id });
+    return true;
+  }
+
+  /**
    * 주사위를 굴릴 차례인 플레이어의 답을 받는다. 굴리기 전에 쓰겠다고 한 아이템이 있으면 그 효과를 먼저 적용한다.
-   * 주사위 조작형 아이템은 쓴 뒤에 다시 묻고, 우주여행 초청장은 우주여행 칸으로 보내 탑승시킨 뒤 차례를 끝낸다.
+   * 주사위 조작형 아이템은 쓴 뒤에 다시 묻고, 차례를 끝내는 효과의 아이템(itemEffect : 세계여행 코스의 우주여행 초청장)은 그 효과를 이행한 뒤 차례를 끝낸다.
    * 쓸 수 없는 아이템을 쓰겠다는 답은 주사위를 굴리겠다는 답으로 본다.
    * @param {Object} player 차례인 플레이어
    * @param {boolean} again 더블이 나와 주사위를 한 번 더 굴리는 것인지 여부
@@ -4042,37 +5737,41 @@ export class HellmarbleGame {
       }
       let id = typeof answer === 'string' && answer.startsWith(ITEM_PREFIX) ? answer.slice(ITEM_PREFIX.length) : '';
       if (!this.useItem(player, id)) return 'roll';
-      if (ITEMS[id].effect !== 'space') continue;
-      await this.invite(player);
-      return 'end';
+      if (await this.itemEffect(player, id)) return 'end';
     }
   }
 
   /**
-   * 우주여행 초청장 아이템의 효과를 이행한다. 주사위를 굴리지 않고 우주여행 칸으로 이동하여 이용료 없이 탑승한다.
-   * 가는 길에 출발지를 지나면 월급을 받으며, 무인도에 갇혀 있었다면 풀려난다.
-   * @param {Object} player 초청장을 쓴 플레이어
-   * @returns {Promise<void>}
+   * 주사위를 굴릴 차례에 직접 쓴 아이템 가운데, 주사위를 굴리는 대신 다른 일을 하고 차례를 끝내는 아이템의 효과를 이행한다.
+   * 그런 아이템은 코스마다 다르므로 코스별 엔진이 재정의한다. (주사위 조작형 아이템은 useItem 이 표시해 두고 throwDice 가 적용하므로 여기에서 다루지 않는다.)
+   * @param {Object} player 아이템을 쓴 플레이어
+   * @param {string} id 아이템 식별자
+   * @returns {Promise<boolean>} 효과를 이행하여 차례가 끝났으면 true (여기에서는 그런 아이템이 없어 언제나 false 이다.)
    */
-  async invite(player) {
-    player.island = 0;
-    await this.moveTo(player, TILES.space, true);
-    this.board(player);
+  async itemEffect(player, id) {
+    void player;
+    void id;
+    return false;
   }
 
   /**
    * 주사위를 한 번 굴려 이동하고 도착한 칸의 효과를 적용한다.
-   * 무인도에 갇힌 채로 굴린 주사위는 더블이어야만 탈출하여 그 눈대로 이동하며, 이 더블로는 다시 굴리지 않는다.
-   * 그 밖의 더블은 다시 굴리되, 파산했거나 무인도에 갇혔거나 우주여행에 탑승한 경우에는 차례가 끝난다.
-   * 우대권의 면제 효과는 주사위를 한 번 굴려 진행하는 동안에만 이어진다.
+   * 갇힌 채로(무인도, 블랙홀) 굴린 주사위는 더블이어야만 탈출하여 그 눈대로 이동하며, 이 더블로는 다시 굴리지 않는다.
+   * 그 밖의 더블은 다시 굴리되, 파산했거나 갇혔거나 탑승한 경우에는 차례가 끝난다.
+   * 통행료·이용료의 면제 상태(exempt)는 주사위를 한 번 굴려 진행하는 동안에만 이어진다.
+   * 풀려나면서 조건이 붙은 굴림(parole : 우주여행 코스에서 블랙홀에 갇힌 지 3턴 째에 풀려난 굴림)은 더블의 효과가 없고, 이동하기 전에 그 코스의 뒤처리(paroled)를 한다.
+   * 카드의 효과(bonus)로 한 번 더 굴리게 된 경우에도 다시 굴린다.
    * @param {Object} player 차례인 플레이어
-   * @returns {Promise<boolean>} 더블이 나와 주사위를 한 번 더 굴려야 하면 true
+   * @returns {Promise<boolean>} 더블이 나왔거나 카드의 효과로 주사위를 한 번 더 굴려야 하면 true
    */
   async playRoll(player) {
     this.exempt = false;
+    this.bonus = false;
+    this.parole = false;
     await this.release(player);
     let trapped = player.island > 0;
-    let thrown = this.throwDice(player);
+    let parole = this.parole;
+    let thrown = this.throwDice(player, parole);
     let dice = thrown.dice;
     let double = dice[0] === dice[1];
     this.state.dice = dice;
@@ -4081,18 +5780,32 @@ export class HellmarbleGame {
     if (thrown.lucky) await this.charmed(player, 'log.charmDouble', { effect: 'double' });
     if (trapped && !double) {
       player.island--;
-      this.log('log.islandStay', { player: player.id });
+      this.log(this.course.logs.stay, { player: player.id });
       return false;
     }
     if (trapped) {
       player.island = 0;
-      this.log('log.islandDouble', { player: player.id });
+      this.log(this.course.logs.flee, { player: player.id });
     }
+    if (parole) await this.paroled(player, dice);
     await this.moveBy(player, dice[0] + dice[1], false, true);
     await this.arrive(player);
-    if (!double || trapped || !player.alive || player.island > 0 || player.boarded) return false;
+    if (this.takeBonus(player)) return true;
+    if (!double || trapped || parole || !player.alive || player.island > 0 || player.boarded) return false;
     this.log('log.double', { player: player.id });
     return true;
+  }
+
+  /**
+   * 풀려나면서 조건이 붙은 굴림(parole)에서, 주사위를 굴린 뒤 이동하기 전에 그 코스만의 뒤처리를 한다. 코스별 엔진이 재정의한다.
+   * (우주여행 코스 : 눈의 합이 모자라면 가진 땅 하나를 반납한다.)
+   * @param {Object} player 차례인 플레이어
+   * @param {number[]} dice 굴린 두 주사위의 눈
+   * @returns {Promise<void>}
+   */
+  async paroled(player, dice) {
+    void player;
+    void dice;
   }
 
   /**
@@ -4144,6 +5857,1509 @@ export class HellmarbleGame {
   }
 }
 
+/**
+ * 세계여행 코스의 규칙 엔진이다. 공통 규칙(HellmarbleGame)에 이 코스만의 칸(우주여행, 무인도, 사회복지기금 본부와 접수처)과
+ * 비밀쿠폰, 우대권과 무전기, 건물별 통행료·이용료를 더한다.
+ */
+export class HellmarbleWorldGame extends HellmarbleGame {
+  /**
+   * 세계여행 코스의 인공지능을 만든다.
+   * @returns {HellmarbleWorldAI} 인공지능
+   */
+  createAI() {
+    return new HellmarbleWorldAI(this);
+  }
+
+  /**
+   * 땅에 도착한 다른 플레이어가 내야 하는 금액을 구한다. 일반 도시는 통행료에 지어진 모든 건물의 이용료를 합산한다.
+   * @param {number} index 칸 번호
+   * @returns {number} 통행료와 이용료의 합 (원)
+   */
+  toll(index) {
+    let tile = this.board[index];
+    let land = this.state.lands[index];
+    let total = tile.toll;
+    if (tile.type === 'city') {
+      // 지어진 건물의 이용료를 종류별로 더한다.
+      for (let kind of BUILDINGS) total += tile.fee[kind] * land[kind];
+    }
+    return this.money(total);
+  }
+
+  /**
+   * 건물 부적이 이 땅에 지어 줄 건물과 그 확률을 구한다. 일반 도시에서만 적용되며, 부적에 적힌 건물(별장, 빌딩, 호텔)을 부적에 적힌 확률로 지어 준다.
+   * @param {HellmarbleCharm} charm 장착한 건물 부적
+   * @param {number} index 땅의 칸 번호
+   * @returns {{building: string, chance: number}|null} 지어 줄 건물의 종류와 확률(%). 건물을 지을 수 없는 땅이면 null
+   */
+  gift(charm, index) {
+    return this.board[index].type === 'city' ? { building: charm.building, chance: charm.chance } : null;
+  }
+
+  /**
+   * 손해가 되는 비밀쿠폰이 지금 이 플레이어에게 실제로 손해가 되는지 확인한다. 건물이 없어 낼 돈이 없는 세금 쿠폰과, 팔 땅이 없는 반액대매출은 손해가 아니다.
+   * @param {Object} player 쿠폰을 뽑는 플레이어
+   * @param {HellmarbleCoupon} card 쿠폰 정보
+   * @returns {boolean} 손해가 되면 true
+   */
+  hurts(player, card) {
+    switch (card.effect) {
+      case 'tax': return this.taxAmount(player, card.rates) > 0;
+      case 'halfsale': return this.owned(player).length > 0;
+      default: return true;
+    }
+  }
+
+  /**
+   * 내야 할 통행료·이용료를 우대권으로 면제받을지 확인하고, 쓰기로 한 우대권(비밀쿠폰, 아이템)을 소모한다.
+   * 우대권을 쓰면 면제 상태(exempt)가 되어, 같은 굴림 안에서 이어지는 통행료·이용료도 내지 않는다.
+   * @param {Object} player 지불하는 플레이어
+   * @param {number} index 돈을 낼 땅의 칸 번호
+   * @param {number} amount 내야 할 금액 (원)
+   * @returns {Promise<boolean>} 우대권을 써서 면제받았으면 true
+   */
+  async waive(player, index, amount) {
+    let choice = await this.choosePass(player, index, amount, false);
+    if (choice === 'coupon') {
+      player.coupons.pass--;
+      this.state.deck.push('pass');
+      this.exempt = true;
+      await this.call('use', player, { kind: 'pass', source: 'coupon', index, amount, travel: false });
+      this.log('log.pass', { player: player.id, tile: index, amount });
+      return true;
+    }
+    if (choice === 'item') {
+      this.consumeItem(player, 'pass');
+      this.exempt = true;
+      await this.call('use', player, { kind: 'pass', source: 'item', index, amount, travel: false });
+      this.log('log.itemPass', { player: player.id, tile: index, amount });
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 세계여행 코스만의 칸(우주여행, 무인도, 사회복지기금 본부와 접수처)에 도착했을 때의 효과를 적용한다.
+   * @param {Object} player 도착한 플레이어
+   * @param {HellmarbleTile} tile 도착한 칸
+   * @returns {Promise<void>}
+   */
+  async visit(player, tile) {
+    switch (tile.type) {
+      case 'space':
+        await this.arriveSpace(player);
+        break;
+      case 'island':
+        player.island = ISLAND_TURNS;
+        this.log('log.island', { player: player.id });
+        await this.useRadio(player, true);
+        break;
+      case 'fund':
+        await this.collectFund(player);
+        break;
+      case 'desk':
+        await this.payFund(player);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * 비밀쿠폰에만 있는 효과(건물별 세금, 무인도 표류, 우주여행 초청장, 항공 여행, 반액대매출)를 이행한다.
+   * @param {Object} player 쿠폰을 뽑은 플레이어
+   * @param {Object} coupon 쿠폰 정보
+   * @param {string} id 쿠폰 식별자
+   * @returns {Promise<void>}
+   */
+  async applyCard(player, coupon, id) {
+    void id;
+    switch (coupon.effect) {
+      case 'tax':
+        await this.payBank(player, this.taxAmount(player, coupon.rates));
+        break;
+      case 'island':
+        await this.moveTo(player, this.tiles.island, false);
+        await this.arrive(player);
+        break;
+      case 'space':
+        await this.moveTo(player, this.tiles.space, true);
+        this.embark(player);
+        break;
+      case 'air':
+        await this.airTravel(player);
+        break;
+      case 'halfsale':
+        await this.halfSale(player);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * 주사위를 굴릴 차례에 직접 쓴 아이템 가운데 우주여행 초청장의 효과를 이행한다. 우주여행 칸으로 보내 탑승시키고 차례를 끝낸다.
+   * @param {Object} player 아이템을 쓴 플레이어
+   * @param {string} id 아이템 식별자
+   * @returns {Promise<boolean>} 우주여행 초청장이어서 차례가 끝났으면 true
+   */
+  async itemEffect(player, id) {
+    if (ITEMS[id].effect !== 'space') return false;
+    await this.invite(player);
+    return true;
+  }
+
+  /**
+   * 무인도에 갇힌 플레이어가 주사위를 굴리기 전에 풀려나는 경우를 처리한다.
+   * 무전기(비밀쿠폰, 아이템)가 있으면 사용 여부를 한 번에 확인하여 즉시 탈출시키고, 3턴 째이면 갇힘을 푼다. (3턴 째에는 어차피 풀려나므로 무전기를 묻지 않는다.)
+   * 이렇게 먼저 풀려난 뒤에 굴리는 주사위는 일반 주사위와 같다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<void>}
+   */
+  async release(player) {
+    if (player.island > 1) await this.useRadio(player, false);
+    await super.release(player);
+  }
+
+  /**
+   * 한 플레이어의 차례를 진행한다. 우주여행에 탑승한 플레이어는 주사위를 굴리지 않고 원하는 칸을 골라 이동하며(playTravel), 그 밖에는 공통의 진행을 따른다.
+   * @param {Object} player 차례인 플레이어
+   * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
+   */
+  async playTurn(player) {
+    if (!player.boarded) return super.playTurn(player);
+    this.exempt = false;
+    this.bonus = false;
+    return this.playTravel(player);
+  }
+
+  /**
+   * 내야 할 통행료·이용료를 우대권으로 면제받을지 한 번에 묻는다.
+   * 비밀쿠폰 우대권과 아이템 우대권을 모두 쓸 수 있으면 한 요청에서 둘 중 하나를 고르게 하고, 쓸 수 있는 것이 없으면 묻지 않는다.
+   * 비밀쿠폰 우대권은 우주여행 이용료에는 쓸 수 없다.
+   * @param {Object} player 지불하는 플레이어
+   * @param {number} index 돈을 낼 칸 번호
+   * @param {number} amount 내야 할 금액 (원)
+   * @param {boolean} travel 우주여행 이용료인지 여부
+   * @returns {Promise<string|null>} 쓰기로 한 우대권 ('coupon' 은 비밀쿠폰, 'item' 은 아이템), 쓰지 않으면 null
+   */
+  async choosePass(player, index, amount, travel) {
+    let coupon = !travel && player.coupons.pass > 0;
+    let item = this.canUseItem(player, 'pass');
+    if (!coupon && !item) return null;
+    return this.sourceOf(await this.decide(player, { type: 'pass', index, amount, travel, coupon, item }), coupon, item);
+  }
+
+  /**
+   * 무인도에서 무전기로 탈출할지 한 번에 묻고, 쓰기로 한 무전기를 소모하여 갇힘을 푼다.
+   * 비밀쿠폰 무전기와 아이템 무전기를 모두 쓸 수 있으면 한 요청에서 둘 중 하나를 고르게 하고, 쓸 수 있는 것이 없으면 묻지 않는다.
+   * 무인도에 막 도착했을 때에는 아이템 무전기만 쓸 수 있다. (비밀쿠폰 무전기는 갇힌 뒤 주사위를 굴리기 전에 쓴다.)
+   * @param {Object} player 무인도에 있는 플레이어
+   * @param {boolean} arrival 무인도에 막 도착한 것인지 여부
+   * @returns {Promise<void>}
+   */
+  async useRadio(player, arrival) {
+    let coupon = !arrival && player.coupons.radio > 0;
+    let item = this.canUseItem(player, 'radio');
+    if (!coupon && !item) return;
+    let choice = this.sourceOf(await this.decide(player, { type: 'radio', arrival, coupon, item }), coupon, item);
+    if (choice === 'coupon') {
+      player.coupons.radio--;
+      this.state.deck.push('radio');
+      player.island = 0;
+      await this.call('use', player, { kind: 'radio', source: 'coupon', arrival });
+      this.log('log.radio', { player: player.id });
+    }
+    if (choice === 'item') {
+      this.consumeItem(player, 'radio');
+      player.island = 0;
+      await this.call('use', player, { kind: 'radio', source: 'item', arrival });
+      this.log('log.itemRadio', { player: player.id });
+    }
+  }
+
+  /**
+   * 우주여행 칸에 도착했을 때의 처리를 한다. 콜롬비아 호의 소유자가 남이면 이용료를 내고 탑승한다.
+   * @param {Object} player 도착한 플레이어
+   * @returns {Promise<void>}
+   */
+  async arriveSpace(player) {
+    let owner = this.state.lands[this.tiles.columbia].owner;
+    let spot = this.tiles.space;
+    if (owner !== null && owner !== player.id) {
+      let amount = await this.tollCut(player, spot, this.money(SPACE_FEE));
+      if ((await this.choosePass(player, spot, amount, true)) === 'item') {
+        this.consumeItem(player, 'pass');
+        await this.call('use', player, { kind: 'pass', source: 'item', index: spot, amount, travel: true });
+        this.log('log.itemPass', { player: player.id, tile: spot, amount });
+        this.embark(player);
+        return;
+      }
+      if (!(await this.pay(player, amount, this.state.players[owner]))) return;
+      this.log('log.spaceFee', { player: player.id, target: owner, amount });
+    }
+    this.embark(player);
+  }
+
+  /**
+   * 사회복지기금 접수처에 돈을 낸다. 모자라면 가진 돈만 내며 땅을 팔거나 파산하지 않는다. 낸 돈은 사회복지기금 본부에 쌓인다.
+   * @param {Object} player 도착한 플레이어
+   * @returns {Promise<void>}
+   */
+  async payFund(player) {
+    let amount = Math.min(player.cash, this.money(WELFARE_FEE));
+    player.cash -= amount;
+    this.state.fund += amount;
+    await this.handover(player, FUND, amount);
+    this.log('log.fundPay', { player: player.id, amount });
+  }
+
+  /**
+   * 건물별로 내야 하는 금액(방범비, 건물수리비, 정기종합소득세)을 계산한다.
+   * @param {Object} player 플레이어
+   * @param {Object} rates 건물 종류별 1개당 금액 (원)
+   * @returns {number} 내야 할 금액 (원)
+   */
+  taxAmount(player, rates) {
+    let total = 0;
+    // 가진 땅마다 지어진 건물의 금액을 더한다.
+    for (let index of this.owned(player)) {
+      // 건물 종류별로 개수만큼 금액을 더한다.
+      for (let kind of BUILDINGS) total += rates[kind] * this.state.lands[index][kind];
+    }
+    return this.money(total);
+  }
+
+  /**
+   * 항공 여행 쿠폰을 이행한다. 콩코드 여객기 이용료를 낸 뒤 타이페이로 이동한다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<void>}
+   */
+  async airTravel(player) {
+    let owner = this.state.lands[this.tiles.concorde].owner;
+    if (owner !== null && owner !== player.id && !(await this.payToll(player, this.tiles.concorde))) return;
+    await this.moveTo(player, this.tiles.taipei, true);
+    await this.arrive(player);
+  }
+
+  /**
+   * 반액대매출 쿠폰을 이행한다. 가진 땅 중 가치(건물 포함)가 가장 높은 곳을 자동으로 골라 50%에 매각한다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<void>}
+   */
+  async halfSale(player) {
+    let best = -1;
+    // 가진 땅 중 가치가 가장 높은 땅을 찾는다.
+    for (let index of this.owned(player)) {
+      if (best < 0 || this.value(index) > this.value(best)) best = index;
+    }
+    if (best < 0) {
+      this.log('log.nothing', { player: player.id });
+      return;
+    }
+    await this.handover(BANK, player, this.sell(player, best, HALF_PERCENT));
+  }
+
+  /**
+   * 우주여행 탑승 상태인 플레이어의 차례를 진행한다. 원하는 칸을 골라 이동한다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
+   */
+  async playTravel(player) {
+    let answer = await this.decide(player, { type: 'travel' });
+    if (answer === QUIT) return false;
+    if (answer === FORFEIT) {
+      await this.bankrupt(player, true);
+      return true;
+    }
+    let target = Number(answer);
+    if (!Number.isInteger(target) || target < 0 || target >= BOARD_SIZE || target === player.position) target = (player.position + 1) % BOARD_SIZE;
+    player.boarded = false;
+    this.log('log.travel', { player: player.id, tile: target });
+    await this.moveTo(player, target, true);
+    await this.arrive(player);
+    return true;
+  }
+
+  /**
+   * 우주여행 초청장 아이템의 효과를 이행한다. 주사위를 굴리지 않고 우주여행 칸으로 이동하여 이용료 없이 탑승한다.
+   * 가는 길에 출발지를 지나면 월급을 받으며, 무인도에 갇혀 있었다면 풀려난다.
+   * @param {Object} player 초청장을 쓴 플레이어
+   * @returns {Promise<void>}
+   */
+  async invite(player) {
+    player.island = 0;
+    await this.moveTo(player, this.tiles.space, true);
+    this.embark(player);
+  }
+}
+
+/**
+ * 우주여행 코스의 규칙 엔진이다. 공통 규칙(HellmarbleGame)에 이 코스만의 칸(시간여행, 블랙홀, 우주조난기지, 핼리혜성, 뉴런의 골짜기)과
+ * 텔레파시 카드, 뉴런의 골짜기 카드, 천사의 빛과 블랙홀 탈출포트, 별과 기지, 견우성과 직녀성의 규칙을 더한다.
+ */
+export class HellmarbleSpaceGame extends HellmarbleGame {
+  /**
+   * 우주여행 코스의 인공지능을 만든다.
+   * @returns {HellmarbleSpaceAI} 인공지능
+   */
+  createAI() {
+    return new HellmarbleSpaceAI(this);
+  }
+
+  /**
+   * 저장된 진행 상태가 우주여행 코스만의 규칙에 어긋나지 않는지 확인한다. 견우성과 직녀성은 한 플레이어가 함께 가질 수 없고,
+   * 증축은 기지를 키우는 것이므로 기지가 없는 별에는 있을 수 없다.
+   * @param {Object} state 게임 진행 상태
+   * @returns {boolean} 어긋나지 않으면 true
+   */
+  static sound(state) {
+    let owners = [];
+    // 두 별의 주인을 모은다.
+    for (let id of LOVERS) owners.push(state.lands[SPACE_TILES[id]].owner);
+    // 기지 없이 증축만 있는 땅이 있는지 확인한다.
+    for (let land of state.lands) {
+      if (land && land.annex > 0 && land.base < 1) return false;
+    }
+    return owners[0] === null || owners[0] !== owners[1];
+  }
+
+  /**
+   * 땅에 도착한 다른 플레이어가 내야 하는 금액을 구한다. 기지가 있는 별은 기지가 있을 때의 이용료가 되고(기지가 없을 때의 이용료에 더하지 않는다.),
+   * 기지를 증축했으면 증축한 횟수만큼 이용료가 더 오르며, 끝까지 증축했으면 추가로 더 오른다. (ANNEX_BONUS)
+   * @param {number} index 칸 번호
+   * @returns {number} 이용료 (원)
+   */
+  toll(index) {
+    let tile = this.board[index];
+    let land = this.state.lands[index];
+    if (tile.type !== 'star' || land.base < 1) return super.toll(index);
+    return this.money(tile.fee.base + tile.fee.annex * land.annex + (land.annex >= BUILD_LIMIT.annex ? ANNEX_BONUS : 0));
+  }
+
+  /**
+   * 이 별에 지금 지을 차례가 된 것을 구한다. 기지가 없으면 기지이고, 기지가 있으면 그 기지의 증축이다.
+   * 자기 별에 한 번 도착할 때마다 하나만 지으므로(arriveProperty), 기지를 지은 방문에는 증축하지 못하고 증축도 방문할 때마다 한 번씩만 하게 된다.
+   * @param {number} index 칸 번호
+   * @returns {string[]} 건물 종류 목록 (기지 또는 증축 하나)
+   */
+  buildKinds(index) {
+    let land = this.state.lands[index];
+    return land && land.base > 0 ? ['annex'] : ['base'];
+  }
+
+  /**
+   * 건물 부적이 이 땅에 지어 줄 건물과 그 확률을 구한다. 우주여행 코스에는 별장, 빌딩, 호텔이 없으므로,
+   * 건물 부적의 효과가 별에 기지 하나를 지어 주는 것으로 바뀌며 확률도 부적마다 따로 정해져 있다. (CHARMS 의 base)
+   * @param {HellmarbleCharm} charm 장착한 건물 부적
+   * @param {number} index 땅의 칸 번호
+   * @returns {{building: string, chance: number}|null} 지어 줄 건물(기지)과 확률(%). 기지를 지을 수 없는 땅(타임머신)이면 null
+   */
+  gift(charm, index) {
+    return this.board[index].type === 'star' ? { building: 'base', chance: charm.base } : null;
+  }
+
+  /**
+   * 손해가 되는 카드가 지금 이 플레이어에게 실제로 손해가 되는지 확인한다. 별이나 기지가 없어 낼 돈이나 잃을 것이 없는 카드와,
+   * 돈을 받게 되는 도플러 효과는 손해가 아니다.
+   * @param {Object} player 카드를 뽑는 플레이어
+   * @param {HellmarbleCoupon} card 카드 정보
+   * @returns {boolean} 손해가 되면 true
+   */
+  hurts(player, card) {
+    switch (card.effect) {
+      case 'ecology': return this.stars(player).length > 0;
+      case 'basepay': return this.bases(player).length > 0;
+      case 'basereturn': return this.bases(player).length > 0;
+      case 'doppler': return this.leadsStars(player);
+      default: return true;
+    }
+  }
+
+  /**
+   * 내야 할 이용료를 천사의 빛으로 면제받을지 확인하고, 쓰기로 하면 소모한다. (우주여행 코스에는 우대권이 없다.)
+   * @param {Object} player 지불하는 플레이어
+   * @param {number} index 돈을 낼 땅의 칸 번호
+   * @param {number} amount 내야 할 금액 (원)
+   * @returns {Promise<boolean>} 천사의 빛을 써서 면제받았으면 true
+   */
+  waive(player, index, amount) {
+    return this.useAngel(player, { reason: 'fee', index, amount });
+  }
+
+  /**
+   * 우주여행 코스만의 칸(지구, 뉴런의 골짜기, 시간여행, 블랙홀, 우주조난기지, 핼리혜성)에 도착했을 때의 효과를 적용한다.
+   * 지구(출발지)에는 지나가지 않고 멈췄을 때에만 효과가 있다. 월급과는 따로, 자기 별 하나를 골라 기지를 짓거나(기지가 없는 별) 기지를 한 번 증축할 수 있다. (offerBuild)
+   * @param {Object} player 도착한 플레이어
+   * @param {HellmarbleTile} tile 도착한 칸
+   * @returns {Promise<void>}
+   */
+  async visit(player, tile) {
+    switch (tile.type) {
+      case 'start':
+        await this.offerBuild(player, 'earth');
+        break;
+      case 'neuron':
+        await this.drawCard(player, 'neuron');
+        break;
+      case 'timetravel':
+        await this.arriveTime(player);
+        break;
+      case 'blackhole':
+        player.island = ISLAND_TURNS;
+        player.boarded = false;
+        player.direct = false;
+        this.log('log.blackhole', { player: player.id });
+        await this.useEscape(player, true);
+        break;
+      case 'rescue':
+        await this.arriveRescue(player);
+        break;
+      case 'halley':
+        this.log('log.halley', { player: player.id });
+        await this.moveTo(player, this.tiles.mars - 1, false);
+        await this.arrive(player);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * 플레이어가 별을 사서 주인이 된 뒤의 후속 처리를 한다. 산 별이 견우성이나 직녀성이고 이로써 두 별 모두 주인이 생겼으면 두 주인이 지구에서 만난다.
+   * (사기 전에는 그 별에 주인이 없었으므로 두 별 모두 주인이 있는 상태가 아니었다. 그래서 reunite 에 false 를 넘긴다.)
+   * @param {Object} player 땅을 산 플레이어
+   * @param {number} index 산 땅의 칸 번호
+   * @returns {Promise<void>}
+   */
+  async acquired(player, index) {
+    void player;
+    if (LOVERS.includes(this.board[index].id)) await this.reunite(false);
+  }
+
+  /**
+   * 블랙홀에 갇힌 플레이어가 주사위를 굴리기 전에 풀려나는 경우를 처리한다.
+   * 블랙홀 탈출포트나 천사의 빛이 있으면 사용 여부를 확인하여 즉시 탈출시킨다. (탈출한 뒤의 주사위는 일반 주사위와 같다.)
+   * 쓰지 않은 채 3턴 째가 되면 갇힘은 풀리지만, 이때 굴리는 주사위는 더블의 효과가 없고 눈의 합이 모자라면 땅을 반납해야 한다. (parole 로 표시한다.)
+   * @param {Object} player 플레이어
+   * @returns {Promise<void>}
+   */
+  async release(player) {
+    if (player.island > 0) await this.useEscape(player, false);
+    if (player.island === 1) this.parole = true;
+    await super.release(player);
+  }
+
+  /**
+   * 블랙홀에 갇힌 지 3턴 째에 풀려난 굴림의 뒤처리를 한다. 눈의 합이 SAFE_SUM 보다 작으면 이동하기 전에 가진 땅 하나를 은행에 반납한다.
+   * @param {Object} player 차례인 플레이어
+   * @param {number[]} dice 굴린 두 주사위의 눈
+   * @returns {Promise<void>}
+   */
+  async paroled(player, dice) {
+    if (dice[0] + dice[1] < SAFE_SUM) await this.surrender(player);
+  }
+
+  /**
+   * 주사위를 굴릴 차례에 직접 쓴 아이템 가운데 시간여행 초청장의 효과를 이행한다. 시간여행 칸으로 보내 탑승시키고 차례를 끝낸다.
+   * @param {Object} player 아이템을 쓴 플레이어
+   * @param {string} id 아이템 식별자
+   * @returns {Promise<boolean>} 시간여행 초청장이어서 차례가 끝났으면 true
+   */
+  async itemEffect(player, id) {
+    if (ITEMS[id].effect !== 'time') return false;
+    await this.timeInvite(player);
+    return true;
+  }
+
+  /**
+   * 시간여행 초청장 아이템의 효과를 이행한다. 주사위를 굴리지 않고 시간여행 칸으로 이동하여 이용료 없이 탑승한다.
+   * 가는 길에 출발지를 지나면 월급을 받으며, 블랙홀에 갇혀 있었다면 풀려난다.
+   * 이렇게 탑승하면 다음 차례에 주사위를 굴리지 않고 곧바로 원하는 칸을 골라 이동한다. (direct 로 표시해 둔다.)
+   * @param {Object} player 초청장을 쓴 플레이어
+   * @returns {Promise<void>}
+   */
+  async timeInvite(player) {
+    player.island = 0;
+    await this.moveTo(player, this.tiles.timetravel, true);
+    player.boarded = true;
+    player.direct = true;
+    this.log('log.timeInvite', { player: player.id });
+  }
+
+  /**
+   * 한 플레이어의 차례를 진행한다. 시간여행 초청장으로 탑승한 플레이어는 주사위를 굴리지 않고 원하는 칸을 골라 이동하며(playDirect),
+   * 도착한 칸의 카드로 주사위를 한 번 더 굴리게 되었으면 보통의 차례처럼 이어서 굴린다. 그 밖에는 공통의 진행을 따른다.
+   * (보통의 시간여행 탑승은 주사위를 굴려 목적지를 정하므로 공통의 진행 안에서 playStep 이 처리한다.)
+   * @param {Object} player 차례인 플레이어
+   * @returns {Promise<boolean>} 차례를 마쳤으면 true, 메인 메뉴로 나가면 false
+   */
+  async playTurn(player) {
+    if (!player.boarded || !player.direct) return super.playTurn(player);
+    this.exempt = false;
+    this.bonus = false;
+    let step = await this.playDirect(player);
+    if (step === QUIT) return false;
+    return step === 'roll' ? this.playRolls(player, true) : true;
+  }
+
+  /**
+   * 시간여행 초청장으로 탑승한 플레이어의 차례를 진행한다. 주사위를 굴리지 않고 원하는 칸을 골라 이동한다.
+   * 보통의 시간여행과 같이 가는 길에 출발지를 지나도 월급이 없고, 지구에 도착하면 월급을 받는다. 지금 있는 칸은 고를 수 없다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<string>} 'roll' (도착한 칸의 카드로 주사위를 한 번 더 굴린다), 'end' (차례가 끝났다), QUIT (메인 메뉴로 나간다)
+   */
+  async playDirect(player) {
+    let answer = await this.decide(player, { type: 'travel' });
+    if (answer === QUIT) return QUIT;
+    if (answer === FORFEIT) {
+      await this.bankrupt(player, true);
+      return 'end';
+    }
+    let target = Number(answer);
+    if (!Number.isInteger(target) || target < 0 || target >= BOARD_SIZE || target === player.position) target = (player.position + 1) % BOARD_SIZE;
+    player.boarded = false;
+    player.direct = false;
+    this.log('log.timeGo', { player: player.id, tile: target });
+    await this.warp(player, target);
+    await this.arrive(player);
+    return this.takeBonus(player) ? 'roll' : 'end';
+  }
+
+  /**
+   * 주사위를 굴리겠다는 답을 받은 뒤의 한 번의 진행을 한다. 시간여행에 탑승한 플레이어는 굴린 주사위로 목적지를 정하고(playTimeTravel), 그 밖에는 주사위를 굴려 이동한다.
+   * @param {Object} player 차례인 플레이어
+   * @returns {Promise<boolean>} 주사위를 한 번 더 굴려야 하면 true
+   */
+  playStep(player) {
+    return player.boarded ? this.playTimeTravel(player) : this.playRoll(player);
+  }
+
+  /**
+   * 플레이어가 가진 별(우주여행 코스의 행성과 별자리. 특수시설은 뺀다.)의 칸 번호 목록을 구한다.
+   * @param {Object} player 플레이어
+   * @returns {number[]} 칸 번호 목록
+   */
+  stars(player) {
+    let list = [];
+    // 가진 땅 가운데 별만 모은다.
+    for (let index of this.owned(player)) {
+      if (this.board[index].type === 'star') list.push(index);
+    }
+    return list;
+  }
+
+  /**
+   * 플레이어가 가진 별 가운데 기지가 지어진 별의 칸 번호 목록을 구한다.
+   * @param {Object} player 플레이어
+   * @returns {number[]} 칸 번호 목록
+   */
+  bases(player) {
+    let list = [];
+    // 가진 별 가운데 기지가 있는 별만 모은다.
+    for (let index of this.stars(player)) {
+      if (this.state.lands[index].base > 0) list.push(index);
+    }
+    return list;
+  }
+
+  /**
+   * 플레이어가 가진 별 가운데 기지가 아직 없는 별의 칸 번호 목록을 구한다.
+   * @param {Object} player 플레이어
+   * @returns {number[]} 칸 번호 목록
+   */
+  bare(player) {
+    let list = [];
+    // 가진 별 가운데 기지가 없는 별만 모은다.
+    for (let index of this.stars(player)) {
+      if (this.state.lands[index].base < 1) list.push(index);
+    }
+    return list;
+  }
+
+  /**
+   * 플레이어의 별 개수가 다른 모든 플레이어의 별 개수보다 많은지 확인한다. (도플러 효과 카드)
+   * @param {Object} player 플레이어
+   * @returns {boolean} 다른 모든 플레이어보다 많으면 true
+   */
+  leadsStars(player) {
+    let mine = this.stars(player).length;
+    // 별이 같거나 더 많은 다른 플레이어가 하나라도 있으면 가장 많은 것이 아니다.
+    for (let rival of this.rivals(player)) {
+      if (this.stars(rival).length >= mine) return false;
+    }
+    return true;
+  }
+
+  /**
+   * 플레이어가 이 땅을 가질 수 있는지 확인한다. 우주여행 코스의 견우성과 직녀성은 한 플레이어가 함께 가질 수 없다.
+   * @param {Object} player 플레이어
+   * @param {number} index 땅의 칸 번호
+   * @returns {boolean} 가질 수 있으면 true
+   */
+  canOwn(player, index) {
+    let tile = this.board[index];
+    if (!LOVERS.includes(tile.id)) return true;
+    // 짝이 되는 다른 별을 이미 가지고 있으면 가질 수 없다.
+    for (let id of LOVERS) {
+      if (id !== tile.id && this.state.lands[this.tiles[id]].owner === player.id) return false;
+    }
+    return true;
+  }
+
+  /**
+   * 견우성과 직녀성 모두 주인이 있는지 확인한다. (세계여행 코스에서는 언제나 false 이다.)
+   * @returns {boolean} 두 별 모두 주인이 있으면 true
+   */
+  paired() {
+    // 두 별 가운데 하나라도 없거나 주인이 없으면 아니다.
+    for (let id of LOVERS) {
+      let index = this.tiles[id];
+      if (index === undefined || this.state.lands[index].owner === null) return false;
+    }
+    return true;
+  }
+
+  /**
+   * 땅의 주인을 주어진 대로 바꾸면 한 플레이어가 견우성과 직녀성을 함께 갖게 되는지 확인한다. (그런 교환이나 빼앗기는 취소된다.)
+   * @param {Array<Array>} changes 바꿀 내용의 목록. 항목은 [칸 번호, 새 주인의 플레이어 번호 또는 null] 이다.
+   * @returns {boolean} 한 플레이어가 두 별을 함께 갖게 되면 true
+   */
+  breaksPair(changes) {
+    let owners = [];
+    // 두 별마다 바뀐 뒤의 주인을 구한다.
+    for (let id of LOVERS) {
+      let index = this.tiles[id];
+      let owner = this.state.lands[index].owner;
+      // 이 별의 주인을 바꾸는 내용이 있으면 그 주인으로 본다.
+      for (let change of changes) {
+        if (change[0] === index) owner = change[1];
+      }
+      owners.push(owner);
+    }
+    return owners[0] !== null && owners[0] === owners[1];
+  }
+
+  /**
+   * 우주여행 코스의 시간여행 칸에 도착했을 때의 처리를 한다. 타임머신의 소유자가 남이면 이용료를 내고 탑승한다.
+   * 이용료는 천사의 빛으로 면제받을 수 있다.
+   * @param {Object} player 도착한 플레이어
+   * @returns {Promise<void>}
+   */
+  async arriveTime(player) {
+    let owner = this.state.lands[this.tiles.timemachine].owner;
+    let spot = this.tiles.timetravel;
+    if (owner !== null && owner !== player.id) {
+      let amount = await this.tollCut(player, spot, this.money(TIME_FEE));
+      if (!(await this.useAngel(player, { reason: 'timefee', index: spot, amount }))) {
+        if (!(await this.pay(player, amount, this.state.players[owner]))) return;
+        this.log('log.timeFee', { player: player.id, target: owner, amount });
+      }
+    }
+    this.embark(player);
+  }
+
+  /**
+   * 우주여행 코스의 우주조난기지에 도착했을 때의 처리를 한다. 모인 기금이 있으면 모두 받고, 없으면 기금을 낸다.
+   * 낼 돈이 모자라면 가진 돈만 내며 땅을 팔거나 파산하지 않는다.
+   * @param {Object} player 도착한 플레이어
+   * @returns {Promise<void>}
+   */
+  async arriveRescue(player) {
+    if (this.state.fund > 0) {
+      await this.collectFund(player);
+      return;
+    }
+    let amount = Math.min(player.cash, this.money(RESCUE_FEE));
+    player.cash -= amount;
+    this.state.fund += amount;
+    await this.handover(player, FUND, amount);
+    this.log('log.rescuePay', { player: player.id, amount });
+  }
+
+  /**
+   * 우주여행 코스의 카드에만 있는 효과를 이행한다. (텔레파시 카드와 뉴런의 골짜기 카드. 은행과 돈이 오가거나 지정한 칸으로 가는 공통 효과는 applyCoupon 이 이행한다.)
+   * 효과가 긴 카드는 card 로 시작하는 메소드에 따로 구현한다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async applyCard(player, coupon, id) {
+    switch (coupon.effect) {
+      case 'bases':
+        if (this.bases(player).length === 0) this.idle(player, id);
+        else await this.gain(player, this.money(coupon.amount) * this.bases(player).length);
+        break;
+      case 'basepay':
+        await this.payBank(player, this.money(coupon.amount) * this.bases(player).length);
+        break;
+      case 'ecology':
+        await this.payBank(player, this.money(coupon.bare) * this.bare(player).length + this.money(coupon.built) * this.bases(player).length);
+        break;
+      case 'luckydice':
+        await this.gain(player, this.money(coupon.amount) * (await this.cast(player, 1)));
+        break;
+      case 'rescue':
+        await this.moveTo(player, this.tiles.rescue, true);
+        if (this.state.fund > 0) await this.collectFund(player);
+        else this.log('log.rescueNone', { player: player.id });
+        break;
+      case 'blackhole':
+        await this.moveTo(player, this.tiles.blackhole, false);
+        await this.arrive(player);
+        break;
+      case 'offcourse':
+        if (!(await this.payBank(player, this.money(coupon.amount)))) break;
+        await this.moveBack(player, coupon.steps);
+        await this.arrive(player);
+        break;
+      case 'reverse':
+        await this.cardReverse(player);
+        break;
+      case 'timetravel':
+        await this.moveTo(player, this.tiles.timetravel, false);
+        this.embark(player);
+        break;
+      case 'rob':
+        // 다른 플레이어마다 정해진 금액을 받아낸다.
+        for (let rival of this.rivals(player)) await this.claim(rival, player, this.money(coupon.amount));
+        break;
+      case 'lovers': await this.cardLovers(player, id); break;
+      case 'party': await this.cardParty(player, coupon, id); break;
+      case 'valley': await this.cardValley(player); break;
+      case 'machinefix': await this.cardMachineFix(player, coupon, id); break;
+      case 'basereturn': await this.cardBaseReturn(player, id); break;
+      case 'roundtrip': await this.cardRoundTrip(player); break;
+      case 'huygens': await this.cardHuygens(player, coupon); break;
+      case 'apollo': await this.cardApollo(player, coupon); break;
+      case 'newton': await this.cardNewton(player, id); break;
+      case 'freebase': await this.cardFreeBase(player, id, 0); break;
+      case 'spectrum': await this.cardFreeBase(player, id, coupon.need); break;
+      case 'einstein': await this.cardEinstein(player, id); break;
+      case 'psychic': await this.cardPsychic(player, id); break;
+      case 'doppler': await this.cardDoppler(player, coupon); break;
+      case 'zodiac': await this.cardZodiac(player); break;
+      case 'moravec': await this.cardMoravec(player); break;
+      case 'copernicus': await this.cardCopernicus(player); break;
+      case 'kepler': await this.cardKepler(player, coupon, id); break;
+      case 'shapley': await this.cardShapley(player, coupon, id); break;
+      case 'humboldt': await this.cardHumboldt(player, id); break;
+      case 'mobius': await this.cardMobius(player, id); break;
+      case 'contract': await this.cardContract(player, id); break;
+      case 'pascal': await this.cardPascal(player, coupon, id); break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * 천사의 빛으로 손해를 면할지 묻고, 쓰기로 하면 소모한다. 텔레파시 카드로 보관한 것과 아이템으로 가져온 것을 한 요청에서 고르게 한다.
+   * 쓸 수 있는 천사의 빛이 없으면 묻지 않는다. 아이템 천사의 빛은 게임 한 판에 정해진 횟수까지만 쓸 수 있다.
+   * @param {Object} player 손해를 입게 된 플레이어
+   * @param {Object} info 손해의 내용 { reason : 사유, amount : 손해의 크기(원) } 와 사유별 값
+   *   (fee, timefee : index 돈을 낼 칸 / claim : target 돈을 받을 플레이어 번호 / steal : index 빼앗길 별, target 빼앗는 플레이어 번호 /
+   *    swap : index 내줄 별, other 받을 별, target 상대 플레이어 번호 / land : index 반납할 땅 / pay, base : 추가 값 없음)
+   * @returns {Promise<boolean>} 천사의 빛을 써서 손해를 면했으면 true
+   */
+  async useAngel(player, info) {
+    let coupon = player.coupons.angel > 0;
+    let item = this.canUseItem(player, 'angel');
+    if (!player.alive || (!coupon && !item)) return false;
+    let card = this.drawn.length > 0 ? this.drawn[this.drawn.length - 1] : null;
+    let choice = this.sourceOf(await this.decide(player, { type: 'angel', ...info, card, coupon, item }), coupon, item);
+    if (!choice) return false;
+    if (choice === 'coupon') {
+      player.coupons.angel--;
+      this.state.deck.push('angel');
+    } else {
+      this.consumeItem(player, 'angel');
+    }
+    await this.call('use', player, { kind: 'angel', source: choice, ...info, card });
+    if (info.reason === 'fee' || info.reason === 'timefee') this.log(choice === 'coupon' ? 'log.angelFee' : 'log.itemAngelFee', { player: player.id, tile: info.index, amount: info.amount });
+    else this.log(choice === 'coupon' ? 'log.angel' : 'log.itemAngel', { player: player.id, coupon: card });
+    return true;
+  }
+
+  /**
+   * 블랙홀에서 블랙홀 탈출포트나 천사의 빛으로 탈출할지 한 번에 묻고, 쓰기로 한 것을 소모하여 갇힘을 푼다.
+   * 텔레파시 카드로 보관한 것과 아이템으로 가져온 것을 각각 따로 고를 수 있으며, 쓸 수 있는 것이 없으면 묻지 않는다.
+   * 블랙홀에 막 도착했을 때 쓰면 갇히지 않은 채 차례가 끝나고, 갇혀 있는 동안 주사위를 굴리기 전에 쓰면 곧바로 보통 차례처럼 주사위를 굴린다.
+   * @param {Object} player 블랙홀에 있는 플레이어
+   * @param {boolean} arrival 블랙홀에 막 도착한 것인지 여부
+   * @returns {Promise<void>}
+   */
+  async useEscape(player, arrival) {
+    let options = {
+      escape: { coupon: player.coupons.escape > 0, item: this.canUseItem(player, 'escape') },
+      angel: { coupon: player.coupons.angel > 0, item: this.canUseItem(player, 'angel') },
+    };
+    if (!options.escape.coupon && !options.escape.item && !options.angel.coupon && !options.angel.item) return;
+    let answer = await this.decide(player, { type: 'escape', arrival, last: !arrival && player.island === 1, ...options });
+    let parts = typeof answer === 'string' ? answer.split('.') : [];
+    let kind = parts[0];
+    let source = parts[1];
+    if (!Object.hasOwn(options, kind) || options[kind][source] !== true) return;
+    if (source === 'coupon') {
+      player.coupons[kind]--;
+      this.state.deck.push(kind);
+    } else {
+      this.consumeItem(player, kind);
+    }
+    player.island = 0;
+    await this.call('use', player, { kind, source, arrival, reason: 'escape' });
+    if (kind === 'escape') this.log(source === 'coupon' ? 'log.escape' : 'log.itemEscape', { player: player.id });
+    else this.log(source === 'coupon' ? 'log.angelEscape' : 'log.itemAngelEscape', { player: player.id });
+  }
+
+  /**
+   * 다른 플레이어에게서 돈을 받아낸다. (카드의 효과) 내는 쪽은 천사의 빛으로 면제받을 수 있고,
+   * 돈이 모자라면 땅을 매각해서라도 내야 하며 그래도 모자라면 남은 돈만 내고 파산한다.
+   * @param {Object} debtor 돈을 내는 플레이어
+   * @param {Object} creditor 돈을 받는 플레이어
+   * @param {number} amount 금액 (원)
+   * @returns {Promise<void>}
+   */
+  async claim(debtor, creditor, amount) {
+    if (!debtor.alive || !creditor.alive || amount <= 0) return;
+    if (await this.useAngel(debtor, { reason: 'claim', amount, target: creditor.id })) return;
+    if (await this.pay(debtor, amount, creditor)) this.log('log.claim', { player: debtor.id, target: creditor.id, amount });
+  }
+
+  /**
+   * 플레이어에게 자기 별 하나를 골라 기지를 짓거나 기지를 한 번 증축할지 묻고, 고르면 그 비용을 받고 짓는다. (하지 않아도 된다.)
+   * 기지가 없는 별을 고르면 기지를 짓고, 기지가 있는 별을 고르면 그 기지를 한 번 증축한다. 둘 가운데 하나만, 한 번만 한다.
+   * 그 별에 가지 않고도 짓게 해 주는 것이며, 지구에 도착했을 때와 견우성·직녀성의 두 주인이 지구에서 만났을 때 쓴다.
+   * 비용을 낼 수 있고 더 지을 것이 남은 별만 선택지가 되며, 그런 별이 없으면 묻지 않는다. (끝까지 증축한 별은 선택지가 아니다.)
+   * @param {Object} player 지을 플레이어
+   * @param {string} reason 고르는 사유 (earth : 지구에 도착함, reunion : 견우성과 직녀성의 주인이 만남)
+   * @returns {Promise<void>}
+   */
+  async offerBuild(player, reason) {
+    let options = [];
+    if (!player.alive) return;
+    // 가진 별 가운데 지금 지을 수 있는 것(기지 또는 증축)이 있는 별을 모은다.
+    for (let index of this.stars(player)) {
+      if (this.buildOptions(player, index).length > 0) options.push(index);
+    }
+    let index = await this.pick(player, reason, options, true);
+    if (index === null) return;
+    let kind = this.buildOptions(player, index)[0];
+    let cost = this.buildCost(index, kind);
+    player.cash -= cost;
+    this.state.lands[index][kind]++;
+    await this.handover(player, BANK, cost);
+    this.log(this.course.logs.built[kind] || 'log.build', { player: player.id, tile: index, building: kind, amount: cost });
+  }
+
+  /**
+   * 견우성과 직녀성 모두 주인이 새로 생겼으면 두 주인을 지구(출발지)에서 만나게 한다.
+   * 두 주인은 곧바로 지구로 이동하여(블랙홀에 갇혀 있어도 탈출한다.) 월급을 받고, 각자 가진 별 가운데 하나를 골라 기지를 짓거나 증축할 수 있다. (비용을 내며, 하지 않아도 된다.)
+   * 이것이 곧 지구에 도착했을 때의 건설이므로(offerBuild), 지구에 도착한 효과(visit)를 따로 또 적용하지는 않는다.
+   * 땅의 주인이 바뀌는 일을 하기 전에 두 별 모두 주인이 있었는지(met)를 구해 두었다가, 바뀐 뒤에 이 메소드에 넘긴다.
+   * @param {boolean} met 주인이 바뀌기 전에 이미 두 별 모두 주인이 있었는지 여부
+   * @returns {Promise<void>}
+   */
+  async reunite(met) {
+    let owners = [];
+    if (met || !this.paired()) return;
+    // 두 별의 주인을 모은다.
+    for (let id of LOVERS) owners.push(this.state.players[this.state.lands[this.tiles[id]].owner]);
+    await this.announce('log.reunion', { player: owners[0].id, target: owners[1].id });
+    // 두 주인을 차례로 지구로 옮기고 월급을 준다.
+    for (let owner of owners) {
+      owner.island = 0;
+      await this.moveTo(owner, this.course.start, false);
+      await this.paySalary(owner);
+    }
+    // 두 주인에게 차례로, 자기 별 가운데 하나에 기지를 짓거나 증축할지 묻는다.
+    for (let owner of owners) await this.offerBuild(owner, 'reunion');
+  }
+
+  /**
+   * 블랙홀에서 3턴 째에 풀려난 뒤 굴린 주사위의 합이 모자라, 가진 땅 하나를 골라 은행에 반납한다. (돌려받는 돈은 없다.)
+   * 가진 땅이 없으면 아무 일도 없다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<void>}
+   */
+  async surrender(player) {
+    let index = await this.pick(player, 'blackhole', this.owned(player), false);
+    if (index === null) return;
+    this.vacate(index);
+    await this.announce('log.surrender', { player: player.id, tile: index });
+  }
+
+  /**
+   * 텔레파시 카드 "견우와 직녀"를 이행한다. 견우성과 직녀성 가운데 주인이 없고 자신이 가질 수 있는 별 하나를 골라 그곳으로 이동하여 무료로 얻는다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardLovers(player, id) {
+    let options = [];
+    // 두 별 가운데 주인이 없고 가질 수 있는 별을 모은다.
+    for (let name of LOVERS) {
+      let index = this.tiles[name];
+      if (this.state.lands[index].owner === null && this.canOwn(player, index)) options.push(index);
+    }
+    let index = await this.pick(player, 'lovers', options, false);
+    if (index === null) {
+      this.idle(player, id);
+      return;
+    }
+    let met = this.paired();
+    await this.moveTo(player, index, true);
+    this.state.lands[index].owner = player.id;
+    await this.announce('log.freeLand', { player: player.id, tile: index });
+    await this.reunite(met);
+  }
+
+  /**
+   * 텔레파시 카드 "우주파티 초대권"을 이행한다. 다른 플레이어 한 명을 골라 화성으로 보낸다. (월급 없음)
+   * 보내진 플레이어는 블랙홀에 갇혀 있었어도 풀려나며, 화성에 도착한 것으로 처리한다. (구매, 이용료 지불 등)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardParty(player, coupon, id) {
+    let options = [];
+    let index = this.tiles[coupon.target];
+    // 보낼 수 있는 다른 플레이어의 번호를 모은다.
+    for (let rival of this.rivals(player)) options.push(rival.id);
+    if (options.length === 0) {
+      this.idle(player, id);
+      return;
+    }
+    let answer = await this.decide(player, { type: 'target', reason: 'party', options, index, card: id });
+    let choice = answer === null || answer === undefined || answer === '' ? NaN : Number(answer);
+    let guest = this.state.players[options.includes(choice) ? choice : options[0]];
+    this.log('log.party', { player: player.id, target: guest.id });
+    guest.island = 0;
+    await this.moveTo(guest, index, false);
+    await this.arrive(guest);
+  }
+
+  /**
+   * 텔레파시 카드 "뉴런의 골짜기"를 이행한다. 원하는 뉴런의 골짜기 칸으로 이동하여(출발지를 지나면 월급을 받는다.) 뉴런의 골짜기 카드를 뽑는다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @returns {Promise<void>}
+   */
+  async cardValley(player) {
+    let options = [];
+    // 뉴런의 골짜기 카드 칸을 모은다.
+    for (let index = 0; index < BOARD_SIZE; index++) {
+      if (this.board[index].type === 'neuron') options.push(index);
+    }
+    await this.moveTo(player, await this.pick(player, 'valley', options, false), true);
+    await this.arrive(player);
+  }
+
+  /**
+   * 텔레파시 카드 "타임머신 수리"를 이행한다. 타임머신의 주인에게서 수리비를 받는다. 주인이 없으면 은행에서 받고, 자신이 주인이면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardMachineFix(player, coupon, id) {
+    let owner = this.state.lands[this.tiles.timemachine].owner;
+    if (owner === null) await this.gain(player, this.money(coupon.amount));
+    else if (owner === player.id) this.idle(player, id);
+    else await this.claim(this.state.players[owner], player, this.money(coupon.amount));
+  }
+
+  /**
+   * 별에 지어진 기지의 값(기지 건설비에 증축한 횟수만큼의 증축 비용을 더한 것)을 구한다. 기지를 잃을 때의 손해의 크기로 쓴다.
+   * @param {number} index 별의 칸 번호
+   * @returns {number} 기지의 값 (원). 기지가 없으면 0
+   */
+  baseWorth(index) {
+    let land = this.state.lands[index];
+    return land.base > 0 ? this.buildCost(index, 'base') + this.buildCost(index, 'annex') * land.annex : 0;
+  }
+
+  /**
+   * 텔레파시 카드 "우주기지 반납"과 "우주해적 출몰"을 이행한다. 자신의 기지 가운데 하나를 골라 반납한다. 천사의 빛으로 면제받을 수 있다.
+   * 증축은 기지를 키운 것이어서 기지와 함께 사라진다. (증축한 기지도 기지 하나이다.)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardBaseReturn(player, id) {
+    let options = this.bases(player);
+    let least = Infinity;
+    if (options.length === 0) {
+      this.idle(player, id);
+      return;
+    }
+    // 잃게 되는 기지의 값(증축 비용 포함) 가운데 가장 싼 것을 손해의 크기로 삼는다.
+    for (let index of options) least = Math.min(least, this.baseWorth(index));
+    if (await this.useAngel(player, { reason: 'base', amount: least })) return;
+    let index = await this.pick(player, 'basereturn', options, false);
+    this.state.lands[index].base = 0;
+    this.state.lands[index].annex = 0;
+    await this.announce('log.baseLost', { player: player.id, tile: index });
+  }
+
+  /**
+   * 텔레파시 카드 "역추진"을 이행한다. 주사위 1개를 굴려 그 눈만큼 뒤로 이동하고, 도착한 칸의 효과를 적용한다.
+   * 뒤로 가는 것이므로 지구를 지나거나 지구에 멈춰도 월급은 받지 않는다. (지구에 멈추면 그 칸의 효과인 기지 건설·증축은 할 수 있다.)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @returns {Promise<void>}
+   */
+  async cardReverse(player) {
+    let steps = await this.cast(player, 1);
+    this.log('log.reverse', { player: player.id, n: steps });
+    await this.moveBack(player, steps);
+    await this.arrive(player);
+  }
+
+  /**
+   * 텔레파시 카드 "우주왕복 초대권"을 이행한다. 보드를 한 바퀴 돌아 제자리로 돌아오며, 지구를 지날 때 월급을, 우주조난기지를 지날 때 모인 기금을 받는다.
+   * 제자리에 돌아와서는 그 칸의 효과를 다시 적용하지 않는다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @returns {Promise<void>}
+   */
+  async cardRoundTrip(player) {
+    this.log('log.roundtrip', { player: player.id });
+    // 보드의 칸 수만큼 한 칸씩 빠르게 전진한다.
+    for (let count = 0; count < BOARD_SIZE; count++) {
+      player.position = (player.position + 1) % BOARD_SIZE;
+      await this.call('step', player, true);
+      if (player.position === this.course.start) await this.paySalary(player);
+      if (player.position === this.course.fund) await this.collectFund(player);
+    }
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "하위헌스의 암호문"을 이행한다. 토성으로 가서, 주인이 남이면 주사위 1개씩을 굴려 겨룬다. (눈이 같으면 다시 굴린다.)
+   * 자신의 눈이 더 크면 토성을 기지째 빼앗고(주인은 천사의 빛으로 취소할 수 있다.), 주인의 눈이 더 크면 이용료를 낸다.
+   * 주인이 없거나 자신이 주인이면 보통 도착한 것처럼 처리한다. (구매 또는 기지 건설)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @returns {Promise<void>}
+   */
+  async cardHuygens(player, coupon) {
+    let index = this.tiles[coupon.target];
+    let land = this.state.lands[index];
+    await this.moveTo(player, index, true);
+    if (land.owner === null || land.owner === player.id) {
+      await this.arrive(player);
+      return;
+    }
+    let owner = this.state.players[land.owner];
+    let rolls = await this.duel(player, owner, true);
+    if (rolls[0] < rolls[1]) {
+      this.log('log.stealFail', { player: player.id, target: owner.id, tile: index });
+      await this.payToll(player, index);
+      return;
+    }
+    if (await this.useAngel(owner, { reason: 'steal', amount: this.value(index), index, target: player.id })) return;
+    land.owner = player.id;
+    await this.announce('log.steal', { player: player.id, target: owner.id, tile: index });
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "아폴로 계획"을 이행한다. 달로 이동하여 보통 도착한 것처럼 처리한 뒤(이용료 지불, 구매 등), 지구로 돌아와 월급을 받는다.
+   * 달로 가는 길에 출발지를 지나는 것으로는 월급을 받지 않으며, 달에서 지구로는 뒤로 이동한다.
+   * 지구에 멈추는 것이므로 월급을 받은 뒤 지구에 도착한 효과(기지 건설)도 적용한다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @returns {Promise<void>}
+   */
+  async cardApollo(player, coupon) {
+    await this.moveTo(player, this.tiles[coupon.target], false);
+    await this.arrive(player);
+    if (!player.alive) return;
+    await this.moveBack(player, (player.position - this.course.start + BOARD_SIZE) % BOARD_SIZE);
+    await this.paySalary(player);
+    await this.arrive(player);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "뉴턴의 만유인력의 법칙"을 이행한다. 진행 방향으로 가장 가까운, 주인이 없는 별로 이동하여(월급 없음) 보통 도착한 것처럼 처리한다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardNewton(player, id) {
+    // 현재 위치의 다음 칸부터 한 바퀴를 살펴 처음 만나는 주인 없는 별로 간다.
+    for (let step = 1; step < BOARD_SIZE; step++) {
+      let index = (player.position + step) % BOARD_SIZE;
+      if (this.board[index].type !== 'star' || this.state.lands[index].owner !== null) continue;
+      await this.moveTo(player, index, false);
+      await this.arrive(player);
+      return;
+    }
+    this.idle(player, id);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "애플시드의 개척정신"과 "스펙트럼 매직"을 이행한다. 기지가 없는 자기 별 하나를 골라 기지를 무료로 짓는다. (짓지 않아도 된다.)
+   * 스펙트럼 매직은 먼저 주사위 2개를 굴려 눈의 합이 정해진 값 이상이어야 한다. 기지를 지을 수 있는 별이 없으면 주사위도 굴리지 않는다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @param {number} need 필요한 주사위 눈의 합 (0 이면 주사위를 굴리지 않는다.)
+   * @returns {Promise<void>}
+   */
+  async cardFreeBase(player, id, need) {
+    let options = this.bare(player);
+    if (options.length === 0) {
+      this.idle(player, id);
+      return;
+    }
+    if (need > 0 && (await this.cast(player, 2)) < need) {
+      this.log('log.spectrumFail', { player: player.id, n: need });
+      return;
+    }
+    let index = await this.pick(player, 'freebase', options, true);
+    if (index === null) return;
+    this.state.lands[index].base = 1;
+    await this.announce('log.freeBase', { player: player.id, tile: index });
+  }
+
+  /**
+   * 두 플레이어의 별을 기지째 서로 교환한다. 한 플레이어가 견우성과 직녀성을 함께 갖게 되는 교환은 취소되며, 상대는 천사의 빛으로 교환을 취소할 수 있다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {number} mine 카드를 뽑은 플레이어가 내줄 별의 칸 번호
+   * @param {Object} rival 상대 플레이어
+   * @param {number} theirs 상대가 내줄 별의 칸 번호
+   * @returns {Promise<void>}
+   */
+  async swapStars(player, mine, rival, theirs) {
+    if (this.breaksPair([[mine, rival.id], [theirs, player.id]])) {
+      this.log('log.loversCancel', { player: player.id });
+      return;
+    }
+    if (await this.useAngel(rival, { reason: 'swap', amount: Math.max(0, this.value(theirs) - this.value(mine)), index: theirs, other: mine, target: player.id })) return;
+    this.state.lands[mine].owner = rival.id;
+    this.state.lands[theirs].owner = player.id;
+    await this.announce('log.swap', { player: player.id, tile: mine, target: rival.id, other: theirs });
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "아인슈타인의 상대성 이론"을 이행한다. 다른 플레이어들이 주사위 1개씩을 굴려, 눈이 가장 낮은 플레이어의 가장 비싼 별과 자신의 가장 싼 별을 교환한다.
+   * 자신이나 그 플레이어에게 별이 없으면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardEinstein(player, id) {
+    let mine = this.extreme(this.stars(player), false);
+    let rivals = this.rivals(player);
+    if (mine < 0 || rivals.length === 0) {
+      this.idle(player, id);
+      return;
+    }
+    let rival = await this.contest(rivals, false);
+    let theirs = this.extreme(this.stars(rival), true);
+    if (theirs < 0) this.idle(player, id);
+    else await this.swapStars(player, mine, rival, theirs);
+  }
+
+  /**
+   * 자기 별 하나를 내주고 대신 얻을 수 있는 주인 없는 별의 목록을 구한다. 얻으면 견우성과 직녀성을 함께 갖게 되는 별은 뺀다. (초능력 카드)
+   * @param {Object} player 플레이어
+   * @param {number} give 내줄 별의 칸 번호
+   * @returns {number[]} 얻을 수 있는 별의 칸 번호 목록
+   */
+  takeOptions(player, give) {
+    let list = [];
+    // 주인이 없는 별 가운데 규칙에 어긋나지 않는 것을 모은다.
+    for (let index = 0; index < BOARD_SIZE; index++) {
+      if (this.board[index].type !== 'star' || this.state.lands[index].owner !== null) continue;
+      if (!this.breaksPair([[give, null], [index, player.id]])) list.push(index);
+    }
+    return list;
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "초능력"을 이행한다. 자기 별 하나와 주인 없는 별 하나를 골라 교환한다. (반드시 교환한다.)
+   * 기지는 별에 그대로 남으므로, 내준 별의 기지는 나중에 그 별을 사는 플레이어가 함께 얻는다. 자기 별이 없거나 주인 없는 별이 없으면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardPsychic(player, id) {
+    let gives = [];
+    // 자기 별 가운데 대신 얻을 별이 하나라도 있는 것을 모은다.
+    for (let index of this.stars(player)) {
+      if (this.takeOptions(player, index).length > 0) gives.push(index);
+    }
+    let give = await this.pick(player, 'give', gives, false);
+    if (give === null) {
+      this.idle(player, id);
+      return;
+    }
+    let take = await this.pick(player, 'take', this.takeOptions(player, give), false);
+    let met = this.paired();
+    this.state.lands[give].owner = null;
+    this.state.lands[take].owner = player.id;
+    await this.announce('log.swapFree', { player: player.id, tile: give, other: take });
+    await this.reunite(met);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "도플러 효과"를 이행한다. 자신의 별 개수가 다른 모든 플레이어보다 많으면 은행에 돈을 내고(천사의 빛으로 면제받을 수 있다.), 아니면 은행에서 돈을 받는다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @returns {Promise<void>}
+   */
+  async cardDoppler(player, coupon) {
+    if (!this.leadsStars(player)) {
+      await this.gain(player, this.money(coupon.gain));
+      return;
+    }
+    if (await this.useAngel(player, { reason: 'pay', amount: this.money(coupon.pay) })) return;
+    await this.payBank(player, this.money(coupon.pay));
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "조디악의 선물"을 이행한다. 주사위를 1개 또는 2개 굴려(플레이어가 고른다.) 나온 수에 해당하는 별자리로 이동한다. (월급 없음)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @returns {Promise<void>}
+   */
+  async cardZodiac(player) {
+    let count = Number(await this.decide(player, { type: 'dicecount' })) === 2 ? 2 : 1;
+    let index = this.tiles[ZODIAC[(await this.cast(player, count)) - 1]];
+    this.log('log.zodiac', { player: player.id, tile: index });
+    await this.moveTo(player, index, false);
+    await this.arrive(player);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "모라비트의 항법"을 이행한다. 원하는 칸으로 이동한다. (출발지를 지나도 월급이 없고, 출발지로 이동하면 월급을 받는다.)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @returns {Promise<void>}
+   */
+  async cardMoravec(player) {
+    let options = [];
+    // 지금 있는 칸을 뺀 모든 칸을 고를 수 있다.
+    for (let index = 0; index < BOARD_SIZE; index++) {
+      if (index !== player.position) options.push(index);
+    }
+    await this.warp(player, await this.pick(player, 'moravec', options, false));
+    await this.arrive(player);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "코페르니쿠스의 지동설"을 이행한다. 지구로 가서 월급을 받고 주사위를 한 번 더 굴린다.
+   * 자기 차례에 뽑았으면 도착한 칸의 처리를 모두 마친 뒤 주사위를 다시 굴리고, 남의 차례에 (카드의 효과로 이동하다가) 뽑았으면 그 자리에서 바로 굴려 이동한다.
+   * 다시 굴리기 전에 지구에 멈춘 것이므로, 지구에 도착한 효과(기지 건설)를 먼저 적용한다. (더블로 지구에 도착해 다시 굴리는 경우와 같다.)
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @returns {Promise<void>}
+   */
+  async cardCopernicus(player) {
+    await this.moveTo(player, this.course.start, true);
+    await this.arrive(player);
+    if (player === this.current) {
+      this.bonus = true;
+      return;
+    }
+    let dice = [this.rollDie(), this.rollDie()];
+    this.state.dice = dice;
+    this.log('log.bonusRoll', { player: player.id });
+    await this.call('dice', player, dice, null);
+    this.log('log.dice', { player: player.id, a: dice[0], b: dice[1], sum: dice[0] + dice[1] });
+    await this.moveBy(player, dice[0] + dice[1], false, true);
+    await this.arrive(player);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "케플러의 조화의 법칙"을 이행한다. 가진 별의 수에 비례한 칸 수만큼 앞으로 이동하여 도착한 칸의 효과를 적용한다. 별이 없으면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardKepler(player, coupon, id) {
+    let steps = this.stars(player).length * coupon.steps;
+    if (steps === 0) {
+      this.idle(player, id);
+      return;
+    }
+    this.log('log.kepler', { player: player.id, n: steps });
+    await this.moveBy(player, steps, true, true);
+    await this.arrive(player);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "샤프레이의 성단거리측정"을 이행한다. 현재 위치의 앞뒤 정해진 칸 수 안에 있는 별의 주인들에게서 측정료를 받는다.
+   * 별의 수와 관계없이 플레이어당 한 번만 받으며, 주인들은 천사의 빛으로 면제받을 수 있다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardShapley(player, coupon, id) {
+    let owners = [];
+    // 앞뒤 범위 안의 칸을 살펴, 다른 플레이어가 주인인 별의 주인을 한 번씩만 모은다.
+    for (let offset = -coupon.range; offset <= coupon.range; offset++) {
+      let index = (player.position + offset + BOARD_SIZE) % BOARD_SIZE;
+      let land = this.state.lands[index];
+      if (offset === 0 || this.board[index].type !== 'star' || land.owner === null || land.owner === player.id || owners.includes(land.owner)) continue;
+      owners.push(land.owner);
+    }
+    if (owners.length === 0) this.idle(player, id);
+    // 모은 주인마다 측정료를 받아낸다.
+    for (let owner of owners) await this.claim(this.state.players[owner], player, this.money(coupon.amount));
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "홈 볼트의 지적"을 이행한다. 다른 플레이어들이 주사위 1개씩을 굴려, 눈이 가장 낮은 플레이어의 가장 싼 땅을 은행에 반납시킨다.
+   * 그 플레이어는 천사의 빛으로 면제받을 수 있고, 가진 땅이 없으면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardHumboldt(player, id) {
+    let rivals = this.rivals(player);
+    let rival = rivals.length > 0 ? await this.contest(rivals, false) : null;
+    let index = rival ? this.extreme(this.owned(rival), false) : -1;
+    if (index < 0) {
+      this.idle(player, id);
+      return;
+    }
+    if (await this.useAngel(rival, { reason: 'land', amount: this.value(index), index })) return;
+    this.vacate(index);
+    await this.announce('log.landLost', { player: rival.id, tile: index });
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "뫼비우스의 띠"를 이행한다. 다른 플레이어들이 주사위 1개씩을 굴려 눈이 가장 높은 플레이어가 주사위 2개를 굴리고,
+   * 자신과 그 플레이어 모두 그 눈의 합만큼 앞으로 이동한다. (블랙홀에 갇혀 있어도 탈출하며, 출발지를 지나면 월급을 받는다.) 두 플레이어 모두 도착한 칸의 효과를 적용한다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardMobius(player, id) {
+    let rivals = this.rivals(player);
+    if (rivals.length === 0) {
+      this.idle(player, id);
+      return;
+    }
+    let partner = await this.contest(rivals, true);
+    let steps = await this.cast(partner, 2);
+    this.log('log.mobius', { player: player.id, target: partner.id, n: steps });
+    // 카드를 뽑은 플레이어부터 차례로 이동하고 도착한 칸의 효과를 적용한다.
+    for (let mover of [player, partner]) {
+      if (!mover.alive) continue;
+      mover.island = 0;
+      await this.moveBy(mover, steps, true, true);
+      await this.arrive(mover);
+    }
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "뒤바뀐 우주계약서"를 이행한다. 별이 가장 많은 다른 플레이어(여럿이면 무작위로 한 명)의 별과 자신의 별을 교환한다.
+   * 자신의 별은 고르고 상대의 별은 무작위로 뽑는다. 자신이나 다른 플레이어들에게 별이 없으면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardContract(player, id) {
+    let mine = this.stars(player);
+    let leaders = [];
+    let most = 0;
+    // 별이 가장 많은 다른 플레이어들을 모은다.
+    for (let rival of this.rivals(player)) {
+      let count = this.stars(rival).length;
+      if (count > most) leaders = [];
+      if (count > 0 && count >= most) leaders.push(rival);
+      most = Math.max(most, count);
+    }
+    if (mine.length === 0 || leaders.length === 0) {
+      this.idle(player, id);
+      return;
+    }
+    let rival = leaders[Math.floor(this.random() * leaders.length)];
+    let pool = this.stars(rival);
+    let theirs = pool[Math.floor(this.random() * pool.length)];
+    await this.swapStars(player, await this.pick(player, 'give', mine, false), rival, theirs);
+  }
+
+  /**
+   * 뉴런의 골짜기 카드 "파스칼과 페르마의 확률"을 이행한다. 다른 플레이어의 별 하나를 골라 그곳으로 가서 주인과 주사위 1개씩을 굴린다.
+   * 자신의 눈이 더 크면 주인에게서 그 별의 이용료를 받고, 같거나 작으면 주인에게 정해진 금액을 낸다. (그 별의 이용료는 내지 않는다.)
+   * 어느 쪽이든 내는 쪽은 천사의 빛으로 면제받을 수 있다. 다른 플레이어의 별이 없으면 아무 일도 없다.
+   * @param {Object} player 카드를 뽑은 플레이어
+   * @param {Object} coupon 카드 정보
+   * @param {string} id 카드 식별자
+   * @returns {Promise<void>}
+   */
+  async cardPascal(player, coupon, id) {
+    let options = [];
+    // 다른 플레이어가 주인인 별을 모은다.
+    for (let index = 0; index < BOARD_SIZE; index++) {
+      let land = this.state.lands[index];
+      if (this.board[index].type === 'star' && land.owner !== null && land.owner !== player.id) options.push(index);
+    }
+    let index = await this.pick(player, 'pascal', options, false);
+    if (index === null) {
+      this.idle(player, id);
+      return;
+    }
+    let owner = this.state.players[this.state.lands[index].owner];
+    await this.moveTo(player, index, true);
+    let rolls = await this.duel(player, owner, false);
+    if (rolls[0] > rolls[1]) {
+      this.log('log.pascalWin', { player: player.id, target: owner.id, tile: index });
+      await this.claim(owner, player, this.toll(index));
+    } else {
+      this.log('log.pascalLose', { player: player.id, target: owner.id });
+      await this.claim(player, owner, this.money(coupon.amount));
+    }
+  }
+
+  /**
+   * 우주여행 코스에서 시간여행에 탑승한 플레이어의 차례를 진행한다. 주사위 2개를 굴려 눈의 합이 SAFE_SUM 이상이면 원하는 칸을 골라 이동하고
+   * (가는 길에 출발지를 지나도 월급이 없고, 지구에 도착하면 월급을 받는다.), 모자라면 TIME_SLIP 칸 앞으로 이동한다. 이 굴림의 더블은 효과가 없다.
+   * @param {Object} player 플레이어
+   * @returns {Promise<boolean>} 카드의 효과로 주사위를 한 번 더 굴려야 하면 true
+   */
+  async playTimeTravel(player) {
+    let thrown = this.throwDice(player, true);
+    let dice = thrown.dice;
+    this.bonus = false;
+    this.state.dice = dice;
+    player.boarded = false;
+    player.direct = false;
+    await this.call('dice', player, dice, thrown.faces);
+    this.log('log.dice', { player: player.id, a: dice[0], b: dice[1], sum: dice[0] + dice[1] });
+    if (dice[0] + dice[1] >= SAFE_SUM) {
+      let options = [];
+      // 지금 있는 칸을 뺀 모든 칸을 고를 수 있다.
+      for (let index = 0; index < BOARD_SIZE; index++) {
+        if (index !== player.position) options.push(index);
+      }
+      let target = await this.pick(player, 'timetravel', options, false);
+      this.log('log.timeGo', { player: player.id, tile: target });
+      await this.warp(player, target);
+    } else {
+      this.log('log.timeSlip', { player: player.id, n: TIME_SLIP });
+      await this.moveBy(player, TIME_SLIP, false, true);
+    }
+    await this.arrive(player);
+    return this.takeBonus(player);
+  }
+}
+
+/**
+ * 코스별 규칙 엔진의 클래스이다. 키는 COURSES 의 키와 같다. 코스를 더하면 그 코스의 엔진 클래스를 만들어 여기에도 더한다.
+ * @type {Object<string, typeof HellmarbleGame>}
+ */
+const ENGINES = { world: HellmarbleWorldGame, space: HellmarbleSpaceGame };
+
+/**
+ * 리그가 진행되는 코스의 엔진 클래스를 구한다.
+ * @param {string} league 리그 식별자
+ * @returns {typeof HellmarbleGame} 엔진 클래스 (모르는 리그이면 세계여행 코스의 엔진)
+ */
+function engineOf(league) {
+  return ENGINES[Object.hasOwn(LEAGUES, league) ? LEAGUES[league].course : 'world'];
+}
+
 /* ==========================================================================
  * 9. 화면 (애플리케이션)
  * ========================================================================== */
@@ -4192,6 +7408,8 @@ export class HellmarbleApp extends HellmarbleHost {
     this.lotsMoved = false;
     this.couponGate = null;
     this.request = null;
+    this.castDice = null;
+    this.pickOptions = null;
     this.itemView = null;
     this.tools = [];
     this.toolAbort = null;
@@ -4364,7 +7582,7 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'game.menu': this.answer('', QUIT); break;
       case 'game.forfeit': this.confirmForfeit(); break;
       case 'game.tile': this.togglePopover(Number(value)); break;
-      case 'game.travel': this.answer('travel', Number(value)); break;
+      case 'game.travel': this.answer(this.mode === 'pick' ? 'pick' : 'travel', Number(value)); break;
       case 'popover.close': this.closePopover(); break;
       case 'coupon.close': this.closeCoupon(); break;
       default:
@@ -4446,12 +7664,38 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
+   * 지금 화면이 다루는 코스의 구성을 구한다. 게임 중에는 그 게임의 코스이고, 게임 밖에서는 세계여행 코스이다.
+   * @returns {HellmarbleCourse} 코스의 구성
+   */
+  courseNow() {
+    return this.game ? this.game.course : COURSES.world;
+  }
+
+  /**
    * 칸의 표시 이름을 구한다.
    * @param {number} index 칸 번호
    * @returns {string} 칸 이름
    */
   tileName(index) {
-    return this.t('tile.' + BOARD[index].id);
+    return this.t('tile.' + this.courseNow().board[index].id);
+  }
+
+  /**
+   * 카드(비밀쿠폰, 텔레파시 카드, 뉴런의 골짜기 카드)의 문구 키 앞부분을 구한다. 비밀쿠폰은 'coupon.<식별자>', 우주여행 코스의 카드는 'card.<식별자>' 이다.
+   * @param {string} id 카드 식별자
+   * @returns {string} 문구 키의 앞부분
+   */
+  cardKey(id) {
+    return (Object.hasOwn(COUPONS, id) ? 'coupon.' : 'card.') + id;
+  }
+
+  /**
+   * 카드의 표시 이름을 구한다.
+   * @param {string} id 카드 식별자
+   * @returns {string} 카드 이름
+   */
+  cardTitle(id) {
+    return this.t(this.cardKey(id) + '.title');
   }
 
   /* ------------------------------ 대화 상자 ------------------------------ */
@@ -4698,7 +7942,7 @@ export class HellmarbleApp extends HellmarbleHost {
       }
       this.storage.write('slot.' + (index + 1), normalizeSave(data, this.t('name.default'), true));
     } catch (error) {
-      failure = this.t(error && error.message === 'parse' ? 'import.failParse' : 'import.failData');
+      failure = this.t(error && error.message === 'parse' ? 'import.failParse' : error && error.message === 'version' ? 'import.failVersion' : 'import.failData');
     }
     if (failure !== '') await this.dialog({ title: this.t('import.failTitle'), text: failure, buttons: [{ label: this.t('common.ok'), value: 'ok', primary: true }] });
     if (this.screen === 'slots') this.showSlots('load');
@@ -4756,7 +8000,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let input = this.root.querySelector('.hm-input');
     let name = (input ? input.value : '').trim().slice(0, NAME_LIMIT) || this.t('name.default');
     this.slotIndex = this.pendingSlot;
-    this.slot = { name, money: LOBBY_MONEY, items: emptyItems(), equips: starterEquips(), charms: starterCharms(), equipped: { ...DEFAULT_LOOK, charm: STARTER_CHARM }, game: null, updated: 0 };
+    this.slot = { version: SAVE_VERSION, name, money: LOBBY_MONEY, items: emptyItems(), equips: starterEquips(), charms: starterCharms(), equipped: { ...DEFAULT_LOOK, charm: STARTER_CHARM }, game: null, updated: 0 };
     this.saveSlot();
     this.showLobby();
   }
@@ -4770,14 +8014,23 @@ export class HellmarbleApp extends HellmarbleHost {
     this.screen = 'lobby';
     let totals = this.itemTotals('lobby');
     let look = this.slot.equipped;
-    let cards = [];
+    let groups = [];
     let notes = [el('p', { class: 'hm-note', text: this.t('lobby.note') })];
-    // 지금 보유 금액으로 보이는 리그마다 참여 카드를 만들고, 승리 보상이 정해진 리그는 안내를 덧붙인다.
-    for (let id in LEAGUES) {
-      if (!this.leagueOpen(id)) continue;
-      let league = LEAGUES[id];
-      cards.push(this.buildLeagueCard(id));
-      if (league.reward !== null && league.hideFrom !== null) notes.push(el('p', { class: 'hm-note hm-league-note', text: this.t('lobby.whiteNote', { league: this.t('league.' + id), limit: this.money(league.hideFrom), cash: this.money(league.cash), reward: this.money(league.reward) }) }));
+    // 코스마다 그 코스로 진행되는 리그를 묶어 보여준다.
+    for (let course in COURSES) {
+      let cards = [];
+      // 지금 보유 금액으로 보이는 리그마다 참여 카드를 만들고, 승리 보상이 정해진 리그는 안내를 덧붙인다.
+      for (let id in LEAGUES) {
+        let league = LEAGUES[id];
+        if (league.course !== course || !this.leagueOpen(id)) continue;
+        cards.push(this.buildLeagueCard(id));
+        if (league.reward !== null && league.hideFrom !== null) notes.push(el('p', { class: 'hm-note hm-league-note', text: this.t('lobby.whiteNote', { league: this.t('league.' + id), limit: this.money(league.hideFrom), cash: this.money(league.cash), reward: this.money(league.reward) }) }));
+      }
+      if (cards.length === 0) continue;
+      groups.push(el('section', { class: 'hm-course', data: { course } }, [
+        el('h2', { class: 'hm-course-name', text: this.t('course.' + course) }),
+        el('div', { class: 'hm-leagues', style: { '--hm-league-count': cards.length } }, cards),
+      ]));
     }
     this.mount(el('div', { class: 'hm-page' }, [
       el('div', { class: 'hm-card hm-lobby' }, [
@@ -4791,7 +8044,7 @@ export class HellmarbleApp extends HellmarbleHost {
           el('p', { class: 'hm-look' + (look.color && look.shape ? '' : ' hm-look-missing') }, [this.buildLookToken(look), el('span', { class: 'hm-look-text', text: this.t('lobby.look') + ' : ' + this.lookText(look) })]),
           el('p', { class: 'hm-item-total', text: '🎒 ' + this.t('item.owned') + ' : ' + (totals.count > 0 ? this.t('item.total', totals) : this.t('item.none')) }),
         ]),
-        el('div', { class: 'hm-leagues', style: { '--hm-league-count': cards.length } }, cards),
+        el('div', { class: 'hm-courses' }, groups),
         ...notes,
         el('div', { class: 'hm-lobby-buttons' }, [
           button(this.t('lobby.shop'), 'lobby.shop'),
@@ -4874,12 +8127,15 @@ export class HellmarbleApp extends HellmarbleHost {
       await this.dialog({ title: this.t('lobby.shortTitle'), text: this.t('lobby.short', params), buttons: [{ label: this.t('common.ok'), value: 'ok', primary: true }] });
       return;
     }
-    let question = this.t(fee > 0 ? 'lobby.confirm' : 'lobby.confirmFree', params) + (league.items ? '' : '\n' + this.t('lobby.noItems'));
+    let stays = false;
+    // 이 리그에서 쓸 수 없어 대기실에 남게 되는 아이템이 있는지 살핀다.
+    for (let item in this.slot.items) stays = stays || (this.slot.items[item] > 0 && !itemFits(item, id));
+    let question = this.t(fee > 0 ? 'lobby.confirm' : 'lobby.confirmFree', params) + (league.items ? (stays ? '\n' + this.t('lobby.otherItems') : '') : '\n' + this.t('lobby.noItems'));
     if (!(await this.confirm(this.t('lobby.confirmTitle'), question))) return;
     if (this.screen !== 'lobby' || !this.leagueOpen(id)) return;
     this.slot.money -= fee;
     this.slot.game = HellmarbleGame.create({ league: id, name: this.slot.name, items: this.slot.items, look: this.slot.equipped, charm: this.slot.equipped.charm });
-    if (league.items) this.slot.items = emptyItems();
+    this.slot.items = splitItems(this.slot.items, id).left;
     this.saveSlot();
     this.showGame(true);
   }
@@ -4991,6 +8247,7 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 부적을 설명하는 문구를 구한다. 더블 부적에는 보통 주사위에서 더블이 나올 확률(6분의 1)에 부적의 값을 더한 확률도 알려준다.
+   * 건물 부적의 자세한 설명에는 우주여행 코스에서 기지를 지어 주는 효과로 바뀐다는 것과 그 확률을 덧붙인다.
    * @param {string} id 부적 식별자
    * @param {string} part 문구의 종류 ('brief', 'description', 'when')
    * @returns {string} 문구
@@ -4999,7 +8256,8 @@ export class HellmarbleApp extends HellmarbleHost {
     let charm = CHARMS[id];
     let params = { chance: charm.chance, percent: charm.percent, total: Math.round((100 / 6 + charm.chance) * 10) / 10, building: charm.building ? this.t('building.' + charm.building) : '' };
     if (part === 'when') return this.t('charm.when');
-    return this.t('charm.' + charm.effect + '.' + (part === 'description' && charm.revisit ? 'revisit' : part), params);
+    let text = this.t('charm.' + charm.effect + '.' + (part === 'description' && charm.revisit ? 'revisit' : part), params);
+    return part === 'description' && charm.base ? text + ' ' + this.t('charm.build.space', { base: charm.base }) : text;
   }
 
   /**
@@ -5075,8 +8333,28 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'charm': return this.t('charm.limit');
       case 'ticket': return this.t('ticket.limit');
       case 'look': return this.t(EQUIPS[id].price > 0 ? 'equip.limit.extra' : 'equip.limit.basic');
-      default: return itemsOfLimit(ITEMS[id].limit).length > 1 ? this.t('item.limit.shared', { items: this.itemGroupText(ITEMS[id].limit) }) : this.t('item.limit.single');
+      default:
+        if (limitUses(ITEMS[id].limit) > 1) return this.t('item.limit.times', { n: limitUses(ITEMS[id].limit) });
+        return itemsOfLimit(ITEMS[id].limit).length > 1 ? this.t('item.limit.shared', { items: this.itemGroupText(ITEMS[id].limit) }) : this.t('item.limit.single');
     }
+  }
+
+  /**
+   * 아이템을 쓸 수 있는 코스를 설명하는 문구를 구한다. (상세 팝업의 "사용 코스")
+   * @param {string} id 소모형 아이템의 식별자
+   * @returns {string} 코스의 이름. 어느 코스에서나 쓸 수 있으면 그렇다고 알린다.
+   */
+  itemCourseText(id) {
+    return this.t(ITEMS[id].course ? 'course.' + ITEMS[id].course : 'item.course.any');
+  }
+
+  /**
+   * 게임 중인 사용자가 이번 게임에서 아이템을 몇 번 더 쓸 수 있는지 구한다. (가진 수량과는 관계없이 사용 제한 묶음의 남은 횟수이다.)
+   * @param {string} id 소모형 아이템의 식별자
+   * @returns {number} 남은 사용 횟수
+   */
+  itemUsesLeft(id) {
+    return Math.max(0, limitUses(ITEMS[id].limit) - this.game.state.players[0].usedItems[ITEMS[id].limit]);
   }
 
   /**
@@ -5132,9 +8410,12 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {string} 사용할 수 없는 이유를 설명하는 문구. 지금 사용할 수 있으면 빈 문자열
    */
   itemBlock(id) {
-    let player = this.game.state.players[0];
     let item = ITEMS[id];
-    if (player.usedItems[item.limit]) return itemsOfLimit(item.limit).length > 1 ? this.t('item.block.shared', { items: this.itemGroupText(item.limit) }) : this.t('item.block.spent');
+    let uses = limitUses(item.limit);
+    if (this.itemUsesLeft(id) < 1) {
+      if (uses > 1) return this.t('item.block.spentTimes', { n: uses });
+      return itemsOfLimit(item.limit).length > 1 ? this.t('item.block.shared', { items: this.itemGroupText(item.limit) }) : this.t('item.block.spent');
+    }
     if (item.use !== 'turn') return this.t('item.block.ask');
     if (this.mode !== 'roll') return this.t('item.block.turn');
     return '';
@@ -5428,7 +8709,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let kind = this.itemKind(id);
     let owned = this.itemStock(view.source, id);
     let worn = this.itemWorn(view.source, id);
-    let spent = kind === 'item' && view.source === 'game' && this.game.state.players[0].usedItems[ITEMS[id].limit];
+    let spent = kind === 'item' && view.source === 'game' && this.itemUsesLeft(id) < 1;
     let meta = [];
     if (view.source === 'shop') meta.push(el('span', { class: 'hm-item-price', text: this.money(view.tab === 'sell' ? this.itemResale(id) : this.itemPrice(id)) }));
     if (kind === 'charm') meta.push(el('span', { class: 'hm-item-flag hm-grade-tag hm-grade-' + CHARMS[id].grade, text: this.gradeName(id) }));
@@ -5522,6 +8803,7 @@ export class HellmarbleApp extends HellmarbleHost {
     let trade = null;
     let reason = '';
     if (kind === 'ticket') facts.push(el('dt', { text: this.t('ticket.odds') }), el('dd', { class: 'hm-num', text: this.drawOdds() }));
+    if (kind === 'item') facts.push(el('dt', { text: this.t('item.info.course') }), el('dd', { text: this.itemCourseText(id) }));
     if (shop) {
       let most = this.itemLimit(view);
       let label = kind === 'ticket' ? this.t('ticket.draw') : kind === 'look' ? this.t('store.tab.' + view.tab) : this.t('store.' + view.tab, { n: view.quantity });
@@ -5540,9 +8822,10 @@ export class HellmarbleApp extends HellmarbleHost {
     if (kind === 'charm' && view.source === 'lobby') buttons.push(button(this.t(worn ? 'charm.unequip' : 'equip.equip'), worn ? 'items.unequip' : 'items.equip', undefined, worn ? '' : 'hm-primary'));
     if (game && kind === 'charm') reason = this.t('charm.gameOnly');
     if (game && kind === 'item') {
-      let spent = this.game.state.players[0].usedItems[ITEMS[id].limit];
+      let left = this.itemUsesLeft(id);
+      let state = left < 1 ? this.t('item.state.spent') : limitUses(ITEMS[id].limit) > 1 ? this.t('item.state.left', { n: left }) : this.t('item.state.ready');
       reason = this.itemBlock(id);
-      rows.push(this.infoRow(this.t('item.info.state'), this.t(spent ? 'item.state.spent' : 'item.state.ready'), true));
+      rows.push(this.infoRow(this.t('item.info.state'), state, true));
     }
     if (game && kind === 'item' && ITEMS[id].use === 'turn') {
       let use = button(this.t('item.use'), 'items.use', undefined, 'hm-primary');
@@ -5625,7 +8908,7 @@ export class HellmarbleApp extends HellmarbleHost {
     this.flight = false;
     this.cards = [];
     this.cardOrder = '';
-    this.game = new HellmarbleGame(this.slot.game, this);
+    this.game = HellmarbleGame.open(this.slot.game, this);
     this.tiles = [];
     this.lots = [];
     this.lotState = [];
@@ -5636,14 +8919,16 @@ export class HellmarbleApp extends HellmarbleHost {
       board.append(this.tiles[index].node);
     }
     board.append(this.buildCenter());
-    // 건물을 지을 수 있는 일반 도시마다, 건물이 세워질 터를 칸의 보드 안쪽에 만든다.
+    // 건물을 지을 수 있는 땅(일반 도시, 별)마다, 건물이 세워질 터를 칸의 보드 안쪽에 만든다.
     for (let index = 0; index < BOARD_SIZE; index++) {
-      this.lots.push(BOARD[index].type === 'city' ? this.buildLot(index) : null);
+      this.lots.push(this.game.board[index].cost ? this.buildLot(index) : null);
       if (this.lots[index]) board.append(this.lots[index]);
     }
     this.lotPairs = this.pairLots();
     this.lotsMoved = true;
-    this.mount(el('div', { class: 'hm-game' }, [el('div', { class: 'hm-board-wrap' }, [board]), this.buildSide()]));
+    this.castDice = null;
+    this.pickOptions = null;
+    this.mount(el('div', { class: 'hm-game hm-course-' + LEAGUES[this.game.state.league].course }, [el('div', { class: 'hm-board-wrap' }, [board]), this.buildSide()]));
     this.refresh();
     this.runGame(intro);
   }
@@ -5804,11 +9089,16 @@ export class HellmarbleApp extends HellmarbleHost {
     let before = this.lotState[index];
     if (!lot) return;
     let land = this.game.state.lands[index];
-    let key = land.owner === null ? '' : [land.owner, land.villa, land.building, land.hotel].join(':');
-    if (before && before.key === key) return;
+    let state = { key: String(land.owner), owner: land.owner };
     let houses = [];
-    // 건물 종류별로 지어진 개수만큼 건물을 세운다.
-    for (let kind of BUILDINGS) {
+    // 건물 종류별 개수를 모아, 건물 구성이 바뀌었는지 견줄 값을 만든다.
+    for (let kind of this.game.course.buildings) {
+      state[kind] = land[kind];
+      state.key += ':' + land[kind];
+    }
+    if (before && before.key === state.key) return;
+    // 건물 종류별로 지어진 개수만큼 건물을 세운다. (우주여행 코스에서는 주인이 없는 별에 기지가 남아 있을 수 있다.)
+    for (let kind of this.game.course.buildings) {
       // 같은 종류의 건물을 한 채씩 만든다.
       for (let count = 0; count < land[kind]; count++) {
         let fresh = Boolean(before) && before.owner === land.owner && count >= before[kind];
@@ -5816,9 +9106,10 @@ export class HellmarbleApp extends HellmarbleHost {
       }
     }
     lot.replaceChildren(...houses);
+    lot.classList.toggle('hm-lot-vacant', land.owner === null);
     this.lotsMoved = true;
     if (land.owner !== null) lot.style.setProperty('--hm-owner', this.styleOf(this.game.state.players[land.owner]).color);
-    this.lotState[index] = { key, owner: land.owner, villa: land.villa, building: land.building, hotel: land.hotel };
+    this.lotState[index] = state;
   }
 
   /**
@@ -5827,7 +9118,7 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {Object} 칸을 이루는 요소 묶음 { node, sub, owner, tokens }
    */
   buildTile(index) {
-    let tile = BOARD[index];
+    let tile = this.game.board[index];
     let place = placeTile(index);
     let node = el('button', {
       class: 'hm-tile hm-side-' + place.side + ' hm-type-' + tile.type,
@@ -5873,7 +9164,7 @@ export class HellmarbleApp extends HellmarbleHost {
       parts.dice,
       parts.status,
       el('div', { class: 'hm-controls' }, [parts.roll, parts.items, parts.menu, parts.forfeit]),
-      el('div', { class: 'hm-fund' }, [el('span', { text: ICONS.fund + ' ' + this.t('game.fund') }), parts.fund]),
+      el('div', { class: 'hm-fund' }, [el('span', { text: ICONS[this.game.course.fundIcon] + ' ' + this.t(this.game.course.words.fund) }), parts.fund]),
     ]);
     this.parts = parts;
     return parts.center;
@@ -6121,7 +9412,7 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {HTMLElement} 우주선 요소
    */
   buildShip() {
-    return el('span', { class: 'hm-ship', attrs: { role: 'img', 'aria-label': this.t('tile.space') } }, [
+    return el('span', { class: 'hm-ship', attrs: { role: 'img', 'aria-label': this.t(this.game.course.words.ship) } }, [
       el('span', { class: 'hm-ship-flame' }),
       el('span', { class: 'hm-ship-fin hm-ship-fin-left' }),
       el('span', { class: 'hm-ship-fin hm-ship-fin-right' }),
@@ -6137,12 +9428,14 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 가운데 영역의 주사위 두 개를 지정한 눈으로 그린다.
+   * 가운데 영역의 주사위를 지정한 눈으로 그린다. 보통은 두 개이고, 카드의 효과로 주사위를 하나만 굴렸을 때에는 하나만 그린다.
    * @param {number} first 첫째 주사위의 눈
-   * @param {number} second 둘째 주사위의 눈
+   * @param {number} [second] 둘째 주사위의 눈 (주사위가 하나이면 생략)
    */
   renderDice(first, second) {
-    this.parts.dice.replaceChildren(this.buildDie(first), this.buildDie(second));
+    let dice = [this.buildDie(first)];
+    if (second !== undefined) dice.push(this.buildDie(second));
+    this.parts.dice.replaceChildren(...dice);
   }
 
   /**
@@ -6159,12 +9452,13 @@ export class HellmarbleApp extends HellmarbleHost {
     }
     this.parts.roll.disabled = this.mode !== 'roll';
     this.parts.items.disabled = !['roll', 'travel'].includes(this.mode) || this.game.current.id !== 0;
-    this.parts.menu.disabled = this.mode === 'busy';
-    this.parts.forfeit.disabled = this.mode === 'busy';
+    this.parts.menu.disabled = !['roll', 'travel'].includes(this.mode);
+    this.parts.forfeit.disabled = !['roll', 'travel'].includes(this.mode);
     this.parts.fund.textContent = this.money(state.fund);
     this.parts.center.classList.toggle('hm-my-turn', this.mode !== 'busy');
-    if (this.flight && !this.rolling) this.renderShip();
-    else if (!this.rolling) this.renderDice(state.dice[0], state.dice[1]);
+    if (this.rolling) return;
+    if (this.flight) this.renderShip();
+    else this.renderDice(...(this.castDice || state.dice));
   }
 
   /**
@@ -6176,9 +9470,12 @@ export class HellmarbleApp extends HellmarbleHost {
     let player = this.game.current;
     let logs = this.game.state.logs;
     let loaded = player.loaded ? ' ' + ITEMS[player.loaded].icon + ' ' + this.t('hint.loaded', { item: this.itemName(player.loaded), faces: ITEMS[player.loaded].faces.join(', ') }) : '';
-    if (this.mode === 'travel') return this.t('hint.travel');
-    if (this.mode === 'roll' && player.island > 1) return this.t('hint.island', { n: player.island - 1 }) + loaded;
-    if (this.mode === 'roll' && player.island === 1) return this.t('hint.release') + loaded;
+    let words = this.game.course.words;
+    if (this.mode === 'travel') return this.t(words.travelHint);
+    if (this.mode === 'pick') return this.t('hint.pick');
+    if (this.mode === 'roll' && player.island > 1) return this.t(words.trapHint, { n: player.island - 1 }) + loaded;
+    if (this.mode === 'roll' && player.island === 1) return this.t(words.freeHint) + loaded;
+    if (this.mode === 'roll' && player.boarded && words.aboard) return this.t(words.aboard) + loaded;
     if (this.mode === 'roll') return this.t(this.again ? 'hint.double' : 'hint.roll') + loaded;
     return logs.length > 0 ? this.describe(logs[logs.length - 1]) : '';
   }
@@ -6202,12 +9499,12 @@ export class HellmarbleApp extends HellmarbleHost {
       let badges = [];
       if (!player.alive) badges.push(this.t('player.bankrupt'));
       if (turn) badges.push(this.t('player.turn'));
-      if (player.island > 0) badges.push(this.t('player.island', { n: player.island - 1 }));
-      if (player.boarded) badges.push(this.t('player.boarded'));
+      if (player.island > 0) badges.push(this.t(game.course.words.trapped, { n: player.island - 1 }));
+      if (player.boarded) badges.push(this.t(game.course.words.boarded));
       if (player.loaded) badges.push(ITEMS[player.loaded].icon + ' ' + this.itemName(player.loaded));
-      // 보관 중인 쿠폰을 종류별로 표시한다.
+      // 보관 중인 카드를 종류별로 표시한다.
       for (let coupon in player.coupons) {
-        if (player.coupons[coupon] > 0) badges.push(ICONS[coupon] + ' ' + this.t('coupon.' + coupon + '.title') + ' ×' + player.coupons[coupon]);
+        if (player.coupons[coupon] > 0) badges.push(ICONS[coupon] + ' ' + this.cardTitle(coupon) + ' ×' + player.coupons[coupon]);
       }
       let chips = [];
       // 상태와 쿠폰 표시를 하나씩 꼬리표로 만든다.
@@ -6261,22 +9558,19 @@ export class HellmarbleApp extends HellmarbleHost {
     let owned = game.owned(player);
     let coupons = [];
     let lands = [];
-    // 보관 중인 쿠폰을 종류별로 모은다.
+    // 보관 중인 카드를 종류별로 모은다.
     for (let coupon in player.coupons) {
-      if (player.coupons[coupon] > 0) coupons.push(ICONS[coupon] + ' ' + this.t('coupon.' + coupon + '.title') + ' ×' + player.coupons[coupon]);
+      if (player.coupons[coupon] > 0) coupons.push(ICONS[coupon] + ' ' + this.cardTitle(coupon) + ' ×' + player.coupons[coupon]);
     }
     // 소유한 땅마다 상세 화면으로 가는 버튼을 만든다.
     for (let index of owned) {
-      let land = game.state.lands[index];
-      let name = this.tileName(index);
-      // 지어진 건물을 종류별 개수만큼 이름 뒤에 덧붙인다.
-      for (let kind of BUILDINGS) name += ICONS[kind].repeat(land[kind]);
-      lands.push(el('button', { class: 'hm-land-item', data: { action: 'dialog.answer', value: 'land:' + index }, attrs: { type: 'button' }, style: { '--hm-land': LAND_COLORS[BOARD[index].show] } }, [
-        el('span', { class: 'hm-land-item-name', text: name }),
-        el('span', { class: 'hm-land-item-toll' }, [this.t('info.toll') + ' ', this.figure(game.toll(index))]),
+      lands.push(el('button', { class: 'hm-land-item', data: { action: 'dialog.answer', value: 'land:' + index }, attrs: { type: 'button' }, style: { '--hm-land': LAND_COLORS[game.board[index].show] } }, [
+        el('span', { class: 'hm-land-item-name', text: this.landLabel(index) }),
+        el('span', { class: 'hm-land-item-toll' }, [this.t(game.course.words.toll) + ' ', this.figure(game.toll(index))]),
       ]));
     }
-    let status = !player.alive ? this.t('player.bankrupt') : player.island > 0 ? this.t('player.island', { n: player.island - 1 }) : player.boarded ? this.t('player.boarded') : this.t('playerinfo.playing');
+    let trapped = this.t(game.course.words.trapped, { n: player.island - 1 });
+    let status = !player.alive ? this.t('player.bankrupt') : player.island > 0 ? trapped : player.boarded ? this.t(game.course.words.boarded) : this.t('playerinfo.playing');
     return {
       kind: 'player', title: this.styleOf(player).symbol + ' ' + this.playerName(player),
       body: [
@@ -6284,7 +9578,7 @@ export class HellmarbleApp extends HellmarbleHost {
           this.infoRow(this.t('result.cash'), this.figure(player.cash)),
           this.infoRow(this.t('result.property'), this.figure(game.propertyValue(player))),
           this.infoRow(this.t('playerinfo.assets'), this.figure(game.assets(player)), true),
-          this.infoRow(this.t('playerinfo.coupons'), coupons.length > 0 ? coupons.join('  ') : this.t('common.none')),
+          this.infoRow(this.t(game.course.words.kept), coupons.length > 0 ? coupons.join('  ') : this.t('common.none')),
           this.infoRow(this.t('playerinfo.charm'), isCharm(player.charm) ? CHARMS[player.charm].icon + ' ' + this.itemName(player.charm) : this.t('common.none')),
           this.infoRow(this.t('playerinfo.status'), status),
         ]),
@@ -6294,6 +9588,19 @@ export class HellmarbleApp extends HellmarbleHost {
       ],
       buttons: [{ label: this.t('common.close'), value: 'close', primary: true }],
     };
+  }
+
+  /**
+   * 땅의 이름 뒤에 지어진 건물을 그림 문자로 덧붙인 표시를 만든다. (소유한 땅 목록, 매각이나 선택 창의 선택지)
+   * @param {number} index 땅의 칸 번호
+   * @returns {string} 땅의 이름과 건물 표시
+   */
+  landLabel(index) {
+    let land = this.game.state.lands[index];
+    let name = this.tileName(index);
+    // 지어진 건물을 종류별 개수만큼 이름 뒤에 덧붙인다.
+    for (let kind of land ? this.game.course.buildings : []) name += ICONS[kind].repeat(land[kind]);
+    return name;
   }
 
   /**
@@ -6335,9 +9642,9 @@ export class HellmarbleApp extends HellmarbleHost {
     for (let name in entry.params) {
       let value = entry.params[name];
       if (name === 'player' || name === 'target') params[name] = this.playerName(players[value]);
-      else if (name === 'tile') params[name] = this.tileName(value);
+      else if (name === 'tile' || name === 'other') params[name] = this.tileName(value);
       else if (name === 'amount') params[name] = this.money(value);
-      else if (name === 'coupon') params[name] = this.t('coupon.' + value + '.title');
+      else if (name === 'coupon') params[name] = this.cardTitle(value);
       else if (name === 'item') params[name] = this.itemName(value);
       else if (name === 'building') params[name] = this.t('building.' + value);
       else if (name === 'order') params[name] = this.orderText(value);
@@ -6379,34 +9686,51 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   buildLandInfo(index) {
     let game = this.game;
-    let tile = BOARD[index];
+    let tile = game.board[index];
     let land = game.state.lands[index];
+    let words = game.course.words;
     let prices = [];
     let status = [];
     if (land) {
       prices.push(this.infoRow(this.t('info.price'), this.figure(game.price(index))));
-      // 일반 도시이면 건물 종류별 건설비를 넣는다.
-      for (let kind of tile.cost ? BUILDINGS : []) {
-        prices.push(this.infoRow(ICONS[kind] + ' ' + this.t('info.cost', { building: this.t('building.' + kind) }), this.figure(game.buildCost(index, kind))));
+      // 건물을 지을 수 있는 땅이면 건물 종류별 건설비를 넣는다. (종류에 맞춘 문구가 따로 있으면 그것을 쓴다. 기지의 증축은 횟수의 한도를 함께 적는다.)
+      for (let kind of tile.cost ? game.course.buildings : []) {
+        let label = this.t(TEXTS.ko['info.cost.' + kind] ? 'info.cost.' + kind : 'info.cost', { building: this.t('building.' + kind), limit: BUILD_LIMIT[kind] });
+        prices.push(this.infoRow(ICONS[kind] + ' ' + label, this.figure(game.buildCost(index, kind))));
       }
-      prices.push(this.infoRow(this.t('info.toll'), this.figure(game.money(tile.toll))));
+      prices.push(this.infoRow(this.t(tile.type === 'star' ? 'info.feeBare' : words.toll), this.figure(game.money(tile.toll))));
       // 일반 도시이면 건물 종류별 이용료를 넣는다.
-      for (let kind of tile.fee ? BUILDINGS : []) {
+      for (let kind of tile.type === 'city' ? BUILDINGS : []) {
         prices.push(this.infoRow(ICONS[kind] + ' ' + this.t(kind === 'villa' ? 'info.feeEach' : 'info.fee', { building: this.t('building.' + kind) }), this.figure(game.money(tile.fee[kind]))));
       }
-      if (index === TILES.columbia) prices.push(this.infoRow(this.t('info.spaceFee'), this.figure(game.money(SPACE_FEE))));
+      if (tile.type === 'star') {
+        prices.push(this.infoRow(ICONS.base + ' ' + this.t('info.feeBase'), this.figure(game.money(tile.fee.base))));
+        prices.push(this.infoRow(ICONS.annex + ' ' + this.t('info.feeAnnex'), this.figure(game.money(tile.fee.annex), '+')));
+        prices.push(this.infoRow(ICONS.annex + ' ' + this.t('info.feeFull', { limit: BUILD_LIMIT.annex }), this.figure(game.money(ANNEX_BONUS), '+')));
+      }
+      if (index === game.tiles.columbia) prices.push(this.infoRow(this.t('info.spaceFee'), this.figure(game.money(SPACE_FEE))));
+      if (index === game.tiles.timemachine) prices.push(this.infoRow(this.t('info.timeFee'), this.figure(game.money(TIME_FEE))));
       status.push(this.infoRow(this.t('info.owner'), this.ownerLabel(land.owner)));
-      if (tile.cost) status.push(this.infoRow(this.t('info.buildings'), this.buildingText(land)));
-      status.push(this.infoRow(this.t('info.total'), this.figure(game.toll(index)), true));
+      if (tile.type === 'city') status.push(this.infoRow(this.t('info.buildings'), this.buildingText(land)));
+      if (tile.type === 'star') {
+        status.push(this.infoRow(this.t('info.base'), land.base > 0 ? this.t(land.owner === null ? 'info.leftover' : 'info.built') : this.t('common.none')));
+        if (land.base > 0) status.push(this.infoRow(this.t('info.annex'), this.t('info.annexCount', { n: land.annex, limit: BUILD_LIMIT.annex })));
+      }
+      status.push(this.infoRow(this.t(words.total), this.figure(game.toll(index)), true));
       if (land.owner !== null) status.push(this.infoRow(this.t('info.sale', { n: SELL_PERCENT }), this.figure(game.saleValue(index))));
     }
-    if (tile.type === 'start') prices.push(this.infoRow(this.t('info.salary'), this.figure(game.money(SALARY))));
+    if (tile.type === 'start') prices.push(this.infoRow(this.t('info.salary'), this.figure(game.salary)));
     if (tile.type === 'space') {
       prices.push(this.infoRow(this.t('info.spaceFee'), this.figure(game.money(SPACE_FEE))));
-      status.push(this.infoRow(this.tileName(TILES.columbia) + ' ' + this.t('info.owner'), this.ownerLabel(game.state.lands[TILES.columbia].owner)));
+      status.push(this.infoRow(this.tileName(game.tiles.columbia) + ' ' + this.t('info.owner'), this.ownerLabel(game.state.lands[game.tiles.columbia].owner)));
+    }
+    if (tile.type === 'timetravel') {
+      prices.push(this.infoRow(this.t('info.timeFee'), this.figure(game.money(TIME_FEE))));
+      status.push(this.infoRow(this.tileName(game.tiles.timemachine) + ' ' + this.t('info.owner'), this.ownerLabel(game.state.lands[game.tiles.timemachine].owner)));
     }
     if (tile.type === 'desk') prices.push(this.infoRow(this.t('info.welfare'), this.figure(game.money(WELFARE_FEE))));
-    if (tile.type === 'desk' || tile.type === 'fund') status.push(this.infoRow(this.t('info.fund'), this.figure(game.state.fund), true));
+    if (tile.type === 'rescue') prices.push(this.infoRow(this.t('info.rescue'), this.figure(game.money(RESCUE_FEE))));
+    if (tile.type === 'desk' || tile.type === 'fund' || tile.type === 'rescue') status.push(this.infoRow(this.t('info.fund'), this.figure(game.state.fund), true));
     return el('div', { class: 'hm-land', style: { '--hm-land': tile.show ? LAND_COLORS[tile.show] : 'var(--hm-muted)' } }, [
       el('div', { class: 'hm-land-head' }, [
         el('span', { class: 'hm-land-name', text: (ICONS[tile.id] ? ICONS[tile.id] + ' ' : '') + this.tileName(index) }),
@@ -6455,12 +9779,12 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 칸 위에 확대된 땅 정보 창을 연다. 우주여행의 목적지를 고르는 중이면 이동 버튼도 함께 보여준다.
+   * 칸 위에 확대된 땅 정보 창을 연다. 우주여행의 목적지를 고르는 중이거나 보드에서 이동할 칸을 고르는 중이면 이동 버튼도 함께 보여준다.
    * @param {number} index 칸 번호
    */
   openPopover(index) {
     this.closePopover();
-    let travel = this.mode === 'travel' && index !== this.game.current.position;
+    let travel = (this.mode === 'travel' && index !== this.game.current.position) || (this.mode === 'pick' && Boolean(this.pickOptions) && this.pickOptions.includes(index));
     let node = el('div', { class: 'hm-popover', data: { action: 'popover.close' }, attrs: { role: 'dialog' } }, [
       this.buildLandInfo(index),
       travel ? button(this.t('game.travelHere'), 'game.travel', index, 'hm-primary hm-wide') : null,
@@ -6556,11 +9880,12 @@ export class HellmarbleApp extends HellmarbleHost {
   async runTool(key, input, options) {
     let args = input && typeof input === 'object' ? input : {};
     let amounts = { start: this.money(START_CASH), salary: this.money(SALARY), space: this.money(SPACE_FEE), welfare: this.money(WELFARE_FEE), sell: SELL_PERCENT, itemSell: ITEM_SELL_PERCENT };
+    let cosmos = { salary: this.money(SPACE_SALARY), time: this.money(TIME_FEE), rescue: this.money(RESCUE_FEE), sell: SELL_PERCENT, annexCost: this.money(ANNEX_COST), annexFee: this.money(ANNEX_FEE), annexBonus: this.money(ANNEX_BONUS), annexLimit: BUILD_LIMIT.annex };
     let result = null;
     try {
       switch (key) {
-        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.leagueRules() + '\n' + this.t('mcp.items.rules', amounts) + '\n' + this.itemRules() + '\n' + this.t('mcp.equips.rules', amounts) + '\n' + this.equipRules() + '\n' + this.charmRules(); break;
-        case 'get_guide': result = this.t('mcp.guide') + '\n' + this.t('mcp.items.guide') + '\n' + this.t('mcp.equips.guide') + '\n' + this.t('mcp.charms.guide'); break;
+        case 'get_rules': result = this.t('mcp.rules', amounts) + '\n' + this.t('mcp.space.rules', cosmos) + '\n' + this.cardRules() + '\n' + this.leagueRules() + '\n' + this.t('mcp.items.rules', amounts) + '\n' + this.itemRules() + '\n' + this.t('mcp.equips.rules', amounts) + '\n' + this.equipRules() + '\n' + this.charmRules(); break;
+        case 'get_guide': result = this.t('mcp.guide') + '\n' + this.t('mcp.space.guide') + '\n' + this.t('mcp.items.guide') + '\n' + this.t('mcp.equips.guide') + '\n' + this.t('mcp.charms.guide'); break;
         case 'get_land': result = this.describeLand(Number(args.index)); break;
         case 'act': result = await this.pressAction(String(args.action), args.value); break;
         case 'set_text': result = this.typeText(String(args.text === undefined ? '' : args.text)); break;
@@ -6574,14 +9899,58 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 아이템마다 이름, 가격, 설명, 사용 시점을 한 줄씩 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
+   * 아이템마다 이름, 가격, 쓸 수 있는 코스, 설명, 사용 시점을 한 줄씩 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
    * @returns {string} 아이템 목록 설명
    */
   itemRules() {
     let lines = [];
     // 아이템마다 설명 한 줄을 만든다.
     for (let id in ITEMS) {
-      lines.push(this.t('mcp.items.entry', { item: this.itemName(id), price: this.money(ITEMS[id].price), description: this.t('item.' + id + '.description'), when: this.t('item.' + id + '.when') }));
+      lines.push(this.t('mcp.items.entry', { item: this.itemName(id), price: this.money(ITEMS[id].price), course: this.itemCourseText(id), description: this.t('item.' + id + '.description'), when: this.t('item.' + id + '.when') }));
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * 카드에 적힌 글에 끼워 넣을 금액과 수치를 구한다. 금액에는 배율을 곱한다.
+   * @param {HellmarbleCoupon} card 카드 정보
+   * @param {number} multiplier 금액 배율
+   * @returns {Object} 문구에 끼워 넣을 값
+   */
+  cardParams(card, multiplier) {
+    let params = { steps: card.steps, need: card.need, range: card.range };
+    // 금액인 항목마다 배율을 곱해 금액 문자열로 바꾼다.
+    for (let name of ['amount', 'bare', 'built', 'pay', 'gain']) {
+      if (card[name] !== undefined) params[name] = this.money(card[name] * multiplier);
+    }
+    // 건물별 금액이 있는 카드는 종류별 금액을 넣는다.
+    for (let kind in card.rates || {}) params[kind] = this.money(card.rates[kind] * multiplier);
+    return params;
+  }
+
+  /**
+   * 카드에 적힌 글을 구한다. 건물별로 금액을 내는 비밀쿠폰 세 종은 같은 글을 쓴다.
+   * @param {string} id 카드 식별자
+   * @param {number} multiplier 금액 배율
+   * @returns {string} 카드에 적힌 글
+   */
+  cardText(id, multiplier) {
+    let card = findCard(id).card;
+    return this.t(card.effect === 'tax' ? 'coupon.tax.text' : this.cardKey(id) + '.text', this.cardParams(card, multiplier));
+  }
+
+  /**
+   * 우주여행 코스의 텔레파시 카드와 뉴런의 골짜기 카드마다 장수와 이름, 적힌 글을 한 줄씩 정리한다. (WebMCP 의 플레이 방법 설명에 덧붙인다.)
+   * @returns {string} 카드 목록 설명
+   */
+  cardRules() {
+    let lines = [];
+    // 두 덱의 카드를 차례로 정리한다.
+    for (let deck of ['telepathy', 'neuron']) {
+      let cards = deck === 'neuron' ? NEURON : TELEPATHY;
+      lines.push('[' + this.t('card.header.' + deck) + ']');
+      // 카드마다 장수, 이름, 적힌 글을 한 줄로 만든다.
+      for (let id in cards) lines.push('- ' + this.cardTitle(id) + ' ×' + cards[id].count + ' : ' + this.cardText(id, 1).replace(/\n/g, ' '));
     }
     return lines.join('\n');
   }
@@ -6717,19 +10086,23 @@ export class HellmarbleApp extends HellmarbleHost {
     for (let player of state.players) {
       players.push({
         id: player.id, name: this.playerName(player), you: !player.ai, alive: player.alive, cash: player.cash, assets: game.assets(player),
-        position: player.position, tile: this.tileName(player.position), island: player.island, boarded: player.boarded, coupons: player.coupons,
+        position: player.position, tile: this.tileName(player.position), island: player.island, boarded: player.boarded, direct: player.direct, coupons: player.coupons,
         items: player.items, usedItems: player.usedItems, loaded: player.loaded, look: player.look, color: this.styleOf(player).color, symbol: this.styleOf(player).symbol, charm: player.charm,
       });
     }
-    // 소유자가 있는 땅을 정리한다.
+    // 소유자가 있는 땅(우주여행 코스에서는 기지가 남아 있는 주인 없는 별도)을 정리한다.
     for (let index = 0; index < BOARD_SIZE; index++) {
       let land = state.lands[index];
-      if (land && land.owner !== null) lands.push({ index, name: this.tileName(index), owner: land.owner, villa: land.villa, building: land.building, hotel: land.hotel, toll: game.toll(index) });
+      if (!land || (land.owner === null && !(land.base > 0))) continue;
+      let info = { index, name: this.tileName(index), owner: land.owner, toll: game.toll(index) };
+      // 그 코스의 건물 종류별 개수를 넣는다.
+      for (let kind of game.course.buildings) info[kind] = land[kind];
+      lands.push(info);
     }
     // 최근 진행 기록을 문장으로 바꾼다.
     for (let entry of this.intro ? [] : state.logs.slice(-8)) logs.push(this.describe(entry));
     return {
-      league: state.league, multiplier: state.multiplier, mode: this.mode, ordering: this.intro, turnOf: game.current.id, again: this.mode === 'roll' && this.again,
+      league: state.league, course: LEAGUES[state.league].course, multiplier: state.multiplier, mode: this.mode, ordering: this.intro, turnOf: game.current.id, again: this.mode === 'roll' && this.again,
       hint: this.parts.status ? this.parts.status.textContent : '', dice: state.dice, fund: state.fund, request: this.request,
       openLand: this.popover ? this.popover.index : null, players, lands, recentLogs: logs,
     };
@@ -6742,7 +10115,8 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   describeLand(index) {
     if (!isCount(index, BOARD_SIZE - 1)) return { ok: false, error: 'index : 0~39' };
-    let tile = BOARD[index];
+    let course = this.courseNow();
+    let tile = course.board[index];
     let game = this.game;
     let land = game ? game.state.lands[index] : null;
     let multiplier = game ? game.state.multiplier : 1;
@@ -6753,11 +10127,12 @@ export class HellmarbleApp extends HellmarbleHost {
       info.price = tile.price * multiplier;
       info.toll = tile.toll * multiplier;
     }
-    // 일반 도시이면 건물 종류별 건설비와 이용료를 넣는다.
-    for (let kind of tile.cost ? BUILDINGS : []) {
+    // 건물을 지을 수 있는 땅이면 건물 종류별 건설비와 이용료를 넣는다. (별의 기지 이용료는 통행료에 더하는 값이 아니라 기지가 있을 때의 이용료 전체이다.)
+    for (let kind of tile.cost ? course.buildings : []) {
       info[kind] = { cost: tile.cost[kind] * multiplier, fee: tile.fee[kind] * multiplier, limit: BUILD_LIMIT[kind], built: land ? land[kind] : 0 };
     }
-    if (index === TILES.columbia || index === TILES.space) info.spaceFee = SPACE_FEE * multiplier;
+    if (index === course.tiles.columbia || index === course.tiles.space) info.spaceFee = SPACE_FEE * multiplier;
+    if (index === course.tiles.timemachine || index === course.tiles.timetravel) info.timeFee = TIME_FEE * multiplier;
     if (land) {
       info.owner = land.owner;
       info.ownerName = land.owner === null ? null : this.playerName(game.state.players[land.owner]);
@@ -6822,13 +10197,15 @@ export class HellmarbleApp extends HellmarbleHost {
 
   /**
    * 차례가 시작될 때 화면을 갱신한다. 사용자의 차례가 되면 열려 있던 땅 정보 창을 자동으로 닫는다.
-   * 우주여행에 탑승한 채로 맞는 차례인지 기억해 두어, 그 차례가 끝날 때까지 주사위 자리에 우주선을 보여준다.
+   * 주사위를 굴리지 않고 목적지를 고르는 차례(세계여행 코스의 우주여행에 탑승한 차례, 우주여행 코스에서 시간여행 초청장으로 탑승한 차례)인지 기억해 두어,
+   * 그 차례가 끝날 때까지 주사위 자리에 우주선을 보여준다.
    * @param {Object} player 차례가 된 플레이어
    * @returns {Promise<void>}
    */
   async turnStart(player) {
     this.moving = -1;
-    this.flight = Boolean(player.boarded);
+    this.flight = Boolean(player.boarded) && (this.game.course.flight || Boolean(player.direct));
+    this.castDice = null;
     if (!player.ai) this.closePopover();
     this.refresh();
   }
@@ -6853,24 +10230,44 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   async dice(player, dice, faces) {
     void player;
+    this.castDice = null;
     await this.rollDice(dice, faces);
     await wait(this.timings.pause);
   }
 
   /**
-   * 가운데 영역의 주사위가 구르는 모습을 정해진 시간 동안 보여준 뒤 지정한 눈에서 멈춘다.
-   * @param {number[]} dice 멈췄을 때 보일 두 주사위의 눈
-   * @param {number[]|null} [faces] 구르는 동안 보여줄 눈의 목록 (생략하면 1~6)
+   * 카드의 효과로 플레이어가 주사위(1개 또는 2개)를 굴리는 모습을 보여준다. 누가 굴리는지를 안내 문구로 알리고, 결과는 다음 주사위를 굴리거나 다음 차례가 시작될 때까지 주사위 자리에 남긴다.
+   * @param {Object} player 주사위를 굴린 플레이어
+   * @param {number[]} dice 굴린 주사위의 눈 (1개 또는 2개)
    * @returns {Promise<void>}
    */
-  async rollDice(dice, faces) {
-    let until = Date.now() + this.timings.dice;
+  async cast(player, dice) {
+    if (!this.game || !this.parts.center) return;
+    this.castDice = null;
+    this.parts.status.textContent = this.t('cast.rolling', { player: this.playerName(player) });
+    this.parts.dice.classList.add('hm-casting');
+    paint(this.parts.dice, 'player', this.styleOf(player));
+    await this.rollDice(dice, null, this.timings.cast);
+    this.castDice = dice.slice();
+    await wait(this.timings.pause);
+    this.parts.dice.classList.remove('hm-casting');
+  }
+
+  /**
+   * 가운데 영역의 주사위가 구르는 모습을 정해진 시간 동안 보여준 뒤 지정한 눈에서 멈춘다.
+   * @param {number[]} dice 멈췄을 때 보일 주사위의 눈 (보통 두 개, 카드의 효과로 굴릴 때에는 하나일 수 있다.)
+   * @param {number[]|null} [faces] 구르는 동안 보여줄 눈의 목록 (생략하면 1~6)
+   * @param {number} [duration] 구르는 시간 (밀리초, 생략하면 주사위 굴림의 기본 시간)
+   * @returns {Promise<void>}
+   */
+  async rollDice(dice, faces, duration) {
+    let until = Date.now() + (duration === undefined ? this.timings.dice : duration);
     let shown = faces && faces.length > 0 ? faces : [1, 2, 3, 4, 5, 6];
     this.rolling = true;
     this.parts.dice.classList.add('hm-rolling');
     // 정해진 시간 동안 임의의 눈을 번갈아 보여준다.
     while (Date.now() < until) {
-      this.renderDice(shown[Math.floor(Math.random() * shown.length)], shown[Math.floor(Math.random() * shown.length)]);
+      this.renderDice(shown[Math.floor(Math.random() * shown.length)], dice.length > 1 ? shown[Math.floor(Math.random() * shown.length)] : undefined);
       await wait(70);
     }
     this.rolling = false;
@@ -6899,17 +10296,14 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {Promise<void>}
    */
   async coupon(player, id) {
-    let coupon = COUPONS[id];
+    let deck = findCard(id).deck;
     let gate = defer();
-    let params = {};
-    if (coupon.amount) params.amount = this.money(this.game.money(coupon.amount));
-    // 건물별 금액이 있는 쿠폰은 종류별 금액을 문구에 넣는다.
-    for (let kind in coupon.rates || {}) params[kind] = this.money(this.game.money(coupon.rates[kind]));
-    let card = el('div', { class: 'hm-coupon', style: { '--hm-coupon-time': this.timings.coupon + 'ms', '--hm-player': this.styleOf(player).color } }, [
-      el('div', { class: 'hm-coupon-head', text: ICONS.coupon + ' ' + this.t('coupon.header') }),
-      el('div', { class: 'hm-coupon-title', text: this.t('coupon.' + id + '.title') }),
-      el('p', { class: 'hm-coupon-text', text: this.t(coupon.effect === 'tax' ? 'coupon.tax.text' : 'coupon.' + id + '.text', params) }),
-      el('div', { class: 'hm-coupon-drawer' }, [this.buildLookToken(player.look), this.t('coupon.drawer', { player: this.playerName(player) })]),
+    let head = deck === 'coupon' ? ICONS.coupon + ' ' + this.t('coupon.header') : ICONS[deck] + ' ' + this.t('card.header.' + deck);
+    let card = el('div', { class: 'hm-coupon hm-coupon-' + deck, style: { '--hm-coupon-time': this.timings.coupon + 'ms', '--hm-player': this.styleOf(player).color } }, [
+      el('div', { class: 'hm-coupon-head', text: head }),
+      el('div', { class: 'hm-coupon-title', text: this.cardTitle(id) }),
+      el('p', { class: 'hm-coupon-text', text: this.cardText(id, this.game.state.multiplier) }),
+      el('div', { class: 'hm-coupon-drawer' }, [this.buildLookToken(player.look), this.t(deck === 'coupon' ? 'coupon.drawer' : 'card.drawer', { player: this.playerName(player) })]),
       button(this.t('common.close'), 'coupon.close', undefined, 'hm-coupon-close'),
       el('div', { class: 'hm-coupon-bar' }),
     ]);
@@ -6973,8 +10367,8 @@ export class HellmarbleApp extends HellmarbleHost {
    * @returns {number} 칸 번호 (플레이어이면 -1)
    */
   officeTile(party) {
-    if (party === BANK) return TILES.start;
-    if (party === FUND) return TILES.fund;
+    if (party === BANK) return this.courseNow().start;
+    if (party === FUND) return this.courseNow().fund;
     return -1;
   }
 
@@ -6985,9 +10379,10 @@ export class HellmarbleApp extends HellmarbleHost {
    */
   transferSide(party) {
     if (this.officeTile(party) < 0) return el('span', { class: 'hm-transfer-side' }, [this.buildToken(party), this.playerName(party)]);
+    let fund = this.courseNow().board[this.courseNow().fund].id;
     return el('span', { class: 'hm-transfer-side' }, [
-      el('span', { class: 'hm-transfer-icon', text: party === BANK ? ICONS.bank : ICONS.fund, attrs: { 'aria-hidden': 'true' } }),
-      this.t(party === BANK ? 'game.bank' : 'tile.fund'),
+      el('span', { class: 'hm-transfer-icon', text: party === BANK ? ICONS.bank : ICONS[fund], attrs: { 'aria-hidden': 'true' } }),
+      this.t(party === BANK ? 'game.bank' : 'tile.' + fund),
     ]);
   }
 
@@ -7084,15 +10479,16 @@ export class HellmarbleApp extends HellmarbleHost {
   async use(player, info) {
     let duration = this.timings.use;
     if (!(duration > 0) || !this.game || !this.parts.center || !ICONS[info.kind]) return;
-    let index = info.kind === 'pass' ? info.index : player.position;
-    let text = info.kind === 'pass' ? this.t(info.travel ? 'use.pass.travel' : 'use.pass.text', { tile: this.tileName(index) }) : this.t('use.radio.text');
+    let waived = info.kind === 'pass' || (info.kind === 'angel' && (info.reason === 'fee' || info.reason === 'timefee'));
+    let index = waived ? info.index : player.position;
+    let source = info.source === 'coupon' ? this.game.course.words.card : 'use.source.' + info.source;
     let banner = el('div', { class: 'hm-use-flash hm-use-' + info.kind, style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
       el('span', { class: 'hm-use-flash-owner' }, [this.buildToken(player), this.playerName(player)]),
       el('span', { class: 'hm-use-flash-icon', text: ICONS[info.kind], attrs: { 'aria-hidden': 'true' } }),
       el('strong', { class: 'hm-use-flash-title', text: this.t('use.' + info.kind + '.title') }),
-      el('span', { class: 'hm-use-flash-source', text: this.t('use.source.' + info.source) }),
-      el('span', { class: 'hm-use-flash-text', text }),
-      info.kind === 'pass' ? el('span', { class: 'hm-use-flash-amount' }, [el('s', { class: 'hm-num', text: this.money(info.amount) }), el('span', { text: '➜' }), el('strong', { text: this.t('use.pass.stamp') })]) : null,
+      el('span', { class: 'hm-use-flash-source', text: this.t(source) }),
+      el('span', { class: 'hm-use-flash-text', text: this.useText(info, index) }),
+      waived ? el('span', { class: 'hm-use-flash-amount' }, [el('s', { class: 'hm-num', text: this.money(info.amount) }), el('span', { text: '➜' }), el('strong', { text: this.t('use.' + info.kind + '.stamp') })]) : null,
     ]);
     let marks = this.markUse(player, info.kind, index, duration);
     this.parts.center.append(banner);
@@ -7100,6 +10496,45 @@ export class HellmarbleApp extends HellmarbleHost {
     banner.remove();
     // 보드 위에 띄운 빛의 고리와 도장을 치운다.
     for (let node of marks) node.remove();
+  }
+
+  /**
+   * 보관한 카드나 아이템을 사용했을 때 알림에 적을, 그 효과를 설명하는 문구를 구한다.
+   * 우대권은 면제받은 칸, 무전기와 블랙홀 탈출포트는 탈출, 천사의 빛은 면제받은 이용료나 탈출 또는 면한 카드의 효과를 알린다.
+   * @param {Object} info 사용한 것 { kind, reason, travel, card }
+   * @param {number} index 효과가 일어난 칸 번호
+   * @returns {string} 문구
+   */
+  useText(info, index) {
+    switch (info.kind) {
+      case 'pass': return this.t(info.travel ? 'use.pass.travel' : 'use.pass.text', { tile: this.tileName(index) });
+      case 'radio': return this.t('use.radio.text');
+      case 'escape': return this.t('use.escape.text');
+      default:
+        if (info.reason === 'fee' || info.reason === 'timefee') return this.t('use.angel.fee', { tile: this.tileName(index) });
+        return info.reason === 'escape' ? this.t('use.angel.escape') : this.t('use.angel.card', { card: info.card ? this.cardTitle(info.card) : '' });
+    }
+  }
+
+  /**
+   * 우주여행 코스에서 일어난 사건을 보드 가운데에 잠깐 크게 알린다. 알리기 전에 화면을 갱신하여 바뀐 땅의 주인과 기지를 함께 보여준다.
+   * 알림의 문장은 진행 기록과 같은 방식으로 만든다.
+   * @param {Object} entry 알릴 내용 { key, params }
+   * @returns {Promise<void>}
+   */
+  async notice(entry) {
+    let duration = this.timings.notice;
+    if (!(duration > 0) || !this.game || !this.parts.center) return;
+    let owner = entry.params.player === undefined ? null : this.game.state.players[entry.params.player];
+    let banner = el('div', { class: 'hm-use-flash hm-use-notice', style: { '--hm-time': duration + 'ms' }, attrs: { role: 'status' } }, [
+      owner ? el('span', { class: 'hm-use-flash-owner' }, [this.buildToken(owner), this.playerName(owner)]) : null,
+      el('span', { class: 'hm-use-flash-icon', text: ICONS.notice, attrs: { 'aria-hidden': 'true' } }),
+      el('strong', { class: 'hm-use-flash-title', text: this.describe(entry) }),
+    ]);
+    this.refresh();
+    this.parts.center.append(banner);
+    await wait(duration);
+    banner.remove();
   }
 
   /**
@@ -7307,6 +10742,11 @@ export class HellmarbleApp extends HellmarbleHost {
       case 'sell': return this.askSell(player, request);
       case 'pass': return this.askPass(player, request);
       case 'radio': return this.askRadio(player, request);
+      case 'angel': return this.askAngel(player, request);
+      case 'escape': return this.askEscape(player, request);
+      case 'pick': return request.map ? this.awaitInput('pick', false, request.options) : this.askPick(player, request);
+      case 'target': return this.askTarget(player, request);
+      case 'dicecount': return this.askDiceCount();
       default: return null;
     }
   }
@@ -7322,15 +10762,18 @@ export class HellmarbleApp extends HellmarbleHost {
   /**
    * 사용자가 주사위를 굴리거나(roll) 우주여행 목적지를 고를 때까지(travel) 기다린다.
    * 기다리는 동안에는 메인 메뉴로 나갈 수도 있다. 열려 있던 땅 정보 창은 닫는다.
-   * @param {string} mode 기다릴 입력의 종류 ('roll' 또는 'travel')
+   * 우주여행 코스에서 보드의 칸을 골라 이동할 때(pick : 시간여행, 모라비트의 항법)에도 쓰며, 이때에는 메인 메뉴로 나가거나 포기할 수 없다.
+   * @param {string} mode 기다릴 입력의 종류 ('roll', 'travel' 또는 'pick')
    * @param {boolean} [again] 더블이 나와 주사위를 한 번 더 굴리는 것인지 여부
+   * @param {number[]} [options] 고를 수 있는 칸 번호 목록 (pick 일 때)
    * @returns {Promise<*>} 입력 결과 (메인 메뉴로 나가면 QUIT)
    */
-  awaitInput(mode, again) {
+  awaitInput(mode, again, options) {
     this.closePopover();
     this.waiting = defer();
     this.mode = mode;
     this.again = Boolean(again);
+    this.pickOptions = options || null;
     this.refreshCenter();
     if (mode === 'roll') this.parts.roll.focus({ preventScroll: true });
     return this.waiting.promise;
@@ -7375,23 +10818,35 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 자기 도시에 지을 건물을 묻는다. 건설하지 않고 넘어가는 선택지도 제공한다.
+   * 자기 땅에 지을 건물을 묻는다. 건설하지 않고 넘어가는 선택지도 제공한다.
+   * 우주여행 코스에서 기지가 이미 있는 별이면 기지의 증축을 묻는 창이 된다. (증축 비용과, 증축한 뒤에 오르는 이용료를 선택지에 적는다.)
    * @param {Object} player 사용자 플레이어
    * @param {Object} request 건설 요청 { index, options }
    * @returns {Promise<string|null>} 지을 건물의 종류 (짓지 않으면 null)
    */
   async askBuild(player, request) {
-    let land = this.game.state.lands[request.index];
+    let game = this.game;
+    let tile = game.board[request.index];
+    let land = game.state.lands[request.index];
+    let kinds = game.buildKinds(request.index);
+    let annex = kinds.includes('annex');
+    let name = annex ? 'ask.annex' : game.course.words.build;
     let buttons = [];
-    // 건물 종류별로 선택지를 만든다. 지을 수 없는 건물은 이유와 함께 비활성화한다.
-    for (let kind of BUILDINGS) {
-      let params = { building: ICONS[kind] + ' ' + this.t('building.' + kind), amount: this.money(this.game.buildCost(request.index, kind)) };
+    // 지을 차례가 된 건물 종류별로 선택지를 만든다. 지을 수 없는 건물은 이유와 함께 비활성화한다.
+    for (let kind of kinds) {
+      let params = { building: ICONS[kind] + ' ' + this.t('building.' + kind), amount: this.money(game.buildCost(request.index, kind)) };
       let key = land[kind] >= BUILD_LIMIT[kind] ? 'ask.build.max' : request.options.includes(kind) ? 'ask.build.option' : 'ask.build.short';
+      if (kind === 'annex') {
+        key = 'ask.annex.option';
+        params.from = this.money(game.toll(request.index));
+        params.to = this.money(game.tollAfter(request.index, kind));
+      }
       buttons.push({ label: this.t(key, params), value: kind, primary: true, disabled: !request.options.includes(kind) });
     }
-    buttons.push({ label: this.t('ask.build.no'), value: 'skip' });
-    let answer = await this.dialog({ title: this.t('ask.build.title'), text: this.t('ask.build.text'), body: [this.buildLandInfo(request.index), this.cashLine(player)], buttons, stack: true });
-    return BUILDINGS.includes(answer) ? answer : null;
+    buttons.push({ label: this.t(name + '.no'), value: 'skip' });
+    let text = this.t(name + '.text', annex ? { fee: this.money(game.money(tile.fee.annex)), bonus: this.money(game.money(ANNEX_BONUS)), limit: BUILD_LIMIT.annex, n: land.annex } : {});
+    let answer = await this.dialog({ title: this.t(name + '.title'), text, body: [this.buildLandInfo(request.index), this.cashLine(player)], buttons, stack: true });
+    return kinds.includes(answer) ? answer : null;
   }
 
   /**
@@ -7407,11 +10862,7 @@ export class HellmarbleApp extends HellmarbleHost {
       let buttons = [];
       // 가진 땅마다 매각 선택지를 만든다.
       for (let index of game.owned(player)) {
-        let land = game.state.lands[index];
-        let name = this.tileName(index);
-        // 지어진 건물을 종류별 개수만큼 이름 뒤에 덧붙인다.
-        for (let kind of BUILDINGS) name += ICONS[kind].repeat(land[kind]);
-        buttons.push({ label: this.t('ask.sell.option', { tile: name, amount: this.money(game.saleValue(index)) }), value: index });
+        buttons.push({ label: this.t('ask.sell.option', { tile: this.landLabel(index), amount: this.money(game.saleValue(index)) }), value: index });
       }
       buttons.push({ label: this.t('game.forfeit'), value: FORFEIT, danger: true });
       let params = { amount: this.money(request.amount), cash: this.money(player.cash), short: this.money(request.amount - player.cash), n: SELL_PERCENT };
@@ -7450,6 +10901,135 @@ export class HellmarbleApp extends HellmarbleHost {
       buttons: this.sourceButtons('radio', player, request), stack: true,
     });
     return answer === 'coupon' || answer === 'item' ? answer : null;
+  }
+
+  /**
+   * 천사의 빛으로 손해를 면할지 창 하나로 묻는다. 어떤 손해인지 알리고, 낼 돈이 있는 경우에는 그 금액을 따로 한 줄로 강조한다.
+   * 쓸 수 있는 천사의 빛마다(텔레파시 카드, 아이템) 선택지를 하나씩 두며 마지막에 사용하지 않는 선택지를 둔다.
+   * 다른 플레이어의 차례에 카드의 효과로 손해를 보게 되었을 때에도 이 창이 뜬다.
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 천사의 빛 요청 { reason, amount, index, target, other, card, coupon, item }
+   * @returns {Promise<string|null>} 'coupon' (텔레파시 카드 천사의 빛), 'item' (아이템 천사의 빛), 쓰지 않으면 null
+   */
+  async askAngel(player, request) {
+    let players = this.game.state.players;
+    let params = {
+      card: request.card ? this.cardTitle(request.card) : '', tile: request.index === undefined ? '' : this.tileName(request.index),
+      other: request.other === undefined ? '' : this.tileName(request.other), target: request.target === undefined ? '' : this.playerName(players[request.target]),
+    };
+    let owed = ['fee', 'timefee', 'pay', 'claim'].includes(request.reason);
+    let due = owed ? el('p', { class: 'hm-due' }, [el('span', { class: 'hm-due-label', text: this.t('ask.pass.due') }), this.figure(request.amount)]) : null;
+    let buttons = [];
+    if (request.coupon) buttons.push({ label: this.t('ask.angel.coupon', { n: player.coupons.angel }), value: 'coupon', primary: true });
+    if (request.item) buttons.push({ label: this.t('ask.angel.item', { n: player.items.angel, left: this.itemUsesLeft('angel') }), value: 'item', primary: true });
+    buttons.push({ label: this.t('ask.keep'), value: 'no' });
+    let answer = await this.dialog({ kind: 'angel', title: ICONS.angel + ' ' + this.t('ask.angel.title'), text: this.t('ask.angel.' + request.reason, params), body: [due, owed ? this.cashLine(player) : null], buttons, stack: true });
+    return answer === 'coupon' || answer === 'item' ? answer : null;
+  }
+
+  /**
+   * 블랙홀에서 블랙홀 탈출포트나 천사의 빛으로 탈출할지 창 하나로 묻는다.
+   * 쓸 수 있는 것마다(텔레파시 카드 블랙홀 탈출포트, 아이템 블랙홀 탈출포트, 텔레파시 카드 천사의 빛, 아이템 천사의 빛) 선택지를 하나씩 두며 마지막에 사용하지 않는 선택지를 둔다.
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 탈출 요청 { arrival, last, escape : { coupon, item }, angel : { coupon, item } }
+   * @returns {Promise<string|null>} 'escape.coupon', 'escape.item', 'angel.coupon', 'angel.item' 가운데 하나, 쓰지 않으면 null
+   */
+  async askEscape(player, request) {
+    let buttons = [];
+    if (request.escape.coupon) buttons.push({ label: this.t('ask.escape.coupon', { n: player.coupons.escape }), value: 'escape.coupon', primary: true });
+    if (request.escape.item) buttons.push({ label: this.t('ask.escape.item', { n: player.items.escape }), value: 'escape.item', primary: true });
+    if (request.angel.coupon) buttons.push({ label: this.t('ask.angel.coupon', { n: player.coupons.angel }), value: 'angel.coupon', primary: true });
+    if (request.angel.item) buttons.push({ label: this.t('ask.angel.item', { n: player.items.angel, left: this.itemUsesLeft('angel') }), value: 'angel.item', primary: true });
+    buttons.push({ label: this.t('ask.keep'), value: 'no' });
+    let text = this.t(request.arrival ? 'ask.escape.arrival' : request.last ? 'ask.escape.last' : 'ask.escape.text');
+    let answer = await this.dialog({ kind: 'escape', title: ICONS.blackhole + ' ' + this.t('ask.escape.title'), text, buttons, stack: true });
+    return typeof answer === 'string' && answer.includes('.') ? answer : null;
+  }
+
+  /**
+   * 자기 땅 하나에 지금 지을 차례가 된 것(우주여행 코스 : 기지가 없으면 기지 건설, 있으면 증축)의 비용과, 지은 뒤 이용료가 어떻게 바뀌는지를 적은 설명을 만든다.
+   * 지구에 도착했을 때나 견우성·직녀성의 주인이 만났을 때 지을 별을 고르는 창의 선택지에 덧붙인다.
+   * @param {number} index 칸 번호
+   * @returns {string} 설명 (예 : "건설비 5만원 · 이용료 5만원 → 20만원", "증축 10만원 · 이용료 25만원 → 35만원")
+   */
+  workDetail(index) {
+    let game = this.game;
+    let kind = game.buildKinds(index)[0];
+    let cost = this.t(kind === 'annex' ? 'ask.pick.annex' : 'ask.pick.cost', { amount: this.money(game.buildCost(index, kind)) });
+    return cost + ' · ' + this.t('ask.pick.rise', { from: this.money(game.toll(index)), to: this.money(game.tollAfter(index, kind)) });
+  }
+
+  /**
+   * 칸을 고르는 창의 선택지에 덧붙일, 그 칸에 대한 짧은 설명을 사유에 맞게 만든다. (잃는 것은 가치를, 기지는 이용료의 변화를, 남의 별은 주인과 이용료를 알린다.)
+   * @param {string} reason 고르는 사유
+   * @param {number} index 칸 번호
+   * @returns {string} 설명 (덧붙일 것이 없으면 빈 문자열)
+   */
+  pickDetail(reason, index) {
+    let game = this.game;
+    let tile = game.board[index];
+    let land = game.state.lands[index];
+    switch (reason) {
+      case 'blackhole': return this.t('ask.pick.value', { amount: this.money(game.value(index)) });
+      case 'give': return this.t('ask.pick.value', { amount: this.money(game.value(index)) });
+      case 'take': return this.t('ask.pick.value', { amount: this.money(game.value(index)) });
+      case 'basereturn': return this.t('ask.pick.fee', { amount: this.money(game.toll(index)) });
+      case 'freebase': return this.t('ask.pick.rise', { from: this.money(game.money(tile.toll)), to: this.money(game.money(tile.fee.base)) });
+      case 'reunion': return this.workDetail(index);
+      case 'earth': return this.workDetail(index);
+      case 'pascal': return this.t('ask.pick.owner', { player: this.playerName(game.state.players[land.owner]), amount: this.money(game.toll(index)) });
+      default: return '';
+    }
+  }
+
+  /**
+   * 카드의 효과 등으로 칸 하나를 골라야 할 때 선택지가 든 창으로 묻는다. 고르지 않아도 되는 선택에는 고르지 않는 선택지를 더한다.
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 선택 요청 { reason, options, optional, card }
+   * @returns {Promise<number|null>} 고른 칸 번호 (고르지 않으면 null)
+   */
+  async askPick(player, request) {
+    let buttons = [];
+    void player;
+    // 고를 수 있는 칸마다 이름과 짧은 설명을 적은 선택지를 만든다.
+    for (let index of request.options) {
+      let detail = this.pickDetail(request.reason, index);
+      buttons.push({ label: this.landLabel(index) + (detail ? ' (' + detail + ')' : ''), value: index, primary: true });
+    }
+    if (request.optional) buttons.push({ label: this.t('ask.pick.skip'), value: 'skip' });
+    let params = { card: request.card ? this.cardTitle(request.card) : '' };
+    let answer = await this.dialog({ kind: 'pick', title: this.t('ask.pick.' + request.reason + '.title'), text: this.t('ask.pick.' + request.reason + '.text', params), buttons, stack: true });
+    return answer === null || answer === 'skip' ? null : Number(answer);
+  }
+
+  /**
+   * 카드의 효과로 다른 플레이어 한 명을 골라야 할 때 선택지가 든 창으로 묻는다.
+   * @param {Object} player 사용자 플레이어
+   * @param {Object} request 선택 요청 { reason, options : 플레이어 번호 목록, card }
+   * @returns {Promise<number|null>} 고른 플레이어의 번호
+   */
+  async askTarget(player, request) {
+    let buttons = [];
+    void player;
+    // 고를 수 있는 플레이어마다 이름과 보유 현금을 적은 선택지를 만든다.
+    for (let id of request.options) {
+      let rival = this.game.state.players[id];
+      buttons.push({ label: this.styleOf(rival).symbol + ' ' + this.playerName(rival) + ' (' + this.money(rival.cash) + ')', value: id, primary: true });
+    }
+    let answer = await this.dialog({ kind: 'pick', title: this.t('ask.target.title'), text: this.t('ask.target.text', { card: request.card ? this.cardTitle(request.card) : '' }), buttons, stack: true });
+    return answer === null ? null : Number(answer);
+  }
+
+  /**
+   * 조디악의 선물 카드에서 주사위를 1개 던질지 2개 던질지 묻는다.
+   * @returns {Promise<number>} 던질 주사위의 수 (1 또는 2)
+   */
+  async askDiceCount() {
+    let answer = await this.dialog({
+      kind: 'pick', title: ICONS.dice + ' ' + this.t('ask.dicecount.title'), text: this.t('ask.dicecount.text'),
+      buttons: [{ label: this.t('ask.dicecount.one'), value: 1, primary: true }, { label: this.t('ask.dicecount.two'), value: 2, primary: true }], stack: true,
+    });
+    return Number(answer) === 2 ? 2 : 1;
   }
 
   /**
