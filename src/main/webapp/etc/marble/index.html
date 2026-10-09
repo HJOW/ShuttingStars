@@ -26,9 +26,32 @@
     <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
     <link rel="icon" href="icons/hellmarble.svg" type="image/svg+xml" sizes="any">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" sizes="180x180">
-    <meta http-equiv="refresh" content="0; url=hellmarble.html">
+    <style>
+        body { font-family: Pretendard, "Noto Sans", D2Coding, sans-serif; text-align: center; padding: 2em; background: #ece6d8; color: #222; }
+        #hm-warn { display: none; }
+    </style>
 </head>
 <body>
-    <a href="hellmarble.html">Hellmarble 시작</a>
+    <!-- 자바스크립트가 꺼져 있으면 이 안내만 보이고 이동하지 않는다. -->
+    <noscript>
+        <h2>Hellmarble</h2>
+        <p>이 게임은 JavaScript가 필요합니다. 브라우저 설정에서 JavaScript를 활성화한 후 새로고침해 주세요.<br>
+        This game requires JavaScript. Please enable JavaScript and reload the page.</p>
+    </noscript>
+    <div id="hm-warn">
+        <p>게임 화면으로 이동하지 못했습니다. 아래 링크를 눌러 주세요.<br>Could not redirect automatically.</p>
+        <a href="hellmarble.html">Hellmarble 시작 / Start</a>
+    </div>
+    <script>
+        // 자바스크립트 동작이 확인되면 실제 게임 페이지로 이동한다. (이동 실패 시 링크 안내 표시)
+        (function () {
+            try {
+                window.location.replace("hellmarble.html" + window.location.search + window.location.hash);
+            } catch (e) { /* 아래 안내 표시로 처리 */ }
+            setTimeout(function () {
+                document.getElementById("hm-warn").style.display = "block";
+            }, 3000);
+        })();
+    </script>
 </body>
 </html>

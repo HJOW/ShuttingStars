@@ -1,6 +1,6 @@
 /**
  * @file Hellmarble : 웹으로 즐기는 보드게임의 주 구현 파일이다.
- * 게임 데이터, 규칙 엔진, 인공지능, 저장소 추상화, 화면 구성을 모두 이 파일에서 제공한다.
+ * 게임 데이터, 규칙 엔진, 인공지능, 저장소 추상화, 화면 구성과 화면의 모양(스타일시트)을 모두 이 파일에서 제공한다.
  * 이 파일은 스스로 게임을 초기화하지 않으므로, HTML 에서 initHellmarble() 을 호출해야 한다.
  * @author HJOW
  * @copyright 2026 HJOW
@@ -7373,12 +7373,13 @@ export class HellmarbleApp extends HellmarbleHost {
   /**
    * 애플리케이션을 만든다. 화면은 start() 를 호출해야 그려진다.
    * @param {HTMLElement} root 게임 화면을 그릴 요소
-   * @param {Object} [options] 선택 사항 { storage : 저장소 객체, timings : 연출 시간(밀리초) 덮어쓰기, random : 부적 추첨에 쓸 난수 함수 }
+   * @param {Object} [options] 선택 사항 { storage : 저장소 객체, timings : 연출 시간(밀리초) 덮어쓰기, random : 부적 추첨에 쓸 난수 함수, style : false 이면 게임의 스타일시트를 넣지 않음 }
    */
   constructor(root, options) {
     super();
     let config = options || {};
     this.root = root;
+    this.styled = config.style !== false;
     this.storage = config.storage || new HellmarbleStorage();
     this.timings = Object.assign({}, TIMINGS, config.timings);
     this.random = typeof config.random === 'function' ? config.random : Math.random;
@@ -7468,10 +7469,11 @@ export class HellmarbleApp extends HellmarbleHost {
   }
 
   /**
-   * 저장된 설정을 불러오고(없으면 시스템 설정을 탐지하고) 입력 처리를 연결한 뒤 메인 메뉴를 보여준다.
+   * 게임 화면의 스타일시트를 문서에 넣고, 저장된 설정을 불러온(없으면 시스템 설정을 탐지한) 다음 입력 처리를 연결하고 메인 메뉴를 보여준다.
    * @returns {HellmarbleApp} 자기 자신
    */
   start() {
+    if (this.styled) installStyle(this.root);
     let saved = this.storage.read('settings');
     if (saved && typeof saved === 'object') {
       if (Object.keys(TEXTS).includes(saved.language)) this.settings.language = saved.language;
@@ -11050,16 +11052,3452 @@ export class HellmarbleApp extends HellmarbleHost {
 }
 
 /* ==========================================================================
+ * 9-1. 화면 모양 (스타일)
+ * ========================================================================== */
+
+/**
+ * 게임의 스타일 요소에 붙이는 표시(속성 이름)이다. 같은 곳에 스타일을 두 번 넣지 않도록, 이 표시로 이미 넣은 것을 찾는다.
+ * @type {string}
+ */
+export const STYLE_MARK = 'data-hellmarble-style';
+
+/**
+ * 게임 화면의 모양을 정하는 스타일시트(CSS)의 내용이다.
+ * 화면의 요소와 마찬가지로 모양도 이 파일이 가지고 있다가, 초기화할 때 installStyle() 이 문서에 넣는다.
+ * 그래서 css/hellmarble.css 가 없어도 게임 화면은 그대로 그려진다. (그 파일에는 게임을 초기화하기 전의 페이지 스타일만 있다. 글꼴 파일은 css/fonts.css 가 불러온다.)
+ * 선택자는 모두 게임이 만드는 요소의 클래스(hm- 으로 시작한다)만 쓰므로, 페이지의 다른 요소에는 영향을 주지 않는다.
+ * 보드 안쪽의 크기는 보드 너비에 비례하는 단위(cqw)를 써서 화면 크기에 맞게 함께 커지고 작아진다.
+ * CSS 의 역슬래시를 그대로 적을 수 있도록 String.raw 로 적었다. 내용에 백틱과 "${" 는 쓸 수 없다.
+ * @type {string}
+ */
+export const STYLE_TEXT = String.raw`
+/* ---------- 색상 (밝은 화면 / 어두운 화면) ---------- */
+
+.hm-root {
+  --hm-bg: #ece6d8;
+  --hm-surface: #fffdf7;
+  --hm-surface-2: #f4eee0;
+  --hm-text: #232733;
+  --hm-muted: #6a6f7d;
+  --hm-line: #d6cdb8;
+  --hm-accent: #0f766e;
+  --hm-accent-ink: #ffffff;
+  --hm-tile: #fffdf7;
+  --hm-corner: #f1e9d6;
+  --hm-felt-a: #dcefe6;
+  --hm-felt-b: #c5e0d4;
+  --hm-paper: #fff7dc;
+  --hm-shadow: 0 16px 40px rgba(60, 50, 20, 0.16);
+  /*
+   * 글꼴은 글을 보여주는 것과 데이터·수치를 보여주는 것으로 나눈다. 글꼴 파일은 fonts.css 가 불러온다.
+   * Noto Sans 자리에는 fonts.css 가 불러오는 언어별 Noto Sans (한국어, 일본어, 중국어 간체, 그 밖의 문자)를 모두 적는다.
+   * 데이터·수치용에는 고정폭인 Noto Sans Mono 를 그 앞에 둔다.
+   */
+  --hm-font-noto: "Noto Sans KR", "Noto Sans JP", "Noto Sans SC", "Noto Sans";
+  --hm-font-text: "Pretendard", var(--hm-font-noto), "D2Coding", sans-serif;
+  --hm-font-data: "D2Coding", "Nanum Gothic Coding", "Noto Sans Mono", var(--hm-font-noto), monospace;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--hm-bg);
+  color: var(--hm-text);
+  font-family: var(--hm-font-text);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+.hm-root[data-theme="dark"] {
+  --hm-bg: #0f1219;
+  --hm-surface: #1a1f2a;
+  --hm-surface-2: #232937;
+  --hm-text: #e9ecf3;
+  --hm-muted: #9aa3b5;
+  --hm-line: #364054;
+  --hm-accent: #2cc7b5;
+  --hm-accent-ink: #05211e;
+  --hm-tile: #232a38;
+  --hm-corner: #2b3344;
+  --hm-felt-a: #17242b;
+  --hm-felt-b: #1d3136;
+  --hm-paper: #2c2818;
+  --hm-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.hm-root *,
+.hm-root *::before,
+.hm-root *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- 데이터·수치용 글꼴 ---------- */
+
+/*
+ * 금액과 가격을 따로 보여주는 자리에는 데이터·수치용 글꼴을 쓴다. (JSON 입력창은 .hm-textarea 에서 지정한다.)
+ * 문장 안에 섞여 있는 금액은 문장의 글꼴을 그대로 따른다.
+ */
+.hm-num,
+.hm-slot-money,
+.hm-wallet-money,
+.hm-items-money,
+.hm-item-price,
+.hm-trade-number,
+.hm-trade-money,
+.hm-tile-sub,
+.hm-fund-money,
+.hm-player-cash,
+.hm-transfer-amount,
+.hm-float {
+  font-family: var(--hm-font-data);
+}
+
+/* ---------- 버튼 ---------- */
+
+.hm-button {
+  appearance: none;
+  padding: 12px 18px;
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  color: var(--hm-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.hm-button:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.hm-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.hm-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hm-button:focus-visible,
+.hm-tile:focus-visible,
+.hm-slot:focus-visible,
+.hm-player:focus-visible,
+.hm-land-item:focus-visible,
+.hm-item-card:focus-visible,
+.hm-items-x:focus-visible,
+.hm-input:focus-visible {
+  outline: 3px solid var(--hm-accent);
+  outline-offset: 2px;
+}
+
+.hm-primary,
+.hm-active {
+  border-color: var(--hm-accent);
+  background: var(--hm-accent);
+  color: var(--hm-accent-ink);
+}
+
+.hm-danger:not(:disabled) {
+  border-color: #e03131;
+  color: #e03131;
+}
+
+.hm-danger:not(:disabled):hover {
+  background: rgba(224, 49, 49, 0.12);
+}
+
+.hm-wide {
+  width: 100%;
+}
+
+/* ---------- 메뉴, 슬롯, 대기실, 설정 화면 ---------- */
+
+.hm-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+
+.hm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 560px);
+  padding: 32px;
+  border: 1px solid var(--hm-line);
+  border-radius: 22px;
+  background: var(--hm-surface);
+  box-shadow: var(--hm-shadow);
+}
+
+.hm-lobby {
+  width: min(100%, 900px);
+}
+
+.hm-menu {
+  align-items: center;
+  width: min(100%, 420px);
+  text-align: center;
+}
+
+.hm-logo-dice {
+  display: flex;
+  gap: 12px;
+  transform: rotate(-8deg);
+}
+
+.hm-logo {
+  margin: 4px 0 0;
+  font-size: clamp(34px, 9vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hm-heading {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.hm-tagline {
+  margin: 0;
+  color: var(--hm-muted);
+}
+
+.hm-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.hm-menu-list .hm-button {
+  padding: 15px 18px;
+  font-size: 18px;
+}
+
+.hm-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hm-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 136px;
+  padding: 16px;
+  border: 2px solid var(--hm-line);
+  border-radius: 16px;
+  background: var(--hm-surface-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.08s ease;
+}
+
+.hm-slot:hover:not(:disabled) {
+  border-color: var(--hm-accent);
+  transform: translateY(-2px);
+}
+
+.hm-slot:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hm-slot-blank {
+  border-style: dashed;
+  background: transparent;
+}
+
+.hm-slot-title {
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hm-slot-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 19px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-slot-money {
+  font-weight: 700;
+}
+
+.hm-slot-state,
+.hm-slot-empty {
+  color: var(--hm-muted);
+  font-size: 14px;
+}
+
+.hm-form {
+  width: min(100%, 440px);
+}
+
+.hm-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  color: var(--hm-text);
+  font: inherit;
+  font-size: 18px;
+}
+
+.hm-wallet {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--hm-surface-2);
+}
+
+.hm-wallet-label {
+  color: var(--hm-muted);
+  font-weight: 700;
+}
+
+.hm-wallet-money {
+  font-size: clamp(22px, 5vw, 30px);
+  font-weight: 900;
+}
+
+/* 리그 카드는 보이는 리그의 수(--hm-league-count)만큼 한 줄에 나란히 놓는다. */
+.hm-leagues {
+  display: grid;
+  grid-template-columns: repeat(var(--hm-league-count, 3), minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hm-league {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 2px solid var(--hm-league);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--hm-league) 9%, var(--hm-surface));
+}
+
+.hm-league .hm-row {
+  padding: 3px 0;
+}
+
+.hm-league-name {
+  margin: 0 0 4px;
+  color: var(--hm-league);
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.hm-league-rivals {
+  flex: 1;
+  margin: 4px 0 8px;
+  color: var(--hm-muted);
+  font-size: 13px;
+}
+
+.hm-note {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 14px;
+}
+
+.hm-lobby-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hm-lobby-buttons .hm-button {
+  flex: 1 1 160px;
+}
+
+/* 대기실에서 장착한 색상과 모양(내 말), 보유 아이템 요약을 나란히 보여준다. */
+.hm-lobby-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hm-lobby-status > * {
+  flex: 1 1 240px;
+}
+
+/* 대기실에 보이는 보유 아이템 요약이다. 아이템이 늘어도 길어지지 않도록 종류 수와 개수만 적는다. */
+.hm-look,
+.hm-item-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  color: var(--hm-muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.hm-look .hm-token {
+  --hm-size: 28px;
+}
+
+/* 색상이나 모양을 장착하지 않아 리그에 참여할 수 없는 상태를 알린다. */
+.hm-look-missing {
+  border-color: #e03131;
+  color: #e03131;
+}
+
+/* ---------- 아이템 창 (상점, 보유 아이템 목록) ---------- */
+
+/*
+ * 제목과 보유 현황, 탭과 분류 버튼, 닫기 버튼은 제자리에 두고 가운데의 아이템 목록만 스크롤한다.
+ * 아이템이 많아져도 창은 화면을 넘지 않고, 목록은 창의 너비에 맞춰 여러 줄로 나열된다.
+ */
+.hm-modal.hm-items {
+  gap: 0;
+  width: min(100%, 880px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.hm-items-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 18px 22px 8px;
+}
+
+.hm-items-head .hm-modal-title {
+  flex: 1 1 auto;
+}
+
+.hm-items-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hm-items-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 12px;
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  line-height: 1.25;
+}
+
+.hm-items-stat-label {
+  color: var(--hm-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hm-items-stat-value {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.hm-items-money {
+  color: var(--hm-accent);
+}
+
+.hm-items-x {
+  appearance: none;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--hm-line);
+  border-radius: 50%;
+  background: var(--hm-surface-2);
+  color: var(--hm-text);
+  font: inherit;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hm-items-x:hover {
+  filter: brightness(1.06);
+}
+
+.hm-items-hint {
+  padding: 0 22px 12px;
+  font-size: 14px;
+}
+
+.hm-items-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 0 22px 14px;
+  border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--hm-surface-2);
+}
+
+.hm-tab {
+  padding: 8px 24px;
+}
+
+.hm-tab:not(.hm-active) {
+  border-color: transparent;
+  background: transparent;
+}
+
+.hm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hm-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+/*
+ * 줄의 높이는 그 줄에 놓인 카드의 내용에 맞춘다. (grid-auto-rows: max-content)
+ * 기본값(auto)으로 두면, 목록의 높이가 모자랄 때 줄이 카드의 최소 높이까지 줄어들어 카드의 내용이 테두리 밖으로 넘친다.
+ * 카드가 다 들어가지 않으면 줄이지 않고 목록을 스크롤한다.
+ */
+.hm-item-grid {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 10px;
+  min-height: 196px;
+  padding: 16px 22px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--hm-surface-2) 55%, var(--hm-surface));
+}
+
+.hm-item-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 52px 12px;
+  color: var(--hm-muted);
+  text-align: center;
+}
+
+/* 카드의 높이는 내용(이름, 두 줄까지의 설명, 가격과 꼬리표)에 맞춰지며, 설명이 더 길어지면 그만큼 늘어난다. */
+.hm-item-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 2px solid var(--hm-line);
+  border-radius: 14px;
+  background: var(--hm-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.08s ease;
+}
+
+.hm-item-card:hover {
+  border-color: var(--hm-accent);
+  transform: translateY(-1px);
+}
+
+/* 이번 게임에서 이미 쓴 아이템은 흐리게 보여준다. */
+.hm-item-spent {
+  border-style: dashed;
+  background: transparent;
+}
+
+.hm-item-spent .hm-item-icon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.hm-item-icon {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--hm-surface-2);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.hm-item-icon-support {
+  background: color-mix(in srgb, #2f9e44 18%, var(--hm-surface));
+}
+
+.hm-item-icon-travel {
+  background: color-mix(in srgb, #7c3aed 18%, var(--hm-surface));
+}
+
+.hm-item-icon-dice {
+  background: color-mix(in srgb, #f08c00 20%, var(--hm-surface));
+}
+
+/* 그림 문자가 같은 아이템을 구분하는 표시이다. (예 : 주사위에서 나오는 눈) */
+.hm-item-mark {
+  position: absolute;
+  right: -7px;
+  bottom: -6px;
+  padding: 1px 6px;
+  border: 2px solid var(--hm-surface);
+  border-radius: 999px;
+  background: var(--hm-text);
+  color: var(--hm-surface);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.hm-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hm-item-name {
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+/* 설명은 두 줄의 자리를 잡아 둔다. 한 줄짜리 설명의 카드도 같은 높이가 되어 가격의 줄이 나란히 놓인다. */
+.hm-item-brief {
+  min-height: 2.6em;
+  color: var(--hm-muted);
+  font-size: 13px;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.hm-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.hm-item-meta:empty {
+  display: none;
+}
+
+.hm-item-price {
+  color: var(--hm-accent);
+  font-weight: 900;
+}
+
+.hm-item-stock,
+.hm-item-flag,
+.hm-item-tag {
+  padding: 1px 9px;
+  border: 1px solid var(--hm-line);
+  border-radius: 999px;
+  background: var(--hm-surface-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.hm-item-flag,
+.hm-item-tag {
+  color: var(--hm-muted);
+}
+
+/* 색상과 모양은 그것을 장착했을 때의 말을 그려 보여주고, 장착 중인 것은 테두리와 꼬리표로 알린다. */
+.hm-item-icon .hm-token {
+  --hm-size: 36px;
+}
+
+.hm-item-on {
+  border-color: var(--hm-accent);
+}
+
+.hm-item-worn {
+  border-color: var(--hm-accent);
+  background: var(--hm-accent);
+  color: var(--hm-accent-ink);
+}
+
+/* ---------- 부적 ---------- */
+
+/* 부적과 부적 추첨권의 그림 바탕이다. 등급이 정해진 부적은 아래의 등급 색으로 바뀐다. */
+.hm-item-icon-charm {
+  --hm-grade: #e8590c;
+  background: color-mix(in srgb, var(--hm-grade) 20%, var(--hm-surface));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--hm-grade) 55%, transparent);
+}
+
+/* 부적의 등급마다 색을 정한다. 일반은 회색, 고급은 초록, 희귀는 보라, 전설은 금색이다. */
+.hm-grade-common {
+  --hm-grade: #868e96;
+  --hm-grade-ink: #ffffff;
+}
+
+.hm-grade-uncommon {
+  --hm-grade: #2f9e44;
+  --hm-grade-ink: #ffffff;
+}
+
+.hm-grade-rare {
+  --hm-grade: #7048e8;
+  --hm-grade-ink: #ffffff;
+}
+
+.hm-grade-legend {
+  --hm-grade: #f59f00;
+  --hm-grade-ink: #2b2000;
+}
+
+.hm-grade-tag {
+  border-color: var(--hm-grade);
+  background: var(--hm-grade);
+  color: var(--hm-grade-ink);
+}
+
+/*
+ * 부적 추첨의 결과이다. 뽑힌 부적마다 봉투가 차례로 뒤집히며 등급과 이름이 드러난다.
+ * 뒤집히는 차례는 --hm-order 로 정하며, 등급이 높을수록 빛과 움직임이 화려하다.
+ */
+.hm-modal.hm-item-detail.hm-draw {
+  align-items: center;
+  width: min(100%, 760px);
+  overflow: hidden auto;
+  text-align: center;
+}
+
+.hm-draw-stage {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  padding: 26px 8px;
+}
+
+.hm-draw-many {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.hm-draw-card {
+  --hm-delay: calc(var(--hm-order) * 0.32s + 0.75s);
+  position: relative;
+  width: 168px;
+  aspect-ratio: 3 / 4;
+  isolation: isolate;
+  perspective: 700px;
+  animation: hm-draw-wobble 0.36s ease-in-out calc(var(--hm-delay) - 0.36s) both;
+}
+
+.hm-draw-many .hm-draw-card {
+  width: auto;
+}
+
+.hm-draw-back,
+.hm-draw-front {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  overflow: hidden;
+  border-radius: 14px;
+  backface-visibility: hidden;
+}
+
+.hm-draw-back {
+  border: 3px solid #ffd43b;
+  background: linear-gradient(160deg, #e03131, #862e9c);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  font-size: clamp(30px, 6vw, 62px);
+  animation: hm-draw-out 0.55s ease-in var(--hm-delay) both;
+}
+
+.hm-draw-front {
+  border: 3px solid var(--hm-grade);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hm-grade) 26%, var(--hm-surface)), var(--hm-surface) 62%);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  animation: hm-draw-in 0.55s ease-out var(--hm-delay) both;
+}
+
+.hm-draw-grade {
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--hm-grade);
+  color: var(--hm-grade-ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.hm-draw-icon {
+  font-size: clamp(26px, 5.4vw, 58px);
+  line-height: 1.15;
+}
+
+.hm-draw-name {
+  font-size: clamp(11px, 1.5vw, 15px);
+  font-weight: 800;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.hm-draw-one .hm-draw-name {
+  font-size: 17px;
+}
+
+/* 고급 : 드러난 뒤 초록빛이 두 번 번진다. */
+.hm-grade-uncommon .hm-draw-front {
+  animation: hm-draw-in 0.55s ease-out var(--hm-delay) both, hm-draw-glow 1.3s ease-out calc(var(--hm-delay) + 0.5s) 2;
+}
+
+/* 희귀 : 뒤에서 빛줄기가 돌고, 보랏빛이 계속 번진다. */
+.hm-grade-rare .hm-draw-front {
+  animation: hm-draw-in 0.55s ease-out var(--hm-delay) both, hm-draw-glow 1.5s ease-in-out calc(var(--hm-delay) + 0.5s) infinite;
+}
+
+.hm-grade-rare.hm-draw-card::before,
+.hm-grade-legend.hm-draw-card::before {
+  content: "";
+  position: absolute;
+  inset: -34%;
+  z-index: 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--hm-grade) 70%, transparent) 0deg 9deg, transparent 9deg 30deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  opacity: 0;
+  animation: hm-draw-rays 7s linear infinite, hm-draw-show 0.6s ease-out calc(var(--hm-delay) + 0.3s) forwards;
+  pointer-events: none;
+}
+
+/* 전설 : 금빛 빛줄기가 더 크고 빠르게 돌며, 드러나는 순간 번쩍이고 봉투가 튀어 오른 뒤 금빛이 훑고 지나간다. */
+.hm-grade-legend.hm-draw-card {
+  z-index: 2;
+  animation: hm-draw-wobble 0.36s ease-in-out calc(var(--hm-delay) - 0.36s) both, hm-draw-leap 0.9s cubic-bezier(0.2, 1.6, 0.4, 1) calc(var(--hm-delay) + 0.35s) both;
+}
+
+.hm-grade-legend.hm-draw-card::before {
+  inset: -62%;
+  background: repeating-conic-gradient(from 0deg, #ffd43b 0deg 7deg, transparent 7deg 20deg);
+  animation: hm-draw-rays 3.4s linear infinite, hm-draw-show 0.6s ease-out calc(var(--hm-delay) + 0.3s) forwards;
+}
+
+.hm-grade-legend .hm-draw-front {
+  border-color: #ffd43b;
+  background: linear-gradient(180deg, #fff3bf, var(--hm-surface) 70%);
+  animation: hm-draw-in 0.55s ease-out var(--hm-delay) both, hm-draw-glow 1.1s ease-in-out calc(var(--hm-delay) + 0.5s) infinite;
+}
+
+.hm-root[data-theme="dark"] .hm-grade-legend .hm-draw-front {
+  background: linear-gradient(180deg, #5c4500, var(--hm-surface) 70%);
+}
+
+.hm-grade-legend .hm-draw-front::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  animation: hm-draw-burst 0.9s ease-out calc(var(--hm-delay) + 0.3s) both;
+  pointer-events: none;
+}
+
+.hm-grade-legend .hm-draw-front::after {
+  content: "";
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
+  transform: translateX(-70%);
+  animation: hm-draw-sweep 2.2s ease-in-out calc(var(--hm-delay) + 0.9s) infinite;
+  pointer-events: none;
+}
+
+/* 모두 드러난 뒤에 가장 높은 등급과 등급별 개수를 알린다. */
+.hm-draw-best,
+.hm-draw-summary {
+  margin: 0;
+  animation: hm-fade 0.5s ease-out calc(var(--hm-count) * 0.32s + 1.1s) both;
+}
+
+.hm-draw-best {
+  color: var(--hm-grade);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.hm-draw-best.hm-grade-legend {
+  font-size: 28px;
+  text-shadow: 0 0 14px rgba(255, 212, 59, 0.9);
+  animation: hm-fade 0.5s ease-out calc(var(--hm-count) * 0.32s + 1.1s) both, hm-draw-beat 1s ease-in-out calc(var(--hm-count) * 0.32s + 1.6s) infinite;
+}
+
+/* 버튼 영역은 대화 상자의 안쪽 여백까지 차지하므로(아래 "대화 상자"의 .hm-modal-buttons 참고) 그만큼 넓게 잡는다. */
+.hm-draw .hm-modal-buttons {
+  width: calc(100% + var(--hm-modal-pad) * 2);
+}
+
+@media (max-width: 640px) {
+  .hm-draw-many {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hm-draw-card {
+    width: 150px;
+  }
+}
+
+.hm-items-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px 18px;
+  border-top: 1px solid var(--hm-line);
+}
+
+.hm-items-foot .hm-button {
+  flex: none;
+  min-width: 120px;
+}
+
+/* 구매와 판매의 결과, 또는 지금 할 수 없는 이유를 알리는 줄이다. */
+.hm-items-notice {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 1.45em;
+  margin: 0;
+  color: var(--hm-accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hm-items-reason {
+  color: var(--hm-muted);
+  font-weight: 600;
+}
+
+/* 아이템 창 위에 겹쳐 뜨는 상세 정보 팝업이다. 아래의 창은 한 번 더 음영 처리한다. */
+.hm-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 10, 16, 0.5);
+  animation: hm-fade 0.15s ease-out;
+}
+
+.hm-modal.hm-item-detail {
+  width: min(100%, 470px);
+}
+
+.hm-item-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hm-item-detail-head .hm-item-icon {
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  font-size: 34px;
+}
+
+.hm-item-detail-head .hm-item-icon .hm-token {
+  --hm-size: 46px;
+}
+
+.hm-item-detail-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hm-item-detail .hm-modal-text {
+  color: var(--hm-text);
+  font-size: 15px;
+}
+
+.hm-item-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--hm-surface-2);
+  font-size: 14px;
+}
+
+.hm-item-facts dt {
+  color: var(--hm-muted);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.hm-item-facts dd {
+  margin: 0;
+}
+
+.hm-item-detail .hm-land-rows {
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+}
+
+.hm-item-detail .hm-items-notice {
+  flex: none;
+}
+
+.hm-item-detail .hm-items-notice:empty {
+  display: none;
+}
+
+/* 상점의 상세 팝업에서 수량을 정하고 합계를 보는 영역이다. */
+.hm-trade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--hm-line);
+  border-radius: 12px;
+}
+
+.hm-trade-count,
+.hm-trade-total {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hm-trade-label {
+  margin-right: 4px;
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hm-step {
+  min-width: 40px;
+  padding: 8px 10px;
+  line-height: 1.1;
+}
+
+.hm-step-max {
+  font-size: 13px;
+}
+
+.hm-trade-number {
+  min-width: 2.2em;
+  font-size: 19px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.hm-trade-money {
+  font-size: 19px;
+  font-weight: 900;
+}
+
+/* 좁은 화면에서는 닫기 버튼을 제목 옆에 두고 보유 현황을 다음 줄로 내리며, 여백을 줄인다. */
+@media (max-width: 640px) {
+  .hm-items-stats {
+    order: 3;
+    width: 100%;
+  }
+
+  .hm-items-head,
+  .hm-items-hint,
+  .hm-items-bar,
+  .hm-item-grid,
+  .hm-items-foot {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+/* 세로가 아주 짧은 화면에서는 목록만이 아니라 창 전체를 스크롤한다. */
+@media (max-height: 560px) {
+  .hm-modal.hm-items {
+    overflow: auto;
+  }
+
+  .hm-item-grid {
+    flex: none;
+    min-height: 0;
+    overflow: visible;
+  }
+}
+
+/* 긴 글(JSON)을 입력하거나 보여주는 입력창이다. 일반 텍스트 입력창처럼 동작한다. */
+.hm-textarea {
+  min-height: 220px;
+  overflow: auto;
+  font-family: var(--hm-font-data);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre;
+  resize: vertical;
+}
+
+.hm-modal.hm-modal-wide {
+  width: min(100%, 680px);
+}
+
+.hm-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-setting-label {
+  font-weight: 700;
+}
+
+.hm-segment {
+  display: flex;
+  gap: 6px;
+}
+
+.hm-segment .hm-button {
+  padding: 9px 16px;
+}
+
+/* ---------- 대화 상자 (화면 음영 처리) ---------- */
+
+.hm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 10, 16, 0.62);
+  animation: hm-fade 0.15s ease-out;
+}
+
+/*
+ * 대화 상자는 화면보다 커지지 않으며, 내용이 다 들어가지 않으면 대화 상자 안을 스크롤한다.
+ * 안의 요소는 줄어들지 않아야 한다. 줄어드는 요소가 있으면(넘치는 내용을 감추는 땅 정보 카드 등) 그 요소가 눌려 내용이 잘리고,
+ * 대화 상자에는 넘치는 것이 없게 되어 스크롤도 생기지 않는다. 그런 요소에는 flex: none 을 준다.
+ */
+.hm-modal {
+  --hm-modal-pad: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, 460px);
+  max-height: 100%;
+  padding: var(--hm-modal-pad);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--hm-line);
+  border-radius: 20px;
+  background: var(--hm-surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  animation: hm-pop 0.18s ease-out;
+}
+
+.hm-modal-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.hm-modal-text {
+  margin: 0;
+  color: var(--hm-muted);
+  white-space: pre-line;
+}
+
+.hm-modal-buttons {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.hm-modal-buttons .hm-button {
+  flex: 1 1 auto;
+}
+
+.hm-modal-buttons.hm-stack {
+  flex-direction: column;
+}
+
+/*
+ * 나란히 놓인 선택지(구매 / 구매하지 않음, 예 / 아니오 등)는 대화 상자를 스크롤해도 아래쪽에 붙어 있어, 내용을 다 내려 보지 않고도 고를 수 있다.
+ * 대화 상자의 안쪽 여백까지 차지하도록 넓혀서, 붙어 있을 때와 제자리에 있을 때의 모습이 같다. (스크롤이 없으면 달라 보이는 것이 없다.)
+ * 붙는 기준선은 스크롤 영역의 안쪽 여백을 뺀 자리이므로, 여백만큼 더 내려(bottom 을 음수로) 대화 상자의 아래 끝에 맞춘다.
+ * 세로로 쌓인 선택지는 화면을 다 가릴 수 있으므로 붙이지 않고 내용과 함께 스크롤한다.
+ */
+.hm-modal-buttons:not(.hm-stack) {
+  position: sticky;
+  bottom: calc(var(--hm-modal-pad) * -1);
+  z-index: 1;
+  margin: -8px calc(var(--hm-modal-pad) * -1) calc(var(--hm-modal-pad) * -1);
+  padding: 12px var(--hm-modal-pad) var(--hm-modal-pad);
+  background: linear-gradient(to bottom, transparent, var(--hm-surface) 12px);
+}
+
+.hm-modal-win .hm-modal-title {
+  color: var(--hm-accent);
+  font-size: 34px;
+  text-align: center;
+}
+
+.hm-modal-lose .hm-modal-title {
+  color: #e03131;
+  font-size: 34px;
+  text-align: center;
+}
+
+.hm-modal-win .hm-modal-text,
+.hm-modal-lose .hm-modal-text {
+  text-align: center;
+}
+
+.hm-modal-sell {
+  border-color: #e03131;
+}
+
+.hm-cash-line {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+/* 우대권 사용 창 : 지불할 금액을 글에서 떼어 한 줄로 강조한다. */
+.hm-due {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 2px solid #e03131;
+  border-radius: 12px;
+  background: rgba(224, 49, 49, 0.1);
+  font-weight: 800;
+}
+
+.hm-due .hm-num {
+  color: #e03131;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.hm-root[data-theme="dark"] .hm-due {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.14);
+}
+
+.hm-root[data-theme="dark"] .hm-due .hm-num {
+  color: #ff8787;
+}
+
+.hm-order-row {
+  display: grid;
+  grid-template-columns: 22px 30px minmax(0, 1fr) auto 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hm-line);
+}
+
+.hm-order-rank {
+  color: var(--hm-muted);
+  font-weight: 900;
+}
+
+.hm-order-name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-order-dice {
+  display: flex;
+  gap: 6px;
+}
+
+.hm-order-dice .hm-die {
+  --hm-size: 28px;
+}
+
+.hm-order-sum {
+  font-weight: 900;
+  text-align: right;
+}
+
+/* ---------- 땅 정보 카드 (확대 창과 구매·건설 창이 함께 쓴다) ---------- */
+
+/* 대화 상자나 확대 창 안에서 눌려 내용이 잘리지 않도록 줄어들지 않게 한다. (넘치면 그 창을 스크롤한다.) */
+.hm-land {
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--hm-line);
+  border-top: 14px solid var(--hm-land);
+  border-radius: 14px;
+  background: var(--hm-surface);
+  text-align: left;
+}
+
+.hm-land-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 0;
+}
+
+.hm-land-name {
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.hm-land-type {
+  flex: none;
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hm-land-desc {
+  margin: 0;
+  padding: 4px 14px 8px;
+  color: var(--hm-muted);
+  font-size: 13px;
+}
+
+.hm-land-rows {
+  padding: 6px 0;
+  border-top: 1px solid var(--hm-line);
+}
+
+.hm-land-status {
+  border-top-style: dashed;
+  background: var(--hm-surface-2);
+}
+
+.hm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 14px;
+  font-size: 14px;
+}
+
+.hm-row-label {
+  color: var(--hm-muted);
+}
+
+.hm-row-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+.hm-row-strong .hm-row-value {
+  color: var(--hm-accent);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.hm-owner-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hm-owner-label .hm-token {
+  --hm-size: 20px;
+}
+
+.hm-popover {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  padding: 8px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: 18px;
+  background: var(--hm-surface);
+  box-shadow: 0 0 0 2px var(--hm-accent), 0 22px 60px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  animation: hm-zoom 0.16s ease-out;
+}
+
+/* 확대 창의 이동 버튼(목적지를 고르는 중일 때)은 창을 스크롤해도 아래쪽에 붙어 있어 언제든 누를 수 있다. */
+.hm-popover > .hm-button {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex: none;
+  box-shadow: 0 0 0 8px var(--hm-surface);
+}
+
+/* 땅의 현실 정보를 재미있게 소개하는 글이다. */
+.hm-land-real {
+  margin: 0;
+  padding: 8px 14px 10px;
+  border-top: 1px dashed var(--hm-line);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hm-land-real strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--hm-accent);
+  font-size: 12px;
+}
+
+/* 플레이어 팝업 : 자산 요약과 소유한 땅 목록 */
+.hm-player-assets {
+  border: 1px solid var(--hm-line);
+  border-left: 8px solid var(--hm-player);
+  border-radius: 12px;
+}
+
+.hm-list-title {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.hm-land-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 6px;
+  max-height: 38vh;
+  overflow: auto;
+}
+
+.hm-land-item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--hm-line);
+  border-left: 8px solid var(--hm-land);
+  border-radius: 10px;
+  background: var(--hm-surface-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hm-land-item:hover {
+  filter: brightness(1.05);
+}
+
+.hm-land-item-name {
+  font-weight: 800;
+}
+
+.hm-land-item-toll {
+  flex: none;
+  color: var(--hm-muted);
+  font-size: 13px;
+}
+
+.hm-popover-hint {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- 게임 화면 배치 ---------- */
+
+/* 가로로 긴 화면에서는 보드를 화면 높이에 맞추고 옆에 플레이어와 기록을 둔다. */
+.hm-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 14px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 12px;
+}
+
+.hm-board-wrap {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+}
+
+.hm-board {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  grid-template-rows: repeat(11, minmax(0, 1fr));
+  gap: 2px;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--hm-line);
+  box-shadow: var(--hm-shadow);
+  container-type: inline-size;
+}
+
+/* ---------- 보드의 칸 ---------- */
+
+.hm-tile {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.5cqw;
+  background-color: var(--hm-tile);
+  color: var(--hm-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.hm-tile:hover {
+  filter: brightness(1.07);
+}
+
+.hm-side-corner {
+  background-color: var(--hm-corner);
+}
+
+/* 땅의 색상은 보드 중앙을 바라보는 쪽 테두리에 표시한다. */
+.hm-tile-color {
+  position: absolute;
+  background: var(--hm-land);
+}
+
+.hm-side-bottom .hm-tile-color {
+  inset: 0 0 auto 0;
+  height: 15%;
+}
+
+.hm-side-top .hm-tile-color {
+  inset: auto 0 0 0;
+  height: 15%;
+}
+
+.hm-side-left .hm-tile-color {
+  inset: 0 0 0 auto;
+  width: 15%;
+}
+
+.hm-side-right .hm-tile-color {
+  inset: 0 auto 0 0;
+  width: 15%;
+}
+
+.hm-tile-body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15cqw;
+  padding: 0.35cqw;
+  text-align: center;
+}
+
+.hm-side-bottom .hm-tile-body {
+  top: 15%;
+  bottom: 19%;
+}
+
+.hm-side-top .hm-tile-body {
+  top: 19%;
+  bottom: 15%;
+}
+
+.hm-side-left .hm-tile-body {
+  right: 15%;
+  left: 15%;
+}
+
+.hm-side-right .hm-tile-body {
+  right: 15%;
+  left: 15%;
+}
+
+/* 옆줄 칸은 양쪽 가장자리를 띠가 차지하므로, 이름이 중간에서 끊기지 않도록 안쪽 여백과 글자 크기를 조금 줄인다. */
+.hm-side-left .hm-tile-body,
+.hm-side-right .hm-tile-body {
+  padding-right: 0.15cqw;
+  padding-left: 0.15cqw;
+}
+
+.hm-side-left .hm-tile-name,
+.hm-side-right .hm-tile-name {
+  font-size: clamp(6px, 1.15cqw, 15px);
+}
+
+.hm-tile-icon {
+  font-size: clamp(9px, 1.7cqw, 26px);
+  line-height: 1.1;
+}
+
+.hm-side-corner .hm-tile-icon {
+  font-size: clamp(11px, 2.6cqw, 38px);
+}
+
+.hm-tile-name {
+  font-size: clamp(6px, 1.32cqw, 17px);
+  font-weight: 800;
+  line-height: 1.12;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.hm-tile-sub {
+  color: var(--hm-muted);
+  font-size: clamp(6px, 1.18cqw, 15px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* 소유자는 칸의 바깥쪽 가장자리에 소유자의 색 띠와 문양, 건물로 표시한다. */
+.hm-tile-owner {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: 19%;
+  overflow: hidden;
+  background: var(--hm-owner-fill, var(--hm-owner));
+  box-shadow: inset 0 0 0 0.08cqw rgba(255, 255, 255, 0.28);
+  color: var(--hm-owner-ink, #ffffff);
+  font-size: clamp(6px, 1.2cqw, 15px);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hm-owned .hm-tile-owner {
+  display: flex;
+}
+
+/* 어두운 화면에서는 그라파이트처럼 어두운 색의 소유자 띠도 칸과 구분되도록 테두리를 더 밝게 두른다. */
+.hm-root[data-theme="dark"] .hm-tile-owner {
+  box-shadow: inset 0 0 0 0.1cqw rgba(255, 255, 255, 0.5);
+}
+
+.hm-root[data-theme="dark"] .hm-player-turn {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 0 4px color-mix(in srgb, var(--hm-player) 28%, transparent);
+}
+
+.hm-side-top .hm-tile-owner {
+  inset: 0 0 auto 0;
+}
+
+/* 옆줄 칸의 소유자 띠는 아래쪽이 아니라, 보드 중앙에서 먼 바깥쪽 세로 가장자리에 둔다. */
+.hm-side-left .hm-tile-owner {
+  inset: 0 auto 0 0;
+  width: 15%;
+  height: auto;
+}
+
+.hm-side-right .hm-tile-owner {
+  inset: 0 0 0 auto;
+  width: 15%;
+  height: auto;
+}
+
+/* 말이 서 있는 칸은 그 플레이어의 색으로 배경을 칠하고 굵은 테두리를 두른다. */
+.hm-tile.hm-here {
+  background-image: var(--hm-here);
+}
+
+.hm-tile.hm-here::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0.32cqw solid var(--hm-here-edge);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 말이 놓일 자리를 비우기 위해 이름을 위쪽으로 올리고 가격과 그림 문자는 숨긴다. */
+.hm-tile.hm-here .hm-tile-body {
+  justify-content: flex-start;
+}
+
+.hm-tile.hm-here .hm-tile-sub,
+.hm-tile.hm-here:not(.hm-side-corner) .hm-tile-icon {
+  display: none;
+}
+
+.hm-tile-open {
+  z-index: 2;
+  outline: 0.35cqw solid var(--hm-accent);
+}
+
+.hm-tile-tokens {
+  position: absolute;
+  inset: auto 0 21% 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hm-side-top .hm-tile-tokens {
+  bottom: 17%;
+}
+
+.hm-side-left .hm-tile-tokens,
+.hm-side-right .hm-tile-tokens {
+  right: 15%;
+  bottom: 6%;
+  left: 15%;
+}
+
+.hm-side-corner .hm-tile-tokens {
+  bottom: 5%;
+}
+
+.hm-tile-tokens .hm-token + .hm-token {
+  margin-left: -0.45cqw;
+}
+
+/* ---------- 말과 주사위 ---------- */
+
+.hm-token {
+  --hm-size: 28px;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--hm-size);
+  height: var(--hm-size);
+  border: calc(var(--hm-size) * 0.09) solid #ffffff;
+  border-radius: 50%;
+  background: var(--hm-player-fill, var(--hm-player));
+  background-clip: padding-box;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  color: var(--hm-player-ink, #ffffff);
+  font-family: var(--hm-font-text);
+  font-size: calc(var(--hm-size) * 0.52);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hm-board .hm-token {
+  --hm-size: 2.5cqw;
+}
+
+.hm-board .hm-token-turn {
+  animation: hm-pulse 1.1s ease-in-out infinite;
+}
+
+.hm-board .hm-token-hop {
+  animation: hm-hop 0.22s ease-out;
+}
+
+.hm-die {
+  --hm-size: 46px;
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: var(--hm-size);
+  height: var(--hm-size);
+  padding: calc(var(--hm-size) * 0.15);
+  border-radius: 20%;
+  background: #ffffff;
+  box-shadow: inset 0 calc(var(--hm-size) * -0.07) 0 rgba(0, 0, 0, 0.14), 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hm-pip {
+  margin: 10%;
+  border-radius: 50%;
+}
+
+.hm-pip-on {
+  background: #1f2430;
+}
+
+.hm-rolling .hm-die {
+  animation: hm-shake 0.28s linear infinite;
+}
+
+/*
+ * 우주선 : 우주여행에 탑승한 플레이어가 목적지를 고르는 차례에 주사위 자리에 놓는다. 크기는 주사위와 같은 --hm-size 를 따른다.
+ * 불꽃, 양쪽 날개, 창문이 달린 몸통을 겹쳐 그리며, 제자리에서 떠 있는 것처럼 살짝 오르내린다.
+ */
+.hm-ship {
+  --hm-size: 46px;
+  position: relative;
+  display: inline-block;
+  width: calc(var(--hm-size) * 1.1);
+  height: var(--hm-size);
+  filter: drop-shadow(0 calc(var(--hm-size) * 0.06) calc(var(--hm-size) * 0.08) rgba(0, 0, 0, 0.35));
+  animation: hm-ship-hover 1.6s ease-in-out infinite;
+}
+
+.hm-ship-body {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 40%;
+  height: 76%;
+  overflow: hidden;
+  border-radius: 50% 50% 20% 20% / 64% 64% 12% 12%;
+  background: linear-gradient(90deg, #ced4da, #ffffff 42%, #adb5bd);
+  transform: translateX(-50%);
+}
+
+/* 몸통 꼭대기의 빨간 머리 부분 */
+.hm-ship-body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 30%;
+  background: linear-gradient(90deg, #c92a2a, #ff6b6b 42%, #a51111);
+}
+
+.hm-ship-window {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  width: 46%;
+  aspect-ratio: 1;
+  border: calc(var(--hm-size) * 0.035) solid #495057;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d0ebff, #1c7ed6 70%);
+  transform: translateX(-50%);
+}
+
+.hm-ship-fin {
+  position: absolute;
+  bottom: 22%;
+  width: 22%;
+  height: 34%;
+  background: #e03131;
+}
+
+.hm-ship-fin-left {
+  left: 13%;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.hm-ship-fin-right {
+  right: 13%;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.hm-ship-flame {
+  position: absolute;
+  top: 72%;
+  left: 50%;
+  width: 24%;
+  height: 30%;
+  background: linear-gradient(#ffe066, #ff922b 55%, rgba(224, 49, 49, 0.2));
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform: translateX(-50%);
+  transform-origin: 50% 0;
+  animation: hm-ship-flame 0.22s ease-in-out infinite alternate;
+}
+
+.hm-center .hm-ship {
+  --hm-size: clamp(26px, 8cqw, 96px);
+}
+
+/* ---------- 보드 가운데 영역 ---------- */
+
+.hm-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  grid-row: 2 / 11;
+  grid-column: 2 / 11;
+  gap: 1.5cqw;
+  padding: 3cqw;
+  overflow: hidden;
+  border-radius: 0.8cqw;
+  background: radial-gradient(circle at 50% 35%, var(--hm-felt-a), var(--hm-felt-b));
+  text-align: center;
+}
+
+.hm-brand {
+  font-size: clamp(14px, 4.6cqw, 60px);
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  line-height: 1;
+  text-indent: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.hm-league-tag {
+  padding: 0.4cqw 1.4cqw;
+  border-radius: 99px;
+  background: var(--hm-league);
+  color: #ffffff;
+  font-size: clamp(9px, 1.5cqw, 18px);
+  font-weight: 800;
+}
+
+.hm-turn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1cqw;
+  margin-top: 1cqw;
+  font-size: clamp(11px, 2.4cqw, 30px);
+  font-weight: 900;
+}
+
+.hm-center .hm-turn .hm-token {
+  --hm-size: 3.4cqw;
+  animation: none;
+}
+
+.hm-dice {
+  display: flex;
+  gap: 2cqw;
+}
+
+.hm-center .hm-die {
+  --hm-size: clamp(26px, 8cqw, 96px);
+}
+
+.hm-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 88%;
+  min-height: 3em;
+  margin: 0;
+  font-size: clamp(10px, 1.75cqw, 21px);
+  font-weight: 600;
+}
+
+.hm-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.2cqw;
+}
+
+.hm-center .hm-button {
+  padding: 0.7em 1.5em;
+  font-size: clamp(11px, 1.9cqw, 22px);
+}
+
+.hm-center.hm-my-turn .hm-primary:not(:disabled) {
+  animation: hm-glow 1.2s ease-in-out infinite;
+}
+
+.hm-fund {
+  display: flex;
+  align-items: baseline;
+  gap: 1cqw;
+  font-size: clamp(9px, 1.6cqw, 19px);
+}
+
+.hm-fund-money {
+  font-size: 1.25em;
+  font-weight: 900;
+}
+
+/* 비밀쿠폰은 보드 가운데에 정해진 시간 동안 표시되며, 아래쪽 띠가 남은 시간을 보여준다. */
+.hm-coupon {
+  position: absolute;
+  inset: 13% 12%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4cqw;
+  padding: 3cqw 4cqw;
+  overflow: hidden;
+  border: 0.45cqw solid var(--hm-player);
+  border-radius: 2cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, 0.4);
+  animation: hm-pop 0.22s ease-out;
+}
+
+.hm-coupon-head {
+  color: var(--hm-muted);
+  font-size: clamp(9px, 1.6cqw, 19px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.hm-coupon-title {
+  font-size: clamp(14px, 3.6cqw, 44px);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.hm-coupon-text {
+  margin: 0;
+  font-size: clamp(10px, 1.95cqw, 23px);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* 쿠폰을 뽑은 플레이어는 말과 이름으로 알린다. 밝은 색상의 플레이어도 읽을 수 있도록 글자는 기본 글자색으로 쓴다. */
+.hm-coupon-drawer {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqw;
+  font-size: clamp(9px, 1.6cqw, 19px);
+  font-weight: 800;
+}
+
+.hm-coupon-bar {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1cqw;
+  background: var(--hm-player);
+  transform-origin: left center;
+  animation: hm-countdown var(--hm-coupon-time) linear forwards;
+}
+
+.hm-coupon-close {
+  margin-top: 0.4cqw;
+}
+
+/* ---------- 보드 위의 건물 ---------- */
+
+/*
+ * 건물은 도시 칸에서 보드 중앙 쪽으로 바로 붙은 터에, 칸에 바닥을 대고 보드 중앙을 바라보며 서 있는 모습으로 그린다.
+ * 터는 아랫줄(1면)의 것을 기준으로 그리고, 왼쪽 줄(2면)은 시계 방향으로 90도, 윗줄(3면)은 180도, 오른쪽 줄(4면)은 시계 반대 방향으로 90도 돌린다.
+ * 터의 바닥선은 소유자의 색이다. 터는 그 칸의 가운데에 놓는다.
+ * 보드 모서리 옆에서는 옆줄의 칸과 윗줄(아랫줄)의 칸이 같은 자리를 쓴다. 이 두 터는 키가 작은 별장을 모서리에 가까운 쪽에 두고(.hm-lot-flip),
+ * 건물이 겹치게 되면 스크립트가 두 터를 자기 칸 안에서 모서리에서 먼 쪽으로 밀고(translate 속성. transform 과 따로 적용된다.),
+ * 그래도 겹치면 별장만 줄여 그린다. (--hm-villa 는 별장의 크기 비율이다. 빌딩과 호텔의 크기는 바꾸지 않는다.)
+ * --hm-shade-x / --hm-shade-y 는 돌린 뒤에도 그림자가 화면의 아래쪽으로 지도록 정하는 그림자의 방향이다.
+ */
+.hm-lot {
+  --hm-villa: 1;
+  --hm-shade-x: 0cqw;
+  --hm-shade-y: 0.3cqw;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.2cqw;
+  padding: 0 0.3cqw;
+  border-bottom: 0.38cqw solid var(--hm-owner);
+  border-radius: 0 0 0.3cqw 0.3cqw;
+  filter: drop-shadow(var(--hm-shade-x) var(--hm-shade-y) 0.25cqw rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+
+.hm-lot:empty {
+  display: none;
+}
+
+/* 건물의 순서를 뒤집어 별장이 반대쪽 끝에 오게 한다. (모서리 옆의 터에서 별장을 모서리 쪽에 두는 데 쓴다.) */
+.hm-lot-flip {
+  flex-direction: row-reverse;
+}
+
+.hm-lot-bottom {
+  align-self: end;
+  justify-self: center;
+}
+
+/* 윗줄 : 뒤집어서 바닥이 위쪽의 칸에 닿고 지붕이 아래(보드 중앙)를 향한다. */
+.hm-lot-top {
+  --hm-shade-y: -0.3cqw;
+  align-self: start;
+  justify-self: center;
+  margin-top: 0.2cqw;
+  transform: rotate(180deg);
+}
+
+/*
+ * 왼쪽 줄 : 시계 방향으로 90도 돌려 바닥이 왼쪽의 칸에 닿고 지붕이 오른쪽(보드 중앙)을 향한다.
+ * 돌려도 배치에 쓰이는 크기는 눕히기 전의 것이므로, 돌린 뒤의 모습이 칸에 붙도록 터의 폭과 높이의 절반만큼 옮긴다.
+ * (바깥쪽 translateX 는 화면의 방향으로 폭의 절반을, 안쪽 translateY 는 돌린 뒤의 방향으로 높이의 절반을 옮긴다.)
+ */
+.hm-lot-left {
+  --hm-shade-x: 0.3cqw;
+  --hm-shade-y: 0cqw;
+  align-self: center;
+  justify-self: start;
+  margin-left: 0.2cqw;
+  transform: translateX(-50%) rotate(90deg) translateY(-50%);
+}
+
+/* 오른쪽 줄 : 시계 반대 방향으로 90도 돌려 바닥이 오른쪽의 칸에 닿고 지붕이 왼쪽(보드 중앙)을 향한다. */
+.hm-lot-right {
+  --hm-shade-x: -0.3cqw;
+  --hm-shade-y: 0cqw;
+  align-self: center;
+  justify-self: end;
+  margin-right: 0.2cqw;
+  transform: translateX(50%) rotate(-90deg) translateY(-50%);
+}
+
+.hm-house {
+  position: relative;
+  flex: none;
+}
+
+/* 방금 지은 건물은 땅에서 솟아오른다. (터를 돌려 놓은 면에서는 칸에서 보드 중앙 쪽으로 솟는다.) */
+.hm-house-new {
+  transform-origin: 50% 100%;
+  animation: hm-build 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* 별장 : 주황 지붕의 작은 집. 자리가 모자란 터에서는 --hm-villa 의 비율로 줄여 그린다. */
+.hm-house-villa {
+  width: calc(1.7cqw * var(--hm-villa));
+  height: calc(1.05cqw * var(--hm-villa));
+  margin-top: calc(0.8cqw * var(--hm-villa));
+  border: 0.12cqw solid #6b3f17;
+  border-bottom: 0;
+  background: linear-gradient(90deg, #ffe8bf 0 60%, #e6c284 60%);
+}
+
+.hm-house-villa::before {
+  content: "";
+  position: absolute;
+  right: calc(-0.32cqw * var(--hm-villa));
+  bottom: 100%;
+  left: calc(-0.32cqw * var(--hm-villa));
+  height: calc(0.8cqw * var(--hm-villa));
+  background: linear-gradient(90deg, #f76707 0 55%, #c2410c 55%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.hm-house-villa::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: calc(0.4cqw * var(--hm-villa));
+  height: calc(0.58cqw * var(--hm-villa));
+  background: #6b3f17;
+  transform: translateX(-50%);
+}
+
+/* 빌딩 : 창문이 줄지어 있는 파란 건물 */
+.hm-house-building {
+  width: 1.9cqw;
+  height: 2.8cqw;
+  margin-top: 0.3cqw;
+  border: 0.12cqw solid #173f86;
+  border-bottom: 0;
+  background-color: #2f6fe0;
+  background-image: linear-gradient(90deg, #2f6fe0 0.22cqw, transparent 0.22cqw), linear-gradient(#2f6fe0 0.24cqw, #fff3b0 0.24cqw);
+  background-size: 0.56cqw 0.62cqw;
+}
+
+.hm-house-building::before {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 100%;
+  left: 22%;
+  height: 0.3cqw;
+  background: #173f86;
+}
+
+/* 호텔 : 금색 간판을 올린 높은 빨간 건물 */
+.hm-house-hotel {
+  width: 2.1cqw;
+  height: 3.2cqw;
+  margin-top: 0.55cqw;
+  border: 0.12cqw solid #7a1414;
+  border-bottom: 0;
+  background-color: #e03131;
+  background-image: linear-gradient(90deg, #e03131 0.24cqw, transparent 0.24cqw), linear-gradient(#e03131 0.24cqw, #ffe066 0.24cqw);
+  background-size: 0.6cqw 0.6cqw;
+}
+
+.hm-house-hotel::before {
+  content: "H";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  padding: 0 0.32cqw;
+  border-radius: 0.2cqw 0.2cqw 0 0;
+  background: #f59f00;
+  color: #5c1a00;
+  font-size: 0.5cqw;
+  font-weight: 900;
+  line-height: 0.55cqw;
+  transform: translateX(-50%);
+}
+
+.hm-house-hotel::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0.55cqw;
+  height: 0.6cqw;
+  background: #7a1414;
+  transform: translateX(-50%);
+}
+
+/* ---------- 돈 이동 (플레이어 사이, 은행, 사회복지기금 본부) ---------- */
+
+/* 누가 누구에게 얼마를 주는지 보드 가운데에 크게 띄운다. 테두리와 화살표의 색(--hm-flow)으로 돈이 오가는 상대를 구분한다. */
+.hm-transfer {
+  --hm-flow: #2f9e44;
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4cqw 1.2cqw;
+  width: max-content;
+  max-width: 78%;
+  padding: 1.3cqw 2.4cqw;
+  border: 0.4cqw solid var(--hm-flow);
+  border-radius: 1.8cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 1.5cqw 4cqw rgba(0, 0, 0, 0.4);
+  font-size: clamp(11px, 2cqw, 24px);
+  font-weight: 800;
+  transform: translateX(-50%);
+  animation: hm-drop 0.25s ease-out;
+}
+
+.hm-transfer-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6cqw;
+}
+
+.hm-center .hm-transfer .hm-token {
+  --hm-size: 3cqw;
+  animation: none;
+}
+
+/* 은행과 오가는 돈은 파랑, 사회복지기금 본부와 오가는 돈은 주황으로 구분한다. */
+.hm-transfer-bank,
+.hm-tile-bank {
+  --hm-flow: #1c7ed6;
+}
+
+.hm-transfer-fund,
+.hm-tile-fund {
+  --hm-flow: #e8590c;
+}
+
+/* 안내 띠에서 은행과 사회복지기금 본부를 나타내는 그림 문자이다. */
+.hm-transfer-icon {
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.hm-transfer-arrow {
+  color: var(--hm-flow);
+  font-size: 1.4em;
+  animation: hm-nudge 0.6s ease-in-out infinite;
+}
+
+/* 돈이 드나드는 동안 은행이 있는 출발지 칸 또는 사회복지기금 본부의 칸을 빛낸다. */
+.hm-tile-bank,
+.hm-tile-fund {
+  z-index: 2;
+  outline: 0.35cqw solid var(--hm-flow);
+  animation: hm-office 0.6s ease-in-out infinite;
+}
+
+.hm-transfer-amount {
+  flex-basis: 100%;
+  color: #2b8a3e;
+  font-size: 1.8em;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* 내는 쪽(플레이어의 말, 은행, 사회복지기금 본부)에서 받는 쪽으로 날아가는 지폐이다. 움직임은 스크립트가 정한다. */
+.hm-bill {
+  position: fixed;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  width: 2.3em;
+  height: 1.25em;
+  border: 0.09em solid #0b5d1e;
+  border-radius: 0.18em;
+  background: linear-gradient(135deg, #d3f9d8, #51cf66 45%, #2f9e44);
+  box-shadow: 0 0.15em 0.45em rgba(0, 0, 0, 0.45), inset 0 0 0 0.13em rgba(255, 255, 255, 0.6);
+  color: #0b5d1e;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/*
+ * 큰 금액이 오갈 때의 돈 이동이다. 안내 띠를 금빛으로 강조하고 금액을 더 크게 보여주며, 지폐에 금빛 지폐를 섞는다.
+ * 받는 쪽에서는 돈이 쏟아져 들어온 것을 터지는 빛(.hm-burst)으로 알린다.
+ */
+.hm-transfer-big {
+  border-width: 0.55cqw;
+  border-color: #f59f00;
+  box-shadow: 0 0 0 0.5cqw rgba(245, 159, 0, 0.35), 0 0 5cqw 1.4cqw rgba(255, 212, 59, 0.7), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.4);
+  animation: hm-drop 0.25s ease-out, hm-transfer-big 0.7s ease-in-out 0.25s infinite;
+}
+
+.hm-transfer-big .hm-transfer-amount {
+  color: #e67700;
+  font-size: 2.3em;
+  text-shadow: 0 0 1.2cqw rgba(255, 212, 59, 0.9);
+  animation: hm-charm-beat 0.7s ease-in-out infinite;
+}
+
+.hm-bill-gold {
+  border-color: #7a4b00;
+  background: linear-gradient(135deg, #fff3bf, #ffd43b 45%, #f59f00);
+  color: #7a4b00;
+}
+
+.hm-float-big {
+  border-color: #ffe066;
+  font-size: clamp(16px, 2vw, 30px);
+  box-shadow: 0 0 0 3px rgba(255, 212, 59, 0.5), 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+
+.hm-burst {
+  position: fixed;
+  z-index: 44;
+  width: calc(var(--hm-size) * 1.9);
+  height: calc(var(--hm-size) * 1.9);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 243, 191, 0.95) 0 18%, rgba(255, 212, 59, 0.75) 38%, rgba(245, 159, 0, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: hm-burst calc(var(--hm-time) * 0.3) ease-out calc(var(--hm-time) * 0.42) 2 both;
+}
+
+/* ---------- 우대권·무전기 사용 ---------- */
+
+/*
+ * 누군가 우대권이나 무전기를 사용했을 때 보드 가운데에 잠깐 띄우는 알림이다. 우대권은 초록, 무전기는 주황(--hm-use)으로 빛난다.
+ * 보드 위에서는 사용한 플레이어의 말에서 빛의 고리(.hm-ring)가 퍼지고, 효과가 일어난 칸에 도장(.hm-stamp)이 찍힌다.
+ */
+.hm-use-pass {
+  --hm-use: #0ca678;
+}
+
+.hm-use-radio {
+  --hm-use: #f08c00;
+}
+
+.hm-use-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5cqw;
+  width: max-content;
+  max-width: 82%;
+  padding: 2cqw 3.2cqw;
+  border: 0.45cqw solid var(--hm-use);
+  border-radius: 2cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 0 0 0.5cqw color-mix(in srgb, var(--hm-use) 35%, transparent), 0 0 5cqw 1.2cqw color-mix(in srgb, var(--hm-use) 65%, transparent), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45);
+  font-size: clamp(11px, 2cqw, 24px);
+  font-weight: 800;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: hm-charm-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both, hm-use-shine 1.1s ease-in-out 0.45s infinite;
+  pointer-events: none;
+}
+
+.hm-use-flash-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqw;
+  color: var(--hm-muted);
+  font-size: 0.85em;
+}
+
+.hm-center .hm-use-flash .hm-token {
+  --hm-size: 3cqw;
+  animation: none;
+}
+
+.hm-use-flash-icon {
+  font-size: clamp(22px, 5cqw, 60px);
+  line-height: 1.1;
+  animation: hm-use-wave 0.5s ease-in-out 0.3s 3;
+}
+
+.hm-use-flash-title {
+  color: var(--hm-use);
+  font-size: 1.25em;
+  font-weight: 900;
+}
+
+.hm-use-flash-source {
+  padding: 0.1em 0.9em;
+  border-radius: 99px;
+  background: var(--hm-use);
+  color: #ffffff;
+  font-size: 0.75em;
+}
+
+.hm-use-flash-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 1cqw;
+  font-size: 1.3em;
+  font-weight: 900;
+}
+
+.hm-use-flash-amount s {
+  color: var(--hm-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+}
+
+.hm-use-flash-amount strong {
+  color: var(--hm-use);
+  animation: hm-charm-beat 0.6s ease-in-out 0.5s 2;
+}
+
+.hm-ring {
+  position: fixed;
+  z-index: 44;
+  width: calc(var(--hm-size) * 0.5);
+  height: calc(var(--hm-size) * 0.5);
+  border: calc(var(--hm-size) * 0.06) solid var(--hm-use);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: hm-ring 0.9s ease-out calc(var(--hm-order) * 0.25s) 2 both;
+}
+
+.hm-stamp {
+  position: fixed;
+  z-index: 45;
+  padding: 0.1em 0.5em;
+  border: 0.14em solid var(--hm-use);
+  border-radius: 0.35em;
+  background: color-mix(in srgb, var(--hm-paper) 88%, transparent);
+  box-shadow: 0 0.15em 0.5em rgba(0, 0, 0, 0.35);
+  color: var(--hm-use);
+  font-size: calc(var(--hm-size) * 0.3);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  animation: hm-stamp 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) 0.35s both;
+}
+
+/* ---------- 패배한 플레이어의 말 ---------- */
+
+/*
+ * 누군가 패배하면(파산, 포기) 그 플레이어의 말이 서 있던 자리에서 폭발이 일어나고 말이 보드 바깥으로 튕겨나간다.
+ * 폭발은 불덩이(.hm-blast), 퍼져 나가는 충격파(.hm-blast-wave), 피어오르는 연기(.hm-blast-smoke), 사방으로 튀는 불티(.hm-spark)로 이루어진다.
+ * 크기는 칸의 너비(--hm-size)를, 시간은 연출 전체의 시간(--hm-time)을 따른다. 튕겨나가는 말(.hm-token-out)의 움직임은 스크립트가 정한다.
+ */
+.hm-blast,
+.hm-blast-wave,
+.hm-blast-smoke,
+.hm-spark {
+  position: fixed;
+  z-index: 45;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.hm-blast {
+  width: calc(var(--hm-size) * 1.9);
+  height: calc(var(--hm-size) * 1.9);
+  background: radial-gradient(circle, #ffffff 0 14%, #fff3bf 26%, #ffd43b 40%, #ff922b 54%, rgba(224, 49, 49, 0.9) 66%, rgba(224, 49, 49, 0) 74%);
+  animation: hm-blast calc(var(--hm-time) * 0.34) cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
+
+.hm-blast-wave {
+  z-index: 44;
+  width: calc(var(--hm-size) * 0.7);
+  height: calc(var(--hm-size) * 0.7);
+  border: calc(var(--hm-size) * 0.08) solid #ffd43b;
+  box-shadow: 0 0 calc(var(--hm-size) * 0.2) #ff922b, inset 0 0 calc(var(--hm-size) * 0.2) #ff922b;
+  animation: hm-blast-wave calc(var(--hm-time) * 0.42) ease-out both;
+}
+
+.hm-blast-smoke {
+  z-index: 44;
+  width: calc(var(--hm-size) * 1.5);
+  height: calc(var(--hm-size) * 1.5);
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 34% 40%, rgba(73, 80, 87, 0.75) 0 16%, rgba(73, 80, 87, 0) 34%),
+    radial-gradient(circle at 66% 44%, rgba(52, 58, 64, 0.7) 0 18%, rgba(52, 58, 64, 0) 38%),
+    radial-gradient(circle at 50% 66%, rgba(73, 80, 87, 0.65) 0 20%, rgba(73, 80, 87, 0) 40%);
+  animation: hm-blast-smoke calc(var(--hm-time) * 0.8) ease-out calc(var(--hm-time) * 0.1) both;
+}
+
+.hm-spark {
+  width: calc(var(--hm-size) * 0.16);
+  height: calc(var(--hm-size) * 0.16);
+  border-radius: 30%;
+  background: var(--hm-spark);
+  box-shadow: 0 0 calc(var(--hm-size) * 0.14) var(--hm-spark);
+  animation: hm-spark calc(var(--hm-time) * 0.5) cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+
+/* 폭발에 휩쓸려 날아가는 말이다. 불에 그을린 듯 붉은빛을 두른다. */
+.hm-token.hm-token-out {
+  position: fixed;
+  z-index: 46;
+  box-shadow: 0 0 calc(var(--hm-size) * 0.35) calc(var(--hm-size) * 0.12) rgba(255, 146, 43, 0.85), 0 calc(var(--hm-size) * 0.2) calc(var(--hm-size) * 0.4) rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+/* 폭발이 일어난 칸은 잠깐 붉게 번쩍이고, 보드는 충격으로 짧게 흔들린다. */
+.hm-tile-blast {
+  z-index: 2;
+  animation: hm-tile-blast 0.9s ease-out both;
+}
+
+.hm-board-quake {
+  animation: hm-quake 0.45s linear;
+}
+
+/* 누가 어떻게 패배했는지를 보드 가운데에 잠깐 띄우는 알림이다. */
+.hm-defeat-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5cqw;
+  width: max-content;
+  max-width: 82%;
+  padding: 2cqw 3.2cqw;
+  border: 0.45cqw solid #e03131;
+  border-radius: 2cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 0 0 0.5cqw rgba(224, 49, 49, 0.35), 0 0 5cqw 1.2cqw rgba(255, 107, 0, 0.6), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45);
+  font-size: clamp(11px, 2cqw, 24px);
+  font-weight: 800;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: hm-charm-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both, hm-defeat-shine 1.1s ease-in-out 0.45s infinite;
+  pointer-events: none;
+}
+
+.hm-defeat-flash-icon {
+  font-size: clamp(22px, 5cqw, 60px);
+  line-height: 1.1;
+  animation: hm-charm-spin 0.6s ease-out both;
+}
+
+.hm-defeat-flash-title {
+  color: #e03131;
+  font-size: 1.25em;
+  font-weight: 900;
+}
+
+/*
+ * 사용자가 장착한 부적의 효과가 일어났을 때 보드 가운데에 잠깐 띄우는 알림이다. 등급의 색으로 빛난다.
+ * 땅값 할인은 원래 가격에 줄을 긋고 깎인 가격을 크게 보여준다.
+ */
+.hm-charm-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5cqw;
+  width: max-content;
+  max-width: 82%;
+  padding: 2cqw 3.2cqw;
+  border: 0.45cqw solid var(--hm-grade);
+  border-radius: 2cqw;
+  background: var(--hm-paper);
+  box-shadow: 0 0 0 0.5cqw color-mix(in srgb, var(--hm-grade) 35%, transparent), 0 0 5cqw 1.2cqw color-mix(in srgb, var(--hm-grade) 65%, transparent), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45);
+  font-size: clamp(11px, 2cqw, 24px);
+  font-weight: 800;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: hm-charm-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both, hm-charm-shine 1.1s ease-in-out 0.45s infinite;
+  pointer-events: none;
+}
+
+/* 누구의 부적인지 말과 이름으로 알린다. */
+.hm-charm-flash-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqw;
+  color: var(--hm-muted);
+  font-size: 0.85em;
+}
+
+.hm-charm-flash-icon {
+  font-size: clamp(22px, 5cqw, 60px);
+  line-height: 1.1;
+  animation: hm-charm-spin 0.8s ease-out both;
+}
+
+.hm-charm-flash-title {
+  color: var(--hm-grade);
+  font-size: 1.25em;
+  font-weight: 900;
+}
+
+.hm-grade-legend .hm-charm-flash-title {
+  color: #e67700;
+}
+
+.hm-charm-flash-price {
+  display: flex;
+  align-items: baseline;
+  gap: 1cqw;
+  font-size: 1.3em;
+  font-weight: 900;
+}
+
+.hm-charm-flash-price s {
+  color: var(--hm-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+}
+
+.hm-charm-flash-price .hm-num:last-child {
+  color: #2f9e44;
+  animation: hm-charm-beat 0.6s ease-in-out 0.5s 2;
+}
+
+/*
+ * 내는 쪽에서 빠져나간 금액과 받는 쪽에 들어온 금액을 말(은행과 사회복지기금 본부는 그 칸) 위에 띄운다.
+ * 떠오르는 방향과 거리는 --hm-rise 로 정하며, 화면 위쪽에 자리가 없으면 아래로 떠오른다.
+ */
+.hm-float {
+  --hm-rise: -100%;
+  position: fixed;
+  z-index: 46;
+  padding: 0.15em 0.65em;
+  border: 2px solid #ffffff;
+  border-radius: 99px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  font-size: clamp(13px, 1.5vw, 22px);
+  font-weight: 900;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: hm-float-pay var(--hm-time) ease-out both;
+}
+
+.hm-float-pay {
+  background: #e03131;
+}
+
+.hm-float-get {
+  background: #2f9e44;
+  animation-name: hm-float-get;
+}
+
+.hm-float-down {
+  --hm-rise: 100%;
+}
+
+.hm-player-pay {
+  animation: hm-flash-pay 0.6s ease-in-out 3;
+}
+
+.hm-player-get {
+  animation: hm-flash-get 0.6s ease-in-out 3;
+}
+
+/* ---------- 보드 옆 영역 (플레이어, 진행 기록) ---------- */
+
+.hm-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.hm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--hm-line);
+  border-radius: 16px;
+  background: var(--hm-surface);
+}
+
+.hm-panel-log {
+  flex: 1;
+  min-height: 170px;
+}
+
+.hm-panel-title {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hm-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 플레이어 카드는 누르면 자산과 소유한 땅 목록이 뜨는 버튼이다. */
+.hm-player {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--hm-player) 11%, var(--hm-surface));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hm-player:hover {
+  filter: brightness(1.04);
+}
+
+.hm-player-name,
+.hm-player-cash,
+.hm-player-meta {
+  display: block;
+}
+
+.hm-player-turn {
+  border-color: var(--hm-player);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hm-player) 28%, transparent);
+}
+
+.hm-player-out {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.hm-player-main {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.hm-player-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-player-cash {
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.hm-player-meta {
+  color: var(--hm-muted);
+  font-size: 12px;
+}
+
+.hm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.hm-badges:empty {
+  display: none;
+}
+
+.hm-badge {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--hm-player);
+  color: var(--hm-player-ink, #ffffff);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hm-log {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  font-size: 13px;
+}
+
+.hm-log-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--hm-line);
+  border-left: 4px solid var(--hm-player);
+}
+
+.hm-log-item:first-child {
+  background: var(--hm-surface-2);
+  font-weight: 700;
+}
+
+/* ---------- 코스 (세계여행 코스, 우주여행 코스) ---------- */
+
+/* 대기실의 리그는 코스별로 묶어 보여준다. 묶음마다 코스의 이름을 적고 그 아래에 그 코스의 리그 카드를 나란히 놓는다. */
+.hm-courses {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hm-course {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hm-course-name {
+  margin: 0;
+  color: var(--hm-muted);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.hm-course-name::before {
+  content: "🌍 ";
+}
+
+.hm-course[data-course="space"] .hm-course-name::before {
+  content: "🚀 ";
+}
+
+/*
+ * 우주여행 코스의 보드 가운데는 밤하늘처럼 보이도록 색을 바꾸고 별을 흩뿌린다.
+ * 글자색은 화면의 밝기 설정을 그대로 따르므로, 밝은 화면에서는 옅은 보랏빛, 어두운 화면에서는 짙은 남빛을 깐다.
+ */
+.hm-course-space {
+  --hm-felt-a: #ebe7fb;
+  --hm-felt-b: #cbc4f0;
+  --hm-sky-star: rgba(92, 70, 190, 0.55);
+}
+
+.hm-root[data-theme="dark"] .hm-course-space {
+  --hm-felt-a: #1e2148;
+  --hm-felt-b: #0e1026;
+  --hm-sky-star: rgba(255, 255, 255, 0.8);
+}
+
+.hm-course-space .hm-center {
+  background:
+    radial-gradient(circle at 12% 18%, var(--hm-sky-star) 0 0.16cqw, transparent 0.2cqw),
+    radial-gradient(circle at 83% 12%, var(--hm-sky-star) 0 0.22cqw, transparent 0.26cqw),
+    radial-gradient(circle at 68% 30%, var(--hm-sky-star) 0 0.12cqw, transparent 0.16cqw),
+    radial-gradient(circle at 24% 62%, var(--hm-sky-star) 0 0.2cqw, transparent 0.24cqw),
+    radial-gradient(circle at 91% 58%, var(--hm-sky-star) 0 0.14cqw, transparent 0.18cqw),
+    radial-gradient(circle at 8% 88%, var(--hm-sky-star) 0 0.18cqw, transparent 0.22cqw),
+    radial-gradient(circle at 57% 91%, var(--hm-sky-star) 0 0.13cqw, transparent 0.17cqw),
+    radial-gradient(circle at 78% 82%, var(--hm-sky-star) 0 0.2cqw, transparent 0.24cqw),
+    radial-gradient(circle at 40% 9%, var(--hm-sky-star) 0 0.13cqw, transparent 0.17cqw),
+    radial-gradient(circle at 50% 35%, var(--hm-felt-a), var(--hm-felt-b));
+}
+
+/* 우주여행 코스의 옆줄 칸에는 "Andromeda" 처럼 긴 이름이 있어, 이름이 낱말 중간에서 끊기지 않도록 글자를 조금 더 줄인다. */
+.hm-course-space .hm-side-left .hm-tile-name,
+.hm-course-space .hm-side-right .hm-tile-name {
+  font-size: clamp(6px, 1cqw, 13px);
+}
+
+/* 기지 : 안테나를 세운 둥근 돔이다. 안테나와 그 끝의 등까지를 건물의 높이로 잡는다. (margin-top) */
+.hm-house-base {
+  width: 2.3cqw;
+  height: 1.5cqw;
+  margin-top: 1.3cqw;
+  border: 0.12cqw solid #364fc7;
+  border-bottom: 0;
+  border-radius: 1.2cqw 1.2cqw 0 0;
+  background: linear-gradient(#edf2ff, #91a7ff);
+}
+
+.hm-house-base::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 0.16cqw;
+  height: 0.8cqw;
+  background: #364fc7;
+  transform: translateX(-50%);
+}
+
+.hm-house-base::after {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 0.7cqw);
+  left: 50%;
+  width: 0.5cqw;
+  height: 0.5cqw;
+  border-radius: 50%;
+  background: #ff6b6b;
+  transform: translateX(-50%);
+}
+
+/* 우주여행 코스의 터에서는 기지와 증축 시설이 한 건물로 보이도록 사이를 띄우지 않는다. (증축한 기지도 기지 하나이다.) */
+.hm-course-space .hm-lot {
+  gap: 0;
+}
+
+/*
+ * 기지의 증축 : 돔 옆에 붙여 지은 시설이다. 첫 증축은 노란 창이 난 낮은 거주 모듈이고 지붕에 태양 전지판을 올렸다.
+ * 둘째 증축은 창이 줄지어 난 높은 관제탑이고 꼭대기에 초록 등을 달았다. 지붕 위의 장식까지를 건물의 높이로 잡는다. (margin-top)
+ */
+.hm-house-annex {
+  width: 1.1cqw;
+  height: 0.95cqw;
+  margin-top: 0.45cqw;
+  border: 0.12cqw solid #364fc7;
+  border-bottom: 0;
+  border-radius: 0.3cqw 0.3cqw 0 0;
+  background:
+    radial-gradient(circle at 50% 48%, #ffe066 0 0.2cqw, transparent 0.24cqw),
+    linear-gradient(#dbe4ff, #748ffc);
+}
+
+.hm-house-annex::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 0.16cqw);
+  left: 50%;
+  width: 1cqw;
+  height: 0.22cqw;
+  border-radius: 0.06cqw;
+  background: linear-gradient(90deg, #1c7ed6 0 30%, #a5d8ff 30% 36%, #1c7ed6 36% 64%, #a5d8ff 64% 70%, #1c7ed6 70%);
+  transform: translateX(-50%);
+}
+
+.hm-house-annex::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 0.14cqw;
+  height: 0.2cqw;
+  background: #364fc7;
+  transform: translateX(-50%);
+}
+
+.hm-house-annex + .hm-house-annex {
+  width: 0.85cqw;
+  height: 1.95cqw;
+  margin-top: 0.4cqw;
+  border-radius: 0.2cqw 0.2cqw 0 0;
+  background-color: #748ffc;
+  background-image: linear-gradient(#748ffc 0.22cqw, #fff3bf 0.22cqw 0.44cqw, #748ffc 0.44cqw);
+  background-size: 100% 0.6cqw;
+}
+
+.hm-house-annex + .hm-house-annex::before {
+  bottom: calc(100% + 0.06cqw);
+  width: 0.34cqw;
+  height: 0.34cqw;
+  border-radius: 50%;
+  background: #51cf66;
+}
+
+.hm-house-annex + .hm-house-annex::after {
+  display: none;
+}
+
+/* 셋째(마지막) 증축 : 끝까지 증축했음을 알리는 금빛 탑이다. 관제탑보다 높고, 꼭대기에 붉은 등을 달았다. */
+.hm-house-annex + .hm-house-annex + .hm-house-annex {
+  width: 0.75cqw;
+  height: 2.3cqw;
+  margin-top: 0.4cqw;
+  border-color: #a8750f;
+  border-radius: 0.3cqw 0.3cqw 0 0;
+  background-color: #f5c211;
+  background-image: linear-gradient(#f5c211 0.3cqw, #7c4a03 0.3cqw 0.42cqw, #f5c211 0.42cqw);
+  background-size: 100% 0.72cqw;
+}
+
+.hm-house-annex + .hm-house-annex + .hm-house-annex::before {
+  background: #ff6b6b;
+}
+
+/* 주인이 없는 별에 남아 있는 기지의 터는 바닥선을 회색으로 그린다. (카드의 효과로 별만 주인을 잃은 경우) */
+.hm-lot.hm-lot-vacant {
+  border-bottom-color: var(--hm-muted);
+}
+
+/* 텔레파시 카드는 보랏빛, 뉴런의 골짜기 카드는 초록빛으로 비밀쿠폰과 구분한다. */
+.hm-coupon-telepathy {
+  --hm-card: #7950f2;
+}
+
+.hm-coupon-neuron {
+  --hm-card: #0ca678;
+}
+
+.hm-coupon-telepathy,
+.hm-coupon-neuron {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hm-card) 18%, var(--hm-paper)), var(--hm-paper) 60%);
+}
+
+.hm-coupon-telepathy .hm-coupon-head,
+.hm-coupon-neuron .hm-coupon-head {
+  color: color-mix(in srgb, var(--hm-card) 72%, var(--hm-text));
+}
+
+/* 천사의 빛은 금빛, 블랙홀 탈출포트는 보랏빛으로 빛나고, 사건 알림은 파란 테두리에 글을 본문 색으로 적는다. */
+.hm-use-angel {
+  --hm-use: #f08c00;
+}
+
+.hm-use-escape {
+  --hm-use: #7950f2;
+}
+
+.hm-use-notice {
+  --hm-use: #1c7ed6;
+}
+
+.hm-use-notice .hm-use-flash-title {
+  color: var(--hm-text);
+  font-size: 1.05em;
+  line-height: 1.4;
+}
+
+/* 카드의 효과로 굴리는 주사위는 굴리는 플레이어의 색으로 테두리를 둘러, 이동하려고 굴리는 주사위와 구분한다. */
+.hm-casting .hm-die {
+  outline: 0.4cqw solid var(--hm-player);
+  outline-offset: 0.35cqw;
+}
+
+/* ---------- 세로로 긴 화면 : 보드를 화면 너비에 맞추고 그 아래에 플레이어와 기록을 둔다. ---------- */
+
+@media (orientation: portrait) {
+  .hm-game {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 6px;
+  }
+
+  .hm-side {
+    overflow: visible;
+  }
+
+  .hm-board-wrap {
+    container-type: inline-size;
+  }
+
+  .hm-board {
+    gap: 1px;
+    width: 100cqw;
+    height: 100cqw;
+    padding: 2px;
+  }
+
+  .hm-log {
+    max-height: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hm-card {
+    padding: 22px 18px;
+  }
+
+  .hm-slots,
+  .hm-leagues {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hm-slot {
+    min-height: 0;
+  }
+}
+
+/* ---------- 움직임 ---------- */
+
+@keyframes hm-fade {
+  from { opacity: 0; }
+}
+
+@keyframes hm-pop {
+  from { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes hm-zoom {
+  from { opacity: 0; transform: scale(0.4); }
+}
+
+@keyframes hm-hop {
+  from { transform: translateY(-45%) scale(1.25); }
+}
+
+@keyframes hm-pulse {
+  50% { box-shadow: 0 0 0 0.5cqw color-mix(in srgb, var(--hm-player) 45%, transparent), 0 1px 4px rgba(0, 0, 0, 0.5); }
+}
+
+@keyframes hm-shake {
+  25% { transform: rotate(-14deg) translateY(-6%); }
+  75% { transform: rotate(14deg) translateY(4%); }
+}
+
+@keyframes hm-ship-hover {
+  50% { transform: translateY(-7%); }
+}
+
+@keyframes hm-ship-flame {
+  from { transform: translateX(-50%) scaleY(0.7); }
+  to { transform: translateX(-50%) scaleY(1.15); }
+}
+
+@keyframes hm-glow {
+  50% { box-shadow: 0 0 0 0.9cqw color-mix(in srgb, var(--hm-accent) 30%, transparent); }
+}
+
+@keyframes hm-countdown {
+  to { transform: scaleX(0); }
+}
+
+@keyframes hm-build {
+  from { opacity: 0.3; transform: scale(0.6, 0); }
+}
+
+@keyframes hm-drop {
+  from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+}
+
+@keyframes hm-nudge {
+  50% { transform: translateX(0.35em); }
+}
+
+@keyframes hm-office {
+  50% { box-shadow: 0 0 0 0.7cqw color-mix(in srgb, var(--hm-flow) 35%, transparent), 0 0 2.6cqw 0.9cqw color-mix(in srgb, var(--hm-flow) 70%, transparent); }
+}
+
+@keyframes hm-float-pay {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  12% { opacity: 1; transform: translate(-50%, calc(-50% + var(--hm-rise))) scale(1.15); }
+  75% { opacity: 1; transform: translate(-50%, calc(-50% + var(--hm-rise) * 1.5)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% + var(--hm-rise) * 2)) scale(1); }
+}
+
+@keyframes hm-float-get {
+  0%, 45% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  58% { opacity: 1; transform: translate(-50%, calc(-50% + var(--hm-rise))) scale(1.3); }
+  90% { opacity: 1; transform: translate(-50%, calc(-50% + var(--hm-rise) * 1.5)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% + var(--hm-rise) * 2)) scale(1); }
+}
+
+@keyframes hm-flash-pay {
+  50% { background: color-mix(in srgb, #e03131 38%, var(--hm-surface)); }
+}
+
+@keyframes hm-flash-get {
+  50% { background: color-mix(in srgb, #2f9e44 38%, var(--hm-surface)); }
+}
+
+@keyframes hm-draw-wobble {
+  25% { transform: rotate(-7deg) scale(1.04); }
+  60% { transform: rotate(7deg) scale(1.06); }
+}
+
+@keyframes hm-draw-out {
+  to { transform: rotateY(180deg); }
+}
+
+@keyframes hm-draw-in {
+  from { transform: rotateY(-180deg); }
+}
+
+@keyframes hm-draw-glow {
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--hm-grade) 55%, transparent), 0 0 30px 10px color-mix(in srgb, var(--hm-grade) 75%, transparent); }
+}
+
+@keyframes hm-draw-rays {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hm-draw-show {
+  to { opacity: 0.85; }
+}
+
+@keyframes hm-draw-leap {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22) rotate(-3deg); }
+  100% { transform: scale(1.06); }
+}
+
+@keyframes hm-draw-burst {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes hm-draw-sweep {
+  0% { transform: translateX(-70%); }
+  45%, 100% { transform: translateX(70%); }
+}
+
+@keyframes hm-draw-beat {
+  50% { transform: scale(1.08); }
+}
+
+@keyframes hm-transfer-big {
+  50% { box-shadow: 0 0 0 0.9cqw rgba(245, 159, 0, 0.45), 0 0 8cqw 2.6cqw rgba(255, 212, 59, 0.85), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.4); }
+}
+
+@keyframes hm-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+}
+
+@keyframes hm-use-shine {
+  50% { box-shadow: 0 0 0 0.9cqw color-mix(in srgb, var(--hm-use) 45%, transparent), 0 0 8cqw 2.4cqw color-mix(in srgb, var(--hm-use) 80%, transparent), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45); }
+}
+
+@keyframes hm-use-wave {
+  25% { transform: rotate(-14deg) scale(1.15); }
+  75% { transform: rotate(14deg) scale(1.15); }
+}
+
+@keyframes hm-ring {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(5); }
+}
+
+@keyframes hm-stamp {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(2.6); }
+}
+
+@keyframes hm-blast {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.12); }
+  45% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+}
+
+@keyframes hm-blast-wave {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(5); }
+}
+
+@keyframes hm-blast-smoke {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  25% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-50%, -95%) scale(1.9); }
+}
+
+@keyframes hm-spark {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--hm-dx)), calc(-50% + var(--hm-dy))) scale(0.3) rotate(240deg); }
+}
+
+@keyframes hm-tile-blast {
+  0%, 25% { box-shadow: 0 0 0 0.5cqw #ff922b, 0 0 3.4cqw 1.4cqw rgba(224, 49, 49, 0.85); filter: brightness(1.5); }
+  100% { box-shadow: 0 0 0 0 rgba(224, 49, 49, 0); filter: brightness(1); }
+}
+
+@keyframes hm-quake {
+  10% { transform: translate(-5px, 3px) rotate(-0.4deg); }
+  25% { transform: translate(5px, -4px) rotate(0.4deg); }
+  40% { transform: translate(-4px, -2px) rotate(-0.3deg); }
+  55% { transform: translate(3px, 3px) rotate(0.2deg); }
+  70% { transform: translate(-2px, 1px); }
+  85% { transform: translate(1px, -1px); }
+}
+
+@keyframes hm-defeat-shine {
+  50% { box-shadow: 0 0 0 0.9cqw rgba(224, 49, 49, 0.45), 0 0 8cqw 2.4cqw rgba(255, 107, 0, 0.75), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45); }
+}
+
+@keyframes hm-charm-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-6deg); }
+}
+
+@keyframes hm-charm-shine {
+  50% { box-shadow: 0 0 0 0.9cqw color-mix(in srgb, var(--hm-grade) 45%, transparent), 0 0 8cqw 2.4cqw color-mix(in srgb, var(--hm-grade) 80%, transparent), 0 1.5cqw 4cqw rgba(0, 0, 0, 0.45); }
+}
+
+@keyframes hm-charm-spin {
+  from { transform: rotate(-200deg) scale(0.3); }
+}
+
+@keyframes hm-charm-beat {
+  50% { transform: scale(1.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 움직임을 줄인 경우 추첨 결과는 기다리지 않고 바로 다 보여준다. */
+  .hm-root .hm-draw-card,
+  .hm-root .hm-draw-card *,
+  .hm-root .hm-draw-card::before,
+  .hm-root .hm-draw-best,
+  .hm-root .hm-draw-summary {
+    animation-delay: 0s !important;
+  }
+
+  .hm-root .hm-draw-back {
+    display: none;
+  }
+
+  .hm-root *,
+  .hm-root *::before,
+  .hm-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hm-coupon-bar {
+    display: none;
+  }
+
+  /* 움직임을 줄인 경우에도 금액 표시는 연출 시간 동안 그대로 보여준다. */
+  .hm-root .hm-float {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--hm-rise) * 1.3));
+    animation: none !important;
+  }
+}
+`;
+
+/**
+ * 게임 화면의 스타일시트(STYLE_TEXT)를 게임을 그릴 요소가 속한 문서에 넣는다. 이미 넣었으면 다시 넣지 않고 넣어 둔 것을 돌려준다.
+ * 페이지가 연결한 다른 스타일시트로 게임의 모양을 덮어쓸 수 있도록, 그것들보다 앞(head 의 맨 앞)에 넣는다.
+ * 요소가 섀도 DOM 안에 있으면 바깥 문서의 스타일이 닿지 않으므로 그 섀도 루트에 넣는다.
+ * @param {HTMLElement} root 게임 화면을 그릴 요소
+ * @returns {HTMLStyleElement} 문서에 들어 있는 스타일 요소
+ */
+export function installStyle(root) {
+  let scope = root.getRootNode();
+  let home = typeof ShadowRoot === 'function' && scope instanceof ShadowRoot ? scope : root.ownerDocument.head;
+  let found = home.querySelector('style[' + STYLE_MARK + ']');
+  if (found) return found;
+  let node = el('style', { text: STYLE_TEXT, attrs: { [STYLE_MARK]: '' } });
+  home.prepend(node);
+  return node;
+}
+
+/* ==========================================================================
  * 10. 초기화
  * ========================================================================== */
 
 /**
  * Hellmarble 을 초기화하여 메인 메뉴를 보여준다. HTML 에서 이 함수를 호출해야 게임이 시작된다.
+ * 게임 화면의 스타일시트도 이때 문서에 넣으므로, HTML 은 게임의 모양을 정하는 CSS 를 따로 연결하지 않아도 된다. (글꼴을 불러오는 css/fonts.css 는 HTML 이 연결한다.)
  * @param {HTMLElement|string} root 게임 화면을 그릴 요소 또는 그 요소의 CSS 선택자
  * @param {Object} [options] 선택 사항
  * @param {Object} [options.storage] 저장소 객체. read(key), write(key, value), remove(key) 를 구현하면 localStorage 대신 쓸 수 있다.
  * @param {Object} [options.timings] 연출 시간(밀리초). TIMINGS 의 일부 항목만 덮어쓸 수 있다.
  * @param {Function} [options.random] 부적 추첨에 쓸 난수 함수 (0 이상 1 미만). 생략하면 Math.random 을 쓴다.
+ * @param {boolean} [options.style] false 를 주면 게임의 스타일시트(STYLE_TEXT)를 문서에 넣지 않는다. 페이지가 모양을 직접 정할 때 쓴다.
  * @returns {HellmarbleApp} 실행 중인 애플리케이션
  */
 export function initHellmarble(root, options) {
