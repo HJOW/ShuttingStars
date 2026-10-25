@@ -317,12 +317,13 @@ const I18N = {
         'itemCat.glowstick': '야광봉',
         'itemCat.keycard': '카드키',
         'itemCat.fadedScroll': '주문서',
+        'itemCat.firework': '폭죽',
         'itemCat.tool': '도구',
         'item.ericOnly': '에릭 전용',
         'item.energy': '에너지',
         'item.noSellDiscard': '팔거나 버릴 수 없습니다',
         'item.batteryAuto': '배터리는 플래시 에너지가 다 되면 자동으로 쓰입니다.',
-        'item.keycardUse': '카드키는 내려가는 엘리베이터 오른쪽의 카드 리더기에 찍어 씁니다.',
+        'item.keycardUse': '카드키는 엘리베이터 오른쪽의 카드 리더기에 찍어 씁니다.',
         'item.keycardOne': '카드키는 하나만 가질 수 있습니다.',
         'consTier.1': '하급',
         'consTier.2': '중급',
@@ -622,12 +623,13 @@ const I18N = {
         'itemCat.glowstick': 'Glowstick',
         'itemCat.keycard': 'Keycard',
         'itemCat.fadedScroll': 'Scroll',
+        'itemCat.firework': 'Firework',
         'itemCat.tool': 'Tool',
         'item.ericOnly': 'Eric only',
         'item.energy': 'Energy',
         'item.noSellDiscard': 'Cannot be sold or discarded',
         'item.batteryAuto': 'Batteries are used automatically when the flashlight runs out.',
-        'item.keycardUse': 'Swipe the keycard at the card reader to the right of the down elevator.',
+        'item.keycardUse': 'Swipe the keycard at the card reader to the right of an elevator.',
         'item.keycardOne': 'You can only carry one keycard.',
         'consTier.1': 'Lesser',
         'consTier.2': 'Standard',
@@ -1087,11 +1089,17 @@ CONSUMABLES.battery = { id: 'battery', category: 'battery', tier: 0, nameKo: '�
 CONSUMABLES.glowstick = { id: 'glowstick', category: 'glowstick', tier: 0, nameKo: '야광봉', nameEn: 'Glowstick', price: 0, effect: { glowstick: true }, hero: 'eric', stack: ERIC_STACK_MAX };
 CONSUMABLES.keycard = { id: 'keycard', category: 'keycard', tier: 0, nameKo: '카드키', nameEn: 'Keycard', price: 0, effect: {}, hero: 'eric', stack: 1, unique: true, noDiscard: true, useReason: 'item.keycardUse' };
 CONSUMABLES.fadedScroll = { id: 'fadedScroll', category: 'fadedScroll', tier: 0, nameKo: '빛 바랜 주문서', nameEn: 'Faded Scroll', price: 0, effect: { warp: true }, hero: 'eric', stack: ERIC_STACK_MAX, short: ['바랜', 'Fa'] };
+// 2026-10-25 AGENTS.md 세 번째 변경 (24-3, U64): 폭죽도 에릭 전용 소모품 (장롱에서만, 여러 개여도 1칸, 행동 슬롯에 등록해 사용)
+CONSUMABLES.firework = { id: 'firework', category: 'firework', tier: 0, nameKo: '폭죽', nameEn: 'Firework', price: 0, effect: { firework: true }, hero: 'eric', stack: ERIC_STACK_MAX };
 function stackMaxOf(id) { return CONSUMABLES[id].stack || STACK_MAX; }
 // 야광봉 (22-3, U54): 주인공 앞 0.6m 바닥에 놓는다 (벽이면 발밑). 빛 = 주위 2칸 (32m) — 에릭 층에 조명 4개를 늘 두고 주인공에게 가까운 야광봉에 배정
 // (조명 개수를 바꾸지 않는 규칙, 8절 16번). 한 층 최대 64개 (넘으면 오래된 것부터), 주인공이 그 층에서 2층 이상 멀어지면 사라진다.
 // 야광봉이 있는 층은 카메라 far 를 viewFar 로 넓혀 멀리서도 보이게 한다 (지형은 검은 안개에 묻혀 그대로 안 보이고, 가린 벽은 깊이로 가린다)
 const GLOWSTICK = { drop: 0.6, lights: 4, lightDist: 32, lightIntensity: 10, lightY: 0.5, color: 0x7dff9a, max: 64, keepFloors: 2, viewFar: 1200 };
+// 폭죽 (24-4, U64): 주인공 앞 0.6m 바닥에 놓고 불을 붙인다 → 4초 뒤 폭발 시작 → 16초 유지 → 사라짐 (피해 없음). 런타임 전용 g.fireworks (저장하지 않음),
+// 한 층에 동시에 최대 8개. 폭발 소음 = 직선 20칸 (벽에 막히지 않음, U65), 빛 = 주위 2칸 (에릭 층에 조명 2개를 늘 두고 가까운 폭발 폭죽에 배정).
+// 멀리서도 보이도록 안개를 받지 않는 빛점 + 폭죽이 있는 동안 카메라 far 를 viewFar 로 넓힌다. 야광봉과 달리 몬스터도 이 빛을 본다 (2026-10-25 사용자)
+const FIREWORK = { drop: 0.6, fuse: 4, burst: 16, max: 8, noise: 20 * CELL_SIZE, lightRadius: 2 * CELL_SIZE, lights: 2, lightIntensity: 16, lightY: 2.5, viewFar: 1200 };
 const CONSUMABLE_TIER_MIN_FLOOR = { 1: 1, 2: 8, 3: 18 };   // 단계별 등장 층
 const CONSUMABLE_DROP_WEIGHTS = { 1: 5, 2: 3, 3: 2 };      // 드롭 단계 가중치 (하급 5 : 중급 3 : 상급 2)
 const POTION_COOLDOWN = 3;                                  // 물약류 (생명력·마나·활력·치료제) 공용 재사용 대기 (초)
@@ -1265,14 +1273,15 @@ const CONSUMABLE_DESC = {
     scroll2: ['현재 층 전체 지도 공개 + 엘리베이터·포탈·상인·성소 위치 표시', 'Reveals the whole floor map, including elevators, portal, merchant and sanctuaries'],
     battery: ['"플래시" 에너지를 모두 쓰면 1개가 자동으로 소모되어 300초를 충전합니다', 'When the flashlight runs out, one is used automatically to recharge 300 seconds'],
     glowstick: ['가운데를 분질러 발밑에 떨어뜨립니다. 주위 2칸을 밝히고, 멀리서도 (가리지 않으면) 보입니다. 다시 주울 수 없고, 몬스터는 이 빛을 보지 못합니다', 'Snap it and drop it at your feet. It lights up 2 cells around it and can be seen from afar unless blocked. It cannot be picked up again, and monsters cannot see its light'],
-    keycard: ['내려가는 엘리베이터 오른쪽의 카드 리더기에 찍으면 엘리베이터가 움직입니다. 하나만 가질 수 있습니다', 'Swipe it at the card reader to the right of the down elevator to activate the elevator. You can only carry one'],
+    keycard: ['엘리베이터 오른쪽의 카드 리더기에 찍으면 그 엘리베이터가 움직입니다. 타고 도착한 뒤 내려서 문이 닫히면 다시 잠깁니다. 하나만 가질 수 있습니다', 'Swipe it at the card reader to the right of an elevator to activate it. After you ride it and step out, it locks again once the doors close. You can only carry one'],
+    firework: ['불을 붙여 발밑에 떨어뜨립니다. 4초 뒤 16초 동안 터지며, 피해는 없지만 큰 소리와 멀리서도 보이는 불빛을 냅니다. 20칸 안의 몬스터가 소리를 듣고 구경하러 옵니다. 다시 주울 수 없습니다', 'Light it and drop it at your feet. After 4s it bursts for 16s — harmless, but loud and visible from afar. Monsters within 20 cells hear it and come to watch. It cannot be picked up again'],
     fadedScroll: ['잠시 무적이 되어 같은 층의 먼 곳 (10칸 이상) 으로 순간이동합니다. 쫓던 몬스터는 추적을 멈추고, 도착한 곳 근처의 몬스터는 다른 곳으로 옮겨집니다', 'Become briefly invulnerable and teleport to a distant spot (10+ cells away) on this floor. Chasing monsters lose track of you, and monsters near where you land are moved elsewhere'],
     scroll3: ['3초 시전 후 가장 가까운 성소 구역으로 이동. 시전 중 공격을 받으면 취소 (소모되지 않음)', 'After a 3s cast, returns you to the nearest sanctuary. Interrupted (not consumed) if you are hit'],
 };
 // 소모품 분류별 색 (아이콘의 액체·바닥 상자). 투척물은 속성 색 (CONSUMABLE_ITEM_COLORS 가 우선)
 const CONSUMABLE_COLORS = {
     hp: '#e0483a', mp: '#4a78e8', sta: '#5ac85a', cure: '#e8e2d0', throw: '#ff7a2a', elixir: '#c060e0', scroll: '#e8d8a8', battery: '#8fd04a',
-    glowstick: '#7dff9a', keycard: '#5ab8e8', fadedScroll: '#c8b896',
+    glowstick: '#7dff9a', keycard: '#5ab8e8', fadedScroll: '#c8b896', firework: '#ff7a5a',
 };
 // 도구 설명 (18-1). [한국어, 영어]
 const TOOL_DESC = {
@@ -1523,6 +1532,8 @@ function collectModifiers(state, game) {
     if (game && game.buffs) for (const b of game.buffs) addMods(mods, b.mods);
     return mods;
 }
+// 에릭의 걷기 속도 배율 (2026-10-25 사용자 지시: 걷기만 30% 감소, 달리기는 그대로 = 원래 걷기 속도 × 1.6, U66)
+const ERIC_WALK_MUL = 0.7;
 // 파생 수치 (PROGRESS.md 6.7, AGENTS.md "파생 수치 공식"). game 이 없으면 버프·조건부 패시브·상태이상 없이 계산
 // 둔화 (9-4) 는 이동 속도와 공격 속도 (= 공격 간격) 에 곱한다 (game.player.effects)
 function calcDerivedStats(state, game) {
@@ -1541,7 +1552,8 @@ function calcDerivedStats(state, game) {
     const slowMul = 1 - (game && game.player && game.player.effects ? effectMagnitude(game.player, 'slow') : 0) / 100;
     let moveMul = 1;   // 칼날 폭풍 (A3) "이동 속도 −30%" 는 % 합산이 아니라 배율 (버프의 moveMul, 14-3)
     if (game && game.buffs) for (const b of game.buffs) if (b.moveMul) moveMul *= b.moveMul;
-    const walkSpeed = 5 * (1 + moveBonus / 100) * slowMul * moveMul;
+    const baseWalk = 5 * (1 + moveBonus / 100) * slowMul * moveMul;
+    const walkSpeed = state.hero === 'eric' ? baseWalk * ERIC_WALK_MUL : baseWalk;
     const resCap = 75 + mods.resCapBonus;
     const res = {};
     for (const el in RES_KEY) res[el] = Math.min(resCap, mods[RES_KEY[el]] + mods.resAll);
@@ -1559,7 +1571,7 @@ function calcDerivedStats(state, game) {
         attackInterval: weapon.interval / (1 + atkSpeedBonus / 100) / slowMul,
         critChance: Math.min(60, 5 + dex * 0.3 + mods.critChance),
         critDamage: 150 + mods.critDamage,
-        walkSpeed, runSpeed: walkSpeed * 1.6,
+        walkSpeed, runSpeed: baseWalk * 1.6,
         hpRegen: (0.2 + str * 0.04) * (1 + mods.hpRegenPct / 100),
         mpRegen: (0.5 + int * 0.1) * (1 + mods.mpRegenPct / 100),
         staminaRegen: 25 * (1 + mods.staminaRegenPct / 100) * staminaRegenMul,
@@ -1907,6 +1919,10 @@ function getSpawn(d, arrival) {
         face = 'N';                                     // 분수를 바라봄
     } else if (arrival === 'descend' || arrival === 'ascend') {
         const p = d.pieces.find((q) => q.type === (arrival === 'descend' ? 'stairsUp' : 'stairsDown'));
+        if (d.hero === 'eric') {   // 에릭 (24-2, U63): 타고 온 엘리베이터 안 (문에서 6.5m 안쪽) 에서 문을 바라보며 도착 — 안에 있는 동안 그 엘리베이터는 활성, 내려서 문이 닫히면 잠긴다
+            const L = elevatorLayout(d, p), face2 = DIR_OPP[p.dir];
+            return { cellKey: p.cells[2], x: L.door.x + L.dx * ERIC_ARRIVE_DEPTH, z: L.door.z + L.dz * ERIC_ARRIVE_DEPTH, yaw: DIR_YAW[face2], faceDir: face2 };
+        }
         cell = d.cells.get(p.cells[0]);                 // cells[0] = 계단 앞 통로
         face = DIR_OPP[p.dir];                          // 계단을 등지고 바깥을 바라봄
     } else if (arrival === 'portal') {
@@ -1967,6 +1983,7 @@ const ELEVATOR_LEN = CELL_SIZE / 2 + (CELL_SIZE / 2 - PASS_SIDE);   // 내부 �
 const ELEVATOR_DOOR_H = 4.4;      // 문·내부 천장 높이 (m)
 const ELEVATOR_PANEL_Y = 1.3;     // 안쪽 끝 벽의 층 버튼 판 높이 (m)
 const CARD_READER_Y = 1.2, CARD_READER_Z = 1.0;   // 에릭의 카드 리더기 (22-4, U55): 높이, 문에서 바깥쪽 (앞 통로) 으로 떨어진 거리 — 문 오른쪽 벽면
+const ERIC_ARRIVE_DEPTH = 6.5;    // 에릭이 엘리베이터로 도착하는 자리: 문에서 안쪽으로 (m). 문이 열리는 거리 (6m) 밖이라 처음엔 문이 닫혀 있다 (24-2)
 // 문 가운데 (step1 과 step2 칸의 경계), 버튼 판 (안쪽 끝 벽 면에서 0.05m 앞), 진행 방향 (앞 통로 → 안쪽). 순수 함수
 function elevatorLayout(d, piece) {
     const c2 = cellCenter(d.cells.get(piece.cells[2]));
@@ -1986,9 +2003,9 @@ function collectInteractables(d, furniture = null) {
         if (piece.type !== 'stairsUp' && piece.type !== 'stairsDown') continue;
         const p = elevatorLayout(d, piece).panel, change = TRIGGER_FLOOR_CHANGE[piece.type];
         out.push({ kind: 'elevator', pieceId: piece.id, change, x: p.x, y: p.y, z: p.z, labelKey: change === 'descend' ? 'interact.elevatorDown' : 'interact.elevatorUp' });
-        if (d.hero === 'eric' && piece.type === 'stairsDown') {   // 에릭: 문 바깥 오른쪽 벽면의 카드 리더기 (22-4, U55). 리더기 앞면 가운데, 2.5m · 30°
+        if (d.hero === 'eric') {   // 에릭: 문 바깥 오른쪽 벽면의 카드 리더기 (22-4, U55 — 2026-10-25 세 번째 변경부터 위층·아래층 엘리베이터 모두, U63). 리더기 앞면 가운데, 2.5m · 30°
             const L = elevatorLayout(d, piece), r = localToWorldXZ(L.door.x, L.door.z, L.yaw, CELL_SIZE / 2 - PASS_SIDE - 0.07, CARD_READER_Z);
-            out.push({ kind: 'cardReader', pieceId: piece.id, x: r.x, y: CARD_READER_Y, z: r.z, range: ERIC_INTERACT_RANGE, labelKey: 'interact.cardReader' });
+            out.push({ kind: 'cardReader', pieceId: piece.id, change, x: r.x, y: CARD_READER_Y, z: r.z, range: ERIC_INTERACT_RANGE, labelKey: 'interact.cardReader' });
         }
     }
     for (const piece of d.pieces) {   // 방랑 상인 (15-2): 상점 칸 안에서 4m · 30° — 카운터 뒤 상인 인형 (로컬 z +1.2) 의 가슴 높이
@@ -2017,23 +2034,28 @@ function merchantLayout(d, piece) {
     return { x, z, dir, yaw: DIR_YAW[dir] };
 }
 
-// --- 에릭 던전의 가구 (17-2·22-1, AGENTS.md "던전 특징 (에릭)", U40·U52). 순수 함수 — 시드로 정하므로 저장하지 않는다 (가져간 서랍 칸만 world.drawersTaken)
+// --- 에릭 던전의 가구 (17-2·22-1·24-1, AGENTS.md "던전 특징 (에릭)", U40·U52·U62). 순수 함수. 위치는 층 시드로 정하므로 저장하지 않고,
+// 서랍 내용물은 따로 내용물 시드 (contentSeed = 현재 층의 world.drawerSeed) 로 굴린다 — 엘리베이터로 도착할 때마다 새 시드 (2026-10-25 AGENTS.md 세 번째 변경).
+// 저장하는 것은 현재 층의 내용물 시드와 가져간 서랍 칸 (world.drawersTaken) 뿐이다 (다른 층의 아이템 배치는 저장하지 않음)
 // 캐비닛 = 일자형·ㄱ자형 조각마다 1/4 (층마다 최소 8개, 모자라면 남은 조각에서 더함),
 // 서랍형 장롱 = ㅏ형·십자형 조각마다 1/2 + 일자형·ㄱ자형 조각마다 1/4 (캐비닛과 따로 굴림, 층마다 최소 16개).
 // 조각의 가운데 칸 (십자형은 가운데 칸에 벽이 없어 팔 칸 중 하나) 의 벽면 가운데에 붙여 통로 쪽을 바라보게 놓는다 (통로 폭 6m → 5.2m 이상 남음).
 // 한 조각에 캐비닛·장롱이 함께 오면 같은 칸의 서로 다른 벽 변에 (일자형은 마주 보는 양쪽 벽 → 4.6m 남음).
-// 서랍은 위·아래 2칸, 칸마다 50% 빈칸, 나머지는 야광봉 40 / 배터리 20 / 하급 활력 물약 20 / 탐색 주문서 15 / 빛 바랜 주문서 5 (U52).
-// 보장: 카드키 = 무작위 빈칸 1곳에 정확히 1개, 배터리 = 4개 이상 (모자라면 빈칸 → 활력 물약·탐색 주문서 칸을 바꿈)
+// 서랍은 위·아래 2칸, 칸마다 50% 빈칸, 나머지는 야광봉 40 / 배터리 20 / 폭죽 20 / 하급 활력 물약 20 / 탐색 주문서 15 / 빛 바랜 주문서 5 (U52·U64).
+// 보장: 카드키 = 무작위 빈칸 1곳에 정확히 1개, 배터리 = 4개 이상 (모자라면 빈칸 → 활력 물약·탐색 주문서 칸을 바꿈). 내용물을 굴릴 때마다 지킨다
 const ERIC_FURNITURE = {
     cabinet: { types: ['straight', 'corner'], chance: 0.25, min: 8, w: 1.2, d: 0.8, h: 2.2 },
     drawer: {
         chance: { tee: 0.5, cross: 0.5, straight: 0.25, corner: 0.25 }, min: 16, w: 1.2, d: 0.6, h: 1.2, emptyChance: 0.5,
-        items: [['glowstick', 40], ['battery', 20], ['sta1', 20], ['scroll1', 15], ['fadedScroll', 5]],
+        items: [['glowstick', 40], ['battery', 20], ['firework', 20], ['sta1', 20], ['scroll1', 15], ['fadedScroll', 5]],
         minBattery: 4, batteryFallback: ['sta1', 'scroll1'],
     },
 };
 ERIC_FURNITURE.drawer.types = Object.keys(ERIC_FURNITURE.drawer.chance);
-const ERIC_FURNITURE_SALT = 5005;
+const ERIC_FURNITURE_SALT = 5005, ERIC_DRAWER_SALT = 5006;
+const DRAWER_SEED_MAX = 2147483647;   // 내용물 시드 범위 [0, 2^31 − 1)
+// 내용물 시드의 기본값 (층 시드에서): 디버그 게임·디버그 화면·자체 테스트용. 실제 게임은 world.drawerSeed (새 게임·엘리베이터 도착 때 무작위, U62)
+function defaultDrawerSeed(seed, floor) { return hashInts(seed, floor, ERIC_DRAWER_SALT) % DRAWER_SEED_MAX; }
 // 가구 하나의 놓임: 칸의 벽 변 dir 쪽 벽면 가운데에 붙임. 반환 { id, cellKey, dir, x, z, yaw (앞면이 바라보는 쪽), box (바닥 사각형) }
 function furnitureSpot(id, cell, dir, size) {
     const f = cellWallFaces(cell).find((q) => q.len === CELL_SIZE - 2 * PASS_SIDE && DIR_DELTA[dir][0] === -q.nx && DIR_DELTA[dir][1] === -q.nz);
@@ -2054,7 +2076,7 @@ function furnitureCellOf(d, piece, rng, used) {
     }
     return { cell: d.cells.get(key), dir: rng.pick(free(key)) };
 }
-function planEricFurniture(d) {
+function planEricFurniture(d, contentSeed = defaultDrawerSeed(d.seed, d.floor)) {
     const rng = createRng(hashInts(d.seed, d.floor, ERIC_FURNITURE_SALT)), C = ERIC_FURNITURE.cabinet, D = ERIC_FURNITURE.drawer;
     const cabPieces = [], cabRest = [], drawerPieces = [], drawerRest = [];
     for (const piece of d.pieces) {   // 조각마다 굴림 (캐비닛·장롱 따로)
@@ -2076,6 +2098,12 @@ function planEricFurniture(d) {
         return out;
     };
     const cabinets = place(cabPieces, C), drawers = place(drawerPieces, D);
+    rollDrawerItems(drawers, createRng(contentSeed));
+    return { cabinets, drawers };
+}
+// 서랍 내용물 굴리기 (24-1, U52·U62): 칸마다 빈칸 50% / 내용물 표. rng = 내용물 시드의 난수 (위치를 정한 난수와 따로)
+function rollDrawerItems(drawers, rng) {
+    const D = ERIC_FURNITURE.drawer;
     for (const dr of drawers) dr.items = [0, 1].map(() => (rng() < D.emptyChance ? null : pickWeighted(D.items.map((e) => e[0]), D.items.map((e) => e[1]), rng)));
     // 보장 (U52): 카드키 정확히 1개 (빈칸 → 없으면 배터리가 아닌 칸), 배터리 4개 이상 (빈칸 → 활력 물약·탐색 주문서 칸)
     const slots = drawers.flatMap((dr) => [0, 1].map((i) => ({ dr, i })));
@@ -2089,7 +2117,7 @@ function planEricFurniture(d) {
         if (!s) break;
         set(s, 'battery');
     }
-    return { cabinets, drawers };
+    return drawers;
 }
 
 // --- 디버그용 글자 지도 (북쪽이 위). 칸 하나 = 가로 3글자 × 세로 2줄, 벽은 + - |
@@ -2210,7 +2238,10 @@ function createNewGameState(slotIndex, hero = DEFAULT_HERO) {
             actionSlots: [{ type: 'skill', id: 'BA' }, { type: 'item', id: 'hp1' }, null, null, null, null, null],
             activeSlot: 0,
         },
-        world: { visited: [], merchantSoldOut: [], drawersTaken: [], glowsticks: [], elevatorUnlocked: false, bossDefeated: false, position: null, runtime: null, history: {} },
+        world: {
+            visited: [], merchantSoldOut: [], drawersTaken: [], drawerSeed: 0, glowsticks: [], elevatorUnlocked: { up: false, down: false }, elevatorRide: null,
+            bossDefeated: false, position: null, runtime: null, history: {},
+        },
     };
     const p = state.player;
     p.equipment.weapon = makeEquipInstance(state, 'pipe0');
@@ -2243,7 +2274,7 @@ function pickNextTheme(current, rnd) {
 function makeFloorRecord(floor, excludeTheme, rnd) {
     return {
         floor, seed: Math.floor(rnd() * 2147483647), theme: pickNextTheme(excludeTheme, rnd),
-        visited: '', merchantSoldOut: [], drawersTaken: [], glowsticks: [], elevatorUnlocked: false, bossDefeated: false, runtime: null,
+        visited: '', merchantSoldOut: [], glowsticks: [], bossDefeated: false, runtime: null,
     };
 }
 // 다음 층 (현재 + 1) 이 아직 정해지지 않았으면 미리 정한다 (AGENTS.md: 다음 층 정보도 저장)
@@ -2252,15 +2283,13 @@ function ensureNextFloor(state, rnd) {
     if (!state.world.history[next]) state.world.history[next] = makeFloorRecord(next, state.theme, rnd);
 }
 
-// 에릭의 서랍 기록 (가져간 칸) 은 현재 층과 바로 위·아래 층 (거리 1) 까지만 보관한다 — 거리 2 이상 (이 값 이상) 떨어진 층의 기록은 지운다.
-// 그 층에 다시 가면 서랍이 새것으로 채워져 있다 (2026-10-25 사용자 결정, U61). 현재 층의 기록은 world.drawersTaken
-const DRAWER_KEEP_FLOORS = 2;
-// 층 기록 중 현재 층에서 멀리 (거리 ≥ 2) 떨어진 층의 서랍 기록·활성 야광봉을 비운다. 저장 데이터를 작게 유지한다 (20-4)
+// 에릭의 서랍 기록 (가져간 칸)·내용물은 층 기록에 두지 않는다 — 엘리베이터로 도착할 때마다 장롱 아이템을 다시 배치하므로 (2026-10-25 AGENTS.md 세 번째 변경,
+// 사용자: "저장 데이터에서는 다른 층의 아이템 배치가 저장되지 않아야 해", U62. 그 전에는 현재 층 ± 1 의 기록에 보관했다, U61). 현재 층만 world.drawerSeed·drawersTaken.
+// 층 기록 중 현재 층에서 2층 이상 떨어진 층의 활성 야광봉을 비운다 (AGENTS.md "2층 이상 멀어질 때까지 그 자리를 지킨다", U54)
 function pruneFarFloorRecords(history, floor) {
     for (const key of Object.keys(history)) {
         const dist = Math.abs(Number(key) - floor), r = history[key];
-        if (dist >= DRAWER_KEEP_FLOORS && r.drawersTaken && r.drawersTaken.length > 0) r.drawersTaken = [];   // 에릭 서랍 (U61)
-        if (dist >= GLOWSTICK.keepFloors && r.glowsticks && r.glowsticks.length > 0) r.glowsticks = [];       // 에릭 야광봉 (U54)
+        if (dist >= GLOWSTICK.keepFloors && r.glowsticks && r.glowsticks.length > 0) r.glowsticks = [];
     }
 }
 // 층 이동 시 state 를 바꾼다 (6.9 의 규칙, U16~U19·U24)
@@ -2276,8 +2305,8 @@ function applyFloorChange(state, kind, leavingRuntime, rnd) {
     const w = state.world, history = w.history;
     const leaving = {
         floor: state.floor, seed: state.dungeonSeed, theme: state.theme,
-        visited: encodeVisited(w.visited), merchantSoldOut: w.merchantSoldOut.slice(), drawersTaken: (w.drawersTaken || []).slice(),
-        glowsticks: (w.glowsticks || []).map((s) => ({ x: s.x, z: s.z })), elevatorUnlocked: w.elevatorUnlocked !== false,
+        visited: encodeVisited(w.visited), merchantSoldOut: w.merchantSoldOut.slice(),
+        glowsticks: (w.glowsticks || []).map((s) => ({ x: s.x, z: s.z })),   // 서랍 기록·엘리베이터 잠금은 층 기록에 두지 않는다 (U62·U63)
         bossDefeated: w.bossDefeated, runtime: leavingRuntime || null,
     };
     let floor, rec = null, target;
@@ -2298,15 +2327,21 @@ function applyFloorChange(state, kind, leavingRuntime, rnd) {
     state.theme = target.theme;
     w.visited = decodeVisited(target.visited);
     w.merchantSoldOut = target.merchantSoldOut.slice();
-    w.drawersTaken = (target.drawersTaken || []).slice();   // 에릭 서랍에서 가져간 칸 (17-6). 이전 형식 기록에는 없다
+    // 에릭 (2026-10-25 AGENTS.md 세 번째 변경, U62): 엘리베이터로 도착하면 장롱 서랍이 모두 닫히고 내용물을 다시 굴린다 — 가져간 칸은 비우고,
+    // 새 내용물 시드는 다음 층을 정한 뒤 (아래) 굴린다 (층 기록의 시드가 바뀌지 않게)
+    w.drawersTaken = [];
     w.glowsticks = (target.glowsticks || []).map((s) => ({ x: s.x, z: s.z }));   // 에릭의 활성 야광봉 (22-3)
-    // 에릭의 아래층 엘리베이터 (22-4, U55): 아래층에서 올라왔으면 그 엘리베이터로 내려갔던 것이므로 활성. 필드가 없는 이전 형식 기록도 활성 (갇히지 않게)
-    w.elevatorUnlocked = kind === 'ascend' || target.elevatorUnlocked !== false;
-    pruneFarFloorRecords(history, floor);   // 야광봉은 2층 이상 멀어지면 사라진다 (AGENTS.md "던전 특징 (에릭)", U54), 서랍 기록도 같은 범위만 보관 (U61)
+    // 엘리베이터 잠금 (U63): 타고 온 엘리베이터 (내려왔으면 위층 엘리베이터, 올라왔으면 아래층 엘리베이터) 만 활성 — 주인공이 안에 있는 동안.
+    // 내려서 문이 닫히면 잠긴다 (elevatorRide, updateElevatorRelock). 그 밖의 엘리베이터는 도착할 때 항상 잠김 (층 기록에 두지 않음). 마틴은 잠금을 쓰지 않는다
+    const ride = kind === 'descend' ? 'up' : kind === 'ascend' ? 'down' : null;
+    w.elevatorUnlocked = { up: ride === 'up', down: ride === 'down' };
+    w.elevatorRide = ride;
+    pruneFarFloorRecords(history, floor);   // 야광봉은 2층 이상 멀어지면 사라진다 (AGENTS.md "던전 특징 (에릭)", U54)
     w.bossDefeated = target.bossDefeated;
     w.position = null;                                    // 시작 위치는 getSpawn(dungeon, kind) 로 정한다
     w.runtime = null;                                     // 현재 층 런타임은 런타임 객체가 가진다 (저장할 때 채움, 7-9)
     ensureNextFloor(state, rnd);
+    if (state.hero === 'eric') w.drawerSeed = Math.floor(rnd() * DRAWER_SEED_MAX);
     return { restored: !!rec, runtime: rec ? rec.runtime : null };
 }
 
@@ -2379,11 +2414,21 @@ function deserializeState(json) {
     try { o = JSON.parse(json); } catch { return null; }
     if (!isValidState(o)) return null;
     if (o.world.runtime === undefined) o.world.runtime = null;
-    if (o.world.drawersTaken === undefined) o.world.drawersTaken = [];   // 17-6 이전 저장 데이터
-    if (o.world.glowsticks === undefined) o.world.glowsticks = [];       // 22-3 이전
-    if (o.world.elevatorUnlocked === undefined) o.world.elevatorUnlocked = true;   // 22-4 이전: 잠금 없이 (카드키 위치가 바뀌어 갇히지 않게, U55)
+    const w = o.world;
     if (o.hero === undefined) o.hero = DEFAULT_HERO;   // 2026-10-24 이전 저장 데이터 = 마틴 (U38)
-    pruneFarFloorRecords(o.world.history, o.floor);    // 이전에 저장한 먼 층의 서랍 기록 (U61 전에는 모든 층에 보관했다) 은 불러올 때 정리한다
+    if (w.drawersTaken === undefined) w.drawersTaken = [];   // 17-6 이전 저장 데이터
+    if (w.glowsticks === undefined) w.glowsticks = [];       // 22-3 이전
+    // 24-1 이전 (U62): 층 기록의 서랍 기록은 지운다. 내용물 시드가 없으면 지금 층의 내용물을 새로 굴린다 (예전 시드 고정 배치의 가져간 칸은 새 배치와 맞지 않으므로 비움)
+    for (const r of Object.values(w.history)) { delete r.drawersTaken; delete r.elevatorUnlocked; }
+    if (w.drawerSeed === undefined) {
+        w.drawerSeed = o.hero === 'eric' ? Math.floor(Math.random() * DRAWER_SEED_MAX) : 0;
+        w.drawersTaken = [];
+    }
+    // 24-2 이전 (U63): 불리언 = 아래층 엘리베이터만 (없으면 활성 — 22-4 이전 데이터가 갇히지 않게, U55). 위층 엘리베이터는 잠금 없던 시절이라
+    // 그 안에서 저장했으면 createGameRuntime 이 "타고 온 엘리베이터" 로 연다
+    if (!isPlainObject(w.elevatorUnlocked)) w.elevatorUnlocked = { up: false, down: w.elevatorUnlocked !== false };
+    if (w.elevatorRide === undefined) w.elevatorRide = null;
+    pruneFarFloorRecords(w.history, o.floor);
     return o;
 }
 function isPlainObject(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
@@ -2439,7 +2484,11 @@ function isValidWorld(w) {
     if (!Array.isArray(w.merchantSoldOut) || !w.merchantSoldOut.every(Number.isInteger)) return false;
     if (w.drawersTaken !== undefined && !isValidDrawersTaken(w.drawersTaken)) return false;   // 없으면 이전 형식 (17-6)
     if (w.glowsticks !== undefined && !isValidGlowsticks(w.glowsticks)) return false;          // 22-3
-    if (w.elevatorUnlocked !== undefined && typeof w.elevatorUnlocked !== 'boolean') return false;   // 22-4
+    if (w.drawerSeed !== undefined && !isIntIn(w.drawerSeed, 0, DRAWER_SEED_MAX)) return false;   // 24-1
+    // 엘리베이터 잠금: { up, down } (24-2) 또는 불리언 (22-4 의 이전 형식), 타고 온 엘리베이터 'up' | 'down' | null
+    const eu = w.elevatorUnlocked;
+    if (eu !== undefined && typeof eu !== 'boolean' && !(isPlainObject(eu) && typeof eu.up === 'boolean' && typeof eu.down === 'boolean')) return false;
+    if (w.elevatorRide !== undefined && w.elevatorRide !== null && w.elevatorRide !== 'up' && w.elevatorRide !== 'down') return false;
     if (w.position !== null && !(isPlainObject(w.position) && ['x', 'y', 'z', 'yaw'].every((k) => isFiniteNum(w.position[k])))) return false;
     if (w.runtime !== undefined && !isValidRuntimeSnapshot(w.runtime)) return false;   // 없으면 이전 형식 (7-9)
     for (const key in w.history) {   // 층 기록 (6.9). 키는 JSON 을 거쳐 문자열이 된 층 번호
@@ -2447,9 +2496,9 @@ function isValidWorld(w) {
         if (!isIntIn(Number(key), 1, Infinity) || !isPlainObject(r) || !Number.isInteger(r.seed) || !THEMES[r.theme]) return false;
         if (!isValidVisitedField(r.visited) || !Array.isArray(r.merchantSoldOut) || typeof r.bossDefeated !== 'boolean') return false;
         if (!isValidRuntimeSnapshot(r.runtime)) return false;
-        if (r.drawersTaken !== undefined && !isValidDrawersTaken(r.drawersTaken)) return false;
+        if (r.drawersTaken !== undefined && !isValidDrawersTaken(r.drawersTaken)) return false;   // (이전 형식, 불러오면 지움)
         if (r.glowsticks !== undefined && !isValidGlowsticks(r.glowsticks)) return false;
-        if (r.elevatorUnlocked !== undefined && typeof r.elevatorUnlocked !== 'boolean') return false;
+        if (r.elevatorUnlocked !== undefined && typeof r.elevatorUnlocked !== 'boolean') return false;   // (이전 형식, 불러오면 지움)
     }
     return true;
 }
@@ -3147,7 +3196,8 @@ function collectDungeonBoxes(d, vis) {
 // 반환: { group, collision, triggers, lights, wallVisualHeight, ceiling, fog, background, cameraFar,
 //         update(dt, eyePos), setLightLevel(f), dispose() }
 //   eyePos = 카메라 (눈) 위치. 손전등·별·불씨가 따라다닌다
-function buildDungeonView(d, themeId) {
+//   opts.drawerSeed = 에릭 층의 서랍 내용물 시드 (현재 층의 world.drawerSeed, U62). 없으면 층 시드에서 정한 기본값
+function buildDungeonView(d, themeId, opts = {}) {
     const vis = THEME_VISUALS[themeId];
     if (!vis) throw new Error('알 수 없는 테마: ' + themeId);
     const A = getThemeAssets(themeId), C = getCommonAssets();
@@ -3155,7 +3205,7 @@ function buildDungeonView(d, themeId) {
     group.name = 'dungeon:' + themeId;
     const disposables = [], animators = [];
     const boxes = collectDungeonBoxes(d, vis);
-    const furniture = d.hero === 'eric' ? planEricFurniture(d) : null;   // 에릭 층의 캐비닛·서랍형 장롱 (17-3)
+    const furniture = d.hero === 'eric' ? planEricFurniture(d, opts.drawerSeed) : null;   // 에릭 층의 캐비닛·서랍형 장롱 (17-3)
     const furnitureFaces = new Set(furniture ? [...furniture.cabinets, ...furniture.drawers].map((it) => `${it.cellKey}|${it.dir}`) : []);
     const ctx = {
         d, themeId, A, C, group, collision: boxes.collision, level: 1, furniture,
@@ -3221,6 +3271,9 @@ function buildDungeonView(d, themeId) {
     // 에릭 층의 야광봉 (22-3, U54): 조명 4개를 늘 두고 (세기 0) 주인공에게 가까운 야광봉 4개에 배정한다. sticks = [{ x, z, obj }]
     const glow = d.hero === 'eric' ? { lights: Array.from({ length: GLOWSTICK.lights }, () => new THREE.PointLight(GLOWSTICK.color, 0, GLOWSTICK.lightDist, 1)), sticks: [] } : null;
     if (glow) group.add(...glow.lights);
+    // 에릭 층의 폭죽 (24-4, U64): 조명 2개를 늘 두고 가까운 폭발 폭죽에 배정. items = [{ ref (런타임 g.fireworks 의 항목), obj, color, update, dispose }]
+    const fw = d.hero === 'eric' ? { lights: Array.from({ length: FIREWORK.lights }, () => new THREE.PointLight(0xffffff, 0, FIREWORK.lightRadius, 1)), items: [] } : null;
+    if (fw) group.add(...fw.lights);
     const aimDir = new THREE.Vector3();
     buildFacilities(ctx, lights);
     buildFurnitureProps(ctx);
@@ -3239,11 +3292,17 @@ function buildDungeonView(d, themeId) {
             const s = ctx.elevators.get(pieceId);
             if (s) s.closing = true;
         },
-        // 에릭의 아래층 엘리베이터 잠금 (22-4): 잠기면 문이 열리지 않고 문 자리에 충돌, ▼ 표시등 꺼짐, 리더기 불 붉게. 마틴 층은 아무 일도 없다
-        setElevatorLocked(locked) {
-            for (const s of ctx.elevators.values()) if (s.setLocked) s.setLocked(locked);
+        // 에릭의 엘리베이터 잠금 (22-4·24-2): change = 'descend' (아래층 엘리베이터) | 'ascend' (위층 엘리베이터). 잠기면 문이 열리지 않고 문 자리에 충돌,
+        // 표시등 꺼짐, 리더기 불 붉게. 마틴 층은 아무 일도 없다
+        setElevatorLocked(change, locked) {
+            for (const s of ctx.elevators.values()) if (s.setLocked && s.change === change) s.setLocked(locked);
         },
-        isElevatorLocked() { return [...ctx.elevators.values()].some((s) => s.locked); },
+        isElevatorLocked(change) { return [...ctx.elevators.values()].some((s) => s.change === change && s.locked); },
+        // 문이 다 닫혔는가 (타고 온 엘리베이터에서 내린 뒤 잠그는 시점, 24-2)
+        isElevatorDoorClosed(pieceId) {
+            const s = ctx.elevators.get(pieceId);
+            return !s || s.open <= 0;
+        },
         // 숨은 캐비닛은 감춘다 (안에서 문 안쪽 면이 시야를 막지 않게. 틈은 화면 막 (HUD) 으로 그린다, 17-5)
         setCabinetHidden(id, hidden) {
             const g = ctx.cabinets.get(id);
@@ -3286,6 +3345,19 @@ function buildDungeonView(d, themeId) {
             });
         },
         glowstickCount() { return glow ? glow.sticks.length : 0; },
+        // 폭죽을 런타임 목록 (g.fireworks) 과 맞춘다 (24-4): 새 폭죽은 만들고, 목록에서 빠진 (끝난) 폭죽은 장면에서 빼고 해제한다
+        syncFireworks(list) {
+            if (!fw) return;
+            for (const e of fw.items) if (!list.includes(e.ref)) { group.remove(e.obj); e.dispose(); }
+            fw.items = fw.items.filter((e) => list.includes(e.ref));
+            for (const f of list) {
+                if (fw.items.some((e) => e.ref === f)) continue;
+                const e = makeFireworkObject(f);
+                group.add(e.obj);
+                fw.items.push(e);
+            }
+        },
+        fireworkCount() { return fw ? fw.items.length : 0; },
         // 플래시를 카메라 위치·시선으로 (매 프레임)
         aimFlash(camera) {
             if (!flashSpot) return;
@@ -3313,6 +3385,16 @@ function buildDungeonView(d, themeId) {
                     if (s) l.position.set(s.x, GLOWSTICK.lightY, s.z);
                 });
             }
+            if (fw) {   // 폭죽: 불꽃 입자·빛점 + 조명은 가까운 폭발 폭죽 2개에 (색은 그 폭죽의 지금 색, 깜빡임)
+                for (const e of fw.items) e.update(time);
+                const dist = (e) => Math.hypot(e.ref.x - eyePos.x, e.ref.z - eyePos.z);
+                const bursting = fw.items.filter((e) => fireworkPhase(e.ref.t) === 'burst').sort((a, b) => dist(a) - dist(b));
+                fw.lights.forEach((l, i) => {
+                    const e = bursting[i];
+                    l.intensity = e ? FIREWORK.lightIntensity * (0.8 + 0.2 * Math.sin(time * 19 + i * 2.1)) : 0;
+                    if (e) { l.position.set(e.ref.x, FIREWORK.lightY, e.ref.z); l.color.copy(e.color); }
+                });
+            }
         },
         // 0~1. 테마 조명·시설 조명·발광 장식에 곱한다 (백룸 보스 "정전"). 손전등은 그대로
         setLightLevel(f) {
@@ -3325,6 +3407,7 @@ function buildDungeonView(d, themeId) {
             if (group.parent) group.parent.remove(group);
             for (const o of disposables) o.dispose();
             disposables.length = 0;
+            if (fw) { for (const e of fw.items) e.dispose(); fw.items = []; }   // 폭죽마다 만든 입자·재질 (24-4)
             animators.length = 0;
             view.setLightLevel(1);   // 공유 발광 재질을 원래 밝기로
         },
@@ -3376,7 +3459,8 @@ function getElevatorAssets() {
         light: markGlow(lambert({ color: 0xfff6e0, emissive: 0xfff2d0, emissiveIntensity: 1 })),
         up: markGlow(lambert({ map: upTex, emissive: 0xffffff, emissiveMap: upTex, emissiveIntensity: 1 })),
         down: markGlow(lambert({ map: downTex, emissive: 0xffffff, emissiveMap: downTex, emissiveIntensity: 1 })),
-        downOff: lambert({ map: downTex, color: 0x484848 }),   // 잠긴 아래층 엘리베이터의 꺼진 표시등 (22-4)
+        downOff: lambert({ map: downTex, color: 0x484848 }),   // 잠긴 엘리베이터의 꺼진 표시등 (22-4, 24-2 부터 위층도)
+        upOff: lambert({ map: upTex, color: 0x484848 }),
         reader: lambert({ color: 0x2a2d33 }),                  // 카드 리더기 몸체·카드 홈
         readerSlot: lambert({ color: 0x0c0d10 }),
         ledRed: new THREE.MeshBasicMaterial({ color: 0xff3a30 }),     // 리더기 불: 잠김 붉은색 / 활성 초록색 (빛을 받지 않는 재질 — 어둠 속에서도 보이게)
@@ -3431,9 +3515,9 @@ function buildElevatorProps(ctx, piece) {
     p(G.box, E.frame, 0, ELEVATOR_PANEL_Y, -len + 0.13, 0.9, 1.2, 0.06);                // 버튼 판
     p(G.box, sign, 0, ELEVATOR_PANEL_Y + 0.15, -len + 0.165, 0.42, 0.42, 0.02);         // 버튼 (빛남)
     const doors = [-1, 1].map((s) => p(G.box, E.door, s * half / 2, H / 2, 0, half, H, 0.08));
-    const state = { open: 0, closing: false, locked: false };
+    const state = { open: 0, closing: false, locked: false, change: TRIGGER_FLOOR_CHANGE[piece.type] };
     ctx.elevators.set(piece.id, state);
-    if (ctx.d.hero === 'eric' && piece.type === 'stairsDown') {   // 에릭: 카드 리더기 + 잠금 (22-4, U55). 처음엔 잠김 → view.setElevatorLocked 가 world 에 맞춘다
+    if (ctx.d.hero === 'eric') {   // 에릭: 카드 리더기 + 잠금 (22-4, U55 — 24-2 부터 위층·아래층 모두, U63). 처음엔 잠김 → view.setElevatorLocked 가 world 에 맞춘다
         const rx = half - 0.03, z = CARD_READER_Z;   // 문 바깥 오른쪽 벽면 (안쪽을 볼 때 오른쪽 = +x)
         p(G.box, E.reader, rx, CARD_READER_Y, z, 0.06, 0.34, 0.22);              // 몸체
         p(G.box, E.readerSlot, rx - 0.031, CARD_READER_Y - 0.04, z, 0.005, 0.16, 0.03);   // 카드 홈
@@ -3447,7 +3531,7 @@ function buildElevatorProps(ctx, piece) {
         state.setLocked = (locked) => {
             state.locked = locked;
             led.material = locked ? E.ledRed : E.ledGreen;
-            if (signMesh) signMesh.material = locked ? E.downOff : sign;
+            if (signMesh) signMesh.material = locked ? (sign === E.down ? E.downOff : E.upOff) : sign;
             const i = list.indexOf(lockBox);
             if (locked && i < 0) list.push(lockBox);
             else if (!locked && i >= 0) list.splice(i, 1);
@@ -3527,6 +3611,100 @@ function makeGlowstickObject(x, z, i) {
     halo.scale.setScalar(GLOWSTICK_HALO_SCALE);
     g.add(halo);
     return g;
+}
+// --- 폭죽 (24-4, U64): 바닥에 세운 작은 원통 + 불붙은 4초 동안 심지 불꽃 → 폭발 16초 = 위로 솟는 분수 불꽃 + 2초마다 위에서 터지는 불꽃
+// (입자 한 묶음 = draw call 1회, 안개 없음) + 멀리서도 보이는 빛점 (화면 크기 일정, 안개 없음, 벽에 가리면 안 보임). 색은 2초마다 바뀐다.
+// 조명은 view 가 가까운 폭발 폭죽에 배정한다 (FIREWORK.lights). 원통·재질은 공용, 입자·빛점 재질은 폭죽마다 (dispose 대상)
+const FIREWORK_COLORS = [0xff5a4a, 0xffd84a, 0x5aff8a, 0x4ac8ff, 0xd86aff, 0xfff4e0];
+const FIREWORK_COLOR_TIME = 2;                 // 색이 바뀌는 간격 (초)
+const FIREWORK_FOUNTAIN = 160, FIREWORK_SHELL = 60;   // 분수 입자 / 터지는 불꽃 입자 수
+const FIREWORK_SHELL_Y = 4, FIREWORK_SHELL_LIFE = 1.3, FIREWORK_GRAVITY = 9.8;
+const FIREWORK_TILT_DEG = 15;                  // 분수가 퍼지는 각 (통로 폭 6m 안에 들도록)
+const FIREWORK_HALO_SCALE = 0.065, FIREWORK_HALO_Y = 2.2;   // 빛점: 1080p 에서 약 45px (야광봉보다 크게), 분수 가운데 높이
+let fireworkAssets = null;
+function getFireworkAssets() {
+    if (fireworkAssets) return fireworkAssets;
+    fireworkAssets = {
+        tube: new THREE.CylinderGeometry(0.07, 0.08, 0.26, 10),
+        cap: new THREE.ConeGeometry(0.075, 0.08, 10),
+        tubeMat: new THREE.MeshLambertMaterial({ color: 0xc8282a }),
+        capMat: new THREE.MeshLambertMaterial({ color: 0xe8d8a8 }),
+        tex: getGlowstickAssets().haloMat.map,   // 둥근 빛 번짐 텍스처는 야광봉 빛점과 같이 쓴다
+    };
+    return fireworkAssets;
+}
+// 폭발한 지 bt 초일 때의 색 (순수 함수)
+function fireworkColorAt(bt) { return FIREWORK_COLORS[Math.floor(Math.max(0, bt) / FIREWORK_COLOR_TIME) % FIREWORK_COLORS.length]; }
+function makeFireworkObject(f) {
+    const A = getFireworkAssets(), g = new THREE.Group();
+    g.position.set(f.x, 0, f.z);
+    const add = (o, y) => { o.position.y = y; g.add(o); return o; };
+    add(new THREE.Mesh(A.tube, A.tubeMat), 0.13);
+    add(new THREE.Mesh(A.cap, A.capMat), 0.3);
+    const additive = { map: A.tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
+    const sparkMat = new THREE.SpriteMaterial({ ...additive, color: 0xffa040 });                                 // 심지 불꽃 (가까이에서만)
+    const haloMat = new THREE.SpriteMaterial({ ...additive, color: 0xffffff, fog: false, sizeAttenuation: false });   // 멀리서도 보이는 빛점
+    const spark = add(new THREE.Sprite(sparkMat), 0.38);
+    const halo = add(new THREE.Sprite(haloMat), FIREWORK_HALO_Y);
+    halo.scale.setScalar(FIREWORK_HALO_SCALE);
+    halo.visible = false;   // 폭발 중에만 (update)
+    const n = FIREWORK_FOUNTAIN + FIREWORK_SHELL, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const ptsMat = new THREE.PointsMaterial({ ...additive, size: 0.28, vertexColors: true, fog: false });   // 둥근 빛 번짐 텍스처 (없으면 네모난 점)
+    const pts = add(new THREE.Points(geo, ptsMat), 0);
+    pts.frustumCulled = false;
+    pts.visible = false;
+    // 입자마다: 분수 = 위쪽 15° 원뿔 방향·속도 7~10.5 m/s·수명 0.9~1.5초·시작 어긋남 / 터지는 불꽃 = 구 방향·최종 반지름 2.2~3.2m
+    const seeds = Array.from({ length: n }, (_, i) => {
+        const a = Math.random() * Math.PI * 2;
+        if (i < FIREWORK_FOUNTAIN) {
+            const tilt = Math.random() * FIREWORK_TILT_DEG * Math.PI / 180, life = 0.9 + Math.random() * 0.6;
+            return { hx: Math.cos(a) * Math.sin(tilt), hz: Math.sin(a) * Math.sin(tilt), up: Math.cos(tilt), speed: 7 + Math.random() * 3.5, life, off: Math.random() * life, b: 0.6 + Math.random() * 0.4 };
+        }
+        const u = Math.random() * 2 - 1, s = Math.sqrt(1 - u * u);
+        return { hx: Math.cos(a) * s, hz: Math.sin(a) * s, up: u, speed: 2.2 + Math.random(), b: 0.6 + Math.random() * 0.4 };
+    });
+    const c = new THREE.Color(), c2 = new THREE.Color();
+    const put = (i, x, y, z, color, k) => {
+        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+        col[i * 3] = color.r * k; col[i * 3 + 1] = color.g * k; col[i * 3 + 2] = color.b * k;
+    };
+    return {
+        ref: f, obj: g, color: c,   // color = 지금 색 (조명이 따라 쓴다)
+        update(time) {
+            const phase = fireworkPhase(f.t), bt = f.t - FIREWORK.fuse;
+            spark.visible = phase === 'fuse';
+            if (spark.visible) {
+                const k = 0.6 + 0.4 * Math.sin(time * 37 + f.x * 7);
+                spark.scale.setScalar(0.22 + 0.12 * k);
+                sparkMat.opacity = k;
+            }
+            pts.visible = halo.visible = phase === 'burst';
+            if (!pts.visible) return;
+            c.setHex(fireworkColorAt(bt));
+            c2.setHex(fireworkColorAt(bt + FIREWORK_COLOR_TIME));   // 위에서 터지는 불꽃은 다음 색
+            haloMat.color.copy(c);
+            haloMat.opacity = 0.8 + 0.2 * Math.sin(time * 23);
+            for (let i = 0; i < FIREWORK_FOUNTAIN; i++) {   // 분수: 수명마다 되풀이. 폭발 직후에는 아직 나오지 않은 입자를 감춘다
+                const s = seeds[i], age = (bt + s.off) % s.life;
+                if (age > bt) { put(i, 0, 0, 0, c, 0); continue; }
+                const r = s.speed * age, y = Math.max(0.02, 0.35 + s.up * r - 0.5 * FIREWORK_GRAVITY * age * age);
+                put(i, s.hx * r, y, s.hz * r, c, s.b * (1 - age / s.life));
+            }
+            const sa = bt % FIREWORK_COLOR_TIME;   // 터지는 불꽃: 2초마다 위에서 퍼졌다가 떨어지며 사라짐
+            for (let i = FIREWORK_FOUNTAIN; i < n; i++) {
+                const s = seeds[i];
+                if (bt < 0.5 || sa > FIREWORK_SHELL_LIFE) { put(i, 0, 0, 0, c2, 0); continue; }
+                const r = s.speed * (1 - Math.exp(-3 * sa));
+                put(i, s.hx * r, FIREWORK_SHELL_Y + s.up * r - 0.8 * sa * sa, s.hz * r, c2, s.b * Math.pow(1 - sa / FIREWORK_SHELL_LIFE, 1.5));
+            }
+            geo.attributes.position.needsUpdate = true;
+            geo.attributes.color.needsUpdate = true;
+        },
+        dispose() { geo.dispose(); ptsMat.dispose(); sparkMat.dispose(); haloMat.dispose(); },
+    };
 }
 // 가구 메시·충돌 상자. 그룹 로컬: 원점 = 바닥 가운데, −z = 앞 (통로 쪽). 충돌 = 바닥 사각형 (planEricFurniture 의 box) × 높이
 function buildFurnitureProps(ctx) {
@@ -4048,10 +4226,11 @@ function createGameRuntime(state, arrival, opts = {}) {
     const debug = !!opts.debug;
     ensureNextFloor(state, Math.random);   // 새 게임 (지하 2층)·이전 형식 저장 데이터·디버그 게임의 다음 층을 미리 정한다 (7-7)
     const dungeon = generateDungeon(state.dungeonSeed, state.floor, state.hero);
-    const view = buildDungeonView(dungeon, state.theme);
+    const view = buildDungeonView(dungeon, state.theme, { drawerSeed: state.world.drawerSeed });   // 에릭 서랍 내용물 = 현재 층의 내용물 시드 (U62)
     const start = playerStartPosition(dungeon, state, arrival, view.collision);
     view.setGlowsticks(state.world.glowsticks || []);   // 에릭의 활성 야광봉 (22-3)
-    view.setElevatorLocked(isElevatorLockedFor(state)); // 에릭의 아래층 엘리베이터 잠금 (22-4)
+    if (state.hero === 'eric') openStartElevator(state, cellAtWorld(dungeon, start.x, start.z));
+    applyElevatorLocks(view, state);                    // 에릭의 엘리베이터 잠금 (22-4·24-2)
     const g = {
         state, dungeon, view, debug,
         player: {
@@ -4078,6 +4257,8 @@ function createGameRuntime(state, arrival, opts = {}) {
         bossFight: null,                         // 전투 중인 보스 (화면 위쪽 HP 막대, 10-4)
         recall: null,                            // 귀환 주문서 시전 { t, dur } (12-7, HUD 진행 막대)
         warp: null,                              // 빛 바랜 주문서 순간이동 { t, moved } (22-5)
+        fireworks: [],                           // 활성 폭죽 [{ x, z, t (불붙인 뒤 지난 초) }] (24-4, 저장하지 않음)
+        fireworkLit: false,                      // 주인공이 폭발 중인 폭죽의 빛 (2칸) 안에 있는가 (몬스터 시야, 24-5)
         interactTarget: null,                    // 조준 중인 상호작용 대상 (view.interactables 의 항목, HUD "F | …", 16-4·21-1)
         interactLabel: null,                     // 그 대상의 안내 문구 키 (상태에 따라: 숨기/나오기, 열기/가져가기/비어 있음, 17-4)
         hiding: null,                            // 숨은 캐비닛 (17-5, enterCabinet)
@@ -4119,12 +4300,14 @@ function updateGame(g, dt) {
     updateCellState(g);
     updateFloorTriggers(g);
     updateInteraction(g);         // 조준 + F 키 상호작용 (엘리베이터 버튼 판·상인·캐비닛·서랍, 16-4·21-1)
+    updateElevatorRelock(g);      // 에릭: 타고 온 엘리베이터에서 내려 문이 닫히면 잠금 (24-2)
     updateRegen(g, dt);
     updatePlayerStatus(g, dt);    // [14] 상태이상 지속 피해·버프 시간 (성소 안이면 해제, 9단계)
     updatePlayerActions(g, dt);   // [15] 재사용 대기·행동 슬롯 사용 (왼쪽 버튼, 21-2)
     updateRecall(g, dt);          // [16] 귀환 주문서 시전 (12-7)
     updateFadedWarp(g, dt);       // [16] 빛 바랜 주문서 순간이동 (22-5)
-    if (g.state.hero === 'eric') updateEricSenses(g, dt);   // [14] 에릭 몬스터의 발소리 듣기·캐비닛 8초 (23단계)
+    updateFireworks(g, dt);       // [16] 폭죽 불붙음 → 폭발 → 사라짐 (24-4)
+    if (g.state.hero === 'eric') updateEricSenses(g, dt);   // [14] 에릭 몬스터의 발소리·폭죽 소리 듣기·캐비닛 8초 (23·24단계)
     updateMonsters(g, dt);        // [14]
     updateProjectiles(g, dt);
     updateZones(g, dt);
@@ -4349,7 +4532,7 @@ function findInteractable(g) {
         if (dist > (it.range || INTERACT_RANGE) || dist < 1e-6) continue;
         if (it.insidePiece && (!g.currentCell || g.currentCell.pieceId !== it.pieceId)) continue;   // 상인: 상인 방 안에서만 (15-2)
         if (it.kind === 'merchant' && g.state.hero === 'eric') continue;                          // 방랑 상인은 마틴만 (AGENTS.md)
-        if (it.kind === 'cardReader' && g.state.world.elevatorUnlocked) continue;                 // 활성화된 엘리베이터의 리더기는 더 쓸 일이 없다 (22-4)
+        if (it.kind === 'cardReader' && !isElevatorLockedFor(g.state, it.change)) continue;        // 활성화된 엘리베이터의 리더기는 더 쓸 일이 없다 (22-4)
         const c = (vx * fx + vy * fy + vz * fz) / dist;
         if (c >= bestCos) { best = it; bestCos = c; }
     }
@@ -4374,10 +4557,10 @@ function useInteractable(g, it) {
     if (it.kind === 'merchant') { g.uiEvents.push({ type: 'openShop' }); return; }   // 상점 화면 (SCREENS.game.openShop, 15-3)
     if (it.kind === 'cabinet') { if (g.hiding) exitCabinet(g); else enterCabinet(g, it.id); return; }   // 17-5
     if (it.kind === 'drawer') { useDrawer(g, it.id, it.slot); return; }                                 // 17-6
-    if (it.kind === 'cardReader') { useCardReader(g); return; }                                         // 22-4
+    if (it.kind === 'cardReader') { useCardReader(g, it); return; }                                     // 22-4·24-2
     if (it.kind === 'elevator') {   // 버튼 판 → 문이 닫히며 층 이동 (U37). 지하 1층에는 위층 엘리베이터가 없다 (안전장치)
         if (it.change === 'ascend' && g.state.floor <= 1) return;
-        if (it.change === 'descend' && isElevatorLockedFor(g.state)) return;   // (안전장치) 잠긴 문 안으로는 들어갈 수 없다 (22-4)
+        if (isElevatorLockedFor(g.state, it.change)) return;   // (안전장치) 잠긴 문 안으로는 들어갈 수 없다 (22-4)
         g.view.closeElevator(it.pieceId);
         changeFloor(g, it.change);
     }
@@ -4406,7 +4589,8 @@ function exitCabinet(g) {
     g.player.pitch = pitch;
 }
 // --- 서랍형 장롱 (17-6, U40): 칸마다 첫 클릭 = 열기, 열린 칸 클릭 = 안의 아이템 가져가기 (없으면 "비어 있음").
-// 가져간 칸은 world.drawersTaken ("가구 id:칸") 에 기록 → 층 기록에 보관되어 (현재 층과 위·아래 1층까지만, U61) 다시 와도 빈 칸. 열림 상태는 저장하지 않는다
+// 가져간 칸은 world.drawersTaken ("가구 id:칸") 에 기록 (현재 층만 — 저장·불러오기 뒤에도 빈 칸). 엘리베이터로 다른 층에 도착하면 서랍이 모두 닫히고
+// 내용물을 다시 굴리므로 비운다 (2026-10-25 AGENTS.md 세 번째 변경, U62). 열림 상태는 저장하지 않는다
 function drawerItem(g, id, slot) {
     const dr = g.view.furniture && g.view.furniture.drawers.find((x) => x.id === id);
     if (!dr || !dr.items[slot] || g.state.world.drawersTaken.includes(`${id}:${slot}`)) return null;
@@ -4425,15 +4609,44 @@ function useDrawer(g, id, slot) {
     g.state.world.drawersTaken.push(`${id}:${slot}`);
     g.uiEvents.push({ type: 'pickup', item });
 }
-// --- 카드키·아래층 엘리베이터 잠금 (22-4, AGENTS.md "던전 특징 (에릭)", U55). 에릭 층의 아래층 엘리베이터는 처음에 잠겨 있고,
-// 문 오른쪽의 카드 리더기에 F: 카드키가 없으면 아무 일도 일어나지 않고 (안내도 없음), 있으면 1개 소모 → 활성화 (world.elevatorUnlocked, 층 기록에 보관)
-function isElevatorLockedFor(state) { return state.hero === 'eric' && !state.world.elevatorUnlocked; }
-function useCardReader(g) {
-    const w = g.state.world;
-    if (!isElevatorLockedFor(g.state) || !consumeConsumable(g.state, 'keycard')) return;
-    w.elevatorUnlocked = true;
-    g.view.setElevatorLocked(false);
+// --- 카드키·엘리베이터 잠금 (22-4·24-2, AGENTS.md "던전 특징 (에릭)", U55·U63). 에릭 층의 엘리베이터 (위층·아래층 모두) 는 처음에 잠겨 있고,
+// 문 오른쪽의 카드 리더기에 F: 카드키가 없으면 아무 일도 일어나지 않고 (안내도 없음), 있으면 1개 소모 → 그 엘리베이터 활성화.
+// 잠금 상태는 현재 층에만 world.elevatorUnlocked = { up, down } (층 기록에 두지 않음). 타고 도착한 엘리베이터는 안에 있는 동안 활성이고
+// (world.elevatorRide), 내려서 문이 다 닫히면 다시 잠긴다 (updateElevatorRelock). change = 'descend' (아래층 엘리베이터) | 'ascend' (위층 엘리베이터)
+function elevatorKeyOf(change) { return change === 'ascend' ? 'up' : 'down'; }
+function isElevatorLockedFor(state, change) {
+    const u = state.world.elevatorUnlocked;
+    return state.hero === 'eric' && !(u && u[elevatorKeyOf(change)]);
+}
+function applyElevatorLocks(view, state) {
+    for (const change of ['descend', 'ascend']) view.setElevatorLocked(change, isElevatorLockedFor(state, change));
+}
+function useCardReader(g, it) {
+    const change = it.change;
+    if (!isElevatorLockedFor(g.state, change) || !consumeConsumable(g.state, 'keycard')) return;
+    g.state.world.elevatorUnlocked[elevatorKeyOf(change)] = true;
+    g.view.setElevatorLocked(change, false);
     g.uiEvents.push({ type: 'toast', key: 'interact.unlocked' });
+}
+// 엘리베이터 안에서 시작하는데 그 엘리베이터가 잠겨 있으면 (위층 엘리베이터에 잠금이 없던 24-2 이전 저장 데이터, 디버그 게임 등)
+// 갇히지 않게 타고 온 엘리베이터로 친다 — 내려서 문이 닫히면 잠긴다 (U63)
+function openStartElevator(state, cell) {
+    if (!isElevatorInterior(cell)) return;
+    const key = cell.pieceType === 'stairsUp' ? 'up' : 'down', w = state.world;
+    if (w.elevatorUnlocked[key]) return;
+    w.elevatorUnlocked[key] = true;
+    w.elevatorRide = key;
+}
+// 타고 온 엘리베이터: 주인공이 그 엘리베이터 내부 밖에 있고 문이 다 닫히면 잠근다 (AGENTS.md "도착 후 엘리베이터에서 내려 문이 닫히면 다시 비활성화", U63)
+function updateElevatorRelock(g) {
+    const w = g.state.world, ride = w.elevatorRide;
+    if (!ride || g.state.hero !== 'eric' || g.transition) return;
+    const piece = g.dungeon.pieces.find((p) => p.type === (ride === 'up' ? 'stairsUp' : 'stairsDown'));
+    const c = g.currentCell;
+    if (piece && ((c && c.pieceId === piece.id && isElevatorInterior(c)) || !g.view.isElevatorDoorClosed(piece.id))) return;
+    w.elevatorUnlocked[ride] = false;
+    w.elevatorRide = null;
+    g.view.setElevatorLocked(ride === 'up' ? 'ascend' : 'descend', true);
 }
 // 층 이동 시작 (7-3 의 1): 입력 잠금 (게임 갱신 중지) + 시스템 메뉴 금지 → 0.4초 동안 검게.
 // 실제 교체 (2~7) 는 화면이 완전히 검어졌을 때 swapFloor, 밝아지면 토스트 (8) — 진행은 SCREENS.game.updateTransition
@@ -4453,11 +4666,12 @@ function swapFloor(g, kind) {
     g.warp = null;                                                                      //   (안전장치) 빛 바랜 주문서 순간이동
     g.hiding = null;                                                                    //   (안전장치) 캐비닛 안에서는 층을 옮길 수 없다
     g.skillTimeline = [];                                                               //   예약한 스킬 동작 (유성 낙하 등) 도 취소
+    g.fireworks = [];                                                                   //   폭죽은 떠난 층과 함께 사라진다 (저장하지 않음, U64)
     unmountDungeonView(g.view);
     g.dungeon = generateDungeon(state.dungeonSeed, state.floor, state.hero);            // 5
-    g.view = buildDungeonView(g.dungeon, state.theme);
+    g.view = buildDungeonView(g.dungeon, state.theme, { drawerSeed: state.world.drawerSeed });   //   에릭: 새 내용물 시드로 서랍을 채움 (모두 닫힘, U62)
     g.view.setGlowsticks(state.world.glowsticks || []);                                //   그 층의 활성 야광봉 (22-3)
-    g.view.setElevatorLocked(isElevatorLockedFor(state));                              //   아래층 엘리베이터 잠금 (22-4)
+    applyElevatorLocks(g.view, state);                                                 //   엘리베이터 잠금: 타고 온 엘리베이터만 활성 (24-2)
     mountDungeonView(g.view);
     const s = getSpawn(g.dungeon, kind);   // 내려왔으면 위 계단 앞, 올라왔으면 아래 계단 앞, 포탈이면 포탈 옆 칸
     placePlayer(g, s.x, s.z, s.yaw);
@@ -4545,10 +4759,10 @@ function clearFloorRuntime(g) {
 // 에릭 층의 어둠·플래시 (18-3, U42): 플래시 켜짐이 바뀌거나 층 (view) 이 바뀌면 적용, 플래시 방향은 매 프레임 카메라를 따른다
 function updateEricDarkness(g) {
     if (!g.view.ericDark) return;
-    const on = g.flash.on, glow = g.view.glowstickCount() > 0;
+    const on = g.flash.on, glow = g.view.glowstickCount() > 0 || g.view.fireworkCount() > 0;
     if (g.darkView !== g.view || g.darkOn !== on || g.darkGlow !== glow) {
         g.view.setEricDarkness(on);
-        app.camera.far = glow ? Math.max(g.view.cameraFar, GLOWSTICK.viewFar) : g.view.cameraFar;   // 야광봉은 멀리서도 보인다 (22-3)
+        app.camera.far = glow ? Math.max(g.view.cameraFar, GLOWSTICK.viewFar, FIREWORK.viewFar) : g.view.cameraFar;   // 야광봉·폭죽은 멀리서도 보인다 (22-3·24-4)
         app.camera.updateProjectionMatrix();
         g.darkView = g.view;
         g.darkOn = on;
@@ -5878,6 +6092,7 @@ const ERIC_MONSTER = {
     lostTime: 8,             // 이 시간 동안 안 보이면 추적 해제 (AGENTS.md, 2026-10-25 4초 → 8초)
     hideCalmTime: 8,         // 캐비닛에 숨은 채로 이 시간이 지나면 모든 몬스터의 의심·추적 해제 (AGENTS.md, 23-3)
     arriveDist: 1.5,         // 의심 모드: 소리 위치에 이만큼 다가가면 도착
+    watchGap: 2,             // 폭죽 구경: 몸 반지름 + 2m 까지 다가가 멈춘다 (24-5)
     reach: 1.5,              // 공격 사거리 = 몸 반지름 + 1.5m
     windup: 0.5,             // 예비 동작 (피할 틈)
     cooldown: 1.2,           // 공격 뒤 다음 예비 동작까지
@@ -5894,7 +6109,10 @@ function footstepRange(moving, running, hiding) {   // 순수 함수
     if (hiding || !moving) return 0;
     return running ? ERIC_FOOTSTEP.run : ERIC_FOOTSTEP.walk;
 }
-// 에릭 몬스터의 귀 (23-1·23-3): 캐비닛에 숨은 시간 (8초면 모두 진정) + 0.5초마다 발소리. 빛 바랜 주문서 순간이동 중에는 소리를 내지 않는다
+// 에릭 몬스터의 귀 (23-1·23-3·24-5): 캐비닛에 숨은 시간 (8초면 모두 진정) + 0.5초마다 폭죽 소리 → 발소리. 빛 바랜 주문서 순간이동 중에는 발소리를 내지 않는다.
+// 폭발 중인 폭죽의 소리 (직선 20칸) 는 발소리보다 우선 (AGENTS.md "에릭 특별 규칙", U65): 추적 중이 아닌 몬스터는 20칸 안의 가장 가까운 폭발 폭죽을 향해 의심 모드,
+// 그동안 발소리는 무시한다. 추적 중인 몬스터는 폭죽을 신경 쓰지 않고, 추적이 풀리면 다음 판정에서 다시 폭죽으로 간다.
+// (야광봉과 달리 몬스터도 폭죽 불빛을 보지만 보이는 거리 (20칸) 가 소리와 같아서 따로 판정하지 않는다. 빛에 비친 주인공은 ericMonsterSees 의 lit)
 function updateEricSenses(g, dt) {
     if (g.hiding) {
         g.hideT = (g.hideT || 0) + dt;
@@ -5909,25 +6127,51 @@ function updateEricSenses(g, dt) {
     g.footstepT = (g.footstepT || 0) - dt;
     if (g.footstepT > 0) return;
     g.footstepT = ERIC_FOOTSTEP.tick;
+    const bursting = (g.fireworks || []).filter((f) => fireworkPhase(f.t) === 'burst');
+    for (const m of g.monsters) {
+        if (!m.eric || m.state === 'chase') continue;
+        const f = fireworkNoiseTarget(m.pos, bursting);
+        if (f) hearFirework(m, f);
+    }
     const p = g.player, range = g.warp ? 0 : footstepRange(p.moving, p.running, !!g.hiding);
     if (range <= 0) return;
     for (const m of g.monsters) if (m.eric && Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z) <= range) hearFootstep(m, p.pos.x, p.pos.z);
 }
-// 발소리를 들음 → 의심 모드 (추적 중이면 그대로). 이미 의심 중이면 소리 위치만 가장 최신 것으로
+// 발소리를 들음 → 의심 모드 (추적 중이면 그대로). 이미 의심 중이면 소리 위치만 가장 최신 것으로. 폭죽을 향한 의심 중이면 무시 (폭죽 소리가 우선, U65)
 function hearFootstep(m, x, z) {
-    if (m.state === 'chase') return;
+    if (m.state === 'chase' || (m.custom.sound && m.custom.sound.firework)) return;
     if (m.state !== 'suspect') { m.state = 'suspect'; m.custom.stuckPos = null; }
     m.custom.sound = { x, z };
     m.path = null;
 }
-// 시야 (U44): 정면 120° 안 2칸 (32m) + 벽에 가리지 않음. 플래시가 켜져 있으면 ① 정면 120° 안 20칸 (불빛이 보임) ② 몬스터가 플래시 부채꼴 (±30°, 20칸) 안 (불빛에 비침) 도 발견
+// 20칸 (직선, 벽에 막히지 않음) 안에서 가장 가까운 폭발 중인 폭죽 (없으면 null). bursting = 폭발 중인 폭죽 목록. 순수 함수 (24-5)
+function fireworkNoiseTarget(pos, bursting) {
+    let best = null, bestD = FIREWORK.noise;
+    for (const f of bursting) {
+        const dist = Math.hypot(f.x - pos.x, f.z - pos.z);
+        if (dist <= bestD) { best = f; bestD = dist; }
+    }
+    return best;
+}
+// 폭죽 소리를 들음 → 그 폭죽을 향해 의심 모드 (주인공을 향한 의심 중이어도 바꾼다). 같은 폭죽이면 그대로 (가는 중·구경 중 유지)
+function hearFirework(m, f) {
+    if (m.state === 'suspect' && m.custom.sound && m.custom.sound.firework === f) return;
+    m.state = 'suspect';
+    m.custom.sound = { x: f.x, z: f.z, firework: f };
+    m.custom.watching = false;
+    m.custom.stuckPos = null;
+    m.path = null;
+}
+// 시야 (U44): 정면 120° 안 2칸 (32m) + 벽에 가리지 않음. 플래시가 켜져 있으면 ① 정면 120° 안 20칸 (불빛이 보임) ② 몬스터가 플래시 부채꼴 (±30°, 20칸) 안 (불빛에 비침) 도 발견.
+// 폭발 중인 폭죽의 빛 (2칸) 안에 선 주인공 (lit) 도 정면 120° 안 20칸에서 보인다 — 야광봉과 달리 몬스터도 폭죽 불빛을 본다 (2026-10-25 사용자, U64 ⑥)
 const ERIC_SIGHT = { fovDeg: 120, base: 2 * CELL_SIZE, flash: 20 * CELL_SIZE, flashHalfDeg: 30 };
-// 순수 함수 (19-3). m = { x, z, yaw }, p = { x, z, yaw (주인공 시선), hiding, flashOn }, los() = 벽에 가리지 않는가 (필요할 때만 부른다)
+// 순수 함수 (19-3). m = { x, z, yaw }, p = { x, z, yaw (주인공 시선), hiding, flashOn, lit }, los() = 벽에 가리지 않는가 (필요할 때만 부른다)
 function ericMonsterSees(m, p, los) {
     if (p.hiding) return false;   // 캐비닛 안의 주인공은 어떤 경우에도 보지 못한다 (AGENTS.md)
     const dx = p.x - m.x, dz = p.z - m.z, dist = Math.hypot(dx, dz);
     const front = dist < 1e-6 || (dx * -Math.sin(m.yaw) + dz * -Math.cos(m.yaw)) / dist >= Math.cos(ERIC_SIGHT.fovDeg / 2 * Math.PI / 180);
     if (front && dist <= ERIC_SIGHT.base) return los();
+    if (p.lit && front && dist <= ERIC_SIGHT.flash) return los();             // 폭죽 빛에 비친 주인공 (24-5)
     if (!p.flashOn || dist > ERIC_SIGHT.flash) return false;
     if (front) return los();                                                   // 불빛이 보임
     const lit = dist < 1e-6 || (-dx * -Math.sin(p.yaw) + -dz * -Math.cos(p.yaw)) / dist >= Math.cos(ERIC_SIGHT.flashHalfDeg * Math.PI / 180);
@@ -5982,7 +6226,7 @@ function updateEricMonster(g, m, dt) {
     if (m.custom.sightT <= 0) {   // 시야는 0.1초마다
         m.custom.sightT = ERIC_MONSTER.sightTick;
         m.custom.sees = playerTargetable(g) && ericMonsterSees({ x: m.pos.x, z: m.pos.z, yaw: m.yaw },
-            { x: p.x, z: p.z, yaw: g.player.yaw, hiding: !!g.hiding, flashOn: !!(g.flash && g.flash.on) },
+            { x: p.x, z: p.z, yaw: g.player.yaw, hiding: !!g.hiding, flashOn: !!(g.flash && g.flash.on), lit: !!g.fireworkLit },
             () => hasLineOfSight(g, m.pos.x, monsterEyeY(m), m.pos.z, p.x, p.y + EYE_HEIGHT, p.z));
     }
     if (m.custom.sees && playerTargetable(g)) {
@@ -6012,6 +6256,20 @@ function updateEricMonster(g, m, dt) {
             if (to && Math.hypot(to.x - m.pos.x, to.z - m.pos.z) > 0.6) ericMoveTo(g, m, to.x, to.z, g.derived.runSpeed, dt);
             return;
         }
+    }
+    if (m.state === 'suspect' && m.custom.sound && m.custom.sound.firework) {   // 폭죽을 향한 의심 모드 (24-5, U65)
+        const snd = m.custom.sound, f = snd.firework;
+        if ((g.fireworks || []).includes(f) && fireworkPhase(f.t) === 'burst') {
+            // 폭죽 가까이 (몸 반지름 + 2m) 갈 때까지 배회 속도로 → 도착하거나 닿을 수 없으면 (5초 동안 1m 도 못 감) 그 자리에서 폭발이 끝날 때까지 구경
+            if (!m.custom.watching && Math.hypot(snd.x - m.pos.x, snd.z - m.pos.z) > m.radius + ERIC_MONSTER.watchGap && ericStuckTime(m, dt) <= ERIC_MONSTER.stuckTime) {
+                ericMoveTo(g, m, snd.x, snd.z, ERIC_MONSTER.wanderSpeed, dt);
+                return;
+            }
+            m.custom.watching = true;
+            faceTo(m, snd.x, snd.z);
+            return;
+        }
+        calmEricMonster(m);   // 폭발이 끝남 → 다시 배회 (20칸 안에 다른 폭발 폭죽이 있으면 다음 판정에서 그쪽으로)
     }
     if (m.state === 'suspect') {   // 의심 모드 (23-2): 소리 위치로 배회 속도 → 도착하거나 막히면 (예: 엘리베이터 안) 다시 배회
         const snd = m.custom.sound;
@@ -6065,6 +6323,7 @@ function calmEricMonster(m) {
     m.custom.sees = false;
     m.custom.lastSeen = null;
     m.custom.sound = null;      // 의심 모드의 소리 위치 (23-2)
+    m.custom.watching = false;  // 폭죽 구경 (24-5)
     m.custom.stuckPos = null;
 }
 // 예비 동작이 끝나는 순간: 그때도 사거리 안이고 노릴 수 있으면 (캐비닛·엘리베이터·성소 밖) 한 방에 사망. 아니면 빗나감
@@ -8844,6 +9103,7 @@ const CONSUMABLE_HANDLERS = {
     },
     glowstick: (g) => dropGlowstick(g),   // 야광봉 (22-3)
     fadedScroll: (g) => startFadedWarp(g),   // 빛 바랜 주문서 (22-5)
+    firework: (g) => dropFirework(g),   // 폭죽 (24-4)
     scroll(g, def) {   // 탐색: 현재 칸에서 맨해튼 거리 8칸 / 전지: 모든 칸 (방문한 칸과 같이 취급 → 지도의 시설 아이콘도 보인다)
         const e = def.effect, p = g.player.pos, gx = Math.floor(p.x / CELL_SIZE), gz = Math.floor(p.z / CELL_SIZE);
         for (const [key, c] of g.dungeon.cells) {
@@ -8852,14 +9112,44 @@ const CONSUMABLE_HANDLERS = {
         g.uiEvents.push({ type: 'toast', key: 'item.revealed' });
     },
 };
+// 야광봉·폭죽을 놓는 자리: 주인공 앞 dist m 바닥 (던전 밖·벽 안이면 발밑). 소수 2자리로
+function dropSpot(g, dist) {
+    const p = g.player;
+    let x = p.pos.x - Math.sin(p.yaw) * dist, z = p.pos.z - Math.cos(p.yaw) * dist;
+    if (!cellAtWorld(g.dungeon, x, z) || nearbyBoxes(g.view.collision, x, z).some((b) => circleHitsBox(x, z, 0.15, b))) { x = p.pos.x; z = p.pos.z; }
+    return { x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 };
+}
 // 야광봉 사용 (22-3, U54): 주인공 앞 0.6m 바닥 (던전 밖·벽 안이면 발밑) 에 활성 야광봉. world.glowsticks 에 기록 (층 기록·저장), 한 층 최대 64개 (오래된 것부터 지움)
 function dropGlowstick(g) {
-    const p = g.player, list = g.state.world.glowsticks;
-    let x = p.pos.x - Math.sin(p.yaw) * GLOWSTICK.drop, z = p.pos.z - Math.cos(p.yaw) * GLOWSTICK.drop;
-    if (!cellAtWorld(g.dungeon, x, z) || nearbyBoxes(g.view.collision, x, z).some((b) => circleHitsBox(x, z, 0.15, b))) { x = p.pos.x; z = p.pos.z; }
-    list.push({ x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 });
+    const list = g.state.world.glowsticks;
+    list.push(dropSpot(g, GLOWSTICK.drop));
     if (list.length > GLOWSTICK.max) list.splice(0, list.length - GLOWSTICK.max);
     if (g.view.setGlowsticks) g.view.setGlowsticks(list);
+}
+// 폭죽 (24-4, AGENTS.md "던전 특징 (에릭)", U64): 주인공 앞 0.6m 바닥에 불을 붙여 놓는다 → 4초 뒤 폭발 → 16초 유지 → 사라짐 (피해 없음).
+// 런타임 g.fireworks = [{ x, z, t }] (저장하지 않음 — 층을 옮기거나 불러오면 사라진다), 한 층에 동시에 최대 8개 (오래된 것부터 지움)
+function fireworkPhase(t) {   // 순수 함수: 'fuse' (불붙음) | 'burst' (폭발 중) | 'done'
+    if (t < FIREWORK.fuse) return 'fuse';
+    return t < FIREWORK.fuse + FIREWORK.burst ? 'burst' : 'done';
+}
+function dropFirework(g) {
+    g.fireworks.push({ ...dropSpot(g, FIREWORK.drop), t: 0 });
+    if (g.fireworks.length > FIREWORK.max) g.fireworks.splice(0, g.fireworks.length - FIREWORK.max);
+    if (g.view.syncFireworks) g.view.syncFireworks(g.fireworks);
+}
+// 매 프레임: 시간을 흘리고 끝난 폭죽을 지운다. 주인공이 폭발 중인 폭죽의 빛 (2칸) 안에 있고 벽에 가리지 않으면 g.fireworkLit (몬스터가 본다, 24-5)
+function updateFireworks(g, dt) {
+    const list = g.fireworks;
+    if (!list || list.length === 0) { g.fireworkLit = false; return; }
+    for (const f of list) f.t += dt;
+    const alive = list.filter((f) => fireworkPhase(f.t) !== 'done');
+    if (alive.length !== list.length) {
+        g.fireworks = alive;
+        if (g.view.syncFireworks) g.view.syncFireworks(alive);
+    }
+    const p = g.player.pos;
+    g.fireworkLit = alive.some((f) => fireworkPhase(f.t) === 'burst' && Math.hypot(f.x - p.x, f.z - p.z) <= FIREWORK.lightRadius
+        && hasLineOfSight(g, f.x, FIREWORK.lightY, f.z, p.x, p.y + 1, p.z));
 }
 // 빛 바랜 주문서 (22-5, AGENTS.md "던전 특징 (에릭)", U56): 사용 즉시 무적 + 모든 몬스터의 추적·의심 해제 → 0.4초 어두워짐 →
 // 같은 층의 직선 10칸 (160m) 이상 떨어진 칸으로 순간이동 + 도착 위치 5칸 (80m) 안의 몬스터는 도착 위치에서 10칸 이상 떨어진 칸으로 → 0.4초 밝아짐 → 무적 끝.
@@ -9276,6 +9566,7 @@ html, body.underground_root { margin: 0; padding: 0; width: 100%; height: 100%; 
 .ug-hud-slot.is-item-scroll { background: rgba(80, 66, 36, 0.7); }
 .ug-hud-slot.is-item-glowstick { background: rgba(20, 80, 40, 0.7); }
 .ug-hud-slot.is-item-fadedScroll { background: rgba(70, 60, 50, 0.7); }
+.ug-hud-slot.is-item-firework { background: rgba(90, 36, 30, 0.7); }
 .ug-hud-level { position: absolute; right: 32px; bottom: 16px; display: flex; align-items: baseline; gap: 8px; }
 .ug-hud-level-label { font-size: 20px; color: rgba(232, 226, 208, 0.8); }
 .ug-hud-level-num { font-size: 34px; color: #f3d898; }
@@ -10386,6 +10677,7 @@ function createLockOverlay() {
 function startNewGame(slot, hero = DEFAULT_HERO) {
     const state = createNewGameState(slot, hero);
     state.dungeonSeed = Math.floor(Math.random() * 2 ** 31);
+    state.world.drawerSeed = Math.floor(Math.random() * DRAWER_SEED_MAX);   // 에릭 서랍 내용물 (U62)
     showScreen('intro', {
         onDone: () => {
             showScreen('game', { state, arrival: 'newGame' });
@@ -11242,6 +11534,29 @@ const ITEM_ICON_DRAW = {
         c.beginPath();
         c.arc(32, 31, 6, 0, Math.PI * 2);
         c.fill();
+    },
+    firework(c, color) {   // 에릭 (24-3): 세운 종이 원통 + 줄무늬 + 꼭지 + 불붙은 심지와 불꽃
+        c.fillStyle = color;
+        c.beginPath();
+        c.roundRect(22, 24, 20, 30, 3);
+        c.fill();
+        c.fillStyle = 'rgba(255, 240, 210, 0.85)';
+        c.fillRect(22, 32, 20, 4);
+        c.fillRect(22, 43, 20, 4);
+        c.fillStyle = '#e8d8a8';
+        iconPoly(c, [[21, 25], [43, 25], [32, 17]], '#e8d8a8');
+        c.strokeStyle = '#5a4a3a';
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(32, 17);
+        c.quadraticCurveTo(36, 12, 40, 11);
+        c.stroke();
+        const spark = c.createRadialGradient(42, 10, 0, 42, 10, 9);
+        spark.addColorStop(0, 'rgba(255, 250, 200, 1)');
+        spark.addColorStop(0.4, 'rgba(255, 170, 60, 0.85)');
+        spark.addColorStop(1, 'rgba(255, 120, 40, 0)');
+        c.fillStyle = spark;
+        c.fillRect(33, 1, 18, 18);
     },
 };
 // 아이템 → 아이콘 종류: 장비 = 무기 종류·보조장비 종류·부위 (쇠파이프는 pipe), 소모품 = 분류
@@ -12318,6 +12633,7 @@ function startDebugGame(opts) {
     state.floor = floor;
     state.dungeonSeed = seed;
     state.theme = THEME_VISUALS[opts.theme] ? opts.theme : 'backrooms';
+    state.world.drawerSeed = defaultDrawerSeed(seed, floor);   // 디버그: 같은 시드 = 같은 서랍 내용물 (층을 옮기면 무작위, U62)
     if (opts.skills === 'all') for (const s of SKILLS) if (!state.player.skills[s.id]) state.player.skills[s.id] = 1;
     if (opts.level) debugSetLevel(state, parseInt(opts.level, 10));
     if (opts.items) debugFillInventory(state, seed);
@@ -12641,9 +12957,14 @@ export const __TEST__ = {
     pickWarpDestination, startFadedWarp, updateFadedWarp, fadedWarpFade, FADED_WARP, calmEricMonster, hasLineOfSight,
     // 20단계: 번역 누락 검사 (동적 키의 정의역), 이야기 장면
     TOOL_DESC, MENU_TABS, EQUIP_SLOT_KEYS, itemTypeKey, introFrame, INTRO_TIMING, INTRO_LINE_KEYS,
-    DRAWER_KEEP_FLOORS, pruneFarFloorRecords,
+    pruneFarFloorRecords,
     // 23단계: 에릭 몬스터 발소리·의심 모드
     footstepRange, ERIC_FOOTSTEP, updateEricSenses, hearFootstep,
+    // 24단계: 장롱 아이템 재배치 (내용물 시드)·양쪽 엘리베이터 잠금·폭죽과 폭죽 소리
+    defaultDrawerSeed, rollDrawerItems, DRAWER_SEED_MAX, ERIC_ARRIVE_DEPTH, elevatorKeyOf, applyElevatorLocks, openStartElevator, updateElevatorRelock,
+    FIREWORK, fireworkPhase, dropFirework, updateFireworks, fireworkNoiseTarget, hearFirework, fireworkColorAt,
+    // 2026-10-25 사용자 지시: 에릭 걷기 속도 −30% (U66)
+    ERIC_WALK_MUL,
     // 19단계: 에릭의 몬스터 (생성 계획·시야·노이즈 단계는 순수 함수, 행동은 가짜 런타임으로 시험)
     planEricMonsters, ericMonsterSees, ericNoiseLevel, setupEricMonster, updateEricMonster, ericReach, ERIC_MONSTER, ERIC_SIGHT, ERIC_NOISE,
 };
