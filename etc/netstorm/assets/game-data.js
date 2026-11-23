@@ -1,0 +1,333 @@
+// 웹 판본의 게임 데이터 조회 모듈이다. 파일 조회(GameFiles)·설정 객체 층(Config)·언어 용어표·Tell 섹션 찾기를 한 객체로 묶는다.
+// 원본의 설정 구성(Configinterface, cpppj o/ConfigInterface.cpp 와 같은 순서)을 따른다:
+//  - 등록 순서: 언어 용어표(이름 없음) → 전역 설정(이름 없음) → `global.` → `fort.` 이며 조회는 마지막에 등록한 객체부터 하므로 전역 설정이 용어표보다 우선한다.
+//  - 전역 설정 버퍼: `[ARGS]` + 버전 줄 + `[options.cfg]`(웹 사용자 설정) + `[setup.cfg]`(원본 setup.cfg) + `[END]`. 같은 키는 먼저 나온 줄이 이긴다.
+//    웹 판본은 options.cfg 파일 대신 호스트가 넘긴 설정(언어·음량 등)을 같은 자리에 넣는다. 해상도·전체화면·설치 경로는 넣지 않는다.
+//  - 경로 지정값(`missionSpec`·`guideSpec` 등)은 임시 `local.1~3` 객체에 인자를 넣고 치환한다.
+//  - Tell 섹션은 tell 스크립트(`{missionSpec}` + local.1 = "tell" → `\D\tell.<언어>`)에서 `[이름]` 섹션을 찾는다(원본 004cf730 의 기본 스크립트 조회).
+// 언어 파일이 없으면(예: 아직 없는 .korean) 영어 파일로 대체한다. 원본은 대체하지 않으나 웹 판본은 한국어 자료가 갖춰질 때까지 영어 화면을 보이기 위한 웹 적응이다.
+// Tell 섹션은 파일뿐 아니라 섹션 단위로도 대체한다: 한국어 tell 파일은 웹에서 닿는 섹션만 번역한 부분 파일이라 없는 섹션은 영어 tell 파일에서 찾는다(2026-10-31 WB03-O).
+// 설정 값 쓰기(원본 Config::Set, 004404e0)는 set() 이 맡는다: 같은 키의 줄을 모두 지우고 `키 = "값"` 줄을 전역 설정 버퍼 끝에 덧붙인다.
+// 원본은 메인 루프가 변경 표시를 보고 options.cfg 를 저장하지만, 웹 판본은 쓸 때마다 호스트가 넘긴 onChange 훅을 불러 로컬 저장소에 저장하게 한다(platform/progress.js·settings.js).
+// 제품 표기(11.01 버전 줄·세 번째 Patch Credits)는 product.js 의 경계를 따르며, product 가 false 이면 원본 10.78 표기 그대로 둔다(원본 스크린샷·자료 대조용).
+// 이 모듈은 DOM 을 쓰지 않아 Node 에서도 불러와 검사할 수 있다.
+// (2026-10-28 WB02-D: 메뉴 대화상자 본문 조회를 위해 추가. 2026-10-30 WB03-H: 값 쓰기와 변경 통지 추가. 2026-11-05 WB03-AC: 제품 11.01 표기와 Patch Credits 객체 추가)
+import { Config, ConfigRegistry, asciiLower, configParseLong, sectionRange } from './config.js';
+import { GameFiles } from './game-files.js';
+import { PRODUCT_CREDITS_OBJECT, PRODUCT_MAJOR_VERSION, PRODUCT_MINOR_VERSION, PRODUCT_VERSION_VALUE, productCreditsText, productTellBody } from './product.js';
+import { decodeOriginalText } from './text-encoding.js';
+
+// 데이터 폴더 기준 TAFF 아카이브 경로이다. (2026-10-28 WB02-D)
+export const ARCHIVE_PATH = 'netstorm.tarc';
+
+// 데이터 폴더 기준 원본 기본 설정 파일 경로이다(인코딩된 파일). (2026-10-28 WB02-D)
+export const SETUP_PATH = 'd/setup.cfg';
+
+// 원본 게임 버전이다(10.78 패치판). product 가 false 인 원본 대조용 GameData 의 MAJOR_VERSION·MINOR_VERSION·version 줄이 된다.
+// 웹 판본의 실제 표시는 product.js 의 제품 표기(11.01)를 쓴다. (2026-10-28 WB02-D, 2026-11-05 WB03-AC: 원본 대조 전용으로 한정)
+const ORIGINAL_MAJOR_VERSION = 10;
+const ORIGINAL_MINOR_VERSION = 78;
+
+// 영어(대체 언어)의 이름이다. 모르는 언어와 없는 언어 파일은 영어로 대체한다. (2026-10-28 WB02-D)
+export const FALLBACK_LANGUAGE = 'english';
+
+// 현재 Tell 이름을 담는 원본 지역 배열의 크기(종료 NUL 포함)이다. 이 크기 이상인 이름은 기록하지 않고 거부한다. (2026-10-30 WB03-J)
+export const TELL_NAME_BYTES = 256;
+
+// 게임 데이터 조회 객체이다.
+// 사용: const data = GameData.build({ files: 적재기가 준 경로 → 바이트 Map, language: 'english', options: { soundVolume: 3 } });
+//       data.tellSection('Credits') → 섹션 본문 문자열, data.substitute('{H2}'), data.pathSpec('missionSpec', 'tutorial1'). (2026-10-28 WB02-D)
+//       원본 스크린샷·자료와 대조할 때는 GameData.build({ …, product: false }) 로 원본 10.78 표기·두 행 Credits 를 쓴다. (2026-11-05 WB03-AC)
+export class GameData {
+    // 파일 조회 계층과 언어를 받아 설정 객체 층을 구성한다. 직접 부르기보다 GameData.build 를 쓴다.
+    // onChange(키, 값)는 set() 으로 값을 쓸 때마다 불리는 선택적 통지 훅이다(저장 연결용).
+    // product 는 제품 표기(11.01 버전 줄·Patch1101 Credits 객체·세 번째 Credits 행) 적용 여부이며 기본값 true 이다. (2026-11-05 WB03-AC)
+    // skirmish 는 12차 스커미시를 Campaign 목록에 보일지 여부이며 기본값 false 이다(제품 표기일 때만 의미가 있다). (2026-11-20 WB04-E1102)
+    constructor({ files, language = FALLBACK_LANGUAGE, options = {}, onChange = null, product = true, skirmish = false }) {
+        // 값 쓰기 통지 훅이다. 호스트가 값을 저장소에 옮기는 데 쓴다. 없으면 통지하지 않는다. (2026-10-30 WB03-H)
+        this.onChange = onChange;
+        // 제품 표기 적용 여부이다. false 이면 원본 10.78 표기 그대로이다(원본 대조 검사용). (2026-11-05 WB03-AC)
+        this.product = Boolean(product);
+        // 스커미시 항목 표시 여부이다. 월드 생성까지 연결된 판본에서만 켠다. (2026-11-20 WB04-E1102)
+        this.skirmish = Boolean(skirmish);
+        // 파일 조회 계층이다.
+        this.files = files;
+        // 현재 언어 이름이다(파일 확장자로 쓰임). 'english' 이외는 대응 파일이 없으면 영어 파일로 대체한다.
+        this.language = language;
+        // 설정 객체 등록부다. `{@미션.키}` 조회는 미션 이름의 스크립트 파일(`missionSpec`)을 임시 객체에 읽어 넣는다(원본 00440760, 팁 문구 `{@tell.tip3}` 등). (2026-10-30 WB03-J: 적재 훅 연결)
+        this.registry = new ConfigRegistry({ loadMission: (config, mission) => this._loadMission(config, mission) });
+        // 마지막으로 조회한 Tell 섹션 이름이다(원본 Client 의 현재 Tell 이름 256바이트). 이름이 달라질 때 이전 이름이 `global.priorTell` 에 기록된다. (2026-10-30 WB03-J)
+        this.currentTell = '';
+        // 언어 용어표 객체(config.<언어>)다. 가장 먼저 등록되어 우선순위가 가장 낮다.
+        this.terms = new Config(this.registry);
+        // 전역 설정 객체(원본 configuration)다.
+        this.configuration = new Config(this.registry);
+        // `global.` 객체(Tell 의 priorTell 등 실행 중 값)다.
+        this.global = new Config(this.registry, 'global');
+        // `fort.` 객체다.
+        this.fort = new Config(this.registry, 'fort');
+        // 언어별로 읽어 둔 tell 스크립트 텍스트 캐시다.
+        this._tellText = null;
+        // 영어 대체 tell 스크립트 텍스트 캐시다(undefined = 아직 읽지 않음). (2026-10-31 WB03-O)
+        this._fallbackTellText = undefined;
+        this._loadConfiguration(options);
+        this._loadLanguage();
+        // 제품 Credits 를 담는 등록 설정 객체(`Patch1101`)이다. Tell `Patch1101.Credits` 가 이 객체의 [Credits] 섹션을 찾는다. 제품 표기가 아니면 null 이다.
+        // 게임 데이터와 수명이 같다(cpppj 는 UI 수명의 등록 Config). 언어는 현재 언어의 tell 파일이 실제로 있을 때만 그 언어이고, 영어로 대체된 화면에서는 영어이다. (2026-11-05 WB03-AC)
+        this.productCredits = null;
+        if (this.product) {
+            this.productCredits = new Config(this.registry, PRODUCT_CREDITS_OBJECT);
+            this.productCredits.append(productCreditsText(this.productLanguage));
+        }
+    }
+
+    // 데이터 폴더 파일 Map(경로 → 바이트)으로 GameData 를 만든다. netstorm.tarc 는 아카이브로 등록하고 모든 파일은 느슨한 파일로도 등록한다.
+    // files 에 아카이브나 setup.cfg 가 없으면 어떤 파일이 빠졌는지 알리는 오류를 던진다. product 는 생성자와 같다. (2026-11-05 WB03-AC: product 전달)
+    static build({ files, language = FALLBACK_LANGUAGE, options = {}, onChange = null, product = true, skirmish = false }) {
+        const archiveBytes = files.get(ARCHIVE_PATH);
+        if (!archiveBytes) throw new Error(`필수 자산이 없습니다: ${ARCHIVE_PATH}`);
+        if (!files.get(SETUP_PATH)) throw new Error(`필수 자산이 없습니다: ${SETUP_PATH}`);
+        const loose = new Map(files);
+        loose.delete(ARCHIVE_PATH);
+        const gameFiles = new GameFiles({ loose });
+        gameFiles.addArchive(archiveBytes);
+        return new GameData({ files: gameFiles, language, options, onChange, product, skirmish });
+    }
+
+    // 제품 표기 문구에 쓸 언어이다. 현재 언어의 tell 파일이 실제로 있으면 현재 언어, 없어 영어로 대체되는 경우는 영어이다.
+    // 한국어 묶음을 받지 못해 영어 Tell·영어 글꼴로 계속하는 화면에 한국어 행이 섞이지 않게 한다. (2026-11-05 WB03-AC)
+    get productLanguage() {
+        if (this.language === FALLBACK_LANGUAGE) return FALLBACK_LANGUAGE;
+        return this.files.read(this.pathSpec('missionSpec', 'tell')) ? this.language : FALLBACK_LANGUAGE;
+    }
+
+    // Tell 창이 표시할 섹션 본문에 제품 표기를 적용한다. 제품 표기일 때 메인 Credits 본문에만 세 번째 행을 덧붙이고, 그 밖에는 원문 그대로 돌려준다.
+    // name 은 지역 인자를 뗀 섹션 이름이다. tellSection/findTellSection 의 원문 조회 결과는 바꾸지 않는다(원본 자료 대조 유지).
+    // 사용: const body = data.presentTellBody('Credits', data.findTellSection('Credits')). (2026-11-05 WB03-AC)
+    presentTellBody(name, body) {
+        return this.product ? productTellBody(name, body, this.productLanguage, { skirmish: this.skirmish }) : body;
+    }
+
+    // 전역 설정 버퍼를 원본 시작 순서(00441790 → 00440e00)대로 채운다. options 는 웹 사용자 설정(키 → 값)이며 setup.cfg 보다 앞에 놓여 우선한다.
+    // 언어는 options 에 없으면 currentLanguage 로 넣는다. 버전 줄은 제품 표기면 11·1·"v11.01"(선행 0 보존), 아니면 원본 10·78·"v10.78" 이다.
+    // (2026-11-05 WB03-AC: cpppj ApplyProductVersion 과 같은 제품 값을 처음부터 같은 자리에 쓴다. 같은 키 줄이 하나뿐이라 조회 결과가 같다)
+    _loadConfiguration(options) {
+        const configuration = this.configuration;
+        configuration.environmentEnabled = true;
+        configuration.clear();
+        configuration.append('[ARGS]');
+        const major = this.product ? PRODUCT_MAJOR_VERSION : ORIGINAL_MAJOR_VERSION;
+        const minor = this.product ? PRODUCT_MINOR_VERSION : ORIGINAL_MINOR_VERSION;
+        configuration.append(`MAJOR_VERSION=${major}`);
+        configuration.append(`MINOR_VERSION=${minor}`);
+        configuration.append(`version="${this.product ? PRODUCT_VERSION_VALUE : `v${ORIGINAL_MAJOR_VERSION}.${ORIGINAL_MINOR_VERSION}`}"`);
+        configuration.append('[options.cfg]');
+        const values = { currentLanguage: this.language, ...options };
+        // 웹 사용자 설정을 `키 = "값"` 줄로 넣는다.
+        for (const [key, value] of Object.entries(values)) configuration.append(`${key} = "${String(value)}"`);
+        configuration.append('[setup.cfg]');
+        configuration.loadBytes(this.files.read(SETUP_PATH), decodeOriginalText);
+        configuration.append('[END]');
+    }
+
+    // 현재 언어의 용어표(languageSpec = "{DataDir}\config.{local.1}")를 읽는다. 파일이 없으면 영어 용어표로 대체하고, 그것도 없으면 빈 채로 둔다.
+    _loadLanguage() {
+        this.terms.clear();
+        const bytes = this._readLanguageFile(this.pathSpec('languageSpec', this.language), this.language);
+        if (bytes) this.terms.loadBytes(bytes, decodeOriginalText);
+    }
+
+    // `{@미션.키}` 조회가 임시 설정 객체(config)에 미션 스크립트를 읽어 넣는다(원본 ConfigInterface 의 미션 적재: missionSpec 경로 파일을 객체 버퍼에 덧붙임).
+    // 파일이 없으면 아무것도 넣지 않는다. 언어 파일이므로 현재 언어의 파일이 없으면 영어로 대체한다. (2026-10-30 WB03-J)
+    _loadMission(config, mission) {
+        this.loadFile(config, this.pathSpec('missionSpec', mission));
+    }
+
+    // 원본 ConfigInterface::LoadFile: 경로의 설정 파일을 읽어 config 버퍼 끝에 덧붙인다(파일이 없으면 아무것도 더하지 않음). 언어 파일은 현재 언어 파일이 없으면 영어로 대체한다(웹 적응, _readLanguageFile).
+    // 미션 스크립트(MissionScript)가 쓰는 설정 인터페이스의 일부이다. 사용: data.loadFile(config, data.pathSpec('missionSpec', 'Tutorial1')). (2026-11-12 WB04-E342)
+    loadFile(config, path) {
+        const bytes = this._readLanguageFile(path, this.language);
+        if (bytes) config.loadBytes(bytes, decodeOriginalText);
+    }
+
+    // 원본 ConfigInterface::AppendConfigArguments: 명령줄 형식의 글을 config 에 덧붙이되 `@파일` 낱말은 같은 파일 읽기(언어 대체 포함)로 읽어 넣는다. (2026-11-12 WB04-E342)
+    appendConfigArguments(config, text) {
+        config.appendArguments(text, (path) => this._readLanguageFile(path, this.language));
+    }
+
+    // 원본 ConfigInterface::Reader: 경로(게임 파일 표기)의 바이트를 돌려주는 파일 읽기 함수이다. 없으면 null 이다. 언어 대체 없이 파일 그대로 읽으므로 Fort 같은 비언어 파일 읽기에 쓴다. (2026-11-12 WB04-E342)
+    reader() {
+        return (path) => this.files.read(path);
+    }
+
+    // 언어 파일을 읽는다. 없고 언어가 영어가 아니면 경로의 `.언어` 또는 `config.언어` 를 영어로 바꿔 한 번 더 시도한다. (웹 적응)
+    _readLanguageFile(path, language) {
+        const bytes = this.files.read(path);
+        if (bytes || language === FALLBACK_LANGUAGE) return bytes;
+        const english = path.replace(new RegExp(`${language}$`, 'i'), FALLBACK_LANGUAGE);
+        return english === path ? null : this.files.read(english);
+    }
+
+    // 와일드카드 패턴(예: `\D\offical*.korean`)과 맞는 파일 이름 목록을 돌려준다. 현재 언어의 파일이 하나도 없고 언어가 영어가 아니면
+    // 패턴 끝의 언어 이름을 영어로 바꿔 한 번 더 찾는다. 아직 없는 한국어 자료가 있어도 Campaign 같은 파일 목록이 빈 채로 나오지 않게 하는 웹 적응이다
+    // (원본은 대체하지 않는다. 언어 파일 읽기 _readLanguageFile 과 같은 규칙). 사용: findFiles('\\D\\offical*.english'). (2026-10-30 WB03-H)
+    findFiles(pattern) {
+        const found = this.files.find(pattern);
+        if (found.length > 0 || this.language === FALLBACK_LANGUAGE) return found;
+        const english = pattern.replace(new RegExp(`${this.language}$`, 'i'), FALLBACK_LANGUAGE);
+        return english === pattern ? found : this.files.find(english);
+    }
+
+    // 키의 값(치환까지 마친 문자열)을 조회한다. 없으면 null 이다.
+    get(key) {
+        return this.configuration.get(key);
+    }
+
+    // 원본 Config::Set(004404e0)을 전역 설정에 적용한다. 같은 키의 줄을 모두 지우고 `키 = "값"` 줄을 버퍼 끝에 덧붙이며(키에 '.' 이 있으면 접두어가 맞는 객체로 간다),
+    // 이미 있던 키면 true 를 돌려준다. 값은 문자열로 바꿔 쓴다. 쓴 뒤 onChange(키, 문자열 값)를 부르며, silent 가 true 이면 부르지 않는다
+    // (호스트가 저장소의 값을 이 층에 옮겨 적을 때 되돌아오는 통지를 막는다). 훅의 예외는 콘솔에만 남기고 쓰기 결과를 바꾸지 않는다.
+    // 사용: data.set('DoneTheWarBegins', 1) → 이후 캠페인 목록의 `{DoneTheWarBegins}` 가 1 로 읽힌다. (2026-10-30 WB03-H)
+    set(key, value, { silent = false } = {}) {
+        const text = String(value);
+        const existed = this.configuration.set(key, text);
+        if (!silent) {
+            try {
+                this.onChange?.(key, text);
+            } catch (error) {
+                console.error('Netstorm: 게임 데이터 변경 통지에서 예외가 발생했습니다.', error);
+            }
+        }
+        return existed;
+    }
+
+    // 원본 GetInt: 키의 값을 C 의 long 규칙(configParseLong)으로 읽는다. 값이 없으면 빈 문자열을 읽어 0 이다. 사용: data.getInt('SCREENW'). (2026-11-10 WB04-E268: cpppj ConfigInterface::GetInt)
+    getInt(key) {
+        return configParseLong(this.configuration.get(key) ?? '');
+    }
+
+    // 원본 ReadInt(00441300 계열): "찾았고 지금 값과 다르다"일 때만 { changed: true, value: 새 값 } 이고, 키가 없거나 같은 값이면 { changed: false, value: 현재 값 } 이다.
+    // 사용: const { changed, value } = data.readInt('SCREENW', width). (2026-11-10 WB04-E268: cpppj ConfigInterface::ReadInt)
+    readInt(key, current) {
+        const text = this.configuration.get(key);
+        if (text === null || text === undefined) return { changed: false, value: current };
+        const parsed = configParseLong(text);
+        if (parsed === (current | 0)) return { changed: false, value: current };
+        return { changed: true, value: parsed };
+    }
+
+    // 원본 ReadString: 문자열 비교는 대소문자를 구분한다(원본의 바이트 비교). 키가 없거나 같은 값이면 { changed: false, value: 현재 값 } 이다. (2026-11-10 WB04-E268: cpppj ConfigInterface::ReadString)
+    readString(key, current) {
+        const text = this.configuration.get(key);
+        if (text === null || text === undefined || text === current) return { changed: false, value: current };
+        return { changed: true, value: text };
+    }
+
+    // 원본 IntEquals(00441470): 지역 변수 초기값 0 에서 ReadInt 가 값을 바꿨고 그 값이 expected 면 참이다. 그래서 expected 가 0 이면 항상 거짓이다(원본 그대로). (2026-11-10 WB04-E268)
+    intEquals(key, expected) {
+        const { changed, value } = this.readInt(key, 0);
+        return changed && value === (expected | 0);
+    }
+
+    // 정수 값을 십진 문자열로 써 넣는다(원본 SetInt, 서식 "%d"). 정수가 아니면 RangeError 이다. 나머지는 set 과 같다. (2026-10-30 WB03-H)
+    setInt(key, value, options = {}) {
+        if (!Number.isInteger(value)) throw new RangeError(`GameData.setInt: 정수가 아닙니다: ${value}`);
+        return this.set(key, value, options);
+    }
+
+    // 문자열의 `{키}` 와 이스케이프를 푼다. 용어표(`{factory}` 등)와 전역 설정(`{H2}` 등)이 함께 쓰인다.
+    substitute(text) {
+        return this.configuration.substitute(text);
+    }
+
+    // 임시 local 설정에 최대 세 인자를 넣고 본문 전체를 현재 설정으로 치환한다.
+    substituteLocal(source, argument1 = null, argument2 = null, argument3 = null) {
+        const local = new Config(this.registry, 'local');
+        try {
+            // 원본처럼 인자가 있는 위치의 줄만 등록한다.
+            [argument1, argument2, argument3].forEach((argument, index) => { if (argument !== null) local.append(`${index + 1}="${argument}"`); });
+            return this.configuration.substitute(source);
+        } finally { local.dispose(); }
+    }
+
+    // 원본 004410f0(경로 지정값): 임시 `local` 객체에 인자(1~3번)를 넣고 키를 치환한 값을 돌려준다. 키가 없으면 빈 문자열이다.
+    // 사용: pathSpec('missionSpec', 'tell') → `\D\tell.english`. (2026-10-28 WB02-D)
+    pathSpec(key, argument1 = null, argument2 = null, argument3 = null) {
+        const local = new Config(this.registry, 'local');
+        try {
+            // 주어진 인자만 `번호="값"` 줄로 넣는다.
+            [argument1, argument2, argument3].forEach((argument, index) => {
+                if (argument !== null) local.append(`${index + 1}="${argument}"`);
+            });
+            return this.configuration.get(key) ?? '';
+        } finally {
+            local.dispose();
+        }
+    }
+
+    // 경로의 텍스트 파일을 문자열로 읽는다. 없으면 null 이다. 언어 파일은 영어로 대체한다.
+    readText(path) {
+        const bytes = this._readLanguageFile(path, this.language);
+        return bytes ? decodeOriginalText(bytes) : null;
+    }
+
+    // tell 스크립트 전체 텍스트이다(`{missionSpec}` + local.1 = "tell"). 처음 한 번 읽어 캐시한다. 파일이 없으면 null 이다.
+    get tellText() {
+        if (this._tellText === null) this._tellText = this.readText(this.pathSpec('missionSpec', 'tell'));
+        return this._tellText;
+    }
+
+    // 영어가 아닌 언어에서 현재 언어의 tell 스크립트에 섹션이 없을 때 대신 찾을 영어 tell 스크립트 텍스트이다. 영어이거나 영어 파일이 없으면 null 이다.
+    // 한국어 tell 파일은 웹에서 닿는 섹션만 번역한 부분 파일이라, 번역이 없는 섹션은 영어로 대체하기 위한 웹 적응이다(원본은 섹션 단위로 대체하지 않는다). (2026-10-31 WB03-O)
+    get fallbackTellText() {
+        if (this._fallbackTellText === undefined) this._fallbackTellText = this.readEnglishText(this.pathSpec('missionSpec', 'tell'));
+        return this._fallbackTellText;
+    }
+
+    // 언어 파일 경로(끝이 `.언어`)의 영어 대응 파일을 문자열로 읽는다. 현재 언어가 영어이거나 경로가 현재 언어로 끝나지 않거나 영어 파일이 없으면 null 이다.
+    // 번역이 부분 파일인 자료(tell·도움말)가 번역이 없는 섹션·주제를 영어로 대신 찾을 때 쓴다. 사용: readEnglishText('\\D\\help.korean') → help.english 본문. (2026-10-31 WB03-P)
+    readEnglishText(path) {
+        if (this.language === FALLBACK_LANGUAGE) return null;
+        const english = path.replace(new RegExp(`${this.language}$`, 'i'), FALLBACK_LANGUAGE);
+        if (english === path) return null;
+        const bytes = this.files.read(english);
+        return bytes ? decodeOriginalText(bytes) : null;
+    }
+
+    // Tell 섹션 본문을 찾는다. 이름에 점이 있으면 먼저 등록된 객체(접두어)의 섹션을, 이어 기본 tell 스크립트의 섹션을 조회한다(원본 004cf730 FindTellSection).
+    // 선택적인 현재 미션 조회기는 등록 객체 다음, 기본 tell 파일 전에 읽는다. 빈 본문도 있는 섹션이다.
+    // 사용: tellSection('UCampaign'). (2026-10-28 WB02-D)
+    tellSection(name, missionSection = null) {
+        const dot = name.indexOf('.');
+        if (dot >= 0) {
+            const object = this.registry.findByName(name.slice(0, dot));
+            const body = object?.section(name.slice(dot + 1)) ?? null;
+            if (body !== null) return body;
+        }
+        if (missionSection !== null) {
+            if (typeof missionSection !== 'function') throw new TypeError('Tell의 현재 미션 섹션 조회 오류');
+            const body = missionSection(name); if (body !== null && body !== undefined) return body;
+        }
+        // 현재 언어의 tell 스크립트를 먼저, 섹션이 없으면 영어 tell 스크립트를 찾는다. 본문이 비어 있는 섹션은 있는 것으로 본다.
+        // 영어 tell 스크립트는 현재 언어 tell 에 섹션이 없을 때만 읽는다(배열로 둘을 한꺼번에 평가하면 섹션이 있어도 영어 파일을 읽는다). (2026-11-10 WB04-E273: 조회 순서 시험에서 발견해 지연 평가로 고침)
+        for (const text of [() => this.tellText, () => this.fallbackTellText]) {
+            const script = text();
+            if (script === null) continue;
+            const range = sectionRange(script, name);
+            if (range) return script.slice(range.start, range.start + range.length);
+        }
+        return null;
+    }
+
+    // Tell 이름을 현재 이름으로 기록하고 섹션 본문을 찾는다(원본 004cf730 의 이름 기록 + 조회). 이름이 현재 이름과 대소문자를 무시하고 다르면
+    // 먼저 이전 이름을 `global.priorTell`(본문의 `{global.priorTell}`)에 쓴다. 조회가 실패해도 이름 기록은 남는다. 이름이 256바이트 이상이면 RangeError 이다.
+    // 호출자(Tell 창 공장)가 `param` 객체를 등록한 상태에서 부르며, 이름에는 이미 지역 인자를 뗀 순수 섹션 이름을 넘긴다. BLANK 는 이 함수 앞에서 걸러진다.
+    // 사용: const body = data.findTellSection('Tips'); body === null 이면 섹션이 없다. (2026-10-30 WB03-J)
+    findTellSection(name, missionSection = null) {
+        const nul = name.indexOf('\0');
+        const local = nul >= 0 ? name.slice(0, nul) : name;
+        if (local.length >= TELL_NAME_BYTES) throw new RangeError('Tell 이름이 원본 256바이트 지역 범위를 넘었습니다.');
+        if (asciiLower(this.currentTell) !== asciiLower(local)) this.set('global.priorTell', this.currentTell, { silent: true });
+        this.currentTell = local;
+        return this.tellSection(local, missionSection);
+    }
+}
