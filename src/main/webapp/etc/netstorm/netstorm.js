@@ -24,11 +24,15 @@ import {
     buildMenuResources,
 } from './assets/menu-assets.js';
 import { KOREAN_BUNDLE, buildKoreanSupport } from './assets/korean-assets.js';
+import { buildJapaneseSupport } from './assets/japanese-assets.js';
+import { JAPANESE_BUNDLE, JAPANESE_FONT_FAMILY } from './assets/japanese-asset-config.js';
+import { createJapaneseGlyphRasterizer } from './platform/japanese-font.js';
 import { KOREAN_FONT_FAMILY } from './assets/korean-font-config.js';
 import { AudioSystem, createAudioContext, volumeStepToCentibels } from './audio/audio-system.js';
 import { SoundList } from './audio/sound-list.js';
 import { MissionAudioAssets } from './audio/mission-audio-assets.js';
 import { SceneMusicDriver } from './audio/scene-music-driver.js';
+import { ThunderProcess, THUNDER_PROCESS_TYPE } from './core/thunder-process.js';
 import { makePriestShieldNoticeHooks } from './core/sound-process.js';
 import { confirmSendMoney, dispatchSendMoneyInput, isSendMoneyCommand, sendMoneyScriptCode } from './core/send-money-input.js';
 import { dispatchChatInputKey } from './ui/hud-chat-geometry.js';
@@ -47,6 +51,8 @@ import { createSoundState, SoundPlayer } from './audio/sound-player.js';
 import { WebSoundDevice } from './audio/web-sound-device.js';
 import { IndexedSurface } from './render/indexed-surface.js';
 import { IndexedPresenter, normalizeScaling } from './render/presenter.js';
+import { GameAgentHost } from './platform/game-agent-host.js';
+import { installWebMcp } from './platform/webmcp-tools.js';
 import { Screen, ScreenMode } from './render/screen.js';
 import { Renderer } from './render/renderer.js';
 import { SquidRenderer } from './render/squid-renderer.js';
@@ -92,6 +98,9 @@ import { ARROW_CAMERA_STEPS, CampaignUserInput } from './core/campaign-user-inpu
 import { makeCampaignCursorClientEffects } from './core/campaign-cursor-client-effects.js';
 import { RawContainedFinder } from './core/raw-contained-finder.js';
 import { PRODUCTION_BRIDGE_COMMAND, PRODUCTION_REPEAT_COMMAND } from './core/production-shortcuts.js';
+import { ProductionControlContext } from './core/production-control-context.js';
+import { cleanupNetstormStateWorld } from './core/netstorm-state-world.js';
+import { CLIENT_PARTICLE_PALETTE_INPUT } from './core/client-particle-palette-input.js';
 import { ProductionMaintenanceGlobals, ProductionMaintenancePanel } from './core/raw-production-maintenance.js';
 import { GameMenuActions } from './core/game-menu-actions.js';
 import { gameMenuCommandValue, gameMenuScriptCode, isGameMenuCommand, queuePlayerListKey } from './core/game-menu-commands.js';
@@ -104,7 +113,7 @@ import { dispatchGameTimeKey, readGameTimeSeconds } from './core/game-time-displ
 import { idleMainMenuActivity } from './core/main-menu-activity.js';
 import { frameDue, frameRateChoices, normalizeFrameRate, parseFrameRateTarget } from './core/frame-rate-option.js';
 import { dispatchScreenshotKey, encodeScreenshotGif, screenshotFileName, screenshotPrimaryPalette } from './core/screenshot-gif.js';
-import { languageChoices, languageOfChoice, parseLanguageTarget, savedLanguage } from './platform/language-choice.js';
+import { languageChoices, languageOfChoice, parseLanguageTarget, savedLanguage, originalLanguageNumber } from './platform/language-choice.js';
 import { difficultyChoices, parseDifficultyTarget } from './core/difficulty-option.js';
 import { SKIRMISH_MISSION_NAME, applySkirmishAction, buildSkirmishLaunch, buildSkirmishScreen, createSkirmishFileSource, isSkirmishMissionName, loadSkirmishSettings, makeSkirmishEmptyWorldFort, makeSkirmishWorldPlan, parseSkirmishTarget, saveSkirmishSettings } from './core/skirmish-setup.js';
 
@@ -117,6 +126,8 @@ import { resetClientClockSynchronization } from './core/client-state-storage-cle
 import { resetStateBridgeDecayScan } from './core/raw-state-bridge-reset.js';
 import { RawCampaignMissionStartBindings } from './core/raw-campaign-mission-start-bindings.js';
 import { RawCampaignTutorialOneBindings } from './core/raw-campaign-tutorial-one-bindings.js';
+import { tutorialObjectiveKey } from './core/tutorial-objective.js';
+import { TutorialObjectiveGump } from './ui/tutorial-objective-gump.js';
 import { MISSION_RELOAD_COMMAND, dispatchMissionAbort } from './core/mission-guide-input.js';
 import { resolveMissionBeginName } from './core/mission-name-alias.js';
 import { WORLD_DESTINATION_SELECTED_COMMAND } from './core/raw-user-selection.js';
@@ -148,9 +159,17 @@ import { CampaignSessionAssets } from './core/raw-campaign-session-owners.js';
 import { PriestPlacementAssets } from './core/priest-placement-assets.js';
 import { RawSurfaceStorage } from './core/raw-surface-storage.js';
 import { Kernel } from './core/kernel.js';
-import { bindClientKernelDiagnostics, ClientTraceGlobals, traceClientObject, writeClientDiagnosticLog } from './core/client-diagnostics.js';
+import { bindClientKernelDiagnostics, ClientTraceGlobals, logClientDisplayAssertion, traceClientObject, writeClientDiagnosticLog } from './core/client-diagnostics.js';
 import { ClientTimeSource } from './core/client-time-source.js';
 import { resetGameStorage } from './platform/reset-storage.js';
+// 공개 모드는 원래 Client의 사본/입력 경계와 별도 Worker에만 연결한다.
+import { ModTimeSource } from './modding/mod-time-source.js';
+import { ModGameHost } from './modding/mod-game-host.js';
+import { ModManager } from './modding/mod-manager.js';
+import { ModStore } from './modding/mod-store.js';
+import { ModWorker, validateModPackageIsolated } from './modding/mod-worker.js';
+import { MOD_LIMITS } from './modding/mod-api.js';
+import { ModPanel, MOD_PANEL_TARGET, modPanelTexts } from './ui/mod-panel.js';
 import { PRODUCT_RESET_ALL_CONFIRMED_TARGET, PRODUCT_RESET_ALL_TARGET } from './assets/product.js';
 import { createCanvasGlyphRasterizer } from './platform/glyph-rasterizer.js';
 import { MainMenuScreen } from './ui/main-menu.js';
@@ -223,7 +242,7 @@ const TUTORIAL_NOTICE_COMMANDS = new Set([0x030000b0, 0x030000b1, 0x020000b5, 0x
 // 작거나 세로가 짧은 창의 기본 논리 크기다. 큰 16:9 창의 상위 크기는 WIDE_LOGICAL_SIZES에서 고른다. (2026-11-19 WB04-E943)
 export const SCREEN_MODES = Object.freeze([
     Object.freeze({ name: '4:3', ratio: 4 / 3, width: 1024, height: LOGICAL_HEIGHT }),
-    Object.freeze({ name: '16:10', ratio: 16 / 10, width: 1228, height: LOGICAL_HEIGHT }),
+    Object.freeze({ name: '16:10', ratio: 16 / 10, width: 1280, height: 800 }),
     Object.freeze({ name: '16:9', ratio: 16 / 9, width: 1366, height: LOGICAL_HEIGHT }),
 ]);
 
@@ -276,6 +295,16 @@ export const AppState = Object.freeze({
 // '클릭하여 시작'을 열기 전에 나머지 시작 자원(메뉴 음악·글꼴)을 기다리는 최대 시간(밀리초)이다. 이 시간이 지나면 자원이 아직 오는 중이어도 시작을 허용한다(음악은 계속 받는다). (2026-11-24 WB04-E1300)
 export const START_READY_TIMEOUT_MS = 20000;
 
+// '클릭하여 시작'을 열기 전의 고정 최소 대기 시간(밀리초)이다. 자원 완료 신호(글꼴·음악)로 잡히지 않는 처음 방문의 경합(스크립트 오류·언어 탐지 실패)을 덜기 위해, 첫 적재가 시작된 뒤 이 시간이 지나기 전에는 자원이 다 와도 클릭을 받지 않는다. 사용자 요구 6초. (2026-11-24 WB04-E1306)
+export const START_MIN_WAIT_MS = 6000;
+
+// 고정 최소 대기 값(옵션·주소 `?startwait=밀리초`)을 0~60000 정수로 정리한다. 비어 있거나 숫자가 아니면 fallback 이다. 사용: normalizeStartMinWaitMs('3000', 6000) → 3000. (2026-11-24 WB04-E1306)
+export function normalizeStartMinWaitMs(value, fallback = START_MIN_WAIT_MS) {
+    if (value === null || value === undefined || value === '') return fallback;
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? Math.min(60000, Math.floor(number)) : fallback;
+}
+
 // 웹 전용 화면(로딩·오류·클릭하여 시작)의 언어별 문구이다. 원본 메인 메뉴의 버튼 라벨은 원본 글꼴로 그리므로 여기에 없다.
 // 모르는 언어는 영어로 대체한다. (2026-10-23 WB01, 2026-10-23 WB03-M1: 임시 메뉴 문구 제거)
 const TEXTS = Object.freeze({
@@ -299,6 +328,8 @@ const TEXTS = Object.freeze({
         gameMenuButton: '메뉴',
         gameMenuButtonTitle: '게임 메뉴 (ESC)',
     }),
+    // 웹 전용 시작/오류/메뉴 단추의 일본어 문구다.
+    japanese: Object.freeze({ title: 'NetStorm', loading: '読み込み中...', loadFailed: 'ゲームデータを読み込めませんでした。', retry: 'クリックして再試行', clickToStart: 'クリックして開始', resetFailed: '初期化できませんでした。保存領域へのアクセスを確認して再試行してください。', gameMenuButton: 'メニュー', gameMenuButtonTitle: 'ゲームメニュー (ESC)' }),
 });
 
 // 시작·로딩 안내 Canvas 글꼴 목록이다. 한국어 글꼴이 등록되기 전에는 뒤의 시스템 글꼴로 대체한다.
@@ -463,10 +494,10 @@ export function clientToLogical(clientX, clientY, rect, logicalWidth, logicalHei
     };
 }
 
-// 문자열 언어 이름을 지원하는 언어 키로 바꾼다. 한국어면 'korean', 그 밖에는 'english' 다.
-// 'ko', 'ko-KR', 'korean' 을 한국어로 본다. (2026-10-23 WB01)
+// 문자열 언어 이름을 영어/한국어/일본어 키로 바꾼다. 나머지는영어로 대체한다.
+// ko/ko-KR/korean과 ja/ja-JP/japanese를 각각한국어/일본어로 본다. (2026-10-23 WB01)
 // 브라우저가 알려 주는 선호 언어를 읽는다: `navigator.languages` 의 첫 항목을 우선하고(없으면 `language`, 옛 `userLanguage`) 비어 있으면 undefined 이다.
-// 처음 방문처럼 저장된 선택이 없을 때 쓰는 자동 탐지 값이다. 한국어 선호(`ko`, `ko-KR`)면 한국어, 그 밖에는 영어이다. (2026-11-24 WB04-E1300)
+// 처음 방문처럼 저장된 선택이 없을 때 선호 언어를 정규화해 영어/한국어/일본어를 선택한다. (2026-11-24 WB04-E1300)
 export function detectBrowserLanguage(navigatorLike = globalThis.navigator) {
     const first = Array.isArray(navigatorLike?.languages) || (navigatorLike?.languages && typeof navigatorLike.languages.length === 'number') ? navigatorLike.languages[0] : undefined;
     return first || navigatorLike?.language || navigatorLike?.userLanguage || undefined;
@@ -474,6 +505,7 @@ export function detectBrowserLanguage(navigatorLike = globalThis.navigator) {
 
 export function normalizeLanguage(value) {
     const text = String(value ?? '').toLowerCase();
+    if (text === 'japanese' || /^ja(?:-|$)/u.test(text)) return 'japanese';
     return text === 'korean' || text.startsWith('ko') ? 'korean' : 'english';
 }
 
@@ -546,7 +578,7 @@ function readQueryParams() {
 
 // 게임 앱 클래스이다. 호스트 페이지는 `new Netstorm(옵션).init(루트요소)` 로 시작하고 `destroy()` 로 정리한다.
 // 옵션:
-//  - language: 'english' | 'korean'. 기본은 ?lang, 없으면 브라우저 언어.
+//  - language: 'english' | 'korean' | 'japanese'. 기본은 ?lang, 없으면 브라우저 언어.
 //  - aspect: 'auto' | '4:3' | '16:10' | '16:9'. 기본은 ?aspect, 없으면 auto.
 //  - debug: true 면 화면 구성·입력 정보를 겹쳐 그린다. 기본은 ?debug 유무.
 //  - fillWindow: true(기본)면 루트 요소를 브라우저 창 전체로 채운다. false 면 호스트가 정한 루트 크기를 따른다.
@@ -581,12 +613,16 @@ export class Netstorm {
             assetBase: options.assetBase ?? DEFAULT_ASSET_BASE,
             // 자산 일시적 실패 재시도 간격(밀리초) 목록이다. 기본(null)은 AssetLoader 의 기본값이며 빈 배열이면 재시도하지 않는다. 검사가 실패를 바로 확인하려고 줄인다. (2026-11-24 WB04-E1300)
             assetRetryDelays: options.assetRetryDelays ?? null,
+            // '클릭하여 시작' 고정 최소 대기(밀리초)이다. 기본은 START_MIN_WAIT_MS(6초)이고 주소 `?startwait=0` 이나 옵션으로 바꾼다. 자동화 브라우저(`navigator.webdriver`, e2e·MCP)에서는 기본을 0 으로 두어 검사가 느려지지 않게 하며, 6초 동작을 시험할 때는 `?startwait=6000` 처럼 값을 직접 준다. (2026-11-24 WB04-E1306)
+            startMinWaitMs: normalizeStartMinWaitMs(options.startMinWaitMs ?? params.get('startwait'), globalThis.navigator?.webdriver === true ? 0 : START_MIN_WAIT_MS),
             fetch: options.fetch ?? null,
             scaling: normalizeScaling(options.scaling ?? params.get('scaling')),
             audio: options.audio ?? !params.has('mute'),
             // 검사 전용 고정 시각 모드의 프레임 밀리초(0 이면 꺼짐)이다. 켜면 Client 시각 공급원이 프레임마다 이 값만큼만 전진하고(원본 cpppj `--fixed-frame-ms` 와 같음) 프레임은 requestAnimationFrame 이 아니라
             // `stepFixedFrames` 로만 진행한다. 같은 입력 단계표의 두 실행을 같은 시계·난수로 비교하는 L2·L3 결정론 대조용이며 주소 `?fixed=25` 로도 켠다. (2026-11-23 WB04-E1271)
             fixedFrameMs: normalizeFixedFrameMs(options.fixedFrameMs ?? params.get('fixed')),
+            // 고정 시각 원본 화면 대조에서만 추가 튜토리얼 표시를 생략한다. 기본 게임과 고정 시각의 기본 표시는 안내를 포함한다.
+            originalTutorialPresentation: normalizeFixedFrameMs(options.fixedFrameMs ?? params.get('fixed')) > 0 && Boolean(options.originalTutorialPresentation ?? (params.get('originalTutorialPresentation') === '1')),
             // 원본 비교 모드이다. 참이면 웹 판본이 빼는 원본 화면 요소(메인 메뉴 Multiplayer·Edit·Quit 버튼, 펼침 메뉴의 Direct Draw·Resolution·Technical Help 등,
             // Campaign 목록의 User Made Campaigns 행)를 원본처럼 보여 cpppj 오라클·원본 스크린샷과 같은 배치로 비교한다. 그 요소들의 동작(Edit·멀티플레이 등)은 여전히 구현하지 않는다.
             // 무브라우저 실행(tools/headless.mjs)의 오라클 비교 전용이며 기본값 false 이다. (2026-11-07 WB02-H)
@@ -630,6 +666,10 @@ export class Netstorm {
         this._layout = null;
         // 이벤트 리스너를 한꺼번에 해제하기 위한 컨트롤러다.
         this._abort = null;
+        // 현재 문서의 실제 게임 입력·캡처·녹화 어댑터다. WebMCP 지원 시에만 만든다.
+        this._agentHost = null;
+        // 이 앱 수명이 등록한 표준 WebMCP 도구의 반납 핸들이다.
+        this._agentBridge = null;
         // 루트 크기 변화 관찰자다.
         this._resizeObserver = null;
         // 예약된 requestAnimationFrame 번호다. 0 이면 예약 없음이다.
@@ -638,6 +678,12 @@ export class Netstorm {
         this._clock = new FrameClock();
         // Client 게임 시계와 보정 전역은 init에서 생성하고 destroy에서 반납한다.
         this._clientLocal = null; this._clientNsInfo = null; this._clientHelpPopup = null; this._gameClock = null; this._hiddenGamePause = false;
+        // 모드 관리자/시계 장벽/설치 검증 취소는 앱 수명마다 새로 만든다.
+        this._mods = null; this._modTimeSource = null; this._modValidation = null;
+        // 웹 전용 모드 관리 DOM과 그 정지 한 단계는 같은 앱 수명에만 유지한다.
+        this._modPanel = null;
+        // 실제 앱의 비고정 초기 시계가 UTC초 경계를 준비하는 동안에는 로딩 표시만 갱신한다.
+        this._clientClockPreparing = false;
         // 같은 Client 수명의 구름·HTML과 연결표·연결 활동 전역이다.
         this._clientKencloud = null; this._clientHtml = null; this._clientConnections = null; this._clientConnectionActivity = null;
         // 같은 Client가 장기 소유하는 게임·CRT 난수와 SP 저장소다.
@@ -651,7 +697,9 @@ export class Netstorm {
         // 현재 브라우저 효과음 장치와 원본 재생 전역·준비 중인 수명이다.
         this._clientSoundState = null; this._clientSoundDevice = null; this._clientSoundPlayer = null; this._clientSoundPrepare = null;
         // 시작 팔레트와 최초 색 정렬 입력은 Client 수명 동안 같은 객체로 유지한다.
-        this._clientPaletteScreen = null; this._clientColorSort = null;
+        this._clientPaletteScreen = null;
+        // 동기 Renderer 프레임의 Canvas 전송 묶음과 현재 합친 논리 변경 범위다.
+        this._clientScreenPresentBatch = false; this._clientScreenPresentBounds = null; this._clientColorSort = null;
         // 논리 화면에 대응하는 실제 Renderer와 월드 변경 영역 전달 장치다.
         this._clientRenderer = null; this._clientSurfaceDisplay = null; this._clientRendererFrame = null;
         // 설치 폴더에 쓰지 않는 색표 캐시는 같은 페이지의 앱 재시작 사이에 유지한다.
@@ -660,6 +708,10 @@ export class Netstorm {
         this._clientSubscriber = null; this._clientGameplay = null; this._clientCoreData = null; this._clientPlayers = null; this._clientTemplates = null;
         // 자산 적재 뒤 구성해 Session보다 오래 유지하는 월드 물리와 Kernel이다.
         this._gameAssets = null; this._surfaceStorage = null; this._clientKernel = null; this._clientTrace = null; this._clientProductionGlobals = null; this._campaignProduction = null;
+        // 커널이 소유한 번개 팔레트 프로세스(TYPE 55)의 PID 목록이다. 소멸 콜백에서 제거하며 세션 종료 전 정리한다. (2026-11-24 WB04-E1329)
+        this._thunderProcesses = [];
+        // 현재 Client 루트에 소유한 추가 튜토리얼 안내다. State 정리와 루트 반납 전에 자기 노드만 지운다.
+        this._campaignTutorialObjective = null;
         // 미니맵의 장기 dirty 상태와 색 전역은 Client 수명에 둔다. (2026-11-20 WB04-E1082)
         this._clientMinimapState = null; this._clientMinimapGlobals = null; this._gameMenuButton = null; this._lastCampaignMission = null;
         // 게임 메뉴(Pause)가 올린 게임 시계 정지·음소거 깊이다. 미션을 떠날 때 되돌린다. (2026-11-20 WB04-E1089)
@@ -793,7 +845,7 @@ export class Netstorm {
 
     // 현재 언어의 화면 문구 모음이다.
     get texts() {
-        return TEXTS[this.options.language] ?? TEXTS.english;
+        return TEXTS[this._gameData?.language ?? this.options.language] ?? TEXTS.english;
     }
 
     // 메인 메뉴 화면 객체이다. 메인 메뉴에 들어가기 전에는 null 이다. (2026-10-23 WB03-M1)
@@ -848,6 +900,7 @@ export class Netstorm {
 
         // 원본처럼 공통 SP를 설정·화면 해석보다 먼저 초기화하고 실패 시 루트는 건드리지 않는다.
         this._initializeClientRuntime(doc.hidden);
+        this._clientClockPreparing = true;
         this._root = root;
         this._canvas = canvas;
         this._ctx = ctx;
@@ -867,6 +920,10 @@ export class Netstorm {
         this._audioStatus = 'none';
         // 저장된 설정을 읽는다(저장소를 쓸 수 없으면 기본값으로 계속). 호스트가 음량을 정했으면 저장하지 않고 우선 적용한다. (2026-10-29 WB03-F)
         const storage = getLocalStorage(doc.defaultView);
+        // 검증 적재는 앱 종료에 즉시 취소한다. 실행 Worker는 관리자가 마지막 사건 뒤 반납한다.
+        const modView = doc.defaultView, modValidation = new AbortController(); this._modValidation = modValidation;
+        const modStore = new ModStore({ storage, validatePackage: (input) => validateModPackageIsolated(input, { view: modView, signal: modValidation.signal }) });
+        this._mods = new ModManager({ host: new ModGameHost(this), source: this._modTimeSource, store: modStore, createWorker: (options) => ModWorker.open({ view: modView, ...options }), forcedOff: this.options.fixedFrameMs > 0 });
         this._settings = new Settings({ storage, onChange: (key) => this._onSettingChange(key) });
         if (this._settings.loadProblem) console.warn(`Netstorm: ${this._settings.loadProblem}. 기본 설정으로 시작합니다.`);
         if (this.options.soundVolume !== null) this._settings.set('soundVolume', this.options.soundVolume, { persist: false });
@@ -894,6 +951,7 @@ export class Netstorm {
             this._bindEvents();
             this._applyLayout();
             this._initializeClientRendererView();
+            this._initializeAgentTools();
             if (this.options.autoFocus) canvas.focus({ preventScroll: true });
             this._startFrameLoop();
             this._load();
@@ -905,13 +963,31 @@ export class Netstorm {
         return this;
     }
 
+    // 지원 문서에서만 실제 게임 도구를 등록한다. 초기화/반납 경합과 등록 오류가 일반 게임 시작을 중단하지 않게 한다.
+    _initializeAgentTools() {
+        const doc = this._root.ownerDocument, lifetime = this._abort;
+        try {
+            if (typeof doc.modelContext?.registerTool !== 'function') return;
+            const host = new GameAgentHost(this); this._agentHost = host;
+            installWebMcp(doc, host, { signal: lifetime.signal }).then((bridge) => {
+                // 이전 init의 늦은 등록은 새 게임 수명에 남기지 않는다.
+                if (this._abort !== lifetime) { bridge.dispose(); return host.dispose(); }
+                this._agentBridge = bridge;
+            }).catch((error) => {
+                host.dispose().catch(() => {});
+                if (this._abort === lifetime) reportGameError('webmcp-registration', error, { state: this._state });
+            });
+        } catch (error) { reportGameError('webmcp-initialize', error, { state: this._state }); }
+    }
+
     // 원본 공통 시작의 SP 초기화와 게임 시계 생성을 같은 Client 소유자로 연결한다.
     _initializeClientRuntime(hidden) {
         this._clientTrace = new ClientTraceGlobals();
         this._clientProductionGlobals = new ProductionMaintenanceGlobals();
-        const source = new ClientTimeSource(), random = new ClientRandomGlobals();
+        const nativeSource = new ClientTimeSource(), random = new ClientRandomGlobals();
         // 고정 시각 모드이면 시각 공급원이 프레임마다 정해진 밀리초만 전진한다(난수 초기화 전에 켜서 유닉스 초도 같은 값에서 시작한다). (2026-11-23 WB04-E1271)
-        if (this.options.fixedFrameMs > 0) source.enableFixed({ frameMilliseconds: this.options.fixedFrameMs });
+        if (this.options.fixedFrameMs > 0) nativeSource.enableFixed({ frameMilliseconds: this.options.fixedFrameMs });
+        const source = new ModTimeSource(nativeSource); this._modTimeSource = source;
         const sp = new ClientSpGlobals(random, () => source.unixSeconds()); sp.store().initialize();
         const local = new ClientLocalStateGlobals(), clock = new ClientFrameClock(source, local.gameTicks());
         // 고정 시각 모드: cpppj 고정 실행은 첫 주 루프 프레임 전에 시계가 4틱(0.1초) 흘러 첫 프레임의 게임 시각이 0.125초다. 시계 원점은 위에서 이미 잡았으므로 그 뒤에 4틱 전진해 같은 출발 시각으로 맞춘다. (2026-11-23 WB04-E1281)
@@ -934,6 +1010,8 @@ export class Netstorm {
         this._clientChatRecords = chatRecords; this._clientChatChannels = chatChannels; this._clientChatWindows = new ClientChatWindowGlobals();
         this._clientChatManager = new ClientChatManagerGlobals(); this._clientDotCommands = new ClientDotCommandGlobals(); this._clientChatInitialized = false;
         this._clientRendererFrame = new ClientRendererFrameGlobals();
+        // 독립 Client 소유자 조립은 기본 상대시계를 사용할 수 있다. 실제init은 이 뒤 준비 관문을 닫고_load에서원본초기화를 마친다.
+        this._clientClockPreparing = false;
     }
 
     // 설정 해석 시 실제 helpWord 값을 같은 Client 캐시에 갱신한다.
@@ -949,7 +1027,7 @@ export class Netstorm {
     // 옵션 메뉴 Language 선택을 적용한다. 선택을 설정(`language`)에 저장하고 주소의 `lang` 매개변수를 같은 출처 기록 교체(history.replaceState)로 지워(저장한 선택을 가리지 않게) 페이지를 다시 불러 새 언어 묶음으로 시작한다. 주소 이동(location.href·assign)은 외부 접속 감사가 금지하므로 쓰지 않는다. 현재 언어와 같으면 false 다. 다시 불러오는 방식은 options.reload() 로 바꿀 수 있다(검사용). (2026-11-20 WB04-E1095)
     _chooseLanguage(number) {
         const language = languageOfChoice(number);
-        if (language === null || language === this.options.language) return false;
+        if (language === null || language === (this._gameData?.language ?? this.options.language)) return false;
         this._settings?.set('language', number);
         const view = this._view(), params = new URLSearchParams(view.location.search);
         if (params.has('lang')) { params.delete('lang'); const query = params.toString(); view.history.replaceState(null, '', `${view.location.pathname}${query ? `?${query}` : ''}${view.location.hash}`); }
@@ -981,6 +1059,14 @@ export class Netstorm {
         globals.rotationMode().value = this._gameData.readInt('rotmode', 0).value >>> 0;
     }
 
+    // 전체 State 부모가 선택한 위치에서 현재 웹 설정의 기존 소비자들을 다시 해석한다.
+    _interpretClientStateOptions() {
+        this._syncClientCloudOptions(); this._syncClientHelpWord(); this._syncClientOwnerColorOptions(); this._syncClientCursorOptions();
+        this._surfaceStorage.transmission.state.compress = this._gameData.readInt('cs', this._surfaceStorage.transmission.state.compress).value | 0;
+        if (this._clientTrace) this._clientTrace.log.level = this._gameData.readInt('tracelevel', this._clientTrace.log.level).value | 0;
+        this._applySettings();
+    }
+
     // 실제 게임 자산에서 장기 물리를 만들고 같은 Client 권한·시각·Kernel과 진단을 연결한다.
     _initializeClientWorldStorage(game, files) {
         if (this._surfaceStorage || !this._clientGameplay || !this._gameClock) throw new Error('Client 월드 저장소의 중복 또는 공통 수명 누락');
@@ -989,7 +1075,9 @@ export class Netstorm {
         const storage = new RawSurfaceStorage(assets.types, assets.frames, metadata.shapes, { source: game, authority: gameplay.authority(), gameAux: gameplay.gameAux() });
         const kernel = new Kernel(); storage.processes.bindDevices(kernel, clock.time());
         storage.bindChecking(() => gameplay.aiDebug().checking().value);
-        storage.bindDisplayDiagnostics(gameplay.aiDebug().assertionDetail(), (expression, file, line) => console.error(`원본 표시 진단: ${file}:${line} ${expression}`));
+        // 동일 Client가 보유한 현재 상세를 호출 순간에 읽어 기존 표시 진단보다 먼저 기록한다.
+        storage.bindDisplayDiagnostics(gameplay.aiDebug().assertionDetail(), (expression, file, line) => logClientDisplayAssertion(gameplay.aiDebug().assertionDetail().value, expression, file, line));
+        storage.enablePatchDestroyDiagnostics();
         storage.bindGraphClock(() => clock.gameSeconds()); bindClientKernelDiagnostics(kernel, storage, (line) => console.info(line));
         this._gameAssets = game; this._surfaceStorage = storage; this._clientKernel = kernel;
     }
@@ -1041,7 +1129,11 @@ export class Netstorm {
         this._displayDirty = true;
         if (layout.visible) {
             if (!this._ctx) throw new Error('Client Screen의 현재 Canvas 문맥 누락');
-            this._presenter.present(this._ctx, surface, layout, true);
+            // 브라우저는 JS 프레임 종료 뒤 표시하므로 프레임 안의 여러 Screen 복사는 마지막에 한 번 전송한다.
+            if (this._clientScreenPresentBatch) {
+                const previous = this._clientScreenPresentBounds;
+                this._clientScreenPresentBounds = previous ? { left: Math.min(previous.left, rect.left), top: Math.min(previous.top, rect.top), right: Math.max(previous.right, rect.right), bottom: Math.max(previous.bottom, rect.bottom) } : { ...rect };
+            } else this._presenter.present(this._ctx, surface, layout, true, rect);
         }
     }
 
@@ -1187,16 +1279,16 @@ export class Netstorm {
         return new ClientMissionAssets(this._gameData, this._gameAssets, name);
     }
 
-    // 미션 조립은 현재 Client의 난수·SP·Player·Core·Template·Subscriber와 시계를 대여한다. 이 호출은 Session을 생성하지 않는다.
+    // 미션 조립은 현재 Client의 난수·SP·Player·Core·Template·Subscriber·구름·HTML 전역과 시계를 대여한다. 이 호출은 Session을 생성하지 않는다. (2026-11-24 WB04-E1328: 누락된 kencloudGlobals·htmlWindowGlobals 연결)
     _campaignSharedServices() {
         const clock = this._gameClock, random = this._clientRandom, sp = this._clientSp, local = this._clientLocal;
         const subscriber = this._clientSubscriber, gameplay = this._clientGameplay, coreData = this._clientCoreData, players = this._clientPlayers, templates = this._clientTemplates;
-        if (!clock || !random || !sp || !local || !subscriber || !gameplay || !coreData || !players || !templates || !this._clientSoundNames || !this._clientChatWindows) throw new Error('캠페인의 실제 Client 공통 수명 미설치');
+        if (!clock || !random || !sp || !local || !subscriber || !gameplay || !coreData || !players || !templates || !this._clientSoundNames || !this._clientChatWindows || !this._clientKencloud || !this._clientHtml) throw new Error('캠페인의 실제 Client 공통 수명 미설치');
         const surface = this._surfaceStorage, kernel = this._clientKernel, request = this._clientGuide?.fortRequest();
         const colors = this._clientColorSort, screen = this._clientPaletteScreen;
         if (Boolean(colors) !== Boolean(screen) || (colors && !colors.mapsReady)) throw new Error('캠페인의 실제 Client 색표 수명 미설치');
         return { soundNames: this._clientSoundNames, chatGlobals: this._clientChatWindows, randomGlobals: random, spGlobals: sp, localStateGlobals: local, subscriberGlobals: subscriber, gameplayGlobals: gameplay, coreDataGlobals: coreData,
-            playerRecords: players, templateStorage: templates, connectionActivityGlobals: this._clientConnectionActivity, connectionRegistry: this._clientConnections, connectionFrameNumber: () => clock.time().number, ...(surface && kernel ? { surfaceStorage: surface, processKernel: kernel } : {}),
+            playerRecords: players, templateStorage: templates, kencloudGlobals: this._clientKencloud, htmlWindowGlobals: this._clientHtml, connectionActivityGlobals: this._clientConnectionActivity, connectionRegistry: this._clientConnections, connectionFrameNumber: () => clock.time().number, ...(surface && kernel ? { surfaceStorage: surface, processKernel: kernel } : {}),
             ...(colors ? { colorSortInput: colors, ownerColorTables: colors.ownerTables, screenPalette: () => this._clientPaletteScreen.palette() } : {}),
             ...(this._clientGuide ? { missionRestrictions: this._clientGuide.restrictions(), missionOptions: gameplay.battleOptionsOwner() } : {}), ...(request ? { missionFortRequest: request } : {}),
             unixSeconds: () => clock.unixSeconds(), frameTime: () => clock.time(), paused: () => clock.paused(),
@@ -1229,9 +1321,17 @@ export class Netstorm {
         };
     }
 
+    // 같은 Client 등록표와 현재 예산 serial로 원본 SP 재부착을 실행한다. HUD가 아직 없거나 이미 반납됐으면 찾기만 하고 끝난다. (WB04-E1325)
+    _refreshCampaignStormPower() {
+        if (!this._clientGump || !this._clientProductionGlobals) return;
+        this._clientGump.refreshStormPower(this._clientProductionGlobals.budgetSerial);
+    }
+
     // 같은 앱의 현재 설정·Gump·입력 큐를 미션 소유권과 자산 후처리에 빌려준다.
     _campaignGameplayServices() {
         const services = {};
+        // 보상·다른 플레이어 SP 정리도 같은 실제 예산 노드를 다시 부착한다. (WB04-E1325)
+        services.refreshSp = () => this._refreshCampaignStormPower();
         bindCampaignOwnershipTheme({ configuration: () => {
             if (!this._gameData) throw new Error('미션 소유권의 실제 설정 수명 누락');
             return this._gameData;
@@ -1245,6 +1345,8 @@ export class Netstorm {
             return this._clientInputQueue;
         } }, services);
         services.assets.queueCommand = services.developerQueue;
+        // 건설17의 검증된 CPP x64 할당 입력을 Session에 명시한다. 원본 공통 입자 상수로 일반화하지 않는다.
+        services.particlePaletteInput = CLIENT_PARTICLE_PALETTE_INPUT;
         // 객체 소멸 통지는 같은 Client의 현재 Gump 등록 ID에 전달한다.
         services.gumpNotice = (owner, parent) => { if (!this._clientGump) throw new Error('미션 Gump 객체 통지 수명 누락'); this._clientGump.objectGone(owner, parent); };
         // Player 내용물 변경은 같은 현재 등록표에서 조회한 Gump에 원본 사건을 직접 전달한다.
@@ -1257,11 +1359,14 @@ export class Netstorm {
             blockingGumpOpen: () => this._clientGump.blockingPopups(),
             // 12차 스커미시: 세션이 미션 Start 때 읽는 월드 계획이다(일반 미션은 null). (2026-11-20 WB04-E1105)
             skirmishWorld: () => this._skirmishPlan };
-        bindCampaignAiClientServices({ configuration: () => this._gameData, languageNumber: () => this.options.language === 'korean' ? 7 : 0,
+        bindCampaignAiClientServices({ configuration: () => this._gameData, languageNumber: () => originalLanguageNumber(this._gameData?.language ?? this.options.language),
             translate: (text) => this._resources.translate(text), encodeDisplayText: (text) => displayTextCodec.encode(text),
             decodeDisplayText: (bytes) => displayTextCodec.decode(bytes), chatChannels: () => this._clientChatChannels }, services.ai);
-        // 섬 피격·사제 방어와 생산 자금 안내는 같은 현재 Tell 창을 사용한다.
+        // 섬 피격·사제 방어와 생산 자금 안내는 같은 현재 Tell 창을, Factory 연구 도움말(0x03000080 kind=0)은 현재 도움말 창을 사용한다. (2026-11-24 WB04-E1328: 누락된 factoryHelp·removeConnectionStatus·templateStateBytes 연결)
         services.factoryTell = (section) => this._openTell(section);
+        services.factoryHelp = (section) => { this._closeCampaignPopups(); this._openHelp(section); };
+        services.removeConnectionStatus = (kind, player) => { this._campaignProduction?.ui?.warnings()?.remove(kind | 0, player | 0, 0); };
+        services.templateStateBytes = currentAllocationBytes;
         // 로컬 서버가 41h 채팅 패킷을 되돌릴 때 받는 현재 UI 수신이다(채팅 창이 없으면 무시). (2026-11-22 WB04-E1172)
         services.chatReceive = (packet) => this._receiveCampaignChat(packet);
         services.priest = { shield: { tell: (section) => this._openTell(section) } };
@@ -1365,7 +1470,7 @@ export class Netstorm {
             if (!screen) throw new Error('미션 카메라의 실제 Screen 수명 누락');
             return { x: screen.width, y: screen.height };
         };
-        // 표면 변경은 크기 변경으로 교체된 현재 Renderer에도 같은 어댑터로 전달한다.
+        // 표면 변경은 현재 Renderer의 부분 영역으로 전달한다. Canvas 전체 갱신 표시는 원본 dirty 영역을 넓히므로 여기서 켜지 않는다. (WB04-E1342)
         services.surfaceDisplay = {
             suppressed: () => {
                 if (!this._clientSurfaceDisplay) throw new Error('미션 표면의 실제 Renderer 수명 누락');
@@ -1373,7 +1478,7 @@ export class Netstorm {
             },
             invalidate: (rect, flags) => {
                 if (!this._clientSurfaceDisplay) throw new Error('미션 표면의 실제 Renderer 수명 누락');
-                this._clientSurfaceDisplay.invalidate(rect, flags); this._displayDirty = true;
+                this._clientSurfaceDisplay.invalidate(rect, flags);
             },
         };
         return services;
@@ -1423,6 +1528,11 @@ export class Netstorm {
     // 로컬 Login이 현재 Client의 설정·시계·진단과 표시 무효화를 직접 조회한다.
     _campaignLoginServices() {
         return {
+            // 2bh 수신 시 현재 Client 채팅 장부에서 해당 subscriber의 채널만 해제한다(C++1366).
+            removeChat: (subscriber, mask) => {
+                if (!this._clientChatChannels) throw new Error('로그인 채널 해제의 현재 Client 수명 누락');
+                this._clientChatChannels.removeFromChannel(subscriber, mask);
+            },
             // State7은 실제 화면 크기와 공유 카메라 전역을 다시 초기화한다.
             initializeRenderer: () => this._initializeClientRendererView(),
             // State7에서 현재 battlePal을 조회해 같은 Client 팔레트 전환을 실행한다.
@@ -1447,7 +1557,7 @@ export class Netstorm {
             gameSeconds: () => this._gameClock.gameSeconds(),
             // 브라우저에는 C 런타임 clock()이 없어 같은 Client의 단조 밀리초를 사용한다.
             clock: () => this._gameClock.milliseconds(),
-            // 현재 메뉴와 최종 화면이 다시 그려지도록 표시한다.
+            // 공통 로그인/타이머 갱신은 메뉴와 화면을 무효화한다. SP 전용 재부착은 같은 Session의 services.refreshSp를 사용한다. (WB04-E1325)
             refresh: () => { if (this._mainMenu) this._mainMenu.dirty = true; this._displayDirty = true; },
             // 비전투·미션·대본 중단을 먼저 제외한 뒤 현재 Session의 전투 종료를 확인한다.
             playerUiBusy: () => {
@@ -1458,6 +1568,12 @@ export class Netstorm {
             },
             // Player 원문 진단을 출력하고 같은 표시 화면을 무효화한다.
             playerNotice: (kind, owner, value) => { console.info(`Player UI ${kind} ${owner} ${value}`); if (this._mainMenu) this._mainMenu.dirty = true; this._displayDirty = true; },
+            // 원본 MessageBoard 상태 통지를 현재 미션의 실제 경고 소유자로 전달한다. 미션 억제 판정은 WarningMessages가 수행한다. (WB04-E1326)
+            status: (kind, owner, value) => {
+                const messages = this._campaignProduction?.ui?.warnings();
+                if (!messages) throw new Error('전투 상태 통지의 실제 MessageBoard 미연결');
+                messages.battleStatus(kind | 0, owner | 0, value | 0);
+            },
             // 원본 연결 진단을 브라우저 콘솔에 기록한다.
             log: (text) => console.info(text),
         };
@@ -1488,8 +1604,8 @@ export class Netstorm {
         if (!request || this._campaignWorld) throw new Error('캠페인 State7의 현재 요청 또는 World 수명 오류');
         runCampaignMissionStarting(client, () => {
             captureCampaignMissionStarting(client, request);
-            // 원본 LoadMissionWorldBody 는 시작 정보를 보관한 뒤 State 전체 정리(CleanupNativeStateWorld(1))를 실행하고 그 다음에 장면 음악을 시작한다(SP 정리 1,280회 난수). (2026-11-23 WB04-E1280)
-            this._clearPlayerSpForState();
+            // 시작 정보를 보관한 뒤 같은 전체 State 부모가 기존 저장소를 정리하고 World 없는 HUD를 만든다.
+            cleanupNetstormStateWorld(this, 1);
             // 원본 State7 의 전투 장면 음악 시작(StartScene(true))이다. World 설치보다 앞이다. (2026-11-20 WB04-E1119)
             this._beginSceneMusic();
             // 원본 LoadMissionWorldBody 는 장면 음악 뒤, 월드·커서 설치 앞에서 Guide 미션이면 게임 시계를 정지하고 관문의 자기 정지 표식을 세운다(PauseMissionWorldEntry → PauseMissionFrameForDialog).
@@ -1522,11 +1638,18 @@ export class Netstorm {
 
     // 현재 World의 Session을 반납하고 같은 미션 연결 대기 관문을 해제한다.
     _releaseCampaignWorld() {
+        this._closeModPanel(false);
+        this._mods?.end('leave');
+        this._clearCampaignTutorialObjective();
         // World 가 없어도(State7 도중 실패 등) 이미 시작한 장면 음악은 메뉴 곡으로 되돌린다. (2026-11-20 WB04-E1119)
         this._endSceneMusic();
-        if (!this._campaignWorld) return;
-        // 원본 월드 정리 어댑터(UberGump 004b2df0)는 Session·UI·Kernel 을 반납하기 전에 초기 캡처 기한(005c8618)을 0 으로 쓴다. 이 값이 남으면 다음 미션의 Zone 설치가
-        // `!earlyCaptureTimer.isRunning()` 진단을 낸다(미션을 떠나고 곧바로 다른 미션을 시작할 때). (2026-11-20 WB04-E1121)
+        if (!this._campaignWorld && !this._campaignProduction) return;
+        if (this._campaignWorld) {
+            // 공통 부모가 자식 정리 증빙·Core0·Runtime 반납·새 HUD 생성을 원문 순서로 수행한다.
+            this._clearThunderFlashes(); cleanupNetstormStateWorld(this, 0); this._endSceneMusic(); return;
+        }
+        // 원본 월드 정리 어댑터(UberGump 004b2df0)는 Session·UI·Kernel 을 반납하기 전에 번개 프로세스(ClearThunderFlashes)와 초기 캡처 기한(005c8618)을 정리한다. (2026-11-20 WB04-E1121, 2026-11-24 WB04-E1329)
+        this._clearThunderFlashes();
         if (this._clientLocal) this._clientLocal.captureEnd().value = 0;
         // 원본 State 월드 정리의 채팅 채널 정리(Clear445140 → ChatChannels::ResetOccupied: 점유된 기록의 이름·플래그·ID 를 모두 0 으로)와 시간 동기화 세 DWORD 초기화(Clear4c1f20 → ResetClientClockSynchronization)이다.
         // 이 둘이 없어 미션을 떠난 뒤에도 이전 미션의 채팅 대상 기록과 시간 응답 방식(replyMode 1)이 다음 미션까지 남았다. (2026-11-23 WB04-E1268)
@@ -1535,7 +1658,7 @@ export class Netstorm {
         // 원본 State 월드 정리는 0059a8ac(건물 숨김, F2·View 메뉴)을 0 으로 되돌린다. 되돌리지 않으면 미션에서 켠 건물 숨김이 다음 미션에도 남아 처음부터 건물이 숨겨졌다. (2026-11-22 WB04-E1230)
         if (this._clientGameplay) this._clientGameplay.hideBuildings().value = 0;
         this._gameMenuButton?.destroy(); this._gameMenuButton = null; this._releaseCampaignPause();
-        this._campaignProduction?.ui?.close(); this._campaignProduction?.hud?.close(); this._clientGump?.releaseFormHost(); this._campaignWorld.dispose(); this._campaignWorld = null; this._campaignWorldMissionToken = 0; this._campaignUserInput = null; this._campaignProduction = null; this._campaignCursor = CURSOR_NORMAL;
+        this._campaignProduction?.ui?.close(); this._campaignProduction?.hud?.close(); this._clientGump?.releaseFormHost(); this._campaignWorld?.dispose(); this._campaignWorld = null; this._campaignWorldMissionToken = 0; this._campaignUserInput = null; this._campaignProduction = null; this._campaignCursor = CURSOR_NORMAL;
     }
 
     // 로그인된 현재 World와 Guide의 실제 미션 Start를 같은 Client 수명에 준비한다.
@@ -1543,7 +1666,7 @@ export class Netstorm {
         const world = this._campaignWorld, current = this._clientGuide?.current(), gump = this._clientGump, chat = this._clientChatWindows;
         if (!world || !current || !gump || !chat || !world.session().localConnectionReady() || this._campaignWorldMissionToken !== current.runtime.saveToken || current.runtime.start) throw new Error('미션 Start의 현재 World·Guide·로그인 수명 오류');
         const client = { time: () => this._gameClock.time(), renderer: () => this._clientRenderer,
-            menu: () => this._mainMenu ? { refresh: () => { this._mainMenu.dirty = true; this._displayDirty = true; }, receiveNativePacketChat: (packet) => this._receiveCampaignChat(packet) } : null };
+            menu: () => this._mainMenu ? { refreshStormPower: () => this._refreshCampaignStormPower(), receiveNativePacketChat: (packet) => this._receiveCampaignChat(packet) } : null };
         const effects = makeCampaignMissionStartEffects(client, world, () => {
             const token = chat.window.current; if (token) gump.events().bubble(token, 0x02000088, 0, 0);
         });
@@ -1589,22 +1712,31 @@ export class Netstorm {
         return cursor;
     }
 
-    // 현재 Session과 Client 생산 전역을 같은 생산 패널 유지 상태에 연결한다.
+    // Ready가 된 Session을 State7에서 만든 같은 생산 패널 유지 상태에 연결한다. 독립 호출자는 같은 상태를 여기서 만든다.
     _prepareCampaignProduction() {
         const world = this._campaignWorld, current = this._clientGuide?.current(), globals = this._clientProductionGlobals, clock = this._gameClock;
-        if (!world || world.connecting || !current?.runtime.start || !globals || !clock || !this._clientRenderer || this._campaignProduction || this._campaignWorldMissionToken !== current.runtime.saveToken) throw new Error('미션 생산 유지의 현재 수명 오류');
-        const session = world.session(), panel = new ProductionMaintenancePanel();
-        panel.initialized = true; panel.bridgeUntil = clock.wallSeconds(); panel.slots = session.battleOption(1) * 2 + 2;
+        if (!world || world.connecting || !current?.runtime.start || !globals || !clock || !this._clientRenderer || this._campaignProduction?.maintenance || this._campaignWorldMissionToken !== current.runtime.saveToken) throw new Error('미션 생산 유지의 현재 수명 오류');
+        // 생성 단계가 이미 정한 최초 슬롯·다리 기한은 다시 쓰지 않는다.
+        const session = world.session(), production = this._campaignProduction ?? { session: null, panel: new ProductionMaintenancePanel(), maintenance: null, ui: null, worldBound: false }, panel = production.panel;
+        if (!production.ui) { panel.initialized = true; panel.bridgeUntil = clock.wallSeconds(); panel.slots = session.battleOption(1) * 2 + 2; }
         globals.bridgeType = this._surfaceStorage.links.bridgeType;
         session.synchronizeProductionContents();
-        const production = { session, panel, maintenance: null, ui: null };
+        production.session = session;
         production.maintenance = session.makeProductionMaintenance(globals, panel, () => clock.wallSeconds(), (mask) => { production.ui?.refresh(mask); this._clientRenderer.invalidateAll(); });
         this._campaignProduction = production; return production;
     }
 
-    // 실제 미션 생산 UI를 같은 Client 수명과 기존 생산 유지 상태에 설치한다.
+    // 기존 Ready 호출자는 같은 Client 생성과 실제 World 도킹을 연속 수행한다.
     _prepareCampaignProductionUi() {
-        const production = this._campaignProduction, root = this._clientGump, screen = this._clientPaletteScreen;
+        const production = this._campaignProduction;
+        if (!production?.session) throw new Error('생산 UI 도킹의 실제 Session 미연결');
+        if (!production.ui) this._createCampaignProductionHud(production);
+        this._dockCampaignProductionHud(production); return production.ui;
+    }
+
+    // World 없이 같은 Client 문맥으로 Uber HUD·생산·Chat 자식을 생성한다.
+    _createCampaignProductionHud(production) {
+        const root = this._clientGump, screen = this._clientPaletteScreen;
         if (!production || production.ui || !root || !screen || !this._clientColorSort || !this._gameAssets || !this._resources?.fonts || !this._clientSoundPlayer || !this._clientSoundNames) throw new Error('미션 생산 UI의 현재 수명 누락');
         // 우클릭 빠른 도움말(원본 RawMenuControls::BaseHelp): 노드의 대체 글자 포인터(주제 이름)가 있으면 제목+Help 항목 팝업을 연다. 항목은 F1 도움말 명령(0x02000017)에 주제 문자열 토큰을 실어 보낸다. (2026-11-22 WB04-E1236)
         const helpState = new GumpHelpState(); helpState.body = 0x61000002; helpState.event = 0x02000017;
@@ -1616,26 +1748,30 @@ export class Netstorm {
             entry: (body, command, topic) => helpMenu().entry(this._helpString(body), command, this._clientChatWindows.store(topic)),
             attachMenu: (x, y, parent) => helpMenu().attach(x, y, parent), sound: (name) => this._clientSoundPlayer.play(this._clientSoundNames.lookup(name), 0, 0, 0, 0, 0),
         });
-        const identity = new RawPlayerIdentity(this._clientPlayers.records(), new Uint8Array(0), this._clientChatRecords, {
+        // 로그인은 Player 기록을 재할당하므로 HUD 생성 시의 뷰를 보관하지 않고 실제 조회 시점에 빌린다.
+        const identity = () => new RawPlayerIdentity(this._clientPlayers.records(), new Uint8Array(0), this._clientChatRecords, {
             localOwner: () => this._clientGameplay.player.battleOwner, subscriber: () => this._clientSubscriber.mySubscriber().value,
             address: () => this._clientGameplay.localAddress().value, name: () => { const bytes = this._clientSubscriber.handle(), end = bytes.indexOf(0); return String.fromCharCode(...bytes.subarray(0, end)); },
             battle: () => this._surfaceStorage.ownerMode.battle, editor: () => this._clientGameplay.world.editor !== 0,
             metamap: () => this._surfaceStorage.ownerMode.challenge, unknownName: () => 'SOMEONE',
         });
+        // 입력/객체 효과가 실행되는 때에만 현재 실제 World를 요구한다.
+        const currentWorld = () => { const world = this._campaignWorld; if (!world) throw new Error('HUD 효과의 현재 실제 World 미연결'); return world; };
+        const context = new ProductionControlContext(this._surfaceStorage, this._clientGameplay, this._clientPlayers, this._clientGameplay.battleOptionsOwner(), this._clientSp, this._clientColorSort.ownerTables);
         const devices = {
             now: () => this._gameClock.wallSeconds(), gameSeconds: () => this._gameClock.gameSeconds(), translate: (value) => this._resources.translate(value),
             sound: (name) => this._clientSoundPlayer.play(this._clientSoundNames.lookup(name), 0, 0, 0, 0, 0), tell: (section) => this._openTell(section),
             about: () => { throw new Error('생산 정보 메뉴 미연결'); },
             menu: { data: this._gameData, helpWord: () => this._clientLocal.helpWord().get(),
-                ownerName: (owner) => displayTextCodec.decode(Uint8Array.from(identity.nameForOwner(owner), (letter) => letter.charCodeAt(0))),
-                objectMenu: { world: this._campaignWorld, identity, staticText: (value) => this._clientChatWindows.store(value), tell: (name) => this._openTell(name),
+                ownerName: (owner) => displayTextCodec.decode(Uint8Array.from(identity().nameForOwner(owner), (letter) => letter.charCodeAt(0))),
+                objectMenu: { get world() { return currentWorld(); }, get identity() { return identity(); }, staticText: (value) => this._clientChatWindows.store(value), tell: (name) => this._openTell(name),
                     player: { translate: (value) => this._resources.translate(value), assertion: (value) => console.error(`Player 메뉴 진단: ${value}`),
                         // Player 이름 칸의 표시 부호화 바이트(이진 문자열)를 화면 문자열로 해독한다(한국어 이름이 제목·동맹 줄에서 깨지지 않게). (2026-11-23 WB04-E1290)
                         decodeName: (value) => displayTextCodec.decode(Uint8Array.from(value, (letter) => letter.charCodeAt(0))),
                         parseAddress: () => { throw new Error('Player 메뉴 주소 해석 미연결'); }, reliability: () => { throw new Error('Player 메뉴 메타맵 신뢰도 미연결'); },
                         ignored: (subscriber) => this._clientChatWindows.ignored.includes(subscriber),
                         // 현재 채팅 입력줄의 수신자 접두에 그 Player 이름이 들어 있으면 1 이다(원본 0042e9e0). 채팅 창이 없으면 0 이다. 단독 미션 Players 메뉴는 자기 자신 행에서만 이 값을 읽고 쓰지 않는다. (2026-11-22 WB04-E1169)
-                        whispered: (subscriber) => { const chat = this._campaignProduction?.ui?.chat(); return chat?.current() ? (chat.containsRecipient(identity.nameForSubscriber(subscriber)) ? 1 : 0) : 0; } },
+                        whispered: (subscriber) => { const chat = this._campaignProduction?.ui?.chat(); return chat?.current() ? (chat.containsRecipient(identity().nameForSubscriber(subscriber)) ? 1 : 0) : 0; } },
                     // 제단 받침(dais)은 같은 좌표의 제단(altar)을 찾아 그 메뉴로 위임한다(원본 447930). 제단 TYPE 은 게임 보조 상태의 값이다. 위임 자체는 객체 메뉴 열기가 같은 몸체로 처리한다. (2026-11-21 WB04-E1137)
                     open: { altar: (sid) => { const session = production.session, raw = session.core().pool.slot(sid), view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength), world = session.world(); return world.find(view.getFloat32(14, true), view.getFloat32(18, true), world.storage.gameAux.altarType); },
                         delegate: () => { throw new Error('사제 메뉴 제단 위임 미연결'); },
@@ -1658,7 +1794,6 @@ export class Netstorm {
         const background = new ClientGumpBackground(root, this._gameAssets, () => 35, () => screen.shadeMaps(), () => screen.colors(), devices.baseHandle);
         const divider = new ClientHudDivider(root, { background, backgroundColor: () => 35, dividerColor: () => 55, baseHandle: devices.baseHandle, closePopups: devices.closePopups,
             menuInstances: devices.menuInstances, poll: devices.poll, cursor: devices.cursor });
-        const world = this._campaignWorld;
         this._clientMinimapState ??= createMetadisplayDirtyState({ fullRefreshOwner: this._clientGameplay.mapRevision() });
         this._clientMinimapGlobals ??= createRawMinimapGlobals();
         const minimap = new ClientMinimap(root, { storage: this._surfaceStorage, dirty: this._clientMinimapState, globals: this._clientMinimapGlobals,
@@ -1666,29 +1801,38 @@ export class Netstorm {
                 const data = this._clientGameplay.camera().snapshot().data, map = root.mapView();
                 return { camera: [data.getUint32(0, true), data.getUint32(4, true)], viewport: { left: map.left, top: map.top, right: map.right, bottom: map.bottom }, pixelsX: data.getInt32(8, true), pixelsY: data.getInt32(12, true) };
             },
-            center: (x, y) => world.centerCamera(x, y), move: (x, y) => world.moveFromMinimap(x, y), inputMode: () => world.inputMode(), poll: () => this._clientInputPoll.poll(0xffff),
+            center: (x, y) => currentWorld().centerCamera(x, y), move: (x, y) => currentWorld().moveFromMinimap(x, y), inputMode: () => currentWorld().inputMode(), poll: () => this._clientInputPoll.poll(0xffff),
             baseHandle: devices.baseHandle, changed: devices.changed, setNodeHelp: devices.setNodeHelp });
         const hud = new ClientUberHud(root, { setNodeHelp: devices.setNodeHelp, translate: devices.translate, assets: this._gameAssets, panelGlobals: this._clientProductionGlobals, divider, minimap,
             // 채팅 창은 생산 UI 조립이 만든 `ui.chat()` 이다(Uber 루트가 생산 패널 뒤에 `createChat` 을 부른다). (2026-11-22 WB04-E1169)
             chat: { create: () => ui.chat().create(), setVisible: (visible) => ui?.chat()?.setVisible(visible), setInput: (visible) => ui?.chat()?.setInput(visible), refreshTechnology: () => ui.chat().refreshTechnology() },
             fullDeck: () => this._clientGameplay.fullDeck(), mapRevision: () => this._clientGameplay.mapRevision(),
             createMinimap: () => minimap.create(),
-            createProduction: () => { ui = createClientProductionAssembly(root, production.session, this._gameAssets, this._resources.fonts, screen, this._clientColorSort, this._clientProductionGlobals, production.panel, devices); return ui.construct(); },
+            createProduction: () => { ui = createClientProductionAssembly(root, context, this._gameAssets, this._resources.fonts, screen, this._clientColorSort, this._clientProductionGlobals, production.panel, devices); return ui.construct(); },
             closePopups: () => this._closeCampaignPopups(), baseHandle: devices.baseHandle, invalidate: (rect, flags) => this._clientRenderer.invalidate(rect, flags),
             finishResize: () => { this._clientKencloud.worldRedraw().value = 1; this._campaignWorld?.resize(this._layout.logicalWidth, this._layout.logicalHeight); this._clientRenderer.invalidateAll(); this._displayDirty = true; } });
-        production.hud = hud; production.minimap = minimap; hud.install(); production.ui = ui;
-        ui.finishInstall(); minimap.setPalette(screen.colors()); minimap.bindWorld(production.session.core());
+        production.hud = hud; production.minimap = minimap; hud.createForState(); production.ui = ui; return ui;
+    }
+
+    // Ready가 된 같은 World를 기존 HUD에 연결하고 최초 도킹·실제 Form·미니맵·웹 메뉴 단추를 설치한다.
+    _dockCampaignProductionHud(production) {
+        const world = this._campaignWorld, session = world?.session(), screen = this._clientPaletteScreen;
+        if (!production?.ui || !production.hud || !session || production.session !== session || production.worldBound) throw new Error('생산 HUD의 실제 World 도킹 수명 오류');
+        const ui = production.ui; ui.bindWorld(session); production.hud.dockForWorld();
+        ui.finishInstall(); production.minimap.setPalette(screen.colors()); production.minimap.bindWorld(session.core()); production.worldBound = true;
         // 웹 전용: 화면 우측 상단 버튼으로도 ESC 와 같은 게임 메뉴막대를 열고 닫는다. 버튼은 Canvas 위 DOM 요소라 열린 메뉴막대보다 항상 앞에 있다. (2026-11-20 WB04-E1084)
         this._gameMenuButton?.destroy();
-        this._gameMenuButton = new GameMenuButton(this._root, { label: this.texts.gameMenuButton, title: this.texts.gameMenuButtonTitle, onClick: () => { this._toggleCampaignGameMenu(); this._canvas?.focus(); } });
+        this._gameMenuButton = new GameMenuButton(this._root, { label: this.texts.gameMenuButton, title: this.texts.gameMenuButtonTitle, fontFamily: this._gameData?.language === 'japanese' ? `"${JAPANESE_FONT_FAMILY}", sans-serif` : undefined, onClick: () => { this._toggleCampaignGameMenu(); this._canvas?.focus(); } });
         this._gameMenuButton.layout(this._layout); this._gameMenuButton.show();
         return ui;
     }
 
     // ESC 게임 메뉴막대가 읽는 현재 게임 조회 장치다(원본 `CurrentGameMenuHooks`·`RawCampaignSession::BindGameMenus` 대응). 값은 모두 호출 시점에 다시 읽는다. (2026-11-20 WB04-E1084)
     _campaignGameMenuDevices(production) {
-        const session = production.session;
+        const session = () => this._clientGameplay.requireSession();
         return {
+            // 원본 메뉴 준비는 SP 비트를 회전하고 RawGameMenuBar의 검산+3은 같은 실제 추적 상자에 쓴다. (WB04-E1327)
+            prepare: () => this._clientSp.store().rotate(), tracking: this._clientSp.store().trackingOwner,
             global: (address) => this._campaignMenuGlobal(address, production),
             // 설정 층에 있는 키(소리·음량 등)는 Settings 가, 그 밖의 키(rotmode·theammode 등)는 게임 데이터가 현재 값을 가진다.
             config: (key) => {
@@ -1699,10 +1843,12 @@ export class Netstorm {
             demo: () => Boolean(this._clientGuide?.current()?.runtime.gate.demo),
             // 옵션 메뉴 Frame Rate 하위 항목(60·75·120 FPS)이다. (2026-11-20 WB04-E1094)
             frameRates: () => frameRateChoices(this._settings?.get('maxFPS')), languages: () => languageChoices(this.options.language), difficulties: () => difficultyChoices(this._settings?.get('difficulty')),
-            player: (owner) => session.playerRecords().subarray(owner * 180, owner * 180 + 180),
+            // 모드 관리는 웹 추가 기능이며 비교용 고정 오라클에는 제공하지 않는다.
+            modMenuLabel: this.options.fixedFrameMs > 0 || this.options.originalComparison ? undefined : () => modPanelTexts(this._gameData?.language ?? this.options.language).menu,
+            player: (owner) => this._clientPlayers.records().subarray(owner * 180, owner * 180 + 180),
             // Player 이름은 표시 부호화 바이트이므로 한국어 이름이 깨지지 않게 디코딩한다. (2026-11-21 WB04-E1166)
             decodeName: (bytes) => displayTextCodec.decode(Uint8Array.from(bytes)),
-            refreshPriest: (owner) => session.refreshPriestParticipation(owner),
+            refreshPriest: (owner) => session().refreshPriestParticipation(owner),
             enabled: (code) => WIRED_MENU_COMMANDS.has(code >>> 0), configEnabled: () => true, storeText: (value) => this._clientChatWindows.store(value),
             about: () => this._resources.translate('About'), technicalHelp: () => 0, width: () => this._layout.logicalWidth,
         };
@@ -1711,14 +1857,14 @@ export class Netstorm {
     // 원본 전역 주소 식별자를 현재 앱의 값으로 바꾼다. 명령 전역 주소는 명령 ID를 돌려준다.
     _campaignMenuGlobal(address, production) {
         const commandId = gameMenuCommandValue(address); if (commandId !== null && commandId !== undefined) return commandId >>> 0;
-        const game = this._clientGameplay, modes = this._surfaceStorage.ownerMode, session = production.session;
+        const game = this._clientGameplay, modes = this._surfaceStorage.ownerMode, session = () => this._clientGameplay.requireSession();
         switch (address) {
         case 0x5c85a4: return game.world.editor ? 1 : 0;
         case 0x594fa4: return game.world.missionPost ? 1 : 0;
         case 0x594fbc: return modes.battle ? 1 : 0;
         case 0x594fb8: return modes.fort ? 1 : 0;
         case 0x594fc8: return modes.challenge ? 1 : 0;
-        case 0x594fa0: return session.core().bridgeState.mission ? 1 : 0;
+        case 0x594fa0: return this._surfaceStorage.links.mission ? 1 : 0;
         case 0x59a8ac: return game.hideBuildings().value >>> 0;
         case 0x540c70: return game.player.battleOwner >>> 0;
         case 0x55b4b0: return this._gameClock.paused() ? 1 : 0;
@@ -1730,20 +1876,20 @@ export class Netstorm {
         case 0x531864: return this._layout.logicalHeight;
         case 0x563e38: return this._clientGump.createState().collection.root;
         default:
-            if (address > 0x52f81e && address < 0x52f827) return session.hiddenPlayers()[address - 0x52f81e] >>> 0;
+            if (address > 0x52f81e && address < 0x52f827) return session().hiddenPlayers()[address - 0x52f81e] >>> 0;
             throw new Error(`게임 메뉴의 미연결 전역: 0x${address.toString(16)}`);
         }
     }
 
     // 오른쪽 위 경고·상태 안내가 읽는 벽 시각·억제·화면 크기와 메시지 이름·모드 조회 장치다(cpppj `UberGump` 의 `pauseContext`·`EnableWarnings`). 값은 호출 시점에 다시 읽는다. 메타맵 참가자 이름은 웹 제외 범위라 연결하지 않는다. (2026-11-20 WB04-E1089)
     _campaignWarningDevices(production) {
-        const session = production.session, empty = new Uint8Array(1), game = () => this._clientGameplay;
+        const empty = new Uint8Array(1), game = () => this._clientGameplay;
         const meta = () => { throw new Error('웹 제외 메타맵 참가자 이름 미연결'); };
         return { now: () => this._gameClock.wallSeconds(), suppressed: () => Boolean(game().world.missionPost),
             view: () => ({ width: this._layout.logicalWidth, height: this._layout.logicalHeight, palette: this._clientPaletteScreen.colors(), inset: this._gameMenuButton?.logicalInset(this._layout.logicalWidth) ?? 0 }),
             context: { challenge: () => this._surfaceStorage.ownerMode.challenge ? 1 : 0, battle: () => this._surfaceStorage.ownerMode.battle ? 1 : 0,
-                playerName: (owner) => { if (owner > 0 && owner < 9) session.playerRecords().subarray(owner * 180 + 12, owner * 180 + 44); },
-                playerText: (owner) => owner <= 0 || owner >= 9 ? empty : session.playerRecords().subarray(owner * 180 + 12, owner * 180 + 44),
+                playerName: (owner) => { if (owner > 0 && owner < 9) this._clientPlayers.records().subarray(owner * 180 + 12, owner * 180 + 44); },
+                playerText: (owner) => owner <= 0 || owner >= 9 ? empty : this._clientPlayers.records().subarray(owner * 180 + 12, owner * 180 + 44),
                 challengePlayerName: meta, challengePlayerText: meta,
                 gameTimeSeconds: () => readGameTimeSeconds(game().battleClockStamp(), () => game().battleClockOrigin().value, () => Math.trunc(performance.now())) } };
     }
@@ -1785,7 +1931,7 @@ export class Netstorm {
 
     // F6 지식 창이 읽는 현재 화면 크기·언어·번역·정적 문자열·팝업 표식 장치다(원본 `RawMenuControls::OpenKnowledge` 의 호출자 몫). 값은 호출 시점에 다시 읽는다. (2026-11-20 WB04-E1088)
     _campaignKnowledgeDevices() {
-        return { width: () => this._layout.logicalWidth, height: () => this._layout.logicalHeight, language: () => this.options.language === 'korean' ? 7 : 0,
+        return { width: () => this._layout.logicalWidth, height: () => this._layout.logicalHeight, language: () => originalLanguageNumber(this._gameData?.language ?? this.options.language),
             storeText: (value) => this._clientChatWindows.store(value), mark: (command) => this._clientHelpPopup.mark(command) };
     }
 
@@ -1803,10 +1949,11 @@ export class Netstorm {
 
     // 현재 Client 의 시각·난수·Kernel 과 미션 월드(있으면)의 풀·Player·SP·Graph·장부를 판번호 1 TSV 로 돌려준다(원본 `UberGump::SessionStateDump`, 검사 전용).
     // 월드가 없으면 `world 0` 덤프이다. cpppj 오라클 덤프와 `tools/session-dump-compare.mjs` 로 L2·L3 대조에 쓴다. 상태를 바꾸지 않고 난수도 쓰지 않는다. (2026-11-21 WB04-E1129)
-    sessionDump() {
+    // { includeAi: true }를 명시한 검사만 현행 C++와 같은 실제 AI 본문·행동 기한 행을 추가한다. 생략하면 기존 덤프 바이트를 유지한다.
+    sessionDump(options = {}) {
         const clock = this._gameClock, random = this._clientRandom; if (!clock || !random) throw new Error('Session 덤프의 현재 시계·난수 수명 누락');
         const session = this._campaignWorld?.session() ?? null, kernel = session ? session.core().kernel : this._clientKernel;
-        return formatSessionStateDump(captureSessionStateDump(session ? session.core().pool.edition : 'patch1078', clock.time(), random, kernel, session));
+        return formatSessionStateDump(captureSessionStateDump(session ? session.core().pool.edition : 'patch1078', clock.time(), random, kernel, session, options));
     }
 
     // 검사 전용: 고정 시각 모드(?fixed=밀리초)에서 프레임을 가상 시각으로 정확히 count 개 진행한다(requestAnimationFrame 을 쓰지 않는다). 프레임마다 가상 시각이 `fixedFrameMs` 씩만 전진하고 Client 시계·난수·Kernel 이 그 시각으로 돈다.
@@ -1816,7 +1963,7 @@ export class Netstorm {
         if (!(this.options.fixedFrameMs > 0)) throw new Error('고정 시각 모드(?fixed=밀리초)에서만 프레임을 직접 진행합니다.');
         const view = this._view();
         for (let index = 0; index < count; index += 1) {
-            this._fixedStamp = (this._fixedStamp ?? 0) + this.options.fixedFrameMs; this._frameHandle = 0; this._onFrame(this._fixedStamp); this._fixedFrameCount = (this._fixedFrameCount ?? 0) + 1;
+            this._fixedStamp = (this._fixedStamp ?? 0) + this.options.fixedFrameMs; this._frameHandle = 0; this._runFrameSafely(this._fixedStamp); this._fixedFrameCount = (this._fixedFrameCount ?? 0) + 1;
             await new Promise((resolve) => view.setTimeout(resolve, 0));
         }
         return this._fixedFrameCount ?? 0;
@@ -1832,7 +1979,7 @@ export class Netstorm {
             translate: (text) => self._resources.translate(text), encodeDisplayText: (text) => displayTextCodec.encode(text), decodeDisplayText: (bytes) => displayTextCodec.decode(bytes),
             writeDiagnosticLog: (level, text) => console.info(`Netstorm: ${String(text).trim()}`), nsInfoGlobals: () => self._clientNsInfo,
             worldAudio: () => ({ sounds: () => ({ playByName: (name) => self._clientSoundPlayer.play(self._clientSoundNames.lookup(name), 0, 0, 0, 0, 0) }) }),
-            requestThunderFlash: (brightness) => { console.info(`Netstorm: 채팅 .flash(${brightness}) 번개 섬광 팔레트 효과는 원본 창 모드와 같이 아무것도 하지 않습니다(E1163 판정).`); },
+            requestThunderFlash: (brightness) => { this._startThunderFlash(brightness); },
             menu: () => ({ receiveNativePacketChat: (packet) => self._receiveCampaignChat(packet) }),
         };
     }
@@ -2090,7 +2237,7 @@ export class Netstorm {
         if (dispatchConstructionHistoryKey(event, camera.constructionHistory(), cells, { paused, center })) return true;
         if (dispatchLostPositionKey(event, () => lost[0], () => lost[1], cells, { paused, center })) return true;
         return dispatchSavedCameraKey(event, camera.savedPositions(), {
-            paused, center, language: () => (this.options.language === 'korean' ? 7 : 0),
+            paused, center, language: () => (originalLanguageNumber(this._gameData?.language ?? this.options.language)),
             sound: () => { this._clientSoundPlayer.play(this._clientSoundNames.lookup('select.wav'), 0, 0, 0, 0, 0); },
             // 선택음 뒤의 현재 지도 영역과 렌더러 시점으로 지도 중심(칸 좌표)을 구한다. 칸 크기는 카메라 상태의 정수 칸 픽셀(+8·+12)을 float 으로 본 값이다.
             capture: () => {
@@ -2102,11 +2249,13 @@ export class Netstorm {
 
     // 현재 포인터 폴링과 지원된 큐 사건을 Guide→Gump→World 순서로 처리한다.
     _runCampaignInputFrame() {
+        // DOM 모달 동안 기존 큐는 보류한다. 패널의 입력을 가짜 Gump 토큰으로 전달하지 않는다.
+        if (this._modPanel) return;
         const world = this._campaignWorld, queue = this._clientInputQueue, tutorial = this._clientGuide?.current()?.runtime.tutorial, gump = this._clientGump, user = this._campaignUserInput;
         if (!world || !queue || !tutorial || !gump || !user) throw new Error('미션 입력 프레임의 현재 장치 수명 누락');
         // 대본 `<$ViewSpot>` 이 맡겨 둔 시작 카메라 위치를 월드가 도는 첫 프레임에 적용한다. (2026-11-22 WB04-E1190)
         this._applyPendingViewSpot();
-        const mouse = this._prepareClientPointer(this.options.language === 'korean' ? 7 : 0);
+        const mouse = this._prepareClientPointer(originalLanguageNumber(this._gameData?.language ?? this.options.language));
         tutorial.event(mouse);
         this._campaignCameraDevice().pollEdgeScroll(mouse);
         const dialog = Boolean(this._mainMenu?.dialog), cursorActive = world.session().cursorDropSettings().lockDepth === 0;
@@ -2117,6 +2266,7 @@ export class Netstorm {
         const cameraPan = this._campaignCameraDevice().pollCameraPan(mouse);
         // 원본 큐의 순서를 지키며 미구현 사건 앞을 추월하지 않는다.
         for (;;) {
+            if (this._modPanel) return;
             const next = queue.peek(); if (!next) break;
             if (cameraPan) { queue.pop(false); continue; }
             // Send X 숫자 창 같은 Gump 모달이 열려 있으면 모든 사건이 그 창으로만 가고 월드·단축키로는 가지 않는다(원본의 모달 dialog 우선 전달). (2026-11-22 WB04-E1168)
@@ -2289,11 +2439,35 @@ export class Netstorm {
             });
     }
 
+    // 미션/State/Client 반납 전에 실제 표시 줄과 장기 루트 참조를 함께 정리한다.
+    _clearCampaignTutorialObjective() {
+        if (!this._campaignTutorialObjective) return;
+        this._campaignTutorialObjective.clear(); this._campaignTutorialObjective = null;
+        this._clientRenderer?.invalidateAll();
+    }
+
+    // 현재 실제 gate를 읽어 창이 없는 지도에만 안내를 제출한다. 진행/예약/승패 판정은 호출하지 않는다.
+    _updateCampaignTutorialObjective() {
+        const root = this._clientGump, current = this._clientGuide?.current(), world = this._campaignWorld;
+        if (!root) { if (this._campaignTutorialObjective) throw new Error('튜토리얼 안내의 Client 루트 반납 순서 오류'); return; }
+        const ui = this._campaignProduction?.ui; let key = '';
+        if (!this.options.originalTutorialPresentation && this._campaignDisplayActive() && current?.runtime.guided
+            && current.runtime.saveToken === this._campaignWorldMissionToken && !this._mainMenu?.dialog && !root.lifetimeState().currentDialog
+            && !this._clientHtml?.window.instances && !ui?.knowledge()?.isOpen() && !ui?.gameMenu()?.isOpen()) {
+            key = tutorialObjectiveKey(current.script.name, current.runtime.gate, current.runtime.mode64);
+        }
+        if (!key && !this._campaignTutorialObjective) return;
+        if (!this._campaignTutorialObjective) this._campaignTutorialObjective = new TutorialObjectiveGump(root, this._resources.fonts);
+        const colors = this._clientPaletteScreen.colors();
+        if (this._campaignTutorialObjective.sync(key ? this._resources.translate(key) : '', world?.mapView() ?? root.mapView(), colors.basic[7], colors.basic[0])) this._clientRenderer.invalidateAll();
+    }
+
     // 현재 미션의 준비·DIB 합성·구름 정리·표시를 원본 순서로 한 번 실행한다.
     _drawCampaignRendererFrame() {
         const world = this._campaignWorld, screen = this._clientPaletteScreen, renderer = this._clientRenderer;
         const clouds = this._clientKencloud, game = this._clientGameplay, data = this._gameData, gump = this._clientGump;
         if (!world || world.connecting || !screen || !renderer || !clouds || !game || !data || !gump || !this._clientRendererFrame || !this._clientRandom) throw new Error('미션 Renderer 출력의 현재 장치 수명 오류');
+        this._updateCampaignTutorialObjective();
         const camera = game.camera();
         const drawing = new CampaignRendererDrawing({ world, screen, camera: camera.snapshot(), globals: this._clientRendererFrame,
             clouds, files: data.files, config: data, random: this._clientRandom.game, denominator: camera.denominator(), clearOutsideMap: true,
@@ -2320,11 +2494,18 @@ export class Netstorm {
     // init 도중 실패한 반쪽 상태도 이 함수가 정리하므로 상태 이름이 아니라 루트 요소의 유무로 판단한다.
     destroy() {
         if (!this._root) return;
+        this._closeModPanel(false);
+        // 저장 검증과 늦은 쓰기를 먼저 취소한다. 비동기 종료는 World/Session 사본만 보유한다.
+        this._modValidation?.abort(); this._modValidation = null;
+        this._mods?.dispose().catch((error) => reportGameError('mod-dispose', error)); this._mods = null;
         // 진행 중인 로딩 결과가 정리 뒤에 상태를 바꾸지 못하게 세대를 올린다.
         this._loadGeneration += 1;
         this._stopFrameLoop();
         this._abort?.abort();
         this._abort = null;
+        this._agentBridge?.dispose(); this._agentBridge = null;
+        // 녹화 트랙·Blob 주소는 오디오 문맥을 닫기 시작하기 전에 같은 앱 수명에서 반납한다.
+        this._agentHost?.dispose().catch((error) => reportGameError('webmcp-dispose', error, { state: this._state })); this._agentHost = null;
         this._resizeObserver?.disconnect();
         this._resizeObserver = null;
         this._mainMenu?.cancel();
@@ -2341,7 +2522,7 @@ export class Netstorm {
         this._clientKencloud = null; this._clientHtml = null; this._clientConnections = null; this._clientConnectionActivity = null;
         this._surfaceStorage?.dispose();
         this._clientSoundDevice?.dispose(); this._clientSoundDevice = null; this._clientSoundPlayer = null; this._clientSoundState = null; this._clientSoundPrepare = null;
-        this._gameClock = null; this._clientLocal = null; this._clientNsInfo = null; this._clientHelpPopup = null; this._hiddenGamePause = false; this._clientSoundNames = null;
+        this._gameClock = null; this._modTimeSource = null; this._clientClockPreparing = false; this._clientLocal = null; this._clientNsInfo = null; this._clientHelpPopup = null; this._hiddenGamePause = false; this._clientSoundNames = null;
         this._clientSp = null; this._clientRandom = null;
         this._clientChatRecords = null; this._clientChatChannels = null; this._clientChatWindows = null;
         this._clientChatManager = null; this._clientDotCommands = null; this._clientChatInitialized = false;
@@ -2406,32 +2587,44 @@ export class Netstorm {
     // 메인 메뉴 필수 묶음(menu)은 기다리고, 음악 묶음(menu-music)은 뒤에서 받는다. 이미 받은 자원은 재시도·재시작에서 다시 받지 않는다.
     // 오래된 세대의 결과는 버린다. 준비 단계에서는 오디오를 재생하지 않는다.
     async _load() {
+        // 고정 최소 대기의 기준이 되는 첫 적재 시작 시각이다(이후 재적재에서는 이미 지났으므로 다시 기다리지 않는다). (2026-11-24 WB04-E1306)
+        this._loadStartedAt ??= Date.now();
         this._loadGeneration += 1;
         const generation = this._loadGeneration;
         this._loadError = null;
         this._setState(AppState.LOADING);
         try {
+            // 실제 관리자가 있을 때만 저장 검증을 기다린다. 없는 경로의 준비 훅 호출 순서는 유지한다.
+            if (this._mods) { await this._mods.load(); if (generation !== this._loadGeneration) return; }
+            // 같은Client의 SP/RNG 초기화 뒤 원본초경계와 최초Capture를 준비한다. 취소된이전앱의결과는 새수명에 적용하지 않는다.
+            if (this._clientClockPreparing) {
+                const clock = this._gameClock;
+                const ready = await clock.prepareOrigin({ cancelled: () => generation !== this._loadGeneration || !this._root });
+                if (!ready || generation !== this._loadGeneration || clock !== this._gameClock) return;
+                this._clientClockPreparing = false;
+            }
             if (!this._resources) {
                 const loader = this._createAssetLoader();
                 await loader.loadManifest();
                 if (generation !== this._loadGeneration) return;
-                // 한국어면 메뉴 묶음 뒤에 한국어 묶음(글꼴·번역표)을 받으므로 진행률의 전체 크기에 미리 더해 둔다. (2026-10-31 WB03-N)
-                const koreanTotal = this.options.language === 'korean' ? this._bundleBytes(loader, KOREAN_BUNDLE) : 0;
+                // 선택 언어의 추가 묶음을 메뉴 뒤에 받으므로 진행률의 전체 크기에 미리 더해 둔다. (2026-10-31 WB03-N)
+                const languageBundle = this.options.language === 'japanese' ? JAPANESE_BUNDLE : this.options.language === 'korean' ? KOREAN_BUNDLE : null;
+                const languageTotal = languageBundle ? this._bundleBytes(loader, languageBundle) : 0;
                 let menuTotal = 0;
                 const files = await loader.loadBundle(MENU_BUNDLE, (loaded, total) => {
                     menuTotal = total;
-                    if (generation === this._loadGeneration) this._loadProgress = { loaded, total: total + koreanTotal };
+                    if (generation === this._loadGeneration) this._loadProgress = { loaded, total: total + languageTotal };
                 });
                 if (generation !== this._loadGeneration) return;
-                const korean = this.options.language === 'korean' ? await this._loadKorean(loader, menuTotal, koreanTotal, generation) : null;
+                const languageSupport = this.options.language === 'japanese' ? await this._loadJapanese(loader, menuTotal, languageTotal, generation) : this.options.language === 'korean' ? await this._loadKorean(loader, menuTotal, languageTotal, generation) : null;
                 if (generation !== this._loadGeneration) return;
-                this._resources = buildMenuResources(files, korean);
+                this._resources = buildMenuResources(files, languageSupport);
                 // 설정 층에는 웹 사용자 설정(언어·음량)과 저장된 캠페인 진행 값을 원본 options.cfg 자리에 넣는다. 해상도·전체화면 값은 넣지 않는다.
                 // 이후 게임 데이터에 쓰이는 값은 _onConfigWrite 가 설정·진행 저장소로 옮긴다. (2026-10-30 WB03-H: 진행 값과 쓰기 통지 연결)
-                // 한국어 언어 자료(tell·offical*·config 용어표)는 같은 데이터 폴더의 느슨한 파일로 합쳐 넘긴다. 한국어 묶음을 받지 못했으면(korean 이 null) 영어 파일로 대체된다. (2026-10-31 WB03-O)
+                // 선택 언어 자료를 느슨한 파일로 합친다. 일본어 준비 실패는 제품 추가 문구도 영어로 대체한다. (2026-10-31 WB03-O)
                 this._gameData = GameData.build({
-                    files: korean?.languageFiles?.size ? new Map([...files, ...korean.languageFiles]) : files,
-                    language: this.options.language,
+                    files: languageSupport?.languageFiles?.size ? new Map([...files, ...languageSupport.languageFiles]) : files,
+                    language: this.options.language === 'japanese' && !languageSupport ? 'english' : this.options.language,
                     options: { ...this._settings.snapshot(), ...this._progress.snapshot() },
                     onChange: (key, value) => this._onConfigWrite(key, value),
                     skirmish: this.options.skirmish,
@@ -2477,16 +2670,40 @@ export class Netstorm {
         const fontsReady = this._root?.ownerDocument?.fonts?.ready;
         if (fontsReady && typeof fontsReady.then === 'function') pending.push(Promise.resolve(fontsReady).catch(() => {}));
         if (this._musicSettled && this._musicStatus === 'loading') pending.push(this._musicSettled);
+        // 고정 최소 대기: 첫 적재 시작으로부터 startMinWaitMs 가 지날 때까지 남은 시간만큼 더 기다린다. 이미 지났거나 0 이면 기다리지 않는다. (2026-11-24 WB04-E1306)
+        const floor = Math.max(0, this.options.startMinWaitMs - (Date.now() - (this._loadStartedAt ?? Date.now())));
+        let floorTimer = null;
+        if (floor > 0) pending.push(new Promise((resolve) => { floorTimer = view.setTimeout(resolve, floor); }));
         if (pending.length === 0) return;
         let timer = null;
-        const timeout = new Promise((resolve) => { timer = view.setTimeout(resolve, START_READY_TIMEOUT_MS); });
+        // 상한은 최소 대기보다 짧을 수 없다(최소 대기를 상한이 끊지 않는다).
+        const timeout = new Promise((resolve) => { timer = view.setTimeout(resolve, Math.max(START_READY_TIMEOUT_MS, this.options.startMinWaitMs)); });
         await Promise.race([Promise.all(pending), timeout]);
-        view.clearTimeout(timer);
+        view.clearTimeout(timer); if (floorTimer !== null) view.clearTimeout(floorTimer);
     }
 
     // 매니페스트에서 묶음에 속한 파일의 전체 크기(바이트)를 구한다. 묶음이 없으면 0 이다. (2026-10-31 WB03-N)
     _bundleBytes(loader, bundle) {
         return loader.entries(bundle).reduce((sum, entry) => sum + entry.size, 0);
+    }
+
+    // 일본어 자료/실제CDN 글꼴을 현재 세대에 연결한다. 실패하면 원래 영어 자원으로 계속한다.
+    async _loadJapanese(loader, menuTotal, languageTotal, generation = this._loadGeneration) {
+        try {
+            const files = await loader.loadBundle(JAPANESE_BUNDLE, (loaded) => {
+                if (generation === this._loadGeneration) this._loadProgress = { loaded: menuTotal + loaded, total: menuTotal + languageTotal };
+            });
+            if (generation !== this._loadGeneration) return null;
+            // 공용 번역의 실제 문자를 글꼴 선적재에 사용한다. 텍스트를 외부URL에 넣지 않는다.
+            const text = [...files.values()].map((bytes) => new TextDecoder('utf-8').decode(bytes)).join('');
+            const support = await buildJapaneseSupport(files, { createRasterizer: () => createJapaneseGlyphRasterizer({ document: this._root.ownerDocument, text }) });
+            // 기다리는 동안 취소한 세대의 스타일시트는 현재 앱에 남기지 않는다.
+            if (generation !== this._loadGeneration) { support.unicode.rasterizer.dispose(); return null; }
+            return support;
+        } catch (error) {
+            if (generation === this._loadGeneration) reportGameError('japanese-assets', error, { state: this._state, generation }, 'Netstorm: 일본어 글꼴·번역표를 준비하지 못해 영어 메뉴로 계속합니다.');
+            return null;
+        }
     }
 
     // 현재 적재 세대에서 한국어 글꼴·번역을 준비하고, 실패하면 진단을 남기고 영어 자료로 대체한다.
@@ -2658,7 +2875,7 @@ export class Netstorm {
     _openPopup(target, point) {
         if (!this._mainMenu || !this._resources || !this._settings) return false;
         // 원본 비교 모드는 웹이 빼는 원본 항목도 만든다. Technical Help 는 원본 가용성 판정대로 비활성이다(웹에는 기술 도움말 프로그램이 없음). (2026-11-07 WB02-H)
-        const items = buildPopupItems(target, this._settings, { translate: this._resources.translate, includeAll: this.options.originalComparison, technicalHelpAvailable: false, language: this.options.language });
+        const items = buildPopupItems(target, this._settings, { translate: this._resources.translate, includeAll: this.options.originalComparison, technicalHelpAvailable: false, language: this._gameData?.language ?? this.options.language });
         if (!items) {
             console.warn(`Netstorm: 알 수 없는 펼침 메뉴 '${target}' 입니다.`);
             return false;
@@ -2712,6 +2929,24 @@ export class Netstorm {
         this.destroy();
         view.location.reload();
     }
+
+    // Options의 웹 전용 관리 화면이다. 같은 게임 시계의 정지 한 단계만 빌린다.
+    _openModPanel() {
+        if (!this._root || !this._mods || !this._clientGump || this._state !== AppState.MAIN_MENU) return false;
+        if (this._modPanel) { this._modPanel.focus(); return true; }
+        this._closeCampaignPopups();
+        const clock = this._gameClock, view = this._view(); let held = true;
+        clock.pushGamePause();
+        try {
+            this._modPanel = new ModPanel({ parent: this._root, manager: this._mods, language: this._gameData?.language ?? this.options.language, maxPackageBytes: MOD_LIMITS.maxPackageBytes,
+                validatePackage: (input, signal) => validateModPackageIsolated(input, { view, signal }),
+                onClose: () => { this._modPanel = null; if (held) { held = false; clock.popGamePause(); } this._displayDirty = true; if (this._mainMenu) this._mainMenu.dirty = true; } });
+            return true;
+        } catch (error) { if (held) { held = false; clock.popGamePause(); } reportGameError('mod-panel', error); return false; }
+    }
+
+    // World/App 반납 때는 숨겨질 캔버스에 초점을 돌리지 않는다. 여러 번 호출해도 한 번만 반납한다.
+    _closeModPanel(restoreFocus = false) { this._modPanel?.close({ restoreFocus }); }
 
     // 설정 값이 바뀌었을 때 소리·음악·음량과 미션 효과음의 좌우 교환을 바로 적용한다.
     // 바뀐 값은 게임 데이터 설정 층에도 옮겨 적어 두 곳이 어긋나지 않게 한다(되돌아오는 통지는 막는다). (2026-10-30 WB03-H)
@@ -2773,6 +3008,7 @@ export class Netstorm {
             if (!resetArmed) { console.warn('Netstorm: 확인 창을 거치지 않은 Reset All 확정은 무시합니다.'); return false; }
             this._resetAll(); return true;
         }
+        if (resetTarget === MOD_PANEL_TARGET.toLowerCase()) return this._openModPanel();
         if (!this._mainMenu || !this._gameData || !this._resources) return false;
         // 옵션 메뉴 Frame Rate 항목의 대상(`Patch1101.SetFrameRate(n)`)은 창을 열지 않고 maxFPS 설정에 써서 바로 반영한다(cpppj 후순위 F1). (2026-11-20 WB04-E1094)
         const frameRate = parseFrameRateTarget(name);
@@ -2881,7 +3117,7 @@ export class Netstorm {
     _skirmishScreenBody(target) {
         const parsed = parseSkirmishTarget(target);
         if (!['main', 'count', 'ai', 'bans'].includes(parsed.kind) || !this._gameData || !this._resources) return null;
-        return buildSkirmishScreen(parsed, this._loadSkirmishSettings(), this._gameData.productLanguage === 'korean' ? 7 : 0, (text) => this._resources.translate(text));
+        return buildSkirmishScreen(parsed, this._loadSkirmishSettings(), originalLanguageNumber(this._gameData.productLanguage), (text) => this._resources.translate(text));
     }
 
     // 12차 스커미시: 설정으로 게임을 시작한다. 시작 함수(options.startSkirmish)가 있으면 그것을 부르고(검사용), 없으면 무작위 시작 자료를 만들어 시작 섬 fort 묶음을 받은 뒤 생성 미션을 시작한다(비동기).
@@ -2934,13 +3170,17 @@ export class Netstorm {
 
     // 일반 도움말 창을 열어 메인 메뉴 위에 올린다(원본 F1Help: 메인 메뉴 Help 목록의 General Help 행과 F1 키). 이미 열려 있으면 그 창에서 주제만 첫 주제로 되돌린다.
     // 도움말 파일(`Quick Help Spec`)이 없으면 원본처럼 오류 로그만 남기고 열지 않는다. 바깥 주소 링크는 `_openExternalAddress` 로 새 탭/창에 연다(2026-11-07 WB03-AD, 그 전에는 콘솔 안내만). 열었으면 true 를 돌려준다. (2026-10-30 WB03-G)
-    // 노드의 도움말 문구(text=false) 또는 주제 이름(word=true) 포인터를 새 문자열 토큰으로 바꾼다(원본 SetNodeHelp: 이전 문자열을 반납하고 0x61000000 대 토큰을 새로 받는다). null 이면 포인터를 지운다. (2026-11-22 WB04-E1236)
+    // 노드의 도움말 문구(text=false) 또는 주제 이름(word=true)을 첫 NUL까지 소유한다. 이전 토큰을 반납한 뒤 새 토큰을 받으며 null·빈 값은 포인터를 지운다(원본 SetNodeHelp, E1236·E1347).
     _setNodeHelp(token, text, word) {
         const node = this._clientGump?.node(token); if (!node) throw new Error('도움말 실제 노드 없음');
+        // C 문자열처럼 첫 NUL 뒤의 내용은 문구·주제·빈 값 판정에 포함하지 않는다.
+        const terminated = text === null ? '' : String(text).split('\0', 1)[0];
         const strings = this._helpStrings ??= new Map(), key = word ? 'alternateTextPointer' : 'textPointer';
-        strings.delete(node[key]); node[key] = 0; if (text === null) return;
+        strings.delete(node[key]); node[key] = 0;
+        // 원본00464ed0/00464f80: 비어 있지 않은 문구는 LOOK(1000)/HELP(200)를 켠다. 빈 도움말은 HELP를 유지하고 빈 LOOK만 비트를 지운다. (WB04-E1324)
+        if (terminated === '') { if (!word) node.flags = (node.flags & ~0x1000) >>> 0; return; }
         this._nextHelpString = (this._nextHelpString ?? 0x61000100) + 1; if (this._nextHelpString > 0x61ffffff) throw new Error('도움말 문자열 주소 영역 소진');
-        strings.set(this._nextHelpString, String(text)); node[key] = this._nextHelpString;
+        strings.set(this._nextHelpString, terminated); node[key] = this._nextHelpString; node.flags = (node.flags | (word ? 0x200 : 0x1000)) >>> 0;
     }
 
     // 도움말 포인터/토큰의 문자열이다(원본 HelpText): 0x61000002 는 현재 helpWord 캐시(없으면 번역한 "Help"), 0x61000001 은 themeHelp, 0x61000003 은 F1Help, 그 밖은 SetNodeHelp 가 저장한 문자열이다. (2026-11-22 WB04-E1236)
@@ -3162,6 +3402,7 @@ export class Netstorm {
     // 마지막으로 시작한 미션을 떠난 뒤 같은 이름·모드로 다시 시작한다(원본 `MissionRestart`/Reload). 기록이 없으면 아무것도 하지 않는다. 다시 시작했으면 true 다. (2026-11-20 WB04-E1085)
     _restartCampaignMission() {
         const last = this._lastCampaignMission; if (!last || !this._clientGuide) return false;
+        this._mods?.end('restart');
         this._leaveCampaignMission(); this._clientGuide.begin(last.name, last.demo, last.mode, last.source ?? null); return true;
     }
 
@@ -3380,6 +3621,8 @@ export class Netstorm {
             wallSeconds: () => this._gameClock.wallSeconds(), random: { next: (limit) => { const random = this._clientRandom; if (!random) throw new Error('장면 음악의 공유 게임 난수 수명 누락'); return random.game.next(limit); } },
             // 날씨(천둥) 효과음은 원본 MakeSceneMusicHooks 처럼 SoundPlayer::PlayByName(이름, 0,0,0,0,0)을 거친다. 그래야 게임 메뉴 음소거(PushMute)·소리 옵션·동시 재생 한도가 같이 적용된다. (2026-11-23 WB04-E1239)
             weatherSound: (name) => { try { this._clientSoundPlayer?.playByName(name, 0, 0, 0, 0, 0); } catch (error) { if (this._audio === audio) reportGameError('scene-music', error, { state: this._state, asset: name }); } },
+            // 원본 MakeSceneMusicHooks(00469c80)처럼 천둥 효과음 앞에 번개 프로세스를 생성한다. (2026-11-24 WB04-E1329)
+            thunderFlash: () => { this._startThunderFlash(0); },
             onError: (error, name) => { if (this._audio === audio) reportGameError('scene-music', error, { state: this._state, asset: name }); },
         });
         this._sceneMusic.begin();
@@ -3565,7 +3808,8 @@ export class Netstorm {
         this._listen(canvas, 'compositionend', (event) => this._onCompositionEnd(event));
         // 마우스 휠은 열린 도움말 창 본문을 스크롤한다(웹 적응). 도움말이 열려 있을 때만 페이지 스크롤을 막는다. (2026-10-30 WB03-G)
         this._listen(canvas, 'wheel', (event) => this._onWheel(event), { passive: false });
-        this._listen(canvas, 'blur', (event) => { if (event.relatedTarget !== this._clientImeElement) this._clearInput(); });
+        // IME 요소가 없는 때의 relatedTarget=null도 실제 포커스 해제이므로 누름을 정리한다.
+        this._listen(canvas, 'blur', (event) => { if (!this._clientImeElement || event.relatedTarget !== this._clientImeElement) this._clearInput(); });
         this._listen(doc, 'visibilitychange', () => this._onVisibilityChange());
         // 붙여넣기: 채팅 입력줄·Send X 숫자 창이 활성이면 클립보드 본문을 확정 문자로 입력줄에 넣는다. (2026-11-22 WB04-E1175)
         this._listen(doc, 'paste', (event) => this._onPaste(event));
@@ -3610,7 +3854,7 @@ export class Netstorm {
         let element = this._clientImeElement;
         if (!element) {
             element = this._root.ownerDocument.createElement('textarea'); this._clientImeElement = element;
-            element.setAttribute('aria-label', this.options.language === 'korean' ? '문자 입력' : 'Text input'); element.setAttribute('autocomplete', 'off'); element.setAttribute('autocapitalize', 'off');
+            element.setAttribute('aria-label', this.options.language === 'japanese' ? '文字入力' : this.options.language === 'korean' ? '문자 입력' : 'Text input'); element.setAttribute('autocomplete', 'off'); element.setAttribute('autocapitalize', 'off');
             element.spellcheck = false; element.tabIndex = -1;
             Object.assign(element.style, { position: 'fixed', width: '1px', height: '1px', opacity: '0', padding: '0', border: '0', resize: 'none', overflow: 'hidden', pointerEvents: 'none' });
             this._listen(element, 'keydown', (event) => this._onKeyDown(event)); this._listen(element, 'keyup', (event) => this._onKeyUp(event));
@@ -3913,13 +4157,22 @@ export class Netstorm {
         if (this.options.fixedFrameMs > 0) return;
         if (this._frameHandle || !this._root || this._root.ownerDocument.hidden) return;
         this._frameHandle = this._view().requestAnimationFrame((now) => {
-            try {
-                this._onFrame(now);
-            } catch (error) {
-                reportGameError('frame', error, { state: this._state, frameTime: now });
-                throw error;
-            }
+            // 실행된 예약을 먼저 반납해 프레임 본문 앞부분의 실패도 다음 예약을 막지 않게 한다.
+            this._frameHandle = 0;
+            this._runFrameSafely(now);
         });
+    }
+
+    // 한 프레임의 오류를 원래 객체·상태·미션·시각과 함께 기록하고 다음 표시 기회를 예약한다.
+    // 실패한 프레임을 다시 실행하지 않으며 정상 종료·숨김·고정 시각의 예약 규칙은 그대로 따른다. (2026-11-26 사용자 결정, WB04-E1338)
+    _runFrameSafely(now) {
+        try {
+            this._onFrame(now);
+        } catch (error) {
+            reportGameError('frame', error, { state: this._state, frameTime: now, mission: this._lastCampaignMission?.name ?? null, fixedFrame: this._fixedFrameCount ?? null });
+            this._displayDirty = true;
+            this._startFrameLoop();
+        }
     }
 
     // 프레임 루프를 멈춘다. 예약된 프레임이 없으면 아무것도 하지 않는다.
@@ -3934,9 +4187,19 @@ export class Netstorm {
     _onFrame(now) {
         this._frameHandle = 0;
         if (!this._canvas) return;
+        // 대기 동안 Native 프레임/입력/Guide/Kernel/RNG는 진행하지 않고 DOM과 실제 시간 감시는 계속한다.
+        if (this._mods?.pending) { this._startFrameLoop(); return; }
+        // 해상도 미디어/resize 알림이 없어도 현재 기기 배율을 맞춘다. 게임 프레임 상한과 시계 처리 전에 표시만 복구한다.
+        if (this._root && Number.isFinite(this._layout?.devicePixelRatio) && this._layout.devicePixelRatio > 0) {
+            const ratio = this._view()?.devicePixelRatio;
+            const dpr = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+            if (this._layout.devicePixelRatio !== dpr) this._applyLayout();
+        }
         // 원본 프레임 상한(maxFPS, 기본 75)보다 빠르게 오는 표시 주기(rAF)는 건너뛰고 다음 기회에 처리한다. 60Hz 표시에서는 상한이 걸리지 않는다. (2026-11-20 WB04-E1094)
         if (!frameDue(now, this._lastFrameStamp, normalizeFrameRate(this._settings?.get('maxFPS')))) { this._startFrameLoop(); return; }
         this._lastFrameStamp = now;
+        // 비동기InitFullTime 중에는 실제Client 프레임/시계/RNG를 소비하지 않고 로딩화면만 진행한다.
+        if (this._clientClockPreparing) { this._clock.tick(now); this._frameSeconds = now / 1000; this._render(now); this._startFrameLoop(); return; }
         // 원본 Client 순서대로 화면 입력과 갱신 전에 같은 게임 프레임을 고정한다.
         // 고정 시각 모드의 시작 그림 구간은 시각만 전진하고 주 루프 프레임(번호·시간차)으로 세지 않는다(원본 cpppj 의 고정 프레임 실행과 같음). (2026-11-23 WB04-E1271)
         if (this.options.fixedFrameMs > 0 && this._state === AppState.TITLE) {
@@ -3963,11 +4226,12 @@ export class Netstorm {
         if (this._state === AppState.MAIN_MENU && readyWorld?.connecting && !readyWorld.session().connectionCallbackActive() && readyWorld.session().localConnectionReady()) {
             this._prepareCampaignMissionStart(); this._prepareCampaignUserInput(); this._prepareCampaignCursor(); this._prepareCampaignTutorial(); readyWorld.completeLocalConnection();
         }
-        // 생산 패널(HUD)은 원본 FinishMissionWorldLoad 가 만들고, Guide 의 시작 단계(기술 추가 등)는 그 뒤 루프 8번에서 돈다. 같은 프레임이어도 패널 폼(SID 순서)이 먼저이다. (2026-11-24 WB04-E1305: Tutorial2 L3 에서 슬롯 11~13 순서 차이로 발견)
-        if (this._campaignDisplayActive() && !this._campaignProduction) this._prepareCampaignProduction();
-        if (this._campaignDisplayActive() && !this._campaignProduction.ui) this._prepareCampaignProductionUi();
+        // State7에서 생성한 HUD의 실제 Session/Form 도킹은 FinishMissionWorldLoad 위치에서 수행한다. Guide의 기술 추가보다 패널 Form(SID 순서)이 먼저다. (E1305·E1383)
+        if (this._campaignDisplayActive() && !this._campaignProduction?.maintenance) this._prepareCampaignProduction();
+        if (this._campaignDisplayActive() && !this._campaignProduction.worldBound) this._prepareCampaignProductionUi();
         // 원본 루프 8번의 Guide를 상태·패킷 처리 뒤, 입력 처리보다 먼저 실행한다.
         this._clientGuide?.run();
+        this._mods?.beforeInput();
         if (this._campaignDisplayActive()) this._runCampaignInputFrame();
         if (this._state === AppState.MAIN_MENU) {
             // 원본 UserInput 은 매 프레임 마우스 위치를 폴링해 Gump 에 알린다. 그래서 포인터가 멈춰 있어도 그 아래에 새로 열린 펼침 메뉴 행이 바로 강조된다
@@ -3989,20 +4253,78 @@ export class Netstorm {
         // 개수가 999 한도에 닿으면 "Gump 원본 개수 한도 초과" 로 게임이 멈춘다. (2026-11-21 WB04-E1134, 몽키 시험의 Vicious 3분 진행에서 발견)
         // 미니맵 갱신(원본 RefreshMinimap 481320)은 Gump 정리·Idle·Kernel 앞이다(이전에는 Kernel 뒤라 한 프레임 앞선 모습을 그렸다). (2026-11-23 WB04-E1266)
         if (this._campaignDisplayActive()) { this._runCampaignProductionFrame(); this._campaignProduction?.hud?.refresh(); this._clientGump.lifetime().cleanup(); this._clientGump.idle(); this._runCampaignKernelFrame(); }
+        // 로그인 중에도 원본 자원 프레임의 기한 예약을 실행한다. 활성 월드는 위 Kernel 프레임에서 이미 호출했다. (WB04-E1313)
+        else if (this._state === AppState.MAIN_MENU && this._campaignWorld && !this._campaignWorld.session().connectionCallbackActive()) this._campaignWorld.runBattleResources();
         this._syncDialogToMapView();
         this._render(now);
         // 원본 주 루프 13번(439c33): 화면을 그린 뒤 Player 결과 알림을 한다. known 이고 전투 모드일 때만 Session 이 필요하다. (2026-11-22 WB04-E1233)
         if (this._campaignDisplayActive() && this._clientGameplay.player.playerKnown && this._surfaceStorage.ownerMode.battle) this._campaignWorld.session().notifyPlayerResults();
+        this._mods?.afterFrame();
         this._startFrameLoop();
     }
 
+    // 원본 Client::StartThunderFlash(00470d40): 현재 Player 의 기술 부모(+0x9c DWORD)가 살아 있을 때만 TYPE 55·flags 0x10 번개 프로세스(ThunderProcess)를 실제 ProcessHost 에 부착한다.
+    // 창 모드와 마찬가지로 웹에서도 팔레트는 바꾸지 않지만, 실제 ProcessForm 할당과 수명(1/60초 뒤 자체 종료)이 원본 SidPool·Kernel 과 같아야 L3 덤프가 일치한다. (2026-11-24 WB04-E1329)
+    _startThunderFlash(brightness = 0) {
+        if (!this._clientGameplay?.player?.playerKnown) return;
+        const storage = this._surfaceStorage, kernel = this._clientKernel, screen = this._clientPaletteScreen, clock = this._gameClock;
+        if (!storage || !kernel || !screen || !clock) throw new Error('번개 기술 부모의 실제 표면 저장소·커널·팔레트·시계 없음');
+        if (storage.ownerMode.challenge) throw new Error('번개 메타맵 00479650 의 실제 기록 조회 미복원');
+        const players = this._clientCoreData.players;
+        const at = (this._clientGameplay.player.battleOwner >>> 0) * 180 + 0x9c;
+        if (at < 0 || at + 4 > players.length) throw new RangeError('번개 현재 Player 기술 DWORD 범위');
+        const parent = (players[at] | (players[at + 1] << 8) | (players[at + 2] << 16) | (players[at + 3] << 24)) >>> 0;
+        if (!parent) return;
+        if (parent > 65535 || parent >= storage.pool.capacity) throw new RangeError('번개 기술 부모의 실제 SID 범위');
+        const process = new ThunderProcess(false, {
+            wallSeconds: () => clock.wallSeconds(),
+            fullScreen: () => false,
+            readPalette: (start, count, destination) => {
+                const pal = screen.palette();
+                // 요청한 부분 팔레트 [start, start+count) 의 BGRX 바이트를 ScreenColor 객체로 채운다.
+                for (let index = 0; index < count; index += 1) {
+                    const offset = (start + index) * 4;
+                    destination[index] = { blue: pal[offset], green: pal[offset + 1], red: pal[offset + 2], reserved: pal[offset + 3] };
+                }
+            },
+            applyPalette: (start, count, colors) => {
+                const bytes = new Uint8Array(Math.max(count, 1) * 4);
+                // ScreenColor 배열을 Screen.setPalette 가 읽는 BGRX 바이트 배열로 옮긴다.
+                for (let index = 0; index < count; index += 1) {
+                    const offset = index * 4, color = colors[index];
+                    bytes[offset] = color.blue & 0xff; bytes[offset + 1] = color.green & 0xff; bytes[offset + 2] = color.red & 0xff; bytes[offset + 3] = color.reserved & 0xff;
+                }
+                screen.setPalette(start, count, bytes, true);
+            },
+            restorePalette: () => { screen.setPalette(0, 256, null, true); },
+        }, (pid) => {
+            const index = this._thunderProcesses.indexOf(pid);
+            if (index >= 0) this._thunderProcesses.splice(index, 1);
+        }, brightness);
+        const attached = storage.processes.host.attach(process, THUNDER_PROCESS_TYPE, parent, 0x10);
+        if (attached) this._thunderProcesses.push(kernel.find(attached));
+    }
+
+    // 원본 Client::ClearThunderFlashes: 등록된 번개 프로세스를 뒤에서부터 즉시 종료해 Form·목록을 함께 반납한다. (2026-11-24 WB04-E1329)
+    _clearThunderFlashes() {
+        const storage = this._surfaceStorage, kernel = this._clientKernel;
+        if (!storage || !kernel) { this._thunderProcesses.length = 0; return; }
+        // 매 kill 의 소멸 콜백이 배열에서 해당 PID 를 지우므로 매번 마지막 항목을 다시 읽는다.
+        while (this._thunderProcesses.length > 0) {
+            const pid = this._thunderProcesses[this._thunderProcesses.length - 1];
+            const process = kernel.get(pid);
+            if (!(process instanceof ThunderProcess)) throw new Error('번개 등록 목록과 실제 Kernel 불일치');
+            storage.processes.host.kill(process, 0x10);
+        }
+    }
+
     // 원본 주 루프 603·604(00439aeb·00439af0): 주변음(먼 천둥·독수리·고래, 120초 주기)과 공유 바람을 매 프레임 갱신한다. 둘은 같은 Game 난수를 소비하므로 게임 정지·메뉴·음향 장치 유무와 무관하게 실행하고(장치가 없으면 소리만 건너뛴다),
-    // 번개 섬광은 E1163 판정대로 창 모드에서 화면 변화가 없어 소리 요청만 한다. 이 호출이 없어 주변음이 한 번도 나지 않았고 바람(입자 흔들림)이 정지해 있었으며 Game 난수열이 원본과 달랐다. (2026-11-22 WB04-E1234)
+    // 번개 섬광(hooks.flash)은 원본 Client::RequestThunderFlash 처럼 창 모드에서도 실제 ThunderProcess(TYPE 55)를 부착해 SidPool·Kernel 수명을 맞춘다. (2026-11-22 WB04-E1234, 2026-11-24 WB04-E1329: ThunderProcess 연결)
     _runAmbientFrame() {
         const random = this._clientRandom?.game, local = this._clientLocal, clock = this._gameClock; if (!random || !local || !clock) return;
         const state = this._ambientSound ??= { kind: 0, forced: 0 };
         stepAmbientSound({ get deadline() { return local.activityEnd().value; }, set deadline(value) { local.activityEnd().value = value; }, get kind() { return state.kind; }, set kind(value) { state.kind = value; }, get forced() { return state.forced; } }, random, {
-            wallSeconds: () => clock.wallSeconds(), currentDialog: () => (this._mainMenu?.dialog ? 1 : 0), flash: () => {},
+            wallSeconds: () => clock.wallSeconds(), currentDialog: () => (this._mainMenu?.dialog ? 1 : 0), flash: (brightness) => { this._startThunderFlash(brightness); },
             sound: (name, loop, volume, pan, priority, limit) => { this._clientSoundPlayer?.playByName(name, loop, volume, pan, priority, limit); },
         });
         this._surfaceStorage?.updateAmbientWind(random);
@@ -4033,7 +4355,14 @@ export class Netstorm {
             // 기존 Tell 창은 별도 Gump 이식 전까지 실제 월드 위에 합성한다. 창이 있거나 바뀌면 이전 픽셀을 전체 복구한다.
             const dialog = this._mainMenu.dialog;
             if (dialog || this._mainMenu.dirty || this._displayDirty) this._clientRenderer.invalidateAll();
-            this._drawCampaignRendererFrame();
+            // 같은 동기 프레임의 실제 변경 범위만 합친다. 오류가 나도 앞서 복사한 부분은 finally에서 표시한다.
+            this._clientScreenPresentBatch = true; this._clientScreenPresentBounds = null;
+            try { this._drawCampaignRendererFrame(); }
+            finally {
+                this._clientScreenPresentBatch = false;
+                const dirty = this._clientScreenPresentBounds; this._clientScreenPresentBounds = null;
+                if (dirty) this._presenter.present(ctx, this._surface, layout, true, dirty);
+            }
             if (dialog) { dialog.draw(this._surface); this._presenter.present(ctx, this._surface, layout, true); }
             this._mainMenu.dirty = false; this._displayDirty = false;
             this._campaignCameraDevice().applyCameraFrame();
@@ -4087,7 +4416,7 @@ export class Netstorm {
     _drawText(ctx, text, x, y, size, color, align = 'center', alpha = 1) {
         ctx.globalAlpha = alpha;
         ctx.fillStyle = color;
-        ctx.font = `${size}px ${FONT_FAMILY}`;
+        ctx.font = `${size}px ${(this._gameData?.language ?? this.options.language) === 'japanese' ? `"${JAPANESE_FONT_FAMILY}", sans-serif` : FONT_FAMILY}`;
         ctx.textAlign = align;
         ctx.textBaseline = 'middle';
         ctx.fillText(text, x, y);
